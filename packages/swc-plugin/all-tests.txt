@@ -1,104 +1,3 @@
-import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
-
-export default function WhitespaceTestCases() {
-  const amount = 100;
-
-  return (
-    <>
-      <T>
-        Normal text <div>and some nesting</div>
-      </T>
-
-      <T>
-        <div>content before</div> trailing text
-      </T>
-      <T>Text with multiple spaces</T>
-      <T>Hello World with spaces</T>
-      <T>
-        <Plural n={1} singular="" plural="Files" />
-      </T>
-      <T>
-        <Plural n={1} singular="   File   " plural={"   Files   "} />
-      </T>
-      <T>
-        <Branch
-          option1=""
-          option2="   Padded   "
-          option3={<span>JSX content</span>}
-        />
-      </T>
-      <T>
-        Start
-        <strong>Bold</strong>
-        <em>Italic</em>
-        End
-      </T>
-      <T>
-        <div>Before</div>
-
-        <div>After</div>
-      </T>
-      <T>
-        User:
-        <Var>userName</Var>
-        has
-        <Num>count</Num>
-        items
-      </T>
-      <T>
-        Click <a href="#">here</a> to continue.
-      </T>
-      <T>Line 1 Line 2 with tabs Line 3 with spaces</T>
-      <T>
-        <Plural n={5} singular="  1 item  " plural={`  items  `} />
-      </T>
-      <T>
-        Total: <Currency currency="USD">{amount}</Currency> available
-      </T>
-      <T>
-        Status: <Plural n={1} singular={true} plural={false} /> -{" "}
-        <Plural n={0} singular={null} plural="Active" />
-      </T>
-      <T>
-        <div>Content</div> <div>More content</div>
-      </T>
-
-      <T>
-        <p></p> <p></p>
-      </T>
-
-      <T>Boundary whitespace test</T>
-      <T>
-        Hello <Var>name</Var>, you have <Num>5</Num> new messages.
-      </T>
-
-      <T>
-        <div>
-          Welcome <strong>user</strong>,
-          <br />
-          You have <span>messages</span> waiting.
-        </div>
-      </T>
-      {/* <T>
-        <div>
-           Hello </div>
-      </T>
-
-      <T>
-        <div> Hello </div>
-      </T>
-
-      {/* <T>
-        <div> Hello 
-          
-        </div>
-      </T> */}
-      <T>
-        <div>Hello</div>
-      </T>
-    </>
-  );
-}
 import {
   Branch,
   Currency,
@@ -305,652 +204,117 @@ export default function EdgeCasesTest() {
     </>
   );
 }
-import { T, Plural, Branch, Var, Currency, DateTime } from "gt-next";
+import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
 
-export default function BranchPage() {
-  const variable = "test";
-  const count = 1;
+export default function WhitespaceTestCases() {
+  const amount = 100;
+
   return (
     <>
       <T>
-        <Plural n={1} singular="File" plural={"Files"} />
-      </T>
-      <T>
-        <Branch branch="file" file={"file.svg"} directory={"public"} />
+        Normal text <div>and some nesting</div>
       </T>
 
       <T>
-        <Plural n={1} singular="File" plural={42} />
+        <div>content before</div> trailing text
       </T>
-      <T>
-        <Plural n={1} singular={true} plural={false} />
-      </T>
-      <T>
-        <Plural n={1} singular={null} plural="Files" />
-      </T>
-
-      <T>
-        <Plural n={1} singular={`File`} plural={`Files`} />
-      </T>
-      <T>
-        <Plural n={1} singular="File" plural={42} />
-      </T>
-
-      <T>
-        <Plural
-          n={1}
-          singular={<>Single file</>}
-          plural={<>Multiple files</>}
-        />
-      </T>
-
-      <T>
-        <Plural
-          n={1}
-          singular={<span>Single file</span>}
-          plural={<span>Multiple files</span>}
-        />
-      </T>
-      <T>
-        <Plural
-          n={1}
-          singular={<Var>{variable}</Var>}
-          plural={
-            <>
-              Multiple <Var>{variable}</Var>s
-            </>
-          }
-        />
-      </T>
-      <T>
-        <div>
-          <>Yo</>
-          <Var>test</Var>
-        </div>
-      </T>
-
-      <T>
-        <Plural
-          n={1}
-          singular={<Var>{variable}</Var>}
-          plural={
-            <div>
-              <>
-                Multiple <Var>{variable}</Var>s
-              </>
-            </div>
-          }
-        />
-      </T>
-
-      <T>
-        <Plural
-          n={1}
-          singular={
-            <Branch
-              branch="type"
-              file={
-                <Plural
-                  n={1}
-                  singular={<>Single nested file</>}
-                  plural={"Multiple nested files"}
-                />
-              }
-              directory={<>Public directory</>}
-            />
-          }
-          plural={"Multiple top-level items"}
-        />
-      </T>
-
+      <T>Text with multiple spaces</T>
+      <T>Hello World with spaces</T>
       <T>
         <Plural n={1} singular="" plural="Files" />
       </T>
       <T>
-        <Plural n={1} singular="File" plural={""} />
-      </T>
-
-      <T>
         <Plural n={1} singular="   File   " plural={"   Files   "} />
       </T>
-
       <T>
-        <Plural
-          n={1}
-          singular={`
-            Multiline
-            File
-          `}
-          plural="Files"
-        />
+        Start
+        <strong>Bold</strong>
+        <em>Italic</em>
+        End
+      </T>
+      <T>
+        <div>Before</div>
+
+        <div>After</div>
+      </T>
+      <T>
+        User:
+        <Var>userName</Var>
+        has
+        <Num>count</Num>
+        items
+      </T>
+      <T>
+        Click <a href="#">here</a> to continue.
+      </T>
+      <T>Line 1 Line 2 with tabs Line 3 with spaces</T>
+      <T>
+        <Plural n={5} singular="  1 item  " plural={`  items  `} />
+      </T>
+      <T>
+        Total: <Currency currency="USD">{amount}</Currency> available
+      </T>
+      <T>
+        Status: <Plural n={1} singular={true} plural={false} /> -{" "}
+        <Plural n={0} singular={null} plural="Active" />
+      </T>
+      <T>
+        <div>Content</div> <div>More content</div>
       </T>
 
       <T>
-        <Plural
-          n={1}
-          singular="File with emoji 📁"
-          plural={"Files with emoji 📁📂"}
-        />
+        <p></p> <p></p>
       </T>
+
+      <T>Boundary whitespace test</T>
       <T>
-        <Branch
-          branch="file"
-          file="special-chars!@#$%^&*().svg"
-          directory={"unicode-path-ñáéíóú"}
-        />
+        Hello <Var>name</Var>, you have <Num>5</Num> new messages.
       </T>
 
       <T>
-        <div>hello</div>
-        <Branch
-          branch="level1"
-          option1={
-            <Branch
-              branch="level2"
-              option1={
-                <Plural
-                  n={1}
-                  singular={
-                    <Branch
-                      branch="level3"
-                      option1={<>Deep option 1</>}
-                      option2={<Var>{variable}</Var>}
-                    />
-                  }
-                  plural={
-                    <Branch
-                      branch="level3"
-                      option1={<Currency currency="USD">100</Currency>}
-                      option2={<DateTime>{new Date()}</DateTime>}
-                    />
-                  }
-                />
-              }
-              option2="Level 2 option 2"
-            />
-          }
-          option2="Level 1 option 2"
-        />
-      </T>
-    </>
-  );
-}
-import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
-
-export default function ComprehensiveEdgeCases() {
-  const variable = "test";
-  const count = 5;
-  const amount = 100.5;
-  const date = new Date();
-
-  return (
-    <>
-      {/* ========== BASIC WHITESPACE EDGE CASES ========== */}
-
-      {/* Leading/trailing spaces with different sibling positions */}
-      <T>
-        <div>before</div> space after div
-      </T>
-
-      <T>
-        space before div <div>after</div>
-      </T>
-
-      <T>
-        <div>first</div> middle space <div>last</div>
-      </T>
-
-      {/* Multiple consecutive spaces */}
-      <T>word1 word2 word3</T>
-
-      {/* Tab and newline combinations */}
-      <T>line1 tabbed line empty line above</T>
-
-      {/* Zero-width and unusual whitespace */}
-      <T>word1 word2 word3</T>
-
-      {/* ========== FRAGMENT EDGE CASES ========== */}
-
-      {/* Empty fragments */}
-      <T>
-        <Plural n={1} singular={<></>} plural="files" />
-      </T>
-
-      {/* Nested fragments */}
-      <T>
-        <Plural
-          n={1}
-          singular={
-            <>
-              <>nested</> fragment
-            </>
-          }
-          plural="files"
-        />
-      </T>
-
-      {/* Fragments with only whitespace */}
-      <T>
-        <Plural n={1} singular={<> </>} plural={<></>} />
-      </T>
-
-      {/* Fragments mixed with elements */}
-      <T>
-        <>text before</>
-        <div>element</div>
-        <>text after</>
-      </T>
-
-      {/* ========== ATTRIBUTE VALUE EDGE CASES ========== */}
-
-      {/* All plural forms */}
-      <T>
-        <Plural
-          n={count}
-          zero="zero items"
-          one="one item"
-          two="two items"
-          few="few items"
-          many="many items"
-          other="other items"
-          singular="singular form"
-          plural="plural form"
-        />
-      </T>
-
-      {/* Mixed attribute types in same component */}
-      <T>
-        <Plural
-          n={1}
-          zero=""
-          one={null}
-          two={42}
-          few={true}
-          many={false}
-          other={`template`}
-          singular={<>fragment</>}
-          plural={<span>element</span>}
-        />
-      </T>
-
-      {/* Extremely long attribute values */}
-      <T>
-        <Plural
-          n={1}
-          singular="This is an extremely long string value that tests how the plugin handles very long attribute content that might span multiple lines and contain various characters including unicode ñáéíóú and emoji 📁📂🎉"
-          plural={`This is an extremely long template literal that tests how the plugin handles very long template content with potential whitespace normalization issues and various characters`}
-        />
-      </T>
-
-      {/* ========== BRANCH COMPONENT EDGE CASES ========== */}
-
-      {/* All empty branch attributes */}
-      <T>
-        <Branch
-          branch="type"
-          option1=""
-          option2={null}
-          option3={<></>}
-          option4={false}
-        />
-      </T>
-
-      {/* Dynamic branch names (should be static) */}
-      <T>
-        <Branch
-          branch="file"
-          file="valid"
-          directory="valid"
-          unknown_option="should be included"
-          another_option={<>fragment content</>}
-        />
-      </T>
-
-      {/* ========== VARIABLE COMPONENT EDGE CASES ========== */}
-
-      {/* All variable types with different content patterns */}
-      <T>
-        <Var name="custom_name">static content</Var>
-        <Var>{variable}</Var>
-        <Var> padded content </Var>
-        <Var></Var>
-      </T>
-
-      <T>
-        <Num name="count_1">{count}</Num>
-        <Num>42</Num>
-        <Num>3.14159</Num>
-      </T>
-
-      <T>
-        <Currency currency="USD" name="price_1">
-          {amount}
-        </Currency>
-        <Currency currency="EUR">99.99</Currency>
-        <Currency currency="JPY">1000</Currency>
-      </T>
-
-      <T>
-        <DateTime name="timestamp_1">{date}</DateTime>
-        <DateTime>{new Date()}</DateTime>
-      </T>
-
-      {/* ========== EXTREME NESTING SCENARIOS ========== */}
-
-      {/* 5-level deep nesting */}
-      <T>
-        <Branch
-          branch="level1"
-          option1={
-            <Plural
-              n={1}
-              singular={
-                <Branch
-                  branch="level2"
-                  option1={
-                    <Plural
-                      n={1}
-                      singular={
-                        <Branch
-                          branch="level3"
-                          option1={
-                            <Plural
-                              n={1}
-                              singular={
-                                <Var name="deep_var">
-                                  deeply nested variable
-                                </Var>
-                              }
-                              plural="deep files"
-                            />
-                          }
-                          option2="level3 option2"
-                        />
-                      }
-                      plural="level2 plurals"
-                    />
-                  }
-                  option2="level2 option2"
-                />
-              }
-              plural="level1 plurals"
-            />
-          }
-          option2="level1 option2"
-        />
-      </T>
-
-      {/* Mixed component types in complex structure */}
-      <T>
-        <div className="container">
-          <Plural
-            n={count}
-            singular={
-              <div>
-                You have <Num>{count}</Num> item costing{" "}
-                <Currency currency="USD">{amount}</Currency>
-                on <DateTime>{date}</DateTime> in the
-                <Branch
-                  branch="location"
-                  home="home folder"
-                  work={<>work directory</>}
-                />
-              </div>
-            }
-            plural={
-              <div>
-                You have <Num>{count}</Num> items costing{" "}
-                <Currency currency="USD">{amount * count}</Currency>
-                <>fragments mixed</> with elements
-              </div>
-            }
-          />
+        <div>
+          Welcome <strong>user</strong>,
+          <br />
+          You have <span>messages</span> waiting.
         </div>
       </T>
-
-      {/* ========== COUNTER CONSISTENCY TESTS ========== */}
-
-      {/* Multiple variables that should have same keys across branches */}
-      <T>
-        <Branch
-          branch="type"
-          option1={
-            <div>
-              First: <Var>{variable}</Var>
-              Second: <Num>{count}</Num>
-              Third: <Currency currency="USD">{amount}</Currency>
-            </div>
-          }
-          option2={
-            <div>
-              First: <Var>{variable}</Var>
-              Second: <Num>{count}</Num>
-              Third: <Currency currency="USD">{amount}</Currency>
-            </div>
-          }
-        />
-      </T>
-
-      {/* Parallel branches with fragments vs elements */}
-      <T>
-        <Plural
-          n={1}
-          singular={
-            <>
-              <Var>var1</Var> and <Num>num1</Num>
-            </>
-          }
-          plural={
-            <div>
-              <Var>var1</Var> and <Num>num1</Num>
-            </div>
-          }
-        />
-      </T>
-
-      {/* ========== LITERAL VALUE EDGE CASES ========== */}
-
-      {/* Different number formats */}
-      <T>
-        <Plural
-          n={1}
-          zero={0}
-          one={1}
-          two={-1}
-          few={3.14159}
-          many={1e6}
-          other={0xff}
-        />
-      </T>
-
-      {/* Boolean combinations */}
-      <T>
-        <Branch
-          branch="status"
-          active={true}
-          inactive={false}
-          unknown={null}
-          pending=""
-        />
-      </T>
-
-      {/* Mixed quotes and escaping */}
-      <T>
-        <Plural
-          n={1}
-          singular="Single 'quotes' inside"
-          plural={'Double "quotes" inside'}
-          other={`Template with 'both' "types"`}
-        />
-      </T>
-
-      {/* ========== UNICODE AND SPECIAL CHARACTERS ========== */}
-
-      {/* Various unicode categories */}
-      <T>
-        <Branch
-          branch="language"
-          english="Hello World"
-          spanish="Hola Mundo ñáéíóú"
-          chinese="你好世界"
-          emoji="🌍🌎🌏 Hello 👋"
-          arabic="مرحبا بالعالم"
-          russian="Привет мир"
-        />
-      </T>
-
-      {/* Special/control characters */}
-      <T>
-        <Plural
-          n={1}
-          singular="Line1\nLine2\tTabbed"
-          plural="Special: !@#$%^&*()_+-=[]{}|;:,.<>?"
-          other={`Template with \${variable} and \`backticks\``}
-        />
-      </T>
-
-      {/* ========== TEMPLATE LITERAL EDGE CASES ========== */}
-
-      {/* Simple templates (should work) */}
-      <T>
-        <Plural
-          n={1}
-          singular={`simple template`}
-          plural={`another simple template`}
-        />
-      </T>
-
-      {/* Multiline templates */}
-      <T>
-        <Branch
-          branch="format"
-          single={`single line`}
-          multi={`
-            line 1
-            line 2
-            line 3
-          `}
-        />
-      </T>
-
-      {/* ========== BOUNDARY CONDITIONS ========== */}
-
-      {/* Component with no attributes */}
-      <T>
-        <Plural n={1} />
-      </T>
-
-      {/* Component with only invalid attributes */}
-      <T>
-        <Plural n={1} invalid_attr="should be ignored" />
-      </T>
-
-      {/* Empty component */}
-      <T>
-        <Var></Var>
-      </T>
-
-      {/* Component with only whitespace children */}
-      <T>
-        <Var></Var>
-      </T>
-
-      {/* ========== REGRESSION TEST CASES ========== */}
-
-      {/* Known problematic patterns from previous issues */}
-      <T>
-        Normal text <div>nested content</div> more text
+      {/* <T>
+        <div>
+           Hello </div>
       </T>
 
       <T>
-        <Plural
-          n={count}
-          zero="No files"
-          one="One file"
-          two="Two files"
-          few="Few files"
-          many="Many files"
-          other="Other files"
-          singular={<>Single file</>}
-        />
+        <div> Hello </div>
       </T>
 
+      {/* <T>
+        <div> Hello 
+          
+        </div>
+      </T> */}
       <T>
-        <Branch
-          branch="context"
-          option1=""
-          option2="   padded   "
-          option3={<Var>{variable}</Var>}
-          option4={<>fragment content</>}
-          option5={<div>element content</div>}
-        />
+        <div>Hello</div>
       </T>
     </>
   );
 }
 
 /*
-EDGE CASES COVERED:
+Expected Runtime vs Build-time behaviors:
 
-1. **Whitespace Normalization:**
-   - Leading/trailing spaces in different sibling contexts
-   - Multiple consecutive spaces
-   - Mixed whitespace types (spaces, tabs, newlines)
-   - Zero-width and unusual whitespace characters
+1. "Normal text " (with space) should be preserved
+2. " trailing text" (with leading space) should be preserved  
+3. "Text with multiple spaces" (internal normalization OK)
+4. Empty string attributes: singular="" should appear in JSON as "singular":""
+5. Padded attributes: "   File   " should stay exactly as-is
+6. Whitespace between inline elements should be preserved for layout
+7. Pure whitespace nodes may be collapsed but significant spacing kept
+8. Variable components should not be wrapped with {"c": ...}
+9. Boolean/null literals should serialize as raw JSON types
+10. Template literals in expressions should be handled appropriately
 
-2. **Fragment Handling:**
-   - Empty fragments
-   - Nested fragments
-   - Fragments with only whitespace
-   - Fragments mixed with regular elements
-
-3. **Attribute Values:**
-   - All CLDR plural forms (zero, one, two, few, many, other, singular, plural)
-   - Mixed data types (strings, numbers, booleans, null, fragments, elements)
-   - Extremely long strings
-   - Unicode and special characters
-
-4. **Variable Components:**
-   - All variable types (Var, Num, Currency, DateTime)
-   - Custom name attributes
-   - Empty components
-   - Padded content
-
-5. **Counter Consistency:**
-   - Parallel branches with same variable sequences
-   - Fragment vs element containers with same content
-   - Deep nesting scenarios
-
-6. **Literal Values:**
-   - Different number formats (integers, floats, scientific notation, hex)
-   - Boolean combinations
-   - Various string quote types
-
-7. **Boundary Conditions:**
-   - Empty components
-   - Components with no valid attributes
-   - Components with only whitespace
-
-8. **Stress Testing:**
-   - Deep nesting (5+ levels)
-   - Many components in sequence
-   - Complex mixed structures
-
-9. **Regression Cases:**
-   - Known problematic patterns from previous fixes
-   - Hash mismatch scenarios
-   - Counter increment edge cases
-
-This should expose any remaining issues with:
-- Whitespace preservation logic
-- Fragment vs element handling consistency
-- Counter increment/restore mechanisms
-- Attribute value processing
-- Unicode handling
-- Template literal processing
-- Hash generation consistency
+The key test is Case 1 - this is the main failing case from the logs.
 */
-
 import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
 
 export default function ExtremeEdgeCases() {
@@ -1612,4 +976,666 @@ ADDITIONAL EXTREME EDGE CASES COVERED:
     - Whitespace preservation edge cases
 
 This test file should expose any remaining edge cases and ensure your plugin handles every possible valid JSX pattern correctly!
+*/
+import { Plural, T } from "gt-next";
+
+export default function EmptyTest() {
+  return (
+    <>
+      {/* Component with no attributes */}
+      <T>
+        <Plural n={1} />
+      </T>
+
+      {/* Component with only invalid attributes */}
+      <T>
+        <Plural n={1} invalid_attr="should be ignored" />
+      </T>
+    </>
+  );
+}
+import { T, Plural, Branch, Var, Currency, DateTime } from "gt-next";
+
+export default function BranchPage() {
+  const variable = "test";
+  const count = 1;
+  return (
+    <>
+      <T>
+        <Plural n={1} singular="File" plural={"Files"} />
+      </T>
+      <T>
+        <Branch branch="file" file={"file.svg"} directory={"public"} />
+      </T>
+
+      <T>
+        <Plural n={1} singular="File" plural={42} />
+      </T>
+      <T>
+        <Plural n={1} singular={true} plural={false} />
+      </T>
+      <T>
+        <Plural n={1} singular={null} plural="Files" />
+      </T>
+
+      <T>
+        <Plural n={1} singular={`File`} plural={`Files`} />
+      </T>
+      <T>
+        <Plural n={1} singular="File" plural={42} />
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={<>Single file</>}
+          plural={<>Multiple files</>}
+        />
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={<span>Single file</span>}
+          plural={<span>Multiple files</span>}
+        />
+      </T>
+      <T>
+        <Plural
+          n={1}
+          singular={<Var>{variable}</Var>}
+          plural={
+            <>
+              Multiple <Var>{variable}</Var>s
+            </>
+          }
+        />
+      </T>
+      <T>
+        <div>
+          <>Yo</>
+          <Var>test</Var>
+        </div>
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={<Var>{variable}</Var>}
+          plural={
+            <div>
+              <>
+                Multiple <Var>{variable}</Var>s
+              </>
+            </div>
+          }
+        />
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={
+            <Branch
+              branch="type"
+              file={
+                <Plural
+                  n={1}
+                  singular={<>Single nested file</>}
+                  plural={"Multiple nested files"}
+                />
+              }
+              directory={<>Public directory</>}
+            />
+          }
+          plural={"Multiple top-level items"}
+        />
+      </T>
+
+      <T>
+        <Plural n={1} singular="" plural="Files" />
+      </T>
+      <T>
+        <Plural n={1} singular="File" plural={""} />
+      </T>
+
+      <T>
+        <Plural n={1} singular="   File   " plural={"   Files   "} />
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={`
+            Multiline
+            File
+          `}
+          plural="Files"
+        />
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular="File with emoji 📁"
+          plural={"Files with emoji 📁📂"}
+        />
+      </T>
+      <T>
+        <Branch
+          branch="file"
+          file="special-chars!@#$%^&*().svg"
+          directory={"unicode-path-ñáéíóú"}
+        />
+      </T>
+
+      <T>
+        <div>hello</div>
+        <Branch
+          branch="level1"
+          option1={
+            <Branch
+              branch="level2"
+              option1={
+                <Plural
+                  n={1}
+                  singular={
+                    <Branch
+                      branch="level3"
+                      option1={<>Deep option 1</>}
+                      option2={<Var>{variable}</Var>}
+                    />
+                  }
+                  plural={
+                    <Branch
+                      branch="level3"
+                      option1={<Currency currency="USD">100</Currency>}
+                      option2={<DateTime>{new Date()}</DateTime>}
+                    />
+                  }
+                />
+              }
+              option2="Level 2 option 2"
+            />
+          }
+          option2="Level 1 option 2"
+        />
+      </T>
+    </>
+  );
+}
+import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
+
+export default function ComprehensiveEdgeCases() {
+  const variable = "test";
+  const count = 5;
+  const amount = 100.5;
+  const date = new Date();
+
+  return (
+    <>
+      {/* ========== BASIC WHITESPACE EDGE CASES ========== */}
+
+      {/* Leading/trailing spaces with different sibling positions */}
+      <T>
+        <div>before</div> space after div
+      </T>
+
+      <T>
+        space before div <div>after</div>
+      </T>
+
+      <T>
+        <div>first</div> middle space <div>last</div>
+      </T>
+
+      {/* Multiple consecutive spaces */}
+      <T>word1 word2 word3</T>
+
+      {/* Tab and newline combinations */}
+      <T>line1 tabbed line empty line above</T>
+
+      {/* Zero-width and unusual whitespace */}
+      <T>word1 word2 word3</T>
+
+      {/* ========== FRAGMENT EDGE CASES ========== */}
+
+      {/* Empty fragments */}
+      <T>
+        <Plural n={1} singular={<></>} plural="files" />
+      </T>
+
+      {/* Nested fragments */}
+      <T>
+        <Plural
+          n={1}
+          singular={
+            <>
+              <>nested</> fragment
+            </>
+          }
+          plural="files"
+        />
+      </T>
+
+      {/* Fragments with only whitespace */}
+      <T>
+        <Plural n={1} singular={<> </>} plural={<></>} />
+      </T>
+
+      {/* Fragments mixed with elements */}
+      <T>
+        <>text before</>
+        <div>element</div>
+        <>text after</>
+      </T>
+
+      {/* ========== ATTRIBUTE VALUE EDGE CASES ========== */}
+
+      {/* All plural forms */}
+      <T>
+        <Plural
+          n={count}
+          zero="zero items"
+          one="one item"
+          two="two items"
+          few="few items"
+          many="many items"
+          other="other items"
+          singular="singular form"
+          plural="plural form"
+        />
+      </T>
+
+      {/* Mixed attribute types in same component */}
+      <T>
+        <Plural
+          n={1}
+          zero=""
+          one={null}
+          two={42}
+          few={true}
+          many={false}
+          other={`template`}
+          singular={<>fragment</>}
+          plural={<span>element</span>}
+        />
+      </T>
+
+      {/* Extremely long attribute values */}
+      <T>
+        <Plural
+          n={1}
+          singular="This is an extremely long string value that tests how the plugin handles very long attribute content that might span multiple lines and contain various characters including unicode ñáéíóú and emoji 📁📂🎉"
+          plural={`This is an extremely long template literal that tests how the plugin handles very long template content with potential whitespace normalization issues and various characters`}
+        />
+      </T>
+
+      {/* ========== BRANCH COMPONENT EDGE CASES ========== */}
+
+      {/* All empty branch attributes */}
+      <T>
+        <Branch
+          branch="type"
+          option1=""
+          option2={null}
+          option3={<></>}
+          option4={false}
+        />
+      </T>
+
+      {/* Dynamic branch names (should be static) */}
+      <T>
+        <Branch
+          branch="file"
+          file="valid"
+          directory="valid"
+          unknown_option="should be included"
+          another_option={<>fragment content</>}
+        />
+      </T>
+
+      {/* ========== VARIABLE COMPONENT EDGE CASES ========== */}
+
+      {/* All variable types with different content patterns */}
+      <T>
+        <Var name="custom_name">static content</Var>
+        <Var>{variable}</Var>
+        <Var> padded content </Var>
+        <Var></Var>
+      </T>
+
+      <T>
+        <Num name="count_1">{count}</Num>
+        <Num>42</Num>
+        <Num>3.14159</Num>
+      </T>
+
+      <T>
+        <Currency currency="USD" name="price_1">
+          {amount}
+        </Currency>
+        <Currency currency="EUR">99.99</Currency>
+        <Currency currency="JPY">1000</Currency>
+      </T>
+
+      <T>
+        <DateTime name="timestamp_1">{date}</DateTime>
+        <DateTime>{new Date()}</DateTime>
+      </T>
+
+      {/* ========== EXTREME NESTING SCENARIOS ========== */}
+
+      {/* 5-level deep nesting */}
+      <T>
+        <Branch
+          branch="level1"
+          option1={
+            <Plural
+              n={1}
+              singular={
+                <Branch
+                  branch="level2"
+                  option1={
+                    <Plural
+                      n={1}
+                      singular={
+                        <Branch
+                          branch="level3"
+                          option1={
+                            <Plural
+                              n={1}
+                              singular={
+                                <Var name="deep_var">
+                                  deeply nested variable
+                                </Var>
+                              }
+                              plural="deep files"
+                            />
+                          }
+                          option2="level3 option2"
+                        />
+                      }
+                      plural="level2 plurals"
+                    />
+                  }
+                  option2="level2 option2"
+                />
+              }
+              plural="level1 plurals"
+            />
+          }
+          option2="level1 option2"
+        />
+      </T>
+
+      {/* Mixed component types in complex structure */}
+      <T>
+        <div className="container">
+          <Plural
+            n={count}
+            singular={
+              <div>
+                You have <Num>{count}</Num> item costing{" "}
+                <Currency currency="USD">{amount}</Currency>
+                on <DateTime>{date}</DateTime> in the
+                <Branch
+                  branch="location"
+                  home="home folder"
+                  work={<>work directory</>}
+                />
+              </div>
+            }
+            plural={
+              <div>
+                You have <Num>{count}</Num> items costing{" "}
+                <Currency currency="USD">{amount * count}</Currency>
+                <>fragments mixed</> with elements
+              </div>
+            }
+          />
+        </div>
+      </T>
+
+      {/* ========== COUNTER CONSISTENCY TESTS ========== */}
+
+      {/* Multiple variables that should have same keys across branches */}
+      <T>
+        <Branch
+          branch="type"
+          option1={
+            <div>
+              First: <Var>{variable}</Var>
+              Second: <Num>{count}</Num>
+              Third: <Currency currency="USD">{amount}</Currency>
+            </div>
+          }
+          option2={
+            <div>
+              First: <Var>{variable}</Var>
+              Second: <Num>{count}</Num>
+              Third: <Currency currency="USD">{amount}</Currency>
+            </div>
+          }
+        />
+      </T>
+
+      {/* Parallel branches with fragments vs elements */}
+      <T>
+        <Plural
+          n={1}
+          singular={
+            <>
+              <Var>var1</Var> and <Num>num1</Num>
+            </>
+          }
+          plural={
+            <div>
+              <Var>var1</Var> and <Num>num1</Num>
+            </div>
+          }
+        />
+      </T>
+
+      {/* ========== LITERAL VALUE EDGE CASES ========== */}
+
+      {/* Different number formats */}
+      <T>
+        <Plural
+          n={1}
+          zero={0}
+          one={1}
+          two={-1}
+          few={3.14159}
+          many={1e6}
+          other={0xff}
+        />
+      </T>
+
+      {/* Boolean combinations */}
+      <T>
+        <Branch
+          branch="status"
+          active={true}
+          inactive={false}
+          unknown={null}
+          pending=""
+        />
+      </T>
+
+      {/* Mixed quotes and escaping */}
+      <T>
+        <Plural
+          n={1}
+          singular="Single 'quotes' inside"
+          plural={'Double "quotes" inside'}
+          other={`Template with 'both' "types"`}
+        />
+      </T>
+
+      {/* ========== UNICODE AND SPECIAL CHARACTERS ========== */}
+
+      {/* Various unicode categories */}
+      <T>
+        <Branch
+          branch="language"
+          english="Hello World"
+          spanish="Hola Mundo ñáéíóú"
+          chinese="你好世界"
+          emoji="🌍🌎🌏 Hello 👋"
+          arabic="مرحبا بالعالم"
+          russian="Привет мир"
+        />
+      </T>
+
+      {/* Special/control characters */}
+      <T>
+        <Plural
+          n={1}
+          singular="Line1\nLine2\tTabbed"
+          plural="Special: !@#$%^&*()_+-=[]{}|;:,.<>?"
+          other={`Template with \${variable} and \`backticks\``}
+        />
+      </T>
+
+      {/* ========== TEMPLATE LITERAL EDGE CASES ========== */}
+
+      {/* Simple templates (should work) */}
+      <T>
+        <Plural
+          n={1}
+          singular={`simple template`}
+          plural={`another simple template`}
+        />
+      </T>
+
+      {/* Multiline templates */}
+      <T>
+        <Branch
+          branch="format"
+          single={`single line`}
+          multi={`
+            line 1
+            line 2
+            line 3
+          `}
+        />
+      </T>
+
+      {/* ========== BOUNDARY CONDITIONS ========== */}
+
+      {/* Component with no attributes */}
+      <T>
+        <Plural n={1} />
+      </T>
+
+      {/* Component with only invalid attributes */}
+      <T>
+        <Plural n={1} invalid_attr="should be ignored" />
+      </T>
+
+      {/* Empty component */}
+      <T>
+        <Var></Var>
+      </T>
+
+      {/* Component with only whitespace children */}
+      <T>
+        <Var></Var>
+      </T>
+
+      {/* ========== REGRESSION TEST CASES ========== */}
+
+      {/* Known problematic patterns from previous issues */}
+      <T>
+        Normal text <div>nested content</div> more text
+      </T>
+
+      <T>
+        <Plural
+          n={count}
+          zero="No files"
+          one="One file"
+          two="Two files"
+          few="Few files"
+          many="Many files"
+          other="Other files"
+          singular={<>Single file</>}
+        />
+      </T>
+
+      <T>
+        <Branch
+          branch="context"
+          option1=""
+          option2="   padded   "
+          option3={<Var>{variable}</Var>}
+          option4={<>fragment content</>}
+          option5={<div>element content</div>}
+        />
+      </T>
+    </>
+  );
+}
+
+/*
+EDGE CASES COVERED:
+
+1. **Whitespace Normalization:**
+   - Leading/trailing spaces in different sibling contexts
+   - Multiple consecutive spaces
+   - Mixed whitespace types (spaces, tabs, newlines)
+   - Zero-width and unusual whitespace characters
+
+2. **Fragment Handling:**
+   - Empty fragments
+   - Nested fragments
+   - Fragments with only whitespace
+   - Fragments mixed with regular elements
+
+3. **Attribute Values:**
+   - All CLDR plural forms (zero, one, two, few, many, other, singular, plural)
+   - Mixed data types (strings, numbers, booleans, null, fragments, elements)
+   - Extremely long strings
+   - Unicode and special characters
+
+4. **Variable Components:**
+   - All variable types (Var, Num, Currency, DateTime)
+   - Custom name attributes
+   - Empty components
+   - Padded content
+
+5. **Counter Consistency:**
+   - Parallel branches with same variable sequences
+   - Fragment vs element containers with same content
+   - Deep nesting scenarios
+
+6. **Literal Values:**
+   - Different number formats (integers, floats, scientific notation, hex)
+   - Boolean combinations
+   - Various string quote types
+
+7. **Boundary Conditions:**
+   - Empty components
+   - Components with no valid attributes
+   - Components with only whitespace
+
+8. **Stress Testing:**
+   - Deep nesting (5+ levels)
+   - Many components in sequence
+   - Complex mixed structures
+
+9. **Regression Cases:**
+   - Known problematic patterns from previous fixes
+   - Hash mismatch scenarios
+   - Counter increment edge cases
+
+This should expose any remaining issues with:
+- Whitespace preservation logic
+- Fragment vs element handling consistency
+- Counter increment/restore mechanisms
+- Attribute value processing
+- Unicode handling
+- Template literal processing
+- Hash generation consistency
 */

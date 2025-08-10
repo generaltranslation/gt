@@ -35,6 +35,19 @@ pub enum LogLevel {
 // <T> (missing n={})
 // <Plural singular="file" plural="files" />
 // <T>
+// <T id="numeric-extremes">
+// No support for max integer etc (yet)
+// <Plural
+// n={count}
+// zero={0}
+// one={-0}
+// two={Number.MAX_SAFE_INTEGER}
+// few={Number.MIN_SAFE_INTEGER}
+// many={1.7976931348623157e308}
+// other={-1.7976931348623157e308}
+// />
+// </T>
+
 // TODO: handle alt={} on specific components
 // Core: cannot handle big ints (eg 123n)
 
@@ -271,6 +284,40 @@ impl TransformVisitor {
         }
     }
 
+
+    fn extract_string_from_jsx_attr(jsx_attr: &JSXAttr) -> Option<String> {
+        match &jsx_attr.value {
+            Some(JSXAttrValue::Lit(Lit::Str(str_lit))) => Some(str_lit.value.to_string()),
+            Some(JSXAttrValue::JSXExprContainer(expr_container)) => {
+                match &expr_container.expr {
+                    JSXExpr::Expr(expr) => {
+                        match expr.as_ref() {
+                            Expr::Lit(Lit::Str(str_lit)) => Some(str_lit.value.to_string()),
+                            Expr::Tpl(tpl) => {
+                                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+                                    if let Some(quasi) = tpl.quasis.first() {
+                                        if let Some(cooked) = &quasi.cooked {
+                                            Some(cooked.to_string())
+                                        } else {
+                                            Some(quasi.raw.to_string())
+                                        }
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None
+                        }
+                    }
+                    _ => None
+                }
+            }
+            _ => None
+        }
+    }
+
     /// Calculate hash for JSX element using AST traversal
     fn calculate_element_hash(&self, element: &JSXElement) -> (String, String) {
         use crate::traversal::JsxTraversal;
@@ -308,15 +355,49 @@ impl TransformVisitor {
         
         // Build sanitized children directly from JSX children
         if let Some(sanitized_children) = traversal.build_sanitized_children(&element.children) {
+            // Get the id from the element
+            let id = element.opening.attrs.iter().find_map(|attr| {
+                if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                    if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                        if ident.sym.as_ref() == "id" {
+                            Self::extract_string_from_jsx_attr(&jsx_attr)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            });
+
+            // Get the context from the element
+            let context = element.opening.attrs.iter().find_map(|attr| {
+                if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                    if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                        if ident.sym.as_ref() == "context" {
+                            Self::extract_string_from_jsx_attr(&jsx_attr)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            });
+
+            // Get the id from the element
             // Create the full SanitizedData structure to match TypeScript implementation
             use crate::hash::SanitizedData;
             let sanitized_data = SanitizedData {
                 source: Some(Box::new(sanitized_children)),
-                id: None,
-                context: None,
+                id,
+                context,
                 data_format: Some("JSX".to_string()),
             };
-            
             // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
             let json_string = JsxHasher::stable_stringify(&sanitized_data)
                 .expect("Failed to serialize sanitized data");

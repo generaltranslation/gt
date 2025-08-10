@@ -23,11 +23,18 @@ fn js_number_to_string(value: f64) -> String {
 
     let abs_value = value.abs();
     if abs_value < 1e-6 || abs_value >= 1e21 {
-        // Use exponential notation, matching JS format
-        format!("{:e}", value)
-            .replace("e+0", "e+")
-            .replace("e-0", "e-")
-            .replace("e+", "e")
+        // // Use exponential notation, matching JS format
+        // format!("{:e}", value)
+        //     .replace("e+0", "e+")
+        //     .replace("e-0", "e-")
+        let formatted = format!("{:e}", value);
+        if formatted.contains("e") && !formatted.contains("e-") && !formatted.contains("e+") {
+            formatted.replace("e", "e+")
+        } else {
+            formatted
+        }
+        .replace("e+0", "e+")
+        .replace("e-0", "e-")
     } else {
         value.to_string()
     }
@@ -160,7 +167,13 @@ impl<'a> JsxTraversal<'a> {
                     let wrapped_children = SanitizedChildren::Wrapped { c: Box::new(children) };
                     Some(SanitizedChild::Fragment(Box::new(wrapped_children)))
                 } else {
-                    None
+                    let empty_element = SanitizedElement {
+                        b: None,
+                        c: None,
+                        t: None,
+                        d: None,
+                    };
+                    Some(SanitizedChild::Element(Box::new(empty_element)))
                 }
             }
             JSXElementChild::JSXElement(element) => {
