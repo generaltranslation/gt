@@ -24,9 +24,6 @@ fn js_number_to_string(value: f64) -> String {
     let abs_value = value.abs();
     if abs_value < 1e-6 || abs_value >= 1e21 {
         // // Use exponential notation, matching JS format
-        // format!("{:e}", value)
-        //     .replace("e+0", "e+")
-        //     .replace("e-0", "e-")
         let formatted = format!("{:e}", value);
         if formatted.contains("e") && !formatted.contains("e-") && !formatted.contains("e+") {
             formatted.replace("e", "e+")
@@ -51,18 +48,24 @@ impl<'a> JsxTraversal<'a> {
             return None;
         }
 
-        let sanitized_children: Vec<SanitizedChild> = children
-            .iter()
-            .enumerate()
-            .filter_map(|(index, child)| {
-                let result = self.build_sanitized_child(child, index == 0, index == children.len() - 1);
-                result
-            })
-            .collect();
+      
 
-        if sanitized_children.is_empty() {
-            return None;
-        }
+        let sanitized_children: Vec<SanitizedChild> = if children.len() == 1 {
+            let child = children.first().unwrap();
+            self.build_sanitized_child(child, true, true).map(|child| vec![child]).unwrap_or_default()
+        } else {
+            children
+                .iter()
+                .enumerate()
+                .filter_map(|(index, child)| {
+                    self.build_sanitized_child(child, index == 0, index == children.len() - 1)
+                })
+                .collect()
+        };
+
+        // if sanitized_children.is_empty() {
+        //     return None;
+        // }
 
         if sanitized_children.len() == 1 {
             Some(SanitizedChildren::Single(Box::new(sanitized_children.into_iter().next().unwrap())))
