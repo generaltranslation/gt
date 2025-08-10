@@ -47,6 +47,10 @@ pub enum LogLevel {
 // other={-1.7976931348623157e308}
 // />
 // </T>
+// Invalid input:
+// <T>
+// <Plural n={1} invalid="ignored" also_invalid="also ignored" />
+// </T>
 
 // TODO: handle alt={} on specific components
 // Core: cannot handle big ints (eg 123n)
