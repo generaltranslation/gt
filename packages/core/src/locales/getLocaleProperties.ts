@@ -169,7 +169,7 @@ export default function _getLocaleProperties(
     const nameWithRegionCode =
       customLocaleProperties?.nameWithRegionCode || baseRegion
         ? `${languageName} (${baseRegion})`
-        : languageName; // German (AT)
+        : name; // German (AT)
     const nativeNameWithRegionCode =
       customLocaleProperties?.nativeNameWithRegionCode ||
       (baseRegion ? `${nativeLanguageName} (${baseRegion})` : nativeName) ||
