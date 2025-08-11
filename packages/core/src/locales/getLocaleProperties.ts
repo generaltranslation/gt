@@ -174,7 +174,7 @@ export default function _getLocaleProperties(
       customLocaleProperties?.nativeNameWithRegionCode ||
       (baseRegion
         ? `${nativeLanguageName} (${baseRegion})`
-        : nativeLanguageName) ||
+        : nativeName) ||
       nameWithRegionCode; // "Deutsch (AT)"
 
     // Region names (default and native)
@@ -291,7 +291,7 @@ export default function _getLocaleProperties(
       (regionName ? `${name} (${regionName})` : name);
     const nativeNameWithRegionCode =
       customLocaleProperties?.nativeNameWithRegionCode ||
-      (nativeRegionName ? `${nativeName} (${nativeRegionName})` : nativeName);
+      (nativeRegionName ? `${nativeLanguageName} (${nativeRegionName})` : nativeName);
 
     const emoji = customLocaleProperties?.emoji || defaultEmoji;
 
