@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.1.6
+
+### Patch Changes
+
+- [#544](https://github.com/generaltranslation/gt/pull/544) [`ca7d1ac`](https://github.com/generaltranslation/gt/commit/ca7d1ac0d424f9804031020e3a36bae27bdcc049) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - corrected nameWithRegionCode and nativeNameWithRegion code
+
 ## 7.1.5
 
 ### Patch Changes
