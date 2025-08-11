@@ -286,7 +286,7 @@ export default function _getLocaleProperties(
 
     const nameWithRegionCode =
       customLocaleProperties?.nameWithRegionCode ||
-      (regionName ? `${name} (${regionName})` : name);
+      (regionName ? `${languageName} (${regionName})` : name);
     const nativeNameWithRegionCode =
       customLocaleProperties?.nativeNameWithRegionCode ||
       (nativeRegionName
