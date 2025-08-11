@@ -51,6 +51,10 @@ pub enum LogLevel {
 // <T>
 // <Plural n={1} invalid="ignored" also_invalid="also ignored" />
 // </T>
+// T with no children:
+// <T>
+//
+// </T>
 
 
 // To investigate:
@@ -732,6 +736,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 
 mod hash;
 mod traversal;
+mod whitespace;
 
 #[cfg(test)]
 mod tests;

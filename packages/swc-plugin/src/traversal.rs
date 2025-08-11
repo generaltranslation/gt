@@ -8,6 +8,7 @@ use crate::hash::{
     SanitizedVariable, VariableType, HtmlContentProps
 };
 use crate::TransformVisitor;
+use crate::whitespace::{has_significant_whitespace, trim_normal_whitespace};
 
 /// AST traversal for converting JSX to sanitized GT objects
 pub struct JsxTraversal<'a> {
@@ -45,34 +46,98 @@ impl<'a> JsxTraversal<'a> {
 
     /// Build sanitized children objects directly from JSX children
     pub fn build_sanitized_children(&mut self, children: &[JSXElementChild]) -> Option<SanitizedChildren> {
-        if children.is_empty() {
+        // sometimes there is whitespace before/after a single child, and that makes three children, ie:
+        // <T> {true} </T>
+        // these whitespaces need to be removed before we can continue
+        let mut remove_first_child = false;
+        let mut remove_last_child = false;
+        if children.len() >= 2 {
+            // Check beginning
+            let first_child = children.first().unwrap();
+            if let JSXElementChild::JSXText(text) = first_child {
+                if trim_normal_whitespace(&text.value).is_empty() && text.value.contains('\n') {
+                    remove_first_child = true;
+                }
+            }
+
+            // Check end
+            let last_child = children.last().unwrap();
+            if let JSXElementChild::JSXText(text) = last_child {
+                if trim_normal_whitespace(&text.value).is_empty() && text.value.contains('\n') {
+                    remove_last_child = true;
+                }
+            }
+        }
+
+        // Filter out the first and last child if they are whitespace
+        let filtered_children = if remove_first_child && remove_last_child {
+            children[1..children.len() - 1].to_vec()
+        } else if remove_first_child {
+            children[1..].to_vec()
+        } else if remove_last_child {
+            children[..children.len() - 1].to_vec()
+        } else {
+            children.to_vec()
+        };
+
+        // Filter out all empty {} expressions
+        let filtered_children: Vec<JSXElementChild> = filtered_children.into_iter().filter(|child| {
+            if let JSXElementChild::JSXExprContainer(expr_container) = child {
+                if let JSXExpr::JSXEmptyExpr(_) = &expr_container.expr {
+                    return false;
+                }
+            } else if let JSXElementChild::JSXText(text) = child {
+                let trimmed = trim_normal_whitespace(&text.value);
+                if trimmed.is_empty() {
+                    // Check if it contains HTML entities (like &nbsp;, &amp;, etc.)
+                    if has_significant_whitespace(&text.value) {
+                        return true;
+                    }
+
+                    // Remove plain whitespace with newlines
+                    if text.value.contains('\n') {
+                        return false;
+                    }
+                }
+            }
+            true
+        }).collect();
+
+        eprintln!("DEBUG: filtered_children: {:?}", filtered_children.len());
+
+
+        // If there are no children, return None
+        if filtered_children.is_empty() {
             return None;
         }
 
-      
 
-        let sanitized_children: Vec<SanitizedChild> = if children.len() == 1 {
-            let child = children.first().unwrap();
-            self.build_sanitized_child(child, true, true).map(|child| vec![child]).unwrap_or_default()
-        } else {
-            children
-                .iter()
-                .enumerate()
-                .filter_map(|(index, child)| {
-                    self.build_sanitized_child(child, index == 0, index == children.len() - 1)
-                })
-                .collect()
-        };
+
+        if filtered_children.len() == 1 {
+            let child = filtered_children.first().unwrap();
+            return self.build_sanitized_child(child, true, true)
+                .map(|child| SanitizedChildren::Single(Box::new(child)));
+        }
+
+        let sanitized_children: Vec<SanitizedChild> = filtered_children
+            .iter()
+            .enumerate()
+            .filter_map(|(index, child)| {
+                self.build_sanitized_child(child, index == 0, index == filtered_children.len() - 1)
+            })
+            .collect();
 
         // if sanitized_children.is_empty() {
         //     return None;
         // }
 
-        if sanitized_children.len() == 1 {
-            Some(SanitizedChildren::Single(Box::new(sanitized_children.into_iter().next().unwrap())))
-        } else {
-            Some(SanitizedChildren::Multiple(sanitized_children))
-        }
+
+        // if sanitized_children.len() == 1 {
+        //     Some(SanitizedChildren::Single(Box::new(sanitized_children.into_iter().next().unwrap())))
+        // } else {
+        //     Some(SanitizedChildren::Multiple(sanitized_children))
+        // }
+        Some(SanitizedChildren::Multiple(sanitized_children))
     }
 
     /// Build a sanitized child with a specific counter context (for branches)
@@ -105,24 +170,22 @@ impl<'a> JsxTraversal<'a> {
                 // This matches how browsers handle JSX text content
                 // eprintln!("DEBUG: ------------------------------");
                 // eprintln!("DEBUG: Processing text: '{}'", content);
-                let normalized = if content.trim().is_empty() {
-                    if (!is_first_sibling && !is_last_sibling) || (is_first_sibling && is_last_sibling) {
-                        if content.contains('\n') {
-                            None
-                        } else {
-                            Some(content)
-                        }
-                    } else {
-                        // Whitespace at beginning or end, collapse to empty
+                let normalized = if trim_normal_whitespace(&content).is_empty() {
+                    if content.contains('\n') {
                         None
+                    } else {
+                        Some(content)
                     }
                 } else {
                     // Handle leading/trailing whitespace
-                    let trimmed_content = content.trim();
+                    let trimmed_content = trim_normal_whitespace(&content);
                     let parts: Vec<&str> = content.split(trimmed_content).collect();
+                    eprintln!("DEBUG: trimmed_content: '{}'", trimmed_content);
                     let standardized_content = if parts.len() > 1 {
                         let first_part = parts.first().unwrap();
                         let last_part = parts.last().unwrap();
+                        eprintln!("DEBUG: first_part: '{}'", first_part);
+                        eprintln!("DEBUG: last_part: '{}'", last_part);
                         let mut leading_space = first_part.to_string();
                         let mut trailing_space = last_part.to_string();
                         // Collapse newlines to empty
@@ -147,7 +210,7 @@ impl<'a> JsxTraversal<'a> {
 
                     for ch in standardized_content.chars() {
                         if ch == '\n' && !in_newline_sequence {
-                            if !result.trim().is_empty() {
+                            if !trim_normal_whitespace(&result).is_empty() {
                                 result.push(' ');
                             } else {
                                 result.clear();
@@ -173,6 +236,7 @@ impl<'a> JsxTraversal<'a> {
 
                     Some(result)
                 };
+
                 // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
                 if let Some(text) = normalized {
                     if !text.is_empty() {
@@ -214,7 +278,7 @@ impl<'a> JsxTraversal<'a> {
                     self.build_sanitized_element(element).map(|el| SanitizedChild::Element(Box::new(el)))
                 }
             }
-            JSXElementChild::JSXExprContainer(expr_container) => self.build_sanitized_jsx_child_from_jsx_expr_container(&expr_container.expr),
+            JSXElementChild::JSXExprContainer(expr_container) => self.build_sanitized_jsx_child_from_jsx_expr_container(&expr_container.expr, !(is_first_sibling && is_last_sibling)),
             _ => None, // Skip fragments and other types for now
         }
     }
@@ -658,13 +722,13 @@ impl<'a> JsxTraversal<'a> {
 
 
     /// Build sanitized JSXchild from JSX container
-    fn build_sanitized_jsx_child_from_jsx_expr_container(&mut self, jsx_expr: &JSXExpr) -> Option<SanitizedChild> {
+    fn build_sanitized_jsx_child_from_jsx_expr_container(&mut self, jsx_expr: &JSXExpr, has_siblings: bool) -> Option<SanitizedChild> {
         match jsx_expr {
             JSXExpr::Expr(expr) => {
                 match expr.as_ref() {
                     Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string())),
                     Expr::Lit(Lit::Num(num_lit)) => Some(SanitizedChild::Text(js_number_to_string(num_lit.value))),
-                    Expr::Lit(Lit::Bool(_)) => None,
+                    Expr::Lit(Lit::Bool(bool_lit)) => if bool_lit.value && !has_siblings { Some(SanitizedChild::Boolean(true)) } else { None }, // Yeah i know this is dumb, but it's what runtime does
                     Expr::Lit(Lit::Null(_)) => None,
                     Expr::JSXFragment(fragment) => {
                         // Fragment becomes one SanitizedChild::Fragment containing its children
