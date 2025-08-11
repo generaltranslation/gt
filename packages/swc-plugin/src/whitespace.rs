@@ -52,8 +52,8 @@ fn trim_with_callback<F>(text: &str, should_trim: F) -> &str
 where
     F: Fn(char) -> bool
 {
-    let mut start_byte = 0;
-    let mut end_byte = text.len();
+    let mut start_byte = text.len();
+    let mut end_byte = 0;
 
     // Find first character that shouldn't be trimmed
     for (byte_pos, ch) in text.char_indices() {
@@ -72,7 +72,7 @@ where
     }
 
     // Handle edge cases
-    if start_byte >= end_byte {
+    if start_byte >= text.len() || end_byte == 0 || start_byte >= end_byte {
         return "";
     }
 
@@ -92,19 +92,108 @@ mod tests {
 
     #[test]
     fn test_trim_normal_whitespace() {
-        // Should trim normal spaces
+        // Basic cases
         assert_eq!(trim_normal_whitespace("  hello  "), "hello");
+        assert_eq!(trim_normal_whitespace("hello"), "hello");
+        assert_eq!(trim_normal_whitespace(""), "");
 
-        // Should keep &nbsp; (non-breaking space)
-        assert_eq!(trim_normal_whitespace("\u{00A0}hello\u{00A0}"), "\u{00A0}hello\u{00A0}");
+        // Leading whitespace only
+        assert_eq!(trim_normal_whitespace("  hello"), "hello");
+        assert_eq!(trim_normal_whitespace("\t\nhello"), "hello");
+        assert_eq!(trim_normal_whitespace("   \t  hello"), "hello");
 
-        // Mixed case
-        assert_eq!(trim_normal_whitespace("  \u{00A0}hello\u{00A0}  "), "\u{00A0}hello\u{00A0}");
+        // Trailing whitespace only
+        assert_eq!(trim_normal_whitespace("hello  "), "hello");
+        assert_eq!(trim_normal_whitespace("hello\t\n"), "hello");
+        assert_eq!(trim_normal_whitespace("hello   \t  "), "hello");
 
-        // All normal whitespace
+        // Mixed normal whitespace types
+        assert_eq!(trim_normal_whitespace(" \t\n hello world \n\t "), "hello world");
+        assert_eq!(trim_normal_whitespace("\n\r\t  content  \t\r\n"), "content");
+
+        // All normal whitespace (should return empty)
         assert_eq!(trim_normal_whitespace("   \t\n   "), "");
+        assert_eq!(trim_normal_whitespace("\n\n\n"), "");
+        assert_eq!(trim_normal_whitespace("\t\t\t"), "");
+        assert_eq!(trim_normal_whitespace(" "), "");
 
-        // All significant whitespace  
+        // HTML entities (&nbsp; etc) - should be preserved
+        assert_eq!(trim_normal_whitespace("\u{00A0}hello\u{00A0}"), "\u{00A0}hello\u{00A0}");
+        assert_eq!(trim_normal_whitespace("\u{00AD}hello\u{00AD}"), "\u{00AD}hello\u{00AD}");
+        assert_eq!(trim_normal_whitespace("\u{202F}hello\u{202F}"), "\u{202F}hello\u{202F}");
+        assert_eq!(trim_normal_whitespace("\u{2060}hello\u{2060}"), "\u{2060}hello\u{2060}");
+
+        // Mixed normal and significant whitespace
+        assert_eq!(trim_normal_whitespace("  \u{00A0}hello\u{00A0}  "), "\u{00A0}hello\u{00A0}");
+        assert_eq!(trim_normal_whitespace("\t\u{00A0}  hello  \u{00A0}\n"), "\u{00A0}  hello  \u{00A0}");
+        assert_eq!(trim_normal_whitespace(" \n\u{202F}content\u{202F} \t"), "\u{202F}content\u{202F}");
+
+        // All significant whitespace (should be preserved)
         assert_eq!(trim_normal_whitespace("\u{00A0}\u{00A0}"), "\u{00A0}\u{00A0}");
+        assert_eq!(trim_normal_whitespace("\u{202F}"), "\u{202F}");
+        assert_eq!(trim_normal_whitespace("\u{00A0}\u{00AD}\u{202F}"), "\u{00A0}\u{00AD}\u{202F}");
+
+        // Edge cases with Unicode whitespace (should be preserved)
+        assert_eq!(trim_normal_whitespace("\u{2000}hello\u{2000}"), "\u{2000}hello\u{2000}");
+        assert_eq!(trim_normal_whitespace("\u{3000}content\u{3000}"), "\u{3000}content\u{3000}");
+
+        // Single character content
+        assert_eq!(trim_normal_whitespace("  x  "), "x");
+        assert_eq!(trim_normal_whitespace("\t\n\u{00A0}\n\t"), "\u{00A0}");
+        
+        // Content with internal normal whitespace (should be preserved)
+        assert_eq!(trim_normal_whitespace("  hello world  "), "hello world");
+        assert_eq!(trim_normal_whitespace("\thello\tworld\t"), "hello\tworld");
+        assert_eq!(trim_normal_whitespace("\nhello\nworld\n"), "hello\nworld");
+
+        // Content with internal significant whitespace
+        assert_eq!(trim_normal_whitespace("  hello\u{00A0}world  "), "hello\u{00A0}world");
+        assert_eq!(trim_normal_whitespace("\thello\u{202F}world\t"), "hello\u{202F}world");
+
+        // Complex mixed scenarios
+        assert_eq!(trim_normal_whitespace(" \t\u{00A0} hello \u{202F} world \u{00A0}\n "), "\u{00A0} hello \u{202F} world \u{00A0}");
+        assert_eq!(trim_normal_whitespace("\n\u{2000}\u{3000}content\u{3000}\u{2000}\n"), "\u{2000}\u{3000}content\u{3000}\u{2000}");
+    }
+
+    #[test]
+    fn test_has_significant_whitespace() {
+        // No significant whitespace
+        assert_eq!(has_significant_whitespace("hello world"), false);
+        assert_eq!(has_significant_whitespace("  \t\n  "), false);
+        assert_eq!(has_significant_whitespace(""), false);
+
+        // Has significant whitespace
+        assert_eq!(has_significant_whitespace("\u{00A0}"), true);
+        assert_eq!(has_significant_whitespace("hello\u{00A0}world"), true);
+        assert_eq!(has_significant_whitespace("  \u{202F}  "), true);
+        assert_eq!(has_significant_whitespace("\u{2000}content"), true);
+
+        // Mixed cases
+        assert_eq!(has_significant_whitespace(" \t\u{00A0}\n "), true);
+        assert_eq!(has_significant_whitespace("normal spaces only"), false);
+    }
+
+    #[test]
+    fn test_whitespace_classification() {
+        // Normal whitespace
+        assert_eq!(is_normal_whitespace(' '), true);
+        assert_eq!(is_normal_whitespace('\t'), true);
+        assert_eq!(is_normal_whitespace('\n'), true);
+        assert_eq!(is_normal_whitespace('\r'), true);
+
+        // Significant whitespace (HTML entities)
+        assert_eq!(is_normal_whitespace('\u{00A0}'), false); // &nbsp;
+        assert_eq!(is_normal_whitespace('\u{00AD}'), false); // &shy;
+        assert_eq!(is_normal_whitespace('\u{202F}'), false); // narrow no-break space
+        assert_eq!(is_normal_whitespace('\u{2060}'), false); // word joiner
+
+        // Unicode whitespace (should be significant)
+        assert_eq!(is_normal_whitespace('\u{2000}'), false); // en quad
+        assert_eq!(is_normal_whitespace('\u{3000}'), false); // ideographic space
+
+        // Non-whitespace
+        assert_eq!(is_normal_whitespace('a'), false);
+        assert_eq!(is_normal_whitespace('1'), false);
+        assert_eq!(is_normal_whitespace('!'), false);
     }
 }
