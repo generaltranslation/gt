@@ -1,29 +1,15 @@
-import {
-  Branch,
-  Currency,
-  DateTime,
-  LocaleSelector,
-  Num,
-  Plural,
-  T,
-  Var,
-} from "gt-next";
+Collecting content from all page.tsx files...
+================================================
 
-export default function EdgeCasesTest() {
-  const variable = "variable content";
-  const count = 5;
-  const pluralText = "files";
-  const messages = { files: "Files", file: "File" };
+File: ./src/app/branch/page.tsx
+----------------------------------------
+import { T, Plural, Branch, Var, Currency, DateTime } from "gt-next";
 
+export default function BranchPage() {
+  const variable = "test";
+  const count = 1;
   return (
     <>
-      <LocaleSelector />
-
-      <T>Normal text</T>
-      <T>
-        Normal text <div>and some nesting</div>
-      </T>
-
       <T>
         <Plural n={1} singular="File" plural={"Files"} />
       </T>
@@ -32,7 +18,7 @@ export default function EdgeCasesTest() {
       </T>
 
       <T>
-        <Plural n={1} singular="File chan ge" plural={42} />
+        <Plural n={1} singular="File" plural={42} />
       </T>
       <T>
         <Plural n={1} singular={true} plural={false} />
@@ -43,6 +29,9 @@ export default function EdgeCasesTest() {
 
       <T>
         <Plural n={1} singular={`File`} plural={`Files`} />
+      </T>
+      <T>
+        <Plural n={1} singular="File" plural={42} />
       </T>
 
       <T>
@@ -60,7 +49,6 @@ export default function EdgeCasesTest() {
           plural={<span>Multiple files</span>}
         />
       </T>
-
       <T>
         <Plural
           n={1}
@@ -69,6 +57,26 @@ export default function EdgeCasesTest() {
             <>
               Multiple <Var>{variable}</Var>s
             </>
+          }
+        />
+      </T>
+      <T>
+        <div>
+          <>Yo</>
+          <Var>test</Var>
+        </div>
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={<Var>{variable}</Var>}
+          plural={
+            <div>
+              <>
+                Multiple <Var>{variable}</Var>s
+              </>
+            </div>
           }
         />
       </T>
@@ -103,6 +111,7 @@ export default function EdgeCasesTest() {
       <T>
         <Plural n={1} singular="   File   " plural={"   Files   "} />
       </T>
+
       <T>
         <Plural
           n={1}
@@ -161,49 +170,13 @@ export default function EdgeCasesTest() {
           option2="Level 1 option 2"
         />
       </T>
-      <T>
-        <div>Item 1</div>
-        <div>Item 2</div>
-        <div>Item 3</div>
-        <Var>{variable}</Var>
-        <Num>{count}</Num>
-        <Currency currency="USD">100</Currency>
-        <DateTime>{new Date()}</DateTime>
-        <Plural n={1} singular="File" plural="Files" />
-        <Branch branch="file" file="test.svg" directory="public" />
-        <div>Item 4</div>
-        <div>Item 5</div>
-        <Plural n={2} singular="Item" plural={"Items"} />
-        <Branch branch="type" image="icon.png" text="Text" />
-      </T>
-
-      <T>
-        change
-        <Plural
-          n={1}
-          singular={<>Here is some translatable static content cha ge</>}
-          plural={"Files"}
-        />
-      </T>
-
-      <T>
-        <Plural
-          n={1}
-          singular={
-            <Plural
-              n={1}
-              singular={
-                <Branch branch="file" file="file.svg" directory="public" />
-              }
-              plural="Files"
-            />
-          }
-          plural={"Files change"}
-        />
-      </T>
     </>
   );
 }
+
+
+File: ./src/app/literal/page.tsx
+----------------------------------------
 import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
 
 export default function WhitespaceTestCases() {
@@ -315,6 +288,10 @@ Expected Runtime vs Build-time behaviors:
 
 The key test is Case 1 - this is the main failing case from the logs.
 */
+
+
+File: ./src/app/extreme/page.tsx
+----------------------------------------
 import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
 
 export default function ExtremeEdgeCases() {
@@ -771,22 +748,22 @@ export default function ExtremeEdgeCases() {
 
       <T> </T>
 
-      <T>
+      {/* <T>
         <Plural n={1} />
-      </T>
-
+      </T> */}
+      {/* 
       <T>
         <Branch branch="test" />
-      </T>
+      </T> */}
 
       <T>
         <Var />
       </T>
 
       {/* Only invalid attributes */}
-      <T>
+      {/* <T>
         <Plural n={1} invalid="ignored" also_invalid="also ignored" />
-      </T>
+      </T> */}
 
       <T>
         <Branch branch="test" invalid="ignored" also_invalid="also ignored" />
@@ -977,30 +954,1482 @@ ADDITIONAL EXTREME EDGE CASES COVERED:
 
 This test file should expose any remaining edge cases and ensure your plugin handles every possible valid JSX pattern correctly!
 */
-import { Plural, T } from "gt-next";
 
-export default function EmptyTest() {
+
+File: ./src/app/numbers/page.tsx
+----------------------------------------
+import { Branch, T, Plural, Var, Num, Currency, DateTime } from "gt-next";
+
+export default function NumbersTest() {
+  const count = 1;
+  const amount = 100;
+  const date = new Date();
   return (
     <>
-      {/* Component with no attributes */}
-      <T>
-        <Plural n={1} />
-      </T>
-
-      {/* Component with only invalid attributes */}
-      <T>
-        <Plural n={1} invalid_attr="should be ignored" />
+      <T >
+        <Branch
+          branch="complex"
+          option1={
+            <>
+              Start {true} {false} {null} {undefined} {} <></>
+              <Plural
+                n={count}
+                zero={
+                  <>
+                    Zero with <Var name="v1">var1</Var>
+                  </>
+                }
+                one={
+                  <>
+                    One with <Num name="n1">{count}</Num> {NaN}
+                  </>
+                }
+                two={
+                  <>
+                    Two with{" "}
+                    <Currency currency="USD" name="c1">
+                      {amount}
+                    </Currency>{" "}
+                    {Infinity}
+                  </>
+                }
+                few={
+                  <>
+                    Few with <DateTime name="d1">{date}</DateTime> 
+                  </>
+                }
+                many={
+                  <Branch
+                    branch="nested"
+                    c={
+                      <>
+                        {0xff} and {0o755} and {0b1111}
+                      </>
+                    }
+                  />
+                }
+                other={
+                  <>
+                    Other {+0} vs {-0}
+                  </>
+                }
+              />
+              End {} <></>
+            </>
+          }
+          option2="Simple option for comparison"
+        />
       </T>
     </>
   );
 }
-import { T, Plural, Branch, Var, Currency, DateTime } from "gt-next";
 
-export default function BranchPage() {
-  const variable = "test";
+
+File: ./src/app/div-span/page.tsx
+----------------------------------------
+import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
+
+export default function WhitespaceTestCases() {
+
   const count = 1;
+  const amount = 100;
   return (
     <>
+      {/* Case 1: Trailing space issue - the main problem */}
+      <T>
+        Normal text <div>and some nesting</div>
+      </T>
+
+      {/* Case 2: Leading space preservation */}
+      <T>
+        <div>content before</div> trailing text
+      </T>
+
+      {/* Case 3: Multiple internal spaces should be normalized */}
+      <T>
+        Text    with     multiple   spaces
+      </T>
+      <T>
+        <>        Text   <div>yo    yo</div>   with  <span/>   multiple   spaces</>
+      </T>
+
+      {/* Case 4: Mixed whitespace with newlines and indentation */}
+      <T>
+        Hello
+        
+        World    with   spaces
+      </T>
+
+      {/* Case 5: Empty string attributes - should be preserved */}
+      <T>
+        <Plural n={1} singular="" plural="Files" />
+      </T>
+
+      {/* Case 6: Padded string attributes - should preserve exact whitespace */}
+      <T>
+        <Plural n={1} singular="   File   " plural={"   Files   "} />
+      </T>
+
+      {/* Case 7: Branch with empty and padded attributes */}
+      <T>
+        <Branch 
+          branch={1}
+          option1="" 
+          option2="   Padded   " 
+          option3={<span>JSX content</span>}
+        />
+      </T>
+
+      {/* Case 8: Complex whitespace between elements */}
+      <T>
+        Start  
+        <strong>Bold</strong>  
+        <em>Italic</em>  
+        End
+      </T>
+
+      {/* Case 9: Whitespace only text nodes */}
+      <T>
+        <div>Before</div>
+        
+        <div>After</div>
+      </T>
+
+      {/* Case 10: Variable components with whitespace */}
+      <T>
+        User:  
+        <Var>userName</Var>  
+        has  
+        <Num>count</Num>  
+        items
+      </T>
+
+      {/* Case 11: Nested elements with preserved spacing */}
+      <T>
+        Click <a href="#">here</a> to continue.
+      </T>
+
+      {/* Case 12: Tab and newline combinations */}
+      <T>
+        Line 1
+		    Line 2 with tabs
+            Line 3 with spaces
+      </T>
+
+      {/* Case 13: Plural with complex whitespace in branches */}
+      <T>
+        You have <Plural 
+          n={5} 
+          singular="  1 item  " 
+          plural={`  2 items  `}
+        />
+      </T>
+
+      {/* Case 14: Expression containers with whitespace */}
+      <T>
+        Total: <Currency currency="USD">{amount}</Currency> available
+      </T>
+
+      {/* Case 15: Boolean and null literals with whitespace context */}
+      <T>
+        Status: <Plural n={1} singular={true} plural={false} /> - <Plural n={0} singular={null} plural="Active" />
+      </T>
+
+      {/* Case 16: Edge case - only whitespace text */}
+      <T>
+        <div>Content</div>   <div>More content</div>
+      </T>
+
+      {/* Case 17: Whitespace at boundaries */}
+      <T>  
+        Boundary whitespace test  
+      </T>
+
+      {/* Case 18: Mixed JSX and text with careful spacing */}
+      <T>
+        Hello <Var>name</Var>, you have <Num>5</Num> new messages.
+      </T>
+
+      {/* Case 19: Template literals in attributes */}
+      <T>
+        <Plural 
+          n={count} 
+          singular="1 file" 
+          plural={`2 files`}
+        />
+      </T>
+
+      {/* Case 20: Complex nesting with whitespace preservation */}
+      <T>
+        <div>
+          Welcome <strong>user</strong>, 
+          <br />
+          You have <span>messages</span> waiting.
+        </div>
+      </T>
+
+
+      <T>   Text    with     multiple   spaces   </T>
+      <T>   Text    with     multiple   spaces   
+
+      </T>
+      
+      <T >
+        <Branch
+          branch="mixed"
+          short="Brief"
+          long={`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`}
+          mixed={
+            <>
+              Very long text with <Var>embedded variables</Var> that continues
+              for a very long time and includes multiple <Num>{9999999}</Num>{" "}
+              numeric values and{" "}
+              <Currency currency="USD">{1234567.89}</Currency> monetary amounts
+              spread throughout the content to test how the algorithm handles
+              very large content blocks with mixed variable types.
+            </>
+            // <>
+            //   <div>hello there</div>
+            //   test
+            //   <div>hello there</div>
+            //   something again
+            //   something else 
+            // </>
+          }
+        />
+      </T>
+
+      <T>
+        Hello
+        
+        World    with   spaces
+      </T>
+
+      <T>
+        {true}
+        {true}
+      </T>
+
+
+      <T>
+        <div/>
+        <div/>
+      </T>
+
+      <T> {true}
+      </T>
+
+      <T>
+        {true}
+      </T>
+      <T>
+        <Plural n={1} singular={true} dual={<>{false}{true}</>} />
+      </T>
+
+      <T>
+        <Plural n={1} singular={true} dual={<>{true}</>} />
+      </T> 
+      
+      <T>
+        &nbsp;yo&nbsp; 
+        &nbsp;yo&nbsp;</T>
+       
+
+<T>
+yo 
+yo
+</T>
+      
+
+      <T>
+        <div>
+        {true}
+        </div>
+      </T>
+
+      <T>
+        <div>
+        {}
+        <div/>
+        {}
+        <div/>
+        {}
+        </div>
+      </T>
+
+      <T>
+        Hello <div>
+          there
+        </div>
+        <div>
+          there
+        </div>
+      </T>
+
+
+
+      <T>
+        <Plural
+          n={count}
+          singular={
+            <>
+              Text{}
+              <></>More text
+            </>
+          }
+          plural={
+            <>
+              <>
+                {}Fragment{}
+              </>
+              content{}
+            </>
+          }
+          other={
+            <>
+              <>
+                {}
+                {}
+              </>
+            </>
+          }
+        />
+      </T>
+
+      <T>
+      <>{true}</>
+      </T>
+
+      <T>
+      <>{false}</>
+      </T>
+
+      <T>
+      <>{true}{true}</>
+      </T>
+
+      
+
+
+      <T >
+        <Branch
+          branch="bool"
+          true_val={<>{true}</>}
+          false_val={<>{false}</>}
+          mixed_true={<>Before {true} after</>}
+          mixed_false={<>Before {false} after</>}
+          multiple={
+            <>
+              {true}
+              {false}
+              {true}
+              <div />
+            </>
+          }
+        />
+      </T>
+
+      <T>&nbsp;yo&nbsp; &nbsp;yo&nbsp;</T>
+
+      <T >
+        <Branch
+          branch="nested"
+          option1={
+            <>
+              <>
+                <>
+                  <>
+                    <>Text</>
+                    <></>
+                    <>More</>
+                  </>
+                  {}
+                </>
+                <span>Element</span>
+              </>
+              <>Final</>
+            </>
+          }
+          option2={
+            <>
+              <>
+                <>
+                  <>
+                    <>Flat</>
+                  </>
+                  &nbsp;
+                </>
+              </>
+            </>
+          }
+        />
+      </T>
+    </>
+  );
+}
+
+/*
+Expected Runtime vs Build-time behaviors:
+
+1. "Normal text " (with space) should be preserved
+2. " trailing text" (with leading space) should be preserved  
+3. "Text with multiple spaces" (internal normalization OK)
+4. Empty string attributes: singular="" should appear in JSON as "singular":""
+5. Padded attributes: "   File   " should stay exactly as-is
+6. Whitespace between inline elements should be preserved for layout
+7. Pure whitespace nodes may be collapsed but significant spacing kept
+8. Variable components should not be wrapped with {"c": ...}
+9. Boolean/null literals should serialize as raw JSON types
+10. Template literals in expressions should be handled appropriately
+
+The key test is Case 1 - this is the main failing case from the logs.
+*/
+
+File: ./src/app/more-extreme/page.tsx
+----------------------------------------
+import { T, Branch, Plural, Var, Num, Currency, DateTime } from "gt-next";
+
+// Extreme edge cases designed to break the SWC plugin hash calculation
+export default function ExtremeEdgeCases() {
+  const count = 7;
+  const amount = 123.45;
+  const date = new Date();
+
+  return (
+    <>
+      {/* ========== EXPRESSION CONTAINER EDGE CASES ========== */}
+
+      {/* Empty JSX expressions {} mixed with content */}
+      <T >
+        <Branch
+          branch="test"
+          option1={
+            <>
+              Start {} middle {} end
+            </>
+          }
+          option2={
+            <>
+              Before{}
+              {}
+              <></>After
+            </>
+          }
+          option3={
+            <>
+              {}
+              <span>element</span>
+              {}
+            </>
+          }
+          option4="normal"
+        />
+      </T>
+
+      {/* Mixed empty expressions and fragments */}
+      <T >
+        <Plural
+          n={count}
+          singular={
+            <>
+              Text{}
+              <></>More text
+            </>
+          }
+          plural={
+            <>
+              <>
+                {}Fragment{}
+              </>
+              content{}
+            </>
+          }
+          other={
+            <>
+              <>
+                {}
+                {}
+              </>
+            </>
+          }
+        />
+      </T>
+
+      {/* ========== BOOLEAN CONTEXT EDGE CASES ========== */}
+
+      {/* All boolean permutations in expressions */}
+      <T >
+        <Branch
+          branch="bool"
+          true_val={<>{true}</>}
+          false_val={<>{false}</>}
+          mixed_true={<>Before {true} after</>}
+          mixed_false={<>Before {false} after</>}
+          multiple={
+            <>
+              {true}
+              {false}
+              {true}
+            </>
+          }
+        />
+      </T>
+
+      {/* Boolean vs null vs undefined combinations */}
+      <T >
+        <Plural
+          n={1}
+          zero={<>{null}</>}
+          one={<>{undefined}</>}
+          two={<>{false}</>}
+          few={
+            <>
+              {true}
+              {null}
+              {undefined}
+            </>
+          }
+          many={
+            <>
+              Mixed {false} and {null}
+            </>
+          }
+          other="normal"
+        />
+      </T>
+
+      {/* ========== NUMERIC PRECISION EDGE CASES ========== */}
+
+      {/* Floating point precision boundaries */}
+      <T >
+        <Branch
+          branch="precision"
+          tiny={1e-324} // Smallest possible positive number
+          almost_zero={4.9e-324} // Just above smallest subnormal
+          epsilon={2.220446049250313e-16} // Machine epsilon
+          almost_one={0.9999999999999999}
+          not_quite_two={1.9999999999999998}
+          close_to_pi={3.141592653589793}
+        />
+      </T>
+
+      {/* Scientific notation variations */}
+      <T >
+        <Plural
+          n={count}
+          zero={1.0}
+          one={1.0}
+          two={1.0}
+          few={5.0e10}
+          many={5.0e10}
+          other={5.0e-10}
+        />
+      </T>
+
+      {/* ========== WHITESPACE PATHOLOGICAL CASES ========== */}
+
+      {/* Zero-width characters and unusual spaces */}
+      <T >
+        <Branch
+          branch="space"
+          zero_width={<>word1​word2</> /* Zero-width space */}
+          thin_space={<>word1 word2</> /* Thin space */}
+          hair_space={<>word1 word2</> /* Hair space */}
+          figure_space={<>word1 word2</> /* Figure space */}
+          punctuation_space={<>word1 word2</> /* Punctuation space */}
+          normal={<>word1 word2</>}
+        />
+      </T>
+
+      {/* Mixed line endings and tabs */}
+      <T >
+        <Plural
+          n={1}
+          singular={<>Line1\nLine2</>} /* Unix LF */
+          plural={<>Line1\r\nLine2</>} /* Windows CRLF */
+          other={<>Line1\rLine2</>} /* Old Mac CR */
+        />
+      </T>
+
+      {/* ========== FRAGMENT PATHOLOGICAL NESTING ========== */}
+
+      {/* Maximum fragment nesting with mixed empty/content */}
+      <T >
+        <Branch
+          branch="nested"
+          option1={
+            <>
+              <>
+                <>
+                  <>
+                    <>Text</>
+                    <></>
+                    <>More</>
+                  </>
+                  {}
+                </>
+                <span>Element</span>
+              </>
+              <>Final</>
+            </>
+          }
+          option2={
+            <>
+              <>
+                <>
+                  <>
+                    <>Flat</>
+                  </>
+                  &nbsp;
+                </>
+              </>
+            </>
+          }
+        />
+      </T>
+
+      {/* Fragments with alternating empty/content patterns */}
+      <T >
+        <Plural
+          n={count}
+          singular={
+            <>
+              <></>Content<></>More<></>End
+            </>
+          }
+          plural={
+            <>
+              Start<></>Middle<></>End
+            </>
+          }
+          other={
+            <>
+              <></>Text
+              <>
+                <></>
+              </>
+            </>
+          }
+        />
+      </T>
+
+      {/* ========== VARIABLE COMPONENT STRESS TESTS ========== */}
+
+      {/* Variables with extreme naming edge cases */}
+      <T >
+        <Branch
+          branch="names"
+          option1={
+            <>
+              <Var name=""></Var>
+              <Var name=" "></Var>
+              <Var name="a"></Var>
+              <Var name="123"></Var>
+              <Var name="var-with-dashes"></Var>
+              <Var name="var_with_underscores"></Var>
+              <Var name="var.with.dots"></Var>
+            </>
+          }
+          option2="normal"
+        />
+      </T>
+
+      {/* Maximum variable density */}
+      <T >
+        <Plural
+          n={1}
+          singular={
+            <>
+              <Var>v1</Var>
+              <Num>1</Num>
+              <Currency currency="USD">1</Currency>
+              <DateTime>{new Date(2023)}</DateTime>
+              <Var>v2</Var>
+              <Num>2</Num>
+              <Currency currency="EUR">2</Currency>
+              <DateTime>{new Date(2023)}</DateTime>
+              <Var>v3</Var>
+              <Num>3</Num>
+              <Currency currency="JPY">3</Currency>
+              <DateTime>{new Date(2023)}</DateTime>
+            </>
+          }
+          plural={
+            <>
+              <DateTime>{new Date(2023)}</DateTime>
+              <Currency currency="JPY">3</Currency>
+              <Num>3</Num>
+              <Var>v3</Var>
+              <DateTime>{new Date(2023)}</DateTime>
+              <Currency currency="EUR">2</Currency>
+              <Num>2</Num>
+              <Var>v2</Var>
+              <DateTime>{new Date(2023)}</DateTime>
+              <Currency currency="USD">1</Currency>
+              <Num>1</Num>
+              <Var>v1</Var>
+            </>
+          }
+        />
+      </T>
+
+      {/* ========== SPECIAL IDENTIFIER EDGE CASES ========== */}
+
+     
+
+      {/* ========== UNICODE PATHOLOGICAL CASES ========== */}
+
+      {/* Combining characters and normalization edge cases */}
+      <T >
+        <Plural
+          n={1}
+          singular="é" /* Pre-composed */
+          plural="é" /* Decomposed (e + combining acute) */
+          other="ñ vs ñ" /* Different normalizations */
+        />
+      </T>
+
+      {/* Surrogate pairs and emoji variations */}
+      <T >
+        <Branch
+          branch="emoji"
+          basic="👍"
+          skin_tone="👍🏽"
+          zwj_sequence="👨‍👩‍👧‍👦" /* Family emoji */
+          flag="🇺🇸" /* Flag emoji */
+          text_vs_emoji="©️ vs ©" /* Text vs emoji variation */
+        />
+      </T>
+
+      {/* ========== MATHEMATICAL EXPRESSIONS IN NUMBERS ========== */}
+
+
+
+
+      {/* ========== TEMPLATE LITERAL EDGE CASES ========== */}
+
+      {/* Template literals with unusual escape sequences */}
+      <T >
+        <Plural
+          n={1}
+          singular={`\\x41`} /* Hex escape */
+          plural={`\\u0041`} /* Unicode escape */
+          other={`\\101`} /* Octal escape */
+        />
+      </T>
+
+      {/* ========== BOUNDARY OVERFLOW CONDITIONS ========== */}
+
+      {/* Maximum attribute count */}
+      <T >
+        <Branch
+          branch="many"
+          a1="1"
+          a2="2"
+          a3="3"
+          a4="4"
+          a5="5"
+          a6="6"
+          a7="7"
+          a8="8"
+          a9="9"
+          a10="10"
+          b1="1"
+          b2="2"
+          b3="3"
+          b4="4"
+          b5="5"
+          b6="6"
+          b7="7"
+          b8="8"
+          b9="9"
+          b10="10"
+          c1="1"
+          c2="2"
+          c3="3"
+          c4="4"
+          c5="5"
+          c6="6"
+          c7="7"
+          c8="8"
+          c9="9"
+          c10="10"
+          d1="1"
+          d2="2"
+          d3="3"
+          d4="4"
+          d5="5"
+          d6="6"
+          d7="7"
+          d8="8"
+          d9="9"
+          d10="10"
+          e1="1"
+          e2="2"
+          e3="3"
+          e4="4"
+          e5="5"
+          e6="6"
+          e7="7"
+          e8="8"
+          e9="9"
+          e10="10"
+        />
+      </T>
+
+      {/* ========== COUNTER SYNCHRONIZATION EDGE CASES ========== */}
+
+      {/* Nested branches with identical variable patterns */}
+      <T >
+        <Branch
+          branch="outer"
+          path1={
+            <Branch
+              branch="inner"
+              option1={
+                <>
+                  <Var>shared1</Var>
+                  <Num>shared2</Num>
+                  <Branch
+                    branch="deepest"
+                    a={<Var>deep1</Var>}
+                    b={<Var>deep2</Var>}
+                  />
+                </>
+              }
+              option2={
+                <>
+                  <Var>shared1</Var>
+                  <Num>shared2</Num>
+                  <Branch
+                    branch="deepest"
+                    a={<Var>deep1</Var>}
+                    b={<Var>deep2</Var>}
+                  />
+                </>
+              }
+            />
+          }
+          path2={
+            <Branch
+              branch="inner"
+              option1={
+                <>
+                  <Var>shared1</Var>
+                  <Num>shared2</Num>
+                  <Branch
+                    branch="deepest"
+                    a={<Var>deep1</Var>}
+                    b={<Var>deep2</Var>}
+                  />
+                </>
+              }
+              option2={
+                <>
+                  <Var>shared1</Var>
+                  <Num>shared2</Num>
+                  <Branch
+                    branch="deepest"
+                    a={<Var>deep1</Var>}
+                    b={<Var>deep2</Var>}
+                  />
+                </>
+              }
+            />
+          }
+        />
+      </T>
+
+      {/* ========== SERIALIZATION EDGE CASES ========== */}
+
+      {/* Objects that might cause JSON serialization issues */}
+      <T >
+        <Plural
+          n={count}
+          zero={0}
+          one={1}
+          two={-1}
+          few={Infinity}
+          other={NaN}
+        />
+      </T>
+
+      {/* String values that look like JSON */}
+      <T >
+        <Branch
+          branch="json"
+          object='{"key": "value"}'
+          array="[1, 2, 3]"
+          nested='{"a": {"b": [1, {"c": true}]}}'
+          escaped='{"quote": "He said \\"hello\\""}'
+        />
+      </T>
+
+      {/* ========== REGRESSION STRESS TESTS ========== */}
+
+      {/* Pattern that previously caused issues */}
+      <T >
+        <Plural
+          n={count}
+          singular={
+            <>
+              Text content
+              <>
+                Nested fragment with <Var>variable1</Var>
+                <>
+                  Deeply nested with <Num>{count}</Num>
+                  {}
+                  <></>
+                  {}
+                  <span>Element</span>
+                  {}
+                  <>Final nested</>
+                </>
+              </>
+              Back to top level
+            </>
+          }
+          plural={
+            <div>
+              <>Fragment in div</> with <Var>variable2</Var>
+              <span>
+                <>
+                  Deep fragment with{" "}
+                  <Currency currency="USD">{amount}</Currency>
+                </>
+                {null}
+                {undefined}
+                {false}
+                {}
+              </span>
+            </div>
+          }
+        />
+      </T>
+
+      {/* Maximum complexity single component */}
+      <T >
+        <Branch
+          branch="complex"
+          option1={
+            <>
+              Start {true} {false} {null} {undefined} {} <></>
+              <Plural
+                n={count}
+                zero={
+                  <>
+                    Zero with <Var name="v1">var1</Var>
+                  </>
+                }
+                one={
+                  <>
+                    One with <Num name="n1">{count}</Num> {NaN}
+                  </>
+                }
+                two={
+                  <>
+                    Two with{" "}
+                    <Currency currency="USD" name="c1">
+                      {amount}
+                    </Currency>{" "}
+                    {Infinity}
+                  </>
+                }
+                few={
+                  <>
+                    Few with <DateTime name="d1">{date}</DateTime> 
+                  </>
+                }
+                many={
+                  <Branch
+                    branch="nested"
+                    c={
+                      <>
+                        {0xff} and {0o755} and {0b1111}
+                      </>
+                    }
+                  />
+                }
+                other={
+                  <>
+                    Other {+0} vs {-0}
+                  </>
+                }
+              />
+              End {} <></>
+            </>
+          }
+          option2="Simple option for comparison"
+        />
+      </T>
+    </>
+  );
+}
+
+/*
+EXTREME EDGE CASES COVERED:
+
+1. **Expression Container Edge Cases:**
+   - Empty JSX expressions {} mixed with content
+   - Complex patterns of {} and <></>
+   - Nested empty expressions
+
+2. **Boolean Context Edge Cases:**
+   - All boolean permutations in expressions
+   - Boolean vs null vs undefined combinations
+   - Mixed falsy values
+
+3. **Numeric Precision Edge Cases:**
+   - Floating point precision boundaries
+   - Machine epsilon and subnormal numbers
+   - Scientific notation variations (+/- exponents)
+
+4. **Whitespace Pathological Cases:**
+   - Zero-width characters
+   - Unusual unicode spaces (thin, hair, figure, punctuation)
+   - Mixed line endings (LF, CRLF, CR)
+
+5. **Fragment Pathological Nesting:**
+   - Maximum fragment nesting with mixed empty/content
+   - Alternating empty/content patterns
+   - Complex fragment hierarchies
+
+6. **Variable Component Stress Tests:**
+   - Variables with edge case names (empty, spaces, special chars)
+   - Maximum variable density
+   - Reverse order variable patterns
+
+7. **Special Identifier Edge Cases:**
+   - JavaScript reserved words (NaN, Infinity, undefined)
+   - Mixed special identifiers in expressions
+
+8. **Unicode Pathological Cases:**
+   - Combining characters and normalization differences
+   - Surrogate pairs, emoji variations, ZWJ sequences
+   - Text vs emoji selectors
+
+9. **Mathematical Expressions:**
+   - Operations that resolve to constants (Math.PI, Math.E)
+   - Bitwise operations (<<, >>, ^, &, |, ~)
+   - Edge mathematical values
+
+10. **Template Literal Edge Cases:**
+    - Unusual escape sequences (hex, unicode, octal)
+    - Raw strings vs processed strings
+    - Mixed raw/processed content
+
+11. **Boundary Overflow Conditions:**
+    - Maximum attribute count (50+ attributes)
+    - Stress testing component limits
+
+12. **Counter Synchronization Edge Cases:**
+    - Nested branches with identical variable patterns
+    - Deep nesting with parallel paths
+    - Counter consistency across complex hierarchies
+
+13. **Serialization Edge Cases:**
+    - Values that might cause JSON issues (Infinity, NaN)
+    - String values that look like JSON
+    - Escaped quote handling
+
+14. **Regression Stress Tests:**
+    - Known problematic patterns
+    - Maximum complexity single component
+    - Everything combined in one test
+
+These edge cases should expose any remaining weaknesses in:
+- Empty expression handling
+- Boolean serialization
+- Floating point precision
+- Unicode normalization
+- Fragment nesting logic
+- Counter management
+- JSON serialization stability
+*/
+
+
+File: ./src/app/additional/page.tsx
+----------------------------------------
+import { T, Branch, Plural, Var, Num, Currency, DateTime } from "gt-next";
+
+// Edge cases designed to test the SWC plugin hash calculation
+
+export default function AdditionalEdgeCases() {
+  const count = 5;
+  const amount = 99.99;
+  const date = new Date();
+  const location = "home";
+
+  return (
+    <>
+      {/* Edge Case 1: Deeply nested Branch components */}
+      <T >
+        <Branch
+          branch={location}
+          home={
+            <Branch
+              branch="time"
+              morning="Good morning at home"
+              evening={
+                <>
+                  Good evening at <Var>home</Var> with{" "}
+                  <Branch
+                    branch="weather"
+                    sunny="sunny skies"
+                    rainy="rainy weather"
+                  />
+                </>
+              }
+            />
+          }
+          work="At the office"
+        />
+      </T>
+
+      {/* Edge Case 2: Complex numeric edge cases */}
+      {/* <T>
+        <Plural
+          n={count}
+          zero={0}
+          one={-0}
+          two={Number.MAX_SAFE_INTEGER}
+          few={Number.MIN_SAFE_INTEGER}
+          many={1.7976931348623157e308}
+          other={-1.7976931348623157e308}
+        />
+      </T> */}
+
+      {/* Edge Case 3: Special JavaScript values in branches */}
+      <T >
+        <Branch
+          branch="type"
+          number={42}
+          bigNumber={9007199254740991}
+          scientific={1e-20}
+          negativeScientific={-1e20}
+          hex={0xdeadbeef}
+          octal={0o755}
+          binary={0b11111111}
+        />
+      </T>
+
+      {/* Edge Case 4: Whitespace preservation in complex structures */}
+      <T >
+        <Branch
+          branch="format"
+          compact={
+            <>
+              No spaces<Var>here</Var>at all
+            </>
+          }
+          spaced={
+            <>
+              {" "}
+              Lots of spaces <Var> here </Var> everywhere{" "}
+            </>
+          }
+          mixed={
+            <>
+              Text<span> embedded spaces </span>more text
+              <Var> padded var </Var>
+              final text
+            </>
+          }
+        />
+      </T>
+
+      {/* Edge Case 5: Multiple variable types in single branch */}
+      <T>
+        <Plural
+          n={count}
+          singular={
+            <>
+              Transaction: <Currency currency="USD">{amount}</Currency> on{" "}
+              <DateTime>{date}</DateTime> for <Num>{0.15}</Num> tax with{" "}
+              <Var name="reference">REF-123</Var>
+            </>
+          }
+          plural={
+            <div>
+              <Currency currency="EUR">{amount * count}</Currency> total from{" "}
+              <Num>{count}</Num> transactions on <DateTime>{date}</DateTime>
+            </div>
+          }
+        />
+      </T>
+
+      {/* Edge Case 6: Empty and minimal content variations */}
+      <T>
+        <Branch
+          branch="content"
+          empty=""
+          space=" "
+          newline={"\n"}
+          tab={"\t"}
+          minimal={<span></span>}
+          singleChar="x"
+        />
+      </T>
+
+      {/* Edge Case 7: Complex fragment nesting */}
+      <T>
+        <Plural
+          n={count}
+          singular={
+            <>
+              Outer fragment
+              <>
+                Nested fragment with <Var>variable</Var>
+                <>
+                  Deep nested with <Num>{count}</Num>
+                  <></>
+                  <>More nesting</>
+                </>
+              </>
+              Back to outer
+            </>
+          }
+          plural={
+            <div>
+              <>Fragment in div</>
+              <span>
+                <>
+                  Fragment in span with{" "}
+                  <Currency currency="USD">{amount}</Currency>
+                </>
+              </span>
+            </div>
+          }
+        />
+      </T>
+
+      {/* Edge Case 8: Unicode and special characters */}
+      <T>
+        <Branch
+          branch="language"
+          english="Hello 👋 World"
+          chinese="你好世界"
+          arabic="مرحبا بالعالم"
+          emoji="🚀 🌟 ✨ 💫 ⭐"
+          symbols="© ® ™ € £ ¥ § ¶ † ‡"
+          math="∞ ≠ ≤ ≥ ± ∓ × ÷ √"
+        />
+      </T>
+
+      {/* Edge Case 9: Very long content strings */}
+      <T>
+        <Branch
+          branch="size"
+          short="Brief"
+          long={`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`}
+          mixed={
+            <>
+              Very long text with <Var>embedded variables</Var> that continues
+              for a very long time and includes multiple <Num>{9999999}</Num>{" "}
+              numeric values and{" "}
+              <Currency currency="USD">{1234567.89}</Currency> monetary amounts
+              spread throughout the content to test how the algorithm handles
+              very large content blocks with mixed variable types.
+            </>
+          }
+        />
+      </T>
+
+      {/* Edge Case 10: Boundary numeric values */}
+      <T>
+        <Plural
+          n={count}
+          zero={0.0}
+          one={1e-323} // Smallest positive number
+          two={5e-324} // Smallest subnormal
+          few={1.7976931348623157e308} // Largest finite
+          many={-1.7976931348623157e308} // Largest negative finite
+          other={2.2250738585072014e-308} // Smallest normal positive
+        />
+      </T>
+
+      {/* Edge Case 11: Attribute edge cases with HTML props */}
+      <T
+        placeholder="Enter text"
+        title="Tooltip text"
+        alt="Alt text"
+      >
+        <Branch
+          branch="element"
+          input={
+            <input placeholder="Branch placeholder" title="Branch title" />
+          }
+          image={
+            <img src="test.jpg" alt="Branch image" title="Branch image title" />
+          }
+          link={
+            <a href="#" aria-label="Branch link" aria-describedby="desc">
+              Link
+            </a>
+          }
+        />
+      </T>
+
+      {/* Edge Case 12: Mixed element types in branches */}
+      <T>
+        <Plural
+          n={count}
+          singular={
+            <article>
+              <h1>Single Item</h1>
+              <p>
+                Description with <Var>details</Var>
+              </p>
+              <footer>
+                <>
+                  Footer with <Currency currency="USD">{amount}</Currency>
+                  <span>
+                    and <DateTime>{date}</DateTime>
+                  </span>
+                </>
+              </footer>
+            </article>
+          }
+          plural={
+            <section>
+              <header>
+                <h2>
+                  <Num>{count}</Num> Items
+                </h2>
+              </header>
+              <main>
+                <>
+                  <p>
+                    Multiple items totaling{" "}
+                    <Currency currency="USD">{amount * count}</Currency>
+                  </p>
+                  <ul>
+                    <li>
+                      Item with <Var>variable</Var>
+                    </li>
+                  </ul>
+                </>
+              </main>
+            </section>
+          }
+        />
+      </T>
+
+      {/* Edge Case 13: Self-closing and void elements */}
+      <T>
+        <Branch
+          branch="type"
+          line={
+            <>
+              <hr />
+              Line break
+              <br />
+              New line
+            </>
+          }
+          image={
+            <>
+              <img src="test.jpg" alt="Test" />
+              Image with <Var>caption</Var>
+            </>
+          }
+          input={
+            <>
+              <input type="text" placeholder="Input" />
+              Field with <Num>{count}</Num>
+            </>
+          }
+        />
+      </T>
+
+      {/* Edge Case 14: Duplicate content in different branches (should have same hash) */}
+      <T>
+        <Branch
+          branch="copy"
+          version1={
+            <>
+              Identical content with <Var>same variable</Var> and{" "}
+              <Num>{count}</Num>
+            </>
+          }
+          version2={
+            <>
+              Identical content with <Var>same variable</Var> and{" "}
+              <Num>{count}</Num>
+            </>
+          }
+          different={
+            <>
+              Different content with <Var>other variable</Var> and{" "}
+              <Num>{count + 1}</Num>
+            </>
+          }
+        />
+      </T>
+
+      {/* Edge Case 15: Component nesting edge cases */}
+      <T>
+        <Branch
+          branch="structure"
+          nested={
+            <div>
+              <Plural
+                n={count}
+                singular={
+                  <span>
+                    Nested plural: <Var>single</Var>
+                  </span>
+                }
+                plural={
+                  <Branch
+                    branch="inner"
+                    option1="Double nested!"
+                    option2={
+                      <>
+                        With <Currency currency="USD">{amount}</Currency>
+                      </>
+                    }
+                  />
+                }
+              />
+            </div>
+          }
+          flat="Simple flat content"
+        />
+      </T>
+    </>
+  );
+}
+
+
+File: ./src/app/page.tsx
+----------------------------------------
+import {
+  Branch,
+  Currency,
+  DateTime,
+  LocaleSelector,
+  Num,
+  Plural,
+  T,
+  Var,
+} from "gt-next";
+
+export default function EdgeCasesTest() {
+  const variable = "variable content";
+  const count = 5;
+  const pluralText = "files";
+  const messages = { files: "Files", file: "File" };
+
+  return (
+    <>
+      <LocaleSelector />
+
+      <T>Normal text</T>
+      <T>
+        Normal text <div>and some nesting</div>
+      </T>
+
       <T>
         <Plural n={1} singular="File" plural={"Files"} />
       </T>
@@ -1009,7 +2438,7 @@ export default function BranchPage() {
       </T>
 
       <T>
-        <Plural n={1} singular="File" plural={42} />
+        <Plural n={1} singular="File chan ge" plural={42} />
       </T>
       <T>
         <Plural n={1} singular={true} plural={false} />
@@ -1020,9 +2449,6 @@ export default function BranchPage() {
 
       <T>
         <Plural n={1} singular={`File`} plural={`Files`} />
-      </T>
-      <T>
-        <Plural n={1} singular="File" plural={42} />
       </T>
 
       <T>
@@ -1040,6 +2466,7 @@ export default function BranchPage() {
           plural={<span>Multiple files</span>}
         />
       </T>
+
       <T>
         <Plural
           n={1}
@@ -1048,26 +2475,6 @@ export default function BranchPage() {
             <>
               Multiple <Var>{variable}</Var>s
             </>
-          }
-        />
-      </T>
-      <T>
-        <div>
-          <>Yo</>
-          <Var>test</Var>
-        </div>
-      </T>
-
-      <T>
-        <Plural
-          n={1}
-          singular={<Var>{variable}</Var>}
-          plural={
-            <div>
-              <>
-                Multiple <Var>{variable}</Var>s
-              </>
-            </div>
           }
         />
       </T>
@@ -1102,7 +2509,6 @@ export default function BranchPage() {
       <T>
         <Plural n={1} singular="   File   " plural={"   Files   "} />
       </T>
-
       <T>
         <Plural
           n={1}
@@ -1161,9 +2567,53 @@ export default function BranchPage() {
           option2="Level 1 option 2"
         />
       </T>
+      <T>
+        <div>Item 1</div>
+        <div>Item 2</div>
+        <div>Item 3</div>
+        <Var>{variable}</Var>
+        <Num>{count}</Num>
+        <Currency currency="USD">100</Currency>
+        <DateTime>{new Date()}</DateTime>
+        <Plural n={1} singular="File" plural="Files" />
+        <Branch branch="file" file="test.svg" directory="public" />
+        <div>Item 4</div>
+        <div>Item 5</div>
+        <Plural n={2} singular="Item" plural={"Items"} />
+        <Branch branch="type" image="icon.png" text="Text" />
+      </T>
+
+      <T>
+        change
+        <Plural
+          n={1}
+          singular={<>Here is some translatable static content cha ge</>}
+          plural={"Files"}
+        />
+      </T>
+
+      <T>
+        <Plural
+          n={1}
+          singular={
+            <Plural
+              n={1}
+              singular={
+                <Branch branch="file" file="file.svg" directory="public" />
+              }
+              plural="Files"
+            />
+          }
+          plural={"Files change"}
+        />
+      </T>
     </>
   );
 }
+
+
+File: ./src/app/big-test/page.tsx
+----------------------------------------
 import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
 
 export default function ComprehensiveEdgeCases() {
@@ -1524,16 +2974,6 @@ export default function ComprehensiveEdgeCases() {
 
       {/* ========== BOUNDARY CONDITIONS ========== */}
 
-      {/* Component with no attributes */}
-      <T>
-        <Plural n={1} />
-      </T>
-
-      {/* Component with only invalid attributes */}
-      <T>
-        <Plural n={1} invalid_attr="should be ignored" />
-      </T>
-
       {/* Empty component */}
       <T>
         <Var></Var>
@@ -1541,7 +2981,7 @@ export default function ComprehensiveEdgeCases() {
 
       {/* Component with only whitespace children */}
       <T>
-        <Var></Var>
+        <Var> </Var>
       </T>
 
       {/* ========== REGRESSION TEST CASES ========== */}
@@ -1639,354 +3079,5 @@ This should expose any remaining issues with:
 - Template literal processing
 - Hash generation consistency
 */
-import { T, Branch, Plural, Var, Num, Currency, DateTime } from "gt-next";
 
-// Edge cases designed to test the SWC plugin hash calculation
 
-export default function AdditionalEdgeCases() {
-  const count = 5;
-  const amount = 99.99;
-  const date = new Date();
-  const location = "home";
-
-  return (
-    <>
-      {/* Edge Case 1: Deeply nested Branch components */}
-      <T id="nested-branches">
-        <Branch
-          branch={location}
-          home={
-            <Branch
-              branch="time"
-              morning="Good morning at home"
-              evening={
-                <>
-                  Good evening at <Var>home</Var> with{" "}
-                  <Branch
-                    branch="weather"
-                    sunny="sunny skies"
-                    rainy="rainy weather"
-                  />
-                </>
-              }
-            />
-          }
-          work="At the office"
-        />
-      </T>
-
-      {/* Edge Case 2: Complex numeric edge cases */}
-      {/* <T id="numeric-extremes">
-        <Plural
-          n={count}
-          zero={0}
-          one={-0}
-          two={Number.MAX_SAFE_INTEGER}
-          few={Number.MIN_SAFE_INTEGER}
-          many={1.7976931348623157e308}
-          other={-1.7976931348623157e308}
-        />
-      </T> */}
-
-      {/* Edge Case 3: Special JavaScript values in branches */}
-      <T id="special-values">
-        <Branch
-          branch="type"
-          number={42}
-          bigNumber={9007199254740991}
-          scientific={1e-20}
-          negativeScientific={-1e20}
-          hex={0xdeadbeef}
-          octal={0o755}
-          binary={0b11111111}
-        />
-      </T>
-
-      {/* Edge Case 4: Whitespace preservation in complex structures */}
-      <T id="whitespace-complex">
-        <Branch
-          branch="format"
-          compact={
-            <>
-              No spaces<Var>here</Var>at all
-            </>
-          }
-          spaced={
-            <>
-              {" "}
-              Lots of spaces <Var> here </Var> everywhere{" "}
-            </>
-          }
-          mixed={
-            <>
-              Text<span> embedded spaces </span>more text
-              <Var> padded var </Var>
-              final text
-            </>
-          }
-        />
-      </T>
-
-      {/* Edge Case 5: Multiple variable types in single branch */}
-      <T id="mixed-variables">
-        <Plural
-          n={count}
-          singular={
-            <>
-              Transaction: <Currency currency="USD">{amount}</Currency> on{" "}
-              <DateTime>{date}</DateTime> for <Num>{0.15}</Num> tax with{" "}
-              <Var name="reference">REF-123</Var>
-            </>
-          }
-          plural={
-            <div>
-              <Currency currency="EUR">{amount * count}</Currency> total from{" "}
-              <Num>{count}</Num> transactions on <DateTime>{date}</DateTime>
-            </div>
-          }
-        />
-      </T>
-
-      {/* Edge Case 6: Empty and minimal content variations */}
-      <T id="minimal-content">
-        <Branch
-          branch="content"
-          empty=""
-          space=" "
-          newline={"\n"}
-          tab={"\t"}
-          minimal={<span></span>}
-          singleChar="x"
-        />
-      </T>
-
-      {/* Edge Case 7: Complex fragment nesting */}
-      <T id="fragment-nesting">
-        <Plural
-          n={count}
-          singular={
-            <>
-              Outer fragment
-              <>
-                Nested fragment with <Var>variable</Var>
-                <>
-                  Deep nested with <Num>{count}</Num>
-                  <></>
-                  <>More nesting</>
-                </>
-              </>
-              Back to outer
-            </>
-          }
-          plural={
-            <div>
-              <>Fragment in div</>
-              <span>
-                <>
-                  Fragment in span with{" "}
-                  <Currency currency="USD">{amount}</Currency>
-                </>
-              </span>
-            </div>
-          }
-        />
-      </T>
-
-      {/* Edge Case 8: Unicode and special characters */}
-      <T id="unicode-chars">
-        <Branch
-          branch="language"
-          english="Hello 👋 World"
-          chinese="你好世界"
-          arabic="مرحبا بالعالم"
-          emoji="🚀 🌟 ✨ 💫 ⭐"
-          symbols="© ® ™ € £ ¥ § ¶ † ‡"
-          math="∞ ≠ ≤ ≥ ± ∓ × ÷ √"
-        />
-      </T>
-
-      {/* Edge Case 9: Very long content strings */}
-      <T id="long-content">
-        <Branch
-          branch="size"
-          short="Brief"
-          long={`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`}
-          mixed={
-            <>
-              Very long text with <Var>embedded variables</Var> that continues
-              for a very long time and includes multiple <Num>{9999999}</Num>{" "}
-              numeric values and{" "}
-              <Currency currency="USD">{1234567.89}</Currency> monetary amounts
-              spread throughout the content to test how the algorithm handles
-              very large content blocks with mixed variable types.
-            </>
-          }
-        />
-      </T>
-
-      {/* Edge Case 10: Boundary numeric values */}
-      <T id="numeric-boundaries">
-        <Plural
-          n={count}
-          zero={0.0}
-          one={1e-323} // Smallest positive number
-          two={5e-324} // Smallest subnormal
-          few={1.7976931348623157e308} // Largest finite
-          many={-1.7976931348623157e308} // Largest negative finite
-          other={2.2250738585072014e-308} // Smallest normal positive
-        />
-      </T>
-
-      {/* Edge Case 11: Attribute edge cases with HTML props */}
-      <T
-        id="html-attributes"
-        placeholder="Enter text"
-        title="Tooltip text"
-        alt="Alt text"
-      >
-        <Branch
-          branch="element"
-          input={
-            <input placeholder="Branch placeholder" title="Branch title" />
-          }
-          image={
-            <img src="test.jpg" alt="Branch image" title="Branch image title" />
-          }
-          link={
-            <a href="#" aria-label="Branch link" aria-describedby="desc">
-              Link
-            </a>
-          }
-        />
-      </T>
-
-      {/* Edge Case 12: Mixed element types in branches */}
-      <T id="mixed-elements">
-        <Plural
-          n={count}
-          singular={
-            <article>
-              <h1>Single Item</h1>
-              <p>
-                Description with <Var>details</Var>
-              </p>
-              <footer>
-                <>
-                  Footer with <Currency currency="USD">{amount}</Currency>
-                  <span>
-                    and <DateTime>{date}</DateTime>
-                  </span>
-                </>
-              </footer>
-            </article>
-          }
-          plural={
-            <section>
-              <header>
-                <h2>
-                  <Num>{count}</Num> Items
-                </h2>
-              </header>
-              <main>
-                <>
-                  <p>
-                    Multiple items totaling{" "}
-                    <Currency currency="USD">{amount * count}</Currency>
-                  </p>
-                  <ul>
-                    <li>
-                      Item with <Var>variable</Var>
-                    </li>
-                  </ul>
-                </>
-              </main>
-            </section>
-          }
-        />
-      </T>
-
-      {/* Edge Case 13: Self-closing and void elements */}
-      <T id="void-elements">
-        <Branch
-          branch="type"
-          line={
-            <>
-              <hr />
-              Line break
-              <br />
-              New line
-            </>
-          }
-          image={
-            <>
-              <img src="test.jpg" alt="Test" />
-              Image with <Var>caption</Var>
-            </>
-          }
-          input={
-            <>
-              <input type="text" placeholder="Input" />
-              Field with <Num>{count}</Num>
-            </>
-          }
-        />
-      </T>
-
-      {/* Edge Case 14: Duplicate content in different branches (should have same hash) */}
-      <T id="duplicate-content">
-        <Branch
-          branch="copy"
-          version1={
-            <>
-              Identical content with <Var>same variable</Var> and{" "}
-              <Num>{count}</Num>
-            </>
-          }
-          version2={
-            <>
-              Identical content with <Var>same variable</Var> and{" "}
-              <Num>{count}</Num>
-            </>
-          }
-          different={
-            <>
-              Different content with <Var>other variable</Var> and{" "}
-              <Num>{count + 1}</Num>
-            </>
-          }
-        />
-      </T>
-
-      {/* Edge Case 15: Component nesting edge cases */}
-      <T id="component-nesting">
-        <Branch
-          branch="structure"
-          nested={
-            <div>
-              <Plural
-                n={count}
-                singular={
-                  <span>
-                    Nested plural: <Var>single</Var>
-                  </span>
-                }
-                plural={
-                  <Branch
-                    branch="inner"
-                    option1="Double nested!"
-                    option2={
-                      <>
-                        With <Currency currency="USD">{amount}</Currency>
-                      </>
-                    }
-                  />
-                }
-              />
-            </div>
-          }
-          flat="Simple flat content"
-        />
-      </T>
-    </>
-  );
-}

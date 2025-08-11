@@ -18,57 +18,6 @@ pub enum LogLevel {
     Warn,
     Info,
 }
-
-// Complain about these:
-// <T>
-// <Plural n={1} singular="File" plural={count > 1 ? "files" : "file"} />
-// </T>
-// <T>
-// <Plural n={5} singular="  1 item  " plural={` ${5} items  `} />
-// </T>
-// <T>
-// <Plural n={1} singular="File" plural={"File" + "s"} />
-// </T>
-// <T>
-// <Plural n={1} singular="File" plural={40 + 2} />
-// </T>
-// <T> (missing n={})
-// <Plural singular="file" plural="files" />
-// <T>
-// <T id="numeric-extremes">
-// No support for max integer etc (yet)
-// <Plural
-// n={count}
-// zero={0}
-// one={-0}
-// two={Number.MAX_SAFE_INTEGER}
-// few={Number.MIN_SAFE_INTEGER}
-// many={1.7976931348623157e308}
-// other={-1.7976931348623157e308}
-// />
-// </T>
-// Invalid input:
-// <T>
-// <Plural n={1} invalid="ignored" also_invalid="also ignored" />
-// </T>
-// T with no children:
-// <T>
-//
-// </T>
-// NO Infinity or NaN, NO Math.PI, NO Math.E, NO Bitwise operations
-// NO String.raw`Path\to\file.txt`
-
-
-// To investigate:
-// <T>
-// Hello
-//
-// World    with   spaces
-// </T>
-
-// TODO: handle alt={} on specific components
-// Core: cannot handle big ints (eg 123n)
-
 // Checklist
 // - [ ] switch from BTreeMap to HashMap (make sure that this will not break stable json)
 
@@ -343,34 +292,6 @@ impl TransformVisitor {
         
         let mut traversal = JsxTraversal::new(self);
         
-        // For GT components (like Plural, Branch), treat the element itself as the content
-        let tag_name = traversal.get_tag_name(&element.opening.name).unwrap_or_default();
-        
-        // if traversal.is_plural_component(&tag_name) || traversal.is_branch_component(&tag_name) {
-        //     // Build the element as a single child (variable)
-        //     let jsx_child = swc_core::ecma::ast::JSXElementChild::JSXElement(Box::new(element.clone()));
-        //     if let Some(sanitized_child) = traversal.build_sanitized_child(&jsx_child) {
-        //         let sanitized_children = crate::hash::SanitizedChildren::Single(Box::new(sanitized_child));
-        //         let sanitized_data = crate::hash::SanitizedData {
-        //             source: Some(Box::new(sanitized_children)),
-        //             id: None,
-        //             context: None,
-        //             data_format: Some("JSX".to_string()),
-        //         };
-                
-        //         let json_string = JsxHasher::stable_stringify(&sanitized_data)
-        //             .expect("Failed to serialize GT component data");
-                
-        //         // Debug: Print GT component JSON
-        //         if json_string.contains("plural")  || json_string.contains("branch") {
-        //             eprintln!("🔍 GT-SWC DEBUG: GT Component JSON: {}", json_string);
-        //         }
-                
-        //         let hash = JsxHasher::hash_string(&json_string);
-        //         return (hash, json_string);
-        //     }
-        // }
-        
         // Build sanitized children directly from JSX children
         if let Some(sanitized_children) = traversal.build_sanitized_children(&element.children) {
             // Get the id from the element
@@ -420,10 +341,6 @@ impl TransformVisitor {
             let json_string = JsxHasher::stable_stringify(&sanitized_data)
                 .expect("Failed to serialize sanitized data");
             
-            // // Debug: Print sanitized JSON before passing to T component
-            // if json_string.contains("plural")  || json_string.contains("branch") {
-            //     eprintln!("🔍 GT-SWC DEBUG: Sanitized JSON before T component: {}", json_string);
-            // }
             
             let hash = JsxHasher::hash_string(&json_string);
             (hash, json_string)

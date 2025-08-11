@@ -16,7 +16,6 @@ pub struct JsxTraversal<'a> {
     id_counter: u32,
 }
 
-
 /// Custom number to string function to match JS behavior
 fn js_number_to_string(value: f64) -> String {
     if value == 0.0 {
@@ -108,8 +107,6 @@ impl<'a> JsxTraversal<'a> {
             return None;
         }
 
-
-
         if filtered_children.len() == 1 {
             let child = filtered_children.first().unwrap();
             return self.build_sanitized_child(child, true, true)
@@ -124,16 +121,6 @@ impl<'a> JsxTraversal<'a> {
             })
             .collect();
 
-        // if sanitized_children.is_empty() {
-        //     return None;
-        // }
-
-
-        // if sanitized_children.len() == 1 {
-        //     Some(SanitizedChildren::Single(Box::new(sanitized_children.into_iter().next().unwrap())))
-        // } else {
-        //     Some(SanitizedChildren::Multiple(sanitized_children))
-        // }
         Some(SanitizedChildren::Multiple(sanitized_children))
     }
 
@@ -813,135 +800,6 @@ impl<'a> JsxTraversal<'a> {
         }
     }
 
-
-    
-
-    // /// Build sanitized children from expressions (for attribute JSX content)
-    // fn build_sanitized_children_from_expr(&mut self, expr: &Expr) -> Option<SanitizedChildren> {
-    //     // Save current counter for branch processing - all variables in parallel branches should share the same index
-    //     let branch_counter = self.id_counter;
-        
-    //     match expr {
-    //         // Handle JSX fragments: <>content</>
-    //         Expr::JSXFragment(fragment) => {
-    //             // Increment counter for fragments just like elements
-    //             // self.id_counter += 1; // TODO: increment branch_counter?
-
-    //             // eprintln!("DEBUG: build_sanitized_children_from_expr() fragment counter: <> {}", branch_counter);
-          
-    //             // Use branch counter for consistent variable key generation in branches
-    //             if let Some(child) = self.build_sanitized_child_with_counter(&JSXElementChild::JSXFragment(fragment.clone()), branch_counter, true, true) {
-    //                 Some(SanitizedChildren::Single(Box::new(child)))
-    //             } else {// Empty fragment should return empty object structure, not None
-    //                 let empty_element = SanitizedElement {
-    //                     b: None,
-    //                     c: None,
-    //                     t: None,
-    //                     d: None,
-    //                 };
-    //                 Some(SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(empty_element)))))
-    //             }
-    //         }
-    //         // Handle JSX elements: <SomeComponent>content</SomeComponent>
-    //         Expr::JSXElement(element) => {
-    //             // eprintln!("DEBUG: build_sanitized_children_from_expr() element counter: <{:?}> {}", self.get_tag_name(&element.opening.name).unwrap_or_default(), branch_counter);
-    //             // Use branch counter for consistent variable key generation in branches
-    //             if let Some(child) = self.build_sanitized_child_with_counter(&JSXElementChild::JSXElement(element.clone()), branch_counter, true, true) {
-    //                 // Check if this is a Branch/Plural component - if so, return it directly
-    //                 if let Some(tag_name) = self.get_tag_name(&element.opening.name) {
-    //                     if self.is_branch_component(&tag_name) || self.is_plural_component(&tag_name) {
-    //                         // Return Branch/Plural components directly without wrapping
-    //                         return Some(SanitizedChildren::Single(Box::new(child)));
-    //                     }
-                        
-    //                     // Check if this is a variable component (Var, Num, Currency, DateTime) - return directly too
-    //                     if self.visitor.should_track_component_as_variable(&Atom::from(tag_name.as_str())) {
-    //                         // Return variable components directly without wrapping
-    //                         return Some(SanitizedChildren::Single(Box::new(child)));
-    //                     }
-    //                 }
-                    
-    //                 // // DO NOT wrap other elements like runtime does: {"c": element}
-    //                 // let single_child = SanitizedChildren::Single(Box::new(child));
-    //                 // Some(SanitizedChildren::Wrapped { c: Box::new(single_child) })
-    //                 Some(SanitizedChildren::Single(Box::new(child)))
-    //             } else {
-    //                 None
-    //             }
-    //         }
-    //         // Handle string literals inside expressions: {"Files"}
-    //         Expr::Lit(Lit::Str(str_lit)) => {
-    //             let content = str_lit.value.to_string();
-    //             Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
-    //         }
-    //         // Handle other literal types: {42}, {true}, {null}
-    //         Expr::Lit(Lit::Num(num_lit)) => {
-    //             // eprintln!("DEBUG: Processing number: {:?} -> {}", num_lit.value, num_lit.value.to_string());
-    //             Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(num_lit.value.to_string()))))
-    //         }
-    //         Expr::Lit(Lit::Bool(bool_lit)) => {
-    //             Some(SanitizedChildren::Single(Box::new(SanitizedChild::Boolean(bool_lit.value))))
-    //         }
-    //         Expr::Lit(Lit::Null(_)) => {
-    //             Some(SanitizedChildren::Single(Box::new(SanitizedChild::Null(None))))
-    //         }
-    //         Expr::Unary(UnaryExpr { op: UnaryOp::Minus, arg, .. }) => {
-    //             // Handle negative numbers
-    //             if let Expr::Lit(Lit::Num(num_lit)) = arg.as_ref() {
-    //                 let negative_num = -num_lit.value;
-    //                 // eprintln!("DEBUG: Processing negative number: -{} -> {}", num_lit.value, negative_num);
-    //                 Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(negative_num.to_string()))))
-    //             } else {
-    //                 None
-    //             }
-    //         }
-            
-    //         // Handle simple template literals: {`files`}
-    //         Expr::Tpl(tpl) => {
-    //             // Only handle template literals with no expressions (simple string templates)
-    //             if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
-    //                 if let Some(quasi) = tpl.quasis.first() {
-    //                     // Use cooked instead of raw to match runtime behavior
-    //                     // let content = quasi.raw.to_string();
-    //                     // Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
-    //                     if let Some(cooked) = &quasi.cooked {
-    //                         let content = cooked.to_string();
-    //                         Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
-    //                     } else {
-    //                         // Fall back to raw if cooked is None (unusual case)
-    //                         let content = quasi.raw.to_string();
-    //                         Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
-    //                     }
-    //                 } else {
-    //                     None
-    //                 }
-    //             } else {
-    //                 // Complex template literals with interpolation can't be evaluated at build-time
-    //                 // Skip these to avoid hash mismatches
-    //                 None
-    //             }
-    //         }
-    //         // Handle conditional expressions: {condition ? "files" : "file"}
-    //         Expr::Cond(cond_expr) => {
-    //             // For stable hashing, we need both branches to be deterministic
-    //             // Try to extract both consequent and alternate if they're simple expressions
-    //             let cons_result = self.build_sanitized_children_from_expr(&cond_expr.cons);
-    //             let alt_result = self.build_sanitized_children_from_expr(&cond_expr.alt);
-                
-    //             // If both branches produce the same result, use it
-    //             // Otherwise, skip for build-time stability
-    //             match (cons_result, alt_result) {
-    //                 (Some(cons), Some(alt)) => {
-    //                     // For now, skip conditional expressions to avoid complexity
-    //                     // In the future, we could try to serialize the condition structure
-    //                     None
-    //                 }
-    //                 _ => None,
-    //             }
-    //         }
-    //         _ => None,
-    //     }
-    // }
 
     /// Get variable type from component name
     fn get_variable_type(&self, component_name: &str) -> VariableType {
