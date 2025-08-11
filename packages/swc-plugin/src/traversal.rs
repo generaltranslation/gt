@@ -8,7 +8,7 @@ use crate::hash::{
     SanitizedVariable, VariableType, HtmlContentProps
 };
 use crate::TransformVisitor;
-use crate::whitespace::{has_significant_whitespace, trim_normal_whitespace};
+use crate::whitespace::{has_significant_whitespace, trim_normal_whitespace, is_normal_whitespace};
 
 /// AST traversal for converting JSX to sanitized GT objects
 pub struct JsxTraversal<'a> {
@@ -211,8 +211,10 @@ impl<'a> JsxTraversal<'a> {
                     for ch in standardized_content.chars() {
                         if ch == '\n' && !in_newline_sequence {
                             if !trim_normal_whitespace(&result).is_empty() {
+                                eprintln!("DEBUG: pushing space");
                                 result.push(' ');
                             } else {
+                                eprintln!("DEBUG: clearing result");
                                 result.clear();
                             }
                             in_newline_sequence = true;
@@ -225,7 +227,7 @@ impl<'a> JsxTraversal<'a> {
                         }
 
                         // We're in a newline sequence - skip whitespace until we hit content
-                        if ch.is_whitespace() {
+                        if is_normal_whitespace(ch) {
                             continue;
                         }
 

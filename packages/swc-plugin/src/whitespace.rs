@@ -37,7 +37,7 @@ pub fn has_significant_whitespace(text: &str) -> bool {
 }
 
 
-fn is_normal_whitespace(ch: char) -> bool {
+pub fn is_normal_whitespace(ch: char) -> bool {
     match classify_whitespace_char(ch) {
         Some(WhitespaceType::NormalSpace) => true,
         Some(WhitespaceType::Tab) => true,
