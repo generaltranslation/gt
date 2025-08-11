@@ -15,6 +15,7 @@ pub struct JsxTraversal<'a> {
     id_counter: u32,
 }
 
+
 /// Custom number to string function to match JS behavior
 fn js_number_to_string(value: f64) -> String {
     if value == 0.0 {
@@ -105,50 +106,72 @@ impl<'a> JsxTraversal<'a> {
                 // eprintln!("DEBUG: ------------------------------");
                 // eprintln!("DEBUG: Processing text: '{}'", content);
                 let normalized = if content.trim().is_empty() {
-                        if (!is_first_sibling && !is_last_sibling) || (is_first_sibling && is_last_sibling) {
-                            if content.contains('\n') {
-                                None
-                            } else {
-                                Some(content)
-                            }
-                        } else {
-                            // Whitespace at beginning or end, collapse to empty
+                    if (!is_first_sibling && !is_last_sibling) || (is_first_sibling && is_last_sibling) {
+                        if content.contains('\n') {
                             None
+                        } else {
+                            Some(content)
                         }
                     } else {
-                        // First get the actual text content without leading/trailing whitespace
-                        let trimmed_content = content.trim();
+                        // Whitespace at beginning or end, collapse to empty
+                        None
+                    }
+                } else {
+                    // Handle leading/trailing whitespace
+                    let trimmed_content = content.trim();
+                    let parts: Vec<&str> = content.split(trimmed_content).collect();
+                    let standardized_content = if parts.len() > 1 {
+                        let first_part = parts.first().unwrap();
+                        let last_part = parts.last().unwrap();
+                        let mut leading_space = first_part.to_string();
+                        let mut trailing_space = last_part.to_string();
+                        // Collapse newlines to empty
+                        if first_part.contains('\n') {
+                            leading_space = "".to_string();
+                        }
+                        if last_part.contains('\n') {
+                            trailing_space = "".to_string();
+                        }
+                        format!("{}{}{}", leading_space, trimmed_content, trailing_space)
+                    } else {
+                        content
+                    };
 
-                        let (has_leading_space, has_trailing_space) = if trimmed_content.len() > 0 {
-                            let parts: Vec<&str> = content.split(trimmed_content).collect();
-                            if parts.len() > 1 {
-                                let first_part = parts.first().unwrap();
-                                let last_part = parts.last().unwrap();
-                                (
-                                    // Check if there are leading/trailing spaces (not other whitespace)
-                                    first_part.ends_with(' ') && !first_part.contains('\n') && (!is_first_sibling || is_last_sibling),
-                                    // Check if there's a space after the last word (before any newlines/indentation)
-                                    last_part.starts_with(' ') && !last_part.contains('\n') && (!is_last_sibling || is_first_sibling),
-                                )
+                    // Collapse multiple newlines to single spaces while preserving content
+                    // Normalizes newlines in text content to match React JSX behavior:
+                    // - Multiple consecutive newlines become single spaces
+                    // - Newlines at the start are removed (result is cleared)
+                    // - Whitespace after newlines is skipped until non-whitespace content
+                    let mut result = String::new();
+                    let mut in_newline_sequence = false;
+
+                    for ch in standardized_content.chars() {
+                        if ch == '\n' {
+                            if !result.trim().is_empty() {
+                                result.push(' ');
                             } else {
-                                (false, false)
+                                result.clear();
                             }
-                        } else {
-                            (false, false)
-                        };
+                            in_newline_sequence = true;
+                            continue;
+                        }
 
-                        // Remove all whitespace and normalize internal spaces
-                        let core_normalized = content.split_whitespace().collect::<Vec<&str>>().join(" ");
+                        if !in_newline_sequence {
+                            result.push(ch);
+                            continue;
+                        }
 
-                        // Reconstruct with preserved leading/trailing spaces
-                        let final_content = format!("{}{}{}",
-                            if has_leading_space { " " } else { "" }, 
-                            core_normalized, 
-                            if has_trailing_space { " " } else { "" }
-                        );
-                        
-                        // Newlines are treated like spaces in text nodes between JSX elements.
-                        Some(final_content)
+                        // We're in a newline sequence - skip whitespace until we hit content
+                        if ch.is_whitespace() {
+                            continue;
+                        }
+
+                        // Found non-whitespace content, exit newline sequence
+                        result.push(ch);
+                        in_newline_sequence = false;
+                    }
+
+                    Some(result)
                 };
                 // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
                 if let Some(text) = normalized {
