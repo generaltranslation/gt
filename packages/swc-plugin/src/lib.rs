@@ -55,6 +55,8 @@ pub enum LogLevel {
 // <T>
 //
 // </T>
+// NO Infinity or NaN, NO Math.PI, NO Math.E, NO Bitwise operations
+// NO String.raw`Path\to\file.txt`
 
 
 // To investigate:

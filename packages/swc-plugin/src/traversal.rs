@@ -165,8 +165,6 @@ impl<'a> JsxTraversal<'a> {
 
                 // Only normalize internal whitespace, preserve leading/trailing spaces
                 // This matches how browsers handle JSX text content
-                // eprintln!("DEBUG: ------------------------------");
-                // eprintln!("DEBUG: Processing text: '{}'", content);
                 let normalized = if trim_normal_whitespace(&content).is_empty() {
                     if content.contains('\n') {
                         None
@@ -436,7 +434,9 @@ impl<'a> JsxTraversal<'a> {
                 if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
                     if name_ident.sym.as_ref() == "name" {
                         if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
-                            return str_lit.value.to_string();
+                            if !str_lit.value.is_empty() {
+                                return str_lit.value.to_string();
+                            }
                         }
                     }
                 }
