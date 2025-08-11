@@ -52,6 +52,14 @@ pub enum LogLevel {
 // <Plural n={1} invalid="ignored" also_invalid="also ignored" />
 // </T>
 
+
+// To investigate:
+// <T>
+// Hello
+//
+// World    with   spaces
+// </T>
+
 // TODO: handle alt={} on specific components
 // Core: cannot handle big ints (eg 123n)
 

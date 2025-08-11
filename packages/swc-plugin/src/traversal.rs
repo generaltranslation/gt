@@ -146,7 +146,7 @@ impl<'a> JsxTraversal<'a> {
                     let mut in_newline_sequence = false;
 
                     for ch in standardized_content.chars() {
-                        if ch == '\n' {
+                        if ch == '\n' && !in_newline_sequence {
                             if !result.trim().is_empty() {
                                 result.push(' ');
                             } else {
