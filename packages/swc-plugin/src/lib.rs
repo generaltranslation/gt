@@ -18,8 +18,6 @@ pub enum LogLevel {
     Warn,
     Info,
 }
-// Checklist
-// - [ ] switch from BTreeMap to HashMap (make sure that this will not break stable json)
 
 impl Default for LogLevel {
     fn default() -> Self {
@@ -120,12 +118,12 @@ impl TransformVisitor {
     }
 
     // TODO: circle back to this
-    /// Check if a component name matches known GT-Next translation components
+    /// Check if a component name matches known gt-next translation components
     fn is_translation_component_name(&self, name: &Atom) -> bool {
         matches!(name.as_ref(), "T")
     }
 
-    /// Check if a component name matches known GT-Next variable components
+    /// Check if a component name matches known gt-next variable components
     fn is_variable_component_name(&self, name: &Atom) -> bool {
         matches!(name.as_ref(), "Var" | "Num" | "Currency" | "DateTime")
     }
@@ -641,7 +639,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     let config: PluginConfig = serde_json::from_str(&config_str)
         .unwrap_or_default();
     
-    let filename = None; // TODO: Get filename from metadata if needed
+    let filename = None;
     
     let mut visitor = TransformVisitor::new(
         config.dynamic_jsx_check_log_level,

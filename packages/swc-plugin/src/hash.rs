@@ -67,9 +67,6 @@ pub struct SanitizedVariable {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub v: Option<VariableType>, // variable type (for regular variables)
     #[serde(skip_serializing_if = "Option::is_none")]
-    // TODO: remove this field
-    pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // branches (for Branch components)
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub t: Option<String>, // transformation type ('b' for branches, 'p' for plurals, 'v' for variables)
 }
 
@@ -189,7 +186,6 @@ mod tests {
         let variable = SanitizedVariable {
             k: Some("name".to_string()),
             v: Some(VariableType::Variable),
-            b: None,
             t: None,
         };
 
@@ -225,7 +221,6 @@ mod tests {
             SanitizedChild::Variable(SanitizedVariable {
                 k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
-                b: None,
                 t: None,
             }),
             SanitizedChild::Text("!".to_string()),
@@ -266,7 +261,6 @@ mod tests {
             c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
                 k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
-                b: None,
                 t: None,
             }))))),
             t: Some("div".to_string()),
@@ -397,7 +391,6 @@ mod tests {
             SanitizedChild::Variable(SanitizedVariable {
                 k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
-                b: None,
                 t: None,
             }),
             SanitizedChild::Text("!".to_string()),
@@ -419,7 +412,6 @@ mod tests {
             SanitizedChild::Variable(SanitizedVariable {
                 k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
-                b: None,
                 t: None,
             }),
             SanitizedChild::Text("!".to_string()),
