@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -13,7 +13,7 @@ import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalU
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
-import { useLocaleData } from './hooks/useLocaleData';
+import { useCalculateLocaleData } from './hooks/useCalculateLocaleData';
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
@@ -54,6 +54,7 @@ export default function GTProvider({
   ssr = config?.ssr || isSSREnabled(),
   localeCookieName = config?.localeCookieName || defaultLocaleCookieName,
   locale: _locale = '',
+  region: _region,
   loadDictionary,
   loadTranslations,
   fallback = undefined,
@@ -79,13 +80,16 @@ export default function GTProvider({
     locales: approvedLocales,
     translationRequired,
     dialectTranslationRequired,
-  } = useLocaleData({
+  } = useCalculateLocaleData({
     _locale,
     defaultLocale,
     locales,
     ssr,
     localeCookieName,
   });
+
+  // Define the region instance
+  const [region, setRegion] = useState<string | undefined>();
 
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation
@@ -94,6 +98,7 @@ export default function GTProvider({
       new GT({
         devApiKey,
         sourceLocale: defaultLocale,
+        targetLocale: locale,
         projectId,
         baseUrl: runtimeUrl,
         customMapping,
@@ -216,6 +221,8 @@ export default function GTProvider({
         locales: approvedLocales,
         setLocale,
         defaultLocale,
+        region,
+        setRegion,
         translations,
         translationsStatus,
         translationRequired,

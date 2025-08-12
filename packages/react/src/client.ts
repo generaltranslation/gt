@@ -14,11 +14,14 @@ import DateTime from './variables/DateTime';
 import Num from './variables/Num';
 import Var from './variables/Var';
 import LocaleSelector from './ui/LocaleSelector';
+import RegionSelector from './ui/RegionSelector';
 import GTProvider from './provider/GTProvider';
 import useSetLocale from './hooks/useSetLocale';
 import useLocales from './hooks/useLocales';
 import useLocaleSelector from './hooks/useLocaleSelector';
 import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
+import useRegion from './hooks/useRegion';
+import { useRegionSelector } from './hooks/useRegionSelector';
 
 export {
   GTContext,
@@ -33,6 +36,8 @@ export {
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  useRegion,
+  useRegionSelector,
   useGTClass,
   useLocaleProperties,
   T,
@@ -43,4 +48,5 @@ export {
   Branch,
   Plural,
   LocaleSelector,
+  RegionSelector,
 };

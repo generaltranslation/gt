@@ -30,6 +30,8 @@ export type GTContextType = {
   locales: string[];
   setLocale: (locale: string) => void;
   defaultLocale: string;
+  region?: string;
+  setRegion: (region: string) => void;
   translations: Translations | null;
   translationsStatus: TranslationsStatus | null;
   translationRequired: boolean;
