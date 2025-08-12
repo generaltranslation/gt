@@ -241,3 +241,329 @@ pub fn build_sanitized_text_content(text: &JSXText) -> Option<SanitizedChild> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use swc_core::ecma::atoms::Atom;
+    use swc_core::common::{DUMMY_SP, SyntaxContext};
+
+    mod js_number_to_string {
+        use super::*;
+
+        #[test]
+        fn handles_positive_zero() {
+            assert_eq!(js_number_to_string(0.0), "0");
+        }
+
+        #[test]
+        fn handles_negative_zero() {
+            assert_eq!(js_number_to_string(-0.0), "-0");
+        }
+
+        #[test]
+        fn handles_integers() {
+            assert_eq!(js_number_to_string(42.0), "42");
+            assert_eq!(js_number_to_string(-42.0), "-42");
+        }
+
+        #[test]
+        fn handles_decimals() {
+            assert_eq!(js_number_to_string(3.14), "3.14");
+            assert_eq!(js_number_to_string(-3.14), "-3.14");
+        }
+
+        #[test]
+        fn handles_very_small_numbers() {
+            let result = js_number_to_string(1e-7);
+            assert!(result.contains("e-"));
+        }
+
+        #[test]
+        fn handles_very_large_numbers() {
+            let result = js_number_to_string(1e22);
+            assert!(result.contains("e+"));
+        }
+    }
+
+    mod get_tag_name {
+        use super::*;
+
+        #[test]
+        fn extracts_simple_identifier() {
+            let ident = Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("div"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            };
+            let name = JSXElementName::Ident(ident.into());
+            assert_eq!(get_tag_name(&name), Some("div".to_string()));
+        }
+
+        #[test]
+        fn extracts_member_expression() {
+            let member_expr = JSXMemberExpr {
+                span: DUMMY_SP,
+                obj: JSXObject::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new("React"),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+                prop: Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new("Fragment"),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into(),
+            };
+            let name = JSXElementName::JSXMemberExpr(member_expr);
+            assert_eq!(get_tag_name(&name), Some("React.Fragment".to_string()));
+        }
+    }
+
+    mod get_variable_type {
+        use super::*;
+
+        #[test]
+        fn identifies_number_variable() {
+            assert_eq!(get_variable_type("Num"), VariableType::Number);
+        }
+
+        #[test]
+        fn identifies_currency_variable() {
+            assert_eq!(get_variable_type("Currency"), VariableType::Currency);
+        }
+
+        #[test]
+        fn identifies_datetime_variable() {
+            assert_eq!(get_variable_type("DateTime"), VariableType::Date);
+        }
+
+        #[test]
+        fn defaults_to_variable() {
+            assert_eq!(get_variable_type("Unknown"), VariableType::Variable);
+            assert_eq!(get_variable_type(""), VariableType::Variable);
+            assert_eq!(get_variable_type("SomeCustomComponent"), VariableType::Variable);
+        }
+    }
+
+    mod extract_html_content_props {
+        use super::*;
+
+        fn create_string_attr(name: &str, value: &str) -> JSXAttrOrSpread {
+            JSXAttrOrSpread::JSXAttr(JSXAttr {
+                span: DUMMY_SP,
+                name: JSXAttrName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+                value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: Atom::new(value),
+                    raw: None,
+                }))),
+            })
+        }
+
+        #[test]
+        fn handles_empty_attributes() {
+            let attrs = [];
+            let props = extract_html_content_props(&attrs);
+            let default_props = HtmlContentProps::default();
+            assert_eq!(props.pl, default_props.pl);
+            assert_eq!(props.ti, default_props.ti);
+            assert_eq!(props.alt, default_props.alt);
+        }
+
+        #[test]
+        fn extracts_placeholder() {
+            let attrs = [create_string_attr("placeholder", "Enter text")];
+            let props = extract_html_content_props(&attrs);
+            assert_eq!(props.pl, Some("Enter text".to_string()));
+        }
+
+        #[test]
+        fn extracts_title() {
+            let attrs = [create_string_attr("title", "Tooltip text")];
+            let props = extract_html_content_props(&attrs);
+            assert_eq!(props.ti, Some("Tooltip text".to_string()));
+        }
+
+        #[test]
+        fn extracts_alt() {
+            let attrs = [create_string_attr("alt", "Image description")];
+            let props = extract_html_content_props(&attrs);
+            assert_eq!(props.alt, Some("Image description".to_string()));
+        }
+
+        #[test]
+        fn extracts_aria_attributes() {
+            let attrs = [
+                create_string_attr("aria-label", "Button label"),
+                create_string_attr("aria-labelledby", "label-id"),
+                create_string_attr("aria-describedby", "desc-id"),
+            ];
+            let props = extract_html_content_props(&attrs);
+            assert_eq!(props.arl, Some("Button label".to_string()));
+            assert_eq!(props.arb, Some("label-id".to_string()));
+            assert_eq!(props.ard, Some("desc-id".to_string()));
+        }
+
+        #[test]
+        fn ignores_unknown_attributes() {
+            let attrs = [create_string_attr("className", "my-class")];
+            let props = extract_html_content_props(&attrs);
+            let default_props = HtmlContentProps::default();
+            assert_eq!(props.pl, default_props.pl);
+        }
+    }
+
+    mod filter_jsx_children {
+        use super::*;
+
+        fn create_jsx_text(content: &str) -> JSXElementChild {
+            JSXElementChild::JSXText(JSXText {
+                span: DUMMY_SP,
+                value: Atom::new(content),
+                raw: Atom::new(content),
+            })
+        }
+
+        fn create_jsx_empty_expr() -> JSXElementChild {
+            JSXElementChild::JSXExprContainer(JSXExprContainer {
+                span: DUMMY_SP,
+                expr: JSXExpr::JSXEmptyExpr(JSXEmptyExpr { span: DUMMY_SP }),
+            })
+        }
+
+        #[test]
+        fn removes_leading_trailing_whitespace() {
+            let children = vec![
+                create_jsx_text("\n  "),
+                create_jsx_text("content"),
+                create_jsx_text("  \n"),
+            ];
+            let filtered = filter_jsx_children(&children);
+            assert_eq!(filtered.len(), 1);
+            if let JSXElementChild::JSXText(text) = &filtered[0] {
+                assert_eq!(text.value.as_ref(), "content");
+            } else {
+                panic!("Expected JSXText");
+            }
+        }
+
+        #[test]
+        fn removes_empty_expressions() {
+            let children = vec![
+                create_jsx_text("before"),
+                create_jsx_empty_expr(),
+                create_jsx_text("after"),
+            ];
+            let filtered = filter_jsx_children(&children);
+            assert_eq!(filtered.len(), 2);
+        }
+
+        #[test]
+        fn preserves_significant_whitespace() {
+            let children = vec![
+                create_jsx_text("\u{00A0}"), // Non-breaking space
+            ];
+            let filtered = filter_jsx_children(&children);
+            assert_eq!(filtered.len(), 1);
+        }
+
+        #[test]
+        fn handles_empty_input() {
+            let children = vec![];
+            let filtered = filter_jsx_children(&children);
+            assert_eq!(filtered.len(), 0);
+        }
+    }
+
+    mod build_sanitized_text_content {
+        use super::*;
+
+        fn create_jsx_text(content: &str) -> JSXText {
+            JSXText {
+                span: DUMMY_SP,
+                value: Atom::new(content),
+                raw: Atom::new(content),
+            }
+        }
+
+        #[test]
+        fn handles_simple_text() {
+            let text = create_jsx_text("hello world");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "hello world");
+            } else {
+                panic!("Expected text content");
+            }
+        }
+
+        #[test]
+        fn handles_empty_text() {
+            let text = create_jsx_text("");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "");
+            } else {
+                panic!("Expected empty text content");
+            }
+        }
+
+        #[test]
+        fn handles_whitespace_only_with_newlines() {
+            let text = create_jsx_text("  \n  ");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn handles_whitespace_only_without_newlines() {
+            let text = create_jsx_text("   ");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "   ");
+            }
+        }
+
+        #[test]
+        fn normalizes_multiple_newlines() {
+            let text = create_jsx_text("hello\n\n\nworld");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "hello world");
+            }
+        }
+
+        #[test]
+        fn preserves_significant_whitespace() {
+            let text = create_jsx_text("hello\u{00A0}world");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "hello\u{00A0}world");
+            }
+        }
+
+        #[test]
+        fn handles_mixed_whitespace() {
+            let text = create_jsx_text("  hello   world  ");
+            let result = build_sanitized_text_content(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "  hello   world  ");
+            }
+        }
+    }
+}
