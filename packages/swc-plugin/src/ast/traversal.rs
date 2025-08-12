@@ -7,17 +7,14 @@ use crate::hash::{
     SanitizedChildren, SanitizedChild, SanitizedElement, SanitizedGtProp, 
     SanitizedVariable, VariableType, HtmlContentProps
 };
-use crate::whitespace::{
-    has_significant_whitespace,
-    trim_normal_whitespace,
-    is_normal_whitespace
-};
 use crate::TransformVisitor;
 use crate::ast::utilities::{
     get_tag_name,
     get_variable_type,
     js_number_to_string,
     extract_html_content_props,
+    filter_jsx_children,
+    build_sanitized_text_content,
 };
 use crate::ast::constants::PLURAL_FORMS;
 
@@ -42,68 +39,11 @@ impl<'a> JsxTraversal<'a> {
     pub fn new(visitor: &'a TransformVisitor) -> Self {
         Self { visitor, id_counter: 0 }
     }
+    
 
     /// Build sanitized children objects directly from JSX children
     pub fn build_sanitized_children(&mut self, children: &[JSXElementChild]) -> Option<SanitizedChildren> {
-        // sometimes there is whitespace before/after a single child, and that makes three children, ie:
-        // <T> {true} </T>
-        // these whitespaces need to be removed before we can continue
-        let mut remove_first_child = false;
-        let mut remove_last_child = false;
-        if children.len() >= 2 {
-            // Check beginning
-            let first_child = children.first().unwrap();
-            if let JSXElementChild::JSXText(text) = first_child {
-                if trim_normal_whitespace(&text.value).is_empty() && text.value.contains('\n') {
-                    remove_first_child = true;
-                }
-            }
-
-            // Check end
-            let last_child = children.last().unwrap();
-            if let JSXElementChild::JSXText(text) = last_child {
-                if trim_normal_whitespace(&text.value).is_empty() && text.value.contains('\n') {
-                    remove_last_child = true;
-                }
-            }
-        }
-
-        let filtered_children: Vec<JSXElementChild> = children
-            .iter()
-            .enumerate()
-            .filter_map(|(i, child)| {
-                let should_skip_first = remove_first_child && i == 0;
-                let should_skip_last = remove_last_child && i == children.len() - 1;
-                if should_skip_first || should_skip_last {
-                    None
-                } else {
-                    Some(child.clone())
-                }
-            })
-            .collect();
-
-        // Filter out all empty {} expressions
-        let filtered_children: Vec<JSXElementChild> = filtered_children.into_iter().filter(|child| {
-            if let JSXElementChild::JSXExprContainer(expr_container) = child {
-                if let JSXExpr::JSXEmptyExpr(_) = &expr_container.expr {
-                    return false;
-                }
-            } else if let JSXElementChild::JSXText(text) = child {
-                let trimmed = trim_normal_whitespace(&text.value);
-                if trimmed.is_empty() {
-                    // Check if it contains HTML entities (like &nbsp;, &amp;, etc.)
-                    if has_significant_whitespace(&text.value) {
-                        return true;
-                    }
-
-                    // Remove plain whitespace with newlines
-                    if text.value.contains('\n') {
-                        return false;
-                    }
-                }
-            }
-            true
-        }).collect();
+        let filtered_children = filter_jsx_children(children);
 
         // If there are no children, return None
         if filtered_children.is_empty() {
@@ -146,95 +86,12 @@ impl<'a> JsxTraversal<'a> {
     }
 
     fn build_sanitized_text(&mut self, text: &JSXText) -> Option<SanitizedChild> {
-        // Normalize whitespace like browsers do: collapse multiple whitespace chars into single spaces
-        let content = text.value.to_string();
+        // Normalize whitespace like JS
+        let normalized = build_sanitized_text_content(text);
 
-        // Only normalize internal whitespace, preserve leading/trailing spaces
-        // This matches how browsers handle JSX text content
-        let normalized = if trim_normal_whitespace(&content).is_empty() {
-            if content.contains('\n') {
-                None
-            } else {
-                Some(content)
-            }
-        } else {
-            // Handle leading/trailing whitespace
-            let trimmed_content = trim_normal_whitespace(&content);
-            let parts: Vec<&str> = content.split(trimmed_content).collect();
-            let standardized_content = if parts.len() > 1 {
-                let first_part = parts.first().unwrap();
-                let last_part = parts.last().unwrap();
-                let mut leading_space = first_part.to_string();
-                let mut trailing_space = last_part.to_string();
-                // Collapse newlines to empty
-                if first_part.contains('\n') {
-                    leading_space = "".to_string();
-                }
-                if last_part.contains('\n') {
-                    trailing_space = "".to_string();
-                }
-                format!("{}{}{}", leading_space, trimmed_content, trailing_space)
-            } else {
-                content
-            };
-
-            // Collapse multiple newlines to single spaces while preserving content
-            // Normalizes newlines in text content to match React JSX behavior:
-            // - Multiple consecutive newlines become single spaces
-            // - Newlines at the start are removed (result is cleared)
-            // - Whitespace with newlines is skipped until non-whitespace content
-            let mut result = String::new();
-            let mut whitespace_sequence = String::new();
-            let mut in_newline_sequence = false;
-
-            for ch in standardized_content.chars() {
-                if ch == '\n' && !in_newline_sequence {
-                    whitespace_sequence.clear();
-                    whitespace_sequence.push(' ');
-                    in_newline_sequence = true;
-                    continue
-                }
-
-
-                // Add character (and any whitespace we've accumulated)
-                if !is_normal_whitespace(ch) {
-                    if !whitespace_sequence.is_empty() {
-                        result.push_str(&whitespace_sequence);
-                        whitespace_sequence.clear();
-                    }
-                    result.push(ch);
-
-                    // Escape newline sequence
-                    if in_newline_sequence {
-                        in_newline_sequence = false;
-                    }
-                    continue;
-                }
-
-                // Skip adding whitespace if we're in a newline sequence
-                if in_newline_sequence {
-                    continue;
-                }
-
-                // Accumulate whitespace
-                whitespace_sequence.push(' ');
-            }
-
-            // Catch any stragglers
-            if !in_newline_sequence && !whitespace_sequence.is_empty()  && !trim_normal_whitespace(&result).is_empty() {
-                result.push_str(&whitespace_sequence);
-            }
-
-            Some(result)
-        };
-
-
+        // Return the normalized text
         if let Some(text) = normalized {
-            if !text.is_empty() {
-                Some(SanitizedChild::Text(text))
-            } else {
-                None
-            }
+            Some(text)
         } else {
             None
         }
