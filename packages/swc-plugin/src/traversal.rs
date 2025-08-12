@@ -10,6 +10,14 @@ use crate::hash::{
 use crate::TransformVisitor;
 use crate::whitespace::{has_significant_whitespace, trim_normal_whitespace, is_normal_whitespace};
 
+use std::collections::HashSet;
+use std::sync::LazyLock;
+
+static PLURAL_FORMS: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
+    ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"]
+        .into_iter().collect()
+});
+
 /// AST traversal for converting JSX to sanitized GT objects
 pub struct JsxTraversal<'a> {
     visitor: &'a TransformVisitor,
@@ -129,7 +137,6 @@ impl<'a> JsxTraversal<'a> {
         let saved_counter = self.id_counter;
         self.id_counter = counter;
         let result = self.build_sanitized_child(child, is_first_sibling, is_last_sibling);
-        // eprintln!("DEBUG: build_sanitized_child_with_counter() counter: {} -> {}", self.id_counter, saved_counter);
         self.id_counter = saved_counter;
         result
     }
@@ -588,7 +595,6 @@ impl<'a> JsxTraversal<'a> {
     /// Extract plural props from Plural component attributes
     fn extract_plural_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChild>>> {
         let mut branches = BTreeMap::new();
-        let plural_forms: std::collections::HashSet<&str> = ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"].into_iter().collect();
 
         for attr in attrs {
             if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
@@ -596,7 +602,7 @@ impl<'a> JsxTraversal<'a> {
                     let prop_name = name_ident.sym.as_ref();
                     
                     // Only include valid plural forms
-                    if plural_forms.contains(prop_name) {
+                    if PLURAL_FORMS.contains(prop_name) {
                         if let Some(value) = &jsx_attr.value {
                             if let Some(sanitized_children) = self.build_sanitized_child_from_attr_value(value) {
                                 branches.insert(prop_name.to_string(), Box::new(sanitized_children));

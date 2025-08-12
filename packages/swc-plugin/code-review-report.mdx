@@ -89,7 +89,7 @@ NOTE: This is okay because we do not know the expected size of the maps ahead of
 
 #### `/src/traversal.rs`
 
-- [ ] **Lines 592-593**: Inefficient HashSet creation on every call
+- [x] **Lines 592-593**: Inefficient HashSet creation on every call
 
   ```rust
   let plural_forms: std::collections::HashSet<&str> =
@@ -99,7 +99,9 @@ NOTE: This is okay because we do not know the expected size of the maps ahead of
 
   **Fix**: Use a static/const HashSet or `matches!` macro instead
 
-- [ ] **Lines 135-145**: Unnecessary state saving/restoration pattern
+NOTE: This is okay
+
+- [x] **Lines 135-145**: Unnecessary state saving/restoration pattern
   ```rust
   let saved_counter = self.id_counter;
   self.id_counter = counter;
