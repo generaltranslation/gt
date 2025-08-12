@@ -100,7 +100,7 @@ export default function ClientProvider({
         baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
-    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
   );
 
   // ---------- TRANSLATION LIFECYCLE ---------- //
