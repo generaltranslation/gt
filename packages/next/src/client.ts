@@ -5,6 +5,7 @@ import {
   useLocale,
   useDefaultLocale,
   LocaleSelector,
+  RegionSelector,
   GTProvider,
   useLocales,
   useSetLocale,
@@ -18,6 +19,8 @@ import {
   useLocaleProperties,
   useGTClass,
   useTranslations,
+  useRegion,
+  useRegionSelector,
 } from 'gt-react/client';
 
 export {
@@ -29,9 +32,10 @@ export {
   useSetLocale,
   useDefaultLocale,
   useLocaleSelector,
+  useRegion,
+  useRegionSelector,
   useGTClass,
   useLocaleProperties,
-
   // Components
   GTProvider as GTClientProvider,
   T,
@@ -42,4 +46,5 @@ export {
   Plural,
   Branch,
   LocaleSelector,
+  RegionSelector,
 };

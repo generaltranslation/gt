@@ -61,7 +61,7 @@ const exceptions = {
   grc: '🏺',
 } as Record<string, string>;
 
-const emojis = {
+export const emojis = {
   AF: '🇦🇫', // Afghanistan
   AX: '🇦🇽', // Åland Islands
   AL: '🇦🇱', // Albania

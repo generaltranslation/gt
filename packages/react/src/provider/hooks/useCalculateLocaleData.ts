@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useDetermineLocale } from './useDetermineLocale';
 import { requiresTranslation, isSameLanguage } from 'generaltranslation';
 
-export function useLocaleData({
+export function useCalculateLocaleData({
   _locale,
   defaultLocale,
   locales: _locales,

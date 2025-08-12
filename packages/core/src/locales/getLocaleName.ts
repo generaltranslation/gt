@@ -1,23 +1,22 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 import { CustomMapping, getCustomProperty } from './customLocaleMapping';
-import { LocaleProperties } from './getLocaleProperties';
 import { _standardizeLocale } from './isValidLocale';
 
 /**
- * Retrieves the display name(s) of language code(s) using Intl.DisplayNames.
+ * Retrieves the display name(s) of locale code(s) using Intl.DisplayNames.
  *
  * @param {string} locale - A BCP-47 locale code.
- * @param {string} [defaultLanguage=libraryDefaultLanguage] - The language for display names.
+ * @param {string} [defaultLocale=libraryDefaultLocale] - The locale for display names.
  * @returns {string} The display name(s) corresponding to the code(s), or empty string(s) if invalid.
  * @internal
  */
 export function _getLocaleName(
   locale: string,
-  defaultLanguage: string = libraryDefaultLocale,
+  defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomMapping
 ): string {
-  defaultLanguage ||= libraryDefaultLocale;
+  defaultLocale ||= libraryDefaultLocale;
   try {
     const standardizedLocale = _standardizeLocale(locale);
     if (customMapping) {
@@ -32,7 +31,7 @@ export function _getLocaleName(
     }
     const displayNames = intlCache.get(
       'DisplayNames',
-      [defaultLanguage, standardizedLocale, libraryDefaultLocale], // default language order
+      [defaultLocale, standardizedLocale, libraryDefaultLocale], // default locale order
       { type: 'language' }
     );
     return displayNames.of(standardizedLocale) || '';

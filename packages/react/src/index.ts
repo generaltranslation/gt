@@ -3,6 +3,7 @@ import useGT from './translation/hooks/useGT';
 import useTranslations from './translation/hooks/useTranslations';
 import useDefaultLocale from './hooks/useDefaultLocale';
 import useLocale from './hooks/useLocale';
+import useRegion from './hooks/useRegion';
 import GTProvider from './provider/GTProvider';
 import Var from './variables/Var';
 import Num from './variables/Num';
@@ -14,12 +15,14 @@ import useLocales from './hooks/useLocales';
 import useSetLocale from './hooks/useSetLocale';
 import LocaleSelector from './ui/LocaleSelector';
 import useLocaleSelector from './hooks/useLocaleSelector';
+import RegionSelector from './ui/RegionSelector';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from './types/types';
 import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
+import { useRegionSelector } from './hooks/useRegionSelector';
 
 export {
   Var,
@@ -37,9 +40,12 @@ export {
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  useRegion,
+  useRegionSelector,
   useGTClass,
   useLocaleProperties,
   LocaleSelector,
+  RegionSelector,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
