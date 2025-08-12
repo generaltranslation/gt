@@ -11,6 +11,7 @@ import { Dictionary, Translations } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import ClientProvider from './ClientProviderWrapper';
 import { GTProviderProps } from '../utils/types';
+import { getRegion } from '../request/getRegion';
 
 export default async function GTProvider({
   children,
@@ -80,6 +81,7 @@ export default async function GTProvider({
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
       dialectTranslationRequired={dialectTranslationRequired}
+      region={await getRegion()}
       gtServicesEnabled={
         process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
       }

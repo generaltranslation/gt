@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -11,13 +11,14 @@ import { readAuthFromEnv } from '../utils/utils';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
-import { defaultLocaleCookieName } from '../utils/cookies';
+import { defaultLocaleCookieName, defaultRegionCookieName } from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
-import { useLocaleState } from './hooks/useLocaleState';
+import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
+import { useRegionState } from './hooks/useRegionState';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -89,7 +90,11 @@ export default function GTProvider({
   });
 
   // Define the region instance
-  const [region, setRegion] = useState<string | undefined>(_region);
+  const { region, setRegion } = useRegionState({
+    _region,
+    ssr,
+    regionCookieName: defaultRegionCookieName,
+  });
 
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation
