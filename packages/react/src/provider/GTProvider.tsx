@@ -13,7 +13,7 @@ import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalU
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
-import { useCalculateLocaleData } from './hooks/useCalculateLocaleData';
+import { useLocaleState } from './hooks/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
@@ -80,7 +80,7 @@ export default function GTProvider({
     locales: approvedLocales,
     translationRequired,
     dialectTranslationRequired,
-  } = useCalculateLocaleData({
+  } = useLocaleState({
     _locale,
     defaultLocale,
     locales,
