@@ -609,3 +609,410 @@ impl Default for HtmlContentProps {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use swc_core::common::{DUMMY_SP, SyntaxContext};
+    use swc_core::ecma::atoms::Atom;
+    use crate::visitor::state::{Statistics, TraversalState, ImportTracker};
+    use crate::config::PluginSettings;
+    use crate::logging::{LogLevel, Logger};
+    
+    // Helper to create test visitor
+    fn create_test_visitor() -> TransformVisitor {
+        TransformVisitor {
+            statistics: Statistics::default(),
+            traversal_state: TraversalState::default(),
+            import_tracker: ImportTracker::default(),
+            settings: PluginSettings::new(LogLevel::Silent, false, None),
+            logger: Logger::new(LogLevel::Silent),
+        }
+    }
+
+    // Helper to create JSX text
+    fn create_jsx_text(content: &str) -> JSXText {
+        JSXText {
+            span: DUMMY_SP,
+            value: Atom::new(content),
+            raw: Atom::new(content),
+        }
+    }
+
+    // Helper to create JSX element child from text
+    fn create_jsx_text_child(content: &str) -> JSXElementChild {
+        JSXElementChild::JSXText(create_jsx_text(content))
+    }
+
+    // Helper to create empty JSX element
+    fn create_jsx_element(tag_name: &str) -> JSXElement {
+        JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(tag_name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(tag_name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+            }),
+        }
+    }
+
+    mod jsx_traversal_creation {
+        use super::*;
+
+        #[test]
+        fn creates_new_traversal() {
+            let visitor = create_test_visitor();
+            let traversal = JsxTraversal::new(&visitor);
+            assert_eq!(traversal.id_counter, 0);
+        }
+    }
+
+    mod build_sanitized_children {
+        use super::*;
+
+        #[test]
+        fn handles_empty_children() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let children = vec![];
+            let result = traversal.build_sanitized_children(&children);
+            assert!(result.is_none());
+        }
+
+        #[test]
+        fn handles_single_text_child() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let children = vec![create_jsx_text_child("hello")];
+            let result = traversal.build_sanitized_children(&children);
+            assert!(result.is_some());
+            if let Some(SanitizedChildren::Single(child)) = result {
+                if let SanitizedChild::Text(text) = child.as_ref() {
+                    assert_eq!(text, "hello");
+                } else {
+                    panic!("Expected text child");
+                }
+            } else {
+                panic!("Expected single child");
+            }
+        }
+
+        #[test]
+        fn handles_multiple_text_children() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let children = vec![
+                create_jsx_text_child("hello "),
+                create_jsx_text_child("world"),
+            ];
+            let result = traversal.build_sanitized_children(&children);
+            assert!(result.is_some());
+            if let Some(SanitizedChildren::Multiple(children)) = result {
+                assert_eq!(children.len(), 2);
+            } else {
+                panic!("Expected multiple children");
+            }
+        }
+    }
+
+    mod build_sanitized_text {
+        use super::*;
+
+        #[test]
+        fn handles_simple_text() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let text = create_jsx_text("hello world");
+            let result = traversal.build_sanitized_text(&text);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(content)) = result {
+                assert_eq!(content, "hello world");
+            } else {
+                panic!("Expected text content");
+            }
+        }
+
+        #[test]
+        fn handles_empty_text() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let text = create_jsx_text("");
+            let result = traversal.build_sanitized_text(&text);
+            assert!(result.is_some()); // Empty text returns Some("")
+        }
+    }
+
+    mod build_sanitized_element {
+        use super::*;
+
+        #[test]
+        fn handles_simple_element() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let element = create_jsx_element("div");
+            let result = traversal.build_sanitized_element(&element);
+            assert!(result.is_some());
+            let sanitized = result.unwrap();
+            assert!(sanitized.t.is_none()); // Non-GT elements have no type
+            assert!(sanitized.c.is_none()); // No children
+            assert!(sanitized.b.is_none()); // No branches
+            assert!(sanitized.d.is_none()); // No GT data
+        }
+
+        #[test]
+        fn handles_element_with_children() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let mut element = create_jsx_element("div");
+            element.children = vec![create_jsx_text_child("content")];
+            let result = traversal.build_sanitized_element(&element);
+            assert!(result.is_some());
+            let sanitized = result.unwrap();
+            assert!(sanitized.c.is_some()); // Has children
+        }
+    }
+
+    mod component_type_detection {
+        use super::*;
+
+        #[test]
+        fn detects_branch_component_basic() {
+            let visitor = create_test_visitor();
+            let traversal = JsxTraversal::new(&visitor);
+            
+            // Without any imports, should return false
+            assert!(!traversal.is_branch_component("Branch"));
+            assert!(!traversal.is_branch_component("CustomBranch"));
+        }
+
+        #[test]
+        fn detects_plural_component_basic() {
+            let visitor = create_test_visitor();
+            let traversal = JsxTraversal::new(&visitor);
+            
+            // Without any imports, should return false
+            assert!(!traversal.is_plural_component("Plural"));
+            assert!(!traversal.is_plural_component("CustomPlural"));
+        }
+
+        #[test]
+        fn detects_namespace_components() {
+            let visitor = create_test_visitor();
+            let traversal = JsxTraversal::new(&visitor);
+            
+            // Namespace components without imports should return false
+            assert!(!traversal.is_branch_component("GT.Branch"));
+            assert!(!traversal.is_plural_component("GT.Plural"));
+        }
+    }
+
+    mod extract_variable_key {
+        use super::*;
+
+        #[test]
+        fn generates_fallback_keys() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let element = create_jsx_element("Var");
+            
+            // Test different variable types generate different keys
+            let number_key = traversal.extract_variable_key(&element, &VariableType::Number);
+            assert!(number_key.starts_with("_gt_n_"));
+            
+            let currency_key = traversal.extract_variable_key(&element, &VariableType::Currency);
+            assert!(currency_key.starts_with("_gt_cost_"));
+            
+            let date_key = traversal.extract_variable_key(&element, &VariableType::Date);
+            assert!(date_key.starts_with("_gt_date_"));
+            
+            let var_key = traversal.extract_variable_key(&element, &VariableType::Variable);
+            assert!(var_key.starts_with("_gt_value_"));
+        }
+    }
+
+    mod build_sanitized_child_from_jsx_expr {
+        use super::*;
+
+        fn create_string_expr(value: &str) -> JSXExpr {
+            JSXExpr::Expr(Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: Atom::new(value),
+                raw: None,
+            }))))
+        }
+
+        fn create_number_expr(value: f64) -> JSXExpr {
+            JSXExpr::Expr(Box::new(Expr::Lit(Lit::Num(Number {
+                span: DUMMY_SP,
+                value,
+                raw: None,
+            }))))
+        }
+
+        fn create_boolean_expr(value: bool) -> JSXExpr {
+            JSXExpr::Expr(Box::new(Expr::Lit(Lit::Bool(Bool {
+                span: DUMMY_SP,
+                value,
+            }))))
+        }
+
+        fn create_null_expr() -> JSXExpr {
+            JSXExpr::Expr(Box::new(Expr::Lit(Lit::Null(Null {
+                span: DUMMY_SP,
+            }))))
+        }
+
+        #[test]
+        fn handles_string_literal() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = create_string_expr("hello");
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, false);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(text)) = result {
+                assert_eq!(text, "hello");
+            } else {
+                panic!("Expected text content");
+            }
+        }
+
+        #[test]
+        fn handles_number_literal() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = create_number_expr(42.0);
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, false);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Text(text)) = result {
+                assert_eq!(text, "42");
+            } else {
+                panic!("Expected text content");
+            }
+        }
+
+        #[test]
+        fn handles_boolean_in_attribute() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = create_boolean_expr(true);
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, true);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Boolean(value)) = result {
+                assert_eq!(value, true);
+            } else {
+                panic!("Expected boolean content");
+            }
+        }
+
+        #[test]
+        fn handles_boolean_as_child() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = create_boolean_expr(true);
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, false);
+            assert!(result.is_some()); // Single true child returns Some
+            
+            let expr_false = create_boolean_expr(false);
+            let result_false = traversal.build_sanitized_child_from_jsx_expr(&expr_false, false, false);
+            assert!(result_false.is_none()); // False child returns None
+        }
+
+        #[test]
+        fn handles_null_in_attribute() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = create_null_expr();
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, true);
+            assert!(result.is_some());
+            if let Some(SanitizedChild::Null(_)) = result {
+                // Expected null content
+            } else {
+                panic!("Expected null content");
+            }
+        }
+
+        #[test]
+        fn handles_null_as_child() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = create_null_expr();
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, false);
+            assert!(result.is_none()); // Null children return None
+        }
+
+        #[test]
+        fn handles_empty_expression() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let expr = JSXExpr::JSXEmptyExpr(JSXEmptyExpr { span: DUMMY_SP });
+            let result = traversal.build_sanitized_child_from_jsx_expr(&expr, false, false);
+            assert!(result.is_none()); // Empty expressions return None
+        }
+    }
+
+    mod counter_management {
+        use super::*;
+
+        #[test]
+        fn counter_saves_and_restores() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            
+            // Set initial counter
+            traversal.id_counter = 5;
+            let initial_counter = traversal.id_counter;
+            
+            // Call method that uses with_counter pattern
+            let text_child = create_jsx_text_child("test");
+            let _ = traversal.build_sanitized_child_with_counter(&text_child, 10, true, true);
+            
+            // Counter should be restored
+            assert_eq!(traversal.id_counter, initial_counter);
+        }
+    }
+
+    mod component_info_analysis {
+        use super::*;
+
+        #[test]
+        fn analyzes_unknown_component() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let attrs = vec![];
+            let info = traversal.analyze_gt_component("div", &attrs);
+            
+            assert!(!info.is_gt_component);
+            assert!(info.transformation.is_none());
+            assert!(info.variable_type.is_none());
+            assert!(info.branches.is_none());
+        }
+
+        #[test]
+        fn analyzes_namespace_component() {
+            let visitor = create_test_visitor();
+            let mut traversal = JsxTraversal::new(&visitor);
+            let attrs = vec![];
+            let info = traversal.analyze_gt_component("GT.T", &attrs);
+            
+            // Without proper imports set up, should not detect as GT component
+            assert!(!info.is_gt_component);
+        }
+    }
+}
