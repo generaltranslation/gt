@@ -81,7 +81,7 @@ export function useRegionSelector(
         // 0 because no action is needed if it's already at the start
         regions.splice(localeRegionIndex, 1);
         regions.unshift(localeRegion);
-      }
+  }, [_regions, region, locale, locales, gt, customMapping, prioritizeCurrentLocaleRegion, sortRegionsAlphabetically, localeRegion]);
     }
 
     return [regions, regionData];
