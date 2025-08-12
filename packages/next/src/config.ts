@@ -155,6 +155,10 @@ export function withGTConfig(
     throw new Error(unsupportedGetLocalePathBuildError);
   }
 
+  // Check if experimentalSwcPluginOptions is enabled
+  const enableExperimentalSwcPlugin =
+    Object.keys(props.experimentalSwcPluginOptions || {}).length > 0;
+
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
@@ -388,7 +392,7 @@ export function withGTConfig(
       // SWC Plugin
       swcPlugins: [
         ...(nextConfig.experimental?.swcPlugins || []),
-        [
+        enableExperimentalSwcPlugin && [
           path.resolve(__dirname, './gt_swc_plugin.wasm'),
           {
             ...mergedConfig.experimentalSwcPluginOptions,
