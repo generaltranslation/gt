@@ -25,6 +25,14 @@ impl Default for LogLevel {
     }
 }
 
+
+// For tracking statistics for the plugin
+#[derive(Default)]
+struct Statistics {
+    jsx_element_count: u32,
+    dynamic_content_violations: u32,
+}
+
 /// Plugin configuration options
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -49,6 +57,8 @@ impl Default for PluginConfig {
 
 /// Main transformation visitor for the SWC plugin
 pub struct TransformVisitor {
+    /// Statistics for the plugin
+    statistics: Statistics,
     /// Track whether we're inside a translation component (T, Plural, etc.)
     in_translation_component: bool,
     /// Track whether we're inside a variable component (Var, Num, Currency, etc.)
@@ -68,9 +78,6 @@ pub struct TransformVisitor {
     dynamic_string_check_log_level: LogLevel,
     /// Experimental feature: inject compile-time hash attributes
     experimental_compile_time_hash: bool,
-    /// Counters for statistics 
-    jsx_element_count: u32,
-    dynamic_content_violations: u32,
     /// Optional filename for better error messages
     filename: Option<String>,
     /// Aliases for GT-Next imports
@@ -111,9 +118,8 @@ impl TransformVisitor {
             dynamic_jsx_check_log_level,
             dynamic_string_check_log_level,
             experimental_compile_time_hash,
-            jsx_element_count: 0,
-            dynamic_content_violations: 0,
             filename,
+            statistics: Statistics::default(),
         }
     }
 
@@ -379,7 +385,7 @@ impl TransformVisitor {
                         match arg.expr.as_ref() {
                             // Template literals: t(`Hello ${name}`)
                             Expr::Tpl(_) => {
-                                self.dynamic_content_violations += 1;
+                                self.statistics.dynamic_content_violations += 1;
                                 let warning = self.create_dynamic_function_warning(function_name.as_ref(), "template literals");
                                 self.log_warning(&self.dynamic_string_check_log_level, &warning);
                             }
@@ -390,7 +396,7 @@ impl TransformVisitor {
                                 let right_is_string = matches!(right.as_ref(), Expr::Lit(Lit::Str(_)));
                                 
                                 if left_is_string || right_is_string {
-                                    self.dynamic_content_violations += 1;
+                                    self.statistics.dynamic_content_violations += 1;
                                     let warning = self.create_dynamic_function_warning(function_name.as_ref(), "string concatenation");
                                     self.log_warning(&self.dynamic_string_check_log_level, &warning);
                                 }
@@ -515,7 +521,7 @@ impl VisitMut for TransformVisitor {
     fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
         // Only check for violations if we're in a translation component and NOT in a JSX attribute
         if self.in_translation_component && !self.in_jsx_attribute {
-            self.dynamic_content_violations += 1;
+            self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
             self.log_warning(&self.dynamic_jsx_check_log_level, &warning);
         }
@@ -548,7 +554,7 @@ impl Fold for TransformVisitor {
     fn fold_jsx_expr_container(&mut self, expr_container: JSXExprContainer) -> JSXExprContainer {
         // Only check for violations if we're in a translation component and NOT in a JSX attribute
         if self.in_translation_component && !self.in_jsx_attribute {
-            self.dynamic_content_violations += 1;
+            self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
             self.log_warning(&self.dynamic_jsx_check_log_level, &warning);
         }
@@ -567,7 +573,7 @@ impl Fold for TransformVisitor {
 
     /// Process JSX elements to track component context and inject experimental features
     fn fold_jsx_element(&mut self, mut element: JSXElement) -> JSXElement {
-        self.jsx_element_count += 1;
+        self.statistics.jsx_element_count += 1;
         
         // Save previous state
         let was_in_translation = self.in_translation_component;
