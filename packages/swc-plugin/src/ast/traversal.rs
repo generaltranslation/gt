@@ -7,16 +7,29 @@ use crate::hash::{
     SanitizedChildren, SanitizedChild, SanitizedElement, SanitizedGtProp, 
     SanitizedVariable, VariableType, HtmlContentProps
 };
+use crate::whitespace::{
+    has_significant_whitespace,
+    trim_normal_whitespace,
+    is_normal_whitespace
+};
 use crate::TransformVisitor;
-use crate::whitespace::{has_significant_whitespace, trim_normal_whitespace, is_normal_whitespace};
+use crate::ast::utilities::{
+    get_tag_name,
+    get_variable_type,
+    js_number_to_string,
+    extract_html_content_props,
+};
+use crate::ast::constants::PLURAL_FORMS;
 
-use std::collections::HashSet;
-use std::sync::LazyLock;
+/// Information about a GT component extracted during analysis
+#[derive(Default)]
+struct ComponentInfo {
+    is_gt_component: bool,
+    transformation: Option<String>,
+    variable_type: Option<VariableType>,
+    branches: Option<BTreeMap<String, Box<SanitizedChild>>>,
+}
 
-static PLURAL_FORMS: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
-    ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"]
-        .into_iter().collect()
-});
 
 /// AST traversal for converting JSX to sanitized GT objects
 pub struct JsxTraversal<'a> {
@@ -24,27 +37,6 @@ pub struct JsxTraversal<'a> {
     id_counter: u32,
 }
 
-/// Custom number to string function to match JS behavior
-fn js_number_to_string(value: f64) -> String {
-    if value == 0.0 {
-        return if value.is_sign_negative() { "-0".to_string() } else { "0".to_string() };
-    }
-
-    let abs_value = value.abs();
-    if abs_value < 1e-6 || abs_value >= 1e21 {
-        // // Use exponential notation, matching JS format
-        let formatted = format!("{:e}", value);
-        if formatted.contains("e") && !formatted.contains("e-") && !formatted.contains("e+") {
-            formatted.replace("e", "e+")
-        } else {
-            formatted
-        }
-        .replace("e+0", "e+")
-        .replace("e-0", "e-")
-    } else {
-        value.to_string()
-    }
-}
 
 impl<'a> JsxTraversal<'a> {
     pub fn new(visitor: &'a TransformVisitor) -> Self {
@@ -341,7 +333,7 @@ impl<'a> JsxTraversal<'a> {
 
     /// Build a sanitized element directly from JSX element
     pub fn build_sanitized_element(&mut self, element: &JSXElement) -> Option<SanitizedElement> {
-        let tag_name = self.get_tag_name(&element.opening.name)?;
+        let tag_name = get_tag_name(&element.opening.name)?;
         
         // Check if this is a GT component
         let component_info = self.analyze_gt_component(&tag_name, &element.opening.attrs);
@@ -390,7 +382,7 @@ impl<'a> JsxTraversal<'a> {
                 let gt_prop = SanitizedGtProp {
                     b: component_info.branches,
                     t: component_info.transformation,
-                    html_props: self.extract_html_content_props(&element.opening.attrs),
+                    html_props: extract_html_content_props(&element.opening.attrs),
                 };
                 sanitized_element.d = Some(gt_prop);
                 sanitized_element.t = Some(tag_name.clone());
@@ -405,7 +397,7 @@ impl<'a> JsxTraversal<'a> {
 
     /// Build a sanitized variable directly from JSX element
     fn build_sanitized_variable(&mut self, element: &JSXElement) -> Option<SanitizedVariable> {
-        let tag_name = self.get_tag_name(&element.opening.name)?;
+        let tag_name = get_tag_name(&element.opening.name)?;
         let component_info = self.analyze_gt_component(&tag_name, &element.opening.attrs);
         
         if let Some(var_type) = component_info.variable_type {
@@ -445,21 +437,6 @@ impl<'a> JsxTraversal<'a> {
             VariableType::Currency => format!("_gt_cost_{}", self.id_counter),
             VariableType::Date => format!("_gt_date_{}", self.id_counter),
             VariableType::Variable => format!("_gt_value_{}", self.id_counter),
-        }
-    }
-
-    /// Get tag name from JSX element name
-    pub fn get_tag_name(&self, name: &JSXElementName) -> Option<String> {
-        match name {
-            JSXElementName::Ident(ident) => Some(ident.sym.to_string()),
-            JSXElementName::JSXMemberExpr(member_expr) => {
-                if let JSXObject::Ident(obj_ident) = &member_expr.obj {
-                    Some(format!("{}.{}", obj_ident.sym, member_expr.prop.sym))
-                } else {
-                    None
-                }
-            }
-            _ => None,
         }
     }
 
@@ -525,11 +502,11 @@ impl<'a> JsxTraversal<'a> {
         } else if self.visitor.should_track_component_as_variable(&Atom::from(tag_name)) {
             info.is_gt_component = true;
             info.transformation = Some("v".to_string());
-            info.variable_type = Some(self.get_variable_type(tag_name));
+            info.variable_type = Some(get_variable_type(tag_name));
         }
 
         // Handle namespace components (GT.T, GT.Var, etc.)
-        // TODO: use a better way of checking
+        // TODO: rework a better way of checking, more modular
         if tag_name.contains('.') {
             let parts: Vec<&str> = tag_name.split('.').collect();
             if parts.len() == 2 {
@@ -559,7 +536,7 @@ impl<'a> JsxTraversal<'a> {
                 } else if is_variable {
                     info.is_gt_component = true;
                     info.transformation = Some("v".to_string());
-                    info.variable_type = Some(self.get_variable_type(component));
+                    info.variable_type = Some(get_variable_type(component));
                 }
             }
         }
@@ -761,45 +738,6 @@ impl<'a> JsxTraversal<'a> {
         }
     }
 
-
-    /// Get variable type from component name
-    fn get_variable_type(&self, component_name: &str) -> VariableType {
-        match component_name {
-            "Num" => VariableType::Number,
-            "Currency" => VariableType::Currency,
-            "DateTime" => VariableType::Date,
-            _ => VariableType::Variable,
-        }
-    }
-
-    /// Extract HTML content properties from attributes
-    fn extract_html_content_props(&self, attrs: &[JSXAttrOrSpread]) -> HtmlContentProps {
-        let mut props = HtmlContentProps::default();
-
-        for attr in attrs {
-            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-                if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
-                    let prop_name = name_ident.sym.as_ref();
-                    
-                    if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
-                        let value = str_lit.value.to_string();
-                        
-                        match prop_name {
-                            "placeholder" => props.pl = Some(value),
-                            "title" => props.ti = Some(value),
-                            "alt" => props.alt = Some(value),
-                            "aria-label" => props.arl = Some(value),
-                            "aria-labelledby" => props.arb = Some(value),
-                            "aria-describedby" => props.ard = Some(value),
-                            _ => {}
-                        }
-                    }
-                }
-            }
-        }
-
-        props
-    }
 }
 
 impl Default for HtmlContentProps {
@@ -813,13 +751,4 @@ impl Default for HtmlContentProps {
             ard: None,
         }
     }
-}
-
-/// Information about a GT component extracted during analysis
-#[derive(Default)]
-struct ComponentInfo {
-    is_gt_component: bool,
-    transformation: Option<String>,
-    variable_type: Option<VariableType>,
-    branches: Option<BTreeMap<String, Box<SanitizedChild>>>,
 }
