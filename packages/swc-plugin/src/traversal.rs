@@ -463,7 +463,7 @@ impl<'a> JsxTraversal<'a> {
     pub fn is_branch_component(&self, tag_name: &str) -> bool {
 
         // Named import
-        if let Some(original_name) = self.visitor.gt_next_branch_import_aliases.get(&Atom::from(tag_name)) {
+        if let Some(original_name) = self.visitor.import_tracker.branch_import_aliases.get(&Atom::from(tag_name)) {
             if original_name == "Branch" {
                 return true;
             }
@@ -472,7 +472,7 @@ impl<'a> JsxTraversal<'a> {
         // Namespace import
         if tag_name.ends_with(".Branch") {
             let namespace = tag_name.split('.').next().unwrap_or("");
-            if self.visitor.gt_next_namespace_imports.contains(&Atom::from(namespace)) {
+            if self.visitor.import_tracker.namespace_imports.contains(&Atom::from(namespace)) {
                 return true;
             }
         }
@@ -482,7 +482,7 @@ impl<'a> JsxTraversal<'a> {
 
     pub fn is_plural_component(&self, tag_name: &str) -> bool {
         // Named import
-        if let Some(original_name) = self.visitor.gt_next_branch_import_aliases.get(&Atom::from(tag_name)) {
+        if let Some(original_name) = self.visitor.import_tracker.branch_import_aliases.get(&Atom::from(tag_name)) {
             if original_name == "Plural" {
                 return true;
             }
@@ -491,7 +491,7 @@ impl<'a> JsxTraversal<'a> {
         // Namespace import
         if tag_name.ends_with(".Plural"){
             let namespace = tag_name.split('.').next().unwrap_or("");
-            if self.visitor.gt_next_namespace_imports.contains(&Atom::from(namespace)) {
+            if self.visitor.import_tracker.namespace_imports.contains(&Atom::from(namespace)) {
                 return true;
             }
         }
@@ -533,9 +533,11 @@ impl<'a> JsxTraversal<'a> {
                 let namespace_atom = Atom::from(namespace);
                 let component_atom = Atom::from(component);
                 
-                let (is_translation, is_variable) = self.visitor.should_track_namespace_component(&namespace_atom, &component_atom);
+                let (is_translation, is_variable, is_branch) = self.visitor.should_track_namespace_component(&namespace_atom, &component_atom);
                 
                 if is_translation {
+                    info.is_gt_component = true;
+                } else if is_branch {
                     info.is_gt_component = true;
                     match component {
                         "Branch" => {

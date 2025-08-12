@@ -33,6 +33,32 @@ struct Statistics {
     dynamic_content_violations: u32,
 }
 
+// For tracking the current state during AST traversal
+#[derive(Default)]
+struct TraversalState {
+    /// Track whether we're inside a translation component (T, Plural, etc.)
+    in_translation_component: bool,
+    /// Track whether we're inside a variable component (Var, Num, Currency, etc.)
+    in_variable_component: bool,
+    /// Track whether we're inside a JSX attribute expression (to ignore them)
+    in_jsx_attribute: bool,
+}
+
+
+// For tracking gt-next imports and their aliases
+#[derive(Default)]
+struct ImportTracker {
+    /// Aliases for gt-next imports
+    translation_import_aliases: std::collections::HashMap<Atom, Atom>, // T
+    variable_import_aliases: std::collections::HashMap<Atom, Atom>,    // Var, Num, Currency, DateTime
+    branch_import_aliases: std::collections::HashMap<Atom, Atom>,      // Branch, Plural
+    // TODO: getGT, useGT
+
+    /// Other import tracking
+    namespace_imports: std::collections::HashSet<Atom>,
+    translation_functions: std::collections::HashSet<Atom>, // getGT, useGT
+}
+
 /// Plugin configuration options
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -59,20 +85,10 @@ impl Default for PluginConfig {
 pub struct TransformVisitor {
     /// Statistics for the plugin
     statistics: Statistics,
-    /// Track whether we're inside a translation component (T, Plural, etc.)
-    in_translation_component: bool,
-    /// Track whether we're inside a variable component (Var, Num, Currency, etc.)
-    in_variable_component: bool,
-    /// Track whether we're inside a JSX attribute expression (to ignore them)
-    in_jsx_attribute: bool,
-    /// Track imported GT-Next translation components
-    gt_next_translation_imports: std::collections::HashSet<Atom>,
-    /// Track imported GT-Next variable components
-    gt_next_variable_imports: std::collections::HashSet<Atom>,
-    /// Track imported GT-Next namespace imports (import * as GT from 'gt-next')
-    gt_next_namespace_imports: std::collections::HashSet<Atom>,
-    /// Track translation functions from useGT/getGT
-    gt_translation_functions: std::collections::HashSet<Atom>,
+    /// Track the current state during AST traversal
+    traversal_state: TraversalState,
+    /// Track gt-next imports and their aliases
+    import_tracker: ImportTracker,
     /// Log levels for different warning types
     dynamic_jsx_check_log_level: LogLevel,
     dynamic_string_check_log_level: LogLevel,
@@ -80,11 +96,7 @@ pub struct TransformVisitor {
     experimental_compile_time_hash: bool,
     /// Optional filename for better error messages
     filename: Option<String>,
-    /// Aliases for GT-Next imports
-    gt_next_translation_import_aliases: std::collections::HashMap<Atom, Atom>, // T
-    gt_next_variable_import_aliases: std::collections::HashMap<Atom, Atom>, // Var, Num, Currency, DateTime
-    gt_next_branch_import_aliases: std::collections::HashMap<Atom, Atom>, // Branch, Plural
-    gt_next_translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // tx, getGT, useGT
+    
 }
 
 impl Default for TransformVisitor {
@@ -101,25 +113,13 @@ impl TransformVisitor {
         filename: Option<String>,
     ) -> Self {
         Self {
-            in_translation_component: false,
-            in_variable_component: false,
-            in_jsx_attribute: false,
-            // new
-            gt_next_translation_import_aliases: std::collections::HashMap::new(), // T (can have multiple aliases)
-            gt_next_variable_import_aliases: std::collections::HashMap::new(), // Var, Num, Currency, DateTime
-            gt_next_branch_import_aliases: std::collections::HashMap::new(), // Branch, Plural
-            gt_next_translation_function_import_aliases: std::collections::HashMap::new(), // tx, getGT, useGT
-            // deprecated
-            gt_next_translation_imports: std::collections::HashSet::new(),
-            // deprecated
-            gt_next_variable_imports: std::collections::HashSet::new(),
-            gt_next_namespace_imports: std::collections::HashSet::new(),
-            gt_translation_functions: std::collections::HashSet::new(),
+            traversal_state: TraversalState::default(),
+            statistics: Statistics::default(),
+            import_tracker: ImportTracker::default(),
             dynamic_jsx_check_log_level,
             dynamic_string_check_log_level,
             experimental_compile_time_hash,
             filename,
-            statistics: Statistics::default(),
         }
     }
 
@@ -148,29 +148,30 @@ impl TransformVisitor {
     /// Check if we should track this component based on imports or known components
     fn should_track_component_as_translation(&self, name: &Atom) -> bool {
         // Direct imports from gt-next - includes T components
-        self.gt_next_translation_import_aliases.contains_key(name)
+        self.import_tracker.translation_import_aliases.contains_key(name)
     }
 
     /// Check if we should track this component as a variable component
     fn should_track_component_as_variable(&self, name: &Atom) -> bool {
         // Direct imports from gt-next
-        self.gt_next_variable_import_aliases.contains_key(name)
+        self.import_tracker.variable_import_aliases.contains_key(name)
     }
 
     /// Check if we should track this component as a branch component
     fn should_track_component_as_branch(&self, name: &Atom) -> bool {
         // Branch and Plural components components
-        self.gt_next_branch_import_aliases.contains_key(name)
+        self.import_tracker.branch_import_aliases.contains_key(name)
     }
 
     /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
-    fn should_track_namespace_component(&self, obj: &Atom, prop: &Atom) -> (bool, bool) {
-        if self.gt_next_namespace_imports.contains(obj) {
+    fn should_track_namespace_component(&self, obj: &Atom, prop: &Atom) -> (bool, bool, bool) {
+        if self.import_tracker.namespace_imports.contains(obj) {
             let is_translation = self.is_translation_component_name(prop);
             let is_variable = self.is_variable_component_name(prop);
-            (is_translation, is_variable)
+            let is_branch = self.is_branch_name(prop);
+            (is_translation, is_variable, is_branch)
         } else {
-            (false, false)
+            (false, false, false)
         }
     }
 
@@ -230,22 +231,19 @@ impl TransformVisitor {
 
                             if self.is_translation_component_name(&original_name) {
                                 // Store the mapping: local_name -> original_name
-                                self.gt_next_translation_imports.insert(local_name.clone());
-                                self.gt_next_translation_import_aliases.insert(local_name, original_name);
+                                self.import_tracker.translation_import_aliases.insert(local_name, original_name);
                             } else if self.is_variable_component_name(&original_name) {
-                                self.gt_next_variable_imports.insert(local_name.clone());
-                                self.gt_next_variable_import_aliases.insert(local_name, original_name);
+                                self.import_tracker.variable_import_aliases.insert(local_name, original_name);
                             } else if self.is_branch_name(&original_name) {
                                 // no existing tracking for branches
-                                self.gt_next_branch_import_aliases.insert(local_name, original_name);
+                                self.import_tracker.branch_import_aliases.insert(local_name, original_name);
                             } else if self.is_translation_function_name(&original_name) {
-                                self.gt_translation_functions.insert(local_name.clone());
-                                self.gt_next_translation_function_import_aliases.insert(local_name, original_name);
+                                self.import_tracker.translation_functions.insert(local_name.clone());
                             }
                         }
                         ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
                             // Handle namespace imports: import * as GT from 'gt-next'
-                            self.gt_next_namespace_imports.insert(local.sym.clone());
+                            self.import_tracker.namespace_imports.insert(local.sym.clone());
                         }
                         _ => {}
                     }
@@ -378,8 +376,7 @@ impl TransformVisitor {
     fn check_call_expr_for_violations (&mut self, call_expr: &CallExpr) {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                // Exclude tx() functions from dynamic content checks
-                if self.gt_translation_functions.contains(function_name) && function_name.as_ref() != "tx" {
+                if self.import_tracker.translation_functions.contains(function_name) {
                     // Check the first argument for dynamic content
                     if let Some(arg) = call_expr.args.first() {
                         match arg.expr.as_ref() {
@@ -418,9 +415,9 @@ impl TransformVisitor {
                 // Handle function calls: const t = useGT()
                 Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
                     if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-                        if self.gt_translation_functions.contains(callee_name) {
+                        if self.import_tracker.translation_functions.contains(callee_name) {
                             // Track the assigned variable as a translation function
-                            self.gt_translation_functions.insert(id.sym.clone());
+                            self.import_tracker.translation_functions.insert(id.sym.clone());
                         }
                     }
                 }
@@ -430,13 +427,14 @@ impl TransformVisitor {
     }
 
 
-    fn determine_component_type (&mut self, element: &JSXElement) -> (bool, bool) {
+    fn determine_component_type (&mut self, element: &JSXElement) -> (bool, bool, bool) {
         return match &element.opening.name {
             JSXElementName::Ident(ident) => {
                 let name = &ident.sym;
                 let is_translation = self.should_track_component_as_translation(name);
                 let is_variable = self.should_track_component_as_variable(name);
-                (is_translation, is_variable)
+                let is_branch = self.should_track_component_as_branch(name);
+                (is_translation, is_variable, is_branch)
             }
             JSXElementName::JSXMemberExpr(member_expr) => {
                 if let JSXObject::Ident(obj_ident) = &member_expr.obj {
@@ -444,10 +442,10 @@ impl TransformVisitor {
                     let prop_name = &member_expr.prop.sym;
                     self.should_track_namespace_component(obj_name, prop_name)
                 } else {
-                    (false, false)
+                    (false, false, false)
                 }
             }
-            _ => (false, false),
+            _ => (false, false, false),
         };
     }
 
@@ -511,16 +509,16 @@ impl VisitMut for TransformVisitor {
 
     /// Process JSX attributes to track context and avoid flagging attribute expressions
     fn visit_mut_jsx_attr(&mut self, attr: &mut JSXAttr) {
-        let was_in_jsx_attribute = self.in_jsx_attribute;
-        self.in_jsx_attribute = true;
+        let was_in_jsx_attribute = self.traversal_state.in_jsx_attribute;
+        self.traversal_state.in_jsx_attribute = true;
         attr.visit_mut_children_with(self);
-        self.in_jsx_attribute = was_in_jsx_attribute;
+        self.traversal_state.in_jsx_attribute = was_in_jsx_attribute;
     }
 
     /// Process JSX expression containers to detect unwrapped dynamic content
     fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
         // Only check for violations if we're in a translation component and NOT in a JSX attribute
-        if self.in_translation_component && !self.in_jsx_attribute {
+        if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
             self.log_warning(&self.dynamic_jsx_check_log_level, &warning);
@@ -553,7 +551,7 @@ impl Fold for TransformVisitor {
     /// Process JSX expression containers to detect unwrapped dynamic content
     fn fold_jsx_expr_container(&mut self, expr_container: JSXExprContainer) -> JSXExprContainer {
         // Only check for violations if we're in a translation component and NOT in a JSX attribute
-        if self.in_translation_component && !self.in_jsx_attribute {
+        if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
             self.log_warning(&self.dynamic_jsx_check_log_level, &warning);
@@ -564,10 +562,10 @@ impl Fold for TransformVisitor {
 
     /// Process JSX attributes to track context and avoid flagging attribute expressions
     fn fold_jsx_attr(&mut self, attr: JSXAttr) -> JSXAttr {
-        let was_in_jsx_attribute = self.in_jsx_attribute;
-        self.in_jsx_attribute = true;
+        let was_in_jsx_attribute = self.traversal_state.in_jsx_attribute;
+        self.traversal_state.in_jsx_attribute = true;
         let attr = attr.fold_children_with(self);
-        self.in_jsx_attribute = was_in_jsx_attribute;
+        self.traversal_state.in_jsx_attribute = was_in_jsx_attribute;
         attr
     }
 
@@ -576,16 +574,16 @@ impl Fold for TransformVisitor {
         self.statistics.jsx_element_count += 1;
         
         // Save previous state
-        let was_in_translation = self.in_translation_component;
-        let was_in_variable = self.in_variable_component;
+        let was_in_translation = self.traversal_state.in_translation_component;
+        let was_in_variable = self.traversal_state.in_variable_component;
 
         // Update component tracking state
-        let (is_translation_component, is_variable_component) = self.determine_component_type(&element);
-        self.in_translation_component = is_translation_component;
-        self.in_variable_component = is_variable_component;
+        let (is_translation_component, is_variable_component, _) = self.determine_component_type(&element);
+        self.traversal_state.in_translation_component = is_translation_component;
+        self.traversal_state.in_variable_component = is_variable_component;
         
         // Inject hash attributes on translation components
-        if self.experimental_compile_time_hash && self.in_translation_component && !was_in_translation {
+        if self.experimental_compile_time_hash && self.traversal_state.in_translation_component && !was_in_translation {
             // Check if hash attribute already exists
             let has_hash_attr = self.determine_has_hash_attr(&element);
             
@@ -609,8 +607,8 @@ impl Fold for TransformVisitor {
         element = element.fold_children_with(self);
         
         // Restore previous state
-        self.in_translation_component = was_in_translation;
-        self.in_variable_component = was_in_variable;
+        self.traversal_state.in_translation_component = was_in_translation;
+        self.traversal_state.in_variable_component = was_in_variable;
         
         element
     }
