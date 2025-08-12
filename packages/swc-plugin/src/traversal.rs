@@ -150,104 +150,106 @@ impl<'a> JsxTraversal<'a> {
         result
     }
 
+    fn build_sanitized_text(&mut self, text: &JSXText) -> Option<SanitizedChild> {
+        // Normalize whitespace like browsers do: collapse multiple whitespace chars into single spaces
+        let content = text.value.to_string();
+
+        // Only normalize internal whitespace, preserve leading/trailing spaces
+        // This matches how browsers handle JSX text content
+        let normalized = if trim_normal_whitespace(&content).is_empty() {
+            if content.contains('\n') {
+                None
+            } else {
+                Some(content)
+            }
+        } else {
+            // Handle leading/trailing whitespace
+            let trimmed_content = trim_normal_whitespace(&content);
+            let parts: Vec<&str> = content.split(trimmed_content).collect();
+            let standardized_content = if parts.len() > 1 {
+                let first_part = parts.first().unwrap();
+                let last_part = parts.last().unwrap();
+                let mut leading_space = first_part.to_string();
+                let mut trailing_space = last_part.to_string();
+                // Collapse newlines to empty
+                if first_part.contains('\n') {
+                    leading_space = "".to_string();
+                }
+                if last_part.contains('\n') {
+                    trailing_space = "".to_string();
+                }
+                format!("{}{}{}", leading_space, trimmed_content, trailing_space)
+            } else {
+                content
+            };
+
+            // Collapse multiple newlines to single spaces while preserving content
+            // Normalizes newlines in text content to match React JSX behavior:
+            // - Multiple consecutive newlines become single spaces
+            // - Newlines at the start are removed (result is cleared)
+            // - Whitespace with newlines is skipped until non-whitespace content
+            let mut result = String::new();
+            let mut whitespace_sequence = String::new();
+            let mut in_newline_sequence = false;
+
+            for ch in standardized_content.chars() {
+                if ch == '\n' && !in_newline_sequence {
+                    whitespace_sequence.clear();
+                    whitespace_sequence.push(' ');
+                    in_newline_sequence = true;
+                    continue
+                }
+
+
+                // Add character (and any whitespace we've accumulated)
+                if !is_normal_whitespace(ch) {
+                    if !whitespace_sequence.is_empty() {
+                        result.push_str(&whitespace_sequence);
+                        whitespace_sequence.clear();
+                    }
+                    result.push(ch);
+
+                    // Escape newline sequence
+                    if in_newline_sequence {
+                        in_newline_sequence = false;
+                    }
+                    continue;
+                }
+
+                // Skip adding whitespace if we're in a newline sequence
+                if in_newline_sequence {
+                    continue;
+                }
+
+                // Accumulate whitespace
+                whitespace_sequence.push(' ');
+            }
+
+            // Catch any stragglers
+            if !in_newline_sequence && !whitespace_sequence.is_empty()  && !trim_normal_whitespace(&result).is_empty() {
+                result.push_str(&whitespace_sequence);
+            }
+
+            Some(result)
+        };
+
+
+        // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
+        if let Some(text) = normalized {
+            if !text.is_empty() {
+                Some(SanitizedChild::Text(text))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     /// Build a sanitized child directly from JSX child
     pub fn build_sanitized_child(&mut self, child: &JSXElementChild, is_first_sibling: bool, is_last_sibling: bool) -> Option<SanitizedChild> {
         match child {
-            JSXElementChild::JSXText(text) => {
-                // Normalize whitespace like browsers do: collapse multiple whitespace chars into single spaces
-                let content = text.value.to_string();
-
-                // Only normalize internal whitespace, preserve leading/trailing spaces
-                // This matches how browsers handle JSX text content
-                let normalized = if trim_normal_whitespace(&content).is_empty() {
-                    if content.contains('\n') {
-                        None
-                    } else {
-                        Some(content)
-                    }
-                } else {
-                    // Handle leading/trailing whitespace
-                    let trimmed_content = trim_normal_whitespace(&content);
-                    let parts: Vec<&str> = content.split(trimmed_content).collect();
-                    let standardized_content = if parts.len() > 1 {
-                        let first_part = parts.first().unwrap();
-                        let last_part = parts.last().unwrap();
-                        let mut leading_space = first_part.to_string();
-                        let mut trailing_space = last_part.to_string();
-                        // Collapse newlines to empty
-                        if first_part.contains('\n') {
-                            leading_space = "".to_string();
-                        }
-                        if last_part.contains('\n') {
-                            trailing_space = "".to_string();
-                        }
-                        format!("{}{}{}", leading_space, trimmed_content, trailing_space)
-                    } else {
-                        content
-                    };
-
-                    // Collapse multiple newlines to single spaces while preserving content
-                    // Normalizes newlines in text content to match React JSX behavior:
-                    // - Multiple consecutive newlines become single spaces
-                    // - Newlines at the start are removed (result is cleared)
-                    // - Whitespace after newlines is skipped until non-whitespace content
-                    let mut result = String::new();
-                    let mut whitespace_sequence = String::new();
-                    let mut in_newline_sequence = false;
-
-                    for ch in standardized_content.chars() {
-                        if ch == '\n' && !in_newline_sequence {
-                            whitespace_sequence.clear();
-                            whitespace_sequence.push(' ');
-                            in_newline_sequence = true;
-                            continue
-                        }
-
-
-                        // Add character (and any whitespace we've accumulated)
-                        if !is_normal_whitespace(ch) {
-                            if !whitespace_sequence.is_empty() {
-                                result.push_str(&whitespace_sequence);
-                                whitespace_sequence.clear();
-                            }
-                            result.push(ch);
-
-                            // Escape newline sequence
-                            if in_newline_sequence {
-                                in_newline_sequence = false;
-                            }
-                            continue;
-                        }
-
-                        // Skip adding whitespace if we're in a newline sequence
-                        if in_newline_sequence {
-                            continue;
-                        }
-
-                        // Accumulate whitespace
-                        whitespace_sequence.push(' ');
-                    }
-
-                    // Catch any stragglers
-                    if !in_newline_sequence && !whitespace_sequence.is_empty()  && !trim_normal_whitespace(&result).is_empty() {
-                        result.push_str(&whitespace_sequence);
-                    }
-
-                    Some(result)
-                };
-
-
-                // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
-                if let Some(text) = normalized {
-                    if !text.is_empty() {
-                        Some(SanitizedChild::Text(text))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            }
+            JSXElementChild::JSXText(text) => self.build_sanitized_text(text),
             JSXElementChild::JSXFragment(fragment) => {
                 // Increment counter for each JSX element we encounter
                 self.id_counter += 1;
@@ -278,7 +280,7 @@ impl<'a> JsxTraversal<'a> {
                     self.build_sanitized_element(element).map(|el| SanitizedChild::Element(Box::new(el)))
                 }
             }
-            JSXElementChild::JSXExprContainer(expr_container) => self.build_sanitized_jsx_child_from_jsx_expr_container(&expr_container.expr, !(is_first_sibling && is_last_sibling)),
+            JSXElementChild::JSXExprContainer(expr_container) => self.build_sanitized_child_from_jsx_expr(&expr_container.expr, !(is_first_sibling && is_last_sibling), false),
             _ => None, // Skip fragments and other types for now
         }
     }
@@ -629,111 +631,45 @@ impl<'a> JsxTraversal<'a> {
                 let content = str_lit.value.to_string();
                 Some(SanitizedChild::Text(content))
             }
-            JSXAttrValue::JSXExprContainer(expr_container) => self.build_sanitized_jsx_child_from_jsx_attr_expr_container(&expr_container.expr),
+            JSXAttrValue::JSXExprContainer(expr_container) => self.build_sanitized_child_from_jsx_expr(&expr_container.expr, false, true),
             _ => None, // Skip fragments and other types for now
         }
     }
 
-
     /// Build sanitized JSXchild from JSX container
-    fn build_sanitized_jsx_child_from_jsx_attr_expr_container(&mut self, jsx_expr: &JSXExpr) -> Option<SanitizedChild> {
-        // Will only be called by branch or plural, or when inspecting attributes like alt, etc.
+    fn build_sanitized_child_from_jsx_expr(&mut self, jsx_expr: &JSXExpr, has_siblings: bool, is_attribute: bool) -> Option<SanitizedChild> {
         match jsx_expr {
             JSXExpr::Expr(expr) => {
                 match expr.as_ref() {
-                    Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string())),
-                    Expr::Lit(Lit::Num(num_lit)) => Some(SanitizedChild::Text(js_number_to_string(num_lit.value))),
-                    Expr::Lit(Lit::Bool(bool_lit)) => Some(SanitizedChild::Boolean(bool_lit.value)),
-                    Expr::Lit(Lit::Null(_)) => Some(SanitizedChild::Null(None)),
-                    Expr::JSXFragment(fragment) => {
-                        // Fragment becomes one SanitizedChild::Fragment containing its children
-                        // Increment counter here because we are hopping over one level of nesting
-                        if let Some(children) = self.build_sanitized_children_with_counter(&fragment.children, self.id_counter + 1) {
-                            Some(SanitizedChild::Fragment(Box::new(SanitizedChildren::Wrapped { c: Box::new(children) })))
+                    Expr::Lit(Lit::Bool(bool_lit)) => {
+                        if is_attribute {
+                            Some(SanitizedChild::Boolean(bool_lit.value))
                         } else {
-                            // Empty fragment should return empty object structure, not None
-                            let empty_element = SanitizedElement {
-                                b: None,
-                                c: None,
-                                t: None,
-                                d: None,
-                            };
-                            Some(SanitizedChild::Element(Box::new(empty_element)))
-                        }
-                    }
-                    Expr::JSXElement(element) => {
-                        self.build_sanitized_child_with_counter(&JSXElementChild::JSXElement(element.clone()), self.id_counter, true, true)
-                    }
-                    Expr::Unary(UnaryExpr { op, arg, .. }) => {
-                        if let Expr::Lit(Lit::Num(num_lit)) = arg.as_ref() {
-                            match op {
-                                UnaryOp::Minus => {
-                                    let negative_num = -num_lit.value;
-                                    if negative_num == 0.0 {
-                                        Some(SanitizedChild::Text(js_number_to_string(num_lit.value)))
-                                    } else {
-                                        Some(SanitizedChild::Text(js_number_to_string(negative_num)))
-                                    }
-                                }
-                                UnaryOp::Plus => {
-                                    Some(SanitizedChild::Text(js_number_to_string(num_lit.value)))
-                                }
-                                _ => None,
-                            }
-                        } else {
-                            None
-                        }
-                    }
-                    Expr::Tpl(tpl) => {
-                        if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
-                            if let Some(quasi) = tpl.quasis.first() {
-                                if let Some(cooked) = &quasi.cooked {
-                                    let content = cooked.to_string();
-                                    Some(SanitizedChild::Text(content))
-                                } else {
-                                    let content = quasi.raw.to_string();
-                                    Some(SanitizedChild::Text(content))
-                                }
+                            if bool_lit.value && !has_siblings {
+                                // Yeah i know this is dumb, but it's what runtime does
+                                Some(SanitizedChild::Boolean(true))
                             } else {
                                 None
                             }
+                        }
+                    },
+                    Expr::Lit(Lit::Null(_)) => {
+                        if is_attribute {
+                            Some(SanitizedChild::Null(None))
                         } else {
                             None
                         }
-                    }
-                    Expr::Ident(ident) => {
-                        match ident.sym.as_ref() {
-                            "NaN" => Some(SanitizedChild::Text("NaN".to_string())),
-                            "Infinity" => Some(SanitizedChild::Text("Infinity".to_string())),
-                            "undefined" => None,
-                            _ => None,
-                        }
-                    }
-                    _ => {
-                        None
-                    }
-                }
-            }
-            JSXExpr::JSXEmptyExpr(_) => {
-                // Handle {} empty expressions - should return empty object
-                None
-            }
-        }
-    }
-
-
-    /// Build sanitized JSXchild from JSX container
-    fn build_sanitized_jsx_child_from_jsx_expr_container(&mut self, jsx_expr: &JSXExpr, has_siblings: bool) -> Option<SanitizedChild> {
-        match jsx_expr {
-            JSXExpr::Expr(expr) => {
-                match expr.as_ref() {
-                    Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string())),
-                    Expr::Lit(Lit::Num(num_lit)) => Some(SanitizedChild::Text(js_number_to_string(num_lit.value))),
-                    Expr::Lit(Lit::Bool(bool_lit)) => if bool_lit.value && !has_siblings { Some(SanitizedChild::Boolean(true)) } else { None }, // Yeah i know this is dumb, but it's what runtime does
-                    Expr::Lit(Lit::Null(_)) => None,
+                    },
                     Expr::JSXFragment(fragment) => {
                         // Fragment becomes one SanitizedChild::Fragment containing its children
-                        if let Some(children) = self.build_sanitized_children(&fragment.children) {
+                        if let Some(children) = if is_attribute {
+                                self.build_sanitized_children_with_counter(
+                                &fragment.children,
+                                self.id_counter + 1,
+                            )
+                        } else {
+                            self.build_sanitized_children(&fragment.children)
+                        } {
                             Some(SanitizedChild::Fragment(Box::new(SanitizedChildren::Wrapped { c: Box::new(children) })))
                         } else {
                             // Empty fragment should return empty object structure, not None
@@ -747,8 +683,23 @@ impl<'a> JsxTraversal<'a> {
                         }
                     }
                     Expr::JSXElement(element) => {
-                        self.build_sanitized_child(&JSXElementChild::JSXElement(element.clone()), true, true)
+                        if is_attribute {
+                            self.build_sanitized_child_with_counter(
+                                &JSXElementChild::JSXElement(element.clone()),
+                                self.id_counter,
+                                true,
+                                true,
+                            )
+                        } else {
+                            self.build_sanitized_child(
+                                &JSXElementChild::JSXElement(element.clone()),
+                                true,
+                                true
+                            )
+                        }
                     }
+                    Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string())),
+                    Expr::Lit(Lit::Num(num_lit)) => Some(SanitizedChild::Text(js_number_to_string(num_lit.value))),
                     Expr::Unary(UnaryExpr { op, arg, .. }) => {
                         if let Expr::Lit(Lit::Num(num_lit)) = arg.as_ref() {
                             match op {
