@@ -422,6 +422,66 @@ impl TransformVisitor {
             }
         }
     }
+
+
+    fn determine_component_type (&mut self, element: &JSXElement) -> (bool, bool) {
+        return match &element.opening.name {
+            JSXElementName::Ident(ident) => {
+                let name = &ident.sym;
+                let is_translation = self.should_track_component_as_translation(name);
+                let is_variable = self.should_track_component_as_variable(name);
+                (is_translation, is_variable)
+            }
+            JSXElementName::JSXMemberExpr(member_expr) => {
+                if let JSXObject::Ident(obj_ident) = &member_expr.obj {
+                    let obj_name = &obj_ident.sym;
+                    let prop_name = &member_expr.prop.sym;
+                    self.should_track_namespace_component(obj_name, prop_name)
+                } else {
+                    (false, false)
+                }
+            }
+            _ => (false, false),
+        };
+    }
+
+
+    fn determine_has_hash_attr (&self, element: &JSXElement) -> bool {
+        element.opening.attrs.iter().any(|attr| {
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                    return ident.sym.as_ref() == "hash";
+                }
+            }
+            false
+        })
+    }
+
+    fn create_hash_attr (&self, element: &JSXElement, hash_value: &str) -> JSXAttrOrSpread {
+        JSXAttrOrSpread::JSXAttr(JSXAttr {
+            span: element.opening.span,
+            name: JSXAttrName::Ident(Ident::new("hash".into(), element.opening.span, SyntaxContext::empty()).into()),
+            value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                span: element.opening.span,
+                value: hash_value.into(),
+                raw: None,
+            }))),
+        })
+    }
+
+
+    fn create_json_attr (&self, element: &JSXElement, json_string: &str) -> JSXAttrOrSpread {
+        JSXAttrOrSpread::JSXAttr(JSXAttr {
+            span: element.opening.span,
+            name: JSXAttrName::Ident(Ident::new("json".into(), element.opening.span, SyntaxContext::empty()).into()),
+            value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                span: element.opening.span,
+                value: json_string.into(),
+                raw: None,
+            }))),
+        })
+    }
+
 }
 
 impl VisitMut for TransformVisitor {
@@ -462,6 +522,7 @@ impl VisitMut for TransformVisitor {
         
         expr_container.visit_mut_children_with(self);
     }
+    
 }
 
 impl Fold for TransformVisitor {
@@ -511,69 +572,29 @@ impl Fold for TransformVisitor {
         // Save previous state
         let was_in_translation = self.in_translation_component;
         let was_in_variable = self.in_variable_component;
-        
-        // Determine component type and update state
-        let (is_translation_component, is_variable_component) = match &element.opening.name {
-            JSXElementName::Ident(ident) => {
-                let name = &ident.sym;
-                let is_translation = self.should_track_component_as_translation(name);
-                let is_variable = self.should_track_component_as_variable(name);
-                (is_translation, is_variable)
-            }
-            JSXElementName::JSXMemberExpr(member_expr) => {
-                if let JSXObject::Ident(obj_ident) = &member_expr.obj {
-                    let obj_name = &obj_ident.sym;
-                    let prop_name = &member_expr.prop.sym;
-                    self.should_track_namespace_component(obj_name, prop_name)
-                } else {
-                    (false, false)
-                }
-            }
-            _ => (false, false),
-        };
-        
+
         // Update component tracking state
+        let (is_translation_component, is_variable_component) = self.determine_component_type(&element);
         self.in_translation_component = is_translation_component;
         self.in_variable_component = is_variable_component;
         
-        // Experimental feature: inject hash attributes on translation components
+        // Inject hash attributes on translation components
         if self.experimental_compile_time_hash && self.in_translation_component && !was_in_translation {
             // Check if hash attribute already exists
-            let has_hash_attr = element.opening.attrs.iter().any(|attr| {
-                if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-                    if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-                        return ident.sym.as_ref() == "hash";
-                    }
-                }
-                false
-            });
+            let has_hash_attr = self.determine_has_hash_attr(&element);
             
             if !has_hash_attr {
                 // Calculate real hash using AST traversal
                 let (hash_value, json_string) = self.calculate_element_hash(&element);
+
                 
                 // Create and add hash attribute with calculated value
-                let hash_attr = JSXAttrOrSpread::JSXAttr(JSXAttr {
-                    span: element.opening.span,
-                    name: JSXAttrName::Ident(Ident::new("hash".into(), element.opening.span, SyntaxContext::empty()).into()),
-                    value: Some(JSXAttrValue::Lit(Lit::Str(Str {
-                        span: element.opening.span,
-                        value: hash_value.clone().into(),
-                        raw: None,
-                    }))),
-                });
+                let hash_attr = self.create_hash_attr(&element, &hash_value);
                 element.opening.attrs.push(hash_attr);
+
                 
                 // Create and add json attribute with the stringified data
-                let json_attr = JSXAttrOrSpread::JSXAttr(JSXAttr {
-                    span: element.opening.span,
-                    name: JSXAttrName::Ident(Ident::new("json".into(), element.opening.span, SyntaxContext::empty()).into()),
-                    value: Some(JSXAttrValue::Lit(Lit::Str(Str {
-                        span: element.opening.span,
-                        value: json_string.into(),
-                        raw: None,
-                    }))),
-                });
+                let json_attr = self.create_json_attr(&element, &json_string);
                 element.opening.attrs.push(json_attr);
             }
         }
