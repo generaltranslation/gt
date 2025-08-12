@@ -30,7 +30,9 @@
     "release:latest": "npm run build:clean && npm publish --tag latest",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\" --fix",
-    "test": "vitest run",
+    "test": "npm run test:js && npm run test:rust",
+    "test:js": "vitest run",
+    "test:rust": "cargo test --manifest-path ./swc-plugin/Cargo.toml",
     "test:watch": "vitest"
   },
   "repository": {
