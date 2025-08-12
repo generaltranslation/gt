@@ -31,7 +31,7 @@ export function _getLocaleName(
     }
     const displayNames = intlCache.get(
       'DisplayNames',
-      [defaultLocale, standardizedLocale, libraryDefaultLocale], // default language order
+      [defaultLocale, standardizedLocale, libraryDefaultLocale], // default locale order
       { type: 'language' }
     );
     return displayNames.of(standardizedLocale) || '';
