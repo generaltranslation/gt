@@ -41,7 +41,7 @@ impl VisitMut for TransformVisitor {
         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
-            self.log_warning(&self.settings.dynamic_jsx_check_log_level, &warning);
+            self.logger.log_warning(&warning);
         }
         
         expr_container.visit_mut_children_with(self);
@@ -74,7 +74,7 @@ impl Fold for TransformVisitor {
         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
-            self.log_warning(&self.settings.dynamic_jsx_check_log_level, &warning);
+            self.logger.log_warning(&warning);
         }
         expr_container.fold_children_with(self)
     }
@@ -102,7 +102,7 @@ impl Fold for TransformVisitor {
         self.traversal_state.in_variable_component = is_variable_component;
         
         // Inject hash attributes on translation components
-        if self.settings.experimental_compile_time_hash && self.traversal_state.in_translation_component && !was_in_translation {
+        if self.settings.compile_time_hash && self.traversal_state.in_translation_component && !was_in_translation {
             // Check if hash attribute already exists
             let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
             
@@ -145,20 +145,17 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     let filename = None;
     
     let mut visitor = TransformVisitor::new(
-        config.dynamic_jsx_check_log_level,
-        config.dynamic_string_check_log_level,
-        config.experimental_compile_time_hash,
+        config.log_level,
+        config.compile_time_hash,
         filename,
     );
     
     program.fold_with(&mut visitor)
 }
 
-mod hash;
-mod ast;
-mod whitespace;
-mod config;
-mod visitor;
-
-#[cfg(test)]
-mod tests;
+pub mod hash;
+pub mod ast;
+pub mod whitespace;
+pub mod config;
+pub mod visitor;
+pub mod logging;

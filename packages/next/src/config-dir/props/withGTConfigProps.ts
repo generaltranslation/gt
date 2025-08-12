@@ -10,9 +10,8 @@ export type HeadersAndCookies = {
 };
 
 export type SwcPluginOptions = {
-  dynamicJsxCheckLogLevel?: 'error' | 'warn' | 'off';
-  dynamicStringCheckLogLevel?: 'error' | 'warn' | 'off';
-  experimentalCompileTimeHash?: boolean;
+  logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
+  compileTimeHash?: boolean;
 };
 
 type withGTConfigProps = {
@@ -50,7 +49,7 @@ type withGTConfigProps = {
   eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
   overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
   // Other
-  swcPluginOptions?: SwcPluginOptions;
+  experimentalSwcPluginOptions?: SwcPluginOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
   [key: string]: any;

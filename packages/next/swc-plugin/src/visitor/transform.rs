@@ -1,6 +1,7 @@
 use super::state::{Statistics, TraversalState, ImportTracker};
 use super::jsx_utils::{extract_attribute_from_jsx_attr};
-use crate::config::{LogLevel, PluginSettings};
+use crate::config::PluginSettings;
+use crate::logging::{LogLevel, Logger};
 use swc_core::{
   common::SyntaxContext,
   ecma::{
@@ -26,20 +27,20 @@ pub struct TransformVisitor {
   pub import_tracker: ImportTracker,
   /// Plugin settings
   pub settings: PluginSettings,
-  
+  /// Logger
+  pub logger: Logger,
 }
 
 impl Default for TransformVisitor {
   fn default() -> Self {
-      Self::new(LogLevel::Warn, LogLevel::Warn, false, None)
+      Self::new(LogLevel::Warn, false, None)
   }
 }
 
 impl TransformVisitor {
   pub fn new(
-      dynamic_jsx_check_log_level: LogLevel,
-      dynamic_string_check_log_level: LogLevel,
-      experimental_compile_time_hash: bool,
+      log_level: LogLevel,
+      compile_time_hash: bool,
       filename: Option<String>,
   ) -> Self {
       Self {
@@ -47,11 +48,11 @@ impl TransformVisitor {
           statistics: Statistics::default(),
           import_tracker: ImportTracker::default(),
           settings: PluginSettings::new(
-              dynamic_jsx_check_log_level,
-              dynamic_string_check_log_level,
-              experimental_compile_time_hash,
-              filename,
+              log_level.clone(),
+              compile_time_hash,
+              filename.clone(),
           ),
+          logger: Logger::new(log_level),
       }
   }
 
@@ -82,16 +83,6 @@ impl TransformVisitor {
           (is_translation, is_variable, is_branch)
       } else {
           (false, false, false)
-      }
-  }
-
-  /// Log a warning with appropriate level
-  pub fn log_warning(&self, level: &LogLevel, message: &str) {
-      match level {
-          LogLevel::Silent => {},
-          LogLevel::Error => eprintln!("[ERROR] {}", message),
-          LogLevel::Warn => eprintln!("[WARN] {}", message),
-          LogLevel::Info => eprintln!("[INFO] {}", message),
       }
   }
 
@@ -232,7 +223,7 @@ impl TransformVisitor {
                           Expr::Tpl(_) => {
                               self.statistics.dynamic_content_violations += 1;
                               let warning = self.create_dynamic_function_warning(function_name.as_ref(), "template literals");
-                              self.log_warning(&self.settings.dynamic_string_check_log_level, &warning);
+                              self.logger.log_warning(&warning);
                           }
                           // String concatenation: t("Hello " + name)
                           Expr::Bin(BinExpr { op: BinaryOp::Add, left, right, .. }) => {
@@ -243,7 +234,7 @@ impl TransformVisitor {
                               if left_is_string || right_is_string {
                                   self.statistics.dynamic_content_violations += 1;
                                   let warning = self.create_dynamic_function_warning(function_name.as_ref(), "string concatenation");
-                                  self.log_warning(&self.settings.dynamic_string_check_log_level, &warning);
+                                  self.logger.log_warning(&warning);
                               }
                           }
                           _ => {

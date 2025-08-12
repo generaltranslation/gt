@@ -391,7 +391,7 @@ export function withGTConfig(
         [
           path.resolve(__dirname, './gt_swc_plugin.wasm'),
           {
-            ...mergedConfig.swcPluginOptions,
+            ...mergedConfig.experimentalSwcPluginOptions,
           },
         ], // you can pass plugin options here
       ],
