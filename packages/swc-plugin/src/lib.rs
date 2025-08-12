@@ -59,6 +59,34 @@ struct ImportTracker {
     translation_functions: std::collections::HashSet<Atom>, // getGT, useGT
 }
 
+// For plugin configuration and settings
+#[derive(Debug)]
+struct PluginSettings {
+    /// Log levels for different warning types
+    dynamic_jsx_check_log_level: LogLevel,
+    dynamic_string_check_log_level: LogLevel,
+    /// Experimental feature: inject compile-time hash attributes
+    experimental_compile_time_hash: bool,
+    /// Optional filename for better error messages
+    filename: Option<String>,
+}
+
+impl PluginSettings {
+fn new(
+    dynamic_jsx_check_log_level: LogLevel,
+    dynamic_string_check_log_level: LogLevel,
+    experimental_compile_time_hash: bool,
+    filename: Option<String>,
+) -> Self {
+    Self {
+        dynamic_jsx_check_log_level,
+        dynamic_string_check_log_level,
+        experimental_compile_time_hash,
+        filename,
+    }
+}
+}
+
 /// Plugin configuration options
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -89,13 +117,8 @@ pub struct TransformVisitor {
     traversal_state: TraversalState,
     /// Track gt-next imports and their aliases
     import_tracker: ImportTracker,
-    /// Log levels for different warning types
-    dynamic_jsx_check_log_level: LogLevel,
-    dynamic_string_check_log_level: LogLevel,
-    /// Experimental feature: inject compile-time hash attributes
-    experimental_compile_time_hash: bool,
-    /// Optional filename for better error messages
-    filename: Option<String>,
+    /// Plugin settings
+    settings: PluginSettings,
     
 }
 
@@ -116,14 +139,10 @@ impl TransformVisitor {
             traversal_state: TraversalState::default(),
             statistics: Statistics::default(),
             import_tracker: ImportTracker::default(),
-            dynamic_jsx_check_log_level,
-            dynamic_string_check_log_level,
-            experimental_compile_time_hash,
-            filename,
+            settings: PluginSettings::new(dynamic_jsx_check_log_level, dynamic_string_check_log_level, experimental_compile_time_hash, filename),
         }
     }
 
-    // TODO: circle back to this
     /// Check if a component name matches known gt-next translation components
     fn is_translation_component_name(&self, name: &Atom) -> bool {
         matches!(name.as_ref(), "T")
@@ -187,7 +206,7 @@ impl TransformVisitor {
 
     /// Generate warning message for dynamic content violations
     fn create_dynamic_content_warning(&self, component_name: &str) -> String {
-        let file_info = if let Some(ref filename) = self.filename {
+        let file_info = if let Some(ref filename) = self.settings.filename {
             format!(" in {}", filename)
         } else {
             String::new()
@@ -201,7 +220,7 @@ impl TransformVisitor {
 
     /// Generate warning message for dynamic function call violations
     fn create_dynamic_function_warning(&self, function_name: &str, violation_type: &str) -> String {
-        let file_info = if let Some(ref filename) = self.filename {
+        let file_info = if let Some(ref filename) = self.settings.filename {
             format!(" in {}", filename)
         } else {
             String::new()
@@ -384,7 +403,7 @@ impl TransformVisitor {
                             Expr::Tpl(_) => {
                                 self.statistics.dynamic_content_violations += 1;
                                 let warning = self.create_dynamic_function_warning(function_name.as_ref(), "template literals");
-                                self.log_warning(&self.dynamic_string_check_log_level, &warning);
+                                self.log_warning(&self.settings.dynamic_string_check_log_level, &warning);
                             }
                             // String concatenation: t("Hello " + name)
                             Expr::Bin(BinExpr { op: BinaryOp::Add, left, right, .. }) => {
@@ -395,7 +414,7 @@ impl TransformVisitor {
                                 if left_is_string || right_is_string {
                                     self.statistics.dynamic_content_violations += 1;
                                     let warning = self.create_dynamic_function_warning(function_name.as_ref(), "string concatenation");
-                                    self.log_warning(&self.dynamic_string_check_log_level, &warning);
+                                    self.log_warning(&self.settings.dynamic_string_check_log_level, &warning);
                                 }
                             }
                             _ => {
@@ -521,7 +540,7 @@ impl VisitMut for TransformVisitor {
         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
-            self.log_warning(&self.dynamic_jsx_check_log_level, &warning);
+            self.log_warning(&self.settings.dynamic_jsx_check_log_level, &warning);
         }
         
         expr_container.visit_mut_children_with(self);
@@ -554,9 +573,8 @@ impl Fold for TransformVisitor {
         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
             let warning = self.create_dynamic_content_warning("T");
-            self.log_warning(&self.dynamic_jsx_check_log_level, &warning);
+            self.log_warning(&self.settings.dynamic_jsx_check_log_level, &warning);
         }
-        
         expr_container.fold_children_with(self)
     }
 
@@ -583,7 +601,7 @@ impl Fold for TransformVisitor {
         self.traversal_state.in_variable_component = is_variable_component;
         
         // Inject hash attributes on translation components
-        if self.experimental_compile_time_hash && self.traversal_state.in_translation_component && !was_in_translation {
+        if self.settings.experimental_compile_time_hash && self.traversal_state.in_translation_component && !was_in_translation {
             // Check if hash attribute already exists
             let has_hash_attr = self.determine_has_hash_attr(&element);
             
