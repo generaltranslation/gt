@@ -17,7 +17,7 @@ import {
   RuntimeTranslationOptions,
 } from 'gt-react';
 
-export { LocaleSelector } from './index.client';
+export { LocaleSelector, RegionSelector } from './index.client';
 
 export function useGTClass() {
   return getI18NConfig().getGTClass();

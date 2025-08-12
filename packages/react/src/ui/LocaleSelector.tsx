@@ -1,6 +1,5 @@
 import React from 'react';
 import useLocaleSelector from '../hooks/useLocaleSelector';
-import { useGTClass, useLocaleProperties } from '../hooks/useGTClass';
 
 /**
  * Capitalizes the first letter of a language name if applicable.
@@ -8,7 +7,7 @@ import { useGTClass, useLocaleProperties } from '../hooks/useGTClass';
  * @param {string} language - The name of the language.
  * @returns {string} The language name with the first letter capitalized if applicable.
  */
-function capitalizeLanguageName(language: string): string {
+export function capitalizeName(language: string): string {
   if (!language) return '';
   return (
     language.charAt(0).toUpperCase() +
@@ -41,9 +40,7 @@ export default function LocaleSelector({
     if (customNames && customNames[locale]) {
       return customNames[locale];
     }
-    return capitalizeLanguageName(
-      getLocaleProperties(locale).nativeNameWithRegionCode
-    );
+    return capitalizeName(getLocaleProperties(locale).nativeNameWithRegionCode);
   };
 
   // If no locales are returned, just render nothing or handle gracefully

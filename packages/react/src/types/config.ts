@@ -35,6 +35,7 @@ export type GTProviderProps = {
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
+  region?: string;
   cacheUrl?: string;
   runtimeUrl?: string;
   renderSettings?: {
@@ -60,6 +61,7 @@ export type ClientProviderProps = {
   initialTranslationsStatus: TranslationsStatus;
   locale: string;
   locales: string[];
+  region?: string; // should be made mandatory if we ever make region a server-side variable
   _versionId?: string;
   dictionaryEnabled?: boolean;
   defaultLocale: string;

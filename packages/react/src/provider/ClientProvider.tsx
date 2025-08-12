@@ -16,6 +16,7 @@ export default function ClientProvider({
   initialTranslations,
   initialTranslationsStatus,
   locale: _locale,
+  region: _region,
   _versionId,
   defaultLocale,
   translationRequired,
@@ -30,21 +31,6 @@ export default function ClientProvider({
   localeCookieName = defaultLocaleCookieName,
   customMapping,
 }: ClientProviderProps): React.JSX.Element {
-  // ---------- SET UP ---------- //
-
-  // Define the GT instance
-  // Used for custom mapping and as a driver for the runtime translation
-  const gt = useMemo(
-    () =>
-      new GT({
-        devApiKey,
-        sourceLocale: defaultLocale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
-        customMapping,
-      }),
-    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
-  );
 
   // ----- TRANSLATIONS STATE ----- //
 
@@ -98,6 +84,25 @@ export default function ClientProvider({
     // re-render client components
     window.location.reload();
   };
+
+  const [region, setRegion] = useState(_region);
+
+  // ----- GT SETUP ----- //
+
+  // Define the GT instance
+  // Used for custom mapping and as a driver for the runtime translation
+  const gt = useMemo(
+    () =>
+      new GT({
+        devApiKey,
+        sourceLocale: defaultLocale,
+        targetLocale: locale,
+        projectId,
+        baseUrl: runtimeUrl || undefined,
+        customMapping,
+      }),
+    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+  );
 
   // ---------- TRANSLATION LIFECYCLE ---------- //
 
@@ -184,6 +189,8 @@ export default function ClientProvider({
         locale,
         locales,
         defaultLocale,
+        region,
+        setRegion,
         translations,
         translationsStatus: translationsStatus,
         translationRequired,
