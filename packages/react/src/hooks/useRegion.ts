@@ -5,8 +5,8 @@ import useGTContext from '../provider/GTContext';
  *
  * Returns the `region` value as a string (e.g., `"US"`, `"CA"`) or `undefined` if no region has been set.
  *
- * ⚠️ **Note:** This hook must be used within a `<GTProvider>` component.  
- * If used outside, it will throw an error:  
+ * ⚠️ **Note:** This hook must be used within a `<GTProvider>` component.
+ * If used outside, it will throw an error:
  * `"useRegion(): Unable to access user's region outside of a <GTProvider>"`.
  *
  * @returns {string | undefined} The currently active region code, or `undefined` if not set.

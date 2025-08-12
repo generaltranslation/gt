@@ -20,7 +20,11 @@ export function useRegionSelector(
     sortRegionsAlphabetically = true,
   }: {
     regions?: string[];
-    customMapping?: { [region: string]: string | { name?: string, emoji?: string, locale?: string } };
+    customMapping?: {
+      [region: string]:
+        | string
+        | { name?: string; emoji?: string; locale?: string };
+    };
     prioritizeCurrentLocaleRegion?: boolean;
     sortRegionsAlphabetically?: boolean;
   } = {
@@ -36,18 +40,16 @@ export function useRegionSelector(
     regions, // ordered list of ISO 3166 region codes
     regionData, // map of ISO 3166 region codes to region display data, potentially not ordered
   ] = useMemo<[string[], Map<string, RegionData>]>(() => {
-    
     const regionToLocaleMap = new Map(
-        locales.map((l) => {
-          const lp = getLocaleProperties(l, locale, gt.customMapping); // has to be directly called so sourceLocale can be in the user's current locale
-          return [lp.regionCode, lp];
-        })
+      locales.map((l) => {
+        const lp = getLocaleProperties(l, locale, gt.customMapping); // has to be directly called so sourceLocale can be in the user's current locale
+        return [lp.regionCode, lp];
+      })
     );
-        
+
     const regions = _regions
       ? [..._regions]
-      : Array.from(regionToLocaleMap?.keys() || [localeRegion]
-    );
+      : Array.from(regionToLocaleMap?.keys() || [localeRegion]);
 
     const regionData = new Map<string, RegionData>(
       regions.map((r: string) => {
@@ -56,7 +58,9 @@ export function useRegionSelector(
           {
             locale: regionToLocaleMap?.get(r)?.code || locale,
             ...gt.getRegionProperties(r),
-            ...(typeof customMapping?.[r] === 'string' ? { name: customMapping?.[r] } : customMapping?.[r] )
+            ...(typeof customMapping?.[r] === 'string'
+              ? { name: customMapping?.[r] }
+              : customMapping?.[r]),
           },
         ];
       })

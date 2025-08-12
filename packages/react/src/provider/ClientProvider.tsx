@@ -31,7 +31,6 @@ export default function ClientProvider({
   localeCookieName = defaultLocaleCookieName,
   customMapping,
 }: ClientProviderProps): React.JSX.Element {
-
   // ----- TRANSLATIONS STATE ----- //
 
   const [translations, setTranslations] = useState<Translations | null>(

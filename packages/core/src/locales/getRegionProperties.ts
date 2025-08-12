@@ -4,7 +4,7 @@ import { defaultEmoji, emojis } from './getLocaleEmoji';
 import { _standardizeLocale } from './isValidLocale';
 
 export type CustomRegionMapping = {
-  [region: string]: { name?: string; emoji?: string, locale?: string };
+  [region: string]: { name?: string; emoji?: string; locale?: string };
 };
 
 /**
@@ -63,14 +63,14 @@ export function _getRegionProperties(
       code: region,
       name: displayNames.of(region) || region,
       emoji: emojis[region] || defaultEmoji,
-      ...customMapping?.[region]
+      ...customMapping?.[region],
     };
   } catch {
     return {
       code: region,
       name: region,
       emoji: defaultEmoji,
-      ...customMapping?.[region]
+      ...customMapping?.[region],
     };
   }
 }

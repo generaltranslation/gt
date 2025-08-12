@@ -20,7 +20,7 @@ import {
   useGTClass,
   useTranslations,
   useRegion,
-  useRegionSelector
+  useRegionSelector,
 } from 'gt-react/client';
 
 export {
