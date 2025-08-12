@@ -7,7 +7,7 @@ import useLocaleSelector from '../hooks/useLocaleSelector';
  * @param {string} str - The string to capitalize.
  * @returns {string} The string with the first letter capitalized if applicable.
  */
-export function capitalizeName(str: string): string {
+function capitalizeName(str: string): string {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + (str.length > 1 ? str.slice(1) : '');
 }
