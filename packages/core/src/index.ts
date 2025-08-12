@@ -947,57 +947,62 @@ export class GT {
   }
 
   /**
-  * Retrieves multiple properties for a given region code, including:
-  * - `code`: the original region code
-  * - `name`: the localized display name
-  * - `emoji`: the associated flag or symbol
-  *
-  * Behavior:
-  * - Accepts ISO 3166-1 alpha-2 or UN M.49 region codes (e.g., `"US"`, `"FR"`, `"419"`).
-  * - Uses the instance's `targetLocale` to localize the region name for the user.
-  * - If `customMapping` contains a `name` or `emoji` for the region, those override the default values.
-  * - Otherwise, uses `Intl.DisplayNames` to get the localized region name, falling back to `libraryDefaultLocale`.
-  * - Falls back to the region code as `name` if display name resolution fails.
-  * - Falls back to a default emoji if no emoji mapping is found in built-in data or `customMapping`.
-  *
-  * @param {string} [region=this.getLocaleProperties().regionCode] - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
-  * @param {CustomRegionMapping} [customMapping] - Optional mapping of region codes to custom names and/or emojis.
-  * @returns {{ code: string, name: string, emoji: string }} An object containing:
-  *  - `code`: the input region code
-  *  - `name`: the localized or custom region name
-  *  - `emoji`: the matching emoji flag or symbol
-  *
-  * @throws {Error} If no target locale is available to determine region properties.
-  *
-  * @example
-  * const gt = new GT({ targetLocale: 'en-US' });
-  * gt.getRegionProperties('US');
-  * // => { code: 'US', name: 'United States', emoji: '🇺🇸' }
-  *
-  * @example
-  * const gt = new GT({ targetLocale: 'fr-FR' });
-  * gt.getRegionProperties('US');
-  * // => { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
-  *
-  * @example
-  * gt.getRegionProperties('US', { US: { name: 'USA', emoji: '🗽' } });
-  * // => { code: 'US', name: 'USA', emoji: '🗽' }
-  */
+   * Retrieves multiple properties for a given region code, including:
+   * - `code`: the original region code
+   * - `name`: the localized display name
+   * - `emoji`: the associated flag or symbol
+   *
+   * Behavior:
+   * - Accepts ISO 3166-1 alpha-2 or UN M.49 region codes (e.g., `"US"`, `"FR"`, `"419"`).
+   * - Uses the instance's `targetLocale` to localize the region name for the user.
+   * - If `customMapping` contains a `name` or `emoji` for the region, those override the default values.
+   * - Otherwise, uses `Intl.DisplayNames` to get the localized region name, falling back to `libraryDefaultLocale`.
+   * - Falls back to the region code as `name` if display name resolution fails.
+   * - Falls back to a default emoji if no emoji mapping is found in built-in data or `customMapping`.
+   *
+   * @param {string} [region=this.getLocaleProperties().regionCode] - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
+   * @param {CustomRegionMapping} [customMapping] - Optional mapping of region codes to custom names and/or emojis.
+   * @returns {{ code: string, name: string, emoji: string }} An object containing:
+   *  - `code`: the input region code
+   *  - `name`: the localized or custom region name
+   *  - `emoji`: the matching emoji flag or symbol
+   *
+   * @throws {Error} If no target locale is available to determine region properties.
+   *
+   * @example
+   * const gt = new GT({ targetLocale: 'en-US' });
+   * gt.getRegionProperties('US');
+   * // => { code: 'US', name: 'United States', emoji: '🇺🇸' }
+   *
+   * @example
+   * const gt = new GT({ targetLocale: 'fr-FR' });
+   * gt.getRegionProperties('US');
+   * // => { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
+   *
+   * @example
+   * gt.getRegionProperties('US', { US: { name: 'USA', emoji: '🗽' } });
+   * // => { code: 'US', name: 'USA', emoji: '🗽' }
+   */
   getRegionProperties(
     region = this.getLocaleProperties().regionCode,
     customMapping?: CustomRegionMapping
-  ): { code: string, name: string, emoji: string } {
+  ): { code: string; name: string; emoji: string } {
     if (!customMapping) {
       if (this.customMapping && !this.customRegionMapping) {
         // Lazy derive custom region mapping from customMapping
         const customRegionMapping: CustomRegionMapping = {};
         for (const [locale, lp] of Object.entries(this.customMapping)) {
-          if (lp && typeof lp === 'object' && lp.regionCode && !customRegionMapping[lp.regionCode]) {
+          if (
+            lp &&
+            typeof lp === 'object' &&
+            lp.regionCode &&
+            !customRegionMapping[lp.regionCode]
+          ) {
             const { regionName: name, emoji } = lp;
-            customRegionMapping[lp.regionCode] = { 
-              locale, 
-              ...(name && { name }), 
-              ...(emoji && { emoji })
+            customRegionMapping[lp.regionCode] = {
+              locale,
+              ...(name && { name }),
+              ...(emoji && { emoji }),
             };
           }
         }
@@ -1006,7 +1011,7 @@ export class GT {
       customMapping = this.customRegionMapping;
     }
     return _getRegionProperties(
-      region, 
+      region,
       this.targetLocale, // this.targetLocale because we want it in the user's language
       customMapping
     );
@@ -1412,7 +1417,7 @@ export function getRegionProperties(
   region: string,
   defaultLocale?: string,
   customMapping?: CustomRegionMapping
-): { code: string, name: string, emoji: string } {
+): { code: string; name: string; emoji: string } {
   return _getRegionProperties(region, defaultLocale, customMapping);
 }
 

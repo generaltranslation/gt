@@ -21,13 +21,16 @@ export default function RegionSelector<Regions extends string[]>({
 }: {
   regions?: Regions;
   placeholder?: ReactNode;
-  customMapping?: { [region: string]: string | { name?: string, locale?: string, emoji?: string } };
+  customMapping?: {
+    [region: string]:
+      | string
+      | { name?: string; locale?: string; emoji?: string };
+  };
   prioritizeCurrentLocaleRegion?: boolean;
   sortRegionsAlphabetically?: boolean;
   asLocaleSelector?: boolean;
   [key: string]: any;
 }): React.JSX.Element | null {
-  
   const {
     region,
     setRegion,
@@ -57,15 +60,17 @@ export default function RegionSelector<Regions extends string[]>({
       value={region || ''}
       onChange={(e) => changeRegion(e.target.value)}
     >
-      {
-        !region &&
-        <option key={'placeholder'} value={''} disabled={Boolean(region)} hidden={Boolean(region)} suppressHydrationWarning>
-        {
-          placeholder ||
-          ''
-        }
-      </option>
-      }
+      {!region && (
+        <option
+          key={'placeholder'}
+          value={''}
+          disabled={Boolean(region)}
+          hidden={Boolean(region)}
+          suppressHydrationWarning
+        >
+          {placeholder || ''}
+        </option>
+      )}
       {regions.map((r) => (
         <option key={r} value={r} suppressHydrationWarning>
           {regionData.get(r)!.name}

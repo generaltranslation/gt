@@ -89,7 +89,7 @@ export default function GTProvider({
   });
 
   // Define the region instance
-  const [region, setRegion] = useState<string | undefined>();
+  const [region, setRegion] = useState<string | undefined>(_region);
 
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation

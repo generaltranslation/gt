@@ -2,17 +2,14 @@ import React from 'react';
 import useLocaleSelector from '../hooks/useLocaleSelector';
 
 /**
- * Capitalizes the first letter of a language name if applicable.
- * For languages that do not use capitalization, it returns the name unchanged.
- * @param {string} language - The name of the language.
- * @returns {string} The language name with the first letter capitalized if applicable.
+ * Capitalizes the first letter of a string if applicable.
+ * For strings that do not use capitalization, it returns the string unchanged.
+ * @param {string} str - The string to capitalize.
+ * @returns {string} The string with the first letter capitalized if applicable.
  */
-export function capitalizeName(language: string): string {
-  if (!language) return '';
-  return (
-    language.charAt(0).toUpperCase() +
-    (language.length > 1 ? language.slice(1) : '')
-  );
+function capitalizeName(str: string): string {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + (str.length > 1 ? str.slice(1) : '');
 }
 
 /**
