@@ -46,7 +46,7 @@ export function useRegionSelector(
         return [lp.regionCode, lp];
       })
     );
-
+      : Array.from(regionToLocaleMap?.keys() || [localeRegion])
     const regions = _regions
       ? [..._regions]
       : Array.from(regionToLocaleMap?.keys() || [localeRegion]);
