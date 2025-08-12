@@ -98,7 +98,7 @@ impl TransformVisitor {
             in_variable_component: false,
             in_jsx_attribute: false,
             // new
-            gt_next_translation_import_aliases: std::collections::HashMap::new(), // T
+            gt_next_translation_import_aliases: std::collections::HashMap::new(), // T (can have multiple aliases)
             gt_next_variable_import_aliases: std::collections::HashMap::new(), // Var, Num, Currency, DateTime
             gt_next_branch_import_aliases: std::collections::HashMap::new(), // Branch, Plural
             gt_next_translation_function_import_aliases: std::collections::HashMap::new(), // tx, getGT, useGT
@@ -367,38 +367,9 @@ impl TransformVisitor {
             (hash, json_string)
         }
     }
-}
 
-impl VisitMut for TransformVisitor {
-    /// Process import declarations to track GT-Next imports
-    fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
-        self.process_gt_import_declaration(import_decl);
-        import_decl.visit_mut_children_with(self);
-    }
-
-    /// Process variable declarations to track assignments like: const t = useGT()
-    fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
-        // Check for assignments like: const t = useGT() or const MyT = T
-        if let (Pat::Ident(BindingIdent { id, .. }), Some(init_expr)) = (&var_declarator.name, &var_declarator.init) {
-            match init_expr.as_ref() {
-                // Handle function calls: const t = useGT()
-                Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
-                    if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-                        if self.gt_translation_functions.contains(callee_name) {
-                            // Track the assigned variable as a translation function
-                            self.gt_translation_functions.insert(id.sym.clone());
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        
-        var_declarator.visit_mut_children_with(self);
-    }
-
-    /// Process function calls to detect invalid usage of translation functions
-    fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
+    /// Check for violations in a call expression
+    fn check_call_expr_for_violations (&mut self, call_expr: &CallExpr) {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
                 // Exclude tx() functions from dynamic content checks
@@ -432,7 +403,43 @@ impl VisitMut for TransformVisitor {
                 }
             }
         }
-        
+    }
+
+    fn track_variable_assignment (&mut self, var_declarator: &VarDeclarator) {
+        // Check for assignments like: const t = useGT() or const MyT = T
+        if let (Pat::Ident(BindingIdent { id, .. }), Some(init_expr)) = (&var_declarator.name, &var_declarator.init) {
+            match init_expr.as_ref() {
+                // Handle function calls: const t = useGT()
+                Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
+                    if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
+                        if self.gt_translation_functions.contains(callee_name) {
+                            // Track the assigned variable as a translation function
+                            self.gt_translation_functions.insert(id.sym.clone());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+impl VisitMut for TransformVisitor {
+    /// Process import declarations to track GT-Next imports
+    fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
+        self.process_gt_import_declaration(import_decl);
+        import_decl.visit_mut_children_with(self);
+    }
+
+    /// Process variable declarations to track assignments like: const t = useGT()
+    fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
+        self.track_variable_assignment(var_declarator);
+        var_declarator.visit_mut_children_with(self);
+    }
+
+    /// Process function calls to detect invalid usage of translation functions
+    fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
+        self.check_call_expr_for_violations(call_expr);
         call_expr.visit_mut_children_with(self);
     }
 
@@ -466,61 +473,13 @@ impl Fold for TransformVisitor {
 
     /// Process variable declarations to track assignments like: const t = useGT()
     fn fold_var_declarator(&mut self, var_declarator: VarDeclarator) -> VarDeclarator {
-        // Check for assignments like: const t = useGT() or const MyT = T
-        if let (Pat::Ident(BindingIdent { id, .. }), Some(init_expr)) = (&var_declarator.name, &var_declarator.init) {
-            match init_expr.as_ref() {
-                // Handle function calls: const t = useGT()
-                Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
-                    if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-                        if self.gt_translation_functions.contains(callee_name) {
-                            // Track the assigned variable as a translation function
-                            self.gt_translation_functions.insert(id.sym.clone());
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        
+        self.track_variable_assignment(&var_declarator);
         var_declarator
     }
 
     /// Process function calls to detect invalid usage of translation functions
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
-        if let Callee::Expr(callee_expr) = &call_expr.callee {
-            if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                // Exclude tx() functions from dynamic content checks
-                if self.gt_translation_functions.contains(function_name) && function_name.as_ref() != "tx" {
-                    // Check the first argument for dynamic content
-                    if let Some(arg) = call_expr.args.first() {
-                        match arg.expr.as_ref() {
-                            // Template literals: t(`Hello ${name}`)
-                            Expr::Tpl(_) => {
-                                self.dynamic_content_violations += 1;
-                                let warning = self.create_dynamic_function_warning(function_name.as_ref(), "template literals");
-                                self.log_warning(&self.dynamic_string_check_log_level, &warning);
-                            }
-                            // String concatenation: t("Hello " + name)
-                            Expr::Bin(BinExpr { op: BinaryOp::Add, left, right, .. }) => {
-                                // Check if it's string concatenation (at least one side is a string)
-                                let left_is_string = matches!(left.as_ref(), Expr::Lit(Lit::Str(_)));
-                                let right_is_string = matches!(right.as_ref(), Expr::Lit(Lit::Str(_)));
-                                
-                                if left_is_string || right_is_string {
-                                    self.dynamic_content_violations += 1;
-                                    let warning = self.create_dynamic_function_warning(function_name.as_ref(), "string concatenation");
-                                    self.log_warning(&self.dynamic_string_check_log_level, &warning);
-                                }
-                            }
-                            _ => {
-                                // Valid usage (string literal, variable, etc.)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
+        self.check_call_expr_for_violations(&call_expr);
         call_expr.fold_children_with(self)
     }
 

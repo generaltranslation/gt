@@ -72,7 +72,9 @@ and performance optimization.
 
 #### `/src/lib.rs`
 
-- [ ] **Lines 103-111**: Inefficient HashMap initialization with multiple `new()` calls
+NOTE: This is okay because we do not know the expected size of the maps ahead of time.
+
+- [x] **Lines 103-111**: Inefficient HashMap initialization with multiple `new()` calls
 
   ```rust
   gt_next_translation_import_aliases: std::collections::HashMap::new(),
@@ -82,7 +84,7 @@ and performance optimization.
 
   **Fix**: Use `HashMap::with_capacity()` if size is known, or consider using a builder pattern
 
-- [ ] **Lines 403-439, 491-527**: Duplicate logic between `VisitMut` and `Fold` implementations
+- [x] **Lines 403-439, 491-527**: Duplicate logic between `VisitMut` and `Fold` implementations
       **Fix**: Extract common logic into helper methods to reduce code duplication
 
 #### `/src/traversal.rs`
