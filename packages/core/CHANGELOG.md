@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.2.0
+
+### Minor Changes
+
+- [#547](https://github.com/generaltranslation/gt/pull/547) [`4806575`](https://github.com/generaltranslation/gt/commit/4806575a7b01184ea35a55fb07fe241144205e4a) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added locale selection based on region
+
 ## 7.1.6
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # gt-next
 
+## 6.1.0
+
+### Minor Changes
+
+- [#547](https://github.com/generaltranslation/gt/pull/547) [`4806575`](https://github.com/generaltranslation/gt/commit/4806575a7b01184ea35a55fb07fe241144205e4a) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added locale selection based on region
+
+### Patch Changes
+
+- Updated dependencies [[`4806575`](https://github.com/generaltranslation/gt/commit/4806575a7b01184ea35a55fb07fe241144205e4a)]:
+  - gt-react@10.1.0
+  - generaltranslation@7.2.0
+
 ## 6.0.11
 
 ### Patch Changes
