@@ -125,7 +125,7 @@ NOTE: This is okay
 - [x] **Lines 146-276**: `build_sanitized_child` method is too complex (130 lines)
       **Fix**: Extract specific handling for each JSX child type into separate methods
 
-- [ ] **Lines 720-801**: Duplicate logic in `build_sanitized_jsx_child_from_jsx_expr_container` methods
+- [x] **Lines 720-801**: Duplicate logic in `build_sanitized_jsx_child_from_jsx_expr_container` methods
       **Fix**: Unify the two similar methods with a parameter to control behavior differences
 
 ---
@@ -136,7 +136,7 @@ NOTE: This is okay
 
 #### `/src/lib.rs`
 
-- [ ] **Lines 107-112**: Inconsistent commenting style for deprecated fields
+- [x] **Lines 107-112**: Inconsistent commenting style for deprecated fields
 
   ```rust
   // new
@@ -147,7 +147,7 @@ NOTE: This is okay
 
   **Fix**: Use consistent documentation comments or remove inline comments
 
-- [ ] **Lines 176-181**: Empty match arms in logging function
+- [x] **Lines 176-181**: Empty match arms in logging function
   ```rust
   LogLevel::Silent => {},
   LogLevel::Error | LogLevel::Warn | LogLevel::Info => {
@@ -158,10 +158,12 @@ NOTE: This is okay
 
 #### `/src/traversal.rs`
 
-- [ ] **Lines 27-38**: Complex number formatting logic that could be simplified
+NOTE: is okay
+
+- [x] **Lines 27-38**: Complex number formatting logic that could be simplified
       **Fix**: Consider using existing Rust number formatting utilities
 
-- [ ] **Lines 233**: Debug print statement left in code
+- [x] **Lines 233**: Debug print statement left in code
   ```rust
   // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
   ```

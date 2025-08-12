@@ -198,9 +198,9 @@ impl TransformVisitor {
     fn log_warning(&self, level: &LogLevel, message: &str) {
         match level {
             LogLevel::Silent => {},
-            LogLevel::Error | LogLevel::Warn | LogLevel::Info => {
-                eprintln!("{}", message);
-            }
+            LogLevel::Error => eprintln!("[ERROR] {}", message),
+            LogLevel::Warn => eprintln!("[WARN] {}", message),
+            LogLevel::Info => eprintln!("[INFO] {}", message),
         }
     }
 

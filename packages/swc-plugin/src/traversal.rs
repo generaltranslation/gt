@@ -234,7 +234,6 @@ impl<'a> JsxTraversal<'a> {
         };
 
 
-        // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
         if let Some(text) = normalized {
             if !text.is_empty() {
                 Some(SanitizedChild::Text(text))
@@ -662,24 +661,26 @@ impl<'a> JsxTraversal<'a> {
                     },
                     Expr::JSXFragment(fragment) => {
                         // Fragment becomes one SanitizedChild::Fragment containing its children
-                        if let Some(children) = if is_attribute {
-                                self.build_sanitized_children_with_counter(
-                                &fragment.children,
-                                self.id_counter + 1,
-                            )
+                        let children_option = if is_attribute {
+                            self.build_sanitized_children_with_counter(&fragment.children, self.id_counter + 1)
                         } else {
                             self.build_sanitized_children(&fragment.children)
-                        } {
-                            Some(SanitizedChild::Fragment(Box::new(SanitizedChildren::Wrapped { c: Box::new(children) })))
-                        } else {
-                            // Empty fragment should return empty object structure, not None
-                            let empty_element = SanitizedElement {
-                                b: None,
-                                c: None,
-                                t: None,
-                                d: None,
-                            };
-                            Some(SanitizedChild::Element(Box::new(empty_element)))
+                        };
+
+                        match children_option {
+                            Some(children) => Some(SanitizedChild::Fragment(Box::new(
+                                SanitizedChildren::Wrapped { c: Box::new(children) }
+                            ))),
+                            None => {
+                                // Empty fragment should return empty object structure, not None
+                                let empty_element = SanitizedElement {
+                                    b: None,
+                                    c: None,
+                                    t: None,
+                                    d: None,
+                                };
+                                Some(SanitizedChild::Element(Box::new(empty_element)))
+                            }
                         }
                     }
                     Expr::JSXElement(element) => {
