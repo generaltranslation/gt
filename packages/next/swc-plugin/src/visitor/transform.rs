@@ -88,30 +88,32 @@ impl TransformVisitor {
 
   /// Generate warning message for dynamic content violations
   pub fn create_dynamic_content_warning(&self, component_name: &str) -> String {
-      let file_info = if let Some(ref filename) = self.settings.filename {
-          format!(" in {}", filename)
+      if let Some(ref filename) = self.settings.filename {
+          format!(
+              "gt-next in {}: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
+              filename, component_name
+          )
       } else {
-          String::new()
-      };
-      
-      format!(
-          "gt-next {}: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
-          file_info, component_name
-      )
+          format!(
+              "gt-next: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
+              component_name
+          )
+      }
   }
 
   /// Generate warning message for dynamic function call violations
   fn create_dynamic_function_warning(&self, function_name: &str, violation_type: &str) -> String {
-      let file_info = if let Some(ref filename) = self.settings.filename {
-          format!(" in {}", filename)
+      if let Some(ref filename) = self.settings.filename {
+          format!(
+              "gt-next in {}: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
+              filename, function_name, violation_type
+          )
       } else {
-          String::new()
-      };
-      
-      format!(
-          "gt-next {}: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
-          file_info, function_name, violation_type
-      )
+          format!(
+              "gt-next: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
+              function_name, violation_type
+          )
+      }
   }
 
   /// Process GT-Next import declarations to track imports and aliases
@@ -312,4 +314,723 @@ impl TransformVisitor {
       })
   }
 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use swc_core::common::{DUMMY_SP, SyntaxContext};
+    use swc_core::ecma::atoms::Atom;
+
+    // Helper to create a test visitor with specific imports
+    fn create_visitor_with_imports() -> TransformVisitor {
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+        
+        // Add some test imports
+        visitor.import_tracker.translation_import_aliases.insert(
+            Atom::new("T"), Atom::new("T")
+        );
+        visitor.import_tracker.variable_import_aliases.insert(
+            Atom::new("Var"), Atom::new("Var")
+        );
+        visitor.import_tracker.branch_import_aliases.insert(
+            Atom::new("Branch"), Atom::new("Branch")
+        );
+        visitor.import_tracker.translation_functions.insert(
+            Atom::new("useGT")
+        );
+        visitor.import_tracker.namespace_imports.insert(
+            Atom::new("GT")
+        );
+        
+        visitor
+    }
+
+    // Helper to create JSX element
+    fn create_jsx_element(tag_name: &str, attrs: Vec<JSXAttrOrSpread>) -> JSXElement {
+        JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(tag_name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+                attrs,
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(tag_name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+            }),
+        }
+    }
+
+    // Helper to create JSX member element (GT.T)
+    fn create_jsx_member_element(obj: &str, prop: &str) -> JSXElement {
+        JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::JSXMemberExpr(JSXMemberExpr {
+                    span: DUMMY_SP,
+                    obj: JSXObject::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new(obj),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    }.into()),
+                    prop: Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new(prop),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    }.into(),
+                }),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::JSXMemberExpr(JSXMemberExpr {
+                    span: DUMMY_SP,
+                    obj: JSXObject::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new(obj),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    }.into()),
+                    prop: Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new(prop),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    }.into(),
+                }),
+            }),
+        }
+    }
+
+    // Helper to create import declaration
+    fn create_import_decl(source: &str, specifiers: Vec<ImportSpecifier>) -> ImportDecl {
+        ImportDecl {
+            span: DUMMY_SP,
+            specifiers,
+            src: Box::new(Str {
+                span: DUMMY_SP,
+                value: Atom::new(source),
+                raw: None,
+            }),
+            type_only: false,
+            with: None,
+            phase: Default::default(),
+        }
+    }
+
+    // Helper to create named import specifier
+    fn create_named_import(local_name: &str, imported_name: Option<&str>) -> ImportSpecifier {
+        ImportSpecifier::Named(ImportNamedSpecifier {
+            span: DUMMY_SP,
+            local: Ident {
+                span: DUMMY_SP,
+                sym: Atom::new(local_name),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            }.into(),
+            imported: imported_name.map(|name| {
+                ModuleExportName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into())
+            }),
+            is_type_only: false,
+        })
+    }
+
+    // Helper to create namespace import
+    fn create_namespace_import(local_name: &str) -> ImportSpecifier {
+        ImportSpecifier::Namespace(ImportStarAsSpecifier {
+            span: DUMMY_SP,
+            local: Ident {
+                span: DUMMY_SP,
+                sym: Atom::new(local_name),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            }.into(),
+        })
+    }
+
+    mod constructor_and_defaults {
+        use super::*;
+
+        #[test]
+        fn creates_new_visitor_with_parameters() {
+            let visitor = TransformVisitor::new(LogLevel::Debug, true, Some("test.tsx".to_string()));
+            
+            assert_eq!(visitor.settings.log_level.as_int(), LogLevel::Debug.as_int());
+            assert_eq!(visitor.settings.compile_time_hash, true);
+            assert_eq!(visitor.settings.filename, Some("test.tsx".to_string()));
+            
+            // Check defaults are set
+            assert_eq!(visitor.statistics.jsx_element_count, 0);
+            assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+            assert!(visitor.import_tracker.translation_import_aliases.is_empty());
+        }
+
+        #[test]
+        fn creates_default_visitor() {
+            let visitor = TransformVisitor::default();
+            
+            assert_eq!(visitor.settings.log_level.as_int(), LogLevel::Warn.as_int());
+            assert_eq!(visitor.settings.compile_time_hash, false);
+            assert_eq!(visitor.settings.filename, None);
+        }
+    }
+
+    mod component_tracking {
+        use super::*;
+
+        #[test]
+        fn tracks_translation_components() {
+            let visitor = create_visitor_with_imports();
+            
+            assert!(visitor.should_track_component_as_translation(&Atom::new("T")));
+            assert!(!visitor.should_track_component_as_translation(&Atom::new("div")));
+            assert!(!visitor.should_track_component_as_translation(&Atom::new("Var")));
+        }
+
+        #[test]
+        fn tracks_variable_components() {
+            let visitor = create_visitor_with_imports();
+            
+            assert!(visitor.should_track_component_as_variable(&Atom::new("Var")));
+            assert!(!visitor.should_track_component_as_variable(&Atom::new("T")));
+            assert!(!visitor.should_track_component_as_variable(&Atom::new("div")));
+        }
+
+        #[test]
+        fn tracks_branch_components() {
+            let visitor = create_visitor_with_imports();
+            
+            assert!(visitor.should_track_component_as_branch(&Atom::new("Branch")));
+            assert!(!visitor.should_track_component_as_branch(&Atom::new("T")));
+            assert!(!visitor.should_track_component_as_branch(&Atom::new("div")));
+        }
+
+        #[test]
+        fn tracks_namespace_components() {
+            let visitor = create_visitor_with_imports();
+            
+            let (is_translation, is_variable, is_branch) = visitor.should_track_namespace_component(
+                &Atom::new("GT"), &Atom::new("T")
+            );
+            assert!(is_translation);
+            assert!(!is_variable);
+            assert!(!is_branch);
+
+            let (is_translation, is_variable, is_branch) = visitor.should_track_namespace_component(
+                &Atom::new("GT"), &Atom::new("Var")
+            );
+            assert!(!is_translation);
+            assert!(is_variable);
+            assert!(!is_branch);
+
+            let (is_translation, is_variable, is_branch) = visitor.should_track_namespace_component(
+                &Atom::new("Unknown"), &Atom::new("T")
+            );
+            assert!(!is_translation);
+            assert!(!is_variable);
+            assert!(!is_branch);
+        }
+    }
+
+    mod warning_message_generation {
+        use super::*;
+
+        #[test]
+        fn creates_dynamic_content_warning_without_filename() {
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, None);
+            let warning = visitor.create_dynamic_content_warning("T");
+            
+            assert!(warning.contains("gt-next"));
+            assert!(warning.contains("<T> component contains unwrapped dynamic content"));
+            assert!(warning.contains("<Var>{expression}</Var>"));
+            assert!(!warning.starts_with("gt-next in "));
+        }
+
+        #[test]
+        fn creates_dynamic_content_warning_with_filename() {
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("components/Test.tsx".to_string()));
+            let warning = visitor.create_dynamic_content_warning("T");
+            
+            assert!(warning.contains("gt-next in components/Test.tsx"));
+            assert!(warning.contains("<T> component contains unwrapped dynamic content"));
+        }
+
+        #[test]
+        fn creates_dynamic_function_warning_without_filename() {
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, None);
+            let warning = visitor.create_dynamic_function_warning("useGT", "template literals");
+            
+            assert!(warning.contains("gt-next"));
+            assert!(warning.contains("useGT() function call uses template literals"));
+            assert!(warning.contains("Use string literals instead"));
+            assert!(!warning.starts_with("gt-next in "));
+        }
+
+        #[test]
+        fn creates_dynamic_function_warning_with_filename() {
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("hooks/useTranslation.ts".to_string()));
+            let warning = visitor.create_dynamic_function_warning("t", "string concatenation");
+            
+            assert!(warning.contains("gt-next in hooks/useTranslation.ts"));
+            assert!(warning.contains("t() function call uses string concatenation"));
+        }
+    }
+
+    mod import_processing {
+        use super::*;
+
+        #[test]
+        fn processes_gt_next_named_imports() {
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let import_decl = create_import_decl("gt-next", vec![
+                create_named_import("T", None),
+                create_named_import("MyVar", Some("Var")),
+                create_named_import("useGT", None),
+            ]);
+
+            visitor.process_gt_import_declaration(&import_decl);
+
+            assert!(visitor.import_tracker.translation_import_aliases.contains_key(&Atom::new("T")));
+            assert!(visitor.import_tracker.variable_import_aliases.contains_key(&Atom::new("MyVar")));
+            assert!(visitor.import_tracker.translation_functions.contains(&Atom::new("useGT")));
+        }
+
+        #[test]
+        fn processes_namespace_imports() {
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let import_decl = create_import_decl("gt-next", vec![
+                create_namespace_import("GT"),
+            ]);
+
+            visitor.process_gt_import_declaration(&import_decl);
+
+            assert!(visitor.import_tracker.namespace_imports.contains(&Atom::new("GT")));
+        }
+
+        #[test]
+        fn processes_gt_next_client_imports() {
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let import_decl = create_import_decl("gt-next/client", vec![
+                create_named_import("T", None),
+            ]);
+
+            visitor.process_gt_import_declaration(&import_decl);
+
+            assert!(visitor.import_tracker.translation_import_aliases.contains_key(&Atom::new("T")));
+        }
+
+        #[test]
+        fn ignores_non_gt_imports() {
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let import_decl = create_import_decl("react", vec![
+                create_named_import("React", None),
+            ]);
+
+            visitor.process_gt_import_declaration(&import_decl);
+
+            assert!(visitor.import_tracker.translation_import_aliases.is_empty());
+            assert!(visitor.import_tracker.namespace_imports.is_empty());
+        }
+    }
+
+    mod component_type_determination {
+        use super::*;
+
+        #[test]
+        fn determines_translation_component_type() {
+            let mut visitor = create_visitor_with_imports();
+            let element = create_jsx_element("T", vec![]);
+
+            let (is_translation, is_variable, is_branch) = visitor.determine_component_type(&element);
+            
+            assert!(is_translation);
+            assert!(!is_variable);
+            assert!(!is_branch);
+        }
+
+        #[test]
+        fn determines_variable_component_type() {
+            let mut visitor = create_visitor_with_imports();
+            let element = create_jsx_element("Var", vec![]);
+
+            let (is_translation, is_variable, is_branch) = visitor.determine_component_type(&element);
+            
+            assert!(!is_translation);
+            assert!(is_variable);
+            assert!(!is_branch);
+        }
+
+        #[test]
+        fn determines_namespace_component_type() {
+            let mut visitor = create_visitor_with_imports();
+            let element = create_jsx_member_element("GT", "T");
+
+            let (is_translation, is_variable, is_branch) = visitor.determine_component_type(&element);
+            
+            assert!(is_translation);
+            assert!(!is_variable);
+            assert!(!is_branch);
+        }
+
+        #[test]
+        fn determines_unknown_component_type() {
+            let mut visitor = create_visitor_with_imports();
+            let element = create_jsx_element("div", vec![]);
+
+            let (is_translation, is_variable, is_branch) = visitor.determine_component_type(&element);
+            
+            assert!(!is_translation);
+            assert!(!is_variable);
+            assert!(!is_branch);
+        }
+    }
+
+    mod hash_attribute_detection {
+        use super::*;
+
+        fn create_string_attr(name: &str, value: &str) -> JSXAttrOrSpread {
+            JSXAttrOrSpread::JSXAttr(JSXAttr {
+                span: DUMMY_SP,
+                name: JSXAttrName::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }.into()),
+                value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: Atom::new(value),
+                    raw: None,
+                }))),
+            })
+        }
+
+        #[test]
+        fn detects_hash_attribute_present() {
+            let element = create_jsx_element("T", vec![
+                create_string_attr("hash", "abc123"),
+                create_string_attr("className", "test"),
+            ]);
+
+            assert!(TransformVisitor::determine_has_hash_attr(&element));
+        }
+
+        #[test]
+        fn detects_hash_attribute_absent() {
+            let element = create_jsx_element("T", vec![
+                create_string_attr("className", "test"),
+                create_string_attr("id", "myid"),
+            ]);
+
+            assert!(!TransformVisitor::determine_has_hash_attr(&element));
+        }
+
+        #[test]
+        fn handles_element_with_no_attributes() {
+            let element = create_jsx_element("T", vec![]);
+            assert!(!TransformVisitor::determine_has_hash_attr(&element));
+        }
+    }
+
+    mod attribute_creation {
+        use super::*;
+
+        #[test]
+        fn creates_string_attribute() {
+            let element = create_jsx_element("T", vec![]);
+            let attr = TransformVisitor::create_attr(&element, "test-value", "data-test");
+
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
+                    assert_eq!(name_ident.sym.as_ref(), "data-test");
+                }
+                if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
+                    assert_eq!(str_lit.value.as_ref(), "test-value");
+                }
+            } else {
+                panic!("Expected JSXAttr");
+            }
+        }
+    }
+
+    mod call_expression_violations {
+        use super::*;
+
+        fn create_call_expr(function_name: &str, arg: Expr) -> CallExpr {
+            CallExpr {
+                span: DUMMY_SP,
+                callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(function_name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }))),
+                args: vec![ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(arg),
+                }],
+                type_args: None,
+                ctxt: SyntaxContext::empty(),
+            }
+        }
+
+        fn create_template_literal() -> Expr {
+            Expr::Tpl(Tpl {
+                span: DUMMY_SP,
+                exprs: vec![Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new("name"),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }))],
+                quasis: vec![
+                    TplElement {
+                        span: DUMMY_SP,
+                        tail: false,
+                        cooked: Some(Atom::new("Hello ")),
+                        raw: Atom::new("Hello "),
+                    },
+                    TplElement {
+                        span: DUMMY_SP,
+                        tail: true,
+                        cooked: Some(Atom::new("!")),
+                        raw: Atom::new("!"),
+                    }
+                ],
+            })
+        }
+
+        fn create_string_concatenation() -> Expr {
+            Expr::Bin(BinExpr {
+                span: DUMMY_SP,
+                op: BinaryOp::Add,
+                left: Box::new(Expr::Lit(Lit::Str(Str {
+                    span: DUMMY_SP,
+                    value: Atom::new("Hello "),
+                    raw: None,
+                }))),
+                right: Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new("name"),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                })),
+            })
+        }
+
+        #[test]
+        fn detects_template_literal_violations() {
+            let mut visitor = create_visitor_with_imports();
+            let call_expr = create_call_expr("useGT", create_template_literal());
+
+            let initial_violations = visitor.statistics.dynamic_content_violations;
+            visitor.check_call_expr_for_violations(&call_expr);
+
+            assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations + 1);
+        }
+
+        #[test]
+        fn detects_string_concatenation_violations() {
+            let mut visitor = create_visitor_with_imports();
+            let call_expr = create_call_expr("useGT", create_string_concatenation());
+
+            let initial_violations = visitor.statistics.dynamic_content_violations;
+            visitor.check_call_expr_for_violations(&call_expr);
+
+            assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations + 1);
+        }
+
+        #[test]
+        fn allows_valid_string_literal_calls() {
+            let mut visitor = create_visitor_with_imports();
+            let string_literal = Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: Atom::new("Hello world"),
+                raw: None,
+            }));
+            let call_expr = create_call_expr("useGT", string_literal);
+
+            let initial_violations = visitor.statistics.dynamic_content_violations;
+            visitor.check_call_expr_for_violations(&call_expr);
+
+            assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations);
+        }
+
+        #[test]
+        fn ignores_non_tracked_functions() {
+            let mut visitor = create_visitor_with_imports();
+            let call_expr = create_call_expr("console.log", create_template_literal());
+
+            let initial_violations = visitor.statistics.dynamic_content_violations;
+            visitor.check_call_expr_for_violations(&call_expr);
+
+            assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations);
+        }
+    }
+
+    mod variable_assignment_tracking {
+        use super::*;
+
+        fn create_var_declarator(name: &str, init: Expr) -> VarDeclarator {
+            VarDeclarator {
+                span: DUMMY_SP,
+                name: Pat::Ident(BindingIdent {
+                    id: Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new(name),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    }.into(),
+                    type_ann: None,
+                }),
+                init: Some(Box::new(init)),
+                definite: false,
+            }
+        }
+
+        fn create_function_call(function_name: &str) -> Expr {
+            Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                    span: DUMMY_SP,
+                    sym: Atom::new(function_name),
+                    optional: false,
+                    ctxt: SyntaxContext::empty(),
+                }))),
+                args: vec![],
+                type_args: None,
+                ctxt: SyntaxContext::empty(),
+            })
+        }
+
+        #[test]
+        fn tracks_translation_function_assignments() {
+            let mut visitor = create_visitor_with_imports();
+            let var_declarator = create_var_declarator("t", create_function_call("useGT"));
+
+            visitor.track_variable_assignment(&var_declarator);
+
+            assert!(visitor.import_tracker.translation_functions.contains(&Atom::new("t")));
+        }
+
+        #[test]
+        fn ignores_non_function_assignments() {
+            let mut visitor = create_visitor_with_imports();
+            let string_literal = Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: Atom::new("hello"),
+                raw: None,
+            }));
+            let var_declarator = create_var_declarator("message", string_literal);
+
+            let initial_count = visitor.import_tracker.translation_functions.len();
+            visitor.track_variable_assignment(&var_declarator);
+
+            assert_eq!(visitor.import_tracker.translation_functions.len(), initial_count);
+        }
+
+        #[test]
+        fn ignores_non_tracked_function_assignments() {
+            let mut visitor = create_visitor_with_imports();
+            let var_declarator = create_var_declarator("result", create_function_call("useState"));
+
+            let initial_count = visitor.import_tracker.translation_functions.len();
+            visitor.track_variable_assignment(&var_declarator);
+
+            assert_eq!(visitor.import_tracker.translation_functions.len(), initial_count);
+        }
+    }
+
+    mod hash_calculation {
+        use super::*;
+
+        #[test]
+        fn calculates_hash_for_empty_element() {
+            let visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let element = create_jsx_element("T", vec![]);
+
+            let (hash, json_string) = visitor.calculate_element_hash(&element);
+
+            assert!(!hash.is_empty());
+            assert!(!json_string.is_empty());
+            assert!(json_string.contains("JSX"));
+        }
+
+        #[test] 
+        fn hash_changes_with_different_content() {
+            let visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            
+            let element1 = create_jsx_element("T", vec![]);
+            let mut element2 = create_jsx_element("T", vec![]);
+            element2.children = vec![JSXElementChild::JSXText(JSXText {
+                span: DUMMY_SP,
+                value: Atom::new("Hello"),
+                raw: Atom::new("Hello"),
+            })];
+
+            let (hash1, _) = visitor.calculate_element_hash(&element1);
+            let (hash2, _) = visitor.calculate_element_hash(&element2);
+
+            assert_ne!(hash1, hash2);
+        }
+    }
+
+    mod integration_tests {
+        use super::*;
+
+        #[test]
+        fn full_workflow_with_imports_and_component_detection() {
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, Some("test.tsx".to_string()));
+            
+            // Process imports
+            let import_decl = create_import_decl("gt-next", vec![
+                create_named_import("T", None),
+                create_named_import("CustomVar", Some("Var")),
+                create_namespace_import("GT"),
+            ]);
+            visitor.process_gt_import_declaration(&import_decl);
+
+            // Test component detection
+            let t_element = create_jsx_element("T", vec![]);
+            let (is_translation, _, _) = visitor.determine_component_type(&t_element);
+            assert!(is_translation);
+
+            let var_element = create_jsx_element("CustomVar", vec![]);
+            let (_, is_variable, _) = visitor.determine_component_type(&var_element);
+            assert!(is_variable);
+
+            let namespace_element = create_jsx_member_element("GT", "T");
+            let (is_translation_ns, _, _) = visitor.determine_component_type(&namespace_element);
+            assert!(is_translation_ns);
+
+            // Test warning generation
+            let warning = visitor.create_dynamic_content_warning("T");
+            assert!(warning.contains("in test.tsx"));
+        }
+    }
 }
