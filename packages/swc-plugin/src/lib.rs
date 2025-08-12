@@ -272,6 +272,19 @@ impl TransformVisitor {
         }
     }
 
+    fn extract_template_string(tpl: &Tpl) -> Option<String> {
+        if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+            if let Some(quasi) = tpl.quasis.first() {
+                if let Some(cooked) = &quasi.cooked {
+                    return Some(cooked.to_string());
+                } else {
+                    return Some(quasi.raw.to_string());
+                }
+            }
+        }
+        None
+    }
+
 
     fn extract_string_from_jsx_attr(jsx_attr: &JSXAttr) -> Option<String> {
         match &jsx_attr.value {
@@ -281,21 +294,7 @@ impl TransformVisitor {
                     JSXExpr::Expr(expr) => {
                         match expr.as_ref() {
                             Expr::Lit(Lit::Str(str_lit)) => Some(str_lit.value.to_string()),
-                            Expr::Tpl(tpl) => {
-                                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
-                                    if let Some(quasi) = tpl.quasis.first() {
-                                        if let Some(cooked) = &quasi.cooked {
-                                            Some(cooked.to_string())
-                                        } else {
-                                            Some(quasi.raw.to_string())
-                                        }
-                                    } else {
-                                        None
-                                    }
-                                } else {
-                                    None
-                                }
-                            }
+                            Expr::Tpl(tpl) => Self::extract_template_string(tpl),
                             _ => None
                         }
                     }
@@ -304,6 +303,24 @@ impl TransformVisitor {
             }
             _ => None
         }
+    }
+
+    fn extract_attribute_from_jsx_attr(element: &JSXElement, attribute_name: &str) -> Option<String> {
+        element.opening.attrs.iter().find_map(|attr| {
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                    if ident.sym.as_ref() == attribute_name {
+                        TransformVisitor::extract_string_from_jsx_attr(jsx_attr)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
     }
 
     /// Calculate hash for JSX element using AST traversal
@@ -316,38 +333,10 @@ impl TransformVisitor {
         // Build sanitized children directly from JSX children
         if let Some(sanitized_children) = traversal.build_sanitized_children(&element.children) {
             // Get the id from the element
-            let id = element.opening.attrs.iter().find_map(|attr| {
-                if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-                    if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-                        if ident.sym.as_ref() == "id" {
-                            Self::extract_string_from_jsx_attr(&jsx_attr)
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            });
+            let id = Self::extract_attribute_from_jsx_attr(element, "id");
 
             // Get the context from the element
-            let context = element.opening.attrs.iter().find_map(|attr| {
-                if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-                    if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-                        if ident.sym.as_ref() == "context" {
-                            Self::extract_string_from_jsx_attr(&jsx_attr)
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            });
+            let context = Self::extract_attribute_from_jsx_attr(element, "context");
 
             // Get the id from the element
             // Create the full SanitizedData structure to match TypeScript implementation
@@ -636,7 +625,7 @@ impl Fold for TransformVisitor {
 pub fn process_transform(program: Program, metadata: TransformPluginProgramMetadata) -> Program {
     let config_str = metadata
         .get_transform_plugin_config()
-        .unwrap_or_else(|| "{}".to_string());
+        .unwrap_or("{}".to_string());
     
     let config: PluginConfig = serde_json::from_str(&config_str)
         .unwrap_or_default();

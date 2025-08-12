@@ -173,10 +173,10 @@ NOTE: is okay
 
 #### `/src/lib.rs`
 
-- [ ] **Lines 289-371**: Nested pattern matching could be flattened
+- [x] **Lines 289-371**: Nested pattern matching could be flattened
       **Fix**: Use `if let` chains or early returns to reduce nesting depth
 
-- [ ] **Lines 641-642**: Unnecessary string allocation
+- [x] **Lines 641-642**: Unnecessary string allocation
   ```rust
   let config_str = metadata
       .get_transform_plugin_config()
@@ -186,7 +186,7 @@ NOTE: is okay
 
 #### `/src/traversal.rs`
 
-- [ ] **Lines 72-80**: Inefficient vector slicing could use iterators
+- [x] **Lines 72-80**: Inefficient vector slicing could use iterators
   ```rust
   let filtered_children = if remove_first_child && remove_last_child {
       children[1..children.len() - 1].to_vec()
@@ -202,7 +202,7 @@ NOTE: is okay
 
 #### `/src/hash.rs`
 
-- [ ] **Lines 136-149**: Manual map reconstruction could be more efficient
+- [x] **Lines 136-149**: Manual map reconstruction could be more efficient
   ```rust
   let original_map = map.clone();
   map.clear();

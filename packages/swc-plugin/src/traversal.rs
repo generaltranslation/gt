@@ -76,16 +76,19 @@ impl<'a> JsxTraversal<'a> {
             }
         }
 
-        // Filter out the first and last child if they are whitespace
-        let filtered_children = if remove_first_child && remove_last_child {
-            children[1..children.len() - 1].to_vec()
-        } else if remove_first_child {
-            children[1..].to_vec()
-        } else if remove_last_child {
-            children[..children.len() - 1].to_vec()
-        } else {
-            children.to_vec()
-        };
+        let filtered_children: Vec<JSXElementChild> = children
+            .iter()
+            .enumerate()
+            .filter_map(|(i, child)| {
+                let should_skip_first = remove_first_child && i == 0;
+                let should_skip_last = remove_last_child && i == children.len() - 1;
+                if should_skip_first || should_skip_last {
+                    None
+                } else {
+                    Some(child.clone())
+                }
+            })
+            .collect();
 
         // Filter out all empty {} expressions
         let filtered_children: Vec<JSXElementChild> = filtered_children.into_iter().filter(|child| {

@@ -130,19 +130,23 @@ impl JsxHasher {
     fn sort_object_keys(value: &mut serde_json::Value) {
         match value {
             serde_json::Value::Object(map) => {
-                // Clone the map, clear it, then rebuild in sorted order
-                let original_map = map.clone();
-                map.clear();
-                
-                // Get keys, sort them, then insert in order
-                let mut keys: Vec<String> = original_map.keys().cloned().collect();
+                // Get all keys first
+                let mut keys: Vec<String> = map.keys().cloned().collect();
                 keys.sort();
-                
+
+                // Extract values in sorted order, process them, then rebuild map
+                let mut sorted_entries: Vec<(String, serde_json::Value)> = Vec::new();
+
                 for key in keys {
-                    if let Some(mut val) = original_map.get(&key).cloned() {
+                    if let Some(mut val) = map.remove(&key) {
                         Self::sort_object_keys(&mut val);
-                        map.insert(key, val);
+                        sorted_entries.push((key, val));
                     }
+                }
+
+                // Rebuild the map (it's now empty from removes)
+                for (key, val) in sorted_entries {
+                    map.insert(key, val);
                 }
             }
             serde_json::Value::Array(arr) => {
