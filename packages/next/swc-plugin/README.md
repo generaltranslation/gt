@@ -6,11 +6,10 @@ A Rust-based SWC plugin that provides compile-time linting and transformations f
 
 - **Dynamic Content Detection**: Warns about unwrapped dynamic content inside `<T>` components
 - **Compile-time Hash Generation**: Pre-computes translation keys for better performance
-- **Import Tracking**: Monitors GT-related imports and variable assignments
 
 ## Configuration
 
-Configure in your `next.config.js`:
+To enable the plug in, configure in your `next.config.js`:
 
 ```javascript
 import { withGTConfig } from 'gt-next/config';
@@ -20,7 +19,7 @@ const nextConfig = {};
 export default withGTConfig(nextConfig, {
   locales: ['en', 'es'],
   swcPluginOptions: {
-    logLevel: 'silent',    // 'silent' | 'error' | 'warn' | 'info' | 'debug'
+    logLevel: 'silent', // 'silent' | 'error' | 'warn' | 'info' | 'debug'
     compileTimeHash: false, // Enable compile-time hash generation
   },
 });
