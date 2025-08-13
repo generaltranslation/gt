@@ -1,5 +1,6 @@
 import React from 'react';
 import useLocaleSelector from '../hooks/useLocaleSelector';
+import { CustomMapping } from 'generaltranslation/types';
 
 /**
  * Capitalizes the first letter of a string if applicable.
@@ -13,18 +14,39 @@ function capitalizeName(str: string): string {
 }
 
 /**
+ * Internal helper to convert deprecated customNames prop to the new customMapping format.
+ * Used for backward compatibility with previous LocaleSelector API.
+ * @param {object} customNames - Mapping of locale to display name.
+ * @returns {CustomMapping | undefined} The converted mapping or undefined.
+ * @internal
+ */
+function _convertCustomNamesToMapping(
+  customNames?: { [key: string]: string } | undefined
+): CustomMapping | undefined {
+  if (!customNames) return undefined;
+  const result: CustomMapping = {};
+  for (const locale in customNames) {
+    result[locale] = { name: customNames[locale] };
+  }
+  return result;
+}
+
+/**
  * A dropdown component that allows users to select a locale.
- * @param {string[]} locales - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
- * @param {object} customNames - An optional object to map locales to custom names.
+ * @param {string[]} [locales] - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
+ * @param {object} [customNames] - (deprecated) An optional object to map locales to custom names. Use `customMapping` instead.
+ * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
 export default function LocaleSelector({
   locales: _locales,
   customNames,
+  customMapping = _convertCustomNamesToMapping(customNames),
   ...props
 }: {
   locales?: string[];
   customNames?: { [key: string]: string };
+  customMapping?: CustomMapping;
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get locale selector properties
@@ -34,8 +56,10 @@ export default function LocaleSelector({
 
   // Get display name
   const getDisplayName = (locale: string) => {
-    if (customNames && customNames[locale]) {
-      return customNames[locale];
+    if (customMapping && customMapping[locale]) {
+      if (typeof customMapping[locale] === 'string')
+        return customMapping[locale];
+      if (customMapping[locale].name) return customMapping[locale].name;
     }
     return capitalizeName(getLocaleProperties(locale).nativeNameWithRegionCode);
   };

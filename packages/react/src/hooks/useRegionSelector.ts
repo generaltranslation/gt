@@ -10,7 +10,57 @@ type RegionData = {
 };
 
 /**
- * A multi-purpose dropdown component that allows users to select a region.
+ * React hook for managing region selection logic in applications supporting multiple regions.
+ *
+ * This hook provides the necessary data and handlers to implement a region selector UI component.
+ * It returns the current region, a list of available regions, region metadata, and functions to update the region or associated locale.
+ *
+ * ### Parameters
+ * @param {Object} [options] - Optional configuration object.
+ * @param {string[]} [options.regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales.
+ * @param {Object.<string, string|{name?: string, emoji?: string, locale?: string}>} [options.customMapping] - Optional mapping to override region display names, emojis, or associated locales.
+ * @param {boolean} [options.prioritizeCurrentLocaleRegion=true] - If true, the region corresponding to the current locale is prioritized in the list.
+ * @param {boolean} [options.sortRegionsAlphabetically=true] - If true, regions are sorted alphabetically by display name.
+ *
+ * ### Returns
+ * @returns {{
+ *   region: string | undefined,
+ *   setRegion: (region: string) => void,
+ *   regions: string[],
+ *   regionData: Map<string, { code: string, name: string, emoji: string, locale: string }>,
+ *   locale: string,
+ *   setLocale: (locale: string) => void
+ * }} An object containing:
+ *   - `region`: The currently selected region code.
+ *   - `setRegion`: Function to update the selected region.
+ *   - `regions`: Array of available region codes.
+ *   - `regionData`: Map of region codes to their display data (name, emoji, locale).
+ *   - `locale`: The current locale.
+ *   - `setLocale`: Function to update the locale.
+ *
+ * ### Example
+ * ```tsx
+ * const {
+ *   region,
+ *   setRegion,
+ *   regions,
+ *   regionData,
+ *   locale,
+ *   setLocale
+ * } = useRegionSelector({
+ *   customMapping: { US: { name: "United States", emoji: "🇺🇸" } }
+ * });
+ *
+ * return (
+ *   <select value={region} onChange={e => setRegion(e.target.value)}>
+ *     {regions.map(r => (
+ *       <option key={r} value={r}>
+ *         {regionData.get(r)?.name}
+ *       </option>
+ *     ))}
+ *   </select>
+ * );
+ * ```
  */
 export function useRegionSelector(
   {

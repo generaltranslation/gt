@@ -8,7 +8,10 @@ import { TranslationsStatus, Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
-import { defaultLocaleCookieName, defaultRegionCookieName } from '../utils/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from '../utils/cookies';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -80,9 +83,7 @@ export default function ClientProvider({
 
   // ----- REGION STATE ----- //
 
-  const [region, _setRegion] = useState(
-    _region
-  );
+  const [region, _setRegion] = useState(_region);
 
   // Check for an invalid cookie and update it
   useEffect(() => {

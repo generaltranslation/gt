@@ -37,7 +37,10 @@ import {
 
 import { GTContextType } from './types/context';
 import { ClientProviderProps } from './types/config';
-import { defaultLocaleCookieName, defaultRegionCookieName } from './utils/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
 

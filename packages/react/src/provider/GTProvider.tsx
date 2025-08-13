@@ -11,7 +11,10 @@ import { readAuthFromEnv } from '../utils/utils';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
-import { defaultLocaleCookieName, defaultRegionCookieName } from '../utils/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
