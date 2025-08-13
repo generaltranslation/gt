@@ -1,11 +1,11 @@
 ---
-title: GT Next Lint
-description: ESLint plugin for General Translation Next.js integration that ensures proper usage of GT Next components.
+title: gt-next Lint
+description: ESLint plugin for gt-next components.
 ---
 
 # GT Next Lint
 
-ESLint plugin for General Translation Next.js integration that ensures proper usage of GT Next components.
+ESLint plugin that catches common translation errors in gt-next components.
 
 ## Installation
 
@@ -13,40 +13,16 @@ ESLint plugin for General Translation Next.js integration that ensures proper us
 npm install --save-dev @generaltranslation/gt-next-lint
 ```
 
-If you don't already have the TypeScript ESLint dependencies:
-
-```bash
-npm install --save-dev @typescript-eslint/eslint-plugin @typescript-eslint/parser
-```
-
 ## Configuration
-
-### Basic ESLint Config
 
 Add to your `eslint.config.mjs`:
 
 ```javascript
 import gtNext from "@generaltranslation/gt-next-lint";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
 
 export default [
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    plugins: {
-      'gt-next': gtNext,
-      '@typescript-eslint': tseslint,
-    },
-    languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: 'module',
-      parser: tsparser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
+    plugins: { 'gt-next': gtNext },
     rules: {
       'gt-next/no-dynamic-jsx': 'warn',
       'gt-next/no-dynamic-string': 'warn',
@@ -55,128 +31,43 @@ export default [
 ];
 ```
 
-### Next.js Template Config
+## Rules
 
-If you're using the standard Next.js ESLint setup with `@eslint/eslintrc`, add GT Next Lint like this:
+### `no-dynamic-jsx`
 
-```javascript
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-import gtNext from "@generaltranslation/gt-next-lint";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  {
-    plugins: {
-      'gt-next': gtNext,
-      '@typescript-eslint': tseslint,
-    },
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
-    rules: {
-      'gt-next/no-dynamic-jsx': 'warn',
-      'gt-next/no-dynamic-string': 'warn',
-    },
-  },
-];
-
-export default eslintConfig;
-```
-
-## Rule: `no-dynamic-jsx`
-
-Ensures dynamic content within `<T>` components is wrapped in variable components like `<Var>`, `<DateTime>`, `<Num>`, or `<Currency>`. JSX expressions inside component attributes are ignored and will not trigger this rule.
-
-### ✅ Correct
+Wraps dynamic content in `<T>` components with variable components.
 
 ```jsx
-import { T, Var } from 'gt-next';
+// ❌ Wrong
+<T>Hello {userName}!</T>
 
+// ✅ Correct  
 <T>Hello <Var>{userName}</Var>!</T>
-
-// JSX expressions in attributes are allowed
-<T>
-  <Image width={16} height={20} src="/logo.png" />
-  Static text content
-</T>
 ```
 
-### ❌ Incorrect  
+### `no-dynamic-string`
+
+Only allows string literals in translation functions.
 
 ```jsx
-import { T } from 'gt-next';
-
-<T>Hello {userName}!</T>  // Warning: wrap {userName} in <Var>
-
-// Mixed case: attributes are fine, but direct content expressions are flagged
-<T>
-  <Image width={16} height={20} />
-  Hello {userName}!  // Warning: wrap {userName} in <Var>
-</T>
-```
-
-### Supported Variable Components
-
-- `<Var>` - General variables
-- `<DateTime>` - Date and time values  
-- `<Num>` - Numeric values
-- `<Currency>` - Currency amounts
-
-Works with imports from `gt-next`, `gt-next/client`, `gt-next/server`, and namespace imports (`import * as GT from 'gt-next'`).
-
-## Rule: `no-dynamic-string`
-
-Ensures translation functions (`useGT`, `getGT`) only accept string literals as their first argument. Dynamic content like template literals or string concatenation is prohibited.
-
-### ✅ Correct
-
-```jsx
-import { useGT } from 'gt-next';
-
 const t = useGT();
-t('Hello, world!');                           // ✓ String literal
-t('Hello, {name}!', { name: userName });     // ✓ Variables in second parameter
+
+// ❌ Wrong
+t(`Hello ${name}`)
+t('Hello ' + name)
+
+// ✅ Correct
+t('Hello, {name}!', { name })
 ```
 
-### ❌ Incorrect
+## Supported Components
 
-```jsx
-import { useGT } from 'gt-next';
+- `<Var>` - Variables
+- `<DateTime>` - Dates
+- `<Num>` - Numbers  
+- `<Currency>` - Currency
 
-const t = useGT();
-t(`Hello, ${userName}!`);                    // ✗ Template literal
-t('Hello, ' + userName);                     // ✗ String concatenation
-t(getMessage());                             // ✗ Function call as argument
+## Supported Functions
 
-const message = 'Hello, world!';
-t(message);                                  // ✗ Variable reference
-```
-
-### Tracked Functions
-
-- `useGT()` - Client-side translation hook
-- `getGT()` - Server-side translation function
-
-### Import Support
-
-Works with all import patterns:
-- Named imports: `import { useGT, tx } from 'gt-next'`
-- Aliased imports: `import { useGT as myGT } from 'gt-next'` 
-- Namespace imports: `import * as GT from 'gt-next'; GT.tx(...)`
-- Assignment tracking: `const t = useGT(); t(...)`
+- `useGT()` - Client translations
+- `getGT()` - Server translations

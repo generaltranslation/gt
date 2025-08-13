@@ -104,9 +104,9 @@ Full documentation, including guides, examples, and API references, can be found
 
 We welcome any contributions to our libraries. Please submit a pull request!
 
-### Rust Development Setup (Optional)
+### Development Setup
 
-If you want to modify the SWC plugin, install Rust:
+For Rust development (SWC plugin):
 
 ```bash
 # Install Rust
@@ -115,7 +115,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # Add WebAssembly target
 rustup target add wasm32-wasip1
 
-# Build the plugin
-cd swc-plugin
-cargo build --release --target wasm32-wasip1
+# Install dependencies and build
+npm run build:swc-plugin
 ```
