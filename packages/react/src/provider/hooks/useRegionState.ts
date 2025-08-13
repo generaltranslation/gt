@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 
 function getNewRegion({
-  region,
   _region,
   regionCookieName,
 }: {
-  region: string | undefined;
   _region: string | undefined;
   regionCookieName: string;
 }) {
@@ -46,7 +44,6 @@ export function useRegionState({
       ? undefined
       : getNewRegion({
           _region,
-          region: _region,
           regionCookieName,
         })
   );
@@ -57,7 +54,7 @@ export function useRegionState({
     }
   };
   useEffect(() => {
-    _setRegion(getNewRegion({ region, _region, regionCookieName }));
+    _setRegion(getNewRegion({ _region, regionCookieName }));
   }, [region, _region, regionCookieName]);
   return {
     region,
