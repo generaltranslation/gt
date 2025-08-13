@@ -2,13 +2,18 @@ use super::state::{Statistics, TraversalState, ImportTracker};
 use super::jsx_utils::{extract_attribute_from_jsx_attr};
 use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
-use swc_core::common::Span;
 use swc_core::{
   common::SyntaxContext,
   ecma::{
       ast::*,
       atoms::Atom,
   },
+};
+use crate::visitor::expr_utils::{
+    extract_id_and_context_from_options,
+    extract_string_from_expr,
+    create_string_prop,
+    has_prop,
 };
 
 use crate::visitor::analysis::{
@@ -241,65 +246,17 @@ impl TransformVisitor {
         }
     }
 
-    // Helper function to extract string values from expressions
-    fn extract_string_from_expr(expr: &Expr) -> Option<String> {
-        match expr {
-            Expr::Lit(Lit::Str(s)) => Some(s.value.to_string()),
-            Expr::Lit(Lit::Num(n)) => Some(n.value.to_string()),
-            Expr::Lit(Lit::Bool(b)) => Some(b.value.to_string()),
-            Expr::Ident(ident) => Some(ident.sym.to_string()),
-            // Add more cases as needed for other expression types
-            _ => None,
-        }
-    }
 
     // Calculate hash for a call expression return the hash and the json string
     pub fn calculate_hash_for_call_expr(&mut self, string: &ExprOrSpread, options: Option<&ExprOrSpread>) -> (Option<String>, Option<String>) {
-        // TODO: what if $hash or $json already exist?
         // Extract the string content
-        let string_content = Self::extract_string_from_expr(&string.expr);
+        let string_content = extract_string_from_expr(&string.expr);
         if string_content.is_none() {
             return (None, None);
         }
 
         // Extract the options content
-        let (id, context) = match options {
-            Some(options) => {
-                match options.expr.as_ref() {
-                    Expr::Object(obj) => {
-                        let mut id_value = None;
-                        let mut context_value = None;
-                        
-                        for prop in &obj.props {
-                            if let PropOrSpread::Prop(prop) = prop {
-                                if let Prop::KeyValue(key_value) = prop.as_ref() {
-                                    if let PropName::Ident(ident) = &key_value.key {
-                                        match ident.sym.as_str() {
-                                            "$id" => {
-                                                id_value = Self::extract_string_from_expr(&key_value.value);
-                                            }
-                                            "$context" => {
-                                                context_value = Self::extract_string_from_expr(&key_value.value);
-                                            }
-                                            _ => {}
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        (id_value, context_value)
-                    }
-                    _ => {
-                        (None, None)
-                    }
-                }
-            }
-            None => {
-                (None, None)
-            }
-        };
-
+        let (id, context) = extract_id_and_context_from_options(options);
 
         // Construct the json object
         use crate::hash::{SanitizedData, SanitizedChildren, SanitizedChild};
@@ -318,31 +275,6 @@ impl TransformVisitor {
         (Some(hash), Some(json_string))
     }
 
-    fn create_string_prop(key: &str, value: &str, span: Span) -> PropOrSpread {
-        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-            key: PropName::Ident(Ident::new(key.into(), span, SyntaxContext::empty()).into()),
-            value: Box::new(Expr::Lit(Lit::Str(Str {
-                span,
-                value: value.into(),
-                raw: None,
-            }))),
-        })))
-    }
-
-    fn has_prop(props: &[PropOrSpread], key: &str) -> bool {
-        props.iter().any(|prop| {
-            if let PropOrSpread::Prop(p) = prop {
-                if let Prop::KeyValue(kv) = p.as_ref() {
-                    if let PropName::Ident(ident) = &kv.key {
-                        return ident.sym.as_ref() == key;
-                    }
-                }
-            }
-            false
-        })
-    }
-
-
     // Inject hash attribute into options
     pub fn inject_hash_attribute_on_call_expr(
         &mut self,
@@ -356,19 +288,20 @@ impl TransformVisitor {
         }
 
         let hash = hash.unwrap();
-        let json = json.unwrap();
+        // let json = json.unwrap();
         
         // Inject $hash & $json attribute into options object
         if let Some(options) = options {
             if let Expr::Object(existing_obj) = options.expr.as_ref() {
                 // Build a new CallExpr with the new options
                 let mut new_props = existing_obj.props.clone();
-                if !Self::has_prop(&existing_obj.props, "$hash") {
-                    new_props.push(Self::create_string_prop("$hash", &hash, call_expr.span));
+                if !has_prop(&existing_obj.props, "$hash") {
+                    new_props.push(create_string_prop("$hash", &hash, call_expr.span));
                 }
-                if !Self::has_prop(&existing_obj.props, "$json") {
-                    new_props.push(Self::create_string_prop("$json", &json, call_expr.span));
-                }
+                // For debugging
+                // if !Self::has_prop(&existing_obj.props, "$json") {
+                //     new_props.push(Self::create_string_prop("$json", &json, call_expr.span));
+                // }
                 
                 // Construct a new options object
                 let modified_options = Expr::Object(ObjectLit {
@@ -395,8 +328,9 @@ impl TransformVisitor {
             let new_options = Expr::Object(ObjectLit {
                 span: call_expr.span,
                 props: vec![
-                    Self::create_string_prop("$hash", &hash, call_expr.span),
-                    Self::create_string_prop("$json", &json, call_expr.span),
+                    create_string_prop("$hash", &hash, call_expr.span),
+                    // For debugging
+                    // create_string_prop("$json", &json, call_expr.span),
                 ],
             });
 
@@ -1014,7 +948,9 @@ mod tests {
             let call_expr = create_call_expr("useGT", create_template_literal());
 
             let initial_violations = visitor.statistics.dynamic_content_violations;
-            visitor.check_call_expr_for_violations(&call_expr);
+            if let Some(first_arg) = call_expr.args.first() {
+                visitor.check_call_expr_for_violations(first_arg, "useGT");
+            }
 
             assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations + 1);
         }
@@ -1025,7 +961,9 @@ mod tests {
             let call_expr = create_call_expr("useGT", create_string_concatenation());
 
             let initial_violations = visitor.statistics.dynamic_content_violations;
-            visitor.check_call_expr_for_violations(&call_expr);
+            if let Some(first_arg) = call_expr.args.first() {
+                visitor.check_call_expr_for_violations(first_arg, "useGT");
+            }
 
             assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations + 1);
         }
@@ -1041,7 +979,9 @@ mod tests {
             let call_expr = create_call_expr("useGT", string_literal);
 
             let initial_violations = visitor.statistics.dynamic_content_violations;
-            visitor.check_call_expr_for_violations(&call_expr);
+            if let Some(first_arg) = call_expr.args.first() {
+                visitor.check_call_expr_for_violations(first_arg, "useGT");
+            }
 
             assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations);
         }
@@ -1052,7 +992,18 @@ mod tests {
             let call_expr = create_call_expr("console.log", create_template_literal());
 
             let initial_violations = visitor.statistics.dynamic_content_violations;
-            visitor.check_call_expr_for_violations(&call_expr);
+            
+            // This test should simulate the real flow - only check violations for tracked functions
+            if let Callee::Expr(callee_expr) = &call_expr.callee {
+                if let Expr::Ident(ident) = callee_expr.as_ref() {
+                    // Only check violations if it's a tracked function
+                    if visitor.import_tracker.translation_functions.contains(&ident.sym) {
+                        if let Some(first_arg) = call_expr.args.first() {
+                            visitor.check_call_expr_for_violations(first_arg, &ident.sym);
+                        }
+                    }
+                }
+            }
 
             assert_eq!(visitor.statistics.dynamic_content_violations, initial_violations);
         }

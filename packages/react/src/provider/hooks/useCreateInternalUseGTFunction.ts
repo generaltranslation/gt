@@ -27,9 +27,14 @@ export default function useCreateInternalUseGTFunction(
         $id: id,
         $context: context,
         $hash: _hash,
-        $json: _json,
         ...variables
       } = options;
+
+      if (_hash) {
+        console.log('received $hash', _hash);
+      } else {
+        console.log('no $hash');
+      }
 
       // Check: reject invalid content
       if (!contentString || typeof contentString !== 'string') return '';
@@ -55,16 +60,14 @@ export default function useCreateInternalUseGTFunction(
         !translationWithIdExists // Translation doesn't exist under the id
       ) {
         // Calculate hash
-        hash = hashSource({
-          source: contentString,
-          ...(context && { context }),
-          ...(id && { id }),
-          dataFormat: 'ICU',
-        });
-        if (_hash && _hash !== hash) {
-          console.log('json', _json);
-          console.warn(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
-        }
+        hash =
+          _hash ||
+          hashSource({
+            source: contentString,
+            ...(context && { context }),
+            ...(id && { id }),
+            dataFormat: 'ICU',
+          });
       }
 
       // Get translation

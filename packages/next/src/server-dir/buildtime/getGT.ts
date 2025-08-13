@@ -62,13 +62,13 @@ export async function getGT(): Promise<
     // Validate content
     if (!message || typeof message !== 'string') return '';
 
-    const {
-      $id: id,
-      $context: context,
-      $hash: _hash,
-      $json: _json,
-      ...variables
-    } = options;
+    const { $id: id, $context: context, $hash: _hash, ...variables } = options;
+
+    if (_hash) {
+      console.log('received $hash', _hash);
+    } else {
+      console.log('no $hash');
+    }
 
     // Render Method
     const renderContent = (message: string, locales: string[]) => {
@@ -104,13 +104,7 @@ export async function getGT(): Promise<
 
     // Use hash to index
     if (!translationEntry) {
-      hash = calcHash();
-      if (_hash && _hash !== hash) {
-        console.log('json', _json);
-        console.warn(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
-      } else {
-        console.log('hash matches!');
-      }
+      hash = _hash || calcHash();
       translationEntry = translations?.[hash];
       translationsStatusEntry = translationsStatus?.[hash];
     }
