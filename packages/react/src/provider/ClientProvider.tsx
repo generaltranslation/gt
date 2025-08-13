@@ -8,7 +8,11 @@ import { TranslationsStatus, Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
-import { defaultLocaleCookieName } from '../utils/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from '../utils/cookies';
+
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
   children,
@@ -29,6 +33,7 @@ export default function ClientProvider({
   runtimeTranslationEnabled,
   resetLocaleCookieName,
   localeCookieName = defaultLocaleCookieName,
+  regionCookieName = defaultRegionCookieName,
   customMapping,
 }: ClientProviderProps): React.JSX.Element {
   // ----- TRANSLATIONS STATE ----- //
@@ -49,15 +54,7 @@ export default function ClientProvider({
     _locale ? determineLocale(_locale, locales) || '' : ''
   );
 
-  // Monitor for changes in _locale parameter
-  useEffect(() => {
-    const newLocale = _locale ? determineLocale(_locale, locales) || '' : '';
-    if (newLocale !== locale) {
-      _setLocale(newLocale);
-    }
-  }, [_locale, locales]);
-
-  // Check for an invalid cookie
+  // Check for an invalid cookie and update it
   useEffect(() => {
     const cookieLocale = document.cookie
       .split('; ')
@@ -80,11 +77,32 @@ export default function ClientProvider({
     // set locale
     _setLocale(newLocale);
 
-    // re-render client components
+    // re-render server components
     window.location.reload();
   };
 
-  const [region, setRegion] = useState(_region);
+  // ----- REGION STATE ----- //
+
+  const [region, _setRegion] = useState(_region);
+
+  // Check for an invalid cookie and update it
+  useEffect(() => {
+    const cookieRegion = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${regionCookieName}=`))
+      ?.split('=')[1];
+    if (region && cookieRegion && cookieRegion !== region) {
+      document.cookie = `${regionCookieName}=;path=/`;
+    }
+  }, [region, regionCookieName]);
+
+  // Set the region via cookies. No page reload needed.
+  const setRegion = (newRegion: string | undefined): void => {
+    // persist region
+    document.cookie = `${regionCookieName}=${newRegion || ''};path=/`;
+    // set region
+    _setRegion(newRegion);
+  };
 
   // ----- GT SETUP ----- //
 

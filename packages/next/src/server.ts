@@ -24,12 +24,4 @@ export function getLocales(): string[] {
   return getI18NConfig().getLocales();
 }
 
-export {
-  GTProvider,
-  T,
-  getGT,
-  tx,
-  Tx,
-  getLocale, // getDefaultLocale
-  getTranslations,
-};
+export { GTProvider, T, getGT, tx, Tx, getLocale, getTranslations };

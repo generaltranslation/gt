@@ -4,7 +4,6 @@ import {
   RenderMethod,
   TranslatedChildren,
   defaultRenderSettings,
-  DictionaryObject,
   defaultLocaleCookieName,
   Dictionary,
 } from 'gt-react/internal';

@@ -78,5 +78,6 @@ export type ClientProviderProps = {
   gtServicesEnabled?: boolean;
   localeCookieName?: string;
   resetLocaleCookieName: string;
+  regionCookieName?: string;
   customMapping?: CustomMapping;
 };

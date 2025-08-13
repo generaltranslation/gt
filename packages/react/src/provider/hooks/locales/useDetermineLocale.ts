@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { determineLocale } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
-import { defaultLocaleCookieName } from '../../utils/cookies';
+import { createUnsupportedLocaleWarning } from '../../../errors/createErrors';
+import { defaultLocaleCookieName } from '../../../utils/cookies';
 
 export function useDetermineLocale({
   locale: _locale = '',
@@ -32,7 +32,7 @@ export function useDetermineLocale({
         })
   );
 
-  const [setLocale, internalSetLocale] = createSetLocale({
+  const [setLocale, setLocaleWithoutSettingCookie] = createSetLocale({
     locale,
     locales,
     defaultLocale,
@@ -40,7 +40,7 @@ export function useDetermineLocale({
     _setLocale,
   });
 
-  // check brower for locales
+  // check browser for locales
   useEffect(() => {
     const newLocale = getNewLocale({
       _locale,
@@ -49,7 +49,7 @@ export function useDetermineLocale({
       defaultLocale,
       localeCookieName,
     });
-    internalSetLocale(newLocale);
+    setLocaleWithoutSettingCookie(newLocale);
   }, [_locale, locale, locales, defaultLocale, localeCookieName]);
 
   return [locale, setLocale];
@@ -132,7 +132,7 @@ function createSetLocale({
   localeCookieName: string;
   _setLocale: any;
 }) {
-  const internalSetLocale = (newLocale: string): string => {
+  const setLocaleWithoutSettingCookie = (newLocale: string): string => {
     // validate locale
     const validatedLocale =
       determineLocale(newLocale, locales) || locale || defaultLocale;
@@ -146,10 +146,10 @@ function createSetLocale({
   };
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
-    const validatedLocale = internalSetLocale(newLocale);
+    const validatedLocale = setLocaleWithoutSettingCookie(newLocale);
     if (typeof document !== 'undefined') {
       document.cookie = `${localeCookieName}=${validatedLocale};path=/`;
     }
   };
-  return [setLocale, internalSetLocale];
+  return [setLocale, setLocaleWithoutSettingCookie];
 }
