@@ -5,3 +5,5 @@
 ---
 
 Added locale selection based on region
+Added experimental compile time hashing
+Added linting plugin for gt-next
