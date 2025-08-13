@@ -99,7 +99,7 @@ export default function ClientProvider({
   // Set the region via cookies. No page reload needed.
   const setRegion = (newRegion: string | undefined): void => {
     // persist region
-    document.cookie = `${regionCookieName}=${newRegion};path=/`;
+    document.cookie = `${regionCookieName}=${newRegion || ''};path=/`;
     // set region
     _setRegion(newRegion);
   };
