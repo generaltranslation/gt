@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.1.1
+
+### Patch Changes
+
+- [#550](https://github.com/generaltranslation/gt/pull/550) [`b83d72e`](https://github.com/generaltranslation/gt/commit/b83d72e1d932a8f63157280d9d9dc6c451f2a625) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added a cookie to track region
+
+- Updated dependencies [[`b83d72e`](https://github.com/generaltranslation/gt/commit/b83d72e1d932a8f63157280d9d9dc6c451f2a625)]:
+  - gt-react@10.1.1
+
 ## 6.1.0
 
 ### Minor Changes
