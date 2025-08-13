@@ -96,7 +96,7 @@ export default function ClientProvider({
     }
   }, [region, regionCookieName]);
 
-  // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
+  // Set the region via cookies. No page reload needed.
   const setRegion = (newRegion: string | undefined): void => {
     // persist region
     document.cookie = `${regionCookieName}=${newRegion};path=/`;
