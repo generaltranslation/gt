@@ -19,22 +19,6 @@ npm install gt-next
 npm install gt-next-cli --save-dev
 ```
 
-### Rust Development Setup (Optional)
-
-If you want to modify the SWC plugin, install Rust:
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Add WebAssembly target
-rustup target add wasm32-wasip1
-
-# Build the plugin
-cd swc-plugin
-cargo build --release --target wasm32-wasip1
-```
-
 ## Getting Started
 
 ### Step 1: Configure Your Environment Variables
@@ -61,7 +45,7 @@ const nextConfig = {};
 export default withGTConfig(nextConfig, {
   locales: ['pt', 'es'], // Support for Portuguese and Spanish
   swcPluginOptions: {
-    logLevel: 'silent',     // Control warning output
+    logLevel: 'silent', // Control warning output
     compileTimeHash: false, // Enable compile-time optimizations
   },
 });
@@ -119,3 +103,19 @@ Full documentation, including guides, examples, and API references, can be found
 ## Contributing
 
 We welcome any contributions to our libraries. Please submit a pull request!
+
+### Rust Development Setup (Optional)
+
+If you want to modify the SWC plugin, install Rust:
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Add WebAssembly target
+rustup target add wasm32-wasip1
+
+# Build the plugin
+cd swc-plugin
+cargo build --release --target wasm32-wasip1
+```

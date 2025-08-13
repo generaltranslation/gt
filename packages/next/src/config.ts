@@ -400,7 +400,7 @@ export function withGTConfig(
             {
               ...mergedConfig.experimentalSwcPluginOptions,
             },
-          ], // you can pass plugin options here
+          ],
         ],
       }),
       ...(turboPackEnabled &&

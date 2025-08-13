@@ -50,11 +50,13 @@ async function T({
   children,
   id,
   context,
+  _hash,
   ...options
 }: {
   children: any;
   id?: string;
   context?: string;
+  _hash?: string;
   [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
@@ -68,7 +70,6 @@ async function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
-  const { hash: hashFromOptions, json } = options;
 
   // ----- TAG CHILDREN ----- //
 
@@ -114,28 +115,14 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    hash = hashSource({
-      source: childrenAsObjects,
-      ...(context && { context }),
-      ...(id && { id }),
-      dataFormat: 'JSX',
-    });
-    if (hashFromOptions) {
-      if (hashFromOptions !== hash) {
-        console.log(`buildtime Json: ${json}`);
-        console.warn(
-          `Mismatch: Buildtime: ${hashFromOptions} Runtime: ${hash}`
-        );
-      } else {
-        // console.log(
-        //   `gt-next: Hash from options matches hash from children: ${hash}`
-        // );
-      }
-    } else {
-      console.log(
-        `gt-next: No hash from options, using hash from children: ${hash}`
-      );
-    }
+    hash =
+      _hash ??
+      hashSource({
+        source: childrenAsObjects,
+        ...(context && { context }),
+        ...(id && { id }),
+        dataFormat: 'JSX',
+      });
     translationEntry = translations?.[hash];
     translationsStatusEntry = translationsStatus?.[hash];
   }
@@ -176,12 +163,14 @@ async function T({
   const translationPromise = (async () => {
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
-      hash ||= hashSource({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
+      hash ||=
+        _hash ??
+        hashSource({
+          source: childrenAsObjects,
+          ...(context && { context }),
+          ...(id && { id }),
+          dataFormat: 'JSX',
+        });
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,

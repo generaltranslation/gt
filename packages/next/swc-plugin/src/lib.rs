@@ -108,17 +108,18 @@ impl Fold for TransformVisitor {
             
             if !has_hash_attr {
                 // Calculate real hash using AST traversal
-                let (hash_value, json_string) = self.calculate_element_hash(&element);
+                let (hash_value, _) = self.calculate_element_hash(&element);
 
                 
                 // Create and add hash attribute with calculated value
-                let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "hash");
+                let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
                 element.opening.attrs.push(hash_attr);
 
                 
-                // Create and add json attribute with the stringified data
-                let json_attr = TransformVisitor::create_attr(&element, &json_string, "json");
-                element.opening.attrs.push(json_attr);
+                // For debugging purposes
+                // // Create and add json attribute with the stringified data
+                // let json_attr = TransformVisitor::create_attr(&element, &json_string, "json");
+                // element.opening.attrs.push(json_attr);
             }
         }
         

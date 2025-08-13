@@ -295,7 +295,7 @@ impl TransformVisitor {
       element.opening.attrs.iter().any(|attr| {
           if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
               if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-                  return ident.sym.as_ref() == "hash";
+                  return ident.sym.as_ref() == "_hash";
               }
           }
           false
@@ -733,7 +733,7 @@ mod tests {
         #[test]
         fn detects_hash_attribute_present() {
             let element = create_jsx_element("T", vec![
-                create_string_attr("hash", "abc123"),
+                create_string_attr("_hash", "abc123"),
                 create_string_attr("className", "test"),
             ]);
 

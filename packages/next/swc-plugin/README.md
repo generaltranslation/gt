@@ -39,5 +39,5 @@ import { T, Var } from 'gt-next';
 <T>Hello {userName}!</T>
 
 // ✅ Correct usage
-<T>Hello <Var name="userName">{userName}</Var>!</T>
+<T>Hello <Var>{userName}</Var>!</T>
 ```

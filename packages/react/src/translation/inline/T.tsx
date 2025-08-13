@@ -42,11 +42,13 @@ function T({
   children,
   id,
   context,
+  _hash,
   ...options
 }: {
   children: any;
   id?: string;
   context?: string;
+  _hash?: string;
   [key: string]: any;
 }): React.JSX.Element | null {
   if (!children) return null;
@@ -54,7 +56,6 @@ function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
-  const { hash: hashFromOptions, json } = options;
 
   const {
     translations,
@@ -87,28 +88,14 @@ function T({
 
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    const hash: string = hashSource({
-      source: childrenAsObjects,
-      ...(context && { context }),
-      ...(id && { id }),
-      dataFormat: 'JSX',
-    });
-    if (hashFromOptions) {
-      if (hashFromOptions !== hash) {
-        console.log(`buildtime Json: ${json}`);
-        console.warn(
-          `Mismatch: Buildtime: ${hashFromOptions} Runtime: ${hash}`
-        );
-      } else {
-        // console.log(
-        //   `gt-react: Hash from options matches hash from children: ${hash}`
-        // );
-      }
-    } else {
-      console.log(
-        `gt-react: No hash from options, using hash from children: ${hash}`
-      );
-    }
+    const hash: string =
+      _hash ??
+      hashSource({
+        source: childrenAsObjects,
+        ...(context && { context }),
+        ...(id && { id }),
+        dataFormat: 'JSX',
+      });
     return [childrenAsObjects, hash];
   }, [
     taggedChildren,

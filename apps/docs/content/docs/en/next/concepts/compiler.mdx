@@ -1,52 +1,78 @@
+---
+title: Compiler
+description: gt-next's rust-based SWC plugin.
+---
+
 # Compiler
 
-GT-Next includes an SWC plugin that performs build-time validation to catch common translation errors before they reach production.
+gt-next includes a Rust-based SWC plugin that performs build-time analysis to catch common translation errors and optimize performance.
 
-## What it Checks
+## Features
 
-The SWC plugin validates two types of dynamic content violations:
-
-### Dynamic JSX Violations
+### Dynamic Content Detection
 Detects unwrapped dynamic content in translation components:
 
 ```jsx
-// L Invalid - dynamic content not wrapped
+// ❌ Invalid - dynamic content not wrapped
 <T>Hello {userName}</T>
 
-//  Valid - dynamic content wrapped in variable component  
-<T>Hello <Var>{userName}</Var></T>
+// ✅ Valid - dynamic content wrapped in variable component  
+<T>Hello <Var name="userName">{userName}</Var></T>
 ```
 
-### Dynamic String Violations
+### Function Call Validation
 Detects non-literal arguments passed to translation functions:
 
 ```jsx
 const t = useGT();
 
-// L Invalid - template literals and concatenation
+// ❌ Invalid - template literals and concatenation
 t(`Hello ${name}`)
 t("Hello " + name)
 
-//  Valid - string literals with variable substitution
+// ✅ Valid - string literals with variable substitution
 t("Hello, {name}!", { name })
+```
+
+### Compile-time Hash Generation
+Pre-computes translation hashes for better runtime performance:
+
+```jsx
+// Input
+<T>Hello world</T>
+
+// Output (when enabled)
+<T _hash="a1b2c3d4">Hello world</T>
 ```
 
 ## Configuration
 
-Both validation types can be configured independently through the `withGTConfig` options:
+Configure the SWC plugin in your `next.config.js`:
 
-```typescript
-export type SwcPluginOptions = {
-  dynamicJsxCheckLogLevel?: 'error' | 'warn' | 'off';
-  dynamicStringCheckLogLevel?: 'error' | 'warn' | 'off';
-};
+```javascript
+import { withGTConfig } from 'gt-next/config';
+
+export default withGTConfig(nextConfig, {
+  locales: ['en', 'es'],
+  swcPluginOptions: {
+    logLevel: 'silent',     // Control warning output
+    compileTimeHash: false, // Enable hash generation
+  },
+});
 ```
 
-- `'warn'` - Shows warnings during build (default)
-- `'error'` - Fails the build with errors  
-- `'off'` - Disables checking
+### Options
 
-For more information on configuring these options, see the [withGTConfig](/docs/en/next/api/config/withGTConfig) documentation.
+- **`logLevel`**: Controls warning output level
+  - `'silent'` - No warnings (default for production)
+  - `'error'` - Show as build errors
+  - `'warn'` - Show as warnings (default for development)
+  - `'info'` - Show info-level messages
+  - `'debug'` - Show all debug information
+
+- **`compileTimeHash`**: Enables compile-time hash generation
+  - `false` - Disabled (default)
+  - `true` - Generate hashes at build time for better performance
 
 ## Limitations
 
@@ -58,4 +84,4 @@ The SWC plugin processes files individually and cannot detect violations in re-e
 <Translate>Hello {name}</Translate> // Won't be detected
 ```
 
-For comprehensive coverage including re-exports, consider using the [GT-Next ESLint plugin](/docs/en/next/tools/eslint).
+For comprehensive coverage including re-exports, consider using the [gt-next ESLint plugin](/docs/en/next/tools/eslint).
