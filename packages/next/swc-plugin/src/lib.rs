@@ -23,7 +23,16 @@ impl VisitMut for TransformVisitor {
 
     /// Process function calls to detect invalid usage of translation functions
     fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
-        self.check_call_expr_for_violations(call_expr);
+        if let Callee::Expr(callee_expr) = &call_expr.callee {
+            if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
+                if self.import_tracker.translation_functions.contains(function_name) {
+                    // Check the first argument for dynamic content
+                    if let Some(arg) = call_expr.args.first() {
+                        self.check_call_expr_for_violations(arg, function_name);
+                    }
+                }
+            }
+        }
         call_expr.visit_mut_children_with(self);
     }
 
@@ -63,8 +72,38 @@ impl Fold for TransformVisitor {
     }
 
     /// Process function calls to detect invalid usage of translation functions
+    /// Inject hash attributes on translation components
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
-        self.check_call_expr_for_violations(&call_expr);
+        if let Callee::Expr(callee_expr) = &call_expr.callee {
+            if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
+                if self.import_tracker.translation_functions.contains(function_name) {
+                    // Check the first argument for dynamic content
+                    if let Some(string) = call_expr.args.first() {
+                        // Check for violations
+                        self.check_call_expr_for_violations(string, function_name);
+
+                        // Get the options
+                        let options = call_expr.args.get(1);
+
+                        // Calculate hash for the call expression
+                        let (hash, json) = self.calculate_hash_for_call_expr(
+                            string,
+                            options
+                        );
+
+                        // Inject hash attribute on the call expression
+                        let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+                            &call_expr,
+                            options,
+                            hash,
+                            json
+                        );
+
+                        return modified_call_expr.fold_children_with(self);
+                    }
+                }
+            }
+        }
         call_expr.fold_children_with(self)
     }
 

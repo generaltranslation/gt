@@ -35,6 +35,7 @@ export default function useGT() {
     options: Record<string, any> & {
       $id?: string;
       $context?: string;
+      $hash?: string;
     } = {}
   ): string {
     return (_internalUseGTFunction as any)(string, options);

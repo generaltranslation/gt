@@ -95,6 +95,8 @@ export type DictionaryTranslationOptions = Record<string, any>;
 export type InlineTranslationOptions = DictionaryTranslationOptions & {
   $context?: string;
   $id?: string;
+  $hash?: string;
+  $string?: string;
 };
 export type RuntimeTranslationOptions = {
   locale?: string;

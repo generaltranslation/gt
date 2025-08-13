@@ -55,13 +55,20 @@ export async function getGT(): Promise<
     options: Record<string, any> & {
       $context?: string;
       $id?: string;
+      $hash?: string;
     } = {}
   ) => {
     // ----- SET UP ----- //
     // Validate content
     if (!message || typeof message !== 'string') return '';
 
-    const { $id: id, $context: context, ...variables } = options;
+    const {
+      $id: id,
+      $context: context,
+      $hash: _hash,
+      $json: _json,
+      ...variables
+    } = options;
 
     // Render Method
     const renderContent = (message: string, locales: string[]) => {
@@ -98,6 +105,12 @@ export async function getGT(): Promise<
     // Use hash to index
     if (!translationEntry) {
       hash = calcHash();
+      if (_hash && _hash !== hash) {
+        console.log('json', _json);
+        console.warn(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
+      } else {
+        console.log('hash matches!');
+      }
       translationEntry = translations?.[hash];
       translationsStatusEntry = translationsStatus?.[hash];
     }

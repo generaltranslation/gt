@@ -23,7 +23,13 @@ export default function useCreateInternalUseGTFunction(
   return useCallback(
     (contentString: string, options: InlineTranslationOptions = {}) => {
       // ----- SET UP ----- //
-      const { $id: id, $context: context, ...variables } = options;
+      const {
+        $id: id,
+        $context: context,
+        $hash: _hash,
+        $json: _json,
+        ...variables
+      } = options;
 
       // Check: reject invalid content
       if (!contentString || typeof contentString !== 'string') return '';
@@ -55,6 +61,10 @@ export default function useCreateInternalUseGTFunction(
           ...(id && { id }),
           dataFormat: 'ICU',
         });
+        if (_hash && _hash !== hash) {
+          console.log('json', _json);
+          console.warn(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
+        }
       }
 
       // Get translation
