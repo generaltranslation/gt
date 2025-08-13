@@ -50,7 +50,7 @@ export function useRegionState({
   const setRegion = (region: string | undefined) => {
     _setRegion(region);
     if (typeof document !== 'undefined') {
-      document.cookie = `${regionCookieName}=${region};path=/`;
+      document.cookie = `${regionCookieName}=${region || ''};path=/`;
     }
   };
   useEffect(() => {
