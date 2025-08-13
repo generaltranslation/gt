@@ -28,7 +28,8 @@ export const noDynamicString: Rule.RuleModule = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Translation functions must use string literals as the first argument',
+      description:
+        'Translation functions must use string literals as the first argument',
       category: 'Best Practices',
       recommended: true,
       url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-dynamic-string',
@@ -36,7 +37,8 @@ export const noDynamicString: Rule.RuleModule = {
     fixable: undefined,
     schema: [],
     messages: {
-      dynamicString: "Translation function must use a constant string literal as the first argument. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.",
+      dynamicString:
+        "Translation function must use a constant string literal as the first argument. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.",
     },
   },
 
@@ -46,7 +48,11 @@ export const noDynamicString: Rule.RuleModule = {
     // Track variables assigned from translation function calls
     const translationVariables = new Set<string>();
 
-    function trackImport(localName: string, importedName: string, source: string) {
+    function trackImport(
+      localName: string,
+      importedName: string,
+      source: string
+    ) {
       if (isGTModule(source) && isTranslationFunction(importedName)) {
         trackedFunctions.set(localName, {
           name: importedName,
@@ -99,7 +105,10 @@ export const noDynamicString: Rule.RuleModule = {
         const objectName = node.callee.object.name;
         const propertyName = node.callee.property.name;
 
-        if (trackedFunctions.has(objectName) && isTranslationFunction(propertyName)) {
+        if (
+          trackedFunctions.has(objectName) &&
+          isTranslationFunction(propertyName)
+        ) {
           validateTranslationCall(node);
         }
       }
@@ -114,7 +123,7 @@ export const noDynamicString: Rule.RuleModule = {
       ) {
         if (node.init.type === 'CallExpression') {
           const callExpression = node.init;
-          
+
           if (callExpression.callee.type === 'Identifier') {
             const functionName = callExpression.callee.name;
             if (trackedFunctions.has(functionName)) {
@@ -128,16 +137,21 @@ export const noDynamicString: Rule.RuleModule = {
             // Handle namespace calls like: const t = GT.useGT();
             const objectName = callExpression.callee.object.name;
             const propertyName = callExpression.callee.property.name;
-            if (trackedFunctions.has(objectName) && isTranslationFunction(propertyName)) {
+            if (
+              trackedFunctions.has(objectName) &&
+              isTranslationFunction(propertyName)
+            ) {
               // This variable now holds a translation function
               translationVariables.add(node.id.name);
             }
           }
-        } else if (node.init.type === 'AwaitExpression' && 
-                   node.init.argument.type === 'CallExpression') {
+        } else if (
+          node.init.type === 'AwaitExpression' &&
+          node.init.argument.type === 'CallExpression'
+        ) {
           // Handle await getGT() case
           const callExpression = node.init.argument;
-          
+
           if (callExpression.callee.type === 'Identifier') {
             const functionName = callExpression.callee.name;
             if (trackedFunctions.has(functionName)) {
@@ -151,7 +165,10 @@ export const noDynamicString: Rule.RuleModule = {
             // Handle namespace calls like: const t = await GT.getGT();
             const objectName = callExpression.callee.object.name;
             const propertyName = callExpression.callee.property.name;
-            if (trackedFunctions.has(objectName) && isTranslationFunction(propertyName)) {
+            if (
+              trackedFunctions.has(objectName) &&
+              isTranslationFunction(propertyName)
+            ) {
               // This variable now holds a translation function (from awaited promise)
               translationVariables.add(node.id.name);
             }

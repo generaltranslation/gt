@@ -5,8 +5,8 @@
 export const recommended = {
   plugins: ['gt-next'],
   rules: {
-    'gt-next/no-dynamic-jsx': 'warn',
-    'gt-next/no-dynamic-string': 'warn',
+    'gt-next/no-dynamic-jsx': true,
+    'gt-next/no-dynamic-string': true,
   },
   settings: {
     react: {

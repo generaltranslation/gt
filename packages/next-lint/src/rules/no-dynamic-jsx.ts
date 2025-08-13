@@ -37,19 +37,7 @@ export const noDynamicJsx: Rule.RuleModule = {
       url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-dynamic-jsx',
     },
     fixable: undefined,
-    schema: [
-      {
-        type: 'object',
-        properties: {
-          severity: {
-            type: 'string',
-            enum: ['error', 'warn'],
-            default: 'warn',
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
+    schema: [],
     messages: {
       dynamicJsx:
         'Dynamic content in <T> component should be wrapped in a variable component (<Var>, <DateTime>, <Num>, or <Currency>)',
@@ -128,6 +116,27 @@ export const noDynamicJsx: Rule.RuleModule = {
       return false;
     }
 
+    // Check if the node is a string literal or template literal
+    function isStringLiteral(expression: any): boolean {
+      // For JSXExpressionContainer, check the expression inside
+      return (
+        (expression.type === 'Literal' &&
+          typeof expression.value === 'string') ||
+        (expression.type === 'TemplateLiteral' &&
+          expression.expressions.length === 0) // No interpolation
+      );
+    }
+
+    // Check if the node is a comment
+    function isComment(expression: any): boolean {
+      return expression.type === 'Block' || expression.type === 'Line';
+    }
+
+    // Check if empty
+    function isEmpty(expression: any): boolean {
+      return expression.type === 'JSXEmptyExpression';
+    }
+
     return {
       // Track imports from GT-Next modules
       ImportDeclaration(node: any) {
@@ -178,6 +187,17 @@ export const noDynamicJsx: Rule.RuleModule = {
       JSXExpressionContainer(node: any) {
         // Skip expressions inside JSX attributes (e.g., <Image width={16} />)
         if (isInsideJSXAttribute(node)) {
+          return;
+        }
+
+        // Skip expressions with just a string literal (e.g., {'Hello'})
+        // Skip expressions with just a comment
+        // Skip expressions with just an empty statement
+        if (
+          (node.expression && isStringLiteral(node.expression)) ||
+          isComment(node.expression) ||
+          isEmpty(node.expression)
+        ) {
           return;
         }
 
