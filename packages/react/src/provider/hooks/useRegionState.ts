@@ -55,7 +55,7 @@ export function useRegionState({
   };
   useEffect(() => {
     _setRegion(getNewRegion({ _region, regionCookieName }));
-  }, [region, _region, regionCookieName]);
+  }, [_region, regionCookieName]);
   return {
     region,
     setRegion,
