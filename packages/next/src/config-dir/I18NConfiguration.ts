@@ -449,6 +449,7 @@ export default class I18NConfiguration {
       this._translationCache.delete(cacheKey);
       throw new Error(error);
     });
+    
     this._translationCache.set(cacheKey, translationPromise);
     return translationPromise;
   }

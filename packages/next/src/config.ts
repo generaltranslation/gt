@@ -297,7 +297,7 @@ export function withGTConfig(
   // Set default cache expiry if and only if no dev key
   if (
     mergedConfig.loadTranslationsType == 'remote' &&
-    mergedConfig.devApiKey &&
+    !mergedConfig.devApiKey &&
     typeof mergedConfig.cacheExpiryTime === 'undefined'
   ) {
     mergedConfig.cacheExpiryTime = defaultCacheExpiryTime;

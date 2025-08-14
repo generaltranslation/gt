@@ -54,6 +54,7 @@ async function T({
   _hash?: string;
   [key: string]: any;
 }): Promise<any> {
+
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
@@ -137,7 +138,7 @@ async function T({
   }
 
   if (
-    translationEntry === null || // If there was an error
+    // translationEntry === null || // If there was an error
     !I18NConfig.isDevelopmentApiEnabled() // Development translation disabled
   ) {
     return renderDefault();
