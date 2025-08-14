@@ -1,9 +1,6 @@
 import React from 'react';
 import useLocaleSelector from '../hooks/useLocaleSelector';
-<<<<<<< HEAD
-=======
 import { CustomMapping } from 'generaltranslation/types';
->>>>>>> a/t
 
 /**
  * Capitalizes the first letter of a string if applicable.
@@ -14,8 +11,6 @@ import { CustomMapping } from 'generaltranslation/types';
 function capitalizeName(str: string): string {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + (str.length > 1 ? str.slice(1) : '');
-<<<<<<< HEAD
-=======
 }
 
 /**
@@ -34,7 +29,6 @@ function _convertCustomNamesToMapping(
     result[locale] = { name: customNames[locale] };
   }
   return result;
->>>>>>> a/t
 }
 
 /**

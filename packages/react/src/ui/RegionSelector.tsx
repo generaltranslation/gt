@@ -8,9 +8,6 @@ type RegionData = {
 };
 
 /**
-<<<<<<< HEAD
- * A multi-purpose dropdown component that allows users to select a region.
-=======
  * A dropdown component that allows users to select a region.
  *
  * @param {string[]} [regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales in the `<GTProvider>` context.
@@ -30,7 +27,6 @@ type RegionData = {
  *   placeholder="Select a region"
  * />
  * ```
->>>>>>> a/t
  */
 export default function RegionSelector<Regions extends string[]>({
   regions: _regions,
@@ -53,22 +49,6 @@ export default function RegionSelector<Regions extends string[]>({
   asLocaleSelector?: boolean;
   [key: string]: any;
 }): React.JSX.Element | null {
-<<<<<<< HEAD
-  const {
-    region,
-    setRegion,
-    regions,
-    regionData,
-    locale,
-    setLocale,
-    localeRegion,
-  } = useRegionSelector({
-    regions: _regions,
-    customMapping,
-    prioritizeCurrentLocaleRegion,
-    sortRegionsAlphabetically,
-  });
-=======
   const { region, setRegion, regions, regionData, locale, setLocale } =
     useRegionSelector({
       regions: _regions,
@@ -76,7 +56,6 @@ export default function RegionSelector<Regions extends string[]>({
       prioritizeCurrentLocaleRegion,
       sortRegionsAlphabetically,
     });
->>>>>>> a/t
 
   const changeRegion = (region: Regions[number]) => {
     setRegion(region);

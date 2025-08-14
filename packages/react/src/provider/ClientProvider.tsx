@@ -86,32 +86,7 @@ export default function ClientProvider({
     _setRegion(newRegion);
   };
 
-<<<<<<< HEAD
-  const [region, setRegion] = useState(_region);
-
-  // ----- GT SETUP ----- //
-
-  // Define the GT instance
-  // Used for custom mapping and as a driver for the runtime translation
-  const gt = useMemo(
-    () =>
-      new GT({
-        devApiKey,
-        sourceLocale: defaultLocale,
-        targetLocale: locale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
-        customMapping,
-      }),
-    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
-  );
-
-  // ---------- TRANSLATION LIFECYCLE ---------- //
-
-  // Fetch additional translations and queue them for merging
-=======
   // Check for an invalid cookie and update it
->>>>>>> a/t
   useEffect(() => {
     const cookieRegion = document.cookie
       .split('; ')

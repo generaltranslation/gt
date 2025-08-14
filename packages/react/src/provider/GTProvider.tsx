@@ -16,11 +16,7 @@ import {
   defaultRegionCookieName,
 } from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
-<<<<<<< HEAD
-import { useCalculateLocaleData } from './hooks/useCalculateLocaleData';
-=======
 import { useLocaleState } from './hooks/locales/useLocaleState';
->>>>>>> a/t
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
@@ -88,11 +84,7 @@ export default function GTProvider({
     locales: approvedLocales,
     translationRequired,
     dialectTranslationRequired,
-<<<<<<< HEAD
-  } = useCalculateLocaleData({
-=======
   } = useLocaleState({
->>>>>>> a/t
     _locale,
     defaultLocale,
     locales,
@@ -101,15 +93,11 @@ export default function GTProvider({
   });
 
   // Define the region instance
-<<<<<<< HEAD
-  const [region, setRegion] = useState<string | undefined>(_region);
-=======
   const { region, setRegion } = useRegionState({
     _region,
     ssr,
     regionCookieName: defaultRegionCookieName,
   });
->>>>>>> a/t
 
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation
