@@ -54,7 +54,6 @@ async function T({
   _hash?: string;
   [key: string]: any;
 }): Promise<any> {
-
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
