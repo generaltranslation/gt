@@ -12,7 +12,7 @@ import {
   runtimeTranslationTimeoutWarning,
 } from '../errors/createErrors';
 import { _Content, JsxChildren } from 'generaltranslation/internal';
-import { Translations, TranslationsStatus } from 'gt-react/internal';
+import { Translations } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import dictionaryManager, { DictionaryManager } from './DictionaryManager';
 import { HeadersAndCookies } from './props/withGTConfigProps';
@@ -30,7 +30,7 @@ type I18NConfigurationParams = {
   projectId?: string;
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
-  cacheExpiryTime: number;
+  cacheExpiryTime?: number;
   loadTranslationsType: 'remote' | 'custom' | 'disabled';
   loadDictionaryEnabled: boolean;
   defaultLocale: string;
@@ -82,7 +82,7 @@ export default class I18NConfiguration {
   devApiKey?: string;
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
-  cacheExpiryTime: number;
+  cacheExpiryTime?: number;
   _versionId?: string;
   // Locale info
   defaultLocale: string;
@@ -408,15 +408,6 @@ export default class I18NConfiguration {
   }
 
   /**
-   * Get the translation result status for a given locale
-   * @param locale - The locale set by the user
-   * @returns The translation result status.
-   */
-  getCachedTranslationsStatus(locale: string): TranslationsStatus {
-    return this._translationManager?.getCachedTranslationsStatus(locale) || {};
-  }
-
-  /**
    * Synchronously retrieves translations for a given locale which are already cached locally
    * @param {string} locale - The locale code.
    * @returns {Translations} The translations data or an empty object if not found.
@@ -440,12 +431,6 @@ export default class I18NConfiguration {
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
-
-    // Set translation result status to loading
-    this._translationManager?.setTranslationsLoading(
-      params.targetLocale,
-      params.options.hash
-    );
 
     // add to tx queue
     const { source, targetLocale, options } = params;
@@ -510,13 +495,6 @@ export default class I18NConfiguration {
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
-
-    // Set translation result status to loading
-    this._translationManager?.setTranslationsLoading(
-      targetLocale,
-      options.hash
-    );
-
     // Add to translation queue
     const translationPromise = new Promise<TranslatedChildren>(
       (resolve, reject) => {
@@ -563,8 +541,8 @@ export default class I18NConfiguration {
         // check if entry is missing
         const result = results[index];
 
-        let errorMsg = 'Translation failed.';
-        let errorCode = 500;
+        const errorMsg = 'Translation failed.';
+        const errorCode = 500;
 
         const hash = request.metadata.hash;
         if (result && typeof result === 'object') {
@@ -575,10 +553,6 @@ export default class I18NConfiguration {
                 request.targetLocale,
                 hash,
                 result.translation
-              );
-              this._translationManager.setTranslationsSuccess(
-                request.targetLocale,
-                hash
               );
             }
             // check for mismatching ids or hashes
@@ -591,19 +565,7 @@ export default class I18NConfiguration {
               );
             }
             return request.resolve(result.translation);
-          } else if ('error' in result) {
-            errorMsg = result.error || errorMsg;
-            errorCode = result.code || errorCode;
           }
-        }
-        // record translation error
-        if (this._translationManager) {
-          this._translationManager.setTranslationError(
-            request.targetLocale,
-            hash,
-            errorMsg,
-            errorCode
-          );
         }
         return request.reject(new GTTranslationError(errorMsg, errorCode));
       });
@@ -617,15 +579,6 @@ export default class I18NConfiguration {
 
       // Reject all promises
       batch.forEach((request) => {
-        // record translation error
-        if (this._translationManager) {
-          this._translationManager.setTranslationError(
-            request.targetLocale,
-            request.metadata.hash,
-            'Translation failed.',
-            500
-          );
-        }
         return request.reject(
           new GTTranslationError('Translation failed:' + error, 500)
         );

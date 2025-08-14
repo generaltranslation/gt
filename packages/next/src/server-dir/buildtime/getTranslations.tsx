@@ -10,7 +10,7 @@ import {
   createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-  translationLoadingWarning,
+  createTranslationLoadingWarning
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
@@ -52,9 +52,6 @@ export async function getTranslations(
     : undefined;
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
-    : undefined;
-  const translationsStatus = translationRequired
-    ? I18NConfig.getCachedTranslationsStatus(locale)
     : undefined;
   const renderSettings = I18NConfig.getRenderSettings();
 
@@ -148,17 +145,14 @@ export async function getTranslations(
       dataFormat: 'ICU',
     });
     const translationEntry = translations?.[hash];
-    const translationsStatusEntry = translationsStatus?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationsStatusEntry?.status === 'success')
-      return renderContent(translationEntry as string, [locale, defaultLocale]);
+    if (translationEntry) return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationsStatusEntry?.status === 'error')
-      return renderContent(entry, [defaultLocale]);
+    if (translationEntry === null) return renderContent(entry, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
@@ -177,17 +171,15 @@ export async function getTranslations(
         id,
         hash,
       },
+    }).then((result) => {
+      // Log the translation result for debugging purposes
+      // eslint-disable-next-line no-console
+      console.warn(createTranslationLoadingWarning({ 
+        ...(id && { id }),
+        source: renderContent(entry, [defaultLocale]),
+        translation: renderContent(result as string, [locale, defaultLocale])
+      }));
     }).catch(() => {}); // Error logged in I18NConfig
-
-    // Loading translation warning
-    console.warn(translationLoadingWarning);
-
-    // Loading behavior
-    if (renderSettings.method === 'replace') {
-      return renderContent(entry, [defaultLocale]);
-    } else if (renderSettings.method === 'skeleton') {
-      return '';
-    }
 
     // Default is returning source, rather than returning a loading state
     return renderContent(entry, [defaultLocale]);

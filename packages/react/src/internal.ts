@@ -32,7 +32,6 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
-  TranslationsStatus,
 } from './types/types';
 
 import { GTContextType } from './types/context';
@@ -68,7 +67,6 @@ export {
   Entry,
   TranslatedChildren,
   Translations,
-  TranslationsStatus,
   GTContextType,
   ClientProviderProps,
   DictionaryTranslationOptions,

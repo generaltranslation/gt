@@ -1,7 +1,9 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultWithGTConfigProps from './config-dir/props/defaultWithGTConfigProps';
+import defaultWithGTConfigProps, {
+  defaultCacheExpiryTime,
+} from './config-dir/props/defaultWithGTConfigProps';
 import withGTConfigProps from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
@@ -44,7 +46,7 @@ import { turboConfigStable } from './plugin/getTurboConfigStable';
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
- * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
+ * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
@@ -256,7 +258,7 @@ export function withGTConfig(
     }
   );
 
-  // ---------- ERROR CHECKS ---------- //
+  // ---------- DERIVED CONFIG ATTRIBUTES ---------- //
 
   // Local dictionary flag
   if (customLoadDictionaryPath) {
@@ -285,6 +287,17 @@ export function withGTConfig(
   } else {
     mergedConfig.loadTranslationsType = 'remote';
   }
+
+  // Set default cache expiry if and only if no dev key
+  if (
+    mergedConfig.loadTranslationsType == 'remote' &&
+    mergedConfig.devApiKey &&
+    typeof mergedConfig.cacheExpiryTime === 'undefined'
+  ) {
+    mergedConfig.cacheExpiryTime = defaultCacheExpiryTime;
+  }
+
+  // ---------- ERROR CHECKS ---------- //
 
   // Resolve getLocale path
   const customLocaleEnabled = false;
