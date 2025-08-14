@@ -40,6 +40,7 @@ import { ClientProviderProps } from './types/config';
 import { defaultLocaleCookieName } from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
+import { validateString } from './provider/helpers/validateString';
 
 export {
   addGTIdentifier,
@@ -79,4 +80,5 @@ export {
   VariableProps,
   defaultLocaleCookieName,
   mergeDictionaries,
+  validateString,
 };

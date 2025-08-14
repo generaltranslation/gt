@@ -71,6 +71,9 @@ export const txUseClientError =
   `This is currently unsupported. Please use <T> with variables, ` +
   `or make sure <Tx> rendered on the server only. `;
 
+export const missingVariablesError = (variables: string[], message: string) =>
+  `gt-next Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
+
 // ---- WARNINGS ---- //
 
 export const usingDefaultsWarning =

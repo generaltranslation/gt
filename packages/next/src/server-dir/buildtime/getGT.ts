@@ -4,9 +4,10 @@ import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
 import {
   createStringTranslationError,
+  missingVariablesError,
   translationLoadingWarning,
 } from '../../errors/createErrors';
-import { InlineTranslationOptions } from 'gt-react/internal';
+import { InlineTranslationOptions, validateString } from 'gt-react/internal';
 import use from '../../utils/use';
 
 /**
@@ -63,11 +64,12 @@ export async function getGT(): Promise<
     if (!message || typeof message !== 'string') return '';
 
     const { $id: id, $context: context, $hash: _hash, ...variables } = options;
+    console.log('options', options);
+    console.log('variables', variables);
 
-    if (_hash) {
-      console.log('received $hash', _hash);
-    } else {
-      console.log('no $hash');
+    // Check: reject invalid variables
+    if (!validateString(message, variables)) {
+      throw new Error(missingVariablesError(Object.keys(variables), message));
     }
 
     // Render Method
@@ -104,7 +106,16 @@ export async function getGT(): Promise<
 
     // Use hash to index
     if (!translationEntry) {
-      hash = _hash || calcHash();
+      hash = calcHash();
+      if (_hash) {
+        if (_hash !== hash) {
+          console.error(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
+        } else {
+          console.log('hash matches!');
+        }
+      } else {
+        console.error('no $hash');
+      }
       translationEntry = translations?.[hash];
       translationsStatusEntry = translationsStatus?.[hash];
     }

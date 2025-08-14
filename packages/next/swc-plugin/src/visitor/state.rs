@@ -27,9 +27,11 @@ pub struct ImportTracker {
     pub translation_import_aliases: std::collections::HashMap<Atom, Atom>, // T
     pub variable_import_aliases: std::collections::HashMap<Atom, Atom>,    // Var, Num, Currency, DateTime
     pub branch_import_aliases: std::collections::HashMap<Atom, Atom>,      // Branch, Plural
+    pub translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // getGT, useGT
     // TODO: getGT, useGT
 
     /// Other import tracking
     pub namespace_imports: std::collections::HashSet<Atom>,
-    pub translation_functions: std::collections::HashSet<Atom>, // getGT, useGT
+    // pub translation_functions: std::collections::HashSet<Atom>, // getGT, useGT (Deprecated)
+    pub translation_callee_names: std::collections::HashMap<Atom, Atom>, // const t = getGT, const t2 = useGT
 }

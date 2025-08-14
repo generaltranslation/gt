@@ -8,6 +8,8 @@ import {
 } from '../../types/types';
 import { TranslateIcuCallback } from '../../types/runtime';
 import { formatMessage } from 'generaltranslation';
+import { validateString } from '../helpers/validateString';
+import { missingVariablesError } from '../../errors/createErrors';
 
 export default function useCreateInternalUseGTFunction(
   translations: Translations | null,
@@ -30,14 +32,15 @@ export default function useCreateInternalUseGTFunction(
         ...variables
       } = options;
 
-      if (_hash) {
-        console.log('received $hash', _hash);
-      } else {
-        console.log('no $hash');
-      }
-
       // Check: reject invalid content
       if (!contentString || typeof contentString !== 'string') return '';
+
+      // Check: reject invalid variables
+      if (!validateString(contentString, variables)) {
+        throw new Error(
+          missingVariablesError(Object.keys(variables), contentString)
+        );
+      }
 
       // Render method
       const renderMessage = (message: string, locales: string[]) => {
@@ -60,14 +63,21 @@ export default function useCreateInternalUseGTFunction(
         !translationWithIdExists // Translation doesn't exist under the id
       ) {
         // Calculate hash
-        hash =
-          _hash ||
-          hashSource({
-            source: contentString,
-            ...(context && { context }),
-            ...(id && { id }),
-            dataFormat: 'ICU',
-          });
+        hash = hashSource({
+          source: contentString,
+          ...(context && { context }),
+          ...(id && { id }),
+          dataFormat: 'ICU',
+        });
+        if (_hash) {
+          if (_hash !== hash) {
+            console.error(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
+          } else {
+            console.log('hash matches!');
+          }
+        } else {
+          console.error('no $hash');
+        }
       }
 
       // Get translation

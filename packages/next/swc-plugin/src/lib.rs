@@ -8,6 +8,7 @@ use swc_core::{
 use crate::config::{PluginConfig};
 use crate::visitor::TransformVisitor;
 
+// TODO: remove VisitMut
 impl VisitMut for TransformVisitor {
     /// Process import declarations to track GT-Next imports
     fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
@@ -25,7 +26,13 @@ impl VisitMut for TransformVisitor {
     fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if self.import_tracker.translation_functions.contains(function_name) {
+                // if self.import_tracker.translation_functions.contains(function_name) {
+                //     // Check the first argument for dynamic content
+                //     if let Some(arg) = call_expr.args.first() {
+                //         self.check_call_expr_for_violations(arg, function_name);
+                //     }
+                // }
+                if self.import_tracker.translation_callee_names.contains_key(function_name) {
                     // Check the first argument for dynamic content
                     if let Some(arg) = call_expr.args.first() {
                         self.check_call_expr_for_violations(arg, function_name);
@@ -67,6 +74,7 @@ impl Fold for TransformVisitor {
 
     /// Process variable declarations to track assignments like: const t = useGT()
     fn fold_var_declarator(&mut self, var_declarator: VarDeclarator) -> VarDeclarator {
+        eprintln!("🔍 Processing variable declarator: {:?}", var_declarator.name);
         self.track_variable_assignment(&var_declarator);
         var_declarator
     }
@@ -76,9 +84,12 @@ impl Fold for TransformVisitor {
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if self.import_tracker.translation_functions.contains(function_name) {
+                if self.settings.compile_time_hash && self.import_tracker.translation_callee_names.contains_key(function_name) {
+                // if self.settings.compile_time_hash && self.import_tracker.translation_functions.contains(function_name) {
+                    eprintln!("contains: {:?}", function_name);
                     // Check the first argument for dynamic content
                     if let Some(string) = call_expr.args.first() {
+                        self.logger.log_debug(&format!("string: {:?}", string));
                         // Check for violations
                         self.check_call_expr_for_violations(string, function_name);
 
@@ -100,6 +111,10 @@ impl Fold for TransformVisitor {
                         );
 
                         return modified_call_expr.fold_children_with(self);
+                    }
+                } else {
+                    if function_name == "useGT" {
+                        eprintln!("function_name: {:?} not in translation_callee_names: {:?}", function_name, self.import_tracker.translation_callee_names);
                     }
                 }
             }

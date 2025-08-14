@@ -81,3 +81,46 @@ pub fn has_prop(props: &[PropOrSpread], key: &str) -> bool {
         false
     })
 }
+
+
+
+/// Create a new CallExpr that spreads an existing expression and adds hash properties
+pub fn create_spread_options_call_expr(
+    call_expr: &CallExpr,
+    spread_expr: &Expr,
+    hash: &str,
+    _: Option<&str>, // json
+    span: Span
+) -> CallExpr {
+    // Create the spread property
+    let spread_prop = PropOrSpread::Spread(SpreadElement {
+        dot3_token: span,
+        expr: Box::new(spread_expr.clone()),
+    });
+
+    // Start with spread, then add our props
+    let mut props = vec![spread_prop];
+    props.push(create_string_prop("$hash", hash, span));
+
+    // if let Some(json_value) = json {
+    //     props.push(create_string_prop("$json", json_value, span));
+    // }
+
+    // Create new options object
+    let new_options = Expr::Object(ObjectLit {
+        span,
+        props,
+    });
+
+    // Replace the options argument
+    let mut new_args = call_expr.args.clone();
+    new_args[1] = ExprOrSpread {
+        spread: None,
+        expr: Box::new(new_options),
+    };
+
+    CallExpr {
+        args: new_args,
+        ..call_expr.clone()
+    }
+}

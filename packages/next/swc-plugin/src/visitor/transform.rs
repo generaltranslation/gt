@@ -10,10 +10,7 @@ use swc_core::{
   },
 };
 use crate::visitor::expr_utils::{
-    extract_id_and_context_from_options,
-    extract_string_from_expr,
-    create_string_prop,
-    has_prop,
+    create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop
 };
 
 use crate::visitor::analysis::{
@@ -147,7 +144,9 @@ impl TransformVisitor {
                                 // no existing tracking for branches
                                 self.import_tracker.branch_import_aliases.insert(local_name, original_name);
                             } else if is_translation_function_name(&original_name) {
-                                self.import_tracker.translation_functions.insert(local_name.clone());
+                                self.logger.log_debug(&format!("inserting translation_function: {:?}", local_name));
+                                // self.import_tracker.translation_functions.insert(local_name.clone()); // old
+                                self.import_tracker.translation_function_import_aliases.insert(local_name, original_name);
                             }
                         }
                         ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
@@ -281,9 +280,9 @@ impl TransformVisitor {
         call_expr: &CallExpr,
         options: Option<&ExprOrSpread>,
         hash: Option<String>,
-        json: Option<String>
+        _: Option<String>
     ) -> CallExpr {
-        if hash.is_none() || json.is_none() {
+        if hash.is_none() { // || json.is_none() 
             return call_expr.clone();
         }
 
@@ -292,36 +291,63 @@ impl TransformVisitor {
         
         // Inject $hash & $json attribute into options object
         if let Some(options) = options {
-            if let Expr::Object(existing_obj) = options.expr.as_ref() {
-                // Build a new CallExpr with the new options
-                let mut new_props = existing_obj.props.clone();
-                if !has_prop(&existing_obj.props, "$hash") {
-                    new_props.push(create_string_prop("$hash", &hash, call_expr.span));
-                }
-                // For debugging
-                // if !Self::has_prop(&existing_obj.props, "$json") {
-                //     new_props.push(Self::create_string_prop("$json", &json, call_expr.span));
-                // }
-                
-                // Construct a new options object
-                let modified_options = Expr::Object(ObjectLit {
-                    span: existing_obj.span,
-                    props: new_props,
-                });
+            match options.expr.as_ref() {
+                Expr::Object(existing_obj) => {
+                    // Build a new CallExpr with the new options
+                    let mut new_props = existing_obj.props.clone();
+                    if !has_prop(&existing_obj.props, "$hash") {
+                        new_props.push(create_string_prop("$hash", &hash, call_expr.span));
+                    }
+                    // For debugging
+                    // if !Self::has_prop(&existing_obj.props, "$json") {
+                    //     new_props.push(Self::create_string_prop("$json", &json, call_expr.span));
+                    // }
+                    
+                    // Construct a new options object
+                    let modified_options = Expr::Object(ObjectLit {
+                        span: existing_obj.span,
+                        props: new_props,
+                    });
 
-                // Replace options with modified version
-                let mut new_args = call_expr.args.clone();
-                new_args[1] = ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(modified_options),
-                };
+                    // Replace options with modified version
+                    let mut new_args = call_expr.args.clone();
+                    new_args[1] = ExprOrSpread {
+                        spread: None,
+                        expr: Box::new(modified_options),
+                    };
+                    
+                    // Print the new args for debugging
+                    self.logger.log_debug(&format!("new_args: {:?}", new_args));
 
-                CallExpr {
-                    args: new_args,
-                    ..call_expr.clone()
+                    CallExpr {
+                        args: new_args,
+                        ..call_expr.clone()
+                    }
                 }
-            } else {
-                call_expr.clone()
+                Expr::Ident(_) | Expr::Member(_) | Expr::Call(_) |
+                Expr::Await(_) | Expr::Cond(_) | Expr::Paren(_) |
+                Expr::Assign(_) => {
+                    create_spread_options_call_expr(
+                        call_expr,
+                        options.expr.as_ref(),
+                        &hash,
+                        None,
+                        call_expr.span
+                    )
+                }
+                // Handle logical OR specially (common pattern: opts || {})
+                Expr::Bin(BinExpr { op: BinaryOp::LogicalOr, .. }) => {
+                    create_spread_options_call_expr(
+                        call_expr,
+                        options.expr.as_ref(),
+                        &hash,
+                        None,
+                        call_expr.span
+                    )
+                }
+                _ => {
+                    call_expr.clone()
+                }
             }
         } else {
             // Create a new options object
@@ -345,7 +371,6 @@ impl TransformVisitor {
                 ..call_expr.clone()
             }
         }
-
     }
 
     pub fn track_variable_assignment (&mut self, var_declarator: &VarDeclarator) {
@@ -355,9 +380,16 @@ impl TransformVisitor {
                 // Handle function calls: const t = useGT()
                 Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
                     if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-                        if self.import_tracker.translation_functions.contains(callee_name) {
+                        // if self.import_tracker.translation_functions.contains(callee_name) {
+                        //     // Track the assigned variable as a translation function
+                        //     self.import_tracker.translation_functions.insert(id.sym.clone());
+                        // }
+                        if self.import_tracker.translation_function_import_aliases.contains_key(callee_name) {
+                            eprintln!("inserting translation_callee_names: {:?} -> {:?}", id.sym, callee_name);
                             // Track the assigned variable as a translation function
-                            self.import_tracker.translation_functions.insert(id.sym.clone());
+                            self.import_tracker.translation_callee_names.insert(id.sym.clone(), callee_name.clone());
+                        } else {
+                            eprintln!("not inserting translation_callee_names: {:?} -> {:?}", id.sym, callee_name);
                         }
                     }
                 }
