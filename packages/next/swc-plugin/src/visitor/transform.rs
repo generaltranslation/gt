@@ -316,9 +316,6 @@ impl TransformVisitor {
                         expr: Box::new(modified_options),
                     };
                     
-                    // Print the new args for debugging
-                    self.logger.log_debug(&format!("new_args: {:?}", new_args));
-
                     CallExpr {
                         args: new_args,
                         ..call_expr.clone()
@@ -380,16 +377,9 @@ impl TransformVisitor {
                 // Handle function calls: const t = useGT()
                 Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
                     if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-                        // if self.import_tracker.translation_functions.contains(callee_name) {
-                        //     // Track the assigned variable as a translation function
-                        //     self.import_tracker.translation_functions.insert(id.sym.clone());
-                        // }
                         if self.import_tracker.translation_function_import_aliases.contains_key(callee_name) {
-                            eprintln!("inserting translation_callee_names: {:?} -> {:?}", id.sym, callee_name);
                             // Track the assigned variable as a translation function
                             self.import_tracker.translation_callee_names.insert(id.sym.clone(), callee_name.clone());
-                        } else {
-                            eprintln!("not inserting translation_callee_names: {:?} -> {:?}", id.sym, callee_name);
                         }
                     }
                 }
