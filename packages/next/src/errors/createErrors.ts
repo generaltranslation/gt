@@ -115,17 +115,17 @@ export const APIKeyMissingWarn =
 export const createTranslationLoadingWarning = ({
   source,
   translation,
-  id
+  id,
 }: {
-  source: string
-  translation: string
+  source: string;
+  translation: string;
   id?: string;
-}) => 
-    `[DEV ONLY] Warning: gt-next created translation "${source}" -> "${translation}"` +
-    (id ? ` for id "${id}"` : '') + `. ` +
+}) =>
+  `[DEV ONLY] Warning: gt-next created translation "${source}" -> "${translation}"` +
+  (id ? ` for id "${id}"` : '') +
+  `. ` +
   `In development, hot-reloaded translations may not be be displayed until the page is refreshed. ` +
-  `In production, translations will be preloaded and there won't be a warning.`
-;
+  `In production, translations will be preloaded and there won't be a warning.`;
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 

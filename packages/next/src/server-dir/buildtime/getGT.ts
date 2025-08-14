@@ -116,10 +116,12 @@ export async function getGT(): Promise<
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry) return renderContent(translationEntry as string, [locale, defaultLocale]);
+    if (translationEntry)
+      return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationEntry === null) return renderContent(message, [defaultLocale]);
+    if (translationEntry === null)
+      return renderContent(message, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
@@ -145,11 +147,16 @@ export async function getGT(): Promise<
       .then((result) => {
         // Log the translation result for debugging purposes
         // eslint-disable-next-line no-console
-        console.warn(createTranslationLoadingWarning({ 
-          ...(id && { id }),
-          source: renderContent(message, [defaultLocale]),
-          translation: renderContent(result as string, [locale, defaultLocale])
-        }));
+        console.warn(
+          createTranslationLoadingWarning({
+            ...(id && { id }),
+            source: renderContent(message, [defaultLocale]),
+            translation: renderContent(result as string, [
+              locale,
+              defaultLocale,
+            ]),
+          })
+        );
       })
       .catch(() => {}); // No need for error logging, error logged in I18NConfig
 

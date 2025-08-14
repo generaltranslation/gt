@@ -10,7 +10,7 @@ import {
   createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-  createTranslationLoadingWarning
+  createTranslationLoadingWarning,
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
@@ -149,7 +149,8 @@ export async function getTranslations(
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry) return renderContent(translationEntry as string, [locale, defaultLocale]);
+    if (translationEntry)
+      return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
     if (translationEntry === null) return renderContent(entry, [defaultLocale]);
@@ -171,15 +172,22 @@ export async function getTranslations(
         id,
         hash,
       },
-    }).then((result) => {
-      // Log the translation result for debugging purposes
-      // eslint-disable-next-line no-console
-      console.warn(createTranslationLoadingWarning({ 
-        ...(id && { id }),
-        source: renderContent(entry, [defaultLocale]),
-        translation: renderContent(result as string, [locale, defaultLocale])
-      }));
-    }).catch(() => {}); // Error logged in I18NConfig
+    })
+      .then((result) => {
+        // Log the translation result for debugging purposes
+        // eslint-disable-next-line no-console
+        console.warn(
+          createTranslationLoadingWarning({
+            ...(id && { id }),
+            source: renderContent(entry, [defaultLocale]),
+            translation: renderContent(result as string, [
+              locale,
+              defaultLocale,
+            ]),
+          })
+        );
+      })
+      .catch(() => {}); // Error logged in I18NConfig
 
     // Default is returning source, rather than returning a loading state
     return renderContent(entry, [defaultLocale]);

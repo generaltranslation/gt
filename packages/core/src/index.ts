@@ -680,8 +680,8 @@ export class GT {
       metadata = {
         ...(regionCode && { regionCode }),
         ...(scriptCode && { scriptCode }),
-        ...metadata
-      }
+        ...metadata,
+      };
     }
 
     // Request the translation
@@ -730,16 +730,16 @@ export class GT {
 
     globalMetadata = {
       ...globalMetadata,
-      targetLocale
-    }
+      targetLocale,
+    };
 
     if (typeof this.customMapping?.[targetLocale] === 'object') {
       const { regionCode, scriptCode } = this.customMapping[targetLocale];
       globalMetadata = {
         ...(regionCode && { regionCode }),
         ...(scriptCode && { scriptCode }),
-        ...globalMetadata
-      }
+        ...globalMetadata,
+      };
     }
 
     // Request the translation

@@ -21,7 +21,7 @@ export {
   LocaleProperties,
   isVariable,
   minifyVariableType,
-  maxTimeout
+  maxTimeout,
 };
 
 // backwards compatability

@@ -218,7 +218,6 @@ export default function useRuntimeTranslation({
       const newTranslations: Translations = {};
 
       try {
-
         // ----- RUNTIME TRANSLATION ----- //
 
         const results = await gt.translateMany(requests, {

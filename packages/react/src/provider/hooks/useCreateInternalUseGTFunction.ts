@@ -22,7 +22,6 @@ export default function useCreateInternalUseGTFunction(
 ): (string: string, options?: InlineTranslationOptions) => string {
   return useCallback(
     (contentString: string, options: InlineTranslationOptions = {}) => {
-
       // ----- SET UP ----- //
       const {
         $id: id,

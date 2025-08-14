@@ -114,7 +114,7 @@ export default function useRuntimeTranslation({
   // realistically, no user will ever encounter a breaking point, but since we can't reject on dismount, we should probably clean this up
   const requestQueueRef = useRef<Map<string, TranslationRequestQueueItem>>(
     new Map()
-  ); 
+  );
 
   const pendingRequestQueueRef = useRef<
     Map<string, Promise<TranslatedChildren>>
