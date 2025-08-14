@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
@@ -50,8 +50,8 @@ function T({
   context?: string;
   _hash?: string;
   [key: string]: any;
-}): React.JSX.Element | null {
-  if (!children) return null;
+}): React.JSX.Element | undefined {
+  if (!children) return undefined;
 
   // Compatibility with different options
   id = id ?? options?.$id;
@@ -60,7 +60,6 @@ function T({
   const {
     translations,
     translationRequired,
-    translationsStatus,
     runtimeTranslationEnabled,
     dialectTranslationRequired,
     registerJsxForTranslation,
@@ -110,44 +109,6 @@ function T({
     ? translations?.[id as string]
     : translations?.[hash];
 
-  const translationStatus = translationsStatus?.[hash];
-
-  // Do dev translation if required
-  useEffect(() => {
-    // skip if:
-    if (
-      !runtimeTranslationEnabled || // runtime translation disabled
-      !translationRequired || // no translation required
-      !translations || // cache not checked yet
-      !locale || // locale not loaded
-      translationEntry || // translation exists
-      translationStatus // translation request has already been sent
-    ) {
-      return;
-    }
-
-    // Translate content
-    registerJsxForTranslation({
-      source: childrenAsObjects,
-      targetLocale: locale,
-      metadata: {
-        id,
-        hash,
-        context,
-      },
-    });
-  }, [
-    runtimeTranslationEnabled,
-    translations,
-    translationEntry,
-    translationRequired,
-    id,
-    hash,
-    context,
-    locale,
-    children,
-  ]);
-
   // ----- RENDER METHODS ----- //
 
   // for default/fallback rendering
@@ -175,29 +136,56 @@ function T({
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
     (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
-    translationStatus?.status === 'error' // error fetching translation
+    translationEntry === null // error fetching translation
   ) {
     return <>{renderDefault()}</>;
   }
 
-  // Loading behavior (checking cache or fetching runtime translation)
-  if (!translationEntry || translationStatus?.status === 'loading') {
-    let loadingFallback;
-    if (renderSettings.method === 'skeleton') {
-      loadingFallback = renderSkeleton();
-    } else if (renderSettings.method === 'replace') {
-      loadingFallback = renderDefault();
-    } else {
-      // default
-      loadingFallback = dialectTranslationRequired
-        ? renderDefault()
-        : renderSkeleton();
-    }
-    return <>{loadingFallback}</>;
+  if (translationEntry) {
+    return <Suspense>{renderTranslation(translationEntry)}</Suspense>;
   }
 
-  // Render translated content
-  return <>{renderTranslation(translationEntry)}</>;
+  const getTranslationPromise = async () => {
+    if (
+      !runtimeTranslationEnabled || // runtime translation disabled
+      !locale // locale not loaded
+    ) {
+      return renderDefault();
+    }
+    if (translationEntry) return renderTranslation(translationEntry);
+    try {
+      const translatedChildren = await registerJsxForTranslation({
+        source: childrenAsObjects,
+        targetLocale: locale,
+        metadata: {
+          id,
+          hash,
+          context,
+        },
+      });
+      if (!translatedChildren) return renderDefault();
+      return renderTranslation(translatedChildren);
+    } catch (error) {
+      console.warn(error);
+      return renderDefault();
+    }
+  };
+
+  let loadingFallback;
+  if (renderSettings.method === 'skeleton') {
+    loadingFallback = renderSkeleton();
+  } else if (renderSettings.method === 'replace') {
+    loadingFallback = renderDefault();
+  } else {
+    // default
+    loadingFallback = dialectTranslationRequired
+      ? renderDefault()
+      : renderSkeleton();
+  }
+
+  return (
+    <Suspense fallback={loadingFallback}>{getTranslationPromise()}</Suspense>
+  );
 }
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-client';

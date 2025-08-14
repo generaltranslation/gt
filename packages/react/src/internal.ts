@@ -32,12 +32,14 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
-  TranslationsStatus,
 } from './types/types';
 
 import { GTContextType } from './types/context';
 import { ClientProviderProps } from './types/config';
-import { defaultLocaleCookieName } from './utils/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
 import { validateString } from './provider/helpers/validateString';
@@ -66,7 +68,6 @@ export {
   Entry,
   TranslatedChildren,
   Translations,
-  TranslationsStatus,
   GTContextType,
   ClientProviderProps,
   DictionaryTranslationOptions,
@@ -79,6 +80,7 @@ export {
   RenderVariable,
   VariableProps,
   defaultLocaleCookieName,
+  defaultRegionCookieName,
   mergeDictionaries,
   validateString,
 };

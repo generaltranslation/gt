@@ -11,13 +11,21 @@ import { readAuthFromEnv } from '../utils/utils';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
-import { defaultLocaleCookieName } from '../utils/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
+<<<<<<< HEAD
 import { useCalculateLocaleData } from './hooks/useCalculateLocaleData';
+=======
+import { useLocaleState } from './hooks/locales/useLocaleState';
+>>>>>>> a/t
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
+import { useRegionState } from './hooks/useRegionState';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -80,7 +88,11 @@ export default function GTProvider({
     locales: approvedLocales,
     translationRequired,
     dialectTranslationRequired,
+<<<<<<< HEAD
   } = useCalculateLocaleData({
+=======
+  } = useLocaleState({
+>>>>>>> a/t
     _locale,
     defaultLocale,
     locales,
@@ -89,7 +101,15 @@ export default function GTProvider({
   });
 
   // Define the region instance
+<<<<<<< HEAD
   const [region, setRegion] = useState<string | undefined>(_region);
+=======
+  const { region, setRegion } = useRegionState({
+    _region,
+    ssr,
+    regionCookieName: defaultRegionCookieName,
+  });
+>>>>>>> a/t
 
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation
@@ -137,12 +157,7 @@ export default function GTProvider({
 
   // ---------- TRANSLATION STATE ---------- //
 
-  const {
-    translations,
-    setTranslations,
-    translationsStatus,
-    setTranslationsStatus,
-  } = useLoadTranslations({
+  const { translations, setTranslations } = useLoadTranslations({
     _translations,
     translationRequired,
     loadTranslationsType,
@@ -156,7 +171,6 @@ export default function GTProvider({
   // ------- RUNTIME TRANSLATION ----- //
 
   const {
-    registerI18nextForTranslation,
     registerIcuForTranslation,
     registerJsxForTranslation,
     runtimeTranslationEnabled,
@@ -168,7 +182,6 @@ export default function GTProvider({
     runtimeUrl,
     renderSettings,
     setTranslations,
-    setTranslationsStatus,
     ...metadata,
   });
 
@@ -176,7 +189,6 @@ export default function GTProvider({
 
   const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
-    translationsStatus,
     locale,
     defaultLocale,
     translationRequired,
@@ -192,7 +204,6 @@ export default function GTProvider({
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
-      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
@@ -211,7 +222,6 @@ export default function GTProvider({
     <GTContext.Provider
       value={{
         gt,
-        registerI18nextForTranslation,
         registerIcuForTranslation,
         registerJsxForTranslation,
         _internalUseGTFunction,
@@ -224,7 +234,6 @@ export default function GTProvider({
         region,
         setRegion,
         translations,
-        translationsStatus,
         translationRequired,
         dialectTranslationRequired,
         projectId,

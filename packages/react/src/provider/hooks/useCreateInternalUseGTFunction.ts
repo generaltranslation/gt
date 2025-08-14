@@ -2,7 +2,6 @@ import { hashSource } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
-  TranslationsStatus,
   Translations,
   RenderMethod,
 } from '../../types/types';
@@ -13,7 +12,6 @@ import { missingVariablesError } from '../../errors/createErrors';
 
 export default function useCreateInternalUseGTFunction(
   translations: Translations | null,
-  translationsStatus: TranslationsStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -24,6 +22,7 @@ export default function useCreateInternalUseGTFunction(
 ): (string: string, options?: InlineTranslationOptions) => string {
   return useCallback(
     (contentString: string, options: InlineTranslationOptions = {}) => {
+
       // ----- SET UP ----- //
       const {
         $id: id,
@@ -85,17 +84,15 @@ export default function useCreateInternalUseGTFunction(
         ? translations?.[id as string]
         : translations?.[hash];
 
-      const translationStatus = translationsStatus?.[hash];
-
       // ----- TRANSLATE ON DEMAND ----- //
 
       // Render fallback when tx not required or error
-      if (!translationRequired || translationStatus?.status === 'error') {
+      if (!translationRequired || translationEntry === null) {
         return renderMessage(contentString, [defaultLocale]);
       }
 
       // Render success
-      if (translationStatus?.status === 'success') {
+      if (translationEntry) {
         return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
@@ -121,19 +118,12 @@ export default function useCreateInternalUseGTFunction(
         },
       });
 
-      // Loading behavior
-      if (renderSettings.method === 'replace') {
-        return renderMessage(contentString, [defaultLocale]);
-      } else if (renderSettings.method === 'skeleton') {
-        return '';
-      }
-      return dialectTranslationRequired // default behavior
-        ? renderMessage(contentString, [defaultLocale])
-        : '';
+      // renderSettings.method must be ignored because t() is synchronous &
+      // t() should never return an empty string because functions reason about strings based on falsiness
+      return renderMessage(contentString, [defaultLocale]);
     },
     [
       translations,
-      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,

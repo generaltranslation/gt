@@ -54,16 +54,7 @@ export type TranslatedElement = {
 export type TranslatedChild = TranslatedElement | string | Variable;
 export type TranslatedChildren = TranslatedChild | TranslatedChild[];
 export type Translations = {
-  [hash: string]: TranslatedChildren;
-};
-
-/**
- * Mapping of hashes to translation result status.
- */
-export type TranslationsStatus = {
-  [hash: string]:
-    | { status: 'success' | 'loading' }
-    | { status: 'error'; code?: number; error?: string };
+  [hash: string]: TranslatedChildren | null;
 };
 
 // ----- DICTIONARY ----- //

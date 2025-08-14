@@ -33,6 +33,8 @@ export type EntryMetadata = {
   sourceLocale?: string;
   actionType?: ActionType;
   timeout?: number;
+  regionCode?: string; // equivalent to regionCode in LocaleProperties, passed via customMapping
+  scriptCode?: string; // equivalent to scriptCode in LocaleProperties, passed via customMapping
 };
 
 /**

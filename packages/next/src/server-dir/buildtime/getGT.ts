@@ -5,7 +5,7 @@ import { hashSource } from 'generaltranslation/id';
 import {
   createStringTranslationError,
   missingVariablesError,
-  translationLoadingWarning,
+  createTranslationLoadingWarning,
 } from '../../errors/createErrors';
 import { InlineTranslationOptions, validateString } from 'gt-react/internal';
 import use from '../../utils/use';
@@ -31,10 +31,6 @@ export async function getGT(): Promise<
 
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
-    : undefined;
-
-  const translationsStatus = translationRequired
-    ? I18NConfig.getCachedTranslationsStatus(locale)
     : undefined;
 
   // ---------- THE t() METHOD ---------- //
@@ -85,13 +81,11 @@ export async function getGT(): Promise<
 
     // ----- GET TRANSLATION ----- //
 
-    let translationEntry = undefined;
-    let translationsStatusEntry = undefined;
+    let translationEntry;
 
     // Use id to index
     if (id) {
       translationEntry = translations?.[id];
-      translationsStatusEntry = translationsStatus?.[id];
     }
 
     // Calculate hash
@@ -117,18 +111,15 @@ export async function getGT(): Promise<
         console.error('no $hash');
       }
       translationEntry = translations?.[hash];
-      translationsStatusEntry = translationsStatus?.[hash];
     }
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationsStatusEntry?.status === 'success')
-      return renderContent(translationEntry as string, [locale, defaultLocale]);
+    if (translationEntry) return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationsStatusEntry?.status === 'error')
-      return renderContent(message, [defaultLocale]);
+    if (translationEntry === null) return renderContent(message, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
@@ -150,10 +141,17 @@ export async function getGT(): Promise<
         ...(id && { id }),
         hash,
       },
-    }).catch(() => {}); // No need for error logging, error logged in I18NConfig
-
-    // Loading translation warning
-    console.warn(translationLoadingWarning);
+    })
+      .then((result) => {
+        // Log the translation result for debugging purposes
+        // eslint-disable-next-line no-console
+        console.warn(createTranslationLoadingWarning({ 
+          ...(id && { id }),
+          source: renderContent(message, [defaultLocale]),
+          translation: renderContent(result as string, [locale, defaultLocale])
+        }));
+      })
+      .catch(() => {}); // No need for error logging, error logged in I18NConfig
 
     // Default is returning source, rather than returning a loading state
     return renderContent(message, [defaultLocale]);
