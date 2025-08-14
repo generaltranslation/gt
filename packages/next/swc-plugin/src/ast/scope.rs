@@ -146,7 +146,7 @@ impl ScopeTracker {
     }
 
     /// Find if a variable is accessible in the current scope
-    pub fn is_variable_accessible(&self, variable_name: &Atom) -> Option<&ScopedVariable> {
+    pub fn get_variable(&self, variable_name: &Atom) -> Option<&ScopedVariable> {
         if let Some(variables) = self.scoped_variables.get(variable_name) {
             // With aggressive cleanup, all remaining variables are accessible by definition
             // Return the most recent one (proper shadowing behavior)
@@ -157,13 +157,13 @@ impl ScopeTracker {
 
     /// Get the assigned value for a variable if it exists in current scope
     pub fn get_variable_value(&self, variable_name: &Atom) -> Option<&Atom> {
-        self.is_variable_accessible(variable_name)
+        self.get_variable(variable_name)
             .map(|var| &var.assigned_value)
     }
 
     /// Get the original function name for a translation variable if it exists in current scope
     pub fn get_translation_function(&self, variable_name: &Atom) -> Option<&Atom> {
-        self.is_variable_accessible(variable_name)
+        self.get_variable(variable_name)
             .filter(|var| var.is_translation_function)
             .map(|var| &var.assigned_value)
     }
@@ -176,6 +176,14 @@ impl ScopeTracker {
     /// Get scope info for debugging
     pub fn get_scope_info(&self, scope_id: u32) -> Option<&ScopeInfo> {
         self.scope_info.get(&scope_id)
+    }
+
+    pub fn log_scoped_variable(&self, variable_name: &Atom) {
+        if let Some(variables) = self.scoped_variables.get(variable_name) {
+            for var in variables {
+                eprintln!("Scoped variable: {:?}", var);
+            }
+        }
     }
 
 }
@@ -244,7 +252,7 @@ mod tests {
         tracker.track_translation_variable("t".into(), "useGT".into());
         
         // Variable should be accessible in same scope
-        let var = tracker.is_variable_accessible(&"t".into());
+        let var = tracker.get_variable(&"t".into());
         assert!(var.is_some());
         assert_eq!(var.unwrap().scope_id, scope1);
         assert_eq!(var.unwrap().assigned_value.as_str(), "useGT");
@@ -254,19 +262,19 @@ mod tests {
         let _scope2 = tracker.enter_scope();
         
         // Variable should still be accessible in nested scope (inheritance)
-        assert!(tracker.is_variable_accessible(&"t".into()).is_some());
+        assert!(tracker.get_variable(&"t".into()).is_some());
         
         // Exit nested scope
         tracker.exit_scope();
         
         // Variable should still be accessible in original scope
-        assert!(tracker.is_variable_accessible(&"t".into()).is_some());
+        assert!(tracker.get_variable(&"t".into()).is_some());
         
         // Exit first scope
         tracker.exit_scope();
         
         // Variable should no longer be accessible (out of scope)
-        assert!(tracker.is_variable_accessible(&"t".into()).is_none());
+        assert!(tracker.get_variable(&"t".into()).is_none());
     }
 
     #[test]
@@ -278,7 +286,7 @@ mod tests {
         tracker.track_translation_variable("t".into(), "useGT".into());
         
         // Verify outer variable
-        let outer_var = tracker.is_variable_accessible(&"t".into()).unwrap();
+        let outer_var = tracker.get_variable(&"t".into()).unwrap();
         assert_eq!(outer_var.assigned_value.as_str(), "useGT");
         
         // Enter inner scope and shadow the variable
@@ -286,7 +294,7 @@ mod tests {
         tracker.track_translation_variable("t".into(), "getGT".into());
         
         // Should get the shadowed (inner) variable
-        let inner_var = tracker.is_variable_accessible(&"t".into()).unwrap();
+        let inner_var = tracker.get_variable(&"t".into()).unwrap();
         assert_eq!(inner_var.assigned_value.as_str(), "getGT");
         assert_eq!(inner_var.scope_id, scope2);
         
@@ -294,7 +302,7 @@ mod tests {
         tracker.exit_scope();
         
         // Should get the outer variable again
-        let restored_var = tracker.is_variable_accessible(&"t".into()).unwrap();
+        let restored_var = tracker.get_variable(&"t".into()).unwrap();
         assert_eq!(restored_var.assigned_value.as_str(), "useGT");
     }
 
@@ -315,9 +323,9 @@ mod tests {
         tracker.track_translation_variable("t2".into(), "getGT".into());
         
         // Should not be able to access sibling's variable (was cleaned up on exit)
-        assert!(tracker.is_variable_accessible(&"t1".into()).is_none());
+        assert!(tracker.get_variable(&"t1".into()).is_none());
         // Should be able to access own variable
-        assert!(tracker.is_variable_accessible(&"t2".into()).is_some());
+        assert!(tracker.get_variable(&"t2".into()).is_some());
     }
 
     #[test]
@@ -382,17 +390,17 @@ mod tests {
         tracker.track_regular_variable("undefined_var".into(), "undefined".into());
         
         // All should be accessible in same scope
-        assert!(tracker.is_variable_accessible(&"t1".into()).is_some());
-        assert!(tracker.is_variable_accessible(&"literal".into()).is_some());
-        assert!(tracker.is_variable_accessible(&"reference".into()).is_some());
-        assert!(tracker.is_variable_accessible(&"undefined_var".into()).is_some());
+        assert!(tracker.get_variable(&"t1".into()).is_some());
+        assert!(tracker.get_variable(&"literal".into()).is_some());
+        assert!(tracker.get_variable(&"reference".into()).is_some());
+        assert!(tracker.get_variable(&"undefined_var".into()).is_some());
         
         // Check types are preserved
-        let t1_var = tracker.is_variable_accessible(&"t1".into()).unwrap();
+        let t1_var = tracker.get_variable(&"t1".into()).unwrap();
         assert_eq!(t1_var.is_translation_function, true);
         assert_eq!(t1_var.assigned_value.as_str(), "useGT");
         
-        let literal_var = tracker.is_variable_accessible(&"literal".into()).unwrap();
+        let literal_var = tracker.get_variable(&"literal".into()).unwrap();
         assert_eq!(literal_var.is_translation_function, false);
         assert_eq!(literal_var.assigned_value.as_str(), "string_literal");
         
@@ -400,14 +408,14 @@ mod tests {
         let _scope2 = tracker.enter_scope();
         
         // All parent variables should be accessible
-        assert!(tracker.is_variable_accessible(&"t1".into()).is_some());
-        assert!(tracker.is_variable_accessible(&"literal".into()).is_some());
+        assert!(tracker.get_variable(&"t1".into()).is_some());
+        assert!(tracker.get_variable(&"literal".into()).is_some());
         
         // Shadow a variable
         tracker.track_regular_variable("t1".into(), "not_a_function".into());
         
         // Should get shadowed version
-        let shadowed = tracker.is_variable_accessible(&"t1".into()).unwrap();
+        let shadowed = tracker.get_variable(&"t1".into()).unwrap();
         assert_eq!(shadowed.is_translation_function, false);
         assert_eq!(shadowed.assigned_value.as_str(), "not_a_function");
         
@@ -415,7 +423,7 @@ mod tests {
         tracker.exit_scope();
         
         // Should get original back
-        let restored = tracker.is_variable_accessible(&"t1".into()).unwrap();
+        let restored = tracker.get_variable(&"t1".into()).unwrap();
         assert_eq!(restored.is_translation_function, true);
         assert_eq!(restored.assigned_value.as_str(), "useGT");
         assert_eq!(restored.scope_id, scope1);
@@ -434,8 +442,8 @@ mod tests {
         tracker.track_translation_variable("t2".into(), "getGT".into());
         
         // Both variables should exist
-        assert!(tracker.is_variable_accessible(&"t1".into()).is_some());
-        assert!(tracker.is_variable_accessible(&"t2".into()).is_some());
+        assert!(tracker.get_variable(&"t1".into()).is_some());
+        assert!(tracker.get_variable(&"t2".into()).is_some());
         
         // Variables should be in the data structure
         assert_eq!(tracker.scoped_variables.len(), 2);
@@ -444,8 +452,8 @@ mod tests {
         tracker.exit_scope();
         
         // t1 should still be accessible, t2 should not
-        assert!(tracker.is_variable_accessible(&"t1".into()).is_some());
-        assert!(tracker.is_variable_accessible(&"t2".into()).is_none());
+        assert!(tracker.get_variable(&"t1".into()).is_some());
+        assert!(tracker.get_variable(&"t2".into()).is_none());
         
         // t2 should be physically removed from data structure
         assert!(tracker.scoped_variables.get(&"t2".into()).is_none());

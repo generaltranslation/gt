@@ -56,7 +56,6 @@ impl VisitMut for TransformVisitor {
         
         expr_container.visit_mut_children_with(self);
     }
-    
 }
 
 impl Fold for TransformVisitor {
@@ -74,17 +73,99 @@ impl Fold for TransformVisitor {
 
     /// Process function declarations to ensure their bodies are traversed
     fn fold_function(&mut self, function: Function) -> Function {
-        function.fold_children_with(self)
+        self.import_tracker.scope_tracker.enter_scope();
+        let function = function.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        function
     }
     
     /// Process arrow functions to ensure their bodies are traversed
     fn fold_arrow_expr(&mut self, arrow: ArrowExpr) -> ArrowExpr {
-        arrow.fold_children_with(self)
+        self.import_tracker.scope_tracker.enter_scope();
+        let arrow = arrow.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        arrow
     }
     
     /// Process function expressions to ensure their bodies are traversed
     fn fold_fn_expr(&mut self, fn_expr: FnExpr) -> FnExpr {
-        fn_expr.fold_children_with(self)
+        self.import_tracker.scope_tracker.enter_scope();
+        let fn_expr = fn_expr.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        fn_expr
+    }
+
+    /// Block statements: { ... } - create scope for let/const
+    fn fold_block_stmt(&mut self, block: BlockStmt) -> BlockStmt {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = block.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// Class declarations: class Foo { ... }
+    fn fold_class(&mut self, class: Class) -> Class {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = class.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// Method definitions: { method() {} }
+    fn fold_method_prop(&mut self, method: MethodProp) -> MethodProp {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = method.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// For statements: for(let i = 0; ...) {}
+    fn fold_for_stmt(&mut self, for_stmt: ForStmt) -> ForStmt {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = for_stmt.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// For-in statements: for(let key in obj) {}
+    fn fold_for_in_stmt(&mut self, for_in: ForInStmt) -> ForInStmt {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = for_in.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// For-of statements: for(let item of items) {}
+    fn fold_for_of_stmt(&mut self, for_of: ForOfStmt) -> ForOfStmt {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = for_of.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+
+    /// Catch clauses: catch(e) {} - creates scope for the error variable
+    fn fold_catch_clause(&mut self, catch: CatchClause) -> CatchClause {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = catch.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// While loops: while(condition) { let x = 1; }
+    fn fold_while_stmt(&mut self, while_stmt: WhileStmt) -> WhileStmt {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = while_stmt.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
+    /// Switch statements: switch(val) { case 1: { let x = 1; } }
+    fn fold_switch_stmt(&mut self, switch: SwitchStmt) -> SwitchStmt {
+        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
+        let result = switch.fold_children_with(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
     }
 
     /// Process function calls to detect invalid usage of translation functions
@@ -92,30 +173,33 @@ impl Fold for TransformVisitor {
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if self.settings.compile_time_hash && self.import_tracker.translation_callee_names.contains_key(function_name) {
-                    // Check the first argument for dynamic content
-                    if let Some(string) = call_expr.args.first() {
-                        // Check for violations
-                        self.check_call_expr_for_violations(string, function_name);
+                if self.settings.compile_time_hash {
+                    if let Some(_original_function) = self.import_tracker.scope_tracker.get_translation_function(function_name) {
+                        // TODO: check original function, because we might have different functions in the future
+                        // Check the first argument for dynamic content
+                        if let Some(string) = call_expr.args.first() {
+                            // Check for violations
+                            self.check_call_expr_for_violations(string, function_name);
 
-                        // Get the options
-                        let options = call_expr.args.get(1);
+                            // Get the options
+                            let options = call_expr.args.get(1);
 
-                        // Calculate hash for the call expression
-                        let (hash, json) = self.calculate_hash_for_call_expr(
-                            string,
-                            options
-                        );
+                            // Calculate hash for the call expression
+                            let (hash, json) = self.calculate_hash_for_call_expr(
+                                string,
+                                options
+                            );
 
-                        // Inject hash attribute on the call expression
-                        let modified_call_expr = self.inject_hash_attribute_on_call_expr(
-                            &call_expr,
-                            options,
-                            hash,
-                            json
-                        );
+                            // Inject hash attribute on the call expression
+                            let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+                                &call_expr,
+                                options,
+                                hash,
+                                json
+                            );
 
-                        return modified_call_expr.fold_children_with(self);
+                            return modified_call_expr.fold_children_with(self);
+                        }
                     }
                 }
             }

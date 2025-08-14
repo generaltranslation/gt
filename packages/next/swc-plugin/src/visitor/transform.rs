@@ -370,6 +370,15 @@ impl TransformVisitor {
         }
     }
 
+    fn track_overriding_variable (&mut self, variable_name: &Atom) {
+        if self.import_tracker.scope_tracker.get_variable(&variable_name).is_some() {
+            self.import_tracker.scope_tracker.track_regular_variable(
+                variable_name.clone(),
+                "other".into(),
+            );
+        }
+    }
+
     pub fn track_variable_assignment (&mut self, var_declarator: &VarDeclarator) {
         // Check for assignments like: const t = useGT() or const MyT = T
         if let (Pat::Ident(BindingIdent { id, .. }), Some(init_expr)) = (&var_declarator.name, &var_declarator.init) {
@@ -378,12 +387,24 @@ impl TransformVisitor {
                 Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
                     if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
                         if self.import_tracker.translation_function_import_aliases.contains_key(callee_name) {
+                            // Track scoped function calls
+                            self.import_tracker.scope_tracker.track_translation_variable(
+                                id.sym.clone(),
+                                callee_name.clone()
+                            );
                             // Track the assigned variable as a translation function
-                            self.import_tracker.translation_callee_names.insert(id.sym.clone(), callee_name.clone());
+                            self.import_tracker.translation_callee_names.insert(id.sym.clone(), callee_name.clone()); // TODO: remove
+                        } else {
+                            // Track calls that will override currently scoped variables
+                            self.track_overriding_variable(&id.sym);
+                            
                         }
-                    }
+                    } 
                 }
-                _ => {}
+                _ => {
+                    // For any other type of assignment that could shadow
+                    self.track_overriding_variable(&id.sym);
+                }
             }
         }
     }

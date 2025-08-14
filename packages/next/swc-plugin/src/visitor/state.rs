@@ -1,5 +1,5 @@
 use swc_core::ecma::atoms::Atom;
-
+use crate::ast::ScopeTracker;
 
 // For tracking statistics for the plugin
 #[derive(Default)]
@@ -28,7 +28,9 @@ pub struct ImportTracker {
     pub variable_import_aliases: std::collections::HashMap<Atom, Atom>,    // Var, Num, Currency, DateTime
     pub branch_import_aliases: std::collections::HashMap<Atom, Atom>,      // Branch, Plural
     pub translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // getGT, useGT
-    // TODO: getGT, useGT
+
+    /// Scope tracker for tracking variables
+    pub scope_tracker: ScopeTracker,
 
     /// Other import tracking
     pub namespace_imports: std::collections::HashSet<Atom>,
