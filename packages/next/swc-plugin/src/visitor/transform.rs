@@ -457,8 +457,8 @@ mod tests {
         visitor.import_tracker.branch_import_aliases.insert(
             Atom::new("Branch"), Atom::new("Branch")
         );
-        visitor.import_tracker.translation_functions.insert(
-            Atom::new("useGT")
+        visitor.import_tracker.translation_function_import_aliases.insert(
+            Atom::new("useGT"), Atom::new("useGT")
         );
         visitor.import_tracker.namespace_imports.insert(
             Atom::new("GT")
@@ -738,7 +738,7 @@ mod tests {
 
             assert!(visitor.import_tracker.translation_import_aliases.contains_key(&Atom::new("T")));
             assert!(visitor.import_tracker.variable_import_aliases.contains_key(&Atom::new("MyVar")));
-            assert!(visitor.import_tracker.translation_functions.contains(&Atom::new("useGT")));
+            assert!(visitor.import_tracker.translation_function_import_aliases.contains_key(&Atom::new("useGT")));
         }
 
         #[test]
@@ -1019,7 +1019,10 @@ mod tests {
             if let Callee::Expr(callee_expr) = &call_expr.callee {
                 if let Expr::Ident(ident) = callee_expr.as_ref() {
                     // Only check violations if it's a tracked function
-                    if visitor.import_tracker.translation_functions.contains(&ident.sym) {
+                    let is_tracked_function = visitor.import_tracker.translation_function_import_aliases.contains_key(&ident.sym);
+                    let is_tracked_callee = visitor.import_tracker.translation_callee_names.contains_key(&ident.sym);
+                    
+                    if is_tracked_function || is_tracked_callee {
                         if let Some(first_arg) = call_expr.args.first() {
                             visitor.check_call_expr_for_violations(first_arg, &ident.sym);
                         }
@@ -1073,7 +1076,7 @@ mod tests {
 
             visitor.track_variable_assignment(&var_declarator);
 
-            assert!(visitor.import_tracker.translation_functions.contains(&Atom::new("t")));
+            assert!(visitor.import_tracker.translation_callee_names.contains_key(&Atom::new("t")));
         }
 
         #[test]
@@ -1086,10 +1089,10 @@ mod tests {
             }));
             let var_declarator = create_var_declarator("message", string_literal);
 
-            let initial_count = visitor.import_tracker.translation_functions.len();
+            let initial_count = visitor.import_tracker.translation_callee_names.len();
             visitor.track_variable_assignment(&var_declarator);
 
-            assert_eq!(visitor.import_tracker.translation_functions.len(), initial_count);
+            assert_eq!(visitor.import_tracker.translation_callee_names.len(), initial_count);
         }
 
         #[test]
@@ -1097,10 +1100,10 @@ mod tests {
             let mut visitor = create_visitor_with_imports();
             let var_declarator = create_var_declarator("result", create_function_call("useState"));
 
-            let initial_count = visitor.import_tracker.translation_functions.len();
+            let initial_count = visitor.import_tracker.translation_callee_names.len();
             visitor.track_variable_assignment(&var_declarator);
 
-            assert_eq!(visitor.import_tracker.translation_functions.len(), initial_count);
+            assert_eq!(visitor.import_tracker.translation_callee_names.len(), initial_count);
         }
     }
 

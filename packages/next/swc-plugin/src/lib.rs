@@ -10,7 +10,7 @@ use crate::visitor::TransformVisitor;
 
 // TODO: remove VisitMut
 impl VisitMut for TransformVisitor {
-    /// Process import declarations to track GT-Next imports
+    /// Process import declarations to track gt-next imports
     fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
         self.process_gt_import_declaration(import_decl);
         import_decl.visit_mut_children_with(self);
@@ -26,12 +26,6 @@ impl VisitMut for TransformVisitor {
     fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                // if self.import_tracker.translation_functions.contains(function_name) {
-                //     // Check the first argument for dynamic content
-                //     if let Some(arg) = call_expr.args.first() {
-                //         self.check_call_expr_for_violations(arg, function_name);
-                //     }
-                // }
                 if self.import_tracker.translation_callee_names.contains_key(function_name) {
                     // Check the first argument for dynamic content
                     if let Some(arg) = call_expr.args.first() {
