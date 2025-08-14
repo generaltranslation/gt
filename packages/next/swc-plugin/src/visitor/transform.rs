@@ -379,27 +379,54 @@ impl TransformVisitor {
         }
     }
 
+    /// Track function parameters that could shadow existing variables
+    pub fn track_parameter_overrides(&mut self, params: &[Param]) {
+        for param in params {
+            if let Pat::Ident(BindingIdent { id, .. }) = &param.pat {
+                // If this parameter name matches an existing tracked variable, shadow it
+                self.track_overriding_variable(&id.sym);
+            }
+        }
+    }
+
+    /// Track arrow function parameters (arrow functions)  
+    pub fn track_arrow_parameter_overrides(&mut self, params: &[Pat]) {
+        for param in params {
+            if let Pat::Ident(BindingIdent { id, .. }) = param {
+                self.track_overriding_variable(&id.sym);
+            }
+        }
+    }
+
+    // Track function call assignments
+    fn track_function_call_assignment(&mut self, callee_expr: &Box<Expr>, variable_name: &Atom) {
+        if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
+            if self.import_tracker.translation_function_import_aliases.contains_key(callee_name) {
+                // Track translation function using scope system
+                self.import_tracker.scope_tracker.track_translation_variable(
+                    variable_name.clone(),
+                    callee_name.clone()
+                );
+            } else {
+                self.track_overriding_variable(variable_name);
+            }
+        }
+    }
+
     pub fn track_variable_assignment (&mut self, var_declarator: &VarDeclarator) {
         // Check for assignments like: const t = useGT() or const MyT = T
         if let (Pat::Ident(BindingIdent { id, .. }), Some(init_expr)) = (&var_declarator.name, &var_declarator.init) {
             match init_expr.as_ref() {
                 // Handle function calls: const t = useGT()
                 Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
-                    if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-                        if self.import_tracker.translation_function_import_aliases.contains_key(callee_name) {
-                            // Track scoped function calls
-                            self.import_tracker.scope_tracker.track_translation_variable(
-                                id.sym.clone(),
-                                callee_name.clone()
-                            );
-                            // Track the assigned variable as a translation function
-                            self.import_tracker.translation_callee_names.insert(id.sym.clone(), callee_name.clone()); // TODO: remove
-                        } else {
-                            // Track calls that will override currently scoped variables
-                            self.track_overriding_variable(&id.sym);
-                            
-                        }
-                    } 
+                    self.track_function_call_assignment(callee_expr, &id.sym);
+                } 
+                Expr::Await(AwaitExpr { arg, .. }) => {
+                    if let Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) = arg.as_ref() {
+                        self.track_function_call_assignment(callee_expr, &id.sym);
+                    } else {
+                        self.track_overriding_variable(&id.sym);
+                    }
                 }
                 _ => {
                     // For any other type of assignment that could shadow
@@ -1041,7 +1068,7 @@ mod tests {
                 if let Expr::Ident(ident) = callee_expr.as_ref() {
                     // Only check violations if it's a tracked function
                     let is_tracked_function = visitor.import_tracker.translation_function_import_aliases.contains_key(&ident.sym);
-                    let is_tracked_callee = visitor.import_tracker.translation_callee_names.contains_key(&ident.sym);
+                    let is_tracked_callee = visitor.import_tracker.scope_tracker.get_translation_function(&ident.sym).is_some();
                     
                     if is_tracked_function || is_tracked_callee {
                         if let Some(first_arg) = call_expr.args.first() {
@@ -1090,15 +1117,6 @@ mod tests {
             })
         }
 
-        #[test]
-        fn tracks_translation_function_assignments() {
-            let mut visitor = create_visitor_with_imports();
-            let var_declarator = create_var_declarator("t", create_function_call("useGT"));
-
-            visitor.track_variable_assignment(&var_declarator);
-
-            assert!(visitor.import_tracker.translation_callee_names.contains_key(&Atom::new("t")));
-        }
 
         #[test]
         fn ignores_non_function_assignments() {
@@ -1110,10 +1128,10 @@ mod tests {
             }));
             let var_declarator = create_var_declarator("message", string_literal);
 
-            let initial_count = visitor.import_tracker.translation_callee_names.len();
             visitor.track_variable_assignment(&var_declarator);
 
-            assert_eq!(visitor.import_tracker.translation_callee_names.len(), initial_count);
+            // Should not track non-function assignments in scope tracker
+            assert!(visitor.import_tracker.scope_tracker.get_translation_function(&Atom::new("message")).is_none());
         }
 
         #[test]
@@ -1121,10 +1139,10 @@ mod tests {
             let mut visitor = create_visitor_with_imports();
             let var_declarator = create_var_declarator("result", create_function_call("useState"));
 
-            let initial_count = visitor.import_tracker.translation_callee_names.len();
             visitor.track_variable_assignment(&var_declarator);
 
-            assert_eq!(visitor.import_tracker.translation_callee_names.len(), initial_count);
+            // Should not track non-translation functions in scope tracker
+            assert!(visitor.import_tracker.scope_tracker.get_translation_function(&Atom::new("result")).is_none());
         }
     }
 

@@ -74,6 +74,11 @@ impl Fold for TransformVisitor {
     /// Process function declarations to ensure their bodies are traversed
     fn fold_function(&mut self, function: Function) -> Function {
         self.import_tracker.scope_tracker.enter_scope();
+
+        // Track parameters before processing body
+        self.track_parameter_overrides(&function.params);
+
+        // Process function body
         let function = function.fold_children_with(self);
         self.import_tracker.scope_tracker.exit_scope();
         function
@@ -82,6 +87,11 @@ impl Fold for TransformVisitor {
     /// Process arrow functions to ensure their bodies are traversed
     fn fold_arrow_expr(&mut self, arrow: ArrowExpr) -> ArrowExpr {
         self.import_tracker.scope_tracker.enter_scope();
+
+        // Track arrow function parameters  
+        self.track_arrow_parameter_overrides(&arrow.params);
+
+        // Process arrow function body
         let arrow = arrow.fold_children_with(self);
         self.import_tracker.scope_tracker.exit_scope();
         arrow
