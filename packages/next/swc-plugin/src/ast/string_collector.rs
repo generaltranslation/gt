@@ -53,6 +53,7 @@ impl StringCollector {
     /// - Unique: Global counter ensures no collisions ever
     /// - Simple: No scope tracking needed
     pub fn increment_counter(&mut self) -> u32 {
+        eprintln!("increment counter {} -> {}", self.global_call_counter, self.global_call_counter + 1);
         self.global_call_counter += 1;
         self.global_call_counter
     }
@@ -65,8 +66,8 @@ impl StringCollector {
     /// Pass 1: Initialize a useGT/getGT call for later content injection
     /// 
     /// This creates an empty content list that t() calls will add to
+    /// This has the added benefit of not overwriting any existing content
     pub fn initialize_call(&mut self, counter_id: u32) {
-        eprintln!("Initializing call for counter_id: {}", counter_id);
         // Ensure the Vec is large enough to hold this index
         while self.calls_needing_injection.len() <= counter_id as usize {
             self.calls_needing_injection.push(Vec::new());
@@ -77,7 +78,6 @@ impl StringCollector {
     /// 
     /// The counter_id should come from the scope tracker via get_translation_function()
     pub fn add_translation_content(&mut self, counter_id: u32, content: TranslationContent) {
-        eprintln!("Adding content to counter_id: {}, message: {}", counter_id, content.message);
         if let Some(content_list) = self.calls_needing_injection.get_mut(counter_id as usize) {
             content_list.push(content);
         } else {
@@ -196,6 +196,11 @@ impl StringCollector {
     /// Reset all state (useful for testing)
     pub fn clear(&mut self) {
         self.calls_needing_injection.clear();
+        self.global_call_counter = 0;
+    }
+
+    /// Reset the counter to a specific value
+    pub fn reset_counter(&mut self) {
         self.global_call_counter = 0;
     }
     

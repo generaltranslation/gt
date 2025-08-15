@@ -108,3 +108,16 @@ export type RenderVariable = ({
 }: Omit<VariableProps, 'variableName'> & {
   locales: string[];
 }) => React.JSX.Element;
+
+/**
+ * Input params for translation function
+ * @internal
+ */
+export type Internal_UseGTParameters = [
+  {
+    message: string;
+    hash: string;
+    id?: string;
+    context?: string;
+  },
+];

@@ -7,7 +7,11 @@ import {
   missingVariablesError,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
-import { InlineTranslationOptions, validateString } from 'gt-react/internal';
+import {
+  InlineTranslationOptions,
+  Internal_UseGTParameters,
+  validateString,
+} from 'gt-react/internal';
 import use from '../../utils/use';
 
 /**
@@ -19,10 +23,16 @@ import use from '../../utils/use';
  * const t = await getGT();
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
-export async function getGT(): Promise<
-  (message: string, options?: InlineTranslationOptions) => string
-> {
+export async function getGT(
+  content?: Internal_UseGTParameters
+): Promise<(message: string, options?: InlineTranslationOptions) => string> {
   // ---------- SET UP ---------- //
+
+  if (content) {
+    console.log('getGT(): received content', JSON.stringify(content, null, 2));
+  } else {
+    console.error('getGT(): no content provided');
+  }
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
@@ -176,6 +186,6 @@ export async function getGT(): Promise<
  * const t = useGT();
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
-export function useGT() {
-  return use(getGT());
+export function useGT(content?: Internal_UseGTParameters) {
+  return use(getGT(content));
 }

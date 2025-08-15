@@ -46,8 +46,10 @@ impl TransformVisitor {
         log_level: LogLevel,
         compile_time_hash: bool,
         filename: Option<String>,
-        string_collector: StringCollector,
+        mut string_collector: StringCollector,
     ) -> Self {
+        // Reset the counter to 0
+        string_collector.reset_counter();
         Self {
             traversal_state: TraversalState::default(),
             statistics: Statistics::default(),
@@ -147,7 +149,6 @@ impl TransformVisitor {
                                 self.import_tracker.branch_import_aliases.insert(local_name, original_name);
                             } else if is_translation_function_name(&original_name) {
                                 // Track the translation function name
-                                self.logger.log_debug(&format!("process_gt_import_declaration()"));
                                 self.import_tracker.scope_tracker.track_translation_variable(
                                     local_name.clone(),
                                     original_name.clone(),
@@ -470,6 +471,7 @@ impl TransformVisitor {
                     let counter_id = self.import_tracker.string_collector.increment_counter();
                     // Create a new entry in the string collector for this call
                     self.import_tracker.string_collector.initialize_call(counter_id);
+                    eprintln!("initialize: {} @ {}", callee_name, counter_id);
 
                     // Track translation function using scope system (useGT_callback, getGT_callback)
                     self.import_tracker

@@ -139,11 +139,12 @@ impl VisitMut for TransformVisitor {
                     // Register the useGT/getGT as aggregators on the string collector
                     let original_name = translation_variable.assigned_value.clone();
                     let identifier = translation_variable.identifier;
-                    eprintln!("Found translation function: {:?}, identifier: {}", original_name, identifier);
 
-                    // Detect useGT/getGT calls
+                    // TODO: identifier is off by one, because looking at parent
+                    // eprintln!("visit_mut_call_expr: tracking call: {} @ {}", function_name, identifier);
+
+                    // Detect t() calls
                     if is_translation_function_callback(&original_name) {
-                        // Detect const t = useGT()
                         if let Some(string) = call_expr.args.first() {
                             // TODO: check for violations
 
@@ -318,9 +319,57 @@ impl Fold for TransformVisitor {
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if self.settings.compile_time_hash {
-                    if let Some(_translation_variable) = self.import_tracker.scope_tracker.get_translation_variable(function_name) {
-                        // TODO: check original function, because we might have different functions in the future
+                if let Some(translation_variable) = self
+                    .import_tracker
+                    .scope_tracker
+                    .get_translation_variable(function_name) {
+
+
+                    // Register the useGT/getGT as aggregators on the string collector
+                    let original_name = translation_variable.assigned_value.clone();
+                    let identifier = translation_variable.identifier;
+
+                    let counter_id = self.import_tracker.string_collector.get_counter();
+
+                    // Detect useGT/getGT calls
+                    if is_translation_function_name(&original_name) {
+                        // Insert the data into the aggregator
+                        if let Some(content) = self
+                            .import_tracker.string_collector
+                            .get_content_for_injection(counter_id) {
+                                // TODO: off by one error here, identifier needs add one
+
+                            eprintln!("injecting content for counter_id: {}", counter_id);
+
+                            // Create the content array
+                            let content_array = self
+                                .import_tracker
+                                .string_collector
+                                .create_content_array(content, call_expr.span);
+
+                            // Check for existing content
+                            let call_expr = call_expr.clone().fold_children_with(self);
+                            if call_expr.args.is_empty() {
+                                let mut new_args = call_expr.args.clone();
+                                new_args.push(ExprOrSpread {
+                                    spread: None,
+                                    expr: Box::new(Expr::Array(content_array.clone())),
+                                });
+                                // self.logger.log_debug(&format!("successfully inserted content into translation function: {:?} {:?} contentArray: {:?}", original_name, function_name, content_array));
+                                // self.logger.log_debug("successfully inserted content into translation function");
+
+                                return CallExpr {
+                                    args: new_args,
+                                    ..call_expr.clone()
+                                };
+                            } else {
+                                // self.logger.log_warning(&format!("failed to insert content into translation function: {:?} {:?} contentArray: {:?}", original_name, function_name, content_array));
+                            }
+                        }
+                    }
+
+                    // Detect t() calls
+                    else if is_translation_function_callback(&original_name) {
                         // Check the first argument for dynamic content
                         if let Some(string) = call_expr.args.first() {
                             // Check for violations
@@ -351,6 +400,8 @@ impl Fold for TransformVisitor {
         }
         call_expr.fold_children_with(self)
     }
+
+    
 
     /// Process JSX expression containers to detect unwrapped dynamic content
     fn fold_jsx_expr_container(&mut self, expr_container: JSXExprContainer) -> JSXExprContainer {
@@ -454,20 +505,21 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     let collected_data = visitor.import_tracker.string_collector;
 
     if collected_data.total_calls() > 0 {
-        // 🔍 Print debug stats:
-        println!("🔍 PASS 1 COMPLETE:");
-        println!("  📊 Total calls initialized: {}", collected_data.total_calls());
-        println!("  📝 Total content items collected: {}", collected_data.total_content_items());
-        println!("  🔢 Final counter value: {}", collected_data.get_counter());
-        // Print detailed call info:
-        for counter_id in collected_data.get_call_ids() {
-            if let Some(content) = collected_data.get_content_for_injection(counter_id) {
-                println!("  📋 Call {}: {} items", counter_id, content.len());
-                for (i, item) in content.iter().enumerate() {
-                    println!("{}: {:?}", i+1, item);
-                }
-            }
-        }
+        println!("PHASE 2:");
+        // // 🔍 Print debug stats:
+        // println!("🔍 PASS 1 COMPLETE:");
+        // println!("  📊 Total calls initialized: {}", collected_data.total_calls());
+        // println!("  📝 Total content items collected: {}", collected_data.total_content_items());
+        // println!("  🔢 Final counter value: {}", collected_data.get_counter());
+        // // Print detailed call info:
+        // for counter_id in collected_data.get_call_ids() {
+        //     if let Some(content) = collected_data.get_content_for_injection(counter_id) {
+        //         println!("  📋 Call {}: {} items", counter_id, content.len());
+        //         for (i, item) in content.iter().enumerate() {
+        //             println!("{}: {:?}", i+1, item);
+        //         }
+        //     }
+        // }
     }
 
     // Second Pass:
