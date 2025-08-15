@@ -370,6 +370,47 @@ impl TransformVisitor {
         }
     }
 
+    fn extract_identifiers_from_pattern(&self, pattern: &Pat, identifiers: &mut Vec<Atom>) {
+        match pattern {
+            Pat::Ident(BindingIdent { id, .. }) => {
+                identifiers.push(id.sym.clone());
+            }
+            Pat::Object(ObjectPat { props, .. }) => {
+                for prop in props {
+                    match prop {
+                        ObjectPatProp::Assign(AssignPatProp { key, .. }) => {
+                            // { key }
+                            identifiers.push(key.sym.clone());
+                        }
+                        ObjectPatProp::KeyValue(KeyValuePatProp { value, ..}) => {
+                            // { key: value }
+                            self.extract_identifiers_from_pattern(value, identifiers);
+                        }
+                        ObjectPatProp::Rest(RestPat { arg, .. }) => {
+                            // { ...key }
+                            self.extract_identifiers_from_pattern(arg, identifiers);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Pat::Array(ArrayPat { elems, .. }) => {
+                for elem in elems {
+                    if let Some(elem) = elem {
+                        self.extract_identifiers_from_pattern(elem, identifiers);
+                    }
+                }
+            }
+            Pat::Assign(AssignPat { left, .. }) => {
+                self.extract_identifiers_from_pattern(left, identifiers);
+            }
+            Pat::Rest(RestPat { arg, .. }) => {
+                self.extract_identifiers_from_pattern(arg, identifiers);
+            }
+            _ => {}
+        }
+    }
+
     fn track_overriding_variable (&mut self, variable_name: &Atom) {
         if self.import_tracker.scope_tracker.get_variable(&variable_name).is_some() {
             self.import_tracker.scope_tracker.track_regular_variable(
@@ -382,9 +423,13 @@ impl TransformVisitor {
     /// Track function parameters that could shadow existing variables
     pub fn track_parameter_overrides(&mut self, params: &[Param]) {
         for param in params {
-            if let Pat::Ident(BindingIdent { id, .. }) = &param.pat {
-                // If this parameter name matches an existing tracked variable, shadow it
-                self.track_overriding_variable(&id.sym);
+            let mut identifiers = Vec::new();
+            self.extract_identifiers_from_pattern(&param.pat, &mut identifiers);
+            for identifier in identifiers {
+                if identifier == "translationFunction" {
+                    eprintln!("Tracking parameter as overriding: {:?}", identifier);
+                }
+                self.track_overriding_variable(&identifier);
             }
         }
     }
@@ -392,8 +437,10 @@ impl TransformVisitor {
     /// Track arrow function parameters (arrow functions)  
     pub fn track_arrow_parameter_overrides(&mut self, params: &[Pat]) {
         for param in params {
-            if let Pat::Ident(BindingIdent { id, .. }) = param {
-                self.track_overriding_variable(&id.sym);
+            let mut identifiers = Vec::new();
+            self.extract_identifiers_from_pattern(param, &mut identifiers);
+            for identifier in identifiers {
+                self.track_overriding_variable(&identifier);
             }
         }
     }
@@ -414,23 +461,38 @@ impl TransformVisitor {
     }
 
     pub fn track_variable_assignment (&mut self, var_declarator: &VarDeclarator) {
-        // Check for assignments like: const t = useGT() or const MyT = T
-        if let (Pat::Ident(BindingIdent { id, .. }), Some(init_expr)) = (&var_declarator.name, &var_declarator.init) {
-            match init_expr.as_ref() {
-                // Handle function calls: const t = useGT()
-                Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
-                    self.track_function_call_assignment(callee_expr, &id.sym);
-                } 
-                Expr::Await(AwaitExpr { arg, .. }) => {
-                    if let Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) = arg.as_ref() {
-                        self.track_function_call_assignment(callee_expr, &id.sym);
-                    } else {
-                        self.track_overriding_variable(&id.sym);
+        if let Some(init_expr) = &var_declarator.init {
+            match &var_declarator.name {
+                // Handle simple identifier assignment: const t = useGT()
+                Pat::Ident(BindingIdent { id, .. }) => {
+                    match init_expr.as_ref() {
+                        Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) => {
+                            // Only direct assignments can be translation functions
+                            self.track_function_call_assignment(callee_expr, &id.sym);
+                        }
+                        Expr::Await(AwaitExpr { arg, .. }) => {
+                            if let Expr::Call(CallExpr { callee: Callee::Expr(callee_expr), .. }) = arg.as_ref() {
+                                // Only direct assignments can be translation functions
+                                self.track_function_call_assignment(callee_expr, &id.sym);
+                            } else {
+                                // Not a function call, treat as overriding
+                                self.track_overriding_variable(&id.sym);
+                            }
+                        }
+                        _ => {
+                            // Not a function call, treat as overriding
+                            self.track_overriding_variable(&id.sym);
+                        }
                     }
                 }
+                // Handle ALL destructuring patterns: const { t } = anything
                 _ => {
-                    // For any other type of assignment that could shadow
-                    self.track_overriding_variable(&id.sym);
+                    let mut identifiers = Vec::new();
+                    self.extract_identifiers_from_pattern(&var_declarator.name, &mut identifiers);
+  
+                    for identifier in identifiers {
+                        self.track_overriding_variable(&identifier);
+                    }
                 }
             }
         }
