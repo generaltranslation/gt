@@ -872,7 +872,7 @@ describe('parseFilesConfig', () => {
         ],
       });
       
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['fr']);
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['fr'], 'fr');
     });
 
     it('should auto-exclude nested locale directories', () => {
@@ -925,7 +925,7 @@ describe('parseFilesConfig', () => {
         ],
       });
       
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['fr', 'de']);
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['fr', 'de'], 'fr');
     });
 
     it('should combine manual exclude patterns with auto-exclude patterns', () => {
@@ -976,7 +976,32 @@ describe('parseFilesConfig', () => {
         ],
       });
       
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['en', 'fr']);
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['en', 'fr'], 'en');
+    });
+
+    it('should never auto-exclude the default locale', () => {
+      const includePatterns = ['src/[locale]/*.json'];
+      const excludePatterns = [];
+      
+      // Mock detecting 'en' directory, but since 'en' is the default locale, it should not be excluded
+      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue([]);
+      vi.mocked(fg.sync).mockReturnValue(['/project/src/en/config.json']);
+
+      expandGlobPatterns(
+        '/project',
+        includePatterns,
+        excludePatterns,
+        'en', // 'en' is the default locale
+        ['es'] // Only 'es' in locales config
+      );
+
+      expect(fg.sync).toHaveBeenCalledWith('/project/src/en/*.json', {
+        absolute: true,
+        ignore: [],
+      });
+      
+      // Verify function was called with 'en' as default locale parameter
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['es'], 'en');
     });
 
     it('should handle complex patterns with nested auto-excludes', () => {

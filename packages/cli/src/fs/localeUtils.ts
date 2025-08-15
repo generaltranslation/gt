@@ -3,15 +3,17 @@ import path from 'node:path';
 import { isValidLocale } from 'generaltranslation';
 
 /**
- * Recursively detects directories that are valid locale codes but not in the current locales list
+ * Recursively detects directories that are valid locale codes but not in the current config
  * @param cwd - The current working directory to scan
  * @param currentLocales - Array of locales currently in the config
+ * @param defaultLocale - The default locale (should never be excluded)
  * @param maxDepth - Maximum depth to recurse (default: 3)
  * @returns Array of relative paths to excluded locale directories (e.g., ['es', 'snippets/es'])
  */
 export function detectExcludedLocaleDirectories(
   cwd: string,
   currentLocales: string[],
+  defaultLocale: string,
   maxDepth: number = 3
 ): string[] {
   const validLocaleDirectoryPaths: string[] = [];
@@ -29,8 +31,12 @@ export function detectExcludedLocaleDirectories(
             ? `${relativePath}/${dirName}`
             : dirName;
 
-          // Check if directory name is a valid locale and not in current config
-          if (isValidLocale(dirName) && !currentLocales.includes(dirName)) {
+          // Check if directory name is a valid locale but not in current config or default locale
+          if (
+            isValidLocale(dirName) && 
+            !currentLocales.includes(dirName) && 
+            dirName !== defaultLocale
+          ) {
             validLocaleDirectoryPaths.push(currentRelativePath);
           } else {
             // Continue recursing into non-locale directories

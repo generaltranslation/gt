@@ -111,7 +111,8 @@ export function expandGlobPatterns(
   // Auto-detect valid locale directories not in current config and add them to excludes
   const excludedLocaleDirectories = detectExcludedLocaleDirectories(
     cwd,
-    locales
+    locales,
+    locale
   );
   const autoExcludePatterns = excludedLocaleDirectories.map(
     (localeDirPath) => `${localeDirPath}/**`
