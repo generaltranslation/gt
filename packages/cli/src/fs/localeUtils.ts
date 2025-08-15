@@ -18,7 +18,11 @@ export function detectExcludedLocaleDirectories(
 ): string[] {
   const validLocaleDirectoryPaths: string[] = [];
 
-  function scanDirectory(currentPath: string, relativePath: string, depth: number) {
+  function scanDirectory(
+    currentPath: string,
+    relativePath: string,
+    depth: number
+  ) {
     if (depth > maxDepth) return;
 
     try {
@@ -27,14 +31,14 @@ export function detectExcludedLocaleDirectories(
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const dirName = entry.name;
-          const currentRelativePath = relativePath 
+          const currentRelativePath = relativePath
             ? `${relativePath}/${dirName}`
             : dirName;
 
           // Check if directory name is a valid locale but not in current config or default locale
           if (
-            isValidLocale(dirName) && 
-            !currentLocales.includes(dirName) && 
+            isValidLocale(dirName) &&
+            !currentLocales.includes(dirName) &&
             dirName !== defaultLocale
           ) {
             validLocaleDirectoryPaths.push(currentRelativePath);

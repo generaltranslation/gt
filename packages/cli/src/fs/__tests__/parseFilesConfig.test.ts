@@ -851,17 +851,13 @@ describe('parseFilesConfig', () => {
     it('should auto-exclude detected locale directories not in current config', () => {
       const includePatterns = ['src/[locale]/*.mdx'];
       const excludePatterns = ['src/[locale]/ignore.mdx'];
-      
+
       vi.mocked(detectExcludedLocaleDirectories).mockReturnValue(['en', 'es']);
       vi.mocked(fg.sync).mockReturnValue(['/project/src/fr/content.mdx']);
 
-      expandGlobPatterns(
-        '/project',
-        includePatterns,
-        excludePatterns,
+      expandGlobPatterns('/project', includePatterns, excludePatterns, 'fr', [
         'fr',
-        ['fr']
-      );
+      ]);
 
       expect(fg.sync).toHaveBeenCalledWith('/project/src/fr/*.mdx', {
         absolute: true,
@@ -871,24 +867,31 @@ describe('parseFilesConfig', () => {
           '/project/es/**',
         ],
       });
-      
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['fr'], 'fr');
+
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith(
+        '/project',
+        ['fr'],
+        'fr'
+      );
     });
 
     it('should auto-exclude nested locale directories', () => {
       const includePatterns = ['./**/*.mdx'];
-      const excludePatterns = ['./[locales]/**/*.mdx', './snippets/[locales]/**/*.mdx'];
-      
-      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue(['en', 'snippets/en', 'snippets/es']);
+      const excludePatterns = [
+        './[locales]/**/*.mdx',
+        './snippets/[locales]/**/*.mdx',
+      ];
+
+      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue([
+        'en',
+        'snippets/en',
+        'snippets/es',
+      ]);
       vi.mocked(fg.sync).mockReturnValue(['/project/content.mdx']);
 
-      expandGlobPatterns(
-        '/project',
-        includePatterns,
-        excludePatterns,
+      expandGlobPatterns('/project', includePatterns, excludePatterns, 'fr', [
         'fr',
-        ['fr']
-      );
+      ]);
 
       expect(fg.sync).toHaveBeenCalledWith('/project/**/*.mdx', {
         absolute: true,
@@ -905,43 +908,40 @@ describe('parseFilesConfig', () => {
     it('should not auto-exclude directories that are in current locales config', () => {
       const includePatterns = ['src/[locale]/*.json'];
       const excludePatterns = [];
-      
+
       vi.mocked(detectExcludedLocaleDirectories).mockReturnValue(['en', 'es']);
       vi.mocked(fg.sync).mockReturnValue(['/project/src/fr/config.json']);
 
-      expandGlobPatterns(
-        '/project',
-        includePatterns,
-        excludePatterns,
+      expandGlobPatterns('/project', includePatterns, excludePatterns, 'fr', [
         'fr',
-        ['fr', 'de']
-      );
+        'de',
+      ]);
 
       expect(fg.sync).toHaveBeenCalledWith('/project/src/fr/*.json', {
         absolute: true,
-        ignore: [
-          '/project/en/**',
-          '/project/es/**',
-        ],
+        ignore: ['/project/en/**', '/project/es/**'],
       });
-      
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['fr', 'de'], 'fr');
+
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith(
+        '/project',
+        ['fr', 'de'],
+        'fr'
+      );
     });
 
     it('should combine manual exclude patterns with auto-exclude patterns', () => {
       const includePatterns = ['./**/*.mdx'];
       const excludePatterns = ['./manual-exclude/**', './temp/[locales]/**'];
-      
-      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue(['en', 'snippets/en']);
+
+      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue([
+        'en',
+        'snippets/en',
+      ]);
       vi.mocked(fg.sync).mockReturnValue(['/project/content.mdx']);
 
-      expandGlobPatterns(
-        '/project',
-        includePatterns,
-        excludePatterns,
+      expandGlobPatterns('/project', includePatterns, excludePatterns, 'fr', [
         'fr',
-        ['fr']
-      );
+      ]);
 
       expect(fg.sync).toHaveBeenCalledWith('/project/**/*.mdx', {
         absolute: true,
@@ -957,32 +957,31 @@ describe('parseFilesConfig', () => {
     it('should handle empty auto-exclude results', () => {
       const includePatterns = ['src/[locale]/*.json'];
       const excludePatterns = ['src/[locale]/ignore.json'];
-      
+
       vi.mocked(detectExcludedLocaleDirectories).mockReturnValue([]);
       vi.mocked(fg.sync).mockReturnValue(['/project/src/en/config.json']);
 
-      expandGlobPatterns(
-        '/project',
-        includePatterns,
-        excludePatterns,
+      expandGlobPatterns('/project', includePatterns, excludePatterns, 'en', [
         'en',
-        ['en', 'fr']
-      );
+        'fr',
+      ]);
 
       expect(fg.sync).toHaveBeenCalledWith('/project/src/en/*.json', {
         absolute: true,
-        ignore: [
-          '/project/src/en/ignore.json',
-        ],
+        ignore: ['/project/src/en/ignore.json'],
       });
-      
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['en', 'fr'], 'en');
+
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith(
+        '/project',
+        ['en', 'fr'],
+        'en'
+      );
     });
 
     it('should never auto-exclude the default locale', () => {
       const includePatterns = ['src/[locale]/*.json'];
       const excludePatterns = [];
-      
+
       // Mock detecting 'en' directory, but since 'en' is the default locale, it should not be excluded
       vi.mocked(detectExcludedLocaleDirectories).mockReturnValue([]);
       vi.mocked(fg.sync).mockReturnValue(['/project/src/en/config.json']);
@@ -999,28 +998,34 @@ describe('parseFilesConfig', () => {
         absolute: true,
         ignore: [],
       });
-      
+
       // Verify function was called with 'en' as default locale parameter
-      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith('/project', ['es'], 'en');
+      expect(detectExcludedLocaleDirectories).toHaveBeenCalledWith(
+        '/project',
+        ['es'],
+        'en'
+      );
     });
 
     it('should handle complex patterns with nested auto-excludes', () => {
       const includePatterns = ['./**/*.mdx'];
-      const excludePatterns = ['./[locales]/**/*.mdx', './snippets/[locales]/**/*.mdx'];
-      
-      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue(['en', 'snippets/en']);
+      const excludePatterns = [
+        './[locales]/**/*.mdx',
+        './snippets/[locales]/**/*.mdx',
+      ];
+
+      vi.mocked(detectExcludedLocaleDirectories).mockReturnValue([
+        'en',
+        'snippets/en',
+      ]);
       vi.mocked(fg.sync).mockReturnValue([
         '/project/docs/guide.mdx',
-        '/project/other/content.mdx'
+        '/project/other/content.mdx',
       ]);
 
-      expandGlobPatterns(
-        '/project',
-        includePatterns,
-        excludePatterns,
+      expandGlobPatterns('/project', includePatterns, excludePatterns, 'fr', [
         'fr',
-        ['fr']
-      );
+      ]);
 
       expect(fg.sync).toHaveBeenCalledWith('/project/**/*.mdx', {
         absolute: true,
