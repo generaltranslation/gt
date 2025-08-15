@@ -20,6 +20,12 @@ pub fn is_translation_function_name(name: &Atom) -> bool {
   matches!(name.as_ref(), "useGT" | "getGT")
 }
 
+/// Check if its a translation function callback const t = useGT()
+pub fn is_translation_function_callback(name: &Atom) -> bool {
+  matches!(name.as_ref(), "useGT_callback" | "getGT_callback")
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

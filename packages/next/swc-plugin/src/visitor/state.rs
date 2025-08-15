@@ -1,5 +1,5 @@
 use swc_core::ecma::atoms::Atom;
-use crate::ast::ScopeTracker;
+use crate::ast::{ScopeTracker, StringCollector};
 
 // For tracking statistics for the plugin
 #[derive(Default)]
@@ -27,13 +27,31 @@ pub struct ImportTracker {
     pub translation_import_aliases: std::collections::HashMap<Atom, Atom>, // T
     pub variable_import_aliases: std::collections::HashMap<Atom, Atom>,    // Var, Num, Currency, DateTime
     pub branch_import_aliases: std::collections::HashMap<Atom, Atom>,      // Branch, Plural
-    pub translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // getGT, useGT
+    pub translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // getGT, useGT (deprecated)
 
     /// Scope tracker for tracking variables
     pub scope_tracker: ScopeTracker,
+    
+    /// String collector for two-pass transformation
+    pub string_collector: StringCollector,
 
     /// Other import tracking
     pub namespace_imports: std::collections::HashSet<Atom>,
     // pub translation_functions: std::collections::HashSet<Atom>, // getGT, useGT (Deprecated)
     pub translation_callee_names: std::collections::HashMap<Atom, Atom>, // const t = getGT, const t2 = useGT
+}
+
+impl ImportTracker {
+    pub fn new(string_collector: StringCollector) -> Self {
+        Self {
+            translation_import_aliases: std::collections::HashMap::new(),
+            variable_import_aliases: std::collections::HashMap::new(),
+            branch_import_aliases: std::collections::HashMap::new(),
+            translation_function_import_aliases: std::collections::HashMap::new(),
+            scope_tracker: ScopeTracker::default(),
+            string_collector,
+            namespace_imports: std::collections::HashSet::new(),
+            translation_callee_names: std::collections::HashMap::new(),
+        }
+    }
 }

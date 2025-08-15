@@ -5,7 +5,7 @@ use swc_core::ecma::atoms::Atom;
 #[derive(Debug, Clone)]
 pub struct ScopeInfo {
     pub id: u32,
-    pub parent_id: Option<u32>,
+    pub parent_id: u32,
     pub depth: u32,
 }
 
@@ -16,6 +16,7 @@ pub struct ScopedVariable {
     pub assigned_value: Atom,    // useGT, getGT, "literal", "ref:otherVar", etc.
     pub variable_name: Atom,     // t, translationFunction, etc.
     pub is_translation_function: bool, // true if assigned_value is a known translation function
+    pub identifier: u32, // identifier for the variable
 }
 
 /// Tracks scope hierarchy and variable assignments within scopes
@@ -24,7 +25,7 @@ pub struct ScopeTracker {
     /// Next scope ID to assign
     next_scope_id: u32,
     /// Current scope being processed
-    current_scope: Option<u32>,
+    current_scope: u32,
     /// Stack to track scope nesting for proper exit handling
     scope_stack: Vec<u32>,
     /// Information about each scope
@@ -37,7 +38,7 @@ impl Default for ScopeTracker {
     fn default() -> Self {
         Self {
             next_scope_id: 1, // Start at 1, reserve 0 for "no scope"
-            current_scope: None,
+            current_scope: 0,
             scope_stack: Vec::new(),
             scope_info: HashMap::new(),
             scoped_variables: HashMap::new(),
@@ -54,7 +55,7 @@ impl ScopeTracker {
         let scope_info = ScopeInfo {
             id: new_scope_id,
             parent_id: self.current_scope,
-            depth: if self.current_scope.is_some() { 
+            depth: if self.current_scope != 0 { 
                 self.scope_stack.len() as u32 + 1
             } else { 
                 0 
@@ -64,112 +65,96 @@ impl ScopeTracker {
         self.scope_info.insert(new_scope_id, scope_info);
         
         // Push current scope to stack
-        if let Some(current) = self.current_scope {
-            self.scope_stack.push(current);
-        }
+        self.scope_stack.push(self.current_scope);
         
-        self.current_scope = Some(new_scope_id);
+        self.current_scope = new_scope_id;
         new_scope_id
     }
 
     /// Exit the current scope and return to parent (with aggressive cleanup)
     pub fn exit_scope(&mut self) {
-        if let Some(current_scope_id) = self.current_scope {
+        if self.current_scope != 0 {
             // Remove all variables from the exiting scope immediately
             self.scoped_variables.retain(|_, variables| {
-                variables.retain(|var| var.scope_id != current_scope_id);
+                variables.retain(|var| var.scope_id != self.current_scope);
                 !variables.is_empty()  // Remove empty variable name entries
             });
             
             // Get parent scope from the scope info before removing it
-            let parent_id = self.scope_info.get(&current_scope_id)
-                .and_then(|info| info.parent_id);
+            let parent_id = self.scope_info.get(&self.current_scope)
+                .map(|info| info.parent_id)
+                .unwrap_or(0);
             
             // Remove scope info for the exiting scope
-            self.scope_info.remove(&current_scope_id);
+            self.scope_info.remove(&self.current_scope);
             
             // Update current scope to parent
             self.current_scope = parent_id;
             
             // Pop from stack if there are items
             if !self.scope_stack.is_empty() {
+                // eprintln!("exit_scope() poping from stack: {:?}", self.scope_stack.last());
                 self.scope_stack.pop();
             }
         }
     }
 
     /// Track a variable assignment in the current scope
-    pub fn track_variable(&mut self, variable_name: Atom, assigned_value: Atom, is_translation_function: bool) {
-        if let Some(scope_id) = self.current_scope {
-            let scoped_var = ScopedVariable {
-                scope_id,
-                assigned_value,
-                variable_name: variable_name.clone(),
-                is_translation_function,
-            };
+    pub fn track_variable(&mut self, variable_name: Atom, assigned_value: Atom, is_translation_function: bool, identifier: u32) {
+        let scoped_var = ScopedVariable {
+            scope_id: self.current_scope,
+            assigned_value,
+            variable_name: variable_name.clone(),
+            is_translation_function,
+            identifier,
+        };
 
-            self.scoped_variables
-                .entry(variable_name)
-                .or_insert_with(Vec::new)
-                .push(scoped_var);
-        }
+        self.scoped_variables
+            .entry(variable_name)
+            .or_insert_with(Vec::new)
+            .push(scoped_var);
+       
     }
 
     /// Track a translation function variable (convenience method)
-    pub fn track_translation_variable(&mut self, variable_name: Atom, function_name: Atom) {
-        self.track_variable(variable_name, function_name, true);
+    pub fn track_translation_variable(&mut self, variable_name: Atom, function_name: Atom, identifier: u32) {
+        // eprintln!("track_translation_variable() {:?}, {:?}, {:?}", variable_name, function_name, identifier);
+        self.track_variable(variable_name, function_name, true, identifier);
+        // Log the scoped variables object
+        // eprintln!("scoped_variables: {:?}", self.scoped_variables);
     }
 
     /// Track a non-translation variable (convenience method)  
     pub fn track_regular_variable(&mut self, variable_name: Atom, assigned_value: Atom) {
-        self.track_variable(variable_name, assigned_value, false);
-    }
-
-    /// Check if a scope is accessible from the current scope (for debugging purposes)
-    #[allow(dead_code)]
-    fn is_scope_accessible(&self, target_scope: u32) -> bool {
-        if Some(target_scope) == self.current_scope {
-            return true;
-        }
-
-        // Walk up the parent chain from current scope
-        let mut check_scope = self.current_scope;
-        while let Some(scope_id) = check_scope {
-            if scope_id == target_scope {
-                return true;
-            }
-            check_scope = self.scope_info.get(&scope_id)
-                .and_then(|info| info.parent_id);
-        }
-        
-        false
+        self.track_variable(variable_name, assigned_value, false, 0); // 0 because we dont care about the identifier
     }
 
     /// Find if a variable is accessible in the current scope
     pub fn get_variable(&self, variable_name: &Atom) -> Option<&ScopedVariable> {
+        if variable_name.as_str() == "useGT" {
+            // eprintln!("get_variable()\nvariable_name: {:?}\n {:?}\ncurrent_scope: {:?}\nscoped_variables: {:?}", variable_name, self.scoped_variables.get(variable_name), self.current_scope, self.scoped_variables);
+        }
         if let Some(variables) = self.scoped_variables.get(variable_name) {
             // With aggressive cleanup, all remaining variables are accessible by definition
             // Return the most recent one (proper shadowing behavior)
-            return variables.last();
+            let result = variables.last();
+            // eprintln!("get_variable() success {:?} {:?}", variable_name, result);
+            return result;
         }
         None
     }
 
-    /// Get the assigned value for a variable if it exists in current scope
-    pub fn get_variable_value(&self, variable_name: &Atom) -> Option<&Atom> {
-        self.get_variable(variable_name)
-            .map(|var| &var.assigned_value)
-    }
-
-    /// Get the original function name for a translation variable if it exists in current scope
-    pub fn get_translation_function(&self, variable_name: &Atom) -> Option<&Atom> {
+    /// Get the translation variable info if it exists in current scope
+    pub fn get_translation_variable(&self, variable_name: &Atom) -> Option<&ScopedVariable> {
+        if variable_name.as_str() == "useGT" {
+            // eprintln!("get_translation_variable() {:?} {:?}", variable_name, self.get_variable(variable_name).filter(|var| var.is_translation_function));
+        }
         self.get_variable(variable_name)
             .filter(|var| var.is_translation_function)
-            .map(|var| &var.assigned_value)
     }
 
     /// Get current scope ID
-    pub fn current_scope_id(&self) -> Option<u32> {
+    pub fn current_scope_id(&self) -> u32 {
         self.current_scope
     }
 
@@ -249,7 +234,7 @@ mod tests {
         
         // Enter first scope and track a variable
         let scope1 = tracker.enter_scope();
-        tracker.track_translation_variable("t".into(), "useGT".into());
+        tracker.track_translation_variable("t".into(), "useGT".into(), 0);
         
         // Variable should be accessible in same scope
         let var = tracker.get_variable(&"t".into());
@@ -283,7 +268,7 @@ mod tests {
         
         // Enter outer scope
         let _scope1 = tracker.enter_scope();
-        tracker.track_translation_variable("t".into(), "useGT".into());
+        tracker.track_translation_variable("t".into(), "useGT".into(), 0);
         
         // Verify outer variable
         let outer_var = tracker.get_variable(&"t".into()).unwrap();
@@ -291,7 +276,7 @@ mod tests {
         
         // Enter inner scope and shadow the variable
         let scope2 = tracker.enter_scope();
-        tracker.track_translation_variable("t".into(), "getGT".into());
+        tracker.track_translation_variable("t".into(), "getGT".into(), 1);
         
         // Should get the shadowed (inner) variable
         let inner_var = tracker.get_variable(&"t".into()).unwrap();
@@ -315,12 +300,12 @@ mod tests {
         
         // Enter first child scope and track variable
         let _child1_scope = tracker.enter_scope();
-        tracker.track_translation_variable("t1".into(), "useGT".into());
+        tracker.track_translation_variable("t1".into(), "useGT".into(), 0);
         tracker.exit_scope(); // Exit first child - t1 should be removed
         
         // Enter second child scope
         let _child2_scope = tracker.enter_scope();
-        tracker.track_translation_variable("t2".into(), "getGT".into());
+        tracker.track_translation_variable("t2".into(), "getGT".into(), 1);
         
         // Should not be able to access sibling's variable (was cleaned up on exit)
         assert!(tracker.get_variable(&"t1".into()).is_none());
@@ -355,25 +340,25 @@ mod tests {
         let mut tracker = ScopeTracker::default();
         
         let _scope = tracker.enter_scope();
-        tracker.track_translation_variable("myTranslator".into(), "useGT".into());
+        tracker.track_translation_variable("myTranslator".into(), "useGT".into(), 0);
         tracker.track_regular_variable("regularVar".into(), "someValue".into());
         
         // Test translation function helper
-        let translation_func = tracker.get_translation_function(&"myTranslator".into());
+        let translation_func = tracker.get_translation_variable(&"myTranslator".into());
         assert!(translation_func.is_some());
-        assert_eq!(translation_func.unwrap().as_str(), "useGT");
+        assert_eq!(translation_func.unwrap().assigned_value.as_str(), "useGT");
         
         // Test general variable value helper
-        let var_value = tracker.get_variable_value(&"regularVar".into());
+        let var_value = tracker.get_variable(&"regularVar".into());
         assert!(var_value.is_some());
-        assert_eq!(var_value.unwrap().as_str(), "someValue");
+        assert_eq!(var_value.unwrap().assigned_value.as_str(), "someValue");
         
         // Test that regular variable doesn't return from translation helper
-        let not_translation = tracker.get_translation_function(&"regularVar".into());
+        let not_translation = tracker.get_translation_variable(&"regularVar".into());
         assert!(not_translation.is_none());
         
         // Test non-existent variable
-        let missing = tracker.get_variable_value(&"nonexistent".into());
+        let missing = tracker.get_variable(&"nonexistent".into());
         assert!(missing.is_none());
     }
 
@@ -384,7 +369,7 @@ mod tests {
         let scope1 = tracker.enter_scope();
         
         // Track different types of variables
-        tracker.track_translation_variable("t1".into(), "useGT".into());
+        tracker.track_translation_variable("t1".into(), "useGT".into(), 0);
         tracker.track_regular_variable("literal".into(), "string_literal".into());
         tracker.track_regular_variable("reference".into(), "ref:t1".into());
         tracker.track_regular_variable("undefined_var".into(), "undefined".into());
@@ -435,11 +420,11 @@ mod tests {
         
         // Enter scope and track variables
         let scope1 = tracker.enter_scope();
-        tracker.track_translation_variable("t1".into(), "useGT".into());
+        tracker.track_translation_variable("t1".into(), "useGT".into(), 0);
         
         // Enter nested scope
         let scope2 = tracker.enter_scope();
-        tracker.track_translation_variable("t2".into(), "getGT".into());
+        tracker.track_translation_variable("t2".into(), "getGT".into(), 1);
         
         // Both variables should exist
         assert!(tracker.get_variable(&"t1".into()).is_some());

@@ -1,5 +1,6 @@
 use super::state::{Statistics, TraversalState, ImportTracker};
 use super::jsx_utils::{extract_attribute_from_jsx_attr};
+use crate::ast::StringCollector;
 use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use swc_core::{
@@ -36,7 +37,7 @@ pub struct TransformVisitor {
 
 impl Default for TransformVisitor {
   fn default() -> Self {
-      Self::new(LogLevel::Warn, false, None)
+      Self::new(LogLevel::Warn, false, None, StringCollector::new())
   }
 }
 
@@ -45,11 +46,12 @@ impl TransformVisitor {
         log_level: LogLevel,
         compile_time_hash: bool,
         filename: Option<String>,
+        string_collector: StringCollector,
     ) -> Self {
         Self {
             traversal_state: TraversalState::default(),
             statistics: Statistics::default(),
-            import_tracker: ImportTracker::default(),
+            import_tracker: ImportTracker::new(string_collector),
             settings: PluginSettings::new(
                 log_level.clone(),
                 compile_time_hash,
@@ -135,8 +137,8 @@ impl TransformVisitor {
                                 None => local_name.clone(),
                             };
 
+                            // Store the mapping: local_name -> original_name
                             if is_translation_component_name(&original_name) {
-                                // Store the mapping: local_name -> original_name
                                 self.import_tracker.translation_import_aliases.insert(local_name, original_name);
                             } else if is_variable_component_name(&original_name) {
                                 self.import_tracker.variable_import_aliases.insert(local_name, original_name);
@@ -144,8 +146,16 @@ impl TransformVisitor {
                                 // no existing tracking for branches
                                 self.import_tracker.branch_import_aliases.insert(local_name, original_name);
                             } else if is_translation_function_name(&original_name) {
-                                self.logger.log_debug(&format!("inserting translation_function: {:?}", local_name));
-                                // self.import_tracker.translation_functions.insert(local_name.clone()); // old
+                                // Track the translation function name
+                                self.logger.log_debug(&format!("process_gt_import_declaration()"));
+                                self.import_tracker.scope_tracker.track_translation_variable(
+                                    local_name.clone(),
+                                    original_name.clone(),
+                                    0 // We don't care about the identifier for imports
+                                );
+
+
+                                // Deprecated behavior
                                 self.import_tracker.translation_function_import_aliases.insert(local_name, original_name);
                             }
                         }
@@ -390,7 +400,6 @@ impl TransformVisitor {
                             // { ...key }
                             self.extract_identifiers_from_pattern(arg, identifiers);
                         }
-                        _ => {}
                     }
                 }
             }
@@ -426,9 +435,6 @@ impl TransformVisitor {
             let mut identifiers = Vec::new();
             self.extract_identifiers_from_pattern(&param.pat, &mut identifiers);
             for identifier in identifiers {
-                if identifier == "translationFunction" {
-                    eprintln!("Tracking parameter as overriding: {:?}", identifier);
-                }
                 self.track_overriding_variable(&identifier);
             }
         }
@@ -448,13 +454,34 @@ impl TransformVisitor {
     // Track function call assignments
     fn track_function_call_assignment(&mut self, callee_expr: &Box<Expr>, variable_name: &Atom) {
         if let Expr::Ident(Ident { sym: callee_name, .. }) = callee_expr.as_ref() {
-            if self.import_tracker.translation_function_import_aliases.contains_key(callee_name) {
-                // Track translation function using scope system
-                self.import_tracker.scope_tracker.track_translation_variable(
-                    variable_name.clone(),
-                    callee_name.clone()
-                );
+            // Check if the callee is a translation function
+            if let Some(translation_variable) = self
+                .import_tracker
+                .scope_tracker
+                .get_translation_variable(callee_name) {
+
+                let original_name = translation_variable.assigned_value.clone();
+
+                // Check if its getGT or useGT
+                if is_translation_function_name(&original_name) {
+                    // TODO: maybe these should get reverted moved back to visit_mut_call_expr() and order gets reversed?
+                    // Get counter_id
+                    let counter_id = self.import_tracker.string_collector.increment_counter();
+                    // Create a new entry in the string collector for this call
+                    self.import_tracker.string_collector.initialize_call(counter_id);
+
+                    // Track translation function using scope system (useGT_callback, getGT_callback)
+                    // TODO: callee_name_callback is not robust, cannot handle aliases
+                    self.import_tracker
+                        .scope_tracker
+                        .track_translation_variable(
+                            variable_name.clone(),
+                            format!("{}_callback", callee_name.clone()).into(),
+                            self.import_tracker.string_collector.get_counter()
+                        );
+                }
             } else {
+                // TODO: do the check that this is not a translation_variable sooner?
                 self.track_overriding_variable(variable_name);
             }
         }
@@ -555,7 +582,7 @@ mod tests {
 
     // Helper to create a test visitor with specific imports
     fn create_visitor_with_imports() -> TransformVisitor {
-        let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
         
         // Add some test imports
         visitor.import_tracker.translation_import_aliases.insert(
@@ -709,7 +736,7 @@ mod tests {
 
         #[test]
         fn creates_new_visitor_with_parameters() {
-            let visitor = TransformVisitor::new(LogLevel::Debug, true, Some("test.tsx".to_string()));
+            let visitor = TransformVisitor::new(LogLevel::Debug, true, Some("test.tsx".to_string()), StringCollector::new());
             
             assert_eq!(visitor.settings.log_level.as_int(), LogLevel::Debug.as_int());
             assert_eq!(visitor.settings.compile_time_hash, true);
@@ -793,7 +820,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_content_warning_without_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, None);
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
             let warning = visitor.create_dynamic_content_warning("T");
             
             assert!(warning.contains("gt-next"));
@@ -804,7 +831,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_content_warning_with_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("components/Test.tsx".to_string()));
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("components/Test.tsx".to_string()), StringCollector::new());
             let warning = visitor.create_dynamic_content_warning("T");
             
             assert!(warning.contains("gt-next in components/Test.tsx"));
@@ -813,7 +840,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_function_warning_without_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, None);
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
             let warning = visitor.create_dynamic_function_warning("useGT", "template literals");
             
             assert!(warning.contains("gt-next"));
@@ -824,7 +851,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_function_warning_with_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("hooks/useTranslation.ts".to_string()));
+            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("hooks/useTranslation.ts".to_string()), StringCollector::new());
             let warning = visitor.create_dynamic_function_warning("t", "string concatenation");
             
             assert!(warning.contains("gt-next in hooks/useTranslation.ts"));
@@ -837,7 +864,7 @@ mod tests {
 
         #[test]
         fn processes_gt_next_named_imports() {
-            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             let import_decl = create_import_decl("gt-next", vec![
                 create_named_import("T", None),
                 create_named_import("MyVar", Some("Var")),
@@ -853,7 +880,7 @@ mod tests {
 
         #[test]
         fn processes_namespace_imports() {
-            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             let import_decl = create_import_decl("gt-next", vec![
                 create_namespace_import("GT"),
             ]);
@@ -865,7 +892,7 @@ mod tests {
 
         #[test]
         fn processes_gt_next_client_imports() {
-            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             let import_decl = create_import_decl("gt-next/client", vec![
                 create_named_import("T", None),
             ]);
@@ -877,7 +904,7 @@ mod tests {
 
         #[test]
         fn ignores_non_gt_imports() {
-            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             let import_decl = create_import_decl("react", vec![
                 create_named_import("React", None),
             ]);
@@ -1130,7 +1157,7 @@ mod tests {
                 if let Expr::Ident(ident) = callee_expr.as_ref() {
                     // Only check violations if it's a tracked function
                     let is_tracked_function = visitor.import_tracker.translation_function_import_aliases.contains_key(&ident.sym);
-                    let is_tracked_callee = visitor.import_tracker.scope_tracker.get_translation_function(&ident.sym).is_some();
+                    let is_tracked_callee = visitor.import_tracker.scope_tracker.get_translation_variable(&ident.sym).is_some();
                     
                     if is_tracked_function || is_tracked_callee {
                         if let Some(first_arg) = call_expr.args.first() {
@@ -1193,7 +1220,7 @@ mod tests {
             visitor.track_variable_assignment(&var_declarator);
 
             // Should not track non-function assignments in scope tracker
-            assert!(visitor.import_tracker.scope_tracker.get_translation_function(&Atom::new("message")).is_none());
+            assert!(visitor.import_tracker.scope_tracker.get_translation_variable(&Atom::new("message")).is_none());
         }
 
         #[test]
@@ -1204,7 +1231,7 @@ mod tests {
             visitor.track_variable_assignment(&var_declarator);
 
             // Should not track non-translation functions in scope tracker
-            assert!(visitor.import_tracker.scope_tracker.get_translation_function(&Atom::new("result")).is_none());
+            assert!(visitor.import_tracker.scope_tracker.get_translation_variable(&Atom::new("result")).is_none());
         }
     }
 
@@ -1213,7 +1240,7 @@ mod tests {
 
         #[test]
         fn calculates_hash_for_empty_element() {
-            let visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             let element = create_jsx_element("T", vec![]);
 
             let (hash, json_string) = visitor.calculate_element_hash(&element);
@@ -1225,7 +1252,7 @@ mod tests {
 
         #[test] 
         fn hash_changes_with_different_content() {
-            let visitor = TransformVisitor::new(LogLevel::Silent, false, None);
+            let visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             
             let element1 = create_jsx_element("T", vec![]);
             let mut element2 = create_jsx_element("T", vec![]);
@@ -1247,7 +1274,7 @@ mod tests {
 
         #[test]
         fn full_workflow_with_imports_and_component_detection() {
-            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, Some("test.tsx".to_string()));
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, Some("test.tsx".to_string()), StringCollector::new());
             
             // Process imports
             let import_decl = create_import_decl("gt-next", vec![
