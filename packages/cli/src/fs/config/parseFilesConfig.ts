@@ -9,6 +9,7 @@ import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { logWarning } from '../../console/logging.js';
 import chalk from 'chalk';
+import { detectExcludedLocaleDirectories } from '../localeUtils.js';
 
 /**
  * Resolves the files from the files object
@@ -107,6 +108,15 @@ export function expandGlobPatterns(
   resolvedPaths: string[];
   placeholderPaths: string[];
 } {
+  // Auto-detect valid locale directories not in current config and add them to excludes
+  const excludedLocaleDirectories = detectExcludedLocaleDirectories(
+    cwd,
+    locales
+  );
+  const autoExcludePatterns = excludedLocaleDirectories.map(
+    (localeDirPath) => `${localeDirPath}/**`
+  );
+  const enhancedExcludePatterns = [...excludePatterns, ...autoExcludePatterns];
   // Expand glob patterns to include all matching files
   const resolvedPaths: string[] = [];
   const placeholderPaths: string[] = [];
@@ -142,7 +152,7 @@ export function expandGlobPatterns(
     // Prepare exclude patterns with locale replaced
     const expandedExcludePatterns = Array.from(
       new Set(
-        excludePatterns.flatMap((p) =>
+        enhancedExcludePatterns.flatMap((p) =>
           locales.map((targetLocale) =>
             path.resolve(
               cwd,
