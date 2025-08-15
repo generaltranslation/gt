@@ -155,7 +155,6 @@ impl TransformVisitor {
                                     0 // We don't care about the identifier for imports
                                 );
 
-
                                 // Deprecated behavior
                                 self.import_tracker.translation_function_import_aliases.insert(local_name, original_name);
                             }
