@@ -172,13 +172,17 @@ describe('localizeStaticImports', () => {
         const fileContent = `
 import Component1 from '/components/en/component1.mdx'
 import Component2 from '/components/en/component2.mdx'
+
 const text = 'Some other content'
+
 import Component3 from '/components/en/component3.mdx'
 `;
         const expected = `
 import Component1 from '/components/ja/component1.mdx'
 import Component2 from '/components/ja/component2.mdx'
+
 const text = 'Some other content'
+
 import Component3 from '/components/ja/component3.mdx'
 `;
 
@@ -1189,6 +1193,54 @@ import Guide from '/components/ja/guide.mdx'
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
               excludeStaticImports: ['/components/[locale]/{images,assets}/**'],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+      });
+
+      describe('ignores import-like text in MDX content', () => {
+        it('should only rewrite real import statements, not code snippets or text', async () => {
+          const fileContent = `
+import Real from '/components/en/real.mdx'
+
+Here is code: \`import Fake from '/components/en/fake.mdx'\`
+
+\`\`\`js
+import Fence from '/components/en/fence.mdx'
+\`\`\`
+`;
+          const expected = `
+import Real from '/components/ja/real.mdx'
+
+Here is code: \`import Fake from '/components/en/fake.mdx'\`
+
+\`\`\`js
+import Fence from '/components/en/fence.mdx'
+\`\`\`
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+            expect(content).toBe(expected);
+            return Promise.resolve();
+          });
+
+          const mockFileMapping = { ja: { 'test.mdx': '/path/test.mdx' } };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
             },
           };
 
