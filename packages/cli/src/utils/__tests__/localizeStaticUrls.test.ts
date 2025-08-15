@@ -749,13 +749,13 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const fileContent = `
 [Guide](/docs/en/guide) - should localize
 [Images](/docs/en/images/photo.jpg) - should exclude
-<a href="/docs/en/api">API</a> - should localize  
+<a href="/docs/en/api">API</a> - should localize
 <a href="/docs/en/snippets/example.js">Snippet</a> - should exclude
 `;
         const expected = `
 [Guide](/docs/ja/guide) - should localize
 [Images](/docs/en/images/photo.jpg) - should exclude
-<a href="/docs/ja/api">API</a> - should localize  
+<a href="/docs/ja/api">API</a> - should localize
 <a href="/docs/en/snippets/example.js">Snippet</a> - should exclude
 `;
 
@@ -859,13 +859,13 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
       it('should handle complex glob patterns', async () => {
         const fileContent = `
 [Image1](/docs/en/images/photos/photo1.jpg)
-[Image2](/docs/en/images/icons/icon.svg)  
+[Image2](/docs/en/images/icons/icon.svg)
 [Image3](/docs/en/assets/logo.png)
 [Guide](/docs/en/guide)
 `;
         const expected = `
 [Image1](/docs/en/images/photos/photo1.jpg)
-[Image2](/docs/en/images/icons/icon.svg)  
+[Image2](/docs/en/images/icons/icon.svg)
 [Image3](/docs/en/assets/logo.png)
 [Guide](/docs/ja/guide)
 `;

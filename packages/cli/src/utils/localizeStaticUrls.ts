@@ -2,6 +2,14 @@ import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkMdx from 'remark-mdx';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkStringify from 'remark-stringify';
+import { visit } from 'unist-util-visit';
+import { Root } from 'mdast';
+
 const { isMatch } = micromatch;
 
 /**
@@ -53,7 +61,7 @@ export default async function localizeStaticUrls(
         targetFiles.map(async (filePath) => {
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
-          // Localize the file
+          // Localize the file (handles both URLs and hrefs in single AST pass)
           const localizedFile = localizeStaticUrlsForFile(
             fileContent,
             settings.defaultLocale,
@@ -62,23 +70,193 @@ export default async function localizeStaticUrls(
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls
           );
-          const localizedFileHrefs = localizeStaticHrefsForFile(
-            localizedFile,
-            settings.defaultLocale,
-            locale,
-            settings.experimentalHideDefaultLocale || false,
-            settings.options?.docsUrlPattern,
-            settings.options?.excludeStaticUrls
-          );
           // Write the localized file to the target path
-          await fs.promises.writeFile(filePath, localizedFileHrefs);
+          await fs.promises.writeFile(filePath, localizedFile);
         })
       );
     })
   );
 }
 
-// Naive find and replace, in the future, construct an AST
+interface UrlTransformResult {
+  content: string;
+  hasChanges: boolean;
+  transformedUrls: Array<{
+    originalPath: string;
+    newPath: string;
+    type: 'markdown' | 'href';
+  }>;
+}
+
+/**
+ * AST-based transformation for MDX files using remark-mdx
+ */
+function transformMdxUrls(
+  mdxContent: string,
+  defaultLocale: string,
+  targetLocale: string,
+  hideDefaultLocale: boolean,
+  pattern: string = '/[locale]',
+  exclude: string[] = []
+): UrlTransformResult {
+  const transformedUrls: Array<{
+    originalPath: string;
+    newPath: string;
+    type: 'markdown' | 'href';
+  }> = [];
+
+  if (!pattern.startsWith('/')) {
+    pattern = '/' + pattern;
+  }
+
+  const patternHead = pattern.split('[locale]')[0];
+
+  // Quick check: if the file doesn't contain the pattern, skip expensive AST parsing
+  if (!mdxContent.includes(patternHead.replace(/\/$/, ''))) {
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedUrls: [],
+    };
+  }
+
+  // Parse the MDX content into an AST
+  const parseProcessor = unified()
+    .use(remarkParse)
+    .use(remarkFrontmatter, ['yaml', 'toml'])
+    .use(remarkMdx);
+
+  const ast = parseProcessor.parse(mdxContent);
+  const processedAst = parseProcessor.runSync(ast) as Root;
+
+  // Helper function to transform URL based on pattern
+  const transformUrl = (
+    originalUrl: string,
+    linkType: 'markdown' | 'href'
+  ): string | null => {
+    // Skip if URL doesn't start with pattern
+    if (!originalUrl.startsWith(patternHead.replace(/\/$/, ''))) {
+      return null;
+    }
+
+    let newUrl: string;
+
+    if (hideDefaultLocale) {
+      // For hideDefaultLocale: '/docs/file' -> '/docs/ja/file'
+      if (
+        originalUrl.startsWith(`${patternHead}${targetLocale}/`) ||
+        originalUrl === `${patternHead}${targetLocale}`
+      ) {
+        return null; // Already localized
+      }
+
+      // Handle exact match (e.g., '/docs' -> '/docs/ja')
+      if (originalUrl === patternHead.replace(/\/$/, '')) {
+        newUrl = `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
+      } else {
+        const pathAfterHead = originalUrl.slice(patternHead.length);
+        newUrl = pathAfterHead
+          ? `${patternHead}${targetLocale}/${pathAfterHead}`
+          : `${patternHead}${targetLocale}`;
+      }
+    } else {
+      // For non-hideDefaultLocale: '/docs/en/file' -> '/docs/ja/file'
+      const expectedPath = `${patternHead}${defaultLocale}`;
+      if (!originalUrl.startsWith(expectedPath)) {
+        return null;
+      }
+
+      newUrl = originalUrl.replace(
+        `${patternHead}${defaultLocale}`,
+        `${patternHead}${targetLocale}`
+      );
+    }
+
+    // Check exclusions
+    const excludePatterns = exclude.map((p) =>
+      p.replace(/\[locale\]/g, defaultLocale)
+    );
+    if (excludePatterns.some((pattern) => isMatch(originalUrl, pattern))) {
+      return null;
+    }
+
+    transformedUrls.push({
+      originalPath: originalUrl,
+      newPath: newUrl,
+      type: linkType,
+    });
+    return newUrl;
+  };
+
+  // Visit markdown link nodes: [text](url)
+  visit(processedAst, 'link', (node: any) => {
+    if (node.url) {
+      const newUrl = transformUrl(node.url, 'markdown');
+      if (newUrl) {
+        node.url = newUrl;
+      }
+    }
+  });
+
+  // Visit JSX/HTML elements for href attributes: <a href="url">
+  visit(
+    processedAst,
+    ['mdxJsxFlowElement', 'mdxJsxTextElement'],
+    (node: any) => {
+      if (node.name === 'a' && node.attributes) {
+        for (const attr of node.attributes) {
+          if (attr.name === 'href' && attr.value) {
+            const hrefValue =
+              typeof attr.value === 'string' ? attr.value : attr.value.value;
+            if (typeof hrefValue === 'string') {
+              const newUrl = transformUrl(hrefValue, 'href');
+              if (newUrl) {
+                if (typeof attr.value === 'string') {
+                  attr.value = newUrl;
+                } else {
+                  attr.value.value = newUrl;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  );
+
+  // Convert the modified AST back to MDX string
+  const stringifyProcessor = unified()
+    .use(remarkStringify, {
+      bullet: '-',
+      emphasis: '_',
+      strong: '*',
+      rule: '-',
+      ruleRepetition: 3,
+      ruleSpaces: false,
+    })
+    .use(remarkFrontmatter, ['yaml', 'toml'])
+    .use(remarkMdx);
+
+  let content = stringifyProcessor.stringify(processedAst);
+
+  // Handle newline formatting to match original input
+  if (content.endsWith('\n') && !mdxContent.endsWith('\n')) {
+    content = content.slice(0, -1);
+  }
+
+  // Preserve leading newlines from original content
+  if (mdxContent.startsWith('\n') && !content.startsWith('\n')) {
+    content = '\n' + content;
+  }
+
+  return {
+    content,
+    hasChanges: transformedUrls.length > 0,
+    transformedUrls,
+  };
+}
+
+// AST-based transformation for MDX files using remark
 function localizeStaticUrlsForFile(
   file: string,
   defaultLocale: string,
@@ -87,153 +265,14 @@ function localizeStaticUrlsForFile(
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = []
 ): string {
-  if (!pattern.startsWith('/')) {
-    pattern = '/' + pattern;
-  }
-
-  // 1. Search for all instances of:
-  const patternHead = pattern.split('[locale]')[0];
-  // Escape special regex characters and remove trailing slash if present
-  const escapedPatternHead = patternHead
-    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    .replace(/\/$/, '');
-
-  let regex;
-  if (hideDefaultLocale) {
-    // Match complete markdown links: `](/docs/...)` or `](/docs)`
-    regex = new RegExp(`\\]\\(${escapedPatternHead}(?:/([^)]*))?\\)`, 'g');
-  } else {
-    // Match complete markdown links with default locale: `](/docs/${defaultLocale}/...)` or `](/docs/${defaultLocale})`
-    regex = new RegExp(
-      `\\]\\(${escapedPatternHead}/${defaultLocale}(?:/([^)]*))?\\)`,
-      'g'
-    );
-  }
-  const matches = file.match(regex);
-
-  if (!matches) {
-    return file;
-  }
-  exclude = exclude.map((pattern) =>
-    pattern.replace(/\[locale\]/g, defaultLocale)
+  // Use AST-based transformation for MDX files
+  const result = transformMdxUrls(
+    file,
+    defaultLocale,
+    targetLocale,
+    hideDefaultLocale,
+    pattern,
+    exclude
   );
-  // 2. Replace the default locale with the target locale in all matched instances
-  const localizedFile = file.replace(regex, (match, pathContent) => {
-    if (exclude.length > 0) {
-      // Check if this path should be excluded from localization
-      let matchPath = '';
-      if (pathContent) {
-        matchPath = hideDefaultLocale
-          ? `${patternHead}${pathContent}`
-          : `${patternHead}${defaultLocale}/${pathContent}`;
-      } else {
-        matchPath = hideDefaultLocale
-          ? `${patternHead}`
-          : `${patternHead}${defaultLocale}`;
-      }
-      if (exclude.some((pattern) => isMatch(matchPath, pattern))) {
-        return match; // Don't localize excluded paths
-      }
-    }
-
-    if (hideDefaultLocale) {
-      // For hideDefaultLocale, check if path already has target locale
-      if (pathContent) {
-        if (
-          pathContent.startsWith(`${targetLocale}/`) ||
-          pathContent === targetLocale
-        ) {
-          return match; // Already localized
-        }
-      }
-      // Add target locale to the path
-      if (!pathContent || pathContent === '') {
-        return `](${patternHead}${targetLocale})`;
-      }
-      return `](${patternHead}${targetLocale}/${pathContent})`;
-    } else {
-      // For non-hideDefaultLocale, replace defaultLocale with targetLocale
-      // pathContent contains everything after the default locale (no leading slash if present)
-      const result = `](${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''})`;
-      return result;
-    }
-  });
-  return localizedFile;
-}
-
-function localizeStaticHrefsForFile(
-  file: string,
-  defaultLocale: string,
-  targetLocale: string,
-  hideDefaultLocale: boolean,
-  pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
-  exclude: string[] = []
-): string {
-  if (!pattern.startsWith('/')) {
-    pattern = '/' + pattern;
-  }
-
-  // 1. Search for all instances of:
-  const patternHead = pattern.split('[locale]')[0];
-  // Escape special regex characters and remove trailing slash if present
-  const escapedPatternHead = patternHead
-    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    .replace(/\/$/, '');
-
-  let regex;
-  if (hideDefaultLocale) {
-    // Match complete href attributes: `href="/docs/..."` or `href="/docs"`
-    regex = new RegExp(`href="${escapedPatternHead}(?:/([^"]*))?"`, 'g');
-  } else {
-    // Match complete href attributes with default locale: `href="/docs/${defaultLocale}/..."` or `href="/docs/${defaultLocale}"`
-    regex = new RegExp(
-      `href="${escapedPatternHead}/${defaultLocale}(?:/([^"]*))?"`,
-      'g'
-    );
-  }
-  const matches = file.match(regex);
-
-  if (!matches) {
-    return file;
-  }
-  exclude = exclude.map((pattern) =>
-    pattern.replace(/\[locale\]/g, defaultLocale)
-  );
-  // 2. Replace the default locale with the target locale in all matched instances
-  const localizedFile = file.replace(regex, (match, pathContent) => {
-    // Check if this path should be excluded from localization
-    if (exclude.length > 0) {
-      let matchPath = patternHead;
-      if (pathContent) {
-        matchPath = hideDefaultLocale
-          ? `${patternHead}${pathContent}`
-          : `${patternHead}${defaultLocale}/${pathContent}`;
-      }
-      if (exclude.some((pattern) => isMatch(matchPath, pattern))) {
-        return match; // Don't localize excluded paths
-      }
-    }
-
-    if (hideDefaultLocale) {
-      // For hideDefaultLocale, check if path already has target locale
-      if (pathContent) {
-        if (
-          pathContent.startsWith(`${targetLocale}/`) ||
-          pathContent === targetLocale
-        ) {
-          return match; // Already localized
-        }
-      }
-      // Add target locale to the path
-      if (!pathContent || pathContent === '') {
-        return `href="${patternHead}${targetLocale}"`;
-      }
-      return `href="${patternHead}${targetLocale}/${pathContent}"`;
-    } else {
-      // For non-hideDefaultLocale, replace defaultLocale with targetLocale
-      // pathContent contains everything after the default locale (no leading slash if present)
-      return `href="${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''}"`;
-    }
-  });
-  return localizedFile;
+  return result.content;
 }
