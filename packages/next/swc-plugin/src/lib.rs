@@ -19,6 +19,7 @@ impl VisitMut for TransformVisitor {
 
     /// Process variable declarations to track assignments like: const t = useGT()
     fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
+        // Track variable assignments before children are visited (process = useGT() first)
         self.track_variable_assignment(var_declarator);
         var_declarator.visit_mut_children_with(self);
     }
@@ -130,11 +131,6 @@ impl VisitMut for TransformVisitor {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
 
-
-                // useGT() is failing the check here
-                // if function_name.as_str() == "useGT" {
-                //     eprintln!("visit_mut_call_expr() function_name: {:?}", function_name);
-                // }
                 if let Some(translation_variable) = self
                     .import_tracker
                     .scope_tracker
@@ -146,13 +142,7 @@ impl VisitMut for TransformVisitor {
                     eprintln!("Found translation function: {:?}, identifier: {}", original_name, identifier);
 
                     // Detect useGT/getGT calls
-                    if is_translation_function_name(&original_name) {
-                        // Handled in track_variable_assignment()
-                        // // Get counter_id
-                        // let counter_id = self.import_tracker.string_collector.increment_counter();
-                        // // Create a new entry in the string collector for this call
-                        // self.import_tracker.string_collector.initialize_call(counter_id);
-                    } else if is_translation_function_callback(&original_name) {
+                    if is_translation_function_callback(&original_name) {
                         // Detect const t = useGT()
                         if let Some(string) = call_expr.args.first() {
                             // TODO: check for violations
@@ -195,55 +185,9 @@ impl VisitMut for TransformVisitor {
     }
 }
 
-// // TODO: remove VisitMut
-// impl VisitMut for TransformVisitor {
-//     /// Process import declarations to track gt-next imports
-//     fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
-//         self.process_gt_import_declaration(import_decl);
-//         import_decl.visit_mut_children_with(self);
-//     }
 
-//     /// Process variable declarations to track assignments like: const t = useGT()
-//     fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
-//         self.track_variable_assignment(var_declarator);
-//         var_declarator.visit_mut_children_with(self);
-//     }
 
-//     /// Process function calls to detect invalid usage of translation functions
-//     fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
-//         if let Callee::Expr(callee_expr) = &call_expr.callee {
-//             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-//                 if self.import_tracker.translation_callee_names.contains_key(function_name) {
-//                     // Check the first argument for dynamic content
-//                     if let Some(arg) = call_expr.args.first() {
-//                         self.check_call_expr_for_violations(arg, function_name);
-//                     }
-//                 }
-//             }
-//         }
-//         call_expr.visit_mut_children_with(self);
-//     }
 
-//     /// Process JSX attributes to track context and avoid flagging attribute expressions
-//     fn visit_mut_jsx_attr(&mut self, attr: &mut JSXAttr) {
-//         let was_in_jsx_attribute = self.traversal_state.in_jsx_attribute;
-//         self.traversal_state.in_jsx_attribute = true;
-//         attr.visit_mut_children_with(self);
-//         self.traversal_state.in_jsx_attribute = was_in_jsx_attribute;
-//     }
-
-//     /// Process JSX expression containers to detect unwrapped dynamic content
-//     fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
-//         // Only check for violations if we're in a translation component and NOT in a JSX attribute
-//         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
-//             self.statistics.dynamic_content_violations += 1;
-//             let warning = self.create_dynamic_content_warning("T");
-//             self.logger.log_warning(&warning);
-//         }
-        
-//         expr_container.visit_mut_children_with(self);
-//     }
-// }
 
 impl Fold for TransformVisitor {
     /// Process import declarations to track GT-Next imports
@@ -254,6 +198,7 @@ impl Fold for TransformVisitor {
 
     /// Process variable declarations to track assignments like: const t = useGT()
     fn fold_var_declarator(&mut self, var_declarator: VarDeclarator) -> VarDeclarator {
+        // Track variable assignments before children are visited (process = useGT() first)
         self.track_variable_assignment(&var_declarator);
         let var_declarator = var_declarator.fold_children_with(self);
         var_declarator
@@ -487,15 +432,21 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     // Create StringCollector for the two-pass system
     let string_collector = crate::ast::StringCollector::new();
     
+    let mut program = program;
+
+
+    // First Pass:
+    // - [ ] Track translation functions
+    // - [X] Calculate hashes for t() functions
+    // - [X] Extract translation strings from t() calls
+    // - [ ] Warn/Error on invalid usage
+    // - [ ] Calculate hashes for <T> components
     let mut visitor = TransformVisitor::new(
-        config.log_level,
+        config.log_level.clone(),
         config.compile_time_hash,
-        filename,
+        filename.clone(),
         string_collector,
     );
-    
-    // program.fold_with(&mut visitor)
-    let mut program = program;
     program.visit_mut_with(&mut visitor);
 
 
@@ -513,11 +464,22 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
             if let Some(content) = collected_data.get_content_for_injection(counter_id) {
                 println!("  📋 Call {}: {} items", counter_id, content.len());
                 for (i, item) in content.iter().enumerate() {
-                    println!("    {}. \"{}\" (hash: {})", i+1, item.message, item.hash);
+                    println!("{}: {:?}", i+1, item);
                 }
             }
         }
     }
+
+    // Second Pass:
+    // - [ ] Insert hash attributes on translation components
+    // - [ ] Insert translation strings in getGT and useGT
+    let mut visitor = TransformVisitor::new(
+        config.log_level,
+        config.compile_time_hash,
+        filename,
+        collected_data,
+    );
+    program = program.fold_with(&mut visitor);
     // Return the program
     program
 

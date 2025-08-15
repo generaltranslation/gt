@@ -460,24 +460,24 @@ impl TransformVisitor {
                 .scope_tracker
                 .get_translation_variable(callee_name) {
 
+                // This will be either useGT or getGT, not the alias
                 let original_name = translation_variable.assigned_value.clone();
 
                 // Check if its getGT or useGT
                 if is_translation_function_name(&original_name) {
                     // TODO: maybe these should get reverted moved back to visit_mut_call_expr() and order gets reversed?
-                    // Get counter_id
+                    // // Get counter_id
                     let counter_id = self.import_tracker.string_collector.increment_counter();
                     // Create a new entry in the string collector for this call
                     self.import_tracker.string_collector.initialize_call(counter_id);
 
                     // Track translation function using scope system (useGT_callback, getGT_callback)
-                    // TODO: callee_name_callback is not robust, cannot handle aliases
                     self.import_tracker
                         .scope_tracker
                         .track_translation_variable(
                             variable_name.clone(),
-                            format!("{}_callback", callee_name.clone()).into(),
-                            self.import_tracker.string_collector.get_counter()
+                            format!("{}_callback", original_name.clone()).into(),
+                            counter_id
                         );
                 }
             } else {
