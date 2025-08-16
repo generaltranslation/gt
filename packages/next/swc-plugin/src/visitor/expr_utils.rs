@@ -9,6 +9,18 @@ pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
         Expr::Lit(Lit::Num(n)) => Some(n.value.to_string()),
         Expr::Lit(Lit::Bool(b)) => Some(b.value.to_string()),
         Expr::Ident(ident) => Some(ident.sym.to_string()),
+        Expr::Tpl(tpl) => {
+            if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+                if let Some(quasi) = tpl.quasis.first() {
+                    if let Some(cooked) = &quasi.cooked {
+                        return Some(cooked.to_string());
+                    } else {
+                        return Some(quasi.raw.to_string());
+                    }
+                }
+            }
+            None
+        }
         // Add more cases as needed for other expression types
         _ => None,
     }

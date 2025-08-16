@@ -165,13 +165,27 @@ impl VisitMut for TransformVisitor {
                                 if let Some(hash) = hash {
                                     let translation_content = StringCollector::create_translation_content(
                                             message,
-                                            hash,
+                                            hash.clone(),
                                             id,
                                             context
                                         );
 
                                     // Add the translation content to the string collector
-                                    self.import_tracker.string_collector.add_translation_content(identifier, translation_content);
+                                    self.import_tracker.string_collector.set_translation_content(identifier, translation_content);
+
+                                    // Store the t() function call
+                                    let counter_id = self.import_tracker.string_collector.increment_counter();
+                                    self.import_tracker.string_collector.initialize_call(counter_id);
+                                    
+                                    // Add the message to the string collector for the t() function
+                                    self
+                                        .import_tracker
+                                        .string_collector
+                                        .set_translation_hash(
+                                            counter_id,
+                                            StringCollector::create_translation_hash(
+                                        hash,
+                                    ));
                                 }
                             }
 
@@ -324,11 +338,8 @@ impl Fold for TransformVisitor {
                     .scope_tracker
                     .get_translation_variable(function_name) {
 
-
                     // Register the useGT/getGT as aggregators on the string collector
                     let original_name = translation_variable.assigned_value.clone();
-                    let identifier = translation_variable.identifier;
-
                     let counter_id = self.import_tracker.string_collector.get_counter();
 
                     // Detect useGT/getGT calls
@@ -336,16 +347,13 @@ impl Fold for TransformVisitor {
                         // Insert the data into the aggregator
                         if let Some(content) = self
                             .import_tracker.string_collector
-                            .get_content_for_injection(counter_id) {
-                                // TODO: off by one error here, identifier needs add one
-
-                            eprintln!("injecting content for counter_id: {}", counter_id);
+                            .get_translation_data(counter_id) {
 
                             // Create the content array
                             let content_array = self
                                 .import_tracker
                                 .string_collector
-                                .create_content_array(content, call_expr.span);
+                                .create_content_array(&content.content, call_expr.span);
 
                             // Check for existing content
                             let call_expr = call_expr.clone().fold_children_with(self);
@@ -378,21 +386,33 @@ impl Fold for TransformVisitor {
                             // Get the options
                             let options = call_expr.args.get(1);
 
-                            // Calculate hash for the call expression
-                            let (hash, json) = self.calculate_hash_for_call_expr(
-                                string,
-                                options
-                            );
+                            // // Calculate hash for the call expression
+                            // let (hash, json) = self.calculate_hash_for_call_expr(
+                            //     string,
+                            //     options
+                            // );
 
-                            // Inject hash attribute on the call expression
-                            let modified_call_expr = self.inject_hash_attribute_on_call_expr(
-                                &call_expr,
-                                options,
-                                hash,
-                                json
-                            );
 
-                            return modified_call_expr.fold_children_with(self);
+                            // Get the hash from the t() aggregator
+                            let counter_id = self.import_tracker.string_collector.increment_counter();
+                            let translation_hash = self.import_tracker.string_collector.get_translation_hash(counter_id);
+
+                            if let Some(translation_hash) = translation_hash {
+                                // self.logger.log_debug(&format!("{} injecting hash attribute on call expression: {:?} {:?} hash: {:?}", counter_id, original_name, function_name, translation_hash.hash));
+                                // Inject hash attribute on the call expression
+                                let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+                                    &call_expr,
+                                    options,
+                                    translation_hash.hash.clone(),
+                                    None
+                                );
+
+                                return modified_call_expr.fold_children_with(self);
+                            // } else {
+                            //     self.logger.log_warning(&format!("{} failed to inject hash attribute on call expression: {:?} {:?}", counter_id, original_name, function_name));
+                            }
+
+
                         }
                     }
                 }
@@ -506,17 +526,22 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 
     if collected_data.total_calls() > 0 {
         println!("PHASE 2:");
-        // // 🔍 Print debug stats:
-        // println!("🔍 PASS 1 COMPLETE:");
+        // 🔍 Print debug stats:
         // println!("  📊 Total calls initialized: {}", collected_data.total_calls());
         // println!("  📝 Total content items collected: {}", collected_data.total_content_items());
         // println!("  🔢 Final counter value: {}", collected_data.get_counter());
         // // Print detailed call info:
         // for counter_id in collected_data.get_call_ids() {
-        //     if let Some(content) = collected_data.get_content_for_injection(counter_id) {
-        //         println!("  📋 Call {}: {} items", counter_id, content.len());
-        //         for (i, item) in content.iter().enumerate() {
+        //     if let Some(content) = collected_data.get_translation_data(counter_id) {
+        //         println!("  📋 Call {}: {} items", counter_id, content.content.len());
+        //         for (i, item) in content.content.iter().enumerate() {
         //             println!("{}: {:?}", i+1, item);
+        //         }
+        //         if let Some(jsx) = &content.jsx {
+        //             println!("  📋 JSX: {:?}", jsx);
+        //         }
+        //         if let Some(hash) = &content.hash {
+        //             println!("  📋 Hash: {:?}", hash);
         //         }
         //     }
         // }
