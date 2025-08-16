@@ -3,6 +3,7 @@ import {
   RenderMethod,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
+  _Messages,
 } from './types';
 import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
 import { GT } from 'generaltranslation';
@@ -11,8 +12,9 @@ export type GTContextType = {
   gt: GT;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  _TFunction: (string: string, options?: InlineTranslationOptions) => string;
-  _DictionaryFunction: (
+  _tFunction: (message: string, options?: InlineTranslationOptions) => string;
+  _preloadMessages: (_messages: _Messages) => Promise<void>;
+  _dictionaryFunction: (
     id: string,
     options?: DictionaryTranslationOptions
   ) => string;

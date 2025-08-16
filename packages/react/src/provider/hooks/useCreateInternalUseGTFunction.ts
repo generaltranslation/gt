@@ -4,129 +4,181 @@ import {
   InlineTranslationOptions,
   Translations,
   RenderMethod,
+  _Messages,
+  _Message,
 } from '../../types/types';
 import { TranslateIcuCallback } from '../../types/runtime';
-import { formatMessage } from 'generaltranslation';
-import { validateString } from '../helpers/validateString';
-import { missingVariablesError } from '../../errors/createErrors';
+import { formatMessage, GT } from 'generaltranslation';
 
-export default function useCreateInternalUseGTFunction(
-  translations: Translations | null,
-  locale: string,
-  defaultLocale: string,
-  translationRequired: boolean,
-  dialectTranslationRequired: boolean,
-  runtimeTranslationEnabled: boolean,
-  registerIcuForTranslation: TranslateIcuCallback,
-  renderSettings: { method: RenderMethod }
-): (message: string, options?: InlineTranslationOptions) => string {
-  return useCallback(
-    (message: string, options: InlineTranslationOptions = {}) => {
-      // ----- SET UP ----- //
-      const {
-        $id: id,
-        $context: context,
-        $_hash: _hash,
-        ...variables
-      } = options;
+export default function useCreateInternalUseGTFunction({
+  gt,
+  translations,
+  locale,
+  defaultLocale,
+  translationRequired,
+  runtimeTranslationEnabled,
+  registerIcuForTranslation,
+}: {
+  gt: GT;
+  translations: Translations | null;
+  locale: string;
+  defaultLocale: string;
+  translationRequired: boolean;
+  runtimeTranslationEnabled: boolean;
+  registerIcuForTranslation: TranslateIcuCallback;
+}): {
+  _tFunction: (message: string, options?: InlineTranslationOptions) => string;
+  _preloadMessages: (_messages: _Messages) => Promise<void>;
+} {
+  // --------- HELPER FUNCTIONS ------- //
 
-      // Check: reject invalid content
-      if (!message || typeof message !== 'string') return '';
+  function initializeT(
+    message: string,
+    options: Record<string, any> & {
+      $context?: string;
+      $id?: string;
+      $_hash?: string;
+    } = {}
+  ) {
+    if (!message || typeof message !== 'string') return null;
 
-      // Check: reject invalid variables
-      if (!validateString(message, variables)) {
-        throw new Error(missingVariablesError(Object.keys(variables), message));
+    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
+
+    // Update renderContent to use actual variables
+    const renderMessage = (msg: string, locales: string[]) => {
+      return gt.formatMessage(msg, {
+        locales,
+        variables,
+      });
+    };
+
+    // Calculate hash
+    const calculateHash = () =>
+      hashSource({
+        source: message,
+        ...(context && { context }),
+        ...(id && { id }),
+        dataFormat: 'ICU',
+      });
+
+    return {
+      id,
+      context,
+      _hash,
+      variables,
+      calculateHash,
+      renderMessage,
+    };
+  }
+
+  function getTranslationData(
+    calculateHash: () => string,
+    id?: string,
+    _hash?: string
+  ) {
+    let translationEntry;
+    let hash = ''; // empty string because 1) it has to be a string but 2) we don't always need to calculate it
+    if (id) {
+      translationEntry = translations?.[id];
+    }
+    if (_hash && translations?.[_hash]) {
+      hash = _hash;
+      translationEntry = translations?.[_hash];
+    }
+    // Use calculated hash to index
+    if (!translationEntry) {
+      hash = calculateHash();
+      if (_hash && _hash !== hash) {
+        console.error(
+          `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
+        );
       }
+      translationEntry = translations?.[hash];
+    }
+    return {
+      translationEntry,
+      hash,
+    };
+  }
 
-      // Render method
-      const renderMessage = (message: string, locales: string[]) => {
-        return formatMessage(message, {
-          locales,
-          variables,
-        });
-      };
-
-      // ----- CHECK TRANSLATIONS ----- //
-
-      // Dependency flag to avoid recalculating hash whenever translation object changes
-      const translationWithIdExists = id && translations?.[id as string];
-
-      let hash = '';
-
-      // Skip hashing:
-      if (
-        translationRequired && // Translation is required
-        !translationWithIdExists // Translation doesn't exist under the id
-      ) {
-        // Calculate hash
-        hash = hashSource({
-          source: message,
-          ...(context && { context }),
-          ...(id && { id }),
-          dataFormat: 'ICU',
-        });
-        if (_hash) {
-          if (_hash !== hash) {
-            console.error(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
-          } else {
-            console.log('hash matches!');
-          }
-        } else {
-          console.error('no $hash');
-        }
-      }
-
-      // Get translation
-      const translationEntry = translationWithIdExists
-        ? translations?.[id as string]
-        : translations?.[hash];
-
-      // ----- TRANSLATE ON DEMAND ----- //
-
-      // Render fallback when tx not required or error
-      if (!translationRequired || translationEntry === null) {
-        return renderMessage(message, [defaultLocale]);
-      }
-
-      // Render success
-      if (translationEntry) {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]);
-      }
-
-      // ----- TRANSLATE ON DEMAND ----- //
-      // development only
-
-      // Check if runtime translation is enabled
-      if (!runtimeTranslationEnabled) {
-        return renderMessage(message, [defaultLocale]);
-      }
-
-      // Translate Content
-      registerIcuForTranslation({
+  const _preloadMessages = async (_messages: _Messages) => {
+    const preload = async ({ message, ...options }: _Message) => {
+      // Early return if possible
+      if (!message) return;
+      // Setup
+      const init = initializeT(message, options);
+      if (!init) return;
+      const { id, context, _hash, calculateHash } = init;
+      const { translationEntry, hash } = getTranslationData(
+        calculateHash,
+        id,
+        _hash
+      );
+      // Return if no translation needed
+      if (translationEntry) return;
+      // Await the creation of the translation
+      await registerIcuForTranslation({
         source: message,
         targetLocale: locale,
         metadata: {
           ...(context && { context }),
           ...(id && { id }),
-          hash: hash || '',
+          hash,
         },
       });
+    };
+    await Promise.all(_messages.map(preload));
+  };
 
-      // renderSettings.method must be ignored because t() is synchronous &
-      // t() should never return an empty string because functions reason about strings based on falsiness
+  const _tFunction = (
+    message: string,
+    options: InlineTranslationOptions = {}
+  ) => {
+    // ----- SET UP ----- //
+    const init = initializeT(message, options);
+    if (!init) return '';
+    const { id, context, _hash, calculateHash, renderMessage } = init;
+
+    // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
+    // Check: translation required
+    if (!translationRequired) return renderMessage(message, [defaultLocale]);
+
+    // ----- GET TRANSLATION ----- //
+
+    const { translationEntry, hash } = getTranslationData(
+      calculateHash,
+      id,
+      _hash
+    );
+
+    // ----- RENDER TRANSLATION ----- //
+
+    if (translationEntry === null) {
       return renderMessage(message, [defaultLocale]);
-    },
-    [
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      runtimeTranslationEnabled,
-      registerIcuForTranslation,
-      dialectTranslationRequired,
-    ]
-  );
+    }
+
+    // If a translation already exists
+    if (translationEntry) {
+      return renderMessage(translationEntry as string, [locale, defaultLocale]);
+    }
+
+    if (!runtimeTranslationEnabled) {
+      // Warn here
+      return renderMessage(message, [defaultLocale]);
+    }
+
+    registerIcuForTranslation({
+      source: message,
+      targetLocale: locale,
+      metadata: {
+        ...(context && { context }),
+        ...(id && { id }),
+        hash: hash || '',
+      },
+    });
+
+    return renderMessage(message, [defaultLocale]);
+  };
+
+  return { _tFunction, _preloadMessages };
 }

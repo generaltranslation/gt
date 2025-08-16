@@ -1,5 +1,6 @@
 /**
  * Given an ISO string, validates that all the variables are present
+ * @deprecated
  */
 export function validateString(
   string: string,

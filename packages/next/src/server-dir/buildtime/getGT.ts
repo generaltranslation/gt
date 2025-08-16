@@ -1,4 +1,3 @@
-import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
@@ -9,8 +8,8 @@ import {
 } from '../../errors/createErrors';
 import {
   InlineTranslationOptions,
+  _Message,
   _Messages,
-  validateString,
 } from 'gt-react/internal';
 import use from '../../utils/use';
 
@@ -33,14 +32,128 @@ export async function getGT(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
+  const gt = I18NConfig.getGTClass();
+
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
 
-  // ---------- THE t() METHOD ---------- //
+  // --------- HELPER FUNCTIONS ------- //
+
+  function initializeT(
+    message: string,
+    options: Record<string, any> & {
+      $context?: string;
+      $id?: string;
+      $_hash?: string;
+    } = {}
+  ) {
+    if (!message || typeof message !== 'string') return null;
+
+    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
+
+    // Update renderContent to use actual variables
+    const renderMessage = (msg: string, locales: string[]) => {
+      return gt.formatMessage(msg, {
+        locales,
+        variables,
+      });
+    };
+
+    // Calculate hash
+    const calculateHash = () =>
+      hashSource({
+        source: message,
+        ...(context && { context }),
+        ...(id && { id }),
+        dataFormat: 'ICU',
+      });
+
+    return {
+      id,
+      context,
+      _hash,
+      variables,
+      calculateHash,
+      renderMessage,
+    };
+  }
+
+  function getTranslationData(
+    calculateHash: () => string,
+    id?: string,
+    _hash?: string
+  ) {
+    let translationEntry;
+    let hash = ''; // empty string because 1) it has to be a string but 2) we don't always need to calculate it
+    if (id) {
+      translationEntry = translations?.[id];
+    }
+    if (_hash && translations?.[_hash]) {
+      hash = _hash;
+      translationEntry = translations?.[_hash];
+    }
+    // Use calculated hash to index
+    if (!translationEntry) {
+      hash = calculateHash();
+      if (_hash && _hash !== hash) {
+        console.error(
+          `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
+        );
+      }
+      translationEntry = translations?.[hash];
+    }
+    return {
+      translationEntry,
+      hash,
+    };
+  }
+
+  // ---------- PRELOAD TRANSLATIONS IF _MESSAGES SUPPLIED --------- //
+
+  let preloadedTranslations: Record<string, string> | undefined;
+  if (
+    _messages &&
+    I18NConfig.isDevelopmentApiEnabled() &&
+    translationRequired
+  ) {
+    preloadedTranslations = {};
+    const preload = async ({
+      message,
+      ...options
+    }: _Message): Promise<void> => {
+      // Early return if possible
+      if (!message) return;
+      // Setup
+      const init = initializeT(message, options);
+      if (!init) return;
+      const { id, context, _hash, calculateHash } = init;
+      const { translationEntry, hash } = getTranslationData(
+        calculateHash,
+        id,
+        _hash
+      );
+      // Return if no translation needed
+      if (translationEntry) return;
+      // Await the creation of the translation
+      (preloadedTranslations as Record<string, string>)[hash] =
+        (await I18NConfig.translateIcu({
+          source: message,
+          targetLocale: locale,
+          options: {
+            ...(context && { context }),
+            ...(id && { id }),
+            hash,
+          },
+        })) as string;
+    };
+    await Promise.all(_messages.map(preload));
+  }
+
+  // ---------- THE t() FUNCTION ---------- //
 
   /**
-   * @param {string} content
+   * @param {string} message
    * @param {InlineTranslationOptions} options For translating strings, the locale to translate to.
    * @returns The translated version of content
    *
@@ -49,7 +162,7 @@ export async function getGT(
    *
    * @example
    * // With a context and a custom identifier:
-   * t('My name is {customName}', { customName: "John", $id: 'my-name', $context: 'a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
+   * t('My name is {name}', { name: "John", $context: 'name is a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
    */
   const t = (
     message: string,
@@ -60,83 +173,48 @@ export async function getGT(
     } = {}
   ) => {
     // ----- SET UP ----- //
-    // Validate content
-    if (!message || typeof message !== 'string') return '';
 
-    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
-    console.log('options', options);
-    console.log('variables', variables);
+    const init = initializeT(message, options);
 
-    // Check: reject invalid variables
-    if (!validateString(message, variables)) {
-      throw new Error(missingVariablesError(Object.keys(variables), message));
-    }
+    if (!init) return '';
 
-    // Render Method
-    const renderContent = (message: string, locales: string[]) => {
-      return formatMessage(message, {
-        locales,
-        variables,
-      });
-    };
+    const { id, context, _hash, calculateHash, renderMessage } = init;
+
+    // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
 
     // Check: translation required
-    if (!translationRequired) return renderContent(message, [defaultLocale]);
+    if (!translationRequired) return renderMessage(message, [defaultLocale]);
 
     // ----- GET TRANSLATION ----- //
 
-    let translationEntry;
-
-    // Use id to index
-    if (id) {
-      translationEntry = translations?.[id];
-    }
-
-    // Calculate hash
-    let hash = '';
-    const calcHash = () =>
-      hashSource({
-        source: message,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'ICU',
-      });
-
-    // Use hash to index
-    if (!translationEntry) {
-      hash = calcHash();
-      if (_hash) {
-        if (_hash !== hash) {
-          console.error(`Mismatch: Buildtime: ${_hash} Runtime: ${hash}`);
-        } else {
-          console.log('hash matches!');
-        }
-      } else {
-        console.error('no $hash');
-      }
-      translationEntry = translations?.[hash];
-    }
+    const { translationEntry, hash } = getTranslationData(
+      calculateHash,
+      id,
+      _hash
+    );
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry)
-      return renderContent(translationEntry as string, [locale, defaultLocale]);
-
-    // If a translation errored
-    if (translationEntry === null)
-      return renderContent(message, [defaultLocale]);
-
-    // ----- CREATE TRANSLATION ----- //
-    // Since this is buildtime string translation, it's dev only
-
-    if (!I18NConfig.isDevelopmentApiEnabled()) {
-      console.warn(createStringTranslationError(message, id, 't'));
-      return renderContent(message, [defaultLocale]);
+    if (translationEntry) {
+      return renderMessage(translationEntry as string, [locale, defaultLocale]);
     }
 
-    // Get hash
-    if (!hash) hash = calcHash();
+    // If it is not possible to create a translation
+    if (!I18NConfig.isDevelopmentApiEnabled()) {
+      console.warn(createStringTranslationError(message, id, 't'));
+      return renderMessage(message, [defaultLocale]);
+    }
+
+    // If the translation has been preloaded
+    if (!translationEntry && preloadedTranslations?.[hash]) {
+      return renderMessage(preloadedTranslations[hash], [
+        locale,
+        defaultLocale,
+      ]);
+    }
+
+    // ----
 
     // Translate on demand
     I18NConfig.translateIcu({
@@ -154,28 +232,21 @@ export async function getGT(
         console.warn(
           createTranslationLoadingWarning({
             ...(id && { id }),
-            source: renderContent(message, [defaultLocale]),
-            translation: renderContent(result as string, [
+            source: renderMessage(message, [defaultLocale]),
+            translation: renderMessage(result as string, [
               locale,
               defaultLocale,
             ]),
           })
         );
       })
-      .catch(() => {}); // No need for error logging, error logged in I18NConfig
+      .catch(() => {
+        // No need for error logging, error logged in I18NConfig
+      });
 
     // Default is returning source, rather than returning a loading state
-    return renderContent(message, [defaultLocale]);
+    return renderMessage(message, [defaultLocale]);
   };
-
-  if (_messages) {
-    console.log(
-      'getGT(): received content',
-      JSON.stringify(_messages, null, 2)
-    );
-  } else {
-    console.error('getGT(): no content provided');
-  }
 
   return t;
 }

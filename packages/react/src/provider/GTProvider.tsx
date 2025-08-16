@@ -175,20 +175,19 @@ export default function GTProvider({
 
   // ---------- USE GT ---------- //
 
-  const _TFunction = useCreateInternalUseGTFunction(
+  const { _tFunction, _preloadMessages } = useCreateInternalUseGTFunction({
+    gt,
     translations,
     locale,
     defaultLocale,
     translationRequired,
-    dialectTranslationRequired,
     runtimeTranslationEnabled,
     registerIcuForTranslation,
-    renderSettings
-  );
+  });
 
   // ---------- USE DICT ---------- //
 
-  const _DictionaryFunction = useCreateInternalUseTranslationsFunction(
+  const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
     dictionary,
     translations,
     locale,
@@ -211,8 +210,9 @@ export default function GTProvider({
         gt,
         registerIcuForTranslation,
         registerJsxForTranslation,
-        _TFunction,
-        _DictionaryFunction,
+        _tFunction,
+        _preloadMessages,
+        _dictionaryFunction,
         runtimeTranslationEnabled,
         locale,
         locales: approvedLocales,

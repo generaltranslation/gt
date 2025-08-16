@@ -131,20 +131,19 @@ export default function ClientProvider({
 
   // ---------- USE GT() TRANSLATION ---------- //
 
-  const _TFunction = useCreateInternalUseGTFunction(
+  const { _tFunction, _preloadMessages } = useCreateInternalUseGTFunction({
+    gt,
     translations,
     locale,
     defaultLocale,
     translationRequired,
-    dialectTranslationRequired,
     runtimeTranslationEnabled,
     registerIcuForTranslation,
-    renderSettings
-  );
+  });
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
-  const _DictionaryFunction = useCreateInternalUseTranslationsFunction(
+  const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
     dictionary,
     translations,
     locale,
@@ -168,8 +167,9 @@ export default function ClientProvider({
         registerIcuForTranslation,
         registerJsxForTranslation,
         setLocale,
-        _TFunction,
-        _DictionaryFunction,
+        _tFunction,
+        _preloadMessages,
+        _dictionaryFunction,
         locale,
         locales,
         defaultLocale,

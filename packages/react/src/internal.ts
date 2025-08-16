@@ -32,6 +32,7 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
+  _Message,
   _Messages,
 } from './types/types';
 
@@ -43,7 +44,6 @@ import {
 } from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
-import { validateString } from './provider/helpers/validateString';
 
 export {
   addGTIdentifier,
@@ -83,6 +83,6 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   mergeDictionaries,
-  validateString,
+  _Message,
   _Messages,
 };
