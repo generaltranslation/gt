@@ -289,16 +289,9 @@ impl TransformVisitor {
         &mut self,
         call_expr: &CallExpr,
         options: Option<&ExprOrSpread>,
-        hash: Option<String>,
+        hash: String,
         _: Option<String>
     ) -> CallExpr {
-        if hash.is_none() { // || json.is_none() 
-            return call_expr.clone();
-        }
-
-        let hash = hash.unwrap();
-        // let json = json.unwrap();
-        
         // Inject $hash & $json attribute into options object
         if let Some(options) = options {
             match options.expr.as_ref() {
@@ -465,12 +458,10 @@ impl TransformVisitor {
 
                 // Check if its getGT or useGT
                 if is_translation_function_name(&original_name) {
-                    // TODO: maybe these should get reverted moved back to visit_mut_call_expr() and order gets reversed?
-                    // // Get counter_id
+                    // Get counter_id
                     let counter_id = self.import_tracker.string_collector.increment_counter();
                     // Create a new entry in the string collector for this call
                     self.import_tracker.string_collector.initialize_call(counter_id);
-                    eprintln!("initialize: {} @ {}", callee_name, counter_id);
 
                     // Track translation function using scope system (useGT_callback, getGT_callback)
                     self.import_tracker

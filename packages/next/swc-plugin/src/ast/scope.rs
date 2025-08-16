@@ -16,6 +16,7 @@ pub struct ScopedVariable {
     pub assigned_value: Atom,    // useGT, getGT, "literal", "ref:otherVar", etc.
     pub variable_name: Atom,     // t, translationFunction, etc.
     pub is_translation_function: bool, // true if assigned_value is a known translation function
+    // TODO: maybe remove this?
     pub identifier: u32, // identifier for the variable
 }
 
