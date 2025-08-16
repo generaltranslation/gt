@@ -11,11 +11,11 @@ export type GTContextType = {
   gt: GT;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  _internalUseGTFunction: (
+  _TFunction: (
     string: string,
     options?: InlineTranslationOptions
   ) => string;
-  _internalUseTranslationsFunction: (
+  _DictionaryFunction: (
     id: string,
     options?: DictionaryTranslationOptions
   ) => string;

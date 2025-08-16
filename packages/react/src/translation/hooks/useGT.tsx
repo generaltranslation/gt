@@ -20,12 +20,17 @@ import { _Messages } from '../../types/types';
  *
  */
 export default function useGT(_messages?: _Messages) {
-  const { _internalUseGTFunction } = useGTContext(
-    `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be invoked within a <GTProvider>.`
+  
+  const { _TFunction } = useGTContext(
+    `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be called within a <GTProvider>.`
   );
 
   if (_messages) {
     console.log('useGT(): received content', JSON.stringify(_messages, null, 2));
+    for (const msgObject of _messages) {
+      const { message, ...rest } = msgObject;
+      _TFunction(message, { ...rest });
+    }
   } else {
     console.error('useGT(): no content provided');
   }
@@ -45,7 +50,7 @@ export default function useGT(_messages?: _Messages) {
       $hash?: string;
     } = {}
   ): string {
-    return (_internalUseGTFunction as any)(string, options);
+    return _TFunction(string, options);
   }
 
   return t;

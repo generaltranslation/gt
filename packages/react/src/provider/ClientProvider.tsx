@@ -131,7 +131,7 @@ export default function ClientProvider({
 
   // ---------- USE GT() TRANSLATION ---------- //
 
-  const _internalUseGTFunction = useCreateInternalUseGTFunction(
+  const _TFunction = useCreateInternalUseGTFunction(
     translations,
     locale,
     defaultLocale,
@@ -144,7 +144,7 @@ export default function ClientProvider({
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
-  const _internalUseTranslationsFunction =
+  const _DictionaryFunction =
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
@@ -169,8 +169,8 @@ export default function ClientProvider({
         registerIcuForTranslation,
         registerJsxForTranslation,
         setLocale,
-        _internalUseGTFunction,
-        _internalUseTranslationsFunction,
+        _TFunction,
+        _DictionaryFunction,
         locale,
         locales,
         defaultLocale,

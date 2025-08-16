@@ -111,8 +111,8 @@ export type RenderVariable = ({
 
 export type _Message = { 
   message: string;
-  hash?: string;
-  id?: string;
-  context?: string;
+  $id?: string;
+  $context?: string;
+  $_hash?: string;
 }
 export type _Messages = _Message[];

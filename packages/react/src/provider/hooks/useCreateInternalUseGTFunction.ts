@@ -19,7 +19,7 @@ export default function useCreateInternalUseGTFunction(
   runtimeTranslationEnabled: boolean,
   registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
-): (string: string, options?: InlineTranslationOptions) => string {
+): (message: string, options?: InlineTranslationOptions) => string {
   return useCallback(
     (contentString: string, options: InlineTranslationOptions = {}) => {
       // ----- SET UP ----- //
