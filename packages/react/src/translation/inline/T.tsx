@@ -87,14 +87,17 @@ function T({
 
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    const hash: string =
-      _hash ??
-      hashSource({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
+    const hash: string = hashSource({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
+    if (hash !== _hash) {
+      console.error('hash mismatch', hash, _hash);
+    } else {
+      console.log('hash match');
+    }
     return [childrenAsObjects, hash];
   }, [
     taggedChildren,

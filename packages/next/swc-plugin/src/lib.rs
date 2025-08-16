@@ -175,7 +175,7 @@ impl VisitMut for TransformVisitor {
 
                                     // Store the t() function call
                                     let counter_id = self.import_tracker.string_collector.increment_counter();
-                                    self.import_tracker.string_collector.initialize_call(counter_id);
+                                    self.import_tracker.string_collector.initialize_aggregator(counter_id);
                                     
                                     // Add the message to the string collector for the t() function
                                     self
@@ -197,6 +197,75 @@ impl VisitMut for TransformVisitor {
             }
         }
         call_expr.visit_mut_children_with(self);
+    }
+
+
+    /// Process JSX expression containers to detect unwrapped dynamic content
+    fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
+        // Only check for violations if we're in a translation component and NOT in a JSX attribute
+        if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
+            self.statistics.dynamic_content_violations += 1;
+            let warning = self.create_dynamic_content_warning("T");
+            self.logger.log_warning(&warning);
+        }
+        expr_container.visit_mut_children_with(self);
+    }
+
+    /// Process JSX attributes to track context and avoid flagging attribute expressions
+    fn visit_mut_jsx_attr(&mut self, attr: &mut JSXAttr) {
+        let was_in_jsx_attribute = self.traversal_state.in_jsx_attribute;
+        self.traversal_state.in_jsx_attribute = true;
+        attr.visit_mut_children_with(self);
+        self.traversal_state.in_jsx_attribute = was_in_jsx_attribute;
+    }
+
+    /// Process JSX elements to track component context and inject experimental features
+    fn visit_mut_jsx_element(&mut self, element: &mut JSXElement) {
+        self.statistics.jsx_element_count += 1;
+        
+        // Save previous state
+        let was_in_translation = self.traversal_state.in_translation_component;
+        let was_in_variable = self.traversal_state.in_variable_component;
+
+        // Update component tracking state
+        let (is_translation_component, is_variable_component, _) = self.determine_component_type(&element);
+        self.traversal_state.in_translation_component = is_translation_component;
+        self.traversal_state.in_variable_component = is_variable_component;
+        
+        // Inject hash attributes on translation components
+        if self.settings.compile_time_hash
+            && self.traversal_state.in_translation_component
+            && !was_in_translation {
+            // Check if hash attribute already exists
+            let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
+            
+            if !has_hash_attr {
+                // Calculate real hash using AST traversal
+                let (hash_value, _) = self.calculate_element_hash(&element);
+
+                // Store the t() function call
+                let counter_id = self.import_tracker.string_collector.increment_counter();
+                self.import_tracker.string_collector.initialize_aggregator(counter_id);
+                
+                // Add the message to the string collector for the t() function
+                self
+                    .import_tracker
+                    .string_collector
+                    .set_translation_jsx(
+                        counter_id,
+                        StringCollector::create_translation_jsx(
+                    hash_value,
+                ));
+            }
+        }
+        
+        // Process children
+        element.visit_mut_children_with(self);
+        
+        // Restore previous state
+        self.traversal_state.in_translation_component = was_in_translation;
+        self.traversal_state.in_variable_component = was_in_variable;
+        
     }
 }
 
@@ -462,14 +531,20 @@ impl Fold for TransformVisitor {
             let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
             
             if !has_hash_attr {
-                // Calculate real hash using AST traversal
-                let (hash_value, _) = self.calculate_element_hash(&element);
+                // TODO: get the hash from the aggregator
+                // // Calculate real hash using AST traversal
+                // let (hash_value, _) = self.calculate_element_hash(&element);
 
-                
-                // Create and add hash attribute with calculated value
-                let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
-                element.opening.attrs.push(hash_attr);
+                // Get the hash from the aggregator
+                let counter_id = self.import_tracker.string_collector.increment_counter();
+                let translation_jsx = self.import_tracker.string_collector.get_translation_jsx(counter_id);
 
+                // Inject hash
+                if let Some(translation_jsx) = translation_jsx {
+                    let hash_value = translation_jsx.hash.clone();
+                    let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
+                    element.opening.attrs.push(hash_attr);
+                }
                 
                 // For debugging purposes
                 // // Create and add json attribute with the stringified data
