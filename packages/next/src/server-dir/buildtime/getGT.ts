@@ -29,7 +29,10 @@ export async function getGT(
   // ---------- SET UP ---------- //
 
   if (_messages) {
-    console.log('getGT(): received content', JSON.stringify(content, null, 2));
+    console.log(
+      'getGT(): received content',
+      JSON.stringify(_messages, null, 2)
+    );
   } else {
     console.error('getGT(): no content provided');
   }
