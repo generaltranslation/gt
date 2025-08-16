@@ -1905,4 +1905,63 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
       });
     });
   });
+
+  describe('debugging real-world scenario', () => {
+    it('should handle /[locale] pattern with hideDefaultLocale=true like imports do', async () => {
+      const fileContent = `---
+title: "Introducción"
+description: "Bienvenido al nuevo hogar de tu documentación"
+---
+
+<Card title="Comience aquí" icon="rocket" href="/en/quickstart" horizontal>
+  Siga nuestra guía de inicio rápido en tres pasos.
+</Card>
+
+<Card title="Edita localmente" icon="pen-to-square" href="/en/development">
+  Edita tu documentación de forma local.
+</Card>`;
+
+      const expected = `---
+title: "Introducción"
+description: "Bienvenido al nuevo hogar de tu documentación"
+---
+
+<Card title="Comience aquí" icon="rocket" href="/es/quickstart" horizontal>
+  Siga nuestra guía de inicio rápido en tres pasos.
+</Card>
+
+<Card title="Edita localmente" icon="pen-to-square" href="/es/development">
+  Edita tu documentación de forma local.
+</Card>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        console.log('Expected:', expected);
+        console.log('Actual:', content);
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        es: { 'test.mdx': '/path/es/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+        experimentalHideDefaultLocale: true,
+        options: {
+          docsUrlPattern: '/[locale]', // Root-level locale pattern
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+  });
 });

@@ -178,13 +178,26 @@ function transformMdxUrls(
   }
 
   // Parse the MDX content into an AST
-  const parseProcessor = unified()
-    .use(remarkParse)
-    .use(remarkFrontmatter, ['yaml', 'toml'])
-    .use(remarkMdx);
+  let processedAst: Root;
+  try {
+    const parseProcessor = unified()
+      .use(remarkParse)
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx);
 
-  const ast = parseProcessor.parse(mdxContent);
-  const processedAst = parseProcessor.runSync(ast) as Root;
+    const ast = parseProcessor.parse(mdxContent);
+    processedAst = parseProcessor.runSync(ast) as Root;
+  } catch (error) {
+    console.warn(
+      `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
+    );
+    console.warn('Returning original content unchanged due to parsing error.');
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedUrls: [],
+    };
+  }
 
   // Helper function to transform URL based on pattern
   const transformUrl = (
@@ -309,7 +322,6 @@ function transformMdxUrls(
       }
     }
 
-
     // Check exclusions
     const excludePatterns = exclude.map((p) =>
       p.replace(/\[locale\]/g, defaultLocale)
@@ -375,7 +387,7 @@ function transformMdxUrls(
 
       // Reset regex lastIndex to avoid issues with global flag
       hrefRegex.lastIndex = 0;
-      
+
       while ((match = hrefRegex.exec(jsxContent)) !== null) {
         const originalHref = match[1];
         const newUrl = transformUrl(originalHref, 'href');
@@ -398,19 +410,34 @@ function transformMdxUrls(
   });
 
   // Convert the modified AST back to MDX string
-  const stringifyProcessor = unified()
-    .use(remarkStringify, {
-      bullet: '-',
-      emphasis: '_',
-      strong: '*',
-      rule: '-',
-      ruleRepetition: 3,
-      ruleSpaces: false,
-    })
-    .use(remarkFrontmatter, ['yaml', 'toml'])
-    .use(remarkMdx);
+  let content: string;
+  try {
+    const stringifyProcessor = unified()
+      .use(remarkStringify, {
+        bullet: '-',
+        emphasis: '_',
+        strong: '*',
+        rule: '-',
+        ruleRepetition: 3,
+        ruleSpaces: false,
+      })
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx);
 
-  let content = stringifyProcessor.stringify(processedAst);
+    content = stringifyProcessor.stringify(processedAst);
+  } catch (error) {
+    console.warn(
+      `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`
+    );
+    console.warn(
+      'Returning original content unchanged due to stringify error.'
+    );
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedUrls: [],
+    };
+  }
 
   // Handle newline formatting to match original input
   if (content.endsWith('\n') && !mdxContent.endsWith('\n')) {
