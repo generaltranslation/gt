@@ -281,6 +281,7 @@ function transformMdxImports(
             if (hideDefaultLocale) {
               // For hideDefaultLocale: '/components/file.mdx' -> '/components/ja/file.mdx'
               // Also handle case where path is exactly '/components' -> '/components/ja'
+              // And handle case where path contains default locale: '/components/en/file.mdx' -> '/components/ja/file.mdx'
               if (
                 fullPath.startsWith(`${patternHead}${targetLocale}/`) ||
                 fullPath === `${patternHead}${targetLocale}`
@@ -288,10 +289,22 @@ function transformMdxImports(
                 continue; // Already localized
               }
 
-              // Handle exact match (e.g., '/components' -> '/components/ja')
-              if (fullPath === patternHead.replace(/\/$/, '')) {
+              // Check if path contains default locale and replace it with target locale
+              const expectedPathWithDefaultLocale = `${patternHead}${defaultLocale}`;
+              if (
+                fullPath.startsWith(`${expectedPathWithDefaultLocale}/`) ||
+                fullPath === expectedPathWithDefaultLocale
+              ) {
+                // Replace default locale with target locale: '/components/en/file.mdx' -> '/components/ja/file.mdx'
+                newPath = fullPath.replace(
+                  `${patternHead}${defaultLocale}`,
+                  `${patternHead}${targetLocale}`
+                );
+              } else if (fullPath === patternHead.replace(/\/$/, '')) {
+                // Handle exact match (e.g., '/components' -> '/components/ja')
                 newPath = `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
               } else {
+                // Handle regular case without locale: '/components/file.mdx' -> '/components/ja/file.mdx'
                 const pathAfterHead = fullPath.slice(patternHead.length);
                 newPath = pathAfterHead
                   ? `${patternHead}${targetLocale}/${pathAfterHead}`

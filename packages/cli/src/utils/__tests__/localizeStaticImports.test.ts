@@ -343,6 +343,38 @@ import Component3 from '/components/ja/component3.mdx'
 
         await localizeStaticImports(settings as any);
       });
+
+      it('should replace default locale with target locale when hideDefaultLocale is true and import contains default locale', async () => {
+        const fileContent = `import Component from '/components/en/special-component.mdx'`;
+        const expected = `import Component from '/components/ja/special-component.mdx'`;
+
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+          expect(content).toBe(expected);
+          return Promise.resolve();
+        });
+
+        const mockFileMapping = {
+          ja: { 'test.mdx': '/path/test.mdx' },
+        };
+        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+        const settings = {
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: ['test'],
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options: {
+            docsHideDefaultLocaleImport: true,
+            docsImportPattern: '/components/[locale]',
+          },
+        };
+
+        await localizeStaticImports(settings as any);
+      });
     });
 
     describe('edge cases', () => {
