@@ -3,25 +3,18 @@ import {
   RenderMethod,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
-  TranslationsStatus,
+  _Messages,
 } from './types';
-import {
-  TranslateIcuCallback,
-  TranslateChildrenCallback,
-  TranslateI18nextCallback,
-} from './runtime';
+import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
 import { GT } from 'generaltranslation';
 
 export type GTContextType = {
   gt: GT;
-  registerI18nextForTranslation: TranslateI18nextCallback;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  _internalUseGTFunction: (
-    string: string,
-    options?: InlineTranslationOptions
-  ) => string;
-  _internalUseTranslationsFunction: (
+  _tFunction: (message: string, options?: InlineTranslationOptions) => string;
+  _preloadMessages: (_messages: _Messages) => Promise<void>;
+  _dictionaryFunction: (
     id: string,
     options?: DictionaryTranslationOptions
   ) => string;
@@ -33,7 +26,6 @@ export type GTContextType = {
   region: string | undefined;
   setRegion: (region: string | undefined) => void;
   translations: Translations | null;
-  translationsStatus: TranslationsStatus | null;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };

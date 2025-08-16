@@ -3,7 +3,6 @@ import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { TranslatedChildren, Translations } from 'gt-react/internal';
 import loadTranslations from './loadTranslation';
-import { TranslationsStatus } from 'gt-react/internal';
 
 /**
  * Configuration type for TranslationManager.
@@ -16,7 +15,7 @@ export type TranslationManagerConfig = {
   projectId?: string;
   _versionId?: string;
   translationEnabled: boolean;
-  cacheExpiryTime: number;
+  cacheExpiryTime?: number;
   loadTranslationsType?: 'remote' | 'custom' | 'disabled';
 };
 
@@ -26,7 +25,6 @@ export type TranslationManagerConfig = {
 export class TranslationManager {
   private config: TranslationManagerConfig;
   private translationsMap: Map<string, Translations>;
-  private translationsStatusMap: Map<string, TranslationsStatus>;
   private translationTimestamps: Map<string, number>;
   private fetchPromises: Map<string, Promise<Translations | undefined>>;
   private gtServicesEnabled: boolean;
@@ -40,10 +38,8 @@ export class TranslationManager {
       projectId: '',
       _versionId: undefined,
       translationEnabled: true,
-      cacheExpiryTime: defaultWithGTConfigProps.cacheExpiryTime,
     };
     this.translationsMap = new Map();
-    this.translationsStatusMap = new Map();
     this.translationTimestamps = new Map();
     this.fetchPromises = new Map();
     this.gtServicesEnabled =
@@ -97,16 +93,20 @@ export class TranslationManager {
 
     // Check if translations have expired
     // Translations can only expire if they are loaded remotely
-    const hasExpired =
-      this.config.loadTranslationsType === 'remote' &&
-      this.translationsMap.has(reference) &&
-      Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
-        this.config.cacheExpiryTime;
+    let hasExpired: boolean = false;
+    if (typeof this.config.cacheExpiryTime === 'number') {
+      hasExpired =
+        this.config.loadTranslationsType === 'remote' &&
+        this.translationsMap.has(reference) &&
+        Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
+          this.config.cacheExpiryTime;
+    }
 
     // Return cached translations if available
     if (this.translationsMap.has(reference) && !hasExpired) {
       return this.translationsMap.get(reference);
     }
+
     // Await any in-progress fetch
     if (this.fetchPromises.has(reference)) {
       return await this.fetchPromises.get(reference);
@@ -118,29 +118,12 @@ export class TranslationManager {
     this.fetchPromises.delete(reference);
 
     if (retrievedTranslations) {
-      // Update the translation result status
-      Object.keys(retrievedTranslations).forEach((hash) => {
-        this.translationsStatusMap.set(reference, {
-          ...(this.translationsStatusMap.get(reference) || {}),
-          [hash]: { status: 'success' },
-        });
-      });
-
       // Cache the retrieved translations
       this.translationsMap.set(reference, retrievedTranslations);
       this.translationTimestamps.set(reference, Date.now());
     }
-    return retrievedTranslations;
-  }
 
-  /**
-   * Get the translation result status for a given locale
-   * @param locale - The locale set by the user
-   * @returns The translation result status.
-   */
-  getCachedTranslationsStatus(locale: string): TranslationsStatus {
-    const reference = this._standardizeLocale(locale);
-    return this.translationsStatusMap.get(reference) || {};
+    return retrievedTranslations;
   }
 
   /**
@@ -169,53 +152,6 @@ export class TranslationManager {
     this.translationsMap.set(reference, {
       ...(this.translationsMap.get(reference) || {}),
       [hash]: translation,
-    });
-  }
-
-  /**
-   * Sets a new translation success entry.
-   * @param {string} locale - The locale code.
-   * @param {string} hash - The key for the new entry.
-   * @returns {boolean} True if the entry was set successfully, false otherwise.
-   */
-  setTranslationsSuccess(locale: string, hash: string) {
-    if (!(locale && hash)) return false;
-    const reference = this._standardizeLocale(locale);
-    this.translationsStatusMap.set(reference, {
-      ...(this.translationsStatusMap.get(reference) || {}),
-      [hash]: {
-        status: 'success',
-      },
-    });
-  }
-
-  /**
-   * Sets a new translation error entry.
-   * @param {string} locale - The locale code.
-   * @param {string} hash - The key for the new entry.
-   * @param {string} error - The error message.
-   * @param {number} code - The error code.
-   */
-  setTranslationError(
-    locale: string,
-    hash: string,
-    error?: string,
-    code?: number
-  ) {
-    if (!(locale && hash)) return;
-    const reference = this._standardizeLocale(locale);
-    this.translationsStatusMap.set(reference, {
-      ...(this.translationsStatusMap.get(reference) || {}),
-      [hash]: { status: 'error', error, code },
-    });
-  }
-
-  setTranslationsLoading(locale: string, hash: string) {
-    if (!(locale && hash)) return;
-    const reference = this._standardizeLocale(locale);
-    this.translationsStatusMap.set(reference, {
-      ...(this.translationsStatusMap.get(reference) || {}),
-      [hash]: { status: 'loading' },
     });
   }
 }

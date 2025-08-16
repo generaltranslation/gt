@@ -1,10 +1,6 @@
 import { customLoadTranslationsError } from '../../errors/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
-import {
-  CustomLoader,
-  TranslationsStatus,
-  Translations,
-} from '../../types/types';
+import { CustomLoader, Translations } from '../../types/types';
 import { useEffect, useState } from 'react';
 
 export function useLoadTranslations({
@@ -39,16 +35,9 @@ export function useLoadTranslations({
       : {}
   );
 
-  // Mapping of hashes to translation result status
-  const [translationsStatus, setTranslationsStatus] =
-    useState<TranslationsStatus | null>(null);
-
   // Reset translations if locale changes (null to trigger a new cache fetch)
   useEffect(() => {
     setTranslations(
-      translationRequired && loadTranslationsType !== 'disabled' ? null : {}
-    );
-    setTranslationsStatus(
       translationRequired && loadTranslationsType !== 'disabled' ? null : {}
     );
   }, [locale, loadTranslationsType]);
@@ -99,14 +88,6 @@ export function useLoadTranslations({
       // Record results
       if (storeResults) {
         setTranslations(result); // not classified as a translation error, because we can still fetch from API
-        setTranslationsStatus(
-          Object.keys(result).reduce((acc: TranslationsStatus, hash) => {
-            acc[hash] = {
-              status: 'success',
-            };
-            return acc;
-          }, {})
-        );
       }
     })();
 
@@ -127,7 +108,5 @@ export function useLoadTranslations({
   return {
     translations,
     setTranslations,
-    translationsStatus,
-    setTranslationsStatus,
   };
 }

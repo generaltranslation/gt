@@ -1,10 +1,11 @@
 'use client';
+
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
-import { TranslationsStatus, Translations } from '../types/types';
+import { Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
@@ -17,8 +18,7 @@ import {
 export default function ClientProvider({
   children,
   dictionary,
-  initialTranslations,
-  initialTranslationsStatus,
+  translations: _translations,
   locale: _locale,
   region: _region,
   _versionId,
@@ -39,13 +39,9 @@ export default function ClientProvider({
   // ----- TRANSLATIONS STATE ----- //
 
   const [translations, setTranslations] = useState<Translations | null>(
-    devApiKey ? null : initialTranslations
+    // devApiKey ? null : _translations
+    _translations // likely to induce hydration error
   );
-
-  const [translationsStatus, setTranslationsStatus] =
-    useState<TranslationsStatus | null>(
-      devApiKey ? null : initialTranslationsStatus
-    );
 
   // ----- LOCALE STATE ----- //
 
@@ -53,6 +49,19 @@ export default function ClientProvider({
   const [locale, _setLocale] = useState<string>(
     _locale ? determineLocale(_locale, locales) || '' : ''
   );
+
+  // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
+  const setLocale = (newLocale: string): void => {
+    // validate locale
+    newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
+    // persist locale
+    document.cookie = `${localeCookieName}=${newLocale};path=/`;
+    document.cookie = `${resetLocaleCookieName}=true;path=/`;
+    // set locale
+    _setLocale(newLocale);
+    // re-render server components
+    window.location.reload();
+  };
 
   // Check for an invalid cookie and update it
   useEffect(() => {
@@ -65,25 +74,18 @@ export default function ClientProvider({
     }
   }, [locale, localeCookieName]);
 
-  // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
-  const setLocale = (newLocale: string): void => {
-    // validate locale
-    newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
-
-    // persist locale
-    document.cookie = `${localeCookieName}=${newLocale};path=/`;
-    document.cookie = `${resetLocaleCookieName}=true;path=/`;
-
-    // set locale
-    _setLocale(newLocale);
-
-    // re-render server components
-    window.location.reload();
-  };
-
   // ----- REGION STATE ----- //
 
+  // Set region state
   const [region, _setRegion] = useState(_region);
+
+  // Set the region via cookies. No page reload needed.
+  const setRegion = (newRegion: string | undefined): void => {
+    // persist region
+    document.cookie = `${regionCookieName}=${newRegion || ''};path=/`;
+    // set region
+    _setRegion(newRegion);
+  };
 
   // Check for an invalid cookie and update it
   useEffect(() => {
@@ -95,14 +97,6 @@ export default function ClientProvider({
       document.cookie = `${regionCookieName}=;path=/`;
     }
   }, [region, regionCookieName]);
-
-  // Set the region via cookies. No page reload needed.
-  const setRegion = (newRegion: string | undefined): void => {
-    // persist region
-    document.cookie = `${regionCookieName}=${newRegion || ''};path=/`;
-    // set region
-    _setRegion(newRegion);
-  };
 
   // ----- GT SETUP ----- //
 
@@ -121,48 +115,37 @@ export default function ClientProvider({
     [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
   );
 
-  // ---------- TRANSLATION LIFECYCLE ---------- //
-
-  // Fetch additional translations and queue them for merging
-  useEffect(() => {
-    setTranslations((prev) => ({ ...initialTranslations, ...prev }));
-    setTranslationsStatus((prev) => ({
-      ...Object.keys(initialTranslations).reduce(
-        (acc: TranslationsStatus, hash) => {
-          acc[hash] = {
-            status: 'success',
-          };
-          return acc;
-        },
-        {}
-      ),
-      ...prev,
-    }));
-  }, [initialTranslations]);
-
   // ---------- TRANSLATION METHODS ---------- //
 
-  const {
-    registerIcuForTranslation,
-    registerJsxForTranslation,
-    registerI18nextForTranslation,
-  } = useRuntimeTranslation({
-    gt,
-    locale: locale,
-    versionId: _versionId,
-    runtimeUrl,
-    setTranslations,
-    setTranslationsStatus,
-    defaultLocale,
-    renderSettings,
-    runtimeTranslationEnabled,
-  });
+  const { registerIcuForTranslation, registerJsxForTranslation } =
+    useRuntimeTranslation({
+      gt,
+      locale: locale,
+      versionId: _versionId,
+      runtimeUrl,
+      setTranslations,
+      defaultLocale,
+      renderSettings,
+      runtimeTranslationEnabled,
+    });
 
   // ---------- USE GT() TRANSLATION ---------- //
 
-  const _internalUseGTFunction = useCreateInternalUseGTFunction(
+  const { _tFunction, _preloadMessages } = useCreateInternalUseGTFunction({
+    gt,
     translations,
-    translationsStatus,
+    locale,
+    defaultLocale,
+    translationRequired,
+    runtimeTranslationEnabled,
+    registerIcuForTranslation,
+  });
+
+  // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
+
+  const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
+    dictionary,
+    translations,
     locale,
     defaultLocale,
     translationRequired,
@@ -171,22 +154,6 @@ export default function ClientProvider({
     registerIcuForTranslation,
     renderSettings
   );
-
-  // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
-
-  const _internalUseTranslationsFunction =
-    useCreateInternalUseTranslationsFunction(
-      dictionary,
-      translations,
-      translationsStatus,
-      locale,
-      defaultLocale,
-      translationRequired,
-      dialectTranslationRequired,
-      runtimeTranslationEnabled,
-      registerIcuForTranslation,
-      renderSettings
-    );
 
   // ---------- RENDER LOGIC ---------- //
 
@@ -198,18 +165,17 @@ export default function ClientProvider({
       value={{
         gt,
         registerIcuForTranslation,
-        registerI18nextForTranslation,
         registerJsxForTranslation,
         setLocale,
-        _internalUseGTFunction,
-        _internalUseTranslationsFunction,
+        _tFunction,
+        _preloadMessages,
+        _dictionaryFunction,
         locale,
         locales,
         defaultLocale,
         region,
         setRegion,
         translations,
-        translationsStatus: translationsStatus,
         translationRequired,
         dialectTranslationRequired,
         renderSettings,

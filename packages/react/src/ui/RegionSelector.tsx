@@ -1,11 +1,5 @@
-import React, { ReactNode, useEffect, useMemo } from 'react';
+import React, { ReactNode } from 'react';
 import { useRegionSelector } from '../hooks/useRegionSelector';
-
-type RegionData = {
-  code: string;
-  name: string;
-  locale: string;
-};
 
 /**
  * A dropdown component that allows users to select a region.

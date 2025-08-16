@@ -44,6 +44,10 @@ const nextConfig = {};
 
 export default withGTConfig(nextConfig, {
   locales: ['pt', 'es'], // Support for Portuguese and Spanish
+  swcPluginOptions: {
+    logLevel: 'silent', // Control warning output
+    compileTimeHash: false, // Enable compile-time optimizations
+  },
 });
 ```
 
@@ -99,3 +103,18 @@ Full documentation, including guides, examples, and API references, can be found
 ## Contributing
 
 We welcome any contributions to our libraries. Please submit a pull request!
+
+### Development Setup
+
+For Rust development (SWC plugin):
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Add WebAssembly target
+rustup target add wasm32-wasip1
+
+# Install dependencies and build
+npm run build:swc-plugin
+```

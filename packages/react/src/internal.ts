@@ -32,7 +32,8 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
-  TranslationsStatus,
+  _Message,
+  _Messages,
 } from './types/types';
 
 import { GTContextType } from './types/context';
@@ -68,7 +69,6 @@ export {
   Entry,
   TranslatedChildren,
   Translations,
-  TranslationsStatus,
   GTContextType,
   ClientProviderProps,
   DictionaryTranslationOptions,
@@ -83,4 +83,6 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   mergeDictionaries,
+  _Message,
+  _Messages,
 };

@@ -10,12 +10,7 @@ import {
   writeChildrenAsObjects,
 } from 'gt-react/internal';
 import renderVariable from '../variables/renderVariable';
-import React from 'react';
 import { hashSource } from 'generaltranslation/id';
-
-async function Resolver({ children }: { children: React.ReactNode }) {
-  return await children;
-}
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -50,10 +45,14 @@ async function T({
   children,
   id,
   context,
+  _hash,
+  ...options
 }: {
   children: any;
   id?: string;
   context?: string;
+  _hash?: string;
+  [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
 
@@ -62,6 +61,10 @@ async function T({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
+
+  // Compatibility with different options
+  id = id ?? options?.$id;
+  context = context ?? options?.$context;
 
   // ----- TAG CHILDREN ----- //
 
@@ -94,11 +97,8 @@ async function T({
 
   // Get the translation entry object
   const translations = await translationsPromise;
-  const translationsStatus = translationRequired
-    ? I18NConfig.getCachedTranslationsStatus(locale)
-    : undefined;
+
   let translationEntry = translations?.[id || ''];
-  let translationsStatusEntry = translationsStatus?.[id || ''];
 
   let childrenAsObjects;
   let hash;
@@ -107,14 +107,19 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    console.log('calculating hash');
     hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (hash !== _hash) {
+      console.error('hash mismatch', hash, _hash);
+    } else {
+      console.log('hash match');
+    }
     translationEntry = translations?.[hash];
-    translationsStatusEntry = translationsStatus?.[hash];
   }
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
@@ -131,19 +136,19 @@ async function T({
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationsStatusEntry?.status === 'success') {
-    return renderTranslation(translationEntry);
+  if (translationEntry) {
+    return <Suspense>{renderTranslation(translationEntry)}</Suspense>;
   }
 
-  if (translationsStatusEntry?.status === 'error') {
+  if (
+    // translationEntry === null || // If there was an error
+    !I18NConfig.isDevelopmentApiEnabled() // Development translation disabled
+  ) {
     return renderDefault();
   }
 
   // ----- TRANSLATE ON DEMAND ----- //
-  // dev only
-
-  // Since this is the buildtime translation component <T>, this is dev-only
-  if (!I18NConfig.isDevelopmentApiEnabled()) return renderDefault();
+  // Since this is the buildtime translation component <T>, everything below is dev-only
 
   // Get render settings
   const renderSettings = I18NConfig.getRenderSettings();
@@ -159,6 +164,11 @@ async function T({
         ...(id && { id }),
         dataFormat: 'JSX',
       });
+      if (hash !== _hash) {
+        console.error('hash mismatch', hash, _hash);
+      } else {
+        console.log('hash match');
+      }
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,
@@ -191,7 +201,7 @@ async function T({
 
   return (
     <Suspense key={locale} fallback={loadingFallback}>
-      <Resolver children={translationPromise} />
+      {translationPromise}
     </Suspense>
   );
 }

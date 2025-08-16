@@ -552,6 +552,10 @@ export class GT {
   ): Promise<TranslationResult | TranslationError>;
 
   // Overload for ICU content
+  /**
+   * Translates the source content to the target locale.
+   * @deprecated Use the {@link translate} method instead.
+   */
   async _translate(
     source: IcuMessage,
     targetLocale: string,
@@ -561,6 +565,10 @@ export class GT {
   ): Promise<TranslationResult | TranslationError>;
 
   // Overload for I18next content
+  /**
+   * Translates the source content to the target locale.
+   * @deprecated Use the {@link translate} method instead.
+   */
   async _translate(
     source: I18nextMessage,
     targetLocale: string,
@@ -570,6 +578,10 @@ export class GT {
   ): Promise<TranslationResult | TranslationError>;
 
   // Implementation
+  /**
+   * Translates the source content to the target locale.
+   * @deprecated Use the {@link translate} method instead.
+   */
   async _translate(
     source: Content,
     targetLocale: string | undefined = this.targetLocale,
@@ -663,6 +675,15 @@ export class GT {
       throw new Error(error);
     }
 
+    if (typeof this.customMapping?.[targetLocale] === 'object') {
+      const { regionCode, scriptCode } = this.customMapping[targetLocale];
+      metadata = {
+        ...(regionCode && { regionCode }),
+        ...(scriptCode && { scriptCode }),
+        ...metadata,
+      };
+    }
+
     // Request the translation
     return await _translate(
       source,
@@ -707,10 +728,24 @@ export class GT {
       throw new Error(error);
     }
 
+    globalMetadata = {
+      ...globalMetadata,
+      targetLocale,
+    };
+
+    if (typeof this.customMapping?.[targetLocale] === 'object') {
+      const { regionCode, scriptCode } = this.customMapping[targetLocale];
+      globalMetadata = {
+        ...(regionCode && { regionCode }),
+        ...(scriptCode && { scriptCode }),
+        ...globalMetadata,
+      };
+    }
+
     // Request the translation
     return await _translateMany(
       sources,
-      { ...globalMetadata, targetLocale },
+      globalMetadata,
       this._getTranslationConfig()
     );
   }

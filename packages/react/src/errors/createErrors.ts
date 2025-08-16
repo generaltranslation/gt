@@ -47,6 +47,9 @@ export const customLoadTranslationsError = (locale: string = '') =>
 export const customLoadDictionaryWarning = (locale: string = '') =>
   `gt-react Error: fetching locally stored dictionary. If you are using a custom loadDictionary(${locale}), make sure it is correctly implemented.`;
 
+export const missingVariablesError = (variables: string[], message: string) =>
+  `gt-react Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
