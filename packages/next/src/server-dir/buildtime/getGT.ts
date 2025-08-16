@@ -136,16 +136,20 @@ export async function getGT(
       // Return if no translation needed
       if (translationEntry) return;
       // Await the creation of the translation
-      (preloadedTranslations as Record<string, string>)[hash] =
-        (await I18NConfig.translateIcu({
-          source: message,
-          targetLocale: locale,
-          options: {
-            ...(context && { context }),
-            ...(id && { id }),
-            hash,
-          },
-        })) as string;
+      try {
+        (preloadedTranslations as Record<string, string>)[hash] =
+          (await I18NConfig.translateIcu({
+            source: message,
+            targetLocale: locale,
+            options: {
+              ...(context && { context }),
+              ...(id && { id }),
+              hash,
+            },
+          })) as string;
+      } catch (error) {
+        console.warn(error);
+      }
     };
     await Promise.all(_messages.map(preload));
   }
@@ -217,16 +221,16 @@ export async function getGT(
     // ----
 
     // Translate on demand
-    I18NConfig.translateIcu({
-      source: message,
-      targetLocale: locale,
-      options: {
-        ...(context && { context }),
-        ...(id && { id }),
-        hash,
-      },
-    })
-      .then((result) => {
+    try {
+      I18NConfig.translateIcu({
+        source: message,
+        targetLocale: locale,
+        options: {
+          ...(context && { context }),
+          ...(id && { id }),
+          hash,
+        },
+      }).then((result) => {
         // Log the translation result for debugging purposes
         // eslint-disable-next-line no-console
         console.warn(
@@ -239,10 +243,10 @@ export async function getGT(
             ]),
           })
         );
-      })
-      .catch(() => {
-        // No need for error logging, error logged in I18NConfig
       });
+    } catch (error) {
+      console.warn(error);
+    }
 
     // Default is returning source, rather than returning a loading state
     return renderMessage(message, [defaultLocale]);

@@ -12,8 +12,12 @@ export type GTContextType = {
   gt: GT;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  _tFunction: (message: string, options?: InlineTranslationOptions) => string;
-  _preloadMessages: (_messages: _Messages) => Promise<void>;
+  _tFunction: (
+    message: string,
+    options?: InlineTranslationOptions,
+    preloadedTranslations?: Translations
+  ) => string;
+  _preloadMessages: (_messages: _Messages) => Promise<Translations>;
   _dictionaryFunction: (
     id: string,
     options?: DictionaryTranslationOptions

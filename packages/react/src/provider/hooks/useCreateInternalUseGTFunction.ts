@@ -6,9 +6,10 @@ import {
   RenderMethod,
   _Messages,
   _Message,
+  TranslatedChildren,
 } from '../../types/types';
 import { TranslateIcuCallback } from '../../types/runtime';
-import { formatMessage, GT } from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction({
   gt,
@@ -27,8 +28,12 @@ export default function useCreateInternalUseGTFunction({
   runtimeTranslationEnabled: boolean;
   registerIcuForTranslation: TranslateIcuCallback;
 }): {
-  _tFunction: (message: string, options?: InlineTranslationOptions) => string;
-  _preloadMessages: (_messages: _Messages) => Promise<void>;
+  _tFunction: (
+    message: string,
+    options?: InlineTranslationOptions,
+    preloadedTranslations?: Translations
+  ) => string;
+  _preloadMessages: (_messages: _Messages) => Promise<Translations>;
 } {
   // --------- HELPER FUNCTIONS ------- //
 
@@ -102,6 +107,7 @@ export default function useCreateInternalUseGTFunction({
   }
 
   const _preloadMessages = async (_messages: _Messages) => {
+    const preloadedTranslations: Translations = {};
     const preload = async ({ message, ...options }: _Message) => {
       // Early return if possible
       if (!message) return;
@@ -115,10 +121,12 @@ export default function useCreateInternalUseGTFunction({
         _hash
       );
       // Return if no translation needed
-      if (translationEntry) return;
+      if (translationEntry) {
+        preloadedTranslations[hash] = translationEntry;
+      }
       // Await the creation of the translation
       // Should update the translations object
-      await registerIcuForTranslation({
+      preloadedTranslations[hash] = await registerIcuForTranslation({
         source: message,
         targetLocale: locale,
         metadata: {
@@ -129,11 +137,13 @@ export default function useCreateInternalUseGTFunction({
       });
     };
     await Promise.all(_messages.map(preload));
+    return preloadedTranslations;
   };
 
   const _tFunction = (
     message: string,
-    options: InlineTranslationOptions = {}
+    options: InlineTranslationOptions = {},
+    preloadedTranslations: Translations | undefined
   ) => {
     // ----- SET UP ----- //
     const init = initializeT(message, options);
@@ -161,6 +171,16 @@ export default function useCreateInternalUseGTFunction({
     // If a translation already exists
     if (translationEntry) {
       return renderMessage(translationEntry as string, [locale, defaultLocale]);
+    }
+
+    if (preloadedTranslations?.[hash] !== 'undefined') {
+      if (preloadedTranslations?.[hash]) {
+        return renderMessage(preloadedTranslations?.[hash] as string, [
+          locale,
+          defaultLocale,
+        ]);
+      }
+      return renderMessage(message, [defaultLocale]);
     }
 
     if (!runtimeTranslationEnabled) {

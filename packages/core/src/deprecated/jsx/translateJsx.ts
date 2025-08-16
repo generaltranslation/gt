@@ -38,9 +38,7 @@ export default async function _translateJsx(
     });
   } catch (error: any) {
     if (error?.name === 'AbortError') {
-      throw new Error(
-        'Translation request timed out. This has either occured due to the translation of an unusually large request or a translation failure in the API.'
-      );
+      throw new Error('Translation request timed out.');
     }
     throw error;
   }

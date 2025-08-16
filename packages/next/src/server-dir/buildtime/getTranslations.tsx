@@ -163,17 +163,17 @@ export async function getTranslations(
       return renderContent(entry, [defaultLocale]);
     }
 
-    // Translate on demand
-    I18NConfig.translateIcu({
-      source: entry,
-      targetLocale: locale,
-      options: {
-        ...(metadata?.$context && { context: metadata.$context }),
-        id,
-        hash,
-      },
-    })
-      .then((result) => {
+    try {
+      // Translate on demand
+      I18NConfig.translateIcu({
+        source: entry,
+        targetLocale: locale,
+        options: {
+          ...(metadata?.$context && { context: metadata.$context }),
+          id,
+          hash,
+        },
+      }).then((result) => {
         // Log the translation result for debugging purposes
         // eslint-disable-next-line no-console
         console.warn(
@@ -186,8 +186,10 @@ export async function getTranslations(
             ]),
           })
         );
-      })
-      .catch(() => {}); // Error logged in I18NConfig
+      });
+    } catch (error) {
+      console.warn(error);
+    }
 
     // Default is returning source, rather than returning a loading state
     return renderContent(entry, [defaultLocale]);

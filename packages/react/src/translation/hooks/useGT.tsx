@@ -1,6 +1,7 @@
-import { Suspense, use, useEffect, useMemo, useRef } from 'react';
+import { Suspense, use, useEffect, useMemo, useRef, useState } from 'react';
 import useGTContext from '../../provider/GTContext';
-import { _Messages } from '../../types/types';
+import { _Messages, Translations } from '../../types/types';
+import { peek, useable } from './dangerouslyUsable';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -31,12 +32,16 @@ export default function useGT(_messages?: _Messages) {
     `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be called within a <GTProvider>.`
   );
 
-  const promiseRef = useRef<Promise<void> | null>(null);
-
-  if (_messages && runtimeTranslationEnabled && translationRequired && !promiseRef.current) {
-    // Create the Promise only once and store it in the ref
-    promiseRef.current = _preloadMessages(_messages);
+  let preloadedTranslations: Translations | undefined;
+  if (_messages && translationRequired && runtimeTranslationEnabled) {
+    // console.log(_messages && translationRequired)
+    preloadedTranslations = use(
+      useable(['_preloadMessages', locale], () => _preloadMessages(_messages), {
+        ttl: 60_000,
+      })
+    );
   }
+  console.log(preloadedTranslations);
 
   /**
    * @param {string} message
@@ -58,7 +63,7 @@ export default function useGT(_messages?: _Messages) {
       $_hash?: string;
     } = {}
   ): string {
-    return _tFunction(string, options);
+    return _tFunction(string, options, preloadedTranslations);
   }
 
   return t;

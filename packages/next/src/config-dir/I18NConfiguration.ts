@@ -194,7 +194,7 @@ export default class I18NConfiguration {
     this.metadata = {
       sourceLocale: this.defaultLocale,
       ...(this.renderSettings.timeout && {
-        timeout: this.renderSettings.timeout - batchInterval,
+        timeout: this.renderSettings.timeout,
       }),
       projectId: this.projectId,
       publish: true,
@@ -525,7 +525,6 @@ export default class I18NConfiguration {
     this._activeRequests++;
     try {
       // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
-
       const results = await this.gt.translateMany(
         batch.map((item) => {
           const { source, metadata, dataFormat } = item;
@@ -575,13 +574,12 @@ export default class I18NConfiguration {
       if (error instanceof Error && error.name === 'AbortError') {
         console.warn(runtimeTranslationTimeoutWarning); // Warning for timeout
       } else {
-        console.error(error);
+        console.warn(error);
       }
-
       // Reject all promises
       batch.forEach((request) => {
         return request.reject(
-          new GTTranslationError('Translation failed:' + error, 500)
+          new GTTranslationError(String(error), 500)
         );
       });
     } finally {
