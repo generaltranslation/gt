@@ -114,5 +114,5 @@ export type _Message = {
   $id?: string;
   $context?: string;
   $_hash?: string;
-}
+};
 export type _Messages = _Message[];

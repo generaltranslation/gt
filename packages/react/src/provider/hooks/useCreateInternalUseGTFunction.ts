@@ -35,9 +35,7 @@ export default function useCreateInternalUseGTFunction(
 
       // Check: reject invalid variables
       if (!validateString(message, variables)) {
-        throw new Error(
-          missingVariablesError(Object.keys(variables), message)
-        );
+        throw new Error(missingVariablesError(Object.keys(variables), message));
       }
 
       // Render method
