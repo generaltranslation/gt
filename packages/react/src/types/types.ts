@@ -109,15 +109,10 @@ export type RenderVariable = ({
   locales: string[];
 }) => React.JSX.Element;
 
-/**
- * Input params for translation function
- * @internal
- */
-export type Internal_UseGTParameters = [
-  {
-    message: string;
-    hash: string;
-    id?: string;
-    context?: string;
-  },
-];
+export type _Message = { 
+  message: string;
+  hash?: string;
+  id?: string;
+  context?: string;
+}
+export type _Messages = _Message[];

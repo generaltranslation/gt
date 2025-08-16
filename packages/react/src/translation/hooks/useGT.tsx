@@ -1,5 +1,5 @@
 import useGTContext from '../../provider/GTContext';
-import { Internal_UseGTParameters } from '../../types/types';
+import { _Messages } from '../../types/types';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -19,13 +19,13 @@ import { Internal_UseGTParameters } from '../../types/types';
  * </>);
  *
  */
-export default function useGT(content?: Internal_UseGTParameters) {
+export default function useGT(_messages?: _Messages) {
   const { _internalUseGTFunction } = useGTContext(
     `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be invoked within a <GTProvider>.`
   );
 
-  if (content) {
-    console.log('useGT(): received content', JSON.stringify(content, null, 2));
+  if (_messages) {
+    console.log('useGT(): received content', JSON.stringify(_messages, null, 2));
   } else {
     console.error('useGT(): no content provided');
   }

@@ -9,7 +9,7 @@ import {
 } from '../../errors/createErrors';
 import {
   InlineTranslationOptions,
-  Internal_UseGTParameters,
+  _Messages,
   validateString,
 } from 'gt-react/internal';
 import use from '../../utils/use';
@@ -24,11 +24,11 @@ import use from '../../utils/use';
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
 export async function getGT(
-  content?: Internal_UseGTParameters
+  _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
   // ---------- SET UP ---------- //
 
-  if (content) {
+  if (_messages) {
     console.log('getGT(): received content', JSON.stringify(content, null, 2));
   } else {
     console.error('getGT(): no content provided');
@@ -186,6 +186,6 @@ export async function getGT(
  * const t = useGT();
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
-export function useGT(content?: Internal_UseGTParameters) {
-  return use(getGT(content));
+export function useGT(_messages?: _Messages) {
+  return use(getGT(_messages));
 }

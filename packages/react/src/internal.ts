@@ -32,7 +32,7 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
-  Internal_UseGTParameters,
+  _Messages,
 } from './types/types';
 
 import { GTContextType } from './types/context';
@@ -84,5 +84,5 @@ export {
   defaultRegionCookieName,
   mergeDictionaries,
   validateString,
-  Internal_UseGTParameters,
+  _Messages,
 };
