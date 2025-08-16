@@ -45,7 +45,7 @@ export default function useGT(_messages?: _Messages) {
     options: Record<string, any> & {
       $id?: string;
       $context?: string;
-      $hash?: string;
+      $_hash?: string;
     } = {}
   ): string {
     return _TFunction(string, options);

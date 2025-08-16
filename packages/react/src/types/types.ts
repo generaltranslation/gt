@@ -86,9 +86,9 @@ export type DictionaryTranslationOptions = Record<string, any>;
 export type InlineTranslationOptions = DictionaryTranslationOptions & {
   $context?: string;
   $id?: string;
-  $hash?: string;
-  $string?: string;
+  $_hash?: string;
 };
+
 export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;

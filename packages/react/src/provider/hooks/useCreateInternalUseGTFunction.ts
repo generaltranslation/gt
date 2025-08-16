@@ -21,22 +21,22 @@ export default function useCreateInternalUseGTFunction(
   renderSettings: { method: RenderMethod }
 ): (message: string, options?: InlineTranslationOptions) => string {
   return useCallback(
-    (contentString: string, options: InlineTranslationOptions = {}) => {
+    (message: string, options: InlineTranslationOptions = {}) => {
       // ----- SET UP ----- //
       const {
         $id: id,
         $context: context,
-        $hash: _hash,
+        $_hash: _hash,
         ...variables
       } = options;
 
       // Check: reject invalid content
-      if (!contentString || typeof contentString !== 'string') return '';
+      if (!message || typeof message !== 'string') return '';
 
       // Check: reject invalid variables
-      if (!validateString(contentString, variables)) {
+      if (!validateString(message, variables)) {
         throw new Error(
-          missingVariablesError(Object.keys(variables), contentString)
+          missingVariablesError(Object.keys(variables), message)
         );
       }
 
@@ -62,7 +62,7 @@ export default function useCreateInternalUseGTFunction(
       ) {
         // Calculate hash
         hash = hashSource({
-          source: contentString,
+          source: message,
           ...(context && { context }),
           ...(id && { id }),
           dataFormat: 'ICU',
@@ -87,7 +87,7 @@ export default function useCreateInternalUseGTFunction(
 
       // Render fallback when tx not required or error
       if (!translationRequired || translationEntry === null) {
-        return renderMessage(contentString, [defaultLocale]);
+        return renderMessage(message, [defaultLocale]);
       }
 
       // Render success
@@ -103,12 +103,12 @@ export default function useCreateInternalUseGTFunction(
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderMessage(contentString, [defaultLocale]);
+        return renderMessage(message, [defaultLocale]);
       }
 
       // Translate Content
       registerIcuForTranslation({
-        source: contentString,
+        source: message,
         targetLocale: locale,
         metadata: {
           ...(context && { context }),
@@ -119,7 +119,7 @@ export default function useCreateInternalUseGTFunction(
 
       // renderSettings.method must be ignored because t() is synchronous &
       // t() should never return an empty string because functions reason about strings based on falsiness
-      return renderMessage(contentString, [defaultLocale]);
+      return renderMessage(message, [defaultLocale]);
     },
     [
       translations,

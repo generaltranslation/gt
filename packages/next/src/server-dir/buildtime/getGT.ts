@@ -56,14 +56,14 @@ export async function getGT(
     options: Record<string, any> & {
       $context?: string;
       $id?: string;
-      $hash?: string;
+      $_hash?: string;
     } = {}
   ) => {
     // ----- SET UP ----- //
     // Validate content
     if (!message || typeof message !== 'string') return '';
 
-    const { $id: id, $context: context, $hash: _hash, ...variables } = options;
+    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
     console.log('options', options);
     console.log('variables', variables);
 
