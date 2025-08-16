@@ -81,12 +81,12 @@ export default function useCreateInternalUseGTFunction({
     if (id) {
       translationEntry = translations?.[id];
     }
-    if (_hash && translations?.[_hash]) {
+    if (_hash && typeof translationEntry === 'undefined') {
       hash = _hash;
       translationEntry = translations?.[_hash];
     }
     // Use calculated hash to index
-    if (!translationEntry) {
+    if (typeof translationEntry === 'undefined') {
       hash = calculateHash();
       if (_hash && _hash !== hash) {
         console.error(
@@ -117,6 +117,7 @@ export default function useCreateInternalUseGTFunction({
       // Return if no translation needed
       if (translationEntry) return;
       // Await the creation of the translation
+      // Should update the translations object
       await registerIcuForTranslation({
         source: message,
         targetLocale: locale,

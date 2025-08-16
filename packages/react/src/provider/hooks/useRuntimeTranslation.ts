@@ -139,6 +139,7 @@ export default function useRuntimeTranslation({
         // ----- RUNTIME TRANSLATION ----- //
 
         const results = await gt.translateMany(requests, {
+          timeout: renderSettings.timeout,
           ...globalMetadata,
           targetLocale: locale,
         });
@@ -254,6 +255,7 @@ export default function useRuntimeTranslation({
           targetLocale: string;
           metadata: TranslationRequestMetadata;
         }): Promise<TranslatedChildren> => {
+          
           // Get the key, which is a combination of hash and locale
           const key = `${params.metadata.hash}:${params.targetLocale}`;
 
@@ -267,7 +269,7 @@ export default function useRuntimeTranslation({
           const translationPromise = new Promise<TranslatedChildren>(
             (resolve, reject) => {
               // Set a timeout to ensure the promise doesn't hang forever
-              const timeoutId = setTimeout(() => {
+              /*const timeoutId = setTimeout(() => {
                 // Check if still in queue (wasn't processed)
                 if (requestQueueRef.current.has(key)) {
                   requestQueueRef.current.delete(key);
@@ -278,7 +280,7 @@ export default function useRuntimeTranslation({
                   console.warn(timeoutError.message);
                   reject(timeoutError);
                 }
-              }, renderSettings.timeout || maxTimeout);
+              }, renderSettings.timeout || maxTimeout);*/
 
               const requestItem =
                 dataFormat === 'JSX'
@@ -287,11 +289,9 @@ export default function useRuntimeTranslation({
                       source: params.source as JsxChildren,
                       metadata: params.metadata,
                       resolve: (value: TranslatedChildren) => {
-                        clearTimeout(timeoutId);
                         resolve(value);
                       },
                       reject: (error: any) => {
-                        clearTimeout(timeoutId);
                         reject(error);
                       },
                     }
@@ -300,11 +300,9 @@ export default function useRuntimeTranslation({
                       source: params.source as string,
                       metadata: params.metadata,
                       resolve: (value: TranslatedChildren) => {
-                        clearTimeout(timeoutId);
                         resolve(value);
                       },
                       reject: (error: any) => {
-                        clearTimeout(timeoutId);
                         reject(error);
                       },
                     };
@@ -348,6 +346,7 @@ export default function useRuntimeTranslation({
 
         // Process the batch
         const batchResult = await sendBatchRequest(batchRequests);
+        
         if (storeResults) {
           setTranslations((prev) => ({
             ...(prev || {}),
