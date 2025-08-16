@@ -141,6 +141,13 @@ impl TransformVisitor {
 
                             // Store the mapping: local_name -> original_name
                             if is_translation_component_name(&original_name) {
+                                // Track the translation component name
+                                self.import_tracker.scope_tracker.track_translation_variable(
+                                    local_name.clone(),
+                                    original_name.clone(),
+                                    0 // We don't care about the identifier for imports
+                                );
+
                                 self.import_tracker.translation_import_aliases.insert(local_name, original_name);
                             } else if is_variable_component_name(&original_name) {
                                 self.import_tracker.variable_import_aliases.insert(local_name, original_name);
@@ -461,7 +468,7 @@ impl TransformVisitor {
                     // Get counter_id
                     let counter_id = self.import_tracker.string_collector.increment_counter();
                     // Create a new entry in the string collector for this call
-                    self.import_tracker.string_collector.initialize_call(counter_id);
+                    self.import_tracker.string_collector.initialize_aggregator(counter_id);
 
                     // Track translation function using scope system (useGT_callback, getGT_callback)
                     self.import_tracker

@@ -19,10 +19,6 @@ pub struct TranslationContent {
 pub struct TranslationJsx {
     /// Pre-calculated hash for this JSX content
     pub hash: String,
-    /// Optional ID from props: <T id="greeting"> → Some("greeting")
-    pub id: Option<String>,
-    /// Optional context from props: <T context="nav"> → Some("nav")
-    pub context: Option<String>,
 }
 
 /// Just a hash value for simple hash injection
@@ -94,7 +90,7 @@ impl StringCollector {
     /// Pass 1: Initialize a useGT/getGT call for later content injection
     /// 
     /// This creates an empty TranslationCall that content will be added to
-    pub fn initialize_call(&mut self, counter_id: u32) {
+    pub fn initialize_aggregator(&mut self, counter_id: u32) {
         // Ensure the Vec is large enough to hold this index
         while self.aggregators.len() <= counter_id as usize {
             self.aggregators.push(TranslationData::default());
@@ -177,13 +173,9 @@ impl StringCollector {
     /// Helper: Create a TranslationJsx from JSX component props
     pub fn create_translation_jsx(
         hash: String,
-        id: Option<String>,
-        context: Option<String>,
     ) -> TranslationJsx {
         TranslationJsx {
             hash,
-            id,
-            context,
         }
     }
 
@@ -324,7 +316,7 @@ mod tests {
         
         // Initialize a call
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Should start empty
         assert_eq!(collector.total_calls(), 1);
@@ -359,7 +351,7 @@ mod tests {
         let mut collector = StringCollector::new();
         let counter_id = collector.increment_counter();
         
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Add multiple content items
         collector.set_translation_content(counter_id, TranslationContent {
@@ -396,9 +388,9 @@ mod tests {
         assert_eq!(counter_id2, 1);
         assert_eq!(counter_id3, 2);
         
-        collector.initialize_call(counter_id1);
-        collector.initialize_call(counter_id2);
-        collector.initialize_call(counter_id3);
+        collector.initialize_aggregator(counter_id1);
+        collector.initialize_aggregator(counter_id2);
+        collector.initialize_aggregator(counter_id3);
         
         // Add content to different calls
         collector.set_translation_content(counter_id1, TranslationContent {
@@ -459,7 +451,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         collector.set_translation_content(counter_id, TranslationContent {
             message: "Test".to_string(),
             hash: "hash".to_string(),
@@ -494,13 +486,11 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Add JSX content
         let jsx = StringCollector::create_translation_jsx(
             "jsx-hash-123".to_string(),
-            Some("jsx-id".to_string()),
-            Some("jsx-context".to_string()),
         );
         
         collector.set_translation_jsx(counter_id, jsx);
@@ -516,8 +506,6 @@ mod tests {
         
         let jsx = retrieved.jsx.as_ref().unwrap();
         assert_eq!(jsx.hash, "jsx-hash-123");
-        assert_eq!(jsx.id, Some("jsx-id".to_string()));
-        assert_eq!(jsx.context, Some("jsx-context".to_string()));
     }
 
     #[test]
@@ -525,7 +513,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Add hash-only content
         let hash = StringCollector::create_translation_hash("hash-only-456".to_string());
@@ -549,7 +537,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Add different types of content to the same call
         let content1 = StringCollector::create_translation_content(
@@ -568,8 +556,6 @@ mod tests {
         
         let jsx = StringCollector::create_translation_jsx(
             "jsx-hash".to_string(),
-            Some("jsx-id".to_string()),
-            Some("jsx-context".to_string()),
         );
         
         let hash = StringCollector::create_translation_hash("simple-hash".to_string());
@@ -596,7 +582,6 @@ mod tests {
         assert!(retrieved.jsx.is_some());
         let jsx = retrieved.jsx.as_ref().unwrap();
         assert_eq!(jsx.hash, "jsx-hash");
-        assert_eq!(jsx.id, Some("jsx-id".to_string()));
         
         // Check Hash
         assert!(retrieved.hash.is_some());
@@ -650,13 +635,9 @@ mod tests {
         // Test TranslationJsx creation
         let jsx = StringCollector::create_translation_jsx(
             "jsx-hash".to_string(),
-            None,
-            Some("jsx-context".to_string()),
         );
         
         assert_eq!(jsx.hash, "jsx-hash");
-        assert_eq!(jsx.id, None);
-        assert_eq!(jsx.context, Some("jsx-context".to_string()));
         
         // Test TranslationHash creation
         let hash = StringCollector::create_translation_hash("simple-hash".to_string());
@@ -668,13 +649,11 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Set initial JSX
         let jsx1 = StringCollector::create_translation_jsx(
             "first-jsx-hash".to_string(),
-            Some("first-id".to_string()),
-            None,
         );
         collector.set_translation_jsx(counter_id, jsx1);
         
@@ -682,13 +661,10 @@ mod tests {
         let call = collector.get_translation_data(counter_id).unwrap();
         assert!(call.jsx.is_some());
         assert_eq!(call.jsx.as_ref().unwrap().hash, "first-jsx-hash");
-        assert_eq!(call.jsx.as_ref().unwrap().id, Some("first-id".to_string()));
         
         // Overwrite with second JSX
         let jsx2 = StringCollector::create_translation_jsx(
             "second-jsx-hash".to_string(),
-            Some("second-id".to_string()),
-            Some("second-context".to_string()),
         );
         collector.set_translation_jsx(counter_id, jsx2);
         
@@ -696,8 +672,6 @@ mod tests {
         let call = collector.get_translation_data(counter_id).unwrap();
         assert!(call.jsx.is_some());
         assert_eq!(call.jsx.as_ref().unwrap().hash, "second-jsx-hash");
-        assert_eq!(call.jsx.as_ref().unwrap().id, Some("second-id".to_string()));
-        assert_eq!(call.jsx.as_ref().unwrap().context, Some("second-context".to_string()));
         
         // Should still count as only 1 item
         assert_eq!(collector.total_content_items(), 1);
@@ -708,7 +682,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Set initial hash
         let hash1 = StringCollector::create_translation_hash("first-hash".to_string());
@@ -737,7 +711,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Add multiple content items
         for i in 1..=5 {
@@ -775,7 +749,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Call should be initialized but empty
         let call = collector.get_translation_data(counter_id).unwrap();
@@ -797,7 +771,7 @@ mod tests {
         let mut collector = StringCollector::new();
         
         let counter_id = collector.increment_counter();
-        collector.initialize_call(counter_id);
+        collector.initialize_aggregator(counter_id);
         
         // Add some content
         collector.set_translation_content(counter_id, StringCollector::create_translation_content(
@@ -817,8 +791,6 @@ mod tests {
         // Also add JSX and Hash (these should not appear in content array)
         collector.set_translation_jsx(counter_id, StringCollector::create_translation_jsx(
             "jsx-hash".to_string(),
-            None,
-            None,
         ));
         
         collector.set_translation_hash(counter_id, StringCollector::create_translation_hash(
@@ -850,9 +822,9 @@ mod tests {
         let call2_id = collector.increment_counter(); // 1 
         let call3_id = collector.increment_counter(); // 2
         
-        collector.initialize_call(call1_id);
-        collector.initialize_call(call2_id);
-        collector.initialize_call(call3_id);
+        collector.initialize_aggregator(call1_id);
+        collector.initialize_aggregator(call2_id);
+        collector.initialize_aggregator(call3_id);
         
         // Call 1: Multiple content + JSX + Hash
         collector.set_translation_content(call1_id, StringCollector::create_translation_content(
@@ -862,7 +834,7 @@ mod tests {
             "Call1 Content2".to_string(), "hash1-2".to_string(), None, Some("ctx1-2".to_string()),
         ));
         collector.set_translation_jsx(call1_id, StringCollector::create_translation_jsx(
-            "jsx1".to_string(), Some("jsx-id1".to_string()), None,
+            "jsx1".to_string(),
         ));
         collector.set_translation_hash(call1_id, StringCollector::create_translation_hash(
             "simple1".to_string(),
@@ -875,7 +847,7 @@ mod tests {
         
         // Call 3: Only JSX
         collector.set_translation_jsx(call3_id, StringCollector::create_translation_jsx(
-            "jsx3".to_string(), None, Some("jsx-ctx3".to_string()),
+            "jsx3".to_string(),
         ));
         
         // Verify totals
