@@ -27,10 +27,6 @@ export default function useGT(_messages?: _Messages) {
 
   if (_messages) {
     console.log('useGT(): received content', JSON.stringify(_messages, null, 2));
-    for (const msgObject of _messages) {
-      const { message, ...rest } = msgObject;
-      _TFunction(message, { ...rest });
-    }
   } else {
     console.error('useGT(): no content provided');
   }

@@ -170,10 +170,6 @@ export async function getGT(
 
   if (_messages) {
     console.log('getGT(): received content', JSON.stringify(_messages, null, 2));
-    for (const msgObject of _messages) {
-      const { message, ...rest } = msgObject;
-      t(message, { ...rest });
-    }
   } else {
     console.error('getGT(): no content provided');
   }
