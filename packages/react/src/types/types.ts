@@ -109,10 +109,10 @@ export type RenderVariable = ({
   locales: string[];
 }) => React.JSX.Element;
 
-export type _Message = { 
+export type _Message = {
   message: string;
   $id?: string;
   $context?: string;
   $_hash?: string;
-}
+};
 export type _Messages = _Message[];

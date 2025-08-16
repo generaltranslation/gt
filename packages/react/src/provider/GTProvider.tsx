@@ -188,18 +188,17 @@ export default function GTProvider({
 
   // ---------- USE DICT ---------- //
 
-  const _DictionaryFunction =
-    useCreateInternalUseTranslationsFunction(
-      dictionary,
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      dialectTranslationRequired,
-      runtimeTranslationEnabled,
-      registerIcuForTranslation,
-      renderSettings
-    );
+  const _DictionaryFunction = useCreateInternalUseTranslationsFunction(
+    dictionary,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    runtimeTranslationEnabled,
+    registerIcuForTranslation,
+    renderSettings
+  );
 
   // ----- RETURN ----- //
 

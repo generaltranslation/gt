@@ -144,18 +144,17 @@ export default function ClientProvider({
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
-  const _DictionaryFunction =
-    useCreateInternalUseTranslationsFunction(
-      dictionary,
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      dialectTranslationRequired,
-      runtimeTranslationEnabled,
-      registerIcuForTranslation,
-      renderSettings
-    );
+  const _DictionaryFunction = useCreateInternalUseTranslationsFunction(
+    dictionary,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    runtimeTranslationEnabled,
+    registerIcuForTranslation,
+    renderSettings
+  );
 
   // ---------- RENDER LOGIC ---------- //
 
