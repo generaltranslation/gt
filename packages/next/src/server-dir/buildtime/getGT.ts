@@ -28,12 +28,6 @@ export async function getGT(
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
   // ---------- SET UP ---------- //
 
-  if (_messages) {
-    console.log('getGT(): received content', JSON.stringify(content, null, 2));
-  } else {
-    console.error('getGT(): no content provided');
-  }
-
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
