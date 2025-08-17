@@ -22,7 +22,7 @@ export type GTContextType = {
     id: string,
     options?: DictionaryTranslationOptions
   ) => string;
-  runtimeTranslationEnabled: boolean;
+  developmentApiEnabled: boolean;
   locale: string;
   locales: string[];
   setLocale: (locale: string) => void;

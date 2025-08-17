@@ -10,6 +10,7 @@ import {
   InlineTranslationOptions,
   _Message,
   _Messages,
+  reactHasUse
 } from 'gt-react/internal';
 import use from '../../utils/use';
 
@@ -113,6 +114,7 @@ export async function getGT(
 
   let preloadedTranslations: Record<string, string> | undefined;
   if (
+    reactHasUse &&
     _messages &&
     I18NConfig.isDevelopmentApiEnabled() &&
     translationRequired

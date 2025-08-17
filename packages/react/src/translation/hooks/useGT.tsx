@@ -1,7 +1,8 @@
-import { Suspense, use, useEffect, useMemo, useRef, useState } from 'react';
+import * as React from 'react';
 import useGTContext from '../../provider/GTContext';
 import { _Messages, Translations } from '../../types/types';
-import { peek, useable } from './dangerouslyUsable';
+import { useable } from '../../promises/dangerouslyUsable';
+import { reactHasUse } from '../../promises/reactHasUse';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -23,7 +24,7 @@ import { peek, useable } from './dangerouslyUsable';
  */
 export default function useGT(_messages?: _Messages) {
   const {
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     translationRequired,
     _preloadMessages,
     _tFunction,
@@ -33,15 +34,19 @@ export default function useGT(_messages?: _Messages) {
   );
 
   let preloadedTranslations: Translations | undefined;
-  if (_messages && translationRequired && runtimeTranslationEnabled) {
-    // console.log(_messages && translationRequired)
-    preloadedTranslations = use(
-      useable(['_preloadMessages', locale], () => _preloadMessages(_messages), {
-        ttl: 60_000,
-      })
+  if (
+    _messages && 
+    reactHasUse &&
+    developmentApiEnabled &&
+    translationRequired
+  ) {
+    preloadedTranslations = React.use(
+      useable(
+        ['_preloadMessages', locale], 
+        () => _preloadMessages(_messages)
+      )
     );
   }
-  console.log(preloadedTranslations);
 
   /**
    * @param {string} message

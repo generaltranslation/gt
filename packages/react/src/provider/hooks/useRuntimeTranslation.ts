@@ -68,22 +68,22 @@ export default function useRuntimeTranslation({
 }): {
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  runtimeTranslationEnabled: boolean;
+  developmentApiEnabled: boolean;
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
-  const runtimeTranslationEnabled =
+  const developmentApiEnabled =
     !!gt.projectId &&
     !!runtimeUrl &&
     !!gt.devApiKey &&
     process.env.NODE_ENV === 'development';
 
-  if (!runtimeTranslationEnabled) {
+  if (!developmentApiEnabled) {
     const disabledError = (fn: string) =>
       Promise.reject(
         new Error(`${fn}() failed because translation is disabled`)
       );
     return {
-      runtimeTranslationEnabled,
+      developmentApiEnabled,
       registerIcuForTranslation: () =>
         disabledError('registerIcuForTranslation'),
       registerJsxForTranslation: () =>
@@ -383,7 +383,7 @@ export default function useRuntimeTranslation({
   }, []);
 
   return {
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     registerIcuForTranslation:
       registerIcuForTranslation as unknown as TranslateIcuCallback,
     registerJsxForTranslation:

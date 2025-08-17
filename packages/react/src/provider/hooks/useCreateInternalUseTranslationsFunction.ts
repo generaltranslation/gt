@@ -25,7 +25,7 @@ export default function useCreateInternalUseTranslationsFunction(
   defaultLocale: string,
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
-  runtimeTranslationEnabled: boolean,
+  developmentApiEnabled: boolean,
   registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
 ) {
@@ -95,13 +95,13 @@ export default function useCreateInternalUseTranslationsFunction(
         return renderMessage(entry, [defaultLocale]);
       }
 
-      // ----- TRANSLATE ON DEMAND ----- //
-      // development only
-
       // Check if runtime translation is enabled
-      if (!runtimeTranslationEnabled) {
+      if (!developmentApiEnabled) {
         return renderMessage(entry, [defaultLocale]);
       }
+
+      // ----- TRANSLATE ON DEMAND ----- //
+      // development only
 
       // Translate Content
       registerIcuForTranslation({
@@ -124,7 +124,7 @@ export default function useCreateInternalUseTranslationsFunction(
       locale,
       defaultLocale,
       translationRequired,
-      runtimeTranslationEnabled,
+      developmentApiEnabled,
       registerIcuForTranslation,
       dialectTranslationRequired,
     ]

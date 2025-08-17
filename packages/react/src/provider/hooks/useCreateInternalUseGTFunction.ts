@@ -17,7 +17,7 @@ export default function useCreateInternalUseGTFunction({
   locale,
   defaultLocale,
   translationRequired,
-  runtimeTranslationEnabled,
+  developmentApiEnabled,
   registerIcuForTranslation,
 }: {
   gt: GT;
@@ -25,7 +25,7 @@ export default function useCreateInternalUseGTFunction({
   locale: string;
   defaultLocale: string;
   translationRequired: boolean;
-  runtimeTranslationEnabled: boolean;
+  developmentApiEnabled: boolean;
   registerIcuForTranslation: TranslateIcuCallback;
 }): {
   _tFunction: (
@@ -183,7 +183,7 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage(message, [defaultLocale]);
     }
 
-    if (!runtimeTranslationEnabled) {
+    if (!developmentApiEnabled) {
       // Warn here
       return renderMessage(message, [defaultLocale]);
     }

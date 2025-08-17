@@ -60,7 +60,7 @@ function T({
   const {
     translations,
     translationRequired,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     dialectTranslationRequired,
     registerJsxForTranslation,
     renderSettings,
@@ -138,7 +138,7 @@ function T({
   if (
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
-    (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
+    (translations && !translationEntry && !developmentApiEnabled) || // cache miss and dev runtime translation disabled (production)
     translationEntry === null // error fetching translation
   ) {
     return <>{renderDefault()}</>;
@@ -150,7 +150,7 @@ function T({
 
   const getTranslationPromise = async () => {
     if (
-      !runtimeTranslationEnabled || // runtime translation disabled
+      !developmentApiEnabled || // runtime translation disabled
       !locale // locale not loaded
     ) {
       return renderDefault();

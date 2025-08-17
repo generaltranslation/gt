@@ -285,7 +285,7 @@ export default class I18NConfiguration {
       devApiKey,
       dictionaryEnabled,
       renderSettings,
-      runtimeTranslationEnabled: developmentApiEnabled,
+      developmentApiEnabled,
       localeRoutingEnabledCookieName,
       referrerLocaleCookieName,
       localeCookieName,

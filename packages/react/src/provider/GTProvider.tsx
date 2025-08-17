@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -161,7 +161,7 @@ export default function GTProvider({
   const {
     registerIcuForTranslation,
     registerJsxForTranslation,
-    runtimeTranslationEnabled,
+    developmentApiEnabled
   } = useRuntimeTranslation({
     gt,
     locale,
@@ -181,7 +181,7 @@ export default function GTProvider({
     locale,
     defaultLocale,
     translationRequired,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     registerIcuForTranslation,
   });
 
@@ -194,7 +194,7 @@ export default function GTProvider({
     defaultLocale,
     translationRequired,
     dialectTranslationRequired,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     registerIcuForTranslation,
     renderSettings
   );
@@ -213,7 +213,7 @@ export default function GTProvider({
         _tFunction,
         _preloadMessages,
         _dictionaryFunction,
-        runtimeTranslationEnabled,
+        developmentApiEnabled,
         locale,
         locales: approvedLocales,
         setLocale,
@@ -227,7 +227,9 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      {display ? children : fallback}
+      <Suspense fallback={fallback}>
+        {display ? children : fallback}
+      </Suspense>
     </GTContext.Provider>
   );
 }

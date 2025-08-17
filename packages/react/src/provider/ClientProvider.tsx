@@ -30,7 +30,7 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  runtimeTranslationEnabled,
+  developmentApiEnabled,
   resetLocaleCookieName,
   localeCookieName = defaultLocaleCookieName,
   regionCookieName = defaultRegionCookieName,
@@ -117,7 +117,10 @@ export default function ClientProvider({
 
   // ---------- TRANSLATION METHODS ---------- //
 
-  const { registerIcuForTranslation, registerJsxForTranslation } =
+  const { 
+    registerIcuForTranslation, 
+    registerJsxForTranslation
+  } =
     useRuntimeTranslation({
       gt,
       locale: locale,
@@ -126,7 +129,7 @@ export default function ClientProvider({
       setTranslations,
       defaultLocale,
       renderSettings,
-      runtimeTranslationEnabled,
+      developmentApiEnabled,
     });
 
   // ---------- USE GT() TRANSLATION ---------- //
@@ -137,7 +140,7 @@ export default function ClientProvider({
     locale,
     defaultLocale,
     translationRequired,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     registerIcuForTranslation,
   });
 
@@ -150,7 +153,7 @@ export default function ClientProvider({
     defaultLocale,
     translationRequired,
     dialectTranslationRequired,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     registerIcuForTranslation,
     renderSettings
   );
@@ -179,7 +182,7 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
-        runtimeTranslationEnabled,
+        developmentApiEnabled,
       }}
     >
       {display && children}

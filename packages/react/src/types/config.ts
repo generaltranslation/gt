@@ -65,7 +65,7 @@ export type ClientProviderProps = {
     method: RenderMethod;
     timeout?: number;
   };
-  runtimeTranslationEnabled: boolean;
+  developmentApiEnabled: boolean;
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string | null;

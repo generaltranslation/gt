@@ -44,6 +44,7 @@ import {
 } from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
+import { reactHasUse } from './promises/reactHasUse';
 
 export {
   addGTIdentifier,
@@ -85,4 +86,5 @@ export {
   mergeDictionaries,
   _Message,
   _Messages,
+  reactHasUse,
 };
