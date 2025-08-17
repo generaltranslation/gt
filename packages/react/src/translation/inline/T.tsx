@@ -73,18 +73,26 @@ function T({
   // ----- FETCH TRANSLATION ----- //
 
   // Dependency flag to avoid recalculating hash whenever translation object changes
-  const translationWithIdExists = id && translations?.[id as string];
+
+  let translationEntry: TranslatedChildren | null | undefined;
+
+  if (id) {
+    translationEntry = translations?.[id]
+  }
+
+  if (typeof translationEntry === 'undefined' && _hash) {
+    translationEntry = translations?.[_hash]
+  }
 
   // Calculate necessary info for fetching translation / generating translation
   const [childrenAsObjects, hash] = useMemo(() => {
     // skip hashing:
     if (
       !translationRequired || // Translation not required
-      translationWithIdExists // Translation already exists under the id
+      translationEntry // Translation already exists under the id
     ) {
       return [undefined, ''];
     }
-
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
     const hash: string = hashSource({
@@ -93,10 +101,8 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (hash !== _hash) {
+    if (_hash && hash !== _hash) {
       console.error('hash mismatch', hash, _hash);
-    } else {
-      console.log('hash match');
     }
     return [childrenAsObjects, hash];
   }, [
@@ -104,13 +110,13 @@ function T({
     context,
     id,
     translationRequired,
-    translationWithIdExists,
+    translationEntry,
   ]);
 
   // get translation entry on hash
-  const translationEntry = translationWithIdExists
-    ? translations?.[id as string]
-    : translations?.[hash];
+  if (typeof translationEntry === 'undefined') {
+    translationEntry = translations?.[hash]
+  }
 
   // ----- RENDER METHODS ----- //
 

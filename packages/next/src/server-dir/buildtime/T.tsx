@@ -107,18 +107,12 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    console.log('calculating hash');
     hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (hash !== _hash) {
-      console.error('hash mismatch', hash, _hash);
-    } else {
-      console.log('hash match');
-    }
     translationEntry = translations?.[hash];
   }
 
@@ -164,11 +158,6 @@ async function T({
         ...(id && { id }),
         dataFormat: 'JSX',
       });
-      if (hash !== _hash) {
-        console.error('hash mismatch', hash, _hash);
-      } else {
-        console.log('hash match');
-      }
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,
