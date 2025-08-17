@@ -10,7 +10,7 @@ import {
   InlineTranslationOptions,
   _Message,
   _Messages,
-  reactHasUse
+  reactHasUse,
 } from 'gt-react/internal';
 import use from '../../utils/use';
 

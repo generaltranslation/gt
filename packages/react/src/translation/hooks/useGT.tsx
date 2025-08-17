@@ -35,16 +35,13 @@ export default function useGT(_messages?: _Messages) {
 
   let preloadedTranslations: Translations | undefined;
   if (
-    _messages && 
+    _messages &&
     reactHasUse &&
     developmentApiEnabled &&
     translationRequired
   ) {
     preloadedTranslations = React.use(
-      useable(
-        ['_preloadMessages', locale], 
-        () => _preloadMessages(_messages)
-      )
+      useable(['_preloadMessages', locale], () => _preloadMessages(_messages))
     );
   }
 

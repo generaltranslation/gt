@@ -161,7 +161,7 @@ export default function GTProvider({
   const {
     registerIcuForTranslation,
     registerJsxForTranslation,
-    developmentApiEnabled
+    developmentApiEnabled,
   } = useRuntimeTranslation({
     gt,
     locale,
@@ -227,9 +227,7 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      <Suspense fallback={fallback}>
-        {display ? children : fallback}
-      </Suspense>
+      <Suspense fallback={fallback}>{display ? children : fallback}</Suspense>
     </GTContext.Provider>
   );
 }

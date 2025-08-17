@@ -117,10 +117,7 @@ export default function ClientProvider({
 
   // ---------- TRANSLATION METHODS ---------- //
 
-  const { 
-    registerIcuForTranslation, 
-    registerJsxForTranslation
-  } =
+  const { registerIcuForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({
       gt,
       locale: locale,
