@@ -578,9 +578,7 @@ export default class I18NConfiguration {
       }
       // Reject all promises
       batch.forEach((request) => {
-        return request.reject(
-          new GTTranslationError(String(error), 500)
-        );
+        return request.reject(new GTTranslationError(String(error), 500));
       });
     } finally {
       this._activeRequests--;
