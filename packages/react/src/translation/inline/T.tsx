@@ -77,11 +77,11 @@ function T({
   let translationEntry: TranslatedChildren | null | undefined;
 
   if (id) {
-    translationEntry = translations?.[id]
+    translationEntry = translations?.[id];
   }
 
   if (typeof translationEntry === 'undefined' && _hash) {
-    translationEntry = translations?.[_hash]
+    translationEntry = translations?.[_hash];
   }
 
   // Calculate necessary info for fetching translation / generating translation
@@ -105,17 +105,11 @@ function T({
       console.error('hash mismatch', hash, _hash);
     }
     return [childrenAsObjects, hash];
-  }, [
-    taggedChildren,
-    context,
-    id,
-    translationRequired,
-    translationEntry,
-  ]);
+  }, [taggedChildren, context, id, translationRequired, translationEntry]);
 
   // get translation entry on hash
   if (typeof translationEntry === 'undefined') {
-    translationEntry = translations?.[hash]
+    translationEntry = translations?.[hash];
   }
 
   // ----- RENDER METHODS ----- //
