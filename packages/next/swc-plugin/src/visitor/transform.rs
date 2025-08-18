@@ -11,7 +11,12 @@ use swc_core::{
   },
 };
 use crate::visitor::expr_utils::{
-    create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args
+    create_spread_options_call_expr,
+    create_string_prop,
+    extract_id_and_context_from_options,
+    extract_string_from_expr,
+    has_prop,
+    inject_new_args,
 };
 
 use crate::visitor::analysis::{
@@ -149,7 +154,7 @@ impl TransformVisitor {
             
         if !has_hash_attr {
             // Calculate real hash using AST traversal
-            let (hash_value, _) = self.calculate_element_hash(&element);
+            let (hash_value, _) = HashOperations::calculate_element_hash(&element);
 
             // Store the t() function call
             let counter_id = self.import_tracker.string_collector.increment_counter();
@@ -327,63 +332,6 @@ impl TransformVisitor {
                 }
             }
             _ => {}
-        }
-    }
-
-    /// Calculate hash for JSX element using AST traversal
-    pub fn calculate_element_hash(&self, element: &JSXElement) -> (String, String) {
-        use crate::ast::JsxTraversal;
-        use crate::hash::JsxHasher;
-        
-        let mut traversal = JsxTraversal::new(self);
-        
-        // Build sanitized children directly from JSX children
-        if let Some(sanitized_children) = traversal.build_sanitized_children(&element.children) {
-            // Get the id from the element
-            let id = extract_attribute_from_jsx_attr(element, "id");
-
-            // Get the context from the element
-            let context = extract_attribute_from_jsx_attr(element, "context");
-
-            // Get the id from the element
-            // Create the full SanitizedData structure to match TypeScript implementation
-            use crate::hash::SanitizedData;
-            let sanitized_data = SanitizedData {
-                source: Some(Box::new(sanitized_children)),
-                id,
-                context,
-                data_format: Some("JSX".to_string()),
-            };
-            // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
-            let json_string = JsxHasher::stable_stringify(&sanitized_data)
-                .expect("Failed to serialize sanitized data");
-            
-            
-            let hash = JsxHasher::hash_string(&json_string);
-            (hash, json_string)
-        } else {
-            // Fallback to empty content hash with proper wrapper structure
-            use crate::hash::{SanitizedData, SanitizedElement, SanitizedChild, SanitizedChildren};
-            let empty_element = SanitizedElement {
-                b: None,
-                c: None,
-                t: None,
-                d: None,
-            };
-            
-            let empty_children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(empty_element))));
-            let sanitized_data = SanitizedData {
-                source: Some(Box::new(empty_children)),
-                id: None,
-                context: None,
-                data_format: Some("JSX".to_string()),
-            };
-            
-            let json_string = JsxHasher::stable_stringify(&sanitized_data)
-                .expect("Failed to serialize empty data");
-            
-            let hash = JsxHasher::hash_string(&json_string);
-            (hash, json_string)
         }
     }
 

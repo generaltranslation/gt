@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap};
 use swc_core::ecma::{
     ast::*,
     atoms::Atom,
