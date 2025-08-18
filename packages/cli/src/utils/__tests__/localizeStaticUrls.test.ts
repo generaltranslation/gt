@@ -1936,8 +1936,6 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-        console.log('Expected:', expected);
-        console.log('Actual:', content);
         expect(content).toBe(expected);
         return Promise.resolve();
       });
