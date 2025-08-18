@@ -8,7 +8,8 @@ import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
-import { Root } from 'mdast';
+import { Root, Link, Literal } from 'mdast';
+import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 
 const { isMatch } = micromatch;
 
@@ -339,7 +340,7 @@ function transformMdxUrls(
   };
 
   // Visit markdown link nodes: [text](url)
-  visit(processedAst, 'link', (node: any) => {
+  visit(processedAst, 'link', (node: Link) => {
     if (node.url) {
       const newUrl = transformUrl(node.url, 'markdown');
       if (newUrl) {
@@ -349,33 +350,35 @@ function transformMdxUrls(
   });
 
   // Visit JSX/HTML elements for href attributes: <a href="url"> or <Card href="url">
-  visit(
-    processedAst,
-    ['mdxJsxFlowElement', 'mdxJsxTextElement'],
-    (node: any) => {
-      if (node.attributes) {
-        for (const attr of node.attributes) {
-          if (attr.name === 'href' && attr.value) {
-            const hrefValue =
-              typeof attr.value === 'string' ? attr.value : attr.value.value;
-            if (typeof hrefValue === 'string') {
-              const newUrl = transformUrl(hrefValue, 'href');
-              if (newUrl) {
-                if (typeof attr.value === 'string') {
-                  attr.value = newUrl;
-                } else {
-                  attr.value.value = newUrl;
-                }
+  visit(processedAst, ['mdxJsxFlowElement', 'mdxJsxTextElement'], (node) => {
+    const jsxNode = node as MdxJsxFlowElement | MdxJsxTextElement;
+    if (jsxNode.attributes) {
+      for (const attr of jsxNode.attributes) {
+        if (
+          attr.type === 'mdxJsxAttribute' &&
+          attr.name === 'href' &&
+          attr.value
+        ) {
+          // Handle MdxJsxAttribute with string or MdxJsxAttributeValueExpression
+          const hrefValue =
+            typeof attr.value === 'string' ? attr.value : attr.value.value;
+          if (typeof hrefValue === 'string') {
+            const newUrl = transformUrl(hrefValue, 'href');
+            if (newUrl) {
+              if (typeof attr.value === 'string') {
+                attr.value = newUrl;
+              } else {
+                attr.value.value = newUrl;
               }
             }
           }
         }
       }
     }
-  );
+  });
 
   // Visit raw JSX nodes for href attributes in JSX strings
-  visit(processedAst, 'jsx', (node: any) => {
+  visit(processedAst, 'jsx', (node: Literal) => {
     if (node.value && typeof node.value === 'string') {
       const jsxContent = node.value;
 

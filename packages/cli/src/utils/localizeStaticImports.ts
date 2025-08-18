@@ -9,6 +9,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root } from 'mdast';
+import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
 
 const { isMatch } = micromatch;
 
@@ -185,7 +186,7 @@ function transformMdxImports(
   const processedAst = parseProcessor.runSync(ast) as Root;
 
   // Visit only mdxjsEsm nodes (import/export statements)
-  visit(processedAst, 'mdxjsEsm', (node: any) => {
+  visit(processedAst, 'mdxjsEsm', (node: MdxjsEsm) => {
     if (node.value && node.value.includes(patternHead.replace(/\/$/, ''))) {
       // Find and transform import paths in the node value
       const lines = node.value.split('\n');
