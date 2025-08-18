@@ -11,7 +11,7 @@ use swc_core::{
   },
 };
 use crate::visitor::expr_utils::{
-    create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop
+    create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args
 };
 
 use crate::visitor::analysis::{
@@ -93,6 +93,54 @@ impl TransformVisitor {
         }
 
         element
+    }
+
+    /// Inject content array on translation function call
+    pub fn inject_content_array_on_translation_function_call(&mut self, call_expr: &CallExpr) -> Option<CallExpr> {
+        let counter_id = self.import_tracker.string_collector.get_counter();
+        if let Some(content) = self
+            .import_tracker.string_collector
+            .get_translation_data(counter_id) {
+
+            // Create the content array
+            let content_array = self
+                .import_tracker
+                .string_collector
+                .create_content_array(&content.content, call_expr.span);
+
+            // Check for existing content
+            if call_expr.args.is_empty() {
+                return Some(inject_new_args(&call_expr, content_array.clone()));
+            }
+        }
+        None
+    }
+
+    pub fn inject_hash_attributes_on_translation_function_call(&mut self, call_expr: &CallExpr) -> Option<CallExpr> {
+        if let Some(_string) = call_expr.args.first() {
+            // Get the options
+            let options = call_expr.args.get(1);
+
+            // Get the hash from the t() aggregator
+            let counter_id = self.import_tracker.string_collector.increment_counter();
+            let translation_hash = self
+                .import_tracker
+                .string_collector
+                .get_translation_hash(counter_id);
+
+            if let Some(translation_hash) = translation_hash {
+                // Inject hash attribute on the call expression
+                let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+                    &call_expr,
+                    options,
+                    translation_hash.hash.clone(),
+                    None
+                );
+
+                return Some(modified_call_expr);
+            }
+        }
+        None
     }
 
     pub fn track_hash_attributes(&mut self, element: &mut JSXElement) {

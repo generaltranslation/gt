@@ -5,7 +5,7 @@ use swc_core::{
     },
     plugin::{plugin_transform, proxies::TransformPluginProgramMetadata},
 };
-use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, expr_utils::{extract_id_and_context_from_options, extract_string_from_expr, get_callee_expr_function_name, inject_new_args}}};
+use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, expr_utils::{get_callee_expr_function_name, inject_new_args}}};
 use crate::visitor::TransformVisitor;
 
 
@@ -189,9 +189,6 @@ impl VisitMut for TransformVisitor {
 }
 
 
-
-
-
 impl Fold for TransformVisitor {
     /// Process import declarations to track GT-Next imports
     fn fold_import_decl(&mut self, import_decl: ImportDecl) -> ImportDecl {
@@ -306,56 +303,20 @@ impl Fold for TransformVisitor {
 
                 // Register the useGT/getGT as aggregators on the string collector
                 let original_name = translation_variable.assigned_value.clone();
-                let counter_id = self.import_tracker.string_collector.get_counter();
 
                 // Detect useGT/getGT calls
                 if is_translation_function_name(&original_name) {
-                    // Insert the data into the aggregator
-                    if let Some(content) = self
-                        .import_tracker.string_collector
-                        .get_translation_data(counter_id) {
-
-                        // Create the content array
-                        let content_array = self
-                            .import_tracker
-                            .string_collector
-                            .create_content_array(&content.content, call_expr.span);
-
-                        // Check for existing content
-                        if call_expr.args.is_empty() {
-                            return inject_new_args(&call_expr, content_array.clone());
-                        }
+                    if let Some(modified_call_expr) = self
+                        .inject_content_array_on_translation_function_call(&call_expr) {
+                        return modified_call_expr.fold_children_with(self);
                     }
                 }
 
                 // Detect t() calls
                 else if is_translation_function_callback(&original_name) {
-                    // Check the first argument for dynamic content
-                    if let Some(_string) = call_expr.args.first() {
-
-                        // Get the options
-                        let options = call_expr.args.get(1);
-
-                        // Get the hash from the t() aggregator
-                        let counter_id = self.import_tracker.string_collector.increment_counter();
-                        let translation_hash = self
-                            .import_tracker
-                            .string_collector
-                            .get_translation_hash(counter_id);
-
-                        if let Some(translation_hash) = translation_hash {
-                            // Inject hash attribute on the call expression
-                            let modified_call_expr = self.inject_hash_attribute_on_call_expr(
-                                &call_expr,
-                                options,
-                                translation_hash.hash.clone(),
-                                None
-                            );
-
-                            return modified_call_expr.fold_children_with(self);
-                        }
-
-
+                    if let Some(modified_call_expr) = self
+                        .inject_hash_attributes_on_translation_function_call(&call_expr) {
+                        return modified_call_expr.fold_children_with(self);
                     }
                 }
             }
@@ -442,6 +403,8 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
         string_collector,
     );
     program.visit_mut_with(&mut visitor);
+
+    /// TODO: here panic if there are any violations
 
 
     let collected_data = visitor.import_tracker.string_collector;
