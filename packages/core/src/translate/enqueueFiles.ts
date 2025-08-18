@@ -27,7 +27,7 @@ export default async function _enqueueFiles(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/upload`;
   const { projectId } = config;
-  const { sourceLocale, targetLocales, publish, _versionId, description } =
+  const { sourceLocale, targetLocales, publish, _versionId, description, modelProvider } =
     options;
 
   // Create form data
@@ -51,6 +51,9 @@ export default async function _enqueueFiles(
   formData.append('publish', String(publish));
   formData.append('versionId', _versionId || '');
   formData.append('description', description || '');
+  if (modelProvider) {
+    formData.append('modelProvider', modelProvider);
+  }
 
   // Request the file uploads
   let response;

@@ -54,6 +54,11 @@
       "description": "Optional boolean flag that indicates whether your project is configured to use human review",
       "default": false
     },
+    "modelProvider": {
+      "type": "string",
+      "description": "AI model provider to use for translations",
+      "enum": ["anthropic", "openai"]
+    },
     "src": {
       "type": "array",
       "description": "Optional array of relative directory paths that contain translatable content",

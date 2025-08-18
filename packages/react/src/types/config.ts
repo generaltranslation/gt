@@ -25,6 +25,7 @@ export type GTConfig = {
   ssr?: boolean;
   localeCookieName?: string;
   customMapping?: CustomMapping;
+  modelProvider?: string;
 };
 
 export type GTProviderProps = {
