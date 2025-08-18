@@ -184,7 +184,7 @@ function T({
   };
 
   if (reactHasUse) {
-    const usedTranslation = React.use(
+    const resolvedTranslation = React.use(
       useable(
         [
           'getTranslationPromise', // prefix key
@@ -198,7 +198,9 @@ function T({
         () => getTranslationPromise()
       )
     );
-    return <Suspense fallback={usedTranslation}>{usedTranslation}</Suspense>;
+    return (
+      <Suspense fallback={resolvedTranslation}>{resolvedTranslation}</Suspense>
+    );
   }
 
   let loadingFallback;
