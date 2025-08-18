@@ -1,6 +1,10 @@
 import React, { Suspense, useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
-import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
+import {
+  addGTIdentifier,
+  reactHasUse,
+  writeChildrenAsObjects,
+} from '../../internal';
 import useGTContext from '../../provider/GTContext';
 import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
@@ -8,6 +12,7 @@ import renderVariable from '../../rendering/renderVariable';
 import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
+import { useable } from '../../promises/dangerouslyUsable';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -145,7 +150,11 @@ function T({
   }
 
   if (translationEntry) {
-    return <Suspense>{renderTranslation(translationEntry)}</Suspense>;
+    return (
+      <Suspense fallback={renderTranslation(translationEntry)}>
+        {renderTranslation(translationEntry)}
+      </Suspense>
+    );
   }
 
   const getTranslationPromise = async () => {
@@ -173,6 +182,24 @@ function T({
       return renderDefault();
     }
   };
+
+  if (reactHasUse) {
+    const usedTranslation = React.use(
+      useable(
+        [
+          'getTranslationPromise', // prefix key
+          developmentApiEnabled,
+          JSON.stringify(childrenAsObjects),
+          locale,
+          id,
+          hash,
+          context,
+        ],
+        () => getTranslationPromise()
+      )
+    );
+    return <Suspense fallback={usedTranslation}>{usedTranslation}</Suspense>;
+  }
 
   let loadingFallback;
   if (renderSettings.method === 'skeleton') {

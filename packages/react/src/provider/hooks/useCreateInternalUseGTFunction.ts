@@ -33,6 +33,7 @@ export default function useCreateInternalUseGTFunction({
     options?: InlineTranslationOptions,
     preloadedTranslations?: Translations
   ) => string;
+  _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
 } {
   // --------- HELPER FUNCTIONS ------- //
@@ -106,11 +107,27 @@ export default function useCreateInternalUseGTFunction({
     };
   }
 
+  const _filterMessagesForPreload = (_messages: _Messages): _Messages => {
+    const result = [];
+    for (const { message, ...options } of _messages) {
+      const init = initializeT(message, options);
+      if (!init) continue;
+      const { id, _hash, calculateHash } = init;
+      const { translationEntry, hash } = getTranslationData(
+        calculateHash,
+        id,
+        _hash
+      );
+      if (!translationEntry) {
+        result.push({ message, ...options, $_hash: hash });
+      }
+    }
+    return result;
+  };
+
   const _preloadMessages = async (_messages: _Messages) => {
     const preloadedTranslations: Translations = {};
     const preload = async ({ message, ...options }: _Message) => {
-      // Early return if possible
-      if (!message) return;
       // Setup
       const init = initializeT(message, options);
       if (!init) return;
@@ -201,5 +218,5 @@ export default function useCreateInternalUseGTFunction({
     return renderMessage(message, [defaultLocale]);
   };
 
-  return { _tFunction, _preloadMessages };
+  return { _tFunction, _filterMessagesForPreload, _preloadMessages };
 }

@@ -27,6 +27,7 @@ export default function useGT(_messages?: _Messages) {
     developmentApiEnabled,
     translationRequired,
     _preloadMessages,
+    _filterMessagesForPreload,
     _tFunction,
     locale,
   } = useGTContext(
@@ -40,16 +41,19 @@ export default function useGT(_messages?: _Messages) {
     developmentApiEnabled &&
     translationRequired
   ) {
-    preloadedTranslations = React.use(
-      useable(
-        [
-          '_preloadMessages', // prefix key
-          locale, // should change on locale
-          JSON.stringify(_messages), // should change when messages change
-        ],
-        () => _preloadMessages(_messages)
-      )
-    );
+    const untranslatedMessages = _filterMessagesForPreload(_messages);
+    if (untranslatedMessages.length > 0) {
+      preloadedTranslations = React.use(
+        useable(
+          [
+            '_preloadMessages', // prefix key
+            locale, // should change on locale
+            JSON.stringify(untranslatedMessages), // should change when messages change
+          ],
+          () => _preloadMessages(untranslatedMessages)
+        )
+      );
+    }
   }
 
   /**

@@ -131,15 +131,16 @@ export default function ClientProvider({
 
   // ---------- USE GT() TRANSLATION ---------- //
 
-  const { _tFunction, _preloadMessages } = useCreateInternalUseGTFunction({
-    gt,
-    translations,
-    locale,
-    defaultLocale,
-    translationRequired,
-    developmentApiEnabled,
-    registerIcuForTranslation,
-  });
+  const { _tFunction, _filterMessagesForPreload, _preloadMessages } =
+    useCreateInternalUseGTFunction({
+      gt,
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      developmentApiEnabled,
+      registerIcuForTranslation,
+    });
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
@@ -168,6 +169,7 @@ export default function ClientProvider({
         registerJsxForTranslation,
         setLocale,
         _tFunction,
+        _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,
         locale,
@@ -182,7 +184,9 @@ export default function ClientProvider({
         developmentApiEnabled,
       }}
     >
-      {display && children}
+      <React.Suspense fallback={display && children}>
+        {display && children}
+      </React.Suspense>
     </GTContext.Provider>
   );
 }

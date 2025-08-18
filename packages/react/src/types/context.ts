@@ -17,6 +17,7 @@ export type GTContextType = {
     options?: InlineTranslationOptions,
     preloadedTranslations?: Translations
   ) => string;
+  _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
   _dictionaryFunction: (
     id: string,

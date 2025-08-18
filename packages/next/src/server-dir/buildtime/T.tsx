@@ -131,7 +131,11 @@ async function T({
 
   // if we have a cached translation, render it
   if (translationEntry) {
-    return <Suspense>{renderTranslation(translationEntry)}</Suspense>;
+    return (
+      <Suspense fallback={renderTranslation(translationEntry)}>
+        {renderTranslation(translationEntry)}
+      </Suspense>
+    );
   }
 
   if (
