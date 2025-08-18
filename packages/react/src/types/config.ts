@@ -52,6 +52,7 @@ export type GTProviderProps = {
   config?: GTConfig;
   fallback?: React.ReactNode;
   customMapping?: CustomMapping;
+  modelProvider?: string;
   [key: string]: any;
 };
 
