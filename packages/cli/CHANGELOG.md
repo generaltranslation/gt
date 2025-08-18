@@ -1,5 +1,22 @@
 # gtx-cli
 
+## 2.1.0
+
+### Minor Changes
+
+- [#556](https://github.com/generaltranslation/gt/pull/556) [`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding modelProvider field to gt.config
+
+### Patch Changes
+
+- Updated dependencies [[`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d)]:
+  - generaltranslation@7.3.0
+
+## 2.0.24
+
+### Patch Changes
+
+- [#552](https://github.com/generaltranslation/gt/pull/552) [`65acf00`](https://github.com/generaltranslation/gt/commit/65acf0085a2b2c89f46b6b4685d94815a16467e6) Thanks [@brian-lou](https://github.com/brian-lou)! - Remove wizard auto-add T components
+
 ## 2.0.23
 
 ### Patch Changes

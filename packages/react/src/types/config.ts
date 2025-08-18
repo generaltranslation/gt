@@ -25,6 +25,7 @@ export type GTConfig = {
   ssr?: boolean;
   localeCookieName?: string;
   customMapping?: CustomMapping;
+  modelProvider?: string;
 };
 
 export type GTProviderProps = {
@@ -51,6 +52,7 @@ export type GTProviderProps = {
   config?: GTConfig;
   fallback?: React.ReactNode;
   customMapping?: CustomMapping;
+  modelProvider?: string;
   [key: string]: any;
 };
 

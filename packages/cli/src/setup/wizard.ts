@@ -1,12 +1,6 @@
 import { detectFormatter } from '../hooks/postProcess.js';
-import { createSpinner, logMessage, promptSelect } from '../console/logging.js';
-import {
-  logInfo,
-  logError,
-  logSuccess,
-  logStep,
-  logWarning,
-} from '../console/logging.js';
+import { createSpinner, promptSelect } from '../console/logging.js';
+import { logInfo, logError, logStep, logWarning } from '../console/logging.js';
 import chalk from 'chalk';
 import { promptConfirm } from '../console/logging.js';
 import { SetupOptions, SupportedFrameworks } from '../types/index.js';
@@ -14,7 +8,6 @@ import findFilepath from '../fs/findFilepath.js';
 import { formatFiles } from '../hooks/postProcess.js';
 import { handleInitGT } from '../next/parse/handleInitGT.js';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';
-import { wrapContentReact } from '../react/parse/wrapContent.js';
 import { wrapContentNext } from '../next/parse/wrapContent.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { installPackage } from '../utils/installPackage.js';
@@ -118,26 +111,12 @@ Please let us know what you would like to see supported at https://github.com/ge
       process.exit(1);
     }
 
-    const addGTProvider = await promptConfirm({
-      message:
-        'Do you want the setup wizard to automatically add the GTProvider component?',
-      defaultValue: true,
-    });
-
-    const addWithGTConfig = await promptConfirm({
-      message: `Do you want to automatically add withGTConfig() to your ${nextConfigPath}?`,
-      defaultValue: true,
-    });
-    const includeTId = await promptConfirm({
-      message: 'Do you want to include an unique id for each <T> tag?',
-      defaultValue: true,
-    });
     const mergeOptions = {
       ...options,
-      disableIds: !includeTId,
+      disableIds: true,
       disableFormatting: true,
-      skipTs: false,
-      addGTProvider,
+      skipTs: true,
+      addGTProvider: true,
     };
     const spinner = createSpinner();
     spinner.start('Wrapping JSX content with <T> tags...');
@@ -152,100 +131,30 @@ Please let us know what you would like to see supported at https://github.com/ge
 
     spinner.stop(
       chalk.green(
-        `Success! Added <T> tags and updated ${chalk.bold.cyan(
-          filesUpdated.length
-        )} files:\n`
+        `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
       ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
 
-    if (addWithGTConfig) {
-      // Read tsconfig.json if it exists
-      const tsconfigPath = findFilepath(['tsconfig.json']);
-      const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
+    // Read tsconfig.json if it exists
+    const tsconfigPath = findFilepath(['tsconfig.json']);
+    const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
 
-      // Add the withGTConfig() function to the next.config.js file
-      await handleInitGT(
-        nextConfigPath,
-        errors,
-        warnings,
-        filesUpdated,
-        packageJson,
-        tsconfigJson
-      );
-      logStep(
-        chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
-      );
-    }
-
-    if (errors.length > 0) {
-      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
-    }
-
-    logSuccess(
-      chalk.green(
-        `Success! All JSX content has been wrapped with <T> tags${
-          includeTId ? ' and unique ids.' : '.'
-        }`
-      )
-    );
-    logMessage(
-      `To translate strings, see the docs on useGT and getGT: https://generaltranslation.com/docs/next/api/strings/getGT`
-    );
-  } else {
-    let addGTProvider = false;
-    if (frameworkType === 'next-pages') {
-      addGTProvider = await promptConfirm({
-        message:
-          'Do you want the setup wizard to automatically add the GTProvider component?',
-        defaultValue: true,
-      });
-    }
-
-    const includeTId = await promptConfirm({
-      message: 'Do you want to include an unique id for each <T> tag?',
-      defaultValue: true,
-    });
-
-    const mergeOptions = {
-      ...options,
-      disableIds: !includeTId,
-      disableFormatting: true,
-      skipTs: false,
-      addGTProvider,
-    };
-    const spinner = createSpinner();
-    spinner.start('Wrapping JSX content with <T> tags...');
-    // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { filesUpdated: filesUpdatedReact } = await wrapContentReact(
-      mergeOptions,
-      'gt-react',
-      frameworkType,
+    // Add the withGTConfig() function to the next.config.js file
+    await handleInitGT(
+      nextConfigPath,
       errors,
-      warnings
+      warnings,
+      filesUpdated,
+      packageJson,
+      tsconfigJson
     );
-    filesUpdated = [...filesUpdated, ...filesUpdatedReact];
-    spinner.stop(
-      chalk.green(
-        `Success! Added <T> tags and updated ${chalk.bold.cyan(
-          filesUpdated.length
-        )} files:\n`
-      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+    logStep(
+      chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
     );
+  }
 
-    if (errors.length > 0) {
-      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
-    }
-
-    logSuccess(
-      chalk.green(
-        `Success! All JSX content has been wrapped with <T> tags${
-          includeTId ? ' and unique ids.' : '.'
-        }`
-      )
-    );
-    logMessage(
-      `To translate strings, see the docs on useGT: https://generaltranslation.com/docs/react/api/strings/useGT`
-    );
+  if (errors.length > 0) {
+    logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
   }
 
   if (warnings.length > 0) {

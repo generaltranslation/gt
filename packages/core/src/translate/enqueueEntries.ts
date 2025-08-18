@@ -43,6 +43,7 @@ export default async function _enqueueEntries(
     metadata: {
       ...(projectId && { projectId }),
       ...(sourceLocale && { sourceLocale }),
+      ...(options.modelProvider && { modelProvider: options.modelProvider }),
     },
     ...(dataFormat && { dataFormat }),
     ...(version && { versionId: version }),

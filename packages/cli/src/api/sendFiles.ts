@@ -44,6 +44,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
       sourceLocale: options.defaultLocale,
       targetLocales: options.locales,
       _versionId: options._versionId,
+      modelProvider: options.modelProvider,
     });
 
     // Handle version ID response (for async processing)
