@@ -10,6 +10,7 @@ import {
 } from '../../types/types';
 import { TranslateIcuCallback } from '../../types/runtime';
 import { GT } from 'generaltranslation';
+import { createStringRenderError } from '../../errors/createErrors';
 
 export default function useCreateInternalUseGTFunction({
   gt,
@@ -193,15 +194,28 @@ export default function useCreateInternalUseGTFunction({
 
     // If a translation already exists
     if (translationEntry) {
-      return renderMessage(translationEntry as string, [locale, defaultLocale]);
+      try {
+        return renderMessage(translationEntry as string, [
+          locale,
+          defaultLocale,
+        ]);
+      } catch (error) {
+        console.error(createStringRenderError(message, id), 'Error: ', error);
+        return renderMessage(message, [defaultLocale]);
+      }
     }
 
     if (preloadedTranslations?.[hash] !== 'undefined') {
       if (preloadedTranslations?.[hash]) {
-        return renderMessage(preloadedTranslations?.[hash] as string, [
-          locale,
-          defaultLocale,
-        ]);
+        try {
+          return renderMessage(preloadedTranslations?.[hash] as string, [
+            locale,
+            defaultLocale,
+          ]);
+        } catch (error) {
+          console.error(createStringRenderError(message, id), 'Error: ', error);
+          return renderMessage(message, [defaultLocale]);
+        }
       }
       return renderMessage(message, [defaultLocale]);
     }

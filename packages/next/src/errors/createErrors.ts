@@ -74,6 +74,12 @@ export const txUseClientError =
 export const missingVariablesError = (variables: string[], message: string) =>
   `gt-next Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
 
+export const createStringRenderError = (
+  message: string,
+  id: string | undefined
+) =>
+  `gt-next Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+
 // ---- WARNINGS ---- //
 
 export const usingDefaultsWarning =

@@ -1,6 +1,6 @@
 use swc_core::ecma::ast::*;
 use swc_core::common::{Span, SyntaxContext};
-
+use swc_core::ecma::atoms::Atom;
 
 // Helper function to extract string values from expressions
 pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
@@ -135,4 +135,25 @@ pub fn create_spread_options_call_expr(
         args: new_args,
         ..call_expr.clone()
     }
+}
+
+pub fn get_callee_expr_function_name(call_expr: &CallExpr) -> Option<Atom> {
+    if let Callee::Expr(callee_expr) = &call_expr.callee {
+        if let Expr::Ident(ident) = callee_expr.as_ref() {
+            return Some(ident.sym.clone());
+        }
+    }
+    None
+}
+
+pub fn inject_new_args(call_expr: &CallExpr, content_array: ArrayLit) -> CallExpr {
+    let mut new_args = call_expr.args.clone();
+    new_args.push(ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Array(content_array)),
+    });
+    return CallExpr {
+        args: new_args,
+        ..call_expr.clone()
+    };
 }

@@ -5,7 +5,7 @@ use swc_core::{
     },
     plugin::{plugin_transform, proxies::TransformPluginProgramMetadata},
 };
-use crate::{ast::StringCollector, config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, expr_utils::{extract_id_and_context_from_options, extract_string_from_expr}}};
+use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, expr_utils::{extract_id_and_context_from_options, extract_string_from_expr, get_callee_expr_function_name, inject_new_args}}};
 use crate::visitor::TransformVisitor;
 
 
@@ -34,10 +34,7 @@ impl VisitMut for TransformVisitor {
     /// Process arrow functions to ensure their bodies are traversed
     fn visit_mut_arrow_expr(&mut self, arrow: &mut ArrowExpr) {
         self.with_scope(|visitor| {
-            // Track arrow function parameters  
             visitor.track_arrow_parameter_overrides(&arrow.params);
-
-            // Process arrow function body
             arrow.visit_mut_children_with(visitor);
         })
     }
@@ -114,72 +111,28 @@ impl VisitMut for TransformVisitor {
 
     /// Call expressions: t()
     fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
-        if let Callee::Expr(callee_expr) = &call_expr.callee {
-            if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
+        if let Some(function_name) = get_callee_expr_function_name(&call_expr) {
+            if let Some(translation_variable) = self
+                .import_tracker
+                .scope_tracker
+                .get_translation_variable(&function_name) {
 
-                if let Some(translation_variable) = self
-                    .import_tracker
-                    .scope_tracker
-                    .get_translation_variable(function_name) {
+                // Register the useGT/getGT as aggregators on the string collector
+                let original_name = translation_variable.assigned_value.clone();
+                let identifier = translation_variable.identifier;
 
-                    // Register the useGT/getGT as aggregators on the string collector
-                    let original_name = translation_variable.assigned_value.clone();
-                    let identifier = translation_variable.identifier;
+                // Detect t() calls
+                if is_translation_function_callback(&original_name) {
+                    if let Some(string) = call_expr.args.first() {
+                        // Check for violations
+                        self.check_call_expr_for_violations(string, &function_name);
 
-                    // TODO: identifier is off by one, because looking at parent
-                    // eprintln!("visit_mut_call_expr: tracking call: {} @ {}", function_name, identifier);
-
-                    // Detect t() calls
-                    if is_translation_function_callback(&original_name) {
-                        if let Some(string) = call_expr.args.first() {
-                            // TODO: check for violations
-
-                            // Get the options
-                            let options = call_expr.args.get(1);
-
-                            // Get context and id
-                            let (context, id) = extract_id_and_context_from_options(options);
-
-                            // Calculate hash for the call expression
-                            let (hash, _) = self.calculate_hash_for_call_expr(
-                                string,
-                                options
-                            );
-
-                            // Construct the translation content object
-                            if let Some(message) = extract_string_from_expr(string.expr.as_ref()) {
-                                if let Some(hash) = hash {
-                                    let translation_content = StringCollector::create_translation_content(
-                                            message,
-                                            hash.clone(),
-                                            id,
-                                            context
-                                        );
-
-                                    // Add the translation content to the string collector
-                                    self.import_tracker.string_collector.set_translation_content(identifier, translation_content);
-
-                                    // Store the t() function call
-                                    let counter_id = self.import_tracker.string_collector.increment_counter();
-                                    self.import_tracker.string_collector.initialize_aggregator(counter_id);
-                                    
-                                    // Add the message to the string collector for the t() function
-                                    self
-                                        .import_tracker
-                                        .string_collector
-                                        .set_translation_hash(
-                                            counter_id,
-                                            StringCollector::create_translation_hash(
-                                        hash,
-                                    ));
-                                }
-                            }
-
-                        }
-
+                        // Track the t() function call
+                        self.track_translation_callback(call_expr, string, identifier);
                     }
 
                 }
+
             }
         }
         call_expr.visit_mut_children_with(self);
@@ -345,89 +298,64 @@ impl Fold for TransformVisitor {
     /// Process function calls to detect invalid usage of translation functions
     /// Inject hash attributes on translation components
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
-        if let Callee::Expr(callee_expr) = &call_expr.callee {
-            if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if let Some(translation_variable) = self
-                    .import_tracker
-                    .scope_tracker
-                    .get_translation_variable(function_name) {
+        if let Some(function_name) = get_callee_expr_function_name(&call_expr) {
+            if let Some(translation_variable) = self
+                .import_tracker
+                .scope_tracker
+                .get_translation_variable(&function_name) {
 
-                    // Register the useGT/getGT as aggregators on the string collector
-                    let original_name = translation_variable.assigned_value.clone();
-                    let counter_id = self.import_tracker.string_collector.get_counter();
+                // Register the useGT/getGT as aggregators on the string collector
+                let original_name = translation_variable.assigned_value.clone();
+                let counter_id = self.import_tracker.string_collector.get_counter();
 
-                    // Detect useGT/getGT calls
-                    if is_translation_function_name(&original_name) {
-                        // Insert the data into the aggregator
-                        if let Some(content) = self
-                            .import_tracker.string_collector
-                            .get_translation_data(counter_id) {
+                // Detect useGT/getGT calls
+                if is_translation_function_name(&original_name) {
+                    // Insert the data into the aggregator
+                    if let Some(content) = self
+                        .import_tracker.string_collector
+                        .get_translation_data(counter_id) {
 
-                            // Create the content array
-                            let content_array = self
-                                .import_tracker
-                                .string_collector
-                                .create_content_array(&content.content, call_expr.span);
+                        // Create the content array
+                        let content_array = self
+                            .import_tracker
+                            .string_collector
+                            .create_content_array(&content.content, call_expr.span);
 
-                            // Check for existing content
-                            let call_expr = call_expr.clone().fold_children_with(self);
-                            if call_expr.args.is_empty() {
-                                let mut new_args = call_expr.args.clone();
-                                new_args.push(ExprOrSpread {
-                                    spread: None,
-                                    expr: Box::new(Expr::Array(content_array.clone())),
-                                });
-                                // self.logger.log_debug(&format!("successfully inserted content into translation function: {:?} {:?} contentArray: {:?}", original_name, function_name, content_array));
-                                // self.logger.log_debug("successfully inserted content into translation function");
-
-                                return CallExpr {
-                                    args: new_args,
-                                    ..call_expr.clone()
-                                };
-                            } else {
-                                // self.logger.log_warning(&format!("failed to insert content into translation function: {:?} {:?} contentArray: {:?}", original_name, function_name, content_array));
-                            }
+                        // Check for existing content
+                        if call_expr.args.is_empty() {
+                            return inject_new_args(&call_expr, content_array.clone());
                         }
                     }
+                }
 
-                    // Detect t() calls
-                    else if is_translation_function_callback(&original_name) {
-                        // Check the first argument for dynamic content
-                        if let Some(string) = call_expr.args.first() {
-                            // Check for violations
-                            self.check_call_expr_for_violations(string, function_name);
+                // Detect t() calls
+                else if is_translation_function_callback(&original_name) {
+                    // Check the first argument for dynamic content
+                    if let Some(_string) = call_expr.args.first() {
 
-                            // Get the options
-                            let options = call_expr.args.get(1);
+                        // Get the options
+                        let options = call_expr.args.get(1);
 
-                            // // Calculate hash for the call expression
-                            // let (hash, json) = self.calculate_hash_for_call_expr(
-                            //     string,
-                            //     options
-                            // );
+                        // Get the hash from the t() aggregator
+                        let counter_id = self.import_tracker.string_collector.increment_counter();
+                        let translation_hash = self
+                            .import_tracker
+                            .string_collector
+                            .get_translation_hash(counter_id);
 
+                        if let Some(translation_hash) = translation_hash {
+                            // Inject hash attribute on the call expression
+                            let modified_call_expr = self.inject_hash_attribute_on_call_expr(
+                                &call_expr,
+                                options,
+                                translation_hash.hash.clone(),
+                                None
+                            );
 
-                            // Get the hash from the t() aggregator
-                            let counter_id = self.import_tracker.string_collector.increment_counter();
-                            let translation_hash = self.import_tracker.string_collector.get_translation_hash(counter_id);
-
-                            if let Some(translation_hash) = translation_hash {
-                                // self.logger.log_debug(&format!("{} injecting hash attribute on call expression: {:?} {:?} hash: {:?}", counter_id, original_name, function_name, translation_hash.hash));
-                                // Inject hash attribute on the call expression
-                                let modified_call_expr = self.inject_hash_attribute_on_call_expr(
-                                    &call_expr,
-                                    options,
-                                    translation_hash.hash.clone(),
-                                    None
-                                );
-
-                                return modified_call_expr.fold_children_with(self);
-                            // } else {
-                            //     self.logger.log_warning(&format!("{} failed to inject hash attribute on call expression: {:?} {:?}", counter_id, original_name, function_name));
-                            }
-
-
+                            return modified_call_expr.fold_children_with(self);
                         }
+
+
                     }
                 }
             }
@@ -507,12 +435,6 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     let mut program = program;
 
 
-    // First Pass:
-    // - [ ] Track translation functions
-    // - [X] Calculate hashes for t() functions
-    // - [X] Extract translation strings from t() calls
-    // - [ ] Warn/Error on invalid usage
-    // - [ ] Calculate hashes for <T> components
     let mut visitor = TransformVisitor::new(
         config.log_level.clone(),
         config.compile_time_hash,
@@ -522,44 +444,14 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     program.visit_mut_with(&mut visitor);
 
 
-    // ✅ YES - You can still access the StringCollector after the visitor returns!
     let collected_data = visitor.import_tracker.string_collector;
-
-    if collected_data.total_calls() > 0 {
-        println!("PHASE 2:");
-        // 🔍 Print debug stats:
-        // println!("  📊 Total calls initialized: {}", collected_data.total_calls());
-        // println!("  📝 Total content items collected: {}", collected_data.total_content_items());
-        // println!("  🔢 Final counter value: {}", collected_data.get_counter());
-        // // Print detailed call info:
-        // for counter_id in collected_data.get_call_ids() {
-        //     if let Some(content) = collected_data.get_translation_data(counter_id) {
-        //         println!("  📋 Call {}: {} items", counter_id, content.content.len());
-        //         for (i, item) in content.content.iter().enumerate() {
-        //             println!("{}: {:?}", i+1, item);
-        //         }
-        //         if let Some(jsx) = &content.jsx {
-        //             println!("  📋 JSX: {:?}", jsx);
-        //         }
-        //         if let Some(hash) = &content.hash {
-        //             println!("  📋 Hash: {:?}", hash);
-        //         }
-        //     }
-        // }
-    }
-
-    // Second Pass:
-    // - [ ] Insert hash attributes on translation components
-    // - [ ] Insert translation strings in getGT and useGT
     let mut visitor = TransformVisitor::new(
         config.log_level,
         config.compile_time_hash,
         filename,
         collected_data,
     );
-    program = program.fold_with(&mut visitor);
-    // Return the program
-    program
+    program.fold_with(&mut visitor)
 
 }
 

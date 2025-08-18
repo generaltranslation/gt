@@ -2,6 +2,7 @@ import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
 import {
+  createStringRenderError,
   createStringTranslationError,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
@@ -209,7 +210,15 @@ export async function getGT(
 
     // If a translation already exists
     if (translationEntry) {
-      return renderMessage(translationEntry as string, [locale, defaultLocale]);
+      try {
+        return renderMessage(translationEntry as string, [
+          locale,
+          defaultLocale,
+        ]);
+      } catch (error) {
+        console.error(error);
+        return renderMessage(message, [defaultLocale]);
+      }
     }
 
     // If it is not possible to create a translation
@@ -220,10 +229,15 @@ export async function getGT(
 
     // If the translation has been preloaded
     if (!translationEntry && preloadedTranslations?.[hash]) {
-      return renderMessage(preloadedTranslations[hash], [
-        locale,
-        defaultLocale,
-      ]);
+      try {
+        return renderMessage(preloadedTranslations[hash], [
+          locale,
+          defaultLocale,
+        ]);
+      } catch (error) {
+        console.error(createStringRenderError(message, id), 'Error: ', error);
+        return renderMessage(message, [defaultLocale]);
+      }
     }
 
     // ----

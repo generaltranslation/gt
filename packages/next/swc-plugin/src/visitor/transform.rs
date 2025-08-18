@@ -119,6 +119,54 @@ impl TransformVisitor {
         }
     }
 
+    /// Track t() function calls
+    pub fn track_translation_callback(&mut self, call_expr: &CallExpr, string: &ExprOrSpread, identifier: u32) {
+        // Get the options
+        let options = call_expr.args.get(1);
+
+        // Get context and id
+        let (context, id) = extract_id_and_context_from_options(options);
+
+        // Calculate hash for the call expression
+        let (hash, _) = self.calculate_hash_for_call_expr(
+            string,
+            options
+        );
+
+        if let Some(message) = extract_string_from_expr(string.expr.as_ref()) {
+            if let Some(hash) = hash {
+                // Construct the translation content object
+                let translation_content = StringCollector::create_translation_content(
+                        message,
+                        hash.clone(),
+                        id,
+                        context
+                    );
+
+                // Add the translation content to the string collector
+                self.import_tracker.string_collector.set_translation_content(
+                    identifier,
+                    translation_content
+                );
+
+                // Store the t() function call
+                let counter_id = self.import_tracker.string_collector.increment_counter();
+                self.import_tracker.string_collector.initialize_aggregator(counter_id);
+                
+                // Add the message to the string collector for the t() function
+                self
+                    .import_tracker
+                    .string_collector
+                    .set_translation_hash(
+                        counter_id,
+                        StringCollector::create_translation_hash(
+                    hash,
+                ));
+            }
+        }
+    }
+
+
     /// Check if we should track this component based on imports or known components
     pub fn should_track_component_as_translation(&self, name: &Atom) -> bool {
         // Direct imports from gt-next - includes T components
@@ -364,10 +412,6 @@ impl TransformVisitor {
                     if !has_prop(&existing_obj.props, "$_hash") {
                         new_props.push(create_string_prop("$_hash", &hash, call_expr.span));
                     }
-                    // For debugging
-                    // if !Self::has_prop(&existing_obj.props, "$_json") {
-                    //     new_props.push(Self::create_string_prop("$_json", &json, call_expr.span));
-                    // }
                     
                     // Construct a new options object
                     let modified_options = Expr::Object(ObjectLit {

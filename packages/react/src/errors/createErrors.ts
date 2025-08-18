@@ -50,6 +50,12 @@ export const customLoadDictionaryWarning = (locale: string = '') =>
 export const missingVariablesError = (variables: string[], message: string) =>
   `gt-react Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
 
+export const createStringRenderError = (
+  message: string,
+  id: string | undefined
+) =>
+  `gt-react Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
