@@ -314,83 +314,74 @@ impl Fold for TransformVisitor {
     
     /// Process function expressions to ensure their bodies are traversed
     fn fold_fn_expr(&mut self, fn_expr: FnExpr) -> FnExpr {
-        self.import_tracker.scope_tracker.enter_scope();
-        let fn_expr = fn_expr.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        fn_expr
+        self.with_scope(|visitor| {
+            let fn_expr = fn_expr.fold_children_with(visitor);
+            fn_expr
+        })
     }
 
     /// Block statements: { ... } - create scope for let/const
     fn fold_block_stmt(&mut self, block: BlockStmt) -> BlockStmt {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = block.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            block.fold_children_with(visitor)
+        })
     }
 
     /// Class declarations: class Foo { ... }
     fn fold_class(&mut self, class: Class) -> Class {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = class.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            class.fold_children_with(visitor)
+        })
     }
 
     /// Method definitions: { method() {} }
     fn fold_method_prop(&mut self, method: MethodProp) -> MethodProp {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = method.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            method.fold_children_with(visitor)
+        })
     }
 
     /// For statements: for(let i = 0; ...) {}
     fn fold_for_stmt(&mut self, for_stmt: ForStmt) -> ForStmt {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = for_stmt.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            for_stmt.fold_children_with(visitor)
+        })
     }
 
     /// For-in statements: for(let key in obj) {}
     fn fold_for_in_stmt(&mut self, for_in: ForInStmt) -> ForInStmt {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = for_in.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            for_in.fold_children_with(visitor)
+        })
     }
 
     /// For-of statements: for(let item of items) {}
     fn fold_for_of_stmt(&mut self, for_of: ForOfStmt) -> ForOfStmt {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = for_of.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            for_of.fold_children_with(visitor)
+        })
     }
 
 
     /// Catch clauses: catch(e) {} - creates scope for the error variable
     fn fold_catch_clause(&mut self, catch: CatchClause) -> CatchClause {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = catch.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            catch.fold_children_with(visitor)
+        })
     }
 
     /// While loops: while(condition) { let x = 1; }
     fn fold_while_stmt(&mut self, while_stmt: WhileStmt) -> WhileStmt {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = while_stmt.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            while_stmt.fold_children_with(visitor)
+        })
     }
 
     /// Switch statements: switch(val) { case 1: { let x = 1; } }
     fn fold_switch_stmt(&mut self, switch: SwitchStmt) -> SwitchStmt {
-        let _scope_id = self.import_tracker.scope_tracker.enter_scope();
-        let result = switch.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        result
+        self.with_scope(|visitor| {
+            switch.fold_children_with(visitor)
+        })
     }
 
     /// Process function calls to detect invalid usage of translation functions
