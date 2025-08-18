@@ -27,8 +27,14 @@ export default async function _enqueueFiles(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/upload`;
   const { projectId } = config;
-  const { sourceLocale, targetLocales, publish, _versionId, description, modelProvider } =
-    options;
+  const {
+    sourceLocale,
+    targetLocales,
+    publish,
+    _versionId,
+    description,
+    modelProvider,
+  } = options;
 
   // Create form data
   const formData = new FormData();
