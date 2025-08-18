@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.3.0
+
+### Minor Changes
+
+- [#556](https://github.com/generaltranslation/gt/pull/556) [`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding modelProvider field to gt.config
+
 ## 7.2.0
 
 ### Minor Changes
