@@ -132,6 +132,186 @@ interface ImportTransformResult {
 }
 
 /**
+ * Determines if an import path should be processed based on pattern matching
+ */
+function shouldProcessImportPath(
+  importPath: string,
+  patternHead: string,
+  targetLocale: string,
+  defaultLocale: string
+): boolean {
+  const patternWithoutSlash = patternHead.replace(/\/$/, '');
+
+  if (targetLocale === defaultLocale) {
+    // For default locale processing, check if path contains the pattern
+    return importPath.includes(patternWithoutSlash);
+  } else {
+    // For non-default locales, check if path starts with pattern
+    return importPath.includes(patternWithoutSlash);
+  }
+}
+
+/**
+ * Checks if an import path should be excluded based on exclusion patterns
+ */
+function isImportPathExcluded(
+  importPath: string,
+  exclude: string[],
+  defaultLocale: string
+): boolean {
+  const excludePatterns = exclude.map((p) =>
+    p.replace(/\[locale\]/g, defaultLocale)
+  );
+  return excludePatterns.some((pattern) => isMatch(importPath, pattern));
+}
+
+/**
+ * Transforms import path for default locale processing
+ */
+function transformDefaultLocaleImportPath(
+  fullPath: string,
+  patternHead: string,
+  defaultLocale: string,
+  hideDefaultLocale: boolean
+): string | null {
+  if (hideDefaultLocale) {
+    // Remove locale from imports that have it: '/snippets/en/file.mdx' -> '/snippets/file.mdx'
+    if (fullPath.includes(`/${defaultLocale}/`)) {
+      return fullPath.replace(`/${defaultLocale}/`, '/');
+    } else if (fullPath.endsWith(`/${defaultLocale}`)) {
+      return fullPath.replace(`/${defaultLocale}`, '');
+    }
+    return null; // Path doesn't have default locale
+  } else {
+    // Add locale to imports that don't have it: '/snippets/file.mdx' -> '/snippets/en/file.mdx'
+    if (
+      fullPath.includes(`/${defaultLocale}/`) ||
+      fullPath.endsWith(`/${defaultLocale}`)
+    ) {
+      return null; // Already has default locale
+    }
+
+    if (fullPath.startsWith(patternHead)) {
+      const pathAfterHead = fullPath.slice(patternHead.length);
+      if (pathAfterHead) {
+        return `${patternHead}${defaultLocale}/${pathAfterHead}`;
+      } else {
+        return `${patternHead.replace(/\/$/, '')}/${defaultLocale}`;
+      }
+    }
+    return null; // Path doesn't match pattern
+  }
+}
+
+/**
+ * Transforms import path for non-default locale processing with hideDefaultLocale=true
+ */
+function transformNonDefaultLocaleImportPathWithHidden(
+  fullPath: string,
+  patternHead: string,
+  targetLocale: string,
+  defaultLocale: string
+): string | null {
+  // Check if already localized
+  if (
+    fullPath.startsWith(`${patternHead}${targetLocale}/`) ||
+    fullPath === `${patternHead}${targetLocale}`
+  ) {
+    return null;
+  }
+
+  // Replace default locale with target locale
+  const expectedPathWithDefaultLocale = `${patternHead}${defaultLocale}`;
+  if (
+    fullPath.startsWith(`${expectedPathWithDefaultLocale}/`) ||
+    fullPath === expectedPathWithDefaultLocale
+  ) {
+    return fullPath.replace(
+      `${patternHead}${defaultLocale}`,
+      `${patternHead}${targetLocale}`
+    );
+  }
+
+  // Handle exact pattern match
+  if (fullPath === patternHead.replace(/\/$/, '')) {
+    return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
+  }
+
+  // Add target locale to path without any locale
+  const pathAfterHead = fullPath.slice(patternHead.length);
+  return pathAfterHead
+    ? `${patternHead}${targetLocale}/${pathAfterHead}`
+    : `${patternHead}${targetLocale}`;
+}
+
+/**
+ * Transforms import path for non-default locale processing with hideDefaultLocale=false
+ */
+function transformNonDefaultLocaleImportPath(
+  fullPath: string,
+  patternHead: string,
+  targetLocale: string,
+  defaultLocale: string
+): string | null {
+  const expectedPathWithLocale = `${patternHead}${defaultLocale}`;
+
+  if (
+    fullPath.startsWith(`${expectedPathWithLocale}/`) ||
+    fullPath === expectedPathWithLocale
+  ) {
+    // Replace existing default locale with target locale
+    return fullPath.replace(
+      `${patternHead}${defaultLocale}`,
+      `${patternHead}${targetLocale}`
+    );
+  } else if (fullPath.startsWith(patternHead)) {
+    // Add target locale to path that doesn't have any locale
+    const pathAfterHead = fullPath.slice(patternHead.length);
+    if (pathAfterHead) {
+      return `${patternHead}${targetLocale}/${pathAfterHead}`;
+    } else {
+      return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
+    }
+  }
+
+  return null; // Path doesn't match pattern
+}
+
+/**
+ * Main import path transformation function that delegates to specific scenarios
+ */
+function transformImportPath(
+  fullPath: string,
+  patternHead: string,
+  targetLocale: string,
+  defaultLocale: string,
+  hideDefaultLocale: boolean
+): string | null {
+  if (targetLocale === defaultLocale) {
+    return transformDefaultLocaleImportPath(
+      fullPath,
+      patternHead,
+      defaultLocale,
+      hideDefaultLocale
+    );
+  } else if (hideDefaultLocale) {
+    return transformNonDefaultLocaleImportPathWithHidden(
+      fullPath,
+      patternHead,
+      targetLocale,
+      defaultLocale
+    );
+  } else {
+    return transformNonDefaultLocaleImportPath(
+      fullPath,
+      patternHead,
+      targetLocale,
+      defaultLocale
+    );
+  }
+}
+
+/**
  * AST-based transformation for MDX files using remark-mdx
  */
 function transformMdxImports(
@@ -196,18 +376,16 @@ function transformMdxImports(
           return line;
         }
 
-        // For default locale processing, we need to check if this line should be processed
-        if (targetLocale === defaultLocale) {
-          // Check if the line contains imports that need adjustment
-          const patternWithoutSlash = patternHead.replace(/\/$/, '');
-          if (!line.includes(patternWithoutSlash)) {
-            return line;
-          }
-        } else {
-          // For non-default locales, use the original logic
-          if (!line.includes(patternHead.replace(/\/$/, ''))) {
-            return line;
-          }
+        // Check if this line should be processed
+        if (
+          !shouldProcessImportPath(
+            line,
+            patternHead,
+            targetLocale,
+            defaultLocale
+          )
+        ) {
+          return line;
         }
 
         // Extract the path from the import statement
@@ -234,118 +412,22 @@ function transformMdxImports(
           if (pathEnd === -1) continue;
 
           const fullPath = line.slice(pathStart, pathEnd);
-          let newPath: string;
 
-          // Special handling for default locale files
-          if (targetLocale === defaultLocale) {
-            if (hideDefaultLocale) {
-              // When hideDefaultLocale=true: remove locale from imports that have it
-              // '/snippets/en/file.mdx' -> '/snippets/file.mdx'
-              if (fullPath.includes(`/${defaultLocale}/`)) {
-                // Remove the locale part: '/snippets/en/file.mdx' -> '/snippets/file.mdx'
-                newPath = fullPath.replace(`/${defaultLocale}/`, '/');
-              } else if (fullPath.endsWith(`/${defaultLocale}`)) {
-                // Remove the locale at the end: '/snippets/en' -> '/snippets'
-                newPath = fullPath.replace(`/${defaultLocale}`, '');
-              } else {
-                // Path doesn't have default locale, leave unchanged
-                continue;
-              }
-            } else {
-              // When hideDefaultLocale=false: add locale to imports that don't have it
-              // '/snippets/file.mdx' -> '/snippets/en/file.mdx'
-              if (
-                fullPath.includes(`/${defaultLocale}/`) ||
-                fullPath.endsWith(`/${defaultLocale}`)
-              ) {
-                // Already has default locale, leave unchanged
-                continue;
-              }
+          // Transform the import path
+          const newPath = transformImportPath(
+            fullPath,
+            patternHead,
+            targetLocale,
+            defaultLocale,
+            hideDefaultLocale
+          );
 
-              // Check if path starts with the pattern and add locale
-              if (fullPath.startsWith(patternHead)) {
-                const pathAfterHead = fullPath.slice(patternHead.length);
-                if (pathAfterHead) {
-                  // '/snippets/file.mdx' -> '/snippets/en/file.mdx'
-                  newPath = `${patternHead}${defaultLocale}/${pathAfterHead}`;
-                } else {
-                  // '/snippets' -> '/snippets/en'
-                  newPath = `${patternHead.replace(/\/$/, '')}/${defaultLocale}`;
-                }
-              } else {
-                // Path doesn't match pattern, leave unchanged
-                continue;
-              }
-            }
-          } else {
-            // Regular logic for non-default locales
-            if (hideDefaultLocale) {
-              // For hideDefaultLocale: '/components/file.mdx' -> '/components/ja/file.mdx'
-              // Also handle case where path is exactly '/components' -> '/components/ja'
-              // And handle case where path contains default locale: '/components/en/file.mdx' -> '/components/ja/file.mdx'
-              if (
-                fullPath.startsWith(`${patternHead}${targetLocale}/`) ||
-                fullPath === `${patternHead}${targetLocale}`
-              ) {
-                continue; // Already localized
-              }
-
-              // Check if path contains default locale and replace it with target locale
-              const expectedPathWithDefaultLocale = `${patternHead}${defaultLocale}`;
-              if (
-                fullPath.startsWith(`${expectedPathWithDefaultLocale}/`) ||
-                fullPath === expectedPathWithDefaultLocale
-              ) {
-                // Replace default locale with target locale: '/components/en/file.mdx' -> '/components/ja/file.mdx'
-                newPath = fullPath.replace(
-                  `${patternHead}${defaultLocale}`,
-                  `${patternHead}${targetLocale}`
-                );
-              } else if (fullPath === patternHead.replace(/\/$/, '')) {
-                // Handle exact match (e.g., '/components' -> '/components/ja')
-                newPath = `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
-              } else {
-                // Handle regular case without locale: '/components/file.mdx' -> '/components/ja/file.mdx'
-                const pathAfterHead = fullPath.slice(patternHead.length);
-                newPath = pathAfterHead
-                  ? `${patternHead}${targetLocale}/${pathAfterHead}`
-                  : `${patternHead}${targetLocale}`;
-              }
-            } else {
-              // For non-hideDefaultLocale: handle both scenarios
-              // 1. '/components/en/file.mdx' -> '/components/ja/file.mdx' (standard case)
-              // 2. '/components/file.mdx' -> '/components/ja/file.mdx' (when default locale wasn't added yet)
-
-              const expectedPathWithLocale = `${patternHead}${defaultLocale}`;
-              if (
-                fullPath.startsWith(`${expectedPathWithLocale}/`) ||
-                fullPath === expectedPathWithLocale
-              ) {
-                // Case 1: Replace existing default locale with target locale
-                newPath = fullPath.replace(
-                  `${patternHead}${defaultLocale}`,
-                  `${patternHead}${targetLocale}`
-                );
-              } else if (fullPath.startsWith(patternHead)) {
-                // Case 2: Add target locale to path that doesn't have any locale
-                const pathAfterHead = fullPath.slice(patternHead.length);
-                if (pathAfterHead) {
-                  newPath = `${patternHead}${targetLocale}/${pathAfterHead}`;
-                } else {
-                  newPath = `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
-                }
-              } else {
-                // Path doesn't match pattern, leave unchanged
-                continue;
-              }
-            }
+          if (!newPath) {
+            continue; // No transformation needed
           }
 
           // Check exclusions
-          const excludePatterns = exclude.map((p) =>
-            p.replace(/\[locale\]/g, defaultLocale)
-          );
-          if (excludePatterns.some((pattern) => isMatch(fullPath, pattern))) {
+          if (isImportPathExcluded(fullPath, exclude, defaultLocale)) {
             continue;
           }
 
