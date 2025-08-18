@@ -23,6 +23,7 @@ import {
 } from './types/types';
 import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 import { useRegionSelector } from './hooks/useRegionSelector';
+import { useLocaleDirection } from './hooks/useLocaleDirection';
 
 export {
   Var,
@@ -44,6 +45,7 @@ export {
   useRegionSelector,
   useGTClass,
   useLocaleProperties,
+  useLocaleDirection,
   LocaleSelector,
   RegionSelector,
   DictionaryTranslationOptions,
