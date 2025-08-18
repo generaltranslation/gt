@@ -106,8 +106,14 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (_hash && hash !== _hash) {
-      console.error('hash mismatch', hash, _hash);
+    if (_hash) {
+      if (_hash !== hash) {
+        console.error(
+          `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
+        );
+      } else {
+        console.log('hash match', _hash, hash);
+      }
     }
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);

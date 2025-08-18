@@ -94,10 +94,16 @@ export default function useCreateInternalUseGTFunction({
     // Use calculated hash to index
     if (typeof translationEntry === 'undefined') {
       hash = calculateHash();
-      if (_hash && _hash !== hash) {
-        console.error(
-          `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
-        );
+      if (_hash) {
+        if (_hash !== hash) {
+          console.error(
+            `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
+          );
+        } else {
+          console.log('hash match', _hash, hash);
+        }
+      } else {
+        console.log('hash missing');
       }
       translationEntry = translations?.[hash];
     }

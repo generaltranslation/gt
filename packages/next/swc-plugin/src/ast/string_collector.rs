@@ -224,20 +224,20 @@ impl StringCollector {
     fn create_content_object(&self, content: &TranslationContent, span: Span) -> ObjectLit {
         let mut props = vec![
             // message: "Hello world"
-            Self::generate_key_value_pair("message", &content.message, span),
+            Self::generate_key_value_pair("$message", &content.message, span),
             
             // hash: "abc123"
-            Self::generate_key_value_pair("hash", &content.hash, span),
+            Self::generate_key_value_pair("$_hash", &content.hash, span),
         ];
         
         // Add optional id property
         if let Some(id) = &content.id {
-            props.push(Self::generate_key_value_pair("id", &id, span));
+            props.push(Self::generate_key_value_pair("$id", &id, span));
         }
         
         // Add optional context property
         if let Some(context) = &content.context {
-            props.push(Self::generate_key_value_pair("context", &context, span));
+            props.push(Self::generate_key_value_pair("$context", &context, span));
         }
         
         ObjectLit {

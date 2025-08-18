@@ -3,7 +3,6 @@ import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
 import {
   createStringTranslationError,
-  missingVariablesError,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
 import {
@@ -26,6 +25,7 @@ import use from '../../utils/use';
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
+  console.log('getGT', _messages);
   // ---------- SET UP ---------- //
 
   const I18NConfig = getI18NConfig();
@@ -97,10 +97,16 @@ export async function getGT(
     // Use calculated hash to index
     if (!translationEntry) {
       hash = calculateHash();
-      if (_hash && _hash !== hash) {
-        console.error(
-          `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
-        );
+      if (_hash) {
+        if (_hash !== hash) {
+          console.error(
+            `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
+          );
+        } else {
+          console.log('hash match', _hash, hash);
+        }
+      } else {
+        console.log('hash missing', id);
       }
       translationEntry = translations?.[hash];
     }

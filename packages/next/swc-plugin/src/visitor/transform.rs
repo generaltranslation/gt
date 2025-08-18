@@ -63,6 +63,16 @@ impl TransformVisitor {
         }
     }
 
+    // Single helper method - handles scope enter/exit only
+    pub fn with_scope<T, F>(&mut self, operation: F) -> T 
+    where F: FnOnce(&mut Self) -> T 
+    {
+        self.import_tracker.scope_tracker.enter_scope();
+        let result = operation(self);
+        self.import_tracker.scope_tracker.exit_scope();
+        result
+    }
+
     /// Check if we should track this component based on imports or known components
     pub fn should_track_component_as_translation(&self, name: &Atom) -> bool {
         // Direct imports from gt-next - includes T components
@@ -305,12 +315,12 @@ impl TransformVisitor {
                 Expr::Object(existing_obj) => {
                     // Build a new CallExpr with the new options
                     let mut new_props = existing_obj.props.clone();
-                    if !has_prop(&existing_obj.props, "$hash") {
-                        new_props.push(create_string_prop("$hash", &hash, call_expr.span));
+                    if !has_prop(&existing_obj.props, "$_hash") {
+                        new_props.push(create_string_prop("$_hash", &hash, call_expr.span));
                     }
                     // For debugging
-                    // if !Self::has_prop(&existing_obj.props, "$json") {
-                    //     new_props.push(Self::create_string_prop("$json", &json, call_expr.span));
+                    // if !Self::has_prop(&existing_obj.props, "$_json") {
+                    //     new_props.push(Self::create_string_prop("$_json", &json, call_expr.span));
                     // }
                     
                     // Construct a new options object
@@ -361,7 +371,7 @@ impl TransformVisitor {
             let new_options = Expr::Object(ObjectLit {
                 span: call_expr.span,
                 props: vec![
-                    create_string_prop("$hash", &hash, call_expr.span),
+                    create_string_prop("$_hash", &hash, call_expr.span),
                     // For debugging
                     // create_string_prop("$json", &json, call_expr.span),
                 ],

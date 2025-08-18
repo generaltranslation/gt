@@ -54,76 +54,72 @@ impl VisitMut for TransformVisitor {
     
     /// Process function expressions to ensure their bodies are traversed
     fn visit_mut_fn_expr(&mut self, fn_expr: &mut FnExpr) {
-        self.import_tracker.scope_tracker.enter_scope();
-
-        // Process function body
-        fn_expr.visit_mut_children_with(self);
-
-        // Exit scope
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            fn_expr.visit_mut_children_with(visitor);
+        })
     }
 
     /// Block statements: { ... } - create scope for let/const
     fn visit_mut_block_stmt(&mut self, block: &mut BlockStmt) {
-        self.import_tracker.scope_tracker.enter_scope();
-        block.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            block.visit_mut_children_with(visitor);
+        })
     }
 
     /// Class declarations: class Foo { ... }
     fn visit_mut_class(&mut self, class: &mut Class) {
-        self.import_tracker.scope_tracker.enter_scope();
-        class.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            class.visit_mut_children_with(visitor);
+        })
     }
 
     /// Method definitions: { method() {} }
     fn visit_mut_method_prop(&mut self, method: &mut MethodProp) {
-        self.import_tracker.scope_tracker.enter_scope();
-        method.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            method.visit_mut_children_with(visitor);
+        })
     }
 
     /// For statements: for(let i = 0; ...) {}
     fn visit_mut_for_stmt(&mut self, for_stmt: &mut ForStmt) {
-        self.import_tracker.scope_tracker.enter_scope();
-        for_stmt.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            for_stmt.visit_mut_children_with(visitor);
+        })
     }
 
     /// For-in statements: for(let key in obj) {}
     fn visit_mut_for_in_stmt(&mut self, for_in: &mut ForInStmt) {
-        self.import_tracker.scope_tracker.enter_scope();
-        for_in.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            for_in.visit_mut_children_with(visitor);
+        })
     }
 
     /// For-of statements: for(let item of items) {}
     fn visit_mut_for_of_stmt(&mut self, for_of: &mut ForOfStmt) {
-        self.import_tracker.scope_tracker.enter_scope();
-        for_of.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            for_of.visit_mut_children_with(visitor);
+        })
     }
 
     /// Catch clauses: catch(e) {} - creates scope for the error variable
     fn visit_mut_catch_clause(&mut self, catch: &mut CatchClause) {
-        self.import_tracker.scope_tracker.enter_scope();
-        catch.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            catch.visit_mut_children_with(visitor);
+        })
     }
 
     /// While loops: while(condition) { let x = 1; }
     fn visit_mut_while_stmt(&mut self, while_stmt: &mut WhileStmt) {
-        self.import_tracker.scope_tracker.enter_scope();
-        while_stmt.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            while_stmt.visit_mut_children_with(visitor);
+        })
     }
 
     /// Switch statements: switch(val) { case 1: { let x = 1; } }
     fn visit_mut_switch_stmt(&mut self, switch: &mut SwitchStmt) {
-        self.import_tracker.scope_tracker.enter_scope();
-        switch.visit_mut_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
+        self.with_scope(|visitor| {
+            switch.visit_mut_children_with(visitor);
+        })
     }
 
     /// Call expressions: t()
