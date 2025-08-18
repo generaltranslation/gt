@@ -41,7 +41,14 @@ export default function useGT(_messages?: _Messages) {
     translationRequired
   ) {
     preloadedTranslations = React.use(
-      useable(['_preloadMessages', locale], () => _preloadMessages(_messages))
+      useable(
+        [
+          '_preloadMessages', // prefix key
+          locale, // should change on locale
+          JSON.stringify(_messages), // should change when messages change
+        ],
+        () => _preloadMessages(_messages)
+      )
     );
   }
 
