@@ -23,7 +23,7 @@ Use the `useLocale()` function to get the locale in the root layout, then add th
 ```javascript title="my-app/app/layout.tsx" copy
 import { useLocale, useLocaleDirection, GTProvider } from 'gt-next'
 
-export default async function RootLayout({ children }) {
+export default function RootLayout({ children }) {
         
   const locale = useLocale(); // e.g. "ar" for Arabic
   const dir = useLocaleDirection(); // e.g. "rtl" for "right-to-left"
