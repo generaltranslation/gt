@@ -12,44 +12,34 @@ use crate::visitor::TransformVisitor;
 impl VisitMut for TransformVisitor {
     /// Process import declarations to track gt-next imports
     fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
-        // No scope enter/exit needed for import declarations
         self.process_gt_import_declaration(import_decl);
         import_decl.visit_mut_children_with(self);
     }
 
     /// Process variable declarations to track assignments like: const t = useGT()
     fn visit_mut_var_declarator(&mut self, var_declarator: &mut VarDeclarator) {
-        // Track variable assignments before children are visited (process = useGT() first)
         self.track_variable_assignment(var_declarator);
         var_declarator.visit_mut_children_with(self);
     }
 
     /// Process function declarations to ensure their bodies are traversed
     fn visit_mut_function(&mut self, function: &mut Function) {
-        self.import_tracker.scope_tracker.enter_scope();
+        self.with_scope(|visitor| {
+            visitor.track_parameter_overrides(&function.params);
+            function.visit_mut_children_with(visitor);
 
-        // Track parameters before processing body
-        self.track_parameter_overrides(&function.params);
-
-        // Process function body
-        function.visit_mut_children_with(self);
-
-        // Exit scope
-        self.import_tracker.scope_tracker.exit_scope();
+        })
     }
     
     /// Process arrow functions to ensure their bodies are traversed
     fn visit_mut_arrow_expr(&mut self, arrow: &mut ArrowExpr) {
-        self.import_tracker.scope_tracker.enter_scope();
+        self.with_scope(|visitor| {
+            // Track arrow function parameters  
+            visitor.track_arrow_parameter_overrides(&arrow.params);
 
-        // Track arrow function parameters  
-        self.track_arrow_parameter_overrides(&arrow.params);
-
-        // Process arrow function body
-        arrow.visit_mut_children_with(self);
-
-        // Exit scope
-        self.import_tracker.scope_tracker.exit_scope();
+            // Process arrow function body
+            arrow.visit_mut_children_with(visitor);
+        })
     }
     
     /// Process function expressions to ensure their bodies are traversed
@@ -228,31 +218,11 @@ impl VisitMut for TransformVisitor {
         self.traversal_state.in_translation_component = is_translation_component;
         self.traversal_state.in_variable_component = is_variable_component;
         
-        // Inject hash attributes on translation components
+        // Calculate and record hash for translation components
         if self.settings.compile_time_hash
             && self.traversal_state.in_translation_component
             && !was_in_translation {
-            // Check if hash attribute already exists
-            let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
-            
-            if !has_hash_attr {
-                // Calculate real hash using AST traversal
-                let (hash_value, _) = self.calculate_element_hash(&element);
-
-                // Store the t() function call
-                let counter_id = self.import_tracker.string_collector.increment_counter();
-                self.import_tracker.string_collector.initialize_aggregator(counter_id);
-                
-                // Add the message to the string collector for the t() function
-                self
-                    .import_tracker
-                    .string_collector
-                    .set_translation_jsx(
-                        counter_id,
-                        StringCollector::create_translation_jsx(
-                    hash_value,
-                ));
-            }
+            self.track_hash_attributes(element);
         }
         
         // Process children
@@ -286,30 +256,18 @@ impl Fold for TransformVisitor {
 
     /// Process function declarations to ensure their bodies are traversed
     fn fold_function(&mut self, function: Function) -> Function {
-        self.import_tracker.scope_tracker.enter_scope();
-
-        // Track parameters before processing body
-        self.track_parameter_overrides(&function.params);
-
-        // Process function body
-        let function = function.fold_children_with(self);
-
-        // Exit scope
-        self.import_tracker.scope_tracker.exit_scope();
-        function
+        self.with_scope(|visitor| {
+            visitor.track_parameter_overrides(&function.params);
+            function.fold_children_with(visitor)
+        })
     }
     
     /// Process arrow functions to ensure their bodies are traversed
     fn fold_arrow_expr(&mut self, arrow: ArrowExpr) -> ArrowExpr {
-        self.import_tracker.scope_tracker.enter_scope();
-
-        // Track arrow function parameters  
-        self.track_arrow_parameter_overrides(&arrow.params);
-
-        // Process arrow function body
-        let arrow = arrow.fold_children_with(self);
-        self.import_tracker.scope_tracker.exit_scope();
-        arrow
+        self.with_scope(|visitor| {
+            visitor.track_arrow_parameter_overrides(&arrow.params);
+            arrow.fold_children_with(visitor)
+        })
     }
     
     /// Process function expressions to ensure their bodies are traversed
@@ -500,54 +458,35 @@ impl Fold for TransformVisitor {
     }
 
     /// Process JSX elements to track component context and inject experimental features
-    fn fold_jsx_element(&mut self, mut element: JSXElement) -> JSXElement {
+    fn fold_jsx_element(&mut self, element: JSXElement) -> JSXElement {
         self.statistics.jsx_element_count += 1;
         
-        // Save previous state
+        // Save state
         let was_in_translation = self.traversal_state.in_translation_component;
         let was_in_variable = self.traversal_state.in_variable_component;
 
-        // Update component tracking state
-        let (is_translation_component, is_variable_component, _) = self.determine_component_type(&element);
-        self.traversal_state.in_translation_component = is_translation_component;
-        self.traversal_state.in_variable_component = is_variable_component;
-        
+        // Determine context
+        let (is_translation, is_variable, _) = self.determine_component_type(&element);
+        self.traversal_state.in_translation_component = is_translation;
+        self.traversal_state.in_variable_component = is_variable;
+
         // Inject hash attributes on translation components
-        if self.settings.compile_time_hash && self.traversal_state.in_translation_component && !was_in_translation {
-            // Check if hash attribute already exists
-            let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
-            
-            if !has_hash_attr {
-                // TODO: get the hash from the aggregator
-                // // Calculate real hash using AST traversal
-                // let (hash_value, _) = self.calculate_element_hash(&element);
+        let element = if self.settings.compile_time_hash
+            && self.traversal_state.in_translation_component
+            && !was_in_translation {
+            self.inject_hash_attributes(element)
+        } else {
+            element
+        };
 
-                // Get the hash from the aggregator
-                let counter_id = self.import_tracker.string_collector.increment_counter();
-                let translation_jsx = self.import_tracker.string_collector.get_translation_jsx(counter_id);
+        // Traverse children
+        let result = element.fold_children_with(self);
 
-                // Inject hash
-                if let Some(translation_jsx) = translation_jsx {
-                    let hash_value = translation_jsx.hash.clone();
-                    let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
-                    element.opening.attrs.push(hash_attr);
-                }
-                
-                // For debugging purposes
-                // // Create and add json attribute with the stringified data
-                // let json_attr = TransformVisitor::create_attr(&element, &json_string, "json");
-                // element.opening.attrs.push(json_attr);
-            }
-        }
-        
-        // Process children
-        element = element.fold_children_with(self);
-        
-        // Restore previous state
+        // Restore state
         self.traversal_state.in_translation_component = was_in_translation;
         self.traversal_state.in_variable_component = was_in_variable;
         
-        element
+        result
     }
 }
 

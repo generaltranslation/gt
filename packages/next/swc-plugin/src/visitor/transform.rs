@@ -63,7 +63,7 @@ impl TransformVisitor {
         }
     }
 
-    // Single helper method - handles scope enter/exit only
+    /// Single helper method - handles scope enter/exit only
     pub fn with_scope<T, F>(&mut self, operation: F) -> T 
     where F: FnOnce(&mut Self) -> T 
     {
@@ -71,6 +71,52 @@ impl TransformVisitor {
         let result = operation(self);
         self.import_tracker.scope_tracker.exit_scope();
         result
+    }
+ 
+    /// Inject hash attributes on translation components
+    pub fn inject_hash_attributes(&mut self, mut element: JSXElement) -> JSXElement {
+        // Check if hash attribute already exists
+        let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
+
+        if !has_hash_attr {
+
+            // Get the hash from the aggregator
+            let counter_id = self.import_tracker.string_collector.increment_counter();
+            let translation_jsx = self.import_tracker.string_collector.get_translation_jsx(counter_id);
+
+            // Inject hash
+            if let Some(translation_jsx) = translation_jsx {
+                let hash_value = translation_jsx.hash.clone();
+                let hash_attr = TransformVisitor::create_attr(&element, &hash_value, "_hash");
+                element.opening.attrs.push(hash_attr);
+            }
+        }
+
+        element
+    }
+
+    pub fn track_hash_attributes(&mut self, element: &mut JSXElement) {
+        // Check if hash attribute already exists
+        let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
+            
+        if !has_hash_attr {
+            // Calculate real hash using AST traversal
+            let (hash_value, _) = self.calculate_element_hash(&element);
+
+            // Store the t() function call
+            let counter_id = self.import_tracker.string_collector.increment_counter();
+            self.import_tracker.string_collector.initialize_aggregator(counter_id);
+            
+            // Add the message to the string collector for the t() function
+            self
+                .import_tracker
+                .string_collector
+                .set_translation_jsx(
+                    counter_id,
+                    StringCollector::create_translation_jsx(
+                hash_value,
+            ));
+        }
     }
 
     /// Check if we should track this component based on imports or known components
