@@ -382,8 +382,12 @@ function transformMdxUrls(
       // Use regex to find href attributes in the JSX string
       const hrefRegex = /href\s*=\s*["']([^"']+)["']/g;
       let match;
-      let hasChanges = false;
-      let newJsxContent = jsxContent;
+      const replacements: Array<{
+        start: number;
+        end: number;
+        oldHrefAttr: string;
+        newHrefAttr: string;
+      }> = [];
 
       // Reset regex lastIndex to avoid issues with global flag
       hrefRegex.lastIndex = 0;
@@ -393,17 +397,32 @@ function transformMdxUrls(
         const newUrl = transformUrl(originalHref, 'href');
 
         if (newUrl) {
-          // Replace the href value in the JSX string
+          // Store replacement info
           const oldHrefAttr = match[0]; // The full match like 'href="/quickstart"'
           const quote = oldHrefAttr.includes('"') ? '"' : "'";
           const newHrefAttr = `href=${quote}${newUrl}${quote}`;
 
-          newJsxContent = newJsxContent.replace(oldHrefAttr, newHrefAttr);
-          hasChanges = true;
+          replacements.push({
+            start: match.index!,
+            end: match.index! + oldHrefAttr.length,
+            oldHrefAttr,
+            newHrefAttr,
+          });
         }
       }
 
-      if (hasChanges) {
+      // Apply replacements in reverse order (from end to start) to avoid position shifts
+      if (replacements.length > 0) {
+        let newJsxContent = jsxContent;
+        replacements
+          .sort((a, b) => b.start - a.start)
+          .forEach(({ start, end, newHrefAttr }) => {
+            newJsxContent =
+              newJsxContent.slice(0, start) +
+              newHrefAttr +
+              newJsxContent.slice(end);
+          });
+
         node.value = newJsxContent;
       }
     }

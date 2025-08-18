@@ -1581,6 +1581,91 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         await localizeStaticUrls(settings as any);
       });
+
+      it('should handle multiple identical href attributes in raw JSX strings correctly', async () => {
+        // Test with raw JSX as it appears in MDX files
+        const fileContent = `Some content before.
+
+{/* JSX code block */}
+
+<div>
+  <a href="/docs/quickstart">First Link</a>
+  <button href="/docs/quickstart">Second Button</button>
+  <span href="/docs/quickstart">Third Span</span>
+</div>`;
+        const expected = `Some content before.
+
+{/* JSX code block */}
+
+<div>
+  <a href="/docs/ja/quickstart">First Link</a>
+  <button href="/docs/ja/quickstart">Second Button</button>
+  <span href="/docs/ja/quickstart">Third Span</span>
+</div>`;
+
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+          expect(content).toBe(expected);
+          return Promise.resolve();
+        });
+
+        const mockFileMapping = {
+          ja: { 'test.mdx': '/path/test.mdx' },
+        };
+        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+        const settings = {
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: ['test'],
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          experimentalHideDefaultLocale: true,
+          options: {
+            docsUrlPattern: '/docs/[locale]',
+          },
+        };
+
+        await localizeStaticUrls(settings as any);
+      });
+
+      it('should handle multiple identical href attributes in JSX correctly', async () => {
+        const fileContent = `<Card href="/docs/quickstart">First Card</Card>
+<Button href="/docs/quickstart">Second Button</Button>
+<Link href="/docs/quickstart">Third Link</Link>`;
+        const expected = `<Card href="/docs/ja/quickstart">First Card</Card>
+<Button href="/docs/ja/quickstart">Second Button</Button>
+<Link href="/docs/ja/quickstart">Third Link</Link>`;
+
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+          expect(content).toBe(expected);
+          return Promise.resolve();
+        });
+
+        const mockFileMapping = {
+          ja: { 'test.mdx': '/path/test.mdx' },
+        };
+        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+        const settings = {
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: ['test'],
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          experimentalHideDefaultLocale: true,
+          options: {
+            docsUrlPattern: '/docs/[locale]',
+          },
+        };
+
+        await localizeStaticUrls(settings as any);
+      });
     });
   });
 
