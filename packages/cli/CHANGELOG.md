@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.1
+
+### Patch Changes
+
+- [#554](https://github.com/generaltranslation/gt/pull/554) [`77fb048`](https://github.com/generaltranslation/gt/commit/77fb048ab2e4432739df1c4fbabe165712e84fb3) Thanks [@SamEggert](https://github.com/SamEggert)! - use MDX AST for static imports/urls
+
 ## 2.1.0
 
 ### Minor Changes
