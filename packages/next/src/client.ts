@@ -1,5 +1,4 @@
 'use client';
-import { useLocaleDirection } from 'gt-react';
 import {
   T,
   useGT,
@@ -22,6 +21,7 @@ import {
   useTranslations,
   useRegion,
   useRegionSelector,
+  useLocaleDirection,
 } from 'gt-react/client';
 
 export {
