@@ -11,6 +11,7 @@ export type EnqueueEntriesOptions = {
   version?: string;
   description?: string;
   requireApproval?: boolean;
+  modelProvider?: string;
 };
 
 export type EnqueueEntriesResult = {

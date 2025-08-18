@@ -14,6 +14,7 @@ export type FileUpload = {
 export type UploadData = {
   data: { source: FileUpload; translations: FileUpload[] }[];
   sourceLocale: string;
+  modelProvider?: string;
 };
 
 /**
@@ -53,6 +54,7 @@ export async function uploadFiles(
       translations: file.translations,
     })),
     sourceLocale: options.defaultLocale,
+    ...(options.modelProvider && { modelProvider: options.modelProvider }),
   };
 
   try {

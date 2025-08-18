@@ -141,6 +141,7 @@ export type Settings = {
   src: string[]; // list of glob patterns for gt-next and gt-react
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
+  modelProvider?: string;
 };
 
 export type AdditionalOptions = {
