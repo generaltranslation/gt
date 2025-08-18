@@ -1,4 +1,4 @@
-import useGTContext from "../provider/GTContext";
+import useGTContext from '../provider/GTContext';
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale from the `<GTProvider>` context.
@@ -12,9 +12,9 @@ import useGTContext from "../provider/GTContext";
  * const dir = useLocaleDirection(); // e.g., 'ltr'
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
-export function useLocaleDirection(locale?: string): "ltr" | "rtl" {
-    const { gt } = useGTContext(
-        'useLocaleDirection(): Unable to access configured GT class instance outside of a <GTProvider>'
-    );
-    return gt.getLocaleDirection(locale);
+export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
+  const { gt } = useGTContext(
+    'useLocaleDirection(): Unable to access configured GT class instance outside of a <GTProvider>'
+  );
+  return gt.getLocaleDirection(locale);
 }

@@ -1,6 +1,6 @@
-import getI18NConfig from "../config-dir/getI18NConfig";
-import use from "../utils/use";
-import { getLocale } from "./getLocale";
+import getI18NConfig from '../config-dir/getI18NConfig';
+import use from '../utils/use';
+import { getLocale } from './getLocale';
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale.
@@ -14,10 +14,12 @@ import { getLocale } from "./getLocale";
  * const dir = await getLocaleDirection(); // e.g., 'ltr'
  * const arabicDir = await getLocaleDirection('ar'); // 'rtl'
  */
-export async function getLocaleDirection(locale?: string): Promise<'ltr' | 'rtl'> {
-    locale ||= await getLocale();
-    const gt = getI18NConfig().getGTClass();
-    return gt.getLocaleDirection(locale);
+export async function getLocaleDirection(
+  locale?: string
+): Promise<'ltr' | 'rtl'> {
+  locale ||= await getLocale();
+  const gt = getI18NConfig().getGTClass();
+  return gt.getLocaleDirection(locale);
 }
 
 /**
@@ -32,6 +34,6 @@ export async function getLocaleDirection(locale?: string): Promise<'ltr' | 'rtl'
  * const dir = useLocaleDirection(); // e.g., 'ltr'
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
-export function useLocaleDirection(locale?: string): "ltr" | "rtl" {
-    return use(getLocaleDirection(locale))
+export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
+  return use(getLocaleDirection(locale));
 }
