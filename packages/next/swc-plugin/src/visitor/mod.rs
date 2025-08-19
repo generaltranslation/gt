@@ -3,5 +3,6 @@ pub mod analysis;
 pub mod transform;
 pub mod jsx_utils;
 pub mod expr_utils;
+pub mod errors;
 
 pub use transform::TransformVisitor;

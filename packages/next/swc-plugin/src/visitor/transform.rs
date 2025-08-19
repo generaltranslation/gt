@@ -17,6 +17,10 @@ use crate::visitor::expr_utils::{
     has_prop,
     inject_new_args,
 };
+use crate::visitor::errors::{
+    create_dynamic_content_warning,
+    create_dynamic_function_warning,
+};
 
 use crate::visitor::analysis::{
     is_translation_component_name,
@@ -268,36 +272,6 @@ impl TransformVisitor {
         }
     }
 
-    /// Generate warning message for dynamic content violations
-    pub fn create_dynamic_content_warning(&self, component_name: &str) -> String {
-        if let Some(ref filename) = self.settings.filename {
-            format!(
-                "gt-next in {}: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
-                filename, component_name
-            )
-        } else {
-            format!(
-                "gt-next: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
-                component_name
-            )
-        }
-    }
-
-    /// Generate warning message for dynamic function call violations
-    fn create_dynamic_function_warning(&self, function_name: &str, violation_type: &str) -> String {
-        if let Some(ref filename) = self.settings.filename {
-            format!(
-                "gt-next in {}: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
-                filename, function_name, violation_type
-            )
-        } else {
-            format!(
-                "gt-next: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
-                function_name, violation_type
-            )
-        }
-    }
-
     /// Process GT-Next import declarations to track imports and aliases
     pub fn process_gt_import_declaration(&mut self, import_decl: &ImportDecl) {
         let src_value = import_decl.src.value.as_ref();
@@ -344,8 +318,12 @@ impl TransformVisitor {
             // Template literals: t(`Hello ${name}`)
             Expr::Tpl(_) => {
                 self.statistics.dynamic_content_violations += 1;
-                let warning = self.create_dynamic_function_warning(function_name, "template literals");
-                self.logger.log_warning(&warning);
+                let warning = create_dynamic_function_warning(
+                    self.settings.filename.as_deref(),
+                    function_name,
+                    "template literals"
+                );
+                self.logger.log_error(&warning);
             }
             // String concatenation: t("Hello " + name)
             Expr::Bin(BinExpr { op: BinaryOp::Add, left, right, .. }) => {
@@ -355,8 +333,12 @@ impl TransformVisitor {
                 
                 if left_is_string || right_is_string {
                     self.statistics.dynamic_content_violations += 1;
-                    let warning = self.create_dynamic_function_warning(function_name, "string concatenation");
-                    self.logger.log_warning(&warning);
+                    let warning = create_dynamic_function_warning(
+                        self.settings.filename.as_deref(),
+                        function_name,
+                        "string concatenation"
+                    );
+                    self.logger.log_error(&warning);
                 }
             }
             _ => {

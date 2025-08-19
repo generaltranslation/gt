@@ -5,7 +5,7 @@ use swc_core::{
     },
     plugin::{plugin_transform, proxies::TransformPluginProgramMetadata},
 };
-use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, expr_utils::{get_callee_expr_function_name, inject_new_args}}};
+use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, errors::create_dynamic_content_warning, expr_utils::{get_callee_expr_function_name, inject_new_args}}};
 use crate::visitor::TransformVisitor;
 
 
@@ -144,8 +144,8 @@ impl VisitMut for TransformVisitor {
         // Only check for violations if we're in a translation component and NOT in a JSX attribute
         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
-            let warning = self.create_dynamic_content_warning("T");
-            self.logger.log_warning(&warning);
+            let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
+            self.logger.log_error(&warning);
         }
         expr_container.visit_mut_children_with(self);
     }
