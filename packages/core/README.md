@@ -30,7 +30,6 @@ This project uses [Vitest](https://vitest.dev/) for testing with two types of te
 ### Test Types
 
 - **Unit Tests** (`__tests__/`): Fast, isolated tests with mocking
-- **E2E Tests** (`__e2e__/`): Integration tests against real/local services
 
 ### Running Tests
 
@@ -40,9 +39,6 @@ npm test
 
 # Run only unit tests
 npm test -- __tests__
-
-# Run only e2e tests
-npm test -- __e2e__
 
 # Run tests in watch mode
 npm run test:watch
@@ -86,7 +82,7 @@ _GT_LOG_LEVEL=debug  # Options: debug, info, warn, error (default: warn)
 
 ```bash
 # Development workflow
-_GT_LOG_LEVEL=debug npm test -- __e2e__ --reporter=verbose
+_GT_LOG_LEVEL=debug npm test --reporter=verbose
 
 # Quick unit test validation
 npm test -- __tests__
@@ -104,9 +100,6 @@ npm run test:watch -- __tests__/
 __tests__/           # Unit tests with mocking
 ├── logging/         # Logger functionality tests
 └── translate/       # Translation logic tests
-
-__e2e__/            # End-to-end integration tests
-└── translate/       # Translation API integration tests
 ```
 
 ## Contributing
