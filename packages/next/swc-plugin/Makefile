@@ -1,6 +1,6 @@
 # Simple Makefile for gt-swc-plugin
 
-.PHONY: format lint test fix help
+.PHONY: format lint test fix build help
 
 ## Format code
 format:
@@ -19,10 +19,15 @@ fix:
 	cargo fmt
 	cargo clippy --fix --allow-dirty --allow-staged
 
+## Build release WASM plugin (wasip1)
+build:
+	cargo build-plugin
+
 ## Show help
 help:
 	@echo "Commands:"
-	@echo "  make format  - Format code"
-	@echo "  make lint    - Run linter" 
-	@echo "  make test    - Run tests"
-	@echo "  make fix     - Fix issues automatically"
+	@echo "  make format    - Format code"
+	@echo "  make lint      - Run linter" 
+	@echo "  make test      - Run tests"
+	@echo "  make fix       - Fix issues automatically"
+	@echo "  make build     - Build release WASM plugin"

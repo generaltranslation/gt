@@ -14,7 +14,11 @@ todo = "warn"
 crate-type = ["cdylib"]
 
 [profile.release]
+# Optimize for SWC plugin distribution
+codegen-units = 1
 lto = true
+opt-level = "s"  # Optimize for size
+strip = "symbols"  # Strip debug symbols
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
