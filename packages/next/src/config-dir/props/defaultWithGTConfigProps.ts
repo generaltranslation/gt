@@ -35,8 +35,8 @@ const defaultWithGTConfigProps = {
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
   swcPluginOptions: {
-    logLevel: 'silent',
-    compileTimeHash: false,
+    logLevel: 'warn',
+    compileTimeHash: true,
   },
 } as const;
 

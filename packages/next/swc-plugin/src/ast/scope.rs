@@ -103,7 +103,6 @@ impl ScopeTracker {
 
       // Pop from stack if there are items
       if !self.scope_stack.is_empty() {
-        // eprintln!("exit_scope() poping from stack: {:?}", self.scope_stack.last());
         self.scope_stack.pop();
       }
     }
@@ -166,15 +165,6 @@ impl ScopeTracker {
   /// Get scope info for debugging
   pub fn get_scope_info(&self, scope_id: u32) -> Option<&ScopeInfo> {
     self.scope_info.get(&scope_id)
-  }
-
-  /// Log scoped variables for debugging
-  pub fn log_scoped_variable(&self, variable_name: &Atom) {
-    if let Some(variables) = self.scoped_variables.get(variable_name) {
-      for var in variables {
-        eprintln!("Scoped variable: {var:?}");
-      }
-    }
   }
 }
 

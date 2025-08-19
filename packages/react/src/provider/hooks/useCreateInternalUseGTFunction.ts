@@ -1,12 +1,9 @@
 import { hashSource } from 'generaltranslation/id';
-import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
   Translations,
-  RenderMethod,
   _Messages,
   _Message,
-  TranslatedChildren,
 } from '../../types/types';
 import { TranslateIcuCallback } from '../../types/runtime';
 import { GT } from 'generaltranslation';
@@ -95,17 +92,6 @@ export default function useCreateInternalUseGTFunction({
     // Use calculated hash to index
     if (typeof translationEntry === 'undefined') {
       hash = calculateHash();
-      if (_hash) {
-        if (_hash !== hash) {
-          console.error(
-            `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
-          );
-        } else {
-          console.log('hash match', _hash, hash);
-        }
-      } else {
-        console.log('hash missing');
-      }
       translationEntry = translations?.[hash];
     }
     return {

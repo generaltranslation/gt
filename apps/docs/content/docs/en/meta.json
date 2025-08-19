@@ -1,12 +1,3 @@
 {
-  "pages": [
-    "platform",
-    "react",
-    "next",
-    "cli",
-    "locadex",
-    "core",
-    "changelog",
-    "next-lint"
-  ]
+  "pages": ["platform", "react", "next", "cli", "locadex", "core", "changelog"]
 }

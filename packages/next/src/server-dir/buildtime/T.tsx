@@ -100,28 +100,25 @@ async function T({
 
   let translationEntry = translations?.[id || ''];
 
-  let childrenAsObjects;
   let hash;
+  if (_hash && typeof translationEntry === 'undefined') {
+    translationEntry = translations?.[_hash];
+  }
+
+  let childrenAsObjects;
 
   if (!translationEntry) {
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    hash = hashSource({
-      source: childrenAsObjects,
-      ...(context && { context }),
-      ...(id && { id }),
-      dataFormat: 'JSX',
-    });
-    if (_hash) {
-      if (_hash !== hash) {
-        console.error(
-          `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
-        );
-      } else {
-        console.log('hash match', _hash, hash);
-      }
-    }
+    hash =
+      _hash ||
+      hashSource({
+        source: childrenAsObjects,
+        ...(context && { context }),
+        ...(id && { id }),
+        dataFormat: 'JSX',
+      });
     translationEntry = translations?.[hash];
   }
 
@@ -165,12 +162,14 @@ async function T({
   const translationPromise = (async () => {
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
-      hash ||= hashSource({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
+      hash ||=
+        _hash ||
+        hashSource({
+          source: childrenAsObjects,
+          ...(context && { context }),
+          ...(id && { id }),
+          dataFormat: 'JSX',
+        });
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,

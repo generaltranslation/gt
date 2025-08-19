@@ -98,17 +98,6 @@ export async function getGT(
     // Use calculated hash to index
     if (!translationEntry) {
       hash = calculateHash();
-      if (_hash) {
-        if (_hash !== hash) {
-          console.error(
-            `Hash mismatch: Buildtime: "${_hash}". Runtime: "${hash}"`
-          );
-        } else {
-          console.log('hash match', _hash, hash);
-        }
-      } else {
-        console.log('hash missing', id);
-      }
       translationEntry = translations?.[hash];
     }
     return {

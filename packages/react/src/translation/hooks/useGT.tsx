@@ -43,7 +43,6 @@ export default function useGT(_messages?: _Messages) {
   ) {
     const untranslatedMessages = _filterMessagesForPreload(_messages);
     if (untranslatedMessages.length > 0) {
-      console.log('preloading messages', untranslatedMessages);
       preloadedTranslations = React.use(
         useable(
           [
