@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.2
+
+### Patch Changes
+
+- [#562](https://github.com/generaltranslation/gt/pull/562) [`8461c5e`](https://github.com/generaltranslation/gt/commit/8461c5ee2ca25cf50d4e366cb4d1e765107851fd) Thanks [@SamEggert](https://github.com/SamEggert)! - localStaticImports gracefully handles invalid MDX
+
 ## 2.1.1
 
 ### Patch Changes
