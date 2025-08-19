@@ -2041,4 +2041,213 @@ import Component2 from '/snippets/excluded.mdx';
       });
     });
   });
+
+  describe('invalid MDX error handling', () => {
+    it('should return original content unchanged when MDX starts with closing tag', async () => {
+      const invalidFileContent = `</Component>
+import ValidComponent from '/components/en/valid.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has unclosed JSX tags', async () => {
+      const invalidFileContent = `<Card title="Test">
+import Component from '/components/en/test.mdx'
+<!-- Missing closing tag for Card -->`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has nested unclosed tags', async () => {
+      const invalidFileContent = `<Card>
+  <Button>
+    <Icon name="test"
+  </Button>
+</Card>
+
+import Component from '/components/en/test.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has mismatched JSX tags', async () => {
+      const invalidFileContent = `<Card title="Test">
+  import Component from '/components/en/test.mdx'
+</NotCard>
+
+Some content here`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has invalid JSX attributes', async () => {
+      const invalidFileContent = `<Card title=invalid-attribute>
+  import Component from '/components/en/test.mdx'
+</Card>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has complex invalid syntax', async () => {
+      const invalidFileContent = `import Component from '/components/en/valid.mdx'
+
+<Card>
+  <nested-tag without-proper-closing>
+    import AnotherComponent from '/components/en/another.mdx'
+  </different-closing-tag>
+</Card`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+  });
 });

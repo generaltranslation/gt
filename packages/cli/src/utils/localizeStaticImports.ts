@@ -357,13 +357,26 @@ function transformMdxImports(
   }
 
   // Parse the MDX content into an AST
-  const parseProcessor = unified()
-    .use(remarkParse)
-    .use(remarkFrontmatter, ['yaml', 'toml'])
-    .use(remarkMdx);
+  let processedAst: Root;
+  try {
+    const parseProcessor = unified()
+      .use(remarkParse)
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx);
 
-  const ast = parseProcessor.parse(mdxContent);
-  const processedAst = parseProcessor.runSync(ast) as Root;
+    const ast = parseProcessor.parse(mdxContent);
+    processedAst = parseProcessor.runSync(ast) as Root;
+  } catch (error) {
+    console.warn(
+      `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
+    );
+    console.warn('Returning original content unchanged due to parsing error.');
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedImports: [],
+    };
+  }
 
   // Visit only mdxjsEsm nodes (import/export statements)
   visit(processedAst, 'mdxjsEsm', (node: MdxjsEsm) => {
@@ -446,12 +459,27 @@ function transformMdxImports(
   });
 
   // Convert the modified AST back to MDX string
-  const stringifyProcessor = unified()
-    .use(remarkStringify)
-    .use(remarkFrontmatter, ['yaml', 'toml'])
-    .use(remarkMdx);
+  let content: string;
+  try {
+    const stringifyProcessor = unified()
+      .use(remarkStringify)
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx);
 
-  let content = stringifyProcessor.stringify(processedAst);
+    content = stringifyProcessor.stringify(processedAst);
+  } catch (error) {
+    console.warn(
+      `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`
+    );
+    console.warn(
+      'Returning original content unchanged due to stringify error.'
+    );
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedImports: [],
+    };
+  }
 
   // Handle newline formatting to match original input
   if (content.endsWith('\n') && !mdxContent.endsWith('\n')) {

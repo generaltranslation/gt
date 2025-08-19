@@ -2047,4 +2047,179 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       await localizeStaticUrls(settings as any);
     });
   });
+
+  describe('invalid MDX error handling', () => {
+    it('should return original content unchanged when MDX starts with closing tag', async () => {
+      const invalidFileContent = `</Card>
+[Guide](/docs/en/guide)
+<Card href="/docs/en/quickstart">Start</Card>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has unclosed JSX tags', async () => {
+      const invalidFileContent = `<Card title="Test" href="/docs/en/guide">
+[Guide](/docs/en/guide)
+<!-- Missing closing tag for Card -->`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has nested unclosed tags', async () => {
+      const invalidFileContent = `<Card>
+  <Button href="/docs/en/guide">
+    <Icon name="test"
+  </Button>
+</Card>
+
+[Guide](/docs/en/guide)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has mismatched JSX tags', async () => {
+      const invalidFileContent = `<Card title="Test">
+  <Button href="/docs/en/guide">Guide</Button>
+</NotCard>
+
+[Another Link](/docs/en/api)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should return original content unchanged when MDX has invalid JSX attributes', async () => {
+      const invalidFileContent = `<Card title=invalid-attribute href="/docs/en/guide">
+  Content here
+</Card>
+
+[Valid Link](/docs/en/api)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+  });
 });
