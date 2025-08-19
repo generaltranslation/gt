@@ -47,10 +47,12 @@ impl<'a> JsxTraversal<'a> {
         // Build sanitized children directly from JSX children
         if let Some(sanitized_children) = self.build_sanitized_children(&element.children) {
             // Get the id from the element
-            let id = extract_attribute_from_jsx_attr(element, "id");
+            let id = extract_attribute_from_jsx_attr(element, "id")
+                .or_else(|| extract_attribute_from_jsx_attr(element, "$id"));
     
             // Get the context from the element
-            let context = extract_attribute_from_jsx_attr(element, "context");
+            let context = extract_attribute_from_jsx_attr(element, "context")
+                .or_else(|| extract_attribute_from_jsx_attr(element, "$context"));
     
             // Get the id from the element
             // Create the full SanitizedData structure to match TypeScript implementation
