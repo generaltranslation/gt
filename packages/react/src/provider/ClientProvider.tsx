@@ -59,6 +59,8 @@ export default function ClientProvider({
     document.cookie = `${resetLocaleCookieName}=true;path=/`;
     // set locale
     _setLocale(newLocale);
+    // TODO: abort in-flight requests
+
     // re-render server components
     window.location.reload();
   };

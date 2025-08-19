@@ -100,6 +100,24 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
         }
       `,
     },
+
+    // Template literals without interpolation are allowed
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        t(\`Hello, world!\`);
+      `,
+    },
+
+    // Template literals without interpolation with variables in second parameter
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        t(\`Hello, {name}!\`, { name: 'Alice' });
+      `,
+    },
   ],
 
   invalid: [

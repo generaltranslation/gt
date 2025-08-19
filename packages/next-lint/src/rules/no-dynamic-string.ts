@@ -71,7 +71,10 @@ export const noDynamicString: Rule.RuleModule = {
     }
 
     function isStringLiteral(node: any): boolean {
-      return node.type === 'Literal' && typeof node.value === 'string';
+      return (
+        (node.type === 'Literal' && typeof node.value === 'string') ||
+        (node.type === 'TemplateLiteral' && node.expressions.length === 0) // Template literal with no interpolation
+      );
     }
 
     function validateTranslationCall(node: any) {

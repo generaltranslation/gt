@@ -148,6 +148,22 @@ ruleTester.run('no-dynamic-jsx', noDynamicJsx, {
         }
       `,
     },
+
+    // Template literal without interpolation (allowed)
+    {
+      code: `
+        import { T } from 'gt-next';
+        <T>{\`Hello World!\`}</T>
+      `,
+    },
+
+    // Template literal without interpolation with static text
+    {
+      code: `
+        import { T } from 'gt-next';
+        <T>Welcome {\`to our site\`}!</T>
+      `,
+    },
   ],
 
   invalid: [

@@ -237,7 +237,7 @@ impl StringCollector {
   fn create_content_object(&self, content: &TranslationContent, span: Span) -> ObjectLit {
     let mut props = vec![
       // message: "Hello world"
-      Self::generate_key_value_pair("$message", &content.message, span),
+      Self::generate_key_value_pair("message", &content.message, span),
       // hash: "abc123"
       Self::generate_key_value_pair("$_hash", &content.hash, span),
     ];
