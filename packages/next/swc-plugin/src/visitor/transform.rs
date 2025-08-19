@@ -18,7 +18,6 @@ use crate::visitor::expr_utils::{
     inject_new_args,
 };
 use crate::visitor::errors::{
-    create_dynamic_content_warning,
     create_dynamic_function_warning,
 };
 
@@ -41,6 +40,8 @@ pub struct TransformVisitor {
   pub settings: PluginSettings,
   /// Logger
   pub logger: Logger,
+  /// String collector for two-pass transformation
+  pub string_collector: StringCollector,
 }
 
 impl Default for TransformVisitor {
@@ -61,13 +62,14 @@ impl TransformVisitor {
         Self {
             traversal_state: TraversalState::default(),
             statistics: Statistics::default(),
-            import_tracker: ImportTracker::new(string_collector),
+            import_tracker: ImportTracker::new(),
             settings: PluginSettings::new(
                 log_level.clone(),
                 compile_time_hash,
                 filename.clone(),
             ),
             logger: Logger::new(log_level),
+            string_collector,
         }
     }
 
@@ -89,8 +91,8 @@ impl TransformVisitor {
         if !has_hash_attr {
 
             // Get the hash from the aggregator
-            let counter_id = self.import_tracker.string_collector.increment_counter();
-            let translation_jsx = self.import_tracker.string_collector.get_translation_jsx(counter_id);
+            let counter_id = self.string_collector.increment_counter();
+            let translation_jsx = self.string_collector.get_translation_jsx(counter_id);
 
             // Inject hash
             if let Some(translation_jsx) = translation_jsx {
@@ -105,14 +107,13 @@ impl TransformVisitor {
 
     /// Inject content array on translation function call
     pub fn inject_content_array_on_translation_function_call(&mut self, call_expr: &CallExpr) -> Option<CallExpr> {
-        let counter_id = self.import_tracker.string_collector.get_counter();
+        let counter_id = self.string_collector.get_counter();
         if let Some(content) = self
-            .import_tracker.string_collector
+            .string_collector
             .get_translation_data(counter_id) {
 
             // Create the content array
             let content_array = self
-                .import_tracker
                 .string_collector
                 .create_content_array(&content.content, call_expr.span);
 
@@ -130,9 +131,8 @@ impl TransformVisitor {
             let options = call_expr.args.get(1);
 
             // Get the hash from the t() aggregator
-            let counter_id = self.import_tracker.string_collector.increment_counter();
+            let counter_id = self.string_collector.increment_counter();
             let translation_hash = self
-                .import_tracker
                 .string_collector
                 .get_translation_hash(counter_id);
 
@@ -163,12 +163,11 @@ impl TransformVisitor {
             let (hash_value, _) = traversal.calculate_element_hash(&element);
 
             // Store the t() function call
-            let counter_id = self.import_tracker.string_collector.increment_counter();
-            self.import_tracker.string_collector.initialize_aggregator(counter_id);
+            let counter_id = self.string_collector.increment_counter();
+            self.string_collector.initialize_aggregator(counter_id);
             
             // Add the message to the string collector for the t() function
             self
-                .import_tracker
                 .string_collector
                 .set_translation_jsx(
                     counter_id,
@@ -203,18 +202,17 @@ impl TransformVisitor {
                     );
 
                 // Add the translation content to the string collector
-                self.import_tracker.string_collector.set_translation_content(
+                self.string_collector.set_translation_content(
                     identifier,
                     translation_content
                 );
 
                 // Store the t() function call
-                let counter_id = self.import_tracker.string_collector.increment_counter();
-                self.import_tracker.string_collector.initialize_aggregator(counter_id);
+                let counter_id = self.string_collector.increment_counter();
+                self.string_collector.initialize_aggregator(counter_id);
                 
                 // Add the message to the string collector for the t() function
                 self
-                    .import_tracker
                     .string_collector
                     .set_translation_hash(
                         counter_id,
@@ -547,9 +545,9 @@ impl TransformVisitor {
                 // Check if its getGT or useGT
                 if is_translation_function_name(&original_name) {
                     // Get counter_id
-                    let counter_id = self.import_tracker.string_collector.increment_counter();
+                    let counter_id = self.string_collector.increment_counter();
                     // Create a new entry in the string collector for this call
-                    self.import_tracker.string_collector.initialize_aggregator(counter_id);
+                    self.string_collector.initialize_aggregator(counter_id);
 
                     // Track translation function using scope system (useGT_callback, getGT_callback)
                     self.import_tracker
@@ -664,18 +662,18 @@ mod tests {
     fn create_visitor_with_imports() -> TransformVisitor {
         let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
         
-        // Add some test imports
-        visitor.import_tracker.translation_import_aliases.insert(
-            Atom::new("T"), Atom::new("T")
+        // Add some test imports using the scope tracker
+        visitor.import_tracker.scope_tracker.track_translation_variable(
+            Atom::new("T"), Atom::new("T"), 0
         );
-        visitor.import_tracker.variable_import_aliases.insert(
-            Atom::new("Var"), Atom::new("Var")
+        visitor.import_tracker.scope_tracker.track_variable(
+            Atom::new("Var"), Atom::new("Var"), true, 0
         );
-        visitor.import_tracker.branch_import_aliases.insert(
-            Atom::new("Branch"), Atom::new("Branch")
+        visitor.import_tracker.scope_tracker.track_variable(
+            Atom::new("Branch"), Atom::new("Branch"), true, 0
         );
-        visitor.import_tracker.translation_function_import_aliases.insert(
-            Atom::new("useGT"), Atom::new("useGT")
+        visitor.import_tracker.scope_tracker.track_translation_variable(
+            Atom::new("useGT"), Atom::new("useGT"), 0
         );
         visitor.import_tracker.namespace_imports.insert(
             Atom::new("GT")
@@ -825,7 +823,8 @@ mod tests {
             // Check defaults are set
             assert_eq!(visitor.statistics.jsx_element_count, 0);
             assert_eq!(visitor.statistics.dynamic_content_violations, 0);
-            assert!(visitor.import_tracker.translation_import_aliases.is_empty());
+            // Scope tracker should be empty initially
+            assert!(visitor.import_tracker.namespace_imports.is_empty());
         }
 
         #[test]
@@ -897,11 +896,12 @@ mod tests {
 
     mod warning_message_generation {
         use super::*;
+        use crate::visitor::errors::{create_dynamic_content_warning, create_dynamic_function_warning};
 
         #[test]
         fn creates_dynamic_content_warning_without_filename() {
             let visitor = TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
-            let warning = visitor.create_dynamic_content_warning("T");
+            let warning = create_dynamic_content_warning(None, "T");
             
             assert!(warning.contains("gt-next"));
             assert!(warning.contains("<T> component contains unwrapped dynamic content"));
@@ -912,7 +912,7 @@ mod tests {
         #[test]
         fn creates_dynamic_content_warning_with_filename() {
             let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("components/Test.tsx".to_string()), StringCollector::new());
-            let warning = visitor.create_dynamic_content_warning("T");
+            let warning = create_dynamic_content_warning(Some("components/Test.tsx"), "T");
             
             assert!(warning.contains("gt-next in components/Test.tsx"));
             assert!(warning.contains("<T> component contains unwrapped dynamic content"));
@@ -921,7 +921,7 @@ mod tests {
         #[test]
         fn creates_dynamic_function_warning_without_filename() {
             let visitor = TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
-            let warning = visitor.create_dynamic_function_warning("useGT", "template literals");
+            let warning = create_dynamic_function_warning(None, "useGT", "template literals");
             
             assert!(warning.contains("gt-next"));
             assert!(warning.contains("useGT() function call uses template literals"));
@@ -931,8 +931,8 @@ mod tests {
 
         #[test]
         fn creates_dynamic_function_warning_with_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("hooks/useTranslation.ts".to_string()), StringCollector::new());
-            let warning = visitor.create_dynamic_function_warning("t", "string concatenation");
+            TransformVisitor::new(LogLevel::Warn, false, Some("hooks/useTranslation.ts".to_string()), StringCollector::new());
+            let warning = create_dynamic_function_warning(Some("hooks/useTranslation.ts"), "t", "string concatenation");
             
             assert!(warning.contains("gt-next in hooks/useTranslation.ts"));
             assert!(warning.contains("t() function call uses string concatenation"));
@@ -953,9 +953,10 @@ mod tests {
 
             visitor.process_gt_import_declaration(&import_decl);
 
-            assert!(visitor.import_tracker.translation_import_aliases.contains_key(&Atom::new("T")));
-            assert!(visitor.import_tracker.variable_import_aliases.contains_key(&Atom::new("MyVar")));
-            assert!(visitor.import_tracker.translation_function_import_aliases.contains_key(&Atom::new("useGT")));
+            // Check that imports are tracked in the scope tracker
+            assert!(visitor.import_tracker.scope_tracker.get_translation_variable(&Atom::new("T")).is_some());
+            assert!(visitor.import_tracker.scope_tracker.get_variable(&Atom::new("MyVar")).is_some());
+            assert!(visitor.import_tracker.scope_tracker.get_translation_variable(&Atom::new("useGT")).is_some());
         }
 
         #[test]
@@ -979,7 +980,7 @@ mod tests {
 
             visitor.process_gt_import_declaration(&import_decl);
 
-            assert!(visitor.import_tracker.translation_import_aliases.contains_key(&Atom::new("T")));
+            assert!(visitor.import_tracker.scope_tracker.get_translation_variable(&Atom::new("T")).is_some());
         }
 
         #[test]
@@ -991,7 +992,8 @@ mod tests {
 
             visitor.process_gt_import_declaration(&import_decl);
 
-            assert!(visitor.import_tracker.translation_import_aliases.is_empty());
+            // Should not track non-gt imports
+            assert!(visitor.import_tracker.scope_tracker.get_translation_variable(&Atom::new("React")).is_none());
             assert!(visitor.import_tracker.namespace_imports.is_empty());
         }
     }
@@ -1236,10 +1238,9 @@ mod tests {
             if let Callee::Expr(callee_expr) = &call_expr.callee {
                 if let Expr::Ident(ident) = callee_expr.as_ref() {
                     // Only check violations if it's a tracked function
-                    let is_tracked_function = visitor.import_tracker.translation_function_import_aliases.contains_key(&ident.sym);
                     let is_tracked_callee = visitor.import_tracker.scope_tracker.get_translation_variable(&ident.sym).is_some();
                     
-                    if is_tracked_function || is_tracked_callee {
+                    if is_tracked_callee {
                         if let Some(first_arg) = call_expr.args.first() {
                             visitor.check_call_expr_for_violations(first_arg, &ident.sym);
                         }
@@ -1320,10 +1321,11 @@ mod tests {
 
         #[test]
         fn calculates_hash_for_empty_element() {
-            let visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             let element = create_jsx_element("T", vec![]);
 
-            let (hash, json_string) = visitor.calculate_element_hash(&element);
+            let mut traversal = crate::ast::JsxTraversal::new(&mut visitor);
+            let (hash, json_string) = traversal.calculate_element_hash(&element);
 
             assert!(!hash.is_empty());
             assert!(!json_string.is_empty());
@@ -1332,7 +1334,7 @@ mod tests {
 
         #[test] 
         fn hash_changes_with_different_content() {
-            let visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+            let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
             
             let element1 = create_jsx_element("T", vec![]);
             let mut element2 = create_jsx_element("T", vec![]);
@@ -1342,8 +1344,11 @@ mod tests {
                 raw: Atom::new("Hello"),
             })];
 
-            let (hash1, _) = visitor.calculate_element_hash(&element1);
-            let (hash2, _) = visitor.calculate_element_hash(&element2);
+            let mut traversal1 = crate::ast::JsxTraversal::new(&mut visitor);
+            let (hash1, _) = traversal1.calculate_element_hash(&element1);
+            
+            let mut traversal2 = crate::ast::JsxTraversal::new(&mut visitor);
+            let (hash2, _) = traversal2.calculate_element_hash(&element2);
 
             assert_ne!(hash1, hash2);
         }
@@ -1351,6 +1356,7 @@ mod tests {
 
     mod integration_tests {
         use super::*;
+        use crate::visitor::errors::create_dynamic_content_warning;
 
         #[test]
         fn full_workflow_with_imports_and_component_detection() {
@@ -1378,7 +1384,7 @@ mod tests {
             assert!(is_translation_ns);
 
             // Test warning generation
-            let warning = visitor.create_dynamic_content_warning("T");
+            let warning = create_dynamic_content_warning(Some("test.tsx"), "T");
             assert!(warning.contains("in test.tsx"));
         }
     }

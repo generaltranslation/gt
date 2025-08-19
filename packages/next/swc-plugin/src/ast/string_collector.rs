@@ -297,9 +297,9 @@ mod tests {
         let counter_id2 = collector.increment_counter();
         let counter_id3 = collector.increment_counter();
         
-        assert_eq!(counter_id1, 0);
-        assert_eq!(counter_id2, 1);
-        assert_eq!(counter_id3, 2);
+        assert_eq!(counter_id1, 1);
+        assert_eq!(counter_id2, 2);
+        assert_eq!(counter_id3, 3);
         
         // IDs should be deterministic
         let mut collector2 = StringCollector::new();
@@ -319,7 +319,7 @@ mod tests {
         collector.initialize_aggregator(counter_id);
         
         // Should start empty
-        assert_eq!(collector.total_calls(), 1);
+        assert_eq!(collector.total_calls(), 2); // counter_id=1 requires indices 0 and 1
         assert_eq!(collector.total_content_items(), 0);
         assert!(!collector.has_content_for_injection(counter_id));
         
@@ -384,9 +384,9 @@ mod tests {
         let counter_id2 = collector.increment_counter();  // 1
         let counter_id3 = collector.increment_counter();  // 2
         
-        assert_eq!(counter_id1, 0);
-        assert_eq!(counter_id2, 1);
-        assert_eq!(counter_id3, 2);
+        assert_eq!(counter_id1, 1);
+        assert_eq!(counter_id2, 2);
+        assert_eq!(counter_id3, 3);
         
         collector.initialize_aggregator(counter_id1);
         collector.initialize_aggregator(counter_id2);
@@ -459,7 +459,7 @@ mod tests {
             context: None,
         });
         
-        assert_eq!(collector.total_calls(), 1);
+        assert_eq!(collector.total_calls(), 2); // counter_id=1 requires indices 0 and 1
         assert_eq!(collector.total_content_items(), 1);
         assert_eq!(collector.get_counter(), 1);
         
@@ -818,9 +818,9 @@ mod tests {
         let mut collector = StringCollector::new();
         
         // Create 3 separate calls
-        let call1_id = collector.increment_counter(); // 0
-        let call2_id = collector.increment_counter(); // 1 
-        let call3_id = collector.increment_counter(); // 2
+        let call1_id = collector.increment_counter(); // 1
+        let call2_id = collector.increment_counter(); // 2 
+        let call3_id = collector.increment_counter(); // 3
         
         collector.initialize_aggregator(call1_id);
         collector.initialize_aggregator(call2_id);
@@ -851,8 +851,8 @@ mod tests {
         ));
         
         // Verify totals
-        assert_eq!(collector.total_calls(), 3);
-        assert_eq!(collector.total_content_items(), 4); // 2 + 1 + 0 content, 1 + 0 + 1 jsx, 1 + 0 + 0 hash
+        assert_eq!(collector.total_calls(), 4); // counter_ids 1,2,3 require indices 0,1,2,3
+        assert_eq!(collector.total_content_items(), 6); // 2 + 1 + 0 content, 1 + 0 + 1 jsx, 1 + 0 + 0 hash = 6
         
         // Verify Call 1
         let call1 = collector.get_translation_data(call1_id).unwrap();

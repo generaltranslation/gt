@@ -331,8 +331,8 @@ impl Fold for TransformVisitor {
         // Only check for violations if we're in a translation component and NOT in a JSX attribute
         if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
             self.statistics.dynamic_content_violations += 1;
-            let warning = self.create_dynamic_content_warning("T");
-            self.logger.log_warning(&warning);
+            let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
+            self.logger.log_error(&warning);
         }
         expr_container.fold_children_with(self)
     }
@@ -404,10 +404,12 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     );
     program.visit_mut_with(&mut visitor);
 
-    /// TODO: here panic if there are any violations
+    if visitor.statistics.dynamic_content_violations > 0 {
+        panic!("gt-next: Error: {} dynamic content violations found", visitor.statistics.dynamic_content_violations);
+    }
 
 
-    let collected_data = visitor.import_tracker.string_collector;
+    let collected_data = visitor.string_collector;
     let mut visitor = TransformVisitor::new(
         config.log_level,
         config.compile_time_hash,

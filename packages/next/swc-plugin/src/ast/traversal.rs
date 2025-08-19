@@ -191,7 +191,6 @@ impl<'a> JsxTraversal<'a> {
         }
     }
 
-
     /// Check if a Plural component is valid
     fn is_valid_plural_component(&self, element: &JSXElement, component_info: &ComponentInfo) -> bool {
     // Check if component has required 'n' attribute
@@ -204,13 +203,8 @@ impl<'a> JsxTraversal<'a> {
         false
     });
 
-    if !has_n_attr {
-        return false;
-    }
-
     // Check if has valid branches OR children
-    if component_info.branches.is_none() && element.children.is_empty() {
-        // eprintln!("DEBUG: Excluding Plural component - no valid plural forms and no children");
+    if !has_n_attr || (component_info.branches.is_none() && element.children.is_empty()) {
         return false;
     }
 
@@ -228,15 +222,9 @@ impl<'a> JsxTraversal<'a> {
         }
         false
     });
-
-    if !has_branch_attr {
-        // eprintln!("DEBUG: Excluding Branch component - missing 'branch' attribute");
-        return false;
-    }
-
-    // Check if has valid branches OR children  
-    if component_info.branches.is_none() && element.children.is_empty() {
-        // eprintln!("DEBUG: Excluding Branch component - no valid branch options and no children");
+    
+    // Check if has valid branches OR children
+    if !has_branch_attr || (component_info.branches.is_none() && element.children.is_empty()) {
         return false;
     }
 
@@ -690,6 +678,7 @@ mod tests {
             import_tracker: ImportTracker::default(),
             settings: PluginSettings::new(LogLevel::Silent, false, None),
             logger: Logger::new(LogLevel::Silent),
+            string_collector: crate::ast::StringCollector::new(),
         }
     }
 

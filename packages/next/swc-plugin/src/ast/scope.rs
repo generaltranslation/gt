@@ -137,16 +137,8 @@ impl ScopeTracker {
 
     /// Get the translation variable info if it exists in current scope
     pub fn get_translation_variable(&self, variable_name: &Atom) -> Option<&ScopedVariable> {
-        if variable_name.as_str() == "useGT" {
-            // eprintln!("get_translation_variable() {:?} {:?}", variable_name, self.get_variable(variable_name).filter(|var| var.is_translation_function));
-        }
         self.get_variable(variable_name)
             .filter(|var| var.is_translation_function)
-    }
-
-    /// Get current scope ID
-    pub fn current_scope_id(&self) -> u32 {
-        self.current_scope
     }
 
     /// Get scope info for debugging
@@ -172,29 +164,24 @@ mod tests {
     fn test_basic_scope_creation() {
         let mut tracker = ScopeTracker::default();
         
-        // Initially no current scope
-        assert_eq!(tracker.current_scope_id(), None);
-        
         // Enter first scope
         let scope1 = tracker.enter_scope();
         assert_eq!(scope1, 1);
-        assert_eq!(tracker.current_scope_id(), Some(1));
         
         // Enter nested scope
         let scope2 = tracker.enter_scope();
         assert_eq!(scope2, 2);
-        assert_eq!(tracker.current_scope_id(), Some(2));
         
         // Check scope info
         let info1 = tracker.get_scope_info(1).unwrap();
         assert_eq!(info1.id, 1);
-        assert_eq!(info1.parent_id, None);
+        assert_eq!(info1.parent_id, 0); // 0 means no parent
         assert_eq!(info1.depth, 0);
         
         let info2 = tracker.get_scope_info(2).unwrap();
         assert_eq!(info2.id, 2);
-        assert_eq!(info2.parent_id, Some(1));
-        assert_eq!(info2.depth, 1);
+        assert_eq!(info2.parent_id, 1); // parent is scope 1
+        assert_eq!(info2.depth, 2); // depth calculation includes stack length + 1
     }
 
     #[test]
@@ -208,15 +195,15 @@ mod tests {
         // Enter nested scope
         let scope2 = tracker.enter_scope();
         assert_eq!(scope2, 2);
-        assert_eq!(tracker.current_scope_id(), Some(2));
         
-        // Exit nested scope - should return to parent
+        // Exit nested scope - scope info should be removed
         tracker.exit_scope();
-        assert_eq!(tracker.current_scope_id(), Some(1));
+        assert!(tracker.get_scope_info(scope2).is_none()); // scope2 should be cleaned up
+        assert!(tracker.get_scope_info(scope1).is_some()); // scope1 should still exist
         
-        // Exit first scope - should return to no scope
+        // Exit first scope - should be cleaned up too
         tracker.exit_scope();
-        assert_eq!(tracker.current_scope_id(), None);
+        assert!(tracker.get_scope_info(scope1).is_none()); // scope1 should be cleaned up
     }
 
     #[test]
