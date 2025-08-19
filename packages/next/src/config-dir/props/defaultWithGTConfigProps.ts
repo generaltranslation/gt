@@ -13,9 +13,8 @@ import {
   defaultReferrerLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '../../utils/cookies';
-import WithGTConfigProps from '../props/withGTConfigProps';
 
-const defaultWithGTConfigProps: WithGTConfigProps = {
+const defaultWithGTConfigProps = {
   config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
