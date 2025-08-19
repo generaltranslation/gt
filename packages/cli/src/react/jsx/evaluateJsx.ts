@@ -1,5 +1,8 @@
 import * as t from '@babel/types';
-import { default as generate } from '@babel/generator';
+import generateModule from '@babel/generator';
+// Handle CommonJS/ESM interop
+const generate = generateModule.default || generateModule;
+
 const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
 
 /**
@@ -53,27 +56,10 @@ export function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
     return { isStatic: true, value: expr.quasis[0].value.raw };
   }
 
-  // Handle binary expressions (string concatenation)
+  // Binary expressions are not static
   if (t.isBinaryExpression(expr)) {
-    // Only handle string concatenation
-    if (expr.operator !== '+') {
-      return { isStatic: false };
-    }
-
-    // Type guard to ensure we only process Expression types
-    if (t.isExpression(expr.left) && t.isExpression(expr.right)) {
-      const left = isStaticExpression(expr.left);
-      const right = isStaticExpression(expr.right);
-
-      if (
-        left.isStatic &&
-        right.isStatic &&
-        left.value !== undefined &&
-        right.value !== undefined
-      ) {
-        return { isStatic: true, value: left.value + right.value };
-      }
-    }
+    // Not a static expression
+    return { isStatic: false };
   }
 
   // Handle parenthesized expressions
