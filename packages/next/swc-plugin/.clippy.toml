@@ -1,21 +1,3 @@
-# Clippy configuration for gt-swc-plugin
-# https://rust-lang.github.io/rust-clippy/master/index.html
-
-# Don't warn about cognitive complexity for large functions (common in AST processing)
-cognitive-complexity-threshold = 50
-
-# Don't warn about too many arguments for plugin functions
-too-many-arguments-threshold = 10
-
-# Don't warn about type complexity for AST types
-type-complexity-threshold = 300
-
-# Allow single-character variable names in short closures
-single-char-lifetime-names-threshold = 5
-
-# Avoid false positives in macro-heavy code
-avoid-breaking-exported-api = false
-
-# Allow some unsafe code patterns common in SWC plugins
-allow-unwrap-in-tests = true
-allow-dbg-in-tests = true
+# Simple clippy config for AST processing
+cognitive-complexity-threshold = 30
+too-many-arguments-threshold = 8
