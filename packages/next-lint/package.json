@@ -52,7 +52,7 @@
   },
   "peerDependencies": {
     "eslint": "^8.0.0 || ^9.0.0",
-    "gt-next": "^6.1.1",
+    "gt-next": "^6.1.2",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0"
   },
