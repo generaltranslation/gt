@@ -71,7 +71,7 @@ Install the `gt-next` and `gtx-cli` packages:
 <Callout type="info">
   **Automatic Setup:** We have an experimental Setup Wizard that can help you setup your project with `gt-next`.
 
-  Try it out by running `npx gtx-cli@latest`. You'll still need to manually internationalize strings, but it will help you get started.
+  Try it out by running `npx gtx-cli@latest`. You'll still need to manually internationalize content, but it will help you get started.
 
   See the [Setup Wizard](/docs/cli/init) reference guide for more information. 
 
@@ -331,13 +331,6 @@ Congratulations! 🥳 If you've followed the steps above, your app is now multil
     This **only happens in dev** so you can easily prototype your website in different languages.
     All translations are preloaded in production, so there will be no delay.
     Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-  </Accordion>
-  <Accordion title="Why are some things translating and others not?">
-    **JSX Translation**
-
-    Right now, the wizard automatically adds `<T>` components around text content.
-    We are currently working on a solution that automatically setup string translations.
-    Until then, if you are rendering a string, please follow [this guide](/docs/next/guides/strings) for translating strings.
   </Accordion>
   <Accordion title="Why are some translations inaccurate?">
     The most likely cause of an inaccurate translation is ambiguous wording.
