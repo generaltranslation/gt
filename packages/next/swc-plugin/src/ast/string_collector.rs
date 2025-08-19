@@ -134,15 +134,18 @@ impl StringCollector {
         self.aggregators.get(counter_id as usize)
     }
 
+    /// Get the translation content for a specific useGT/getGT call
     pub fn get_translation_content(&self, counter_id: u32) -> Option<&Vec<TranslationContent>> {
         self.aggregators.get(counter_id as usize).and_then(|data| Some(&data.content))
     }
 
+    /// Get the translation JSX for a specific useGT/getGT call
     pub fn get_translation_jsx(&self, counter_id: u32) -> Option<&TranslationJsx> {
         // Filter by jsx
         self.aggregators.get(counter_id as usize).and_then(|data| data.jsx.as_ref())
     }
 
+    /// Get the translation hash for a specific useGT/getGT call
     pub fn get_translation_hash(&self, counter_id: u32) -> Option<&TranslationHash> {
         self.aggregators.get(counter_id as usize).and_then(|data| data.hash.as_ref())
     }

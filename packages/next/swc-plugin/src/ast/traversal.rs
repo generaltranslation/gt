@@ -37,10 +37,12 @@ pub struct JsxTraversal<'a> {
 
 
 impl<'a> JsxTraversal<'a> {
+    /// Create a new JsxTraversal instance
     pub fn new(visitor: &'a TransformVisitor) -> Self {
         Self { visitor, id_counter: 0 }
     }
 
+    /// Calculate the hash of a JSX element
     pub fn calculate_element_hash(&mut self, element: &JSXElement) -> (String, String) {
         use crate::hash::JsxHasher;
         
@@ -367,6 +369,7 @@ impl<'a> JsxTraversal<'a> {
         return false;
     }
 
+    /// Check if this is a Plural component
     pub fn is_plural_component(&self, tag_name: &str) -> bool {
         // Named import
         if let Some(translation_variable) = self

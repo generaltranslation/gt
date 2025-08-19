@@ -5,7 +5,7 @@ use swc_core::{
     },
     plugin::{plugin_transform, proxies::TransformPluginProgramMetadata},
 };
-use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, errors::create_dynamic_content_warning, expr_utils::{get_callee_expr_function_name, inject_new_args}}};
+use crate::{config::PluginConfig, visitor::{analysis::{is_translation_function_callback, is_translation_function_name}, errors::create_dynamic_content_warning, expr_utils::{get_callee_expr_function_name}}};
 use crate::visitor::TransformVisitor;
 
 

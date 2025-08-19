@@ -4,18 +4,26 @@ use swc_core::ecma::atoms::Atom;
 /// Information about a scope
 #[derive(Debug, Clone)]
 pub struct ScopeInfo {
+    /// The scope ID
     pub id: u32,
+    /// The parent scope ID
     pub parent_id: u32,
+    /// The depth of the scope
     pub depth: u32,
 }
 
 /// Information about a scoped variable assignment
 #[derive(Debug, Clone)]
 pub struct ScopedVariable {
+    /// The scope ID
     pub scope_id: u32,
+    /// The original name of the variable
     pub original_name: Atom,    // useGT, getGT, T, useGT1, (Name or aliased name)
+    /// The variable name
     pub variable_name: Atom,     // t, translationFunction, etc.
+    /// Whether the variable is a translation function
     pub is_translation_function: bool, // true if assigned_value is a known translation function
+    /// The identifier for the variable
     pub identifier: u32, // identifier for the variable
 }
 
@@ -146,6 +154,7 @@ impl ScopeTracker {
         self.scope_info.get(&scope_id)
     }
 
+    /// Log scoped variables for debugging
     pub fn log_scoped_variable(&self, variable_name: &Atom) {
         if let Some(variables) = self.scoped_variables.get(variable_name) {
             for var in variables {

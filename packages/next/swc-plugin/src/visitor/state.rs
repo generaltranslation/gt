@@ -1,5 +1,5 @@
 use swc_core::ecma::atoms::Atom;
-use crate::ast::{ScopeTracker, StringCollector};
+use crate::ast::{ScopeTracker};
 
 // For tracking statistics for the plugin
 #[derive(Default)]

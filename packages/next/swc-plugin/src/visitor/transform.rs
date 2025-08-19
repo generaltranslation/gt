@@ -900,7 +900,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_content_warning_without_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
+            TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
             let warning = create_dynamic_content_warning(None, "T");
             
             assert!(warning.contains("gt-next"));
@@ -911,7 +911,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_content_warning_with_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, Some("components/Test.tsx".to_string()), StringCollector::new());
+            TransformVisitor::new(LogLevel::Warn, false, Some("components/Test.tsx".to_string()), StringCollector::new());
             let warning = create_dynamic_content_warning(Some("components/Test.tsx"), "T");
             
             assert!(warning.contains("gt-next in components/Test.tsx"));
@@ -920,7 +920,7 @@ mod tests {
 
         #[test]
         fn creates_dynamic_function_warning_without_filename() {
-            let visitor = TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
+            TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
             let warning = create_dynamic_function_warning(None, "useGT", "template literals");
             
             assert!(warning.contains("gt-next"));
