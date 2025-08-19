@@ -157,12 +157,6 @@ export function withGTConfig(
     throw new Error(unsupportedGetLocalePathBuildError);
   }
 
-  // Check if experimentalSwcPluginOptions is enabled
-  const enableExperimentalSwcPluginOptions =
-    nextConfig.experimental?.swcPlugins !== undefined;
-  const enableSwcPlugin =
-    enableExperimentalSwcPluginOptions || nextConfig.experimental?.swcPlugins;
-
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
@@ -383,12 +377,15 @@ export function withGTConfig(
         mergedConfig.loadTranslationsType === 'custom'
       ).toString(),
       _GENERALTRANSLATION_DEFAULT_LOCALE: (
-        mergedConfig.defaultLocale || defaultWithGTConfigProps.defaultLocale
+        mergedConfig.defaultLocale ||
+        defaultWithGTConfigProps.defaultLocale ||
+        ''
       ).toString(),
       _GENERALTRANSLATION_GT_SERVICES_ENABLED: gtServicesEnabled.toString(),
       _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
         mergedConfig.ignoreBrowserLocales?.toString() ||
-        defaultWithGTConfigProps.ignoreBrowserLocales.toString(),
+        defaultWithGTConfigProps.ignoreBrowserLocales?.toString() ||
+        'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
     },

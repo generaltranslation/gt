@@ -13,8 +13,9 @@ import {
   defaultReferrerLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '../../utils/cookies';
+import WithGTConfigProps from '../props/withGTConfigProps';
 
-const defaultWithGTConfigProps = {
+const defaultWithGTConfigProps: WithGTConfigProps = {
   config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
@@ -34,7 +35,7 @@ const defaultWithGTConfigProps = {
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
-  swcPluginOptions: {
+  experimentalSwcPluginOptions: {
     logLevel: 'warn',
     compileTimeHash: true,
   },
