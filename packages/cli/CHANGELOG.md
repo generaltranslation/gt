@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.3
+
+### Patch Changes
+
+- [#564](https://github.com/generaltranslation/gt/pull/564) [`7251fc5`](https://github.com/generaltranslation/gt/commit/7251fc5d2474ad71b2da9ae5b71e37aed8199bce) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix CLI validation (used to error for {<JSX/>} inside <T>)
+
 ## 2.1.2
 
 ### Patch Changes
