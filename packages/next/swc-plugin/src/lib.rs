@@ -367,7 +367,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
   let mut program = program;
 
   if !config.compile_time_hash {
-    panic!("gt-next: Error: compile_time_hash is not enabled");
+    return program;
   }
 
   let mut visitor = TransformVisitor::new(

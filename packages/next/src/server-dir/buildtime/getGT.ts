@@ -26,7 +26,6 @@ import use from '../../utils/use';
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
-  console.log('getGT', _messages);
   // ---------- SET UP ---------- //
 
   const I18NConfig = getI18NConfig();

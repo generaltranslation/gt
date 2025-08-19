@@ -158,10 +158,10 @@ export function withGTConfig(
   }
 
   // Check if experimentalSwcPluginOptions is enabled
-  const enableExperimentalSwcPlugin =
-    Object.keys(props.experimentalSwcPluginOptions || {}).length > 0;
+  const enableExperimentalSwcPluginOptions =
+    nextConfig.experimental?.swcPlugins !== undefined;
   const enableSwcPlugin =
-    enableExperimentalSwcPlugin || nextConfig.experimental?.swcPlugins;
+    enableExperimentalSwcPluginOptions || nextConfig.experimental?.swcPlugins;
 
   // ---------- MERGE CONFIGS ---------- //
 
@@ -405,17 +405,15 @@ export function withGTConfig(
     experimental: {
       ...nextConfig.experimental,
       // SWC Plugin
-      ...(enableSwcPlugin && {
-        swcPlugins: [
-          ...(nextConfig.experimental?.swcPlugins || []),
-          enableExperimentalSwcPlugin && [
-            path.resolve(__dirname, './gt_swc_plugin.wasm'),
-            {
-              ...mergedConfig.experimentalSwcPluginOptions,
-            },
-          ],
+      swcPlugins: [
+        ...(nextConfig.experimental?.swcPlugins || []),
+        [
+          path.resolve(__dirname, './gt_swc_plugin.wasm'),
+          {
+            ...mergedConfig.experimentalSwcPluginOptions,
+          },
         ],
-      }),
+      ],
       ...(turboPackEnabled &&
         experimentalTurbopack && {
           turbo: {
