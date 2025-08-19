@@ -321,7 +321,7 @@ export default function useRuntimeTranslation({
   const createRegistration = useCallback(
     <T extends 'ICU' | 'JSX'>(dataFormat: T) =>
       (params: {
-        source: T extends 'ICU' ? string : JsxChildren;
+        source: T extends 'ICU' ? string : JsxChildren | undefined;
         targetLocale: string;
         metadata: TranslationRequestMetadata;
       }): Promise<TranslatedChildren> => {
@@ -384,9 +384,7 @@ export default function useRuntimeTranslation({
 
   return {
     developmentApiEnabled,
-    registerIcuForTranslation:
-      registerIcuForTranslation as unknown as TranslateIcuCallback,
-    registerJsxForTranslation:
-      registerJsxForTranslation as unknown as TranslateChildrenCallback,
+    registerIcuForTranslation,
+    registerJsxForTranslation,
   };
 }
