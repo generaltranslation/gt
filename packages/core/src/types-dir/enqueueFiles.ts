@@ -40,6 +40,7 @@ export type EnqueueFilesOptions = {
   targetLocales: string[];
   _versionId?: string;
   timeout?: number;
+  modelProvider?: string;
 };
 
 export type RequiredEnqueueFilesOptions = EnqueueFilesOptions &

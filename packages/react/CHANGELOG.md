@@ -1,5 +1,22 @@
 # gt-react
 
+## 10.2.1
+
+### Patch Changes
+
+- [#559](https://github.com/generaltranslation/gt/pull/559) [`5b93faf`](https://github.com/generaltranslation/gt/commit/5b93faf28001c579e293d027651889be44ea366e) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added useLocaleDirection hook and async getLocaleDirection function
+
+## 10.2.0
+
+### Minor Changes
+
+- [#556](https://github.com/generaltranslation/gt/pull/556) [`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding modelProvider field to gt.config
+
+### Patch Changes
+
+- Updated dependencies [[`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d)]:
+  - generaltranslation@7.3.0
+
 ## 10.1.1
 
 ### Patch Changes

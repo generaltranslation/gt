@@ -58,6 +58,18 @@ export function buildJSXTree(
     }
 
     const expr = node.expression;
+    if (t.isJSXElement(expr)) {
+      return buildJSXTree(
+        importAliases,
+        expr,
+        unwrappedExpressions,
+        updates,
+        errors,
+        warnings,
+        file,
+        insideT
+      );
+    }
     const staticAnalysis = isStaticExpression(expr);
     if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
       // Preserve the exact whitespace for static string expressions

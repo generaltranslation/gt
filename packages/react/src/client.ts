@@ -22,6 +22,7 @@ import useLocaleSelector from './hooks/useLocaleSelector';
 import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 import useRegion from './hooks/useRegion';
 import { useRegionSelector } from './hooks/useRegionSelector';
+import { useLocaleDirection } from './hooks/useLocaleDirection';
 
 export {
   GTContext,
@@ -40,6 +41,7 @@ export {
   useRegionSelector,
   useGTClass,
   useLocaleProperties,
+  useLocaleDirection,
   T,
   Var,
   Num,

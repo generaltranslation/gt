@@ -45,6 +45,7 @@ export async function sendUpdates(
       version: options.version,
       description: options.description,
       requireApproval: options.requireApproval,
+      modelProvider: options.modelProvider,
     });
 
     const { versionId, message, locales, projectSettings } = responseData;

@@ -17,6 +17,7 @@ import {
   Plural as _Plural,
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
+  useLocaleDirection as _useLocaleDirection,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -333,6 +334,22 @@ export const useGTClass: typeof _useGTClass = () => {
  * console.log(localeProperties);
  */
 export const useLocaleProperties: typeof _useLocaleProperties = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale from the `<GTProvider>` context.
+ *
+ * If no locale is provided, the direction for the current user's locale is returned.
+ *
+ * @param {string} [locale] - Optional locale code (e.g., 'ar', 'en-US'). If omitted, uses the current locale from context.
+ * @returns {'ltr' | 'rtl'} The text direction for the locale: 'rtl' for right-to-left languages, otherwise 'ltr'.
+ *
+ * @example
+ * const dir = useLocaleDirection(); // e.g., 'ltr'
+ * const arabicDir = useLocaleDirection('ar'); // 'rtl'
+ */
+export const useLocaleDirection: typeof _useLocaleDirection = () => {
   throw new Error(typesFileError);
 };
 

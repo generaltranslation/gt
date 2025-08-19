@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.1.2
+
+### Patch Changes
+
+- [#559](https://github.com/generaltranslation/gt/pull/559) [`5b93faf`](https://github.com/generaltranslation/gt/commit/5b93faf28001c579e293d027651889be44ea366e) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added useLocaleDirection hook and async getLocaleDirection function
+
+- Updated dependencies [[`5b93faf`](https://github.com/generaltranslation/gt/commit/5b93faf28001c579e293d027651889be44ea366e)]:
+  - gt-react@10.2.1
+
 ## 6.1.1
 
 ### Patch Changes

@@ -1,5 +1,28 @@
 # gtx-cli
 
+## 2.1.2
+
+### Patch Changes
+
+- [#562](https://github.com/generaltranslation/gt/pull/562) [`8461c5e`](https://github.com/generaltranslation/gt/commit/8461c5ee2ca25cf50d4e366cb4d1e765107851fd) Thanks [@SamEggert](https://github.com/SamEggert)! - localStaticImports gracefully handles invalid MDX
+
+## 2.1.1
+
+### Patch Changes
+
+- [#554](https://github.com/generaltranslation/gt/pull/554) [`77fb048`](https://github.com/generaltranslation/gt/commit/77fb048ab2e4432739df1c4fbabe165712e84fb3) Thanks [@SamEggert](https://github.com/SamEggert)! - use MDX AST for static imports/urls
+
+## 2.1.0
+
+### Minor Changes
+
+- [#556](https://github.com/generaltranslation/gt/pull/556) [`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding modelProvider field to gt.config
+
+### Patch Changes
+
+- Updated dependencies [[`c52d896`](https://github.com/generaltranslation/gt/commit/c52d896f83fb4f6e58921286320a524885c8a52d)]:
+  - generaltranslation@7.3.0
+
 ## 2.0.24
 
 ### Patch Changes

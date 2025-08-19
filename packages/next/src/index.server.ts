@@ -10,6 +10,7 @@ import { Tx } from './server';
 import { useGT } from './server-dir/buildtime/getGT';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
+import { useLocaleDirection } from './request/getLocaleDirection';
 import getI18NConfig from './config-dir/getI18NConfig';
 import {
   DictionaryTranslationOptions,
@@ -48,6 +49,7 @@ export {
   useGT,
   useTranslations,
   useLocale,
+  useLocaleDirection,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
