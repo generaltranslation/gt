@@ -24,10 +24,10 @@ pub struct TraversalState {
 #[derive(Default)]
 pub struct ImportTracker {
     /// Aliases for gt-next imports
-    pub translation_import_aliases: std::collections::HashMap<Atom, Atom>, // T
-    pub variable_import_aliases: std::collections::HashMap<Atom, Atom>,    // Var, Num, Currency, DateTime
-    pub branch_import_aliases: std::collections::HashMap<Atom, Atom>,      // Branch, Plural
-    pub translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // getGT, useGT (deprecated)
+    // pub translation_import_aliases: std::collections::HashMap<Atom, Atom>, // T
+    // pub variable_import_aliases: std::collections::HashMap<Atom, Atom>,    // Var, Num, Currency, DateTime
+    // pub branch_import_aliases: std::collections::HashMap<Atom, Atom>,      // Branch, Plural
+    // pub translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // getGT, useGT (deprecated)
 
     /// Scope tracker for tracking variables
     pub scope_tracker: ScopeTracker,
@@ -44,10 +44,10 @@ pub struct ImportTracker {
 impl ImportTracker {
     pub fn new(string_collector: StringCollector) -> Self {
         Self {
-            translation_import_aliases: std::collections::HashMap::new(),
-            variable_import_aliases: std::collections::HashMap::new(),
-            branch_import_aliases: std::collections::HashMap::new(),
-            translation_function_import_aliases: std::collections::HashMap::new(),
+            // translation_import_aliases: std::collections::HashMap::new(),
+            // variable_import_aliases: std::collections::HashMap::new(),
+            // branch_import_aliases: std::collections::HashMap::new(),
+            // translation_function_import_aliases: std::collections::HashMap::new(),
             scope_tracker: ScopeTracker::default(),
             string_collector,
             namespace_imports: std::collections::HashSet::new(),

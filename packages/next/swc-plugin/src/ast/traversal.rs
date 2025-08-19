@@ -7,6 +7,7 @@ use crate::hash::{
     SanitizedChildren, SanitizedChild, SanitizedElement, SanitizedGtProp, 
     SanitizedVariable, VariableType, HtmlContentProps
 };
+use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
 use crate::TransformVisitor;
 use crate::ast::utilities::{
     get_tag_name,
@@ -39,6 +40,60 @@ impl<'a> JsxTraversal<'a> {
     pub fn new(visitor: &'a TransformVisitor) -> Self {
         Self { visitor, id_counter: 0 }
     }
+
+    pub fn calculate_element_hash(&mut self, element: &JSXElement) -> (String, String) {
+        use crate::hash::JsxHasher;
+        
+        // Build sanitized children directly from JSX children
+        if let Some(sanitized_children) = self.build_sanitized_children(&element.children) {
+            // Get the id from the element
+            let id = extract_attribute_from_jsx_attr(element, "id");
+    
+            // Get the context from the element
+            let context = extract_attribute_from_jsx_attr(element, "context");
+    
+            // Get the id from the element
+            // Create the full SanitizedData structure to match TypeScript implementation
+            use crate::hash::SanitizedData;
+            let sanitized_data = SanitizedData {
+                source: Some(Box::new(sanitized_children)),
+                id,
+                context,
+                data_format: Some("JSX".to_string()),
+            };
+            // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
+            let json_string = JsxHasher::stable_stringify(&sanitized_data)
+                .expect("Failed to serialize sanitized data");
+            
+            
+            let hash = JsxHasher::hash_string(&json_string);
+            (hash, json_string)
+        } else {
+            // Fallback to empty content hash with proper wrapper structure
+            use crate::hash::{SanitizedData, SanitizedElement, SanitizedChild, SanitizedChildren};
+            let empty_element = SanitizedElement {
+                b: None,
+                c: None,
+                t: None,
+                d: None,
+            };
+            
+            let empty_children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(empty_element))));
+            let sanitized_data = SanitizedData {
+                source: Some(Box::new(empty_children)),
+                id: None,
+                context: None,
+                data_format: Some("JSX".to_string()),
+            };
+            
+            let json_string = JsxHasher::stable_stringify(&sanitized_data)
+                .expect("Failed to serialize empty data");
+            
+            let hash = JsxHasher::hash_string(&json_string);
+            (hash, json_string)
+        }
+      }
+    
     
 
     /// Build sanitized children objects directly from JSX children
@@ -301,8 +356,12 @@ impl<'a> JsxTraversal<'a> {
     pub fn is_branch_component(&self, tag_name: &str) -> bool {
 
         // Named import
-        if let Some(original_name) = self.visitor.import_tracker.branch_import_aliases.get(&Atom::from(tag_name)) {
-            if original_name == "Branch" {
+        if let Some(translation_variable) = self
+            .visitor
+            .import_tracker
+            .scope_tracker
+            .get_translation_variable(&Atom::from(tag_name)) {
+            if translation_variable.original_name.as_str() == "Branch" {
                 return true;
             }
         }
@@ -320,8 +379,12 @@ impl<'a> JsxTraversal<'a> {
 
     pub fn is_plural_component(&self, tag_name: &str) -> bool {
         // Named import
-        if let Some(original_name) = self.visitor.import_tracker.branch_import_aliases.get(&Atom::from(tag_name)) {
-            if original_name == "Plural" {
+        if let Some(translation_variable) = self
+            .visitor
+            .import_tracker
+            .scope_tracker
+            .get_translation_variable(&Atom::from(tag_name)) {
+            if translation_variable.original_name.as_str() == "Plural" {
                 return true;
             }
         }

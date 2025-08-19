@@ -118,7 +118,7 @@ impl VisitMut for TransformVisitor {
                 .get_translation_variable(&function_name) {
 
                 // Register the useGT/getGT as aggregators on the string collector
-                let original_name = translation_variable.assigned_value.clone();
+                let original_name = translation_variable.original_name.clone();
                 let identifier = translation_variable.identifier;
 
                 // Detect t() calls
@@ -302,7 +302,7 @@ impl Fold for TransformVisitor {
                 .get_translation_variable(&function_name) {
 
                 // Register the useGT/getGT as aggregators on the string collector
-                let original_name = translation_variable.assigned_value.clone();
+                let original_name = translation_variable.original_name.clone();
 
                 // Detect useGT/getGT calls
                 if is_translation_function_name(&original_name) {

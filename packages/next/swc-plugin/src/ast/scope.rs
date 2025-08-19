@@ -13,7 +13,7 @@ pub struct ScopeInfo {
 #[derive(Debug, Clone)]
 pub struct ScopedVariable {
     pub scope_id: u32,
-    pub assigned_value: Atom,    // useGT, getGT, "literal", "ref:otherVar", etc.
+    pub original_name: Atom,    // useGT, getGT, T, useGT1, (Name or aliased name)
     pub variable_name: Atom,     // t, translationFunction, etc.
     pub is_translation_function: bool, // true if assigned_value is a known translation function
     pub identifier: u32, // identifier for the variable
@@ -103,7 +103,7 @@ impl ScopeTracker {
     pub fn track_variable(&mut self, variable_name: Atom, assigned_value: Atom, is_translation_function: bool, identifier: u32) {
         let scoped_var = ScopedVariable {
             scope_id: self.current_scope,
-            assigned_value,
+            original_name: assigned_value,
             variable_name: variable_name.clone(),
             is_translation_function,
             identifier,
@@ -118,10 +118,7 @@ impl ScopeTracker {
 
     /// Track a translation function variable (convenience method)
     pub fn track_translation_variable(&mut self, variable_name: Atom, function_name: Atom, identifier: u32) {
-        // eprintln!("track_translation_variable() {:?}, {:?}, {:?}", variable_name, function_name, identifier);
         self.track_variable(variable_name, function_name, true, identifier);
-        // Log the scoped variables object
-        // eprintln!("scoped_variables: {:?}", self.scoped_variables);
     }
 
     /// Track a non-translation variable (convenience method)  
@@ -131,14 +128,8 @@ impl ScopeTracker {
 
     /// Find if a variable is accessible in the current scope
     pub fn get_variable(&self, variable_name: &Atom) -> Option<&ScopedVariable> {
-        if variable_name.as_str() == "useGT" {
-            // eprintln!("get_variable()\nvariable_name: {:?}\n {:?}\ncurrent_scope: {:?}\nscoped_variables: {:?}", variable_name, self.scoped_variables.get(variable_name), self.current_scope, self.scoped_variables);
-        }
         if let Some(variables) = self.scoped_variables.get(variable_name) {
-            // With aggressive cleanup, all remaining variables are accessible by definition
-            // Return the most recent one (proper shadowing behavior)
             let result = variables.last();
-            // eprintln!("get_variable() success {:?} {:?}", variable_name, result);
             return result;
         }
         None
@@ -240,7 +231,7 @@ mod tests {
         let var = tracker.get_variable(&"t".into());
         assert!(var.is_some());
         assert_eq!(var.unwrap().scope_id, scope1);
-        assert_eq!(var.unwrap().assigned_value.as_str(), "useGT");
+        assert_eq!(var.unwrap().original_name.as_str(), "useGT");
         assert_eq!(var.unwrap().is_translation_function, true);
         
         // Enter nested scope
@@ -272,7 +263,7 @@ mod tests {
         
         // Verify outer variable
         let outer_var = tracker.get_variable(&"t".into()).unwrap();
-        assert_eq!(outer_var.assigned_value.as_str(), "useGT");
+        assert_eq!(outer_var.original_name.as_str(), "useGT");
         
         // Enter inner scope and shadow the variable
         let scope2 = tracker.enter_scope();
@@ -280,7 +271,7 @@ mod tests {
         
         // Should get the shadowed (inner) variable
         let inner_var = tracker.get_variable(&"t".into()).unwrap();
-        assert_eq!(inner_var.assigned_value.as_str(), "getGT");
+        assert_eq!(inner_var.original_name.as_str(), "getGT");
         assert_eq!(inner_var.scope_id, scope2);
         
         // Exit inner scope (this should remove the inner variable)
@@ -288,7 +279,7 @@ mod tests {
         
         // Should get the outer variable again
         let restored_var = tracker.get_variable(&"t".into()).unwrap();
-        assert_eq!(restored_var.assigned_value.as_str(), "useGT");
+        assert_eq!(restored_var.original_name.as_str(), "useGT");
     }
 
     #[test]
@@ -346,12 +337,12 @@ mod tests {
         // Test translation function helper
         let translation_func = tracker.get_translation_variable(&"myTranslator".into());
         assert!(translation_func.is_some());
-        assert_eq!(translation_func.unwrap().assigned_value.as_str(), "useGT");
+        assert_eq!(translation_func.unwrap().original_name.as_str(), "useGT");
         
         // Test general variable value helper
         let var_value = tracker.get_variable(&"regularVar".into());
         assert!(var_value.is_some());
-        assert_eq!(var_value.unwrap().assigned_value.as_str(), "someValue");
+        assert_eq!(var_value.unwrap().original_name.as_str(), "someValue");
         
         // Test that regular variable doesn't return from translation helper
         let not_translation = tracker.get_translation_variable(&"regularVar".into());
@@ -383,11 +374,11 @@ mod tests {
         // Check types are preserved
         let t1_var = tracker.get_variable(&"t1".into()).unwrap();
         assert_eq!(t1_var.is_translation_function, true);
-        assert_eq!(t1_var.assigned_value.as_str(), "useGT");
+        assert_eq!(t1_var.original_name.as_str(), "useGT");
         
         let literal_var = tracker.get_variable(&"literal".into()).unwrap();
         assert_eq!(literal_var.is_translation_function, false);
-        assert_eq!(literal_var.assigned_value.as_str(), "string_literal");
+        assert_eq!(literal_var.original_name.as_str(), "string_literal");
         
         // Enter nested scope
         let _scope2 = tracker.enter_scope();
@@ -402,7 +393,7 @@ mod tests {
         // Should get shadowed version
         let shadowed = tracker.get_variable(&"t1".into()).unwrap();
         assert_eq!(shadowed.is_translation_function, false);
-        assert_eq!(shadowed.assigned_value.as_str(), "not_a_function");
+        assert_eq!(shadowed.original_name.as_str(), "not_a_function");
         
         // Exit nested scope - shadow should be removed
         tracker.exit_scope();
@@ -410,7 +401,7 @@ mod tests {
         // Should get original back
         let restored = tracker.get_variable(&"t1".into()).unwrap();
         assert_eq!(restored.is_translation_function, true);
-        assert_eq!(restored.assigned_value.as_str(), "useGT");
+        assert_eq!(restored.original_name.as_str(), "useGT");
         assert_eq!(restored.scope_id, scope1);
     }
 

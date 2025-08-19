@@ -1,6 +1,5 @@
 use super::state::{Statistics, TraversalState, ImportTracker};
-use super::jsx_utils::{extract_attribute_from_jsx_attr};
-use crate::ast::StringCollector;
+use crate::ast::{JsxTraversal, StringCollector};
 use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use swc_core::{
@@ -149,12 +148,15 @@ impl TransformVisitor {
     }
 
     pub fn track_hash_attributes(&mut self, element: &mut JSXElement) {
+        // Traversal
+        let mut traversal = JsxTraversal::new(self);
+
         // Check if hash attribute already exists
         let has_hash_attr = TransformVisitor::determine_has_hash_attr(&element);
             
         if !has_hash_attr {
             // Calculate real hash using AST traversal
-            let (hash_value, _) = HashOperations::calculate_element_hash(&element);
+            let (hash_value, _) = traversal.calculate_element_hash(&element);
 
             // Store the t() function call
             let counter_id = self.import_tracker.string_collector.increment_counter();
@@ -222,20 +224,36 @@ impl TransformVisitor {
 
     /// Check if we should track this component based on imports or known components
     pub fn should_track_component_as_translation(&self, name: &Atom) -> bool {
-        // Direct imports from gt-next - includes T components
-        self.import_tracker.translation_import_aliases.contains_key(name)
+        // // Direct imports from gt-next - includes T components
+        if let Some(translation_variable) = self.import_tracker.scope_tracker.get_translation_variable(name) {
+            if is_translation_component_name(&translation_variable.original_name) {
+                return true;
+            }
+        }
+        false
+
     }
 
     /// Check if we should track this component as a variable component
     pub fn should_track_component_as_variable(&self, name: &Atom) -> bool {
         // Direct imports from gt-next
-        self.import_tracker.variable_import_aliases.contains_key(name)
+        if let Some(variable) = self.import_tracker.scope_tracker.get_variable(name) {
+            if is_variable_component_name(&variable.original_name) {
+                return true;
+            }
+        }
+        false
     }
 
     /// Check if we should track this component as a branch component
     pub fn should_track_component_as_branch(&self, name: &Atom) -> bool {
         // Branch and Plural components components
-        self.import_tracker.branch_import_aliases.contains_key(name)
+        if let Some(branch_variable) = self.import_tracker.scope_tracker.get_variable(name) {
+            if is_branch_name(&branch_variable.original_name) {
+                return true;
+            }
+        }
+        false
     }
 
     /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
@@ -297,30 +315,15 @@ impl TransformVisitor {
                             };
 
                             // Store the mapping: local_name -> original_name
-                            if is_translation_component_name(&original_name) {
-                                // Track the translation component name
+                            if is_translation_component_name(&original_name)
+                            || is_variable_component_name(&original_name)
+                            || is_branch_name(&original_name)
+                            || is_translation_function_name(&original_name) {
                                 self.import_tracker.scope_tracker.track_translation_variable(
                                     local_name.clone(),
                                     original_name.clone(),
                                     0 // We don't care about the identifier for imports
                                 );
-
-                                self.import_tracker.translation_import_aliases.insert(local_name, original_name);
-                            } else if is_variable_component_name(&original_name) {
-                                self.import_tracker.variable_import_aliases.insert(local_name, original_name);
-                            } else if is_branch_name(&original_name) {
-                                // no existing tracking for branches
-                                self.import_tracker.branch_import_aliases.insert(local_name, original_name);
-                            } else if is_translation_function_name(&original_name) {
-                                // Track the translation function name
-                                self.import_tracker.scope_tracker.track_translation_variable(
-                                    local_name.clone(),
-                                    original_name.clone(),
-                                    0 // We don't care about the identifier for imports
-                                );
-
-                                // Deprecated behavior
-                                self.import_tracker.translation_function_import_aliases.insert(local_name, original_name);
                             }
                         }
                         ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
@@ -362,7 +365,7 @@ impl TransformVisitor {
         }
     }
 
-
+  
     // Calculate hash for a call expression return the hash and the json string
     pub fn calculate_hash_for_call_expr(&mut self, string: &ExprOrSpread, options: Option<&ExprOrSpread>) -> (Option<String>, Option<String>) {
         // Extract the string content
@@ -557,7 +560,7 @@ impl TransformVisitor {
                 .get_translation_variable(callee_name) {
 
                 // This will be either useGT or getGT, not the alias
-                let original_name = translation_variable.assigned_value.clone();
+                let original_name = translation_variable.original_name.clone();
 
                 // Check if its getGT or useGT
                 if is_translation_function_name(&original_name) {
