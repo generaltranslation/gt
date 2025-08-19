@@ -4,7 +4,7 @@ use crate::{
   visitor::{
     analysis::{is_translation_function_callback, is_translation_function_name},
     errors::create_dynamic_content_warning,
-    expr_utils::get_callee_expr_function_name,
+    expr_utils::{get_callee_expr_function_name, is_allowed_dynamic_content},
   },
 };
 use swc_core::{
@@ -145,9 +145,12 @@ impl VisitMut for TransformVisitor {
   fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
     // Only check for violations if we're in a translation component and NOT in a JSX attribute
     if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
-      self.statistics.dynamic_content_violations += 1;
-      let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
-      self.logger.log_error(&warning);
+      // Check if the expression is allowed dynamic content
+      if !is_allowed_dynamic_content(&expr_container.expr) {
+        self.statistics.dynamic_content_violations += 1;
+        let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
+        self.logger.log_error(&warning);
+      }
     }
     expr_container.visit_mut_children_with(self);
   }
@@ -303,17 +306,6 @@ impl Fold for TransformVisitor {
       }
     }
     call_expr.fold_children_with(self)
-  }
-
-  /// Process JSX expression containers to detect unwrapped dynamic content
-  fn fold_jsx_expr_container(&mut self, expr_container: JSXExprContainer) -> JSXExprContainer {
-    // Only check for violations if we're in a translation component and NOT in a JSX attribute
-    if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
-      self.statistics.dynamic_content_violations += 1;
-      let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
-      self.logger.log_error(&warning);
-    }
-    expr_container.fold_children_with(self)
   }
 
   /// Process JSX attributes to track context and avoid flagging attribute expressions
