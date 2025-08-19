@@ -8,6 +8,9 @@ import { cookieConsentGiven } from '@/components/analytics/cookie-banner';
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+      return;
+    }
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
       api_host: '/ingest',
       ui_host: 'https://us.posthog.com',
