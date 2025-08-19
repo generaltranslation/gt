@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../../logging/errors', () => ({
   apiError: vi.fn(
     (status: number, statusText: string, error: string) =>
-      `GT error: API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`
+      `GT Error: API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`
   ),
 }));
 
@@ -37,7 +37,7 @@ describe.sequential('validateResponse', () => {
   it('should throw error for failed response with error text', async () => {
     const errorText = 'Invalid API key';
     const expectedErrorMessage =
-      'GT error: API returned error status. Status: 401, Status Text: Unauthorized, Error: Invalid API key';
+      'GT Error: API returned error status. Status: 401, Status Text: Unauthorized, Error: Invalid API key';
 
     const mockResponse = {
       ok: false,

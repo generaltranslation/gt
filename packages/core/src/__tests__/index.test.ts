@@ -54,7 +54,7 @@ describe('GT Translation Methods', () => {
         context: 'greeting',
       };
 
-      const result = await gt._translate(source, 'fr', metadata);
+      const result = await gt.translate(source, 'fr', metadata);
 
       expect(mockTranslate).toHaveBeenCalledWith(source, 'fr', metadata, {
         baseUrl: 'https://api.test.com',
@@ -71,8 +71,8 @@ describe('GT Translation Methods', () => {
         baseUrl: 'https://api.test.com',
       });
 
-      await expect(gtNoTarget._translate('Hello world', '')).rejects.toThrow(
-        'GT error: Cannot call `translate` without a specified locale. Either pass a locale to the `translate` function or specify a targetLocale in the GT constructor.'
+      await expect(gtNoTarget.translate('Hello world', '')).rejects.toThrow(
+        'GT Error: Cannot call `translate` without a specified locale. Either pass a locale to the `translate` function or specify a targetLocale in the GT constructor.'
       );
     });
 
@@ -82,8 +82,8 @@ describe('GT Translation Methods', () => {
         baseUrl: 'https://api.test.com',
       });
 
-      await expect(gtNoProject._translate('Hello world', 'es')).rejects.toThrow(
-        'GT error: Cannot call `translate` without a specified project ID. Either pass a project ID to the `translate` function or specify a projectId in the GT constructor.'
+      await expect(gtNoProject.translate('Hello world', 'es')).rejects.toThrow(
+        'GT Error: Cannot call `translate` without a specified project ID. Either pass a project ID to the `translate` function or specify a projectId in the GT constructor.'
       );
     });
 
@@ -93,7 +93,7 @@ describe('GT Translation Methods', () => {
 
       const source: Content = 'Hello world';
 
-      await gt._translate(source, 'fr');
+      await gt.translate(source, 'fr');
 
       expect(mockTranslate).toHaveBeenCalledWith(source, 'fr', undefined, {
         baseUrl: 'https://api.test.com',
@@ -119,7 +119,7 @@ describe('GT Translation Methods', () => {
         },
       ];
 
-      await gt._translate(complexJsxSource, 'es');
+      await gt.translate(complexJsxSource, 'es');
 
       expect(mockTranslate).toHaveBeenCalledWith(
         complexJsxSource,
@@ -138,7 +138,7 @@ describe('GT Translation Methods', () => {
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
       // Test ICU format
-      await gt._translate('Hello {name}', 'es', {
+      await gt.translate('Hello {name}', 'es', {
         context: 'greeting',
         dataFormat: 'ICU',
       });
@@ -156,7 +156,7 @@ describe('GT Translation Methods', () => {
 
       // Test JSX format
       const jsxSource: JsxChildren = [{ t: 'span', c: ['Hello world'] }];
-      await gt._translate(jsxSource, 'fr', {
+      await gt.translate(jsxSource, 'fr', {
         context: 'greeting',
         dataFormat: 'JSX',
       });
@@ -187,7 +187,7 @@ describe('GT Translation Methods', () => {
         timeout: 5000,
       };
 
-      await gt._translate('Hello world', 'es', fullMetadata);
+      await gt.translate('Hello world', 'es', fullMetadata);
 
       expect(mockTranslate).toHaveBeenCalledWith(
         'Hello world',
@@ -206,7 +206,7 @@ describe('GT Translation Methods', () => {
       const error = new Error('Translation service unavailable');
       mockTranslate.mockRejectedValue(error);
 
-      await expect(gt._translate('Hello world', 'es')).rejects.toThrow(
+      await expect(gt.translate('Hello world', 'es')).rejects.toThrow(
         'Translation service unavailable'
       );
     });
@@ -318,7 +318,7 @@ describe('GT Translation Methods', () => {
       ];
 
       await expect(gtNoTarget.translateMany(requests)).rejects.toThrow(
-        'GT error: Cannot call `translateMany` without a specified locale. Either pass a locale to the `translateMany` function or specify a targetLocale in the GT constructor.'
+        'GT Error: Cannot call `translateMany` without a specified locale. Either pass a locale to the `translateMany` function or specify a targetLocale in the GT constructor.'
       );
     });
 
@@ -339,7 +339,7 @@ describe('GT Translation Methods', () => {
       await expect(
         gtNoProject.translateMany(requests, { targetLocale: 'es' })
       ).rejects.toThrow(
-        'GT error: Cannot call `translateMany` without a specified project ID. Either pass a project ID to the `translateMany` function or specify a projectId in the GT constructor.'
+        'GT Error: Cannot call `translateMany` without a specified project ID. Either pass a project ID to the `translateMany` function or specify a projectId in the GT constructor.'
       );
     });
 
