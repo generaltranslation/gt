@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.2.1
+
+### Patch Changes
+
+- [#570](https://github.com/generaltranslation/gt/pull/570) [`9f49d8c`](https://github.com/generaltranslation/gt/commit/9f49d8ca2af6f2373a0e83080100b7d0d8dc5a38) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: throwing error on template string
+
 ## 6.2.0
 
 ### Minor Changes
