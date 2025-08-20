@@ -734,7 +734,7 @@ mod tests {
       statistics: Statistics::default(),
       traversal_state: TraversalState::default(),
       import_tracker: ImportTracker::default(),
-      settings: PluginSettings::new(LogLevel::Silent, false, None),
+      settings: PluginSettings::new(LogLevel::Silent, false, None, false),
       logger: Logger::new(LogLevel::Silent),
       string_collector: crate::ast::StringCollector::new(),
     }

@@ -35,7 +35,7 @@ pub struct TransformVisitor {
 
 impl Default for TransformVisitor {
   fn default() -> Self {
-    Self::new(LogLevel::Warn, false, None, StringCollector::new())
+    Self::new(LogLevel::Warn, false, None, false, StringCollector::new())
   }
 }
 
@@ -44,6 +44,7 @@ impl TransformVisitor {
     log_level: LogLevel,
     compile_time_hash: bool,
     filename: Option<String>,
+    disable_build_checks: bool,
     mut string_collector: StringCollector,
   ) -> Self {
     // Reset the counter to 0
@@ -52,7 +53,7 @@ impl TransformVisitor {
       traversal_state: TraversalState::default(),
       statistics: Statistics::default(),
       import_tracker: ImportTracker::new(),
-      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone()),
+      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks),
       logger: Logger::new(log_level),
       string_collector,
     }
@@ -301,14 +302,16 @@ impl TransformVisitor {
   pub fn check_call_expr_for_violations(&mut self, arg: &ExprOrSpread, function_name: &str) {
     match arg.expr.as_ref() {
       // Template literals: t(`Hello ${name}`)
-      Expr::Tpl(_) => {
-        self.statistics.dynamic_content_violations += 1;
-        let warning = create_dynamic_function_warning(
-          self.settings.filename.as_deref(),
-          function_name,
-          "template literals",
-        );
-        self.logger.log_error(&warning);
+      Expr::Tpl(tpl) => {
+        if !tpl.exprs.is_empty() && !self.settings.disable_build_checks {
+          self.statistics.dynamic_content_violations += 1;
+          let warning = create_dynamic_function_warning(
+            self.settings.filename.as_deref(),
+            function_name,
+            "template literals",
+          );
+          self.logger.log_error(&warning);
+        }
       }
       // String concatenation: t("Hello " + name)
       Expr::Bin(BinExpr {
@@ -322,13 +325,15 @@ impl TransformVisitor {
         let right_is_string = matches!(right.as_ref(), Expr::Lit(Lit::Str(_)));
 
         if left_is_string || right_is_string {
-          self.statistics.dynamic_content_violations += 1;
-          let warning = create_dynamic_function_warning(
-            self.settings.filename.as_deref(),
-            function_name,
-            "string concatenation",
-          );
-          self.logger.log_error(&warning);
+          if !self.settings.disable_build_checks {
+            self.statistics.dynamic_content_violations += 1;
+            let warning = create_dynamic_function_warning(
+              self.settings.filename.as_deref(),
+              function_name,
+              "string concatenation",
+            );
+            self.logger.log_error(&warning);
+          }
         }
       }
       _ => {
@@ -678,7 +683,7 @@ mod tests {
 
   // Helper to create a test visitor with specific imports
   fn create_visitor_with_imports() -> TransformVisitor {
-    let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+    let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
 
     // Add some test imports using the scope tracker
     visitor
@@ -847,6 +852,7 @@ mod tests {
         LogLevel::Debug,
         true,
         Some("test.tsx".to_string()),
+        false,
         StringCollector::new(),
       );
 
@@ -934,7 +940,7 @@ mod tests {
 
     #[test]
     fn creates_dynamic_content_warning_without_filename() {
-      TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
+      TransformVisitor::new(LogLevel::Warn, false, None, false, StringCollector::new());
       let warning = create_dynamic_content_warning(None, "T");
 
       assert!(warning.contains("gt-next"));
@@ -949,6 +955,7 @@ mod tests {
         LogLevel::Warn,
         false,
         Some("components/Test.tsx".to_string()),
+        false,
         StringCollector::new(),
       );
       let warning = create_dynamic_content_warning(Some("components/Test.tsx"), "T");
@@ -959,7 +966,7 @@ mod tests {
 
     #[test]
     fn creates_dynamic_function_warning_without_filename() {
-      TransformVisitor::new(LogLevel::Warn, false, None, StringCollector::new());
+      TransformVisitor::new(LogLevel::Warn, false, None, false, StringCollector::new());
       let warning = create_dynamic_function_warning(None, "useGT", "template literals");
 
       assert!(warning.contains("gt-next"));
@@ -974,6 +981,7 @@ mod tests {
         LogLevel::Warn,
         false,
         Some("hooks/useTranslation.ts".to_string()),
+        false,
         StringCollector::new(),
       );
       let warning = create_dynamic_function_warning(
@@ -993,7 +1001,7 @@ mod tests {
     #[test]
     fn processes_gt_next_named_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
       let import_decl = create_import_decl(
         "gt-next",
         vec![
@@ -1026,7 +1034,7 @@ mod tests {
     #[test]
     fn processes_namespace_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
       let import_decl = create_import_decl("gt-next", vec![create_namespace_import("GT")]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1040,7 +1048,7 @@ mod tests {
     #[test]
     fn processes_gt_next_client_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
       let import_decl = create_import_decl("gt-next/client", vec![create_named_import("T", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1055,7 +1063,7 @@ mod tests {
     #[test]
     fn ignores_non_gt_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
       let import_decl = create_import_decl("react", vec![create_named_import("React", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1426,7 +1434,7 @@ mod tests {
     #[test]
     fn calculates_hash_for_empty_element() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
       let element = create_jsx_element("T", vec![]);
 
       let mut traversal = crate::ast::JsxTraversal::new(&mut visitor);
@@ -1440,7 +1448,7 @@ mod tests {
     #[test]
     fn hash_changes_with_different_content() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
 
       let element1 = create_jsx_element("T", vec![]);
       let mut element2 = create_jsx_element("T", vec![]);
@@ -1470,6 +1478,7 @@ mod tests {
         LogLevel::Silent,
         false,
         Some("test.tsx".to_string()),
+        false,
         StringCollector::new(),
       );
 

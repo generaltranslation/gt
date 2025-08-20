@@ -10,14 +10,17 @@ pub struct PluginSettings {
   pub compile_time_hash: bool,
   /// Optional filename for better error messages
   pub filename: Option<String>,
+  /// Disable dynamic content check
+  pub disable_build_checks: bool,
 }
 
 impl PluginSettings {
-  pub fn new(log_level: LogLevel, compile_time_hash: bool, filename: Option<String>) -> Self {
+  pub fn new(log_level: LogLevel, compile_time_hash: bool, filename: Option<String>, disable_build_checks: bool) -> Self {
     Self {
       log_level,
       compile_time_hash,
       filename,
+      disable_build_checks,
     }
   }
 }
@@ -32,6 +35,8 @@ pub struct PluginConfig {
   pub compile_time_hash: bool,
   #[serde(default)]
   pub filename: Option<String>,
+  #[serde(default)]
+  pub disable_build_checks: bool,
 }
 
 impl Default for PluginConfig {
@@ -40,6 +45,7 @@ impl Default for PluginConfig {
       log_level: LogLevel::Warn,
       compile_time_hash: false,
       filename: None,
+      disable_build_checks: false,
     }
   }
 }
