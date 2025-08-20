@@ -55,8 +55,6 @@ export default function getI18NConfig(): I18NConfiguration {
       throw new Error(devApiKeyIncludedInProductionError);
     }
 
-    const a = 'test lefthook';
-
     // disable all translation
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
       ...defaultWithGTConfigProps,
