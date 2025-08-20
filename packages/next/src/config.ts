@@ -1,7 +1,9 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultWithGTConfigProps from './config-dir/props/defaultWithGTConfigProps';
+import defaultWithGTConfigProps, {
+  defaultCacheExpiryTime,
+} from './config-dir/props/defaultWithGTConfigProps';
 import withGTConfigProps from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
@@ -44,7 +46,7 @@ import { turboConfigStable } from './plugin/getTurboConfigStable';
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
- * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
+ * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
@@ -163,6 +165,12 @@ export function withGTConfig(
     ...props.headersAndCookies,
   };
 
+  // Merge experimentalSwcPluginOptions
+  const mergedExperimentalSwcPluginOptions = {
+    ...defaultWithGTConfigProps.experimentalSwcPluginOptions,
+    ...props.experimentalSwcPluginOptions,
+  };
+
   // precedence: input > env > config file > defaults
   const mergedConfig: withGTConfigProps = {
     ...defaultWithGTConfigProps,
@@ -170,6 +178,7 @@ export function withGTConfig(
     ...envConfig,
     ...props,
     headersAndCookies: mergedHeadersAndCookies,
+    experimentalSwcPluginOptions: mergedExperimentalSwcPluginOptions,
     _usingPlugin: true, // flag to indicate plugin usage
   };
 
@@ -256,7 +265,7 @@ export function withGTConfig(
     }
   );
 
-  // ---------- ERROR CHECKS ---------- //
+  // ---------- DERIVED CONFIG ATTRIBUTES ---------- //
 
   // Local dictionary flag
   if (customLoadDictionaryPath) {
@@ -285,6 +294,17 @@ export function withGTConfig(
   } else {
     mergedConfig.loadTranslationsType = 'remote';
   }
+
+  // Set default cache expiry if and only if no dev key
+  if (
+    mergedConfig.loadTranslationsType == 'remote' &&
+    !mergedConfig.devApiKey &&
+    typeof mergedConfig.cacheExpiryTime === 'undefined'
+  ) {
+    mergedConfig.cacheExpiryTime = defaultCacheExpiryTime;
+  }
+
+  // ---------- ERROR CHECKS ---------- //
 
   // Resolve getLocale path
   const customLocaleEnabled = false;
@@ -344,36 +364,10 @@ export function withGTConfig(
   // experimental.turbo is deprecated in next@15.3.0.
   // Check for experimental.turbo. If we write to turbopack field, experimental fields will be ignored.
   // Yet, if there are other resolveAlias fields, we don't want to be ignored either.
-  let turboConfig = {};
-  if (turboPackEnabled) {
-    if (
-      turboConfigStable &&
-      (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
-    ) {
-      turboConfig = {
-        turbopack: {
-          ...nextConfig.turbopack,
-          resolveAlias: {
-            ...nextConfig.turbopack?.resolveAlias,
-            ...turboAliases,
-          },
-        },
-      };
-    } else {
-      turboConfig = {
-        experimental: {
-          ...nextConfig.experimental,
-          turbo: {
-            ...nextConfig.experimental?.turbo,
-            resolveAlias: {
-              ...nextConfig.experimental?.turbo?.resolveAlias,
-              ...turboAliases,
-            },
-          },
-        },
-      };
-    }
-  }
+  const experimentalTurbopack = !(
+    turboConfigStable &&
+    (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
+  );
 
   return {
     ...nextConfig,
@@ -390,16 +384,51 @@ export function withGTConfig(
         mergedConfig.loadTranslationsType === 'custom'
       ).toString(),
       _GENERALTRANSLATION_DEFAULT_LOCALE: (
-        mergedConfig.defaultLocale || defaultWithGTConfigProps.defaultLocale
+        mergedConfig.defaultLocale ||
+        defaultWithGTConfigProps.defaultLocale ||
+        ''
       ).toString(),
       _GENERALTRANSLATION_GT_SERVICES_ENABLED: gtServicesEnabled.toString(),
       _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
         mergedConfig.ignoreBrowserLocales?.toString() ||
-        defaultWithGTConfigProps.ignoreBrowserLocales.toString(),
+        defaultWithGTConfigProps.ignoreBrowserLocales?.toString() ||
+        'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
     },
-    ...turboConfig,
+    ...(turboPackEnabled &&
+      !experimentalTurbopack && {
+        turbopack: {
+          ...nextConfig.turbopack,
+          resolveAlias: {
+            ...nextConfig.turbopack?.resolveAlias,
+            ...turboAliases,
+          },
+        },
+      }),
+    experimental: {
+      ...nextConfig.experimental,
+      // SWC Plugin
+      swcPlugins: [
+        ...(nextConfig.experimental?.swcPlugins || []),
+        [
+          path.resolve(__dirname, './gt_swc_plugin.wasm'),
+          {
+            ...mergedConfig.experimentalSwcPluginOptions,
+          },
+        ],
+      ],
+      ...(turboPackEnabled &&
+        experimentalTurbopack && {
+          turbo: {
+            ...nextConfig.experimental?.turbo,
+            resolveAlias: {
+              ...nextConfig.experimental?.turbo?.resolveAlias,
+              ...turboAliases,
+            },
+          },
+        }),
+    },
     webpack: function webpack(
       ...[webpackConfig, options]: Parameters<
         NonNullable<NextConfig['webpack']>

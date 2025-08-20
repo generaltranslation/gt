@@ -71,6 +71,15 @@ export const txUseClientError =
   `This is currently unsupported. Please use <T> with variables, ` +
   `or make sure <Tx> rendered on the server only. `;
 
+export const missingVariablesError = (variables: string[], message: string) =>
+  `gt-next Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
+
+export const createStringRenderError = (
+  message: string,
+  id: string | undefined
+) =>
+  `gt-next Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+
 // ---- WARNINGS ---- //
 
 export const usingDefaultsWarning =
@@ -109,9 +118,20 @@ export const APIKeyMissingWarn =
   `Find your Development API key: generaltranslation.com/dashboard.  ` +
   `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
 
-export const translationLoadingWarning =
-  `gt-next: [DEV ONLY] Translations have changed since the last update. ` +
-  `Translations in production will be preloaded, and page will not need to be refreshed.`;
+export const createTranslationLoadingWarning = ({
+  source,
+  translation,
+  id,
+}: {
+  source: string;
+  translation: string;
+  id?: string;
+}) =>
+  `[DEV ONLY] Warning: gt-next created translation "${source}" -> "${translation}"` +
+  (id ? ` for id "${id}"` : '') +
+  `. ` +
+  `In development, hot-reloaded translations may not be be displayed until the page is refreshed. ` +
+  `In production, translations will be preloaded and there won't be a warning.`;
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 

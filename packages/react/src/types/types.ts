@@ -54,16 +54,7 @@ export type TranslatedElement = {
 export type TranslatedChild = TranslatedElement | string | Variable;
 export type TranslatedChildren = TranslatedChild | TranslatedChild[];
 export type Translations = {
-  [hash: string]: TranslatedChildren;
-};
-
-/**
- * Mapping of hashes to translation result status.
- */
-export type TranslationsStatus = {
-  [hash: string]:
-    | { status: 'success' | 'loading' }
-    | { status: 'error'; code?: number; error?: string };
+  [hash: string]: TranslatedChildren | null;
 };
 
 // ----- DICTIONARY ----- //
@@ -95,7 +86,9 @@ export type DictionaryTranslationOptions = Record<string, any>;
 export type InlineTranslationOptions = DictionaryTranslationOptions & {
   $context?: string;
   $id?: string;
+  $_hash?: string;
 };
+
 export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;
@@ -115,3 +108,11 @@ export type RenderVariable = ({
 }: Omit<VariableProps, 'variableName'> & {
   locales: string[];
 }) => React.JSX.Element;
+
+export type _Message = {
+  message: string;
+  $id?: string;
+  $context?: string;
+  $_hash?: string;
+};
+export type _Messages = _Message[];

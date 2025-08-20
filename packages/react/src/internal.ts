@@ -32,7 +32,8 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
-  TranslationsStatus,
+  _Message,
+  _Messages,
 } from './types/types';
 
 import { GTContextType } from './types/context';
@@ -43,6 +44,7 @@ import {
 } from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
+import { reactHasUse } from './promises/reactHasUse';
 
 export {
   addGTIdentifier,
@@ -68,7 +70,6 @@ export {
   Entry,
   TranslatedChildren,
   Translations,
-  TranslationsStatus,
   GTContextType,
   ClientProviderProps,
   DictionaryTranslationOptions,
@@ -83,4 +84,7 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   mergeDictionaries,
+  _Message,
+  _Messages,
+  reactHasUse,
 };

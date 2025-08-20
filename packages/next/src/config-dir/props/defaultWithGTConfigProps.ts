@@ -24,7 +24,6 @@ const defaultWithGTConfigProps = {
   maxConcurrentRequests: 100,
   maxBatchSize: 25,
   batchInterval: 50,
-  cacheExpiryTime: 60000,
   renderSettings: defaultRenderSettings,
   _usingPlugin: false,
   ignoreBrowserLocales: false,
@@ -35,6 +34,13 @@ const defaultWithGTConfigProps = {
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
+  experimentalSwcPluginOptions: {
+    logLevel: 'warn',
+    compileTimeHash: true,
+  },
 } as const;
+
+// exported separately because it's only used in production
+export const defaultCacheExpiryTime = 60000;
 
 export default defaultWithGTConfigProps;

@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "7.3.0",
+  "version": "7.3.1",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
@@ -13,8 +13,8 @@
     "build:release": "npm run build:clean",
     "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
-    "lint": "eslint \"src/**/*.{js,ts}\" \"./__e2e__/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
-    "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./__e2e__/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
+    "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "npm run build:clean && npm publish",

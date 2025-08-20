@@ -1,12 +1,7 @@
 // Type definition for the params extracted from gt.config.json
 
 import { RenderMethod } from '../internal';
-import {
-  Dictionary,
-  Translations,
-  CustomLoader,
-  TranslationsStatus,
-} from './types';
+import { Dictionary, Translations, CustomLoader } from './types';
 import { CustomMapping } from 'generaltranslation/types';
 
 export type GTConfig = {
@@ -59,8 +54,7 @@ export type GTProviderProps = {
 export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
-  initialTranslations: Translations;
-  initialTranslationsStatus: TranslationsStatus;
+  translations: Translations;
   locale: string;
   locales: string[];
   region?: string; // should be made mandatory if we ever make region a server-side variable
@@ -73,7 +67,7 @@ export type ClientProviderProps = {
     method: RenderMethod;
     timeout?: number;
   };
-  runtimeTranslationEnabled: boolean;
+  developmentApiEnabled: boolean;
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string | null;

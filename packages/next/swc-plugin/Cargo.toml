@@ -1,0 +1,31 @@
+[package]
+name = "gt-swc-plugin"
+version = "0.1.0"
+edition = "2021"
+
+# Essential lints only
+[lints.clippy]
+# Catch common issues
+unwrap_used = "warn"
+expect_used = "warn"
+todo = "warn"
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+# Optimize for SWC plugin distribution
+codegen-units = 1
+lto = true
+opt-level = "s"  # Optimize for size
+strip = "symbols"  # Strip debug symbols
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+swc_core = { version = "34.0.*", features = ["ecma_plugin_transform"] }
+sha2 = "0.10"
+
+# .cargo/config.toml defines few alias to build plugin.
+# cargo build-wasip1 generates wasm32-wasip1 binary
+# cargo build-wasm32 generates wasm32-unknown-unknown binary.

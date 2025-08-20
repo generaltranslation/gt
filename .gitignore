@@ -11,5 +11,5 @@ _test_cli
 _testing
 dist/
 .turbo
-.claude
+.claude/
 tsconfig.tsbuildinfo

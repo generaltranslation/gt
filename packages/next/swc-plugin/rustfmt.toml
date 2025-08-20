@@ -1,0 +1,9 @@
+# Simple rustfmt config
+edition = "2021"
+max_width = 100
+tab_spaces = 2
+
+# Clean imports
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+reorder_imports = true

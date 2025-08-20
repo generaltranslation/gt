@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.1.2",
+  "version": "6.1.3",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -14,14 +14,16 @@
   ],
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.13",
-    "generaltranslation": "^7.2.0",
-    "gt-react": "^10.2.1"
+    "generaltranslation": "^7.3.1",
+    "gt-react": "^10.2.2"
   },
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build": "npm run transpile",
-    "build:clean": "rm -rf dist; npm run build",
+    "build:swc-plugin": "cargo build --release --target wasm32-wasip1 --manifest-path ./swc-plugin/Cargo.toml && mkdir -p ./dist && cp -p ./swc-plugin/target/wasm32-wasip1/release/gt_swc_plugin.wasm ./dist/gt_swc_plugin.wasm",
+    "build:swc-plugin:dev": "cargo build --target wasm32-wasip1 --manifest-path ./swc-plugin/Cargo.toml && mkdir -p ./dist && cp -p ./swc-plugin/target/wasm32-wasip1/debug/gt_swc_plugin.wasm ./dist/gt_swc_plugin-dev.wasm",
+    "build": "npm run build:swc-plugin && npm run transpile",
+    "build:clean": "rm -rf ./swc-plugin/target && rm -rf dist; npm run build",
     "build:release": "npm run build:clean",
     "release": "npm run build:clean && npm publish",
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
@@ -29,7 +31,9 @@
     "release:latest": "npm run build:clean && npm publish --tag latest",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\" --fix",
-    "test": "vitest run",
+    "test": "npm run test:js && npm run test:rust",
+    "test:js": "vitest run",
+    "test:rust": "cargo test --manifest-path ./swc-plugin/Cargo.toml",
     "test:watch": "vitest"
   },
   "repository": {
@@ -86,6 +90,14 @@
     },
     "./_load-dictionary": {
       "default": "./dist/_load-dictionary.js"
+    },
+    "./compiler": {
+      "types": "./dist/compiler/index.d.ts",
+      "default": "./dist/compiler/index.js"
+    },
+    "./eslint-plugin": {
+      "types": "./dist/eslint-plugin/index.d.ts",
+      "default": "./dist/eslint-plugin/index.js"
     }
   },
   "typesVersions": {
@@ -116,6 +128,12 @@
       ],
       "_load-dictionary": [
         "./dist/_load-dictionary.d.ts"
+      ],
+      "compiler": [
+        "./dist/compiler/index.d.ts"
+      ],
+      "eslint-plugin": [
+        "./dist/eslint-plugin/index.d.ts"
       ]
     }
   },
@@ -148,6 +166,12 @@
       ],
       "gt-next/_load-dictionary": [
         "/dist/_load-dictionary"
+      ],
+      "gt-next/compiler": [
+        "/dist/compiler"
+      ],
+      "gt-next/eslint-plugin": [
+        "/dist/eslint-plugin"
       ]
     }
   },

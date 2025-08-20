@@ -1,0 +1,5 @@
+# SWC plugin build target (WASM only)
+[alias]
+# Primary SWC plugin target
+build-plugin = "build --target wasm32-wasip1 --release"
+build-plugin-dev = "build --target wasm32-wasip1"

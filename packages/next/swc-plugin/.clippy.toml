@@ -1,0 +1,3 @@
+# Simple clippy config for AST processing
+cognitive-complexity-threshold = 30
+too-many-arguments-threshold = 8

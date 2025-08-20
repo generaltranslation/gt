@@ -3,7 +3,6 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   RenderMethod,
-  TranslationsStatus,
   Translations,
 } from '../../types/types';
 import {
@@ -22,12 +21,11 @@ import { TranslateIcuCallback } from '../../types/runtime';
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
   translations: Translations | null,
-  translationsStatus: TranslationsStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
-  runtimeTranslationEnabled: boolean,
+  developmentApiEnabled: boolean,
   registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
 ) {
@@ -84,27 +82,26 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check id first
       const translationEntry = translations?.[hash];
-      const translationStatus = translationsStatus?.[hash];
 
       // Check translation successful
-      if (translationStatus?.status === 'success') {
+      if (translationEntry) {
         return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
         ]);
       }
 
-      if (translationStatus?.status === 'error') {
+      if (translationEntry === null) {
+        return renderMessage(entry, [defaultLocale]);
+      }
+
+      // Check if runtime translation is enabled
+      if (!developmentApiEnabled) {
         return renderMessage(entry, [defaultLocale]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
       // development only
-
-      // Check if runtime translation is enabled
-      if (!runtimeTranslationEnabled) {
-        return renderMessage(entry, [defaultLocale]);
-      }
 
       // Translate Content
       registerIcuForTranslation({
@@ -117,24 +114,17 @@ export default function useCreateInternalUseTranslationsFunction(
         },
       });
 
-      // Loading behavior
-      if (renderSettings.method === 'replace') {
-        return renderMessage(entry, [defaultLocale]);
-      } else if (renderSettings.method === 'skeleton') {
-        return '';
-      }
-      return dialectTranslationRequired // default behavior
-        ? renderMessage(entry, [defaultLocale])
-        : '';
+      // renderSettings.method must be ignored because t() is synchronous &
+      // t() should never return an empty string because functions reason about strings based on falsiness
+      return renderMessage(entry, [defaultLocale]);
     },
     [
       dictionary,
       translations,
-      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
-      runtimeTranslationEnabled,
+      developmentApiEnabled,
       registerIcuForTranslation,
       dialectTranslationRequired,
     ]

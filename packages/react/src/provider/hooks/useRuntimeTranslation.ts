@@ -8,14 +8,11 @@ import {
 import {
   RenderMethod,
   TranslatedChildren,
-  TranslationsStatus,
   Translations,
 } from '../../types/types';
-
 import {
   TranslateIcuCallback,
   TranslateChildrenCallback,
-  TranslateI18nextCallback,
 } from '../../types/runtime';
 import { JsxChildren } from 'generaltranslation/internal';
 import {
@@ -23,40 +20,39 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
-import { DataFormat } from 'generaltranslation/types';
 import { GT } from 'generaltranslation';
 
-// Queue to store requested keys between renders.
 type TranslationRequestMetadata = {
   hash: string;
   context?: string;
   [attr: string]: any;
 };
-type TranslationRequestQueueItem = (
+
+type TranslationRequestQueueItem =
   | {
-      dataFormat: 'ICU' | 'I18NEXT';
+      dataFormat: 'ICU';
       source: string;
+      metadata: TranslationRequestMetadata;
+      resolve: (value: TranslatedChildren) => void;
+      reject: (error: any) => void; // kept for API compatibility (unused after change)
     }
   | {
       dataFormat: 'JSX';
       source: JsxChildren;
-    }
-) & {
-  metadata: TranslationRequestMetadata;
-  resolve: any;
-  reject: any;
-};
+      metadata: TranslationRequestMetadata;
+      resolve: (value: TranslatedChildren) => void;
+      reject: (error: any) => void; // kept for API compatibility (unused after change)
+    };
 
 export default function useRuntimeTranslation({
   gt,
   locale,
-  versionId,
+  versionId, // kept for API compatibility (not used)
   defaultLocale,
   runtimeUrl,
   renderSettings,
   setTranslations,
-  setTranslationsStatus,
-  ...globalMetadata
+  ...additionalMetadata
 }: {
   gt: GT;
   locale: string;
@@ -68,323 +64,326 @@ export default function useRuntimeTranslation({
     timeout?: number;
   };
   setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
-  setTranslationsStatus: React.Dispatch<
-    React.SetStateAction<TranslationsStatus | null>
-  >;
   [key: string]: any;
 }): {
-  registerI18nextForTranslation: TranslateI18nextCallback;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  runtimeTranslationEnabled: boolean;
+  developmentApiEnabled: boolean;
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
+  const developmentApiEnabled =
+    !!gt.projectId &&
+    !!runtimeUrl &&
+    !!gt.devApiKey &&
+    process.env.NODE_ENV === 'development';
 
-  // Translation at runtime during development is enabled
-  const runtimeTranslationEnabled = !!(
-    gt.projectId &&
-    runtimeUrl &&
-    gt.devApiKey &&
-    process.env.NODE_ENV === 'development'
-  );
-
-  if (!runtimeTranslationEnabled)
+  if (!developmentApiEnabled) {
+    const disabledError = (fn: string) =>
+      Promise.reject(
+        new Error(`${fn}() failed because translation is disabled`)
+      );
     return {
-      runtimeTranslationEnabled,
-      registerI18nextForTranslation: () =>
-        Promise.reject(
-          new Error(
-            'registerI18nextForTranslation() failed because translation is disabled'
-          )
-        ),
+      developmentApiEnabled,
       registerIcuForTranslation: () =>
-        Promise.reject(
-          new Error(
-            'registerIcuForTranslation() failed because translation is disabled'
-          )
-        ),
+        disabledError('registerIcuForTranslation'),
       registerJsxForTranslation: () =>
-        Promise.reject(
-          new Error(
-            'registerJsxForTranslation() failed because translation is disabled'
-          )
-        ),
+        disabledError('registerJsxForTranslation'),
     };
+  }
 
-  // ----- SETUP ----- //
-
-  globalMetadata = {
-    ...globalMetadata,
+  // ---------- CONFIG SNAPSHOT (stable via ref, updated each render) ---------- //
+  const cfgRef = useRef({
+    gt,
+    locale,
+    baseMetadata: {
+      ...additionalMetadata,
+      projectId: gt.projectId,
+      sourceLocale: defaultLocale,
+    },
+    timeout: renderSettings.timeout,
+  });
+  cfgRef.current.gt = gt;
+  cfgRef.current.locale = locale;
+  cfgRef.current.baseMetadata = {
+    ...additionalMetadata,
     projectId: gt.projectId,
     sourceLocale: defaultLocale,
   };
+  cfgRef.current.timeout = renderSettings.timeout;
 
-  const [activeRequests, setActiveRequests] = useState(0);
+  // ---------- LIFECYCLE & STAGING (avoid setState before mount) ---------- //
+  const mountedRef = useRef(false);
+  const stagedResultsRef = useRef<Translations | null>(null);
+  const [flushTick, setFlushTick] = useState(0);
 
-  // Requests waiting to be sent
+  const mergeIntoTranslations = useCallback(
+    (delta: Translations) => {
+      setTranslations((prev) => {
+        const keys = Object.keys(delta);
+        if (keys.length === 0) return prev;
+        const next = prev ? { ...prev } : {};
+        let changed = false;
+        for (const k of keys) {
+          const nv = (delta as any)[k];
+          const pv = (prev as any)?.[k];
+          if (!Object.is(pv, nv)) {
+            (next as any)[k] = nv;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    },
+    [setTranslations]
+  );
+
+  const stageAndRequestFlush = useCallback((delta: Translations) => {
+    stagedResultsRef.current = {
+      ...(stagedResultsRef.current ?? {}),
+      ...delta,
+    };
+    // Only trigger a state change after mount; before mount, we'll flush on mount.
+    if (mountedRef.current) setFlushTick((t) => t + 1);
+  }, []);
+
+  // Mount/unmount: mark mounted and flush anything staged pre-mount.
+  useEffect(() => {
+    mountedRef.current = true;
+    if (stagedResultsRef.current) {
+      const staged = stagedResultsRef.current;
+      stagedResultsRef.current = null;
+      mergeIntoTranslations(staged);
+    }
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [mergeIntoTranslations]);
+
+  // Perform the actual setTranslations in an effect (runs post-commit).
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    const staged = stagedResultsRef.current;
+    if (staged) {
+      stagedResultsRef.current = null;
+      mergeIntoTranslations(staged);
+    }
+  }, [flushTick, mergeIntoTranslations]);
+
+  // ---------- REQUEST/QUEUE STATE ---------- //
+  const activeRequestsRef = useRef(0);
   const requestQueueRef = useRef<Map<string, TranslationRequestQueueItem>>(
     new Map()
   );
-  // Requests that have yet to be resolved
   const pendingRequestQueueRef = useRef<
     Map<string, Promise<TranslatedChildren>>
   >(new Map());
 
-  useEffect(() => {
-    // remove all pending requests
-    requestQueueRef.current.forEach((item) => item.resolve());
-    requestQueueRef.current.clear();
-  }, [locale]);
+  // ---------- BATCH SENDER (no state writes here) ---------- //
+  const sendBatchRequest = useCallback(
+    async (
+      batch: Map<string, TranslationRequestQueueItem>
+    ): Promise<Translations> => {
+      if (batch.size === 0) return {};
+      activeRequestsRef.current += 1;
 
-  // ----- DEFINE FUNCTIONS ----- //
+      const { gt, locale, baseMetadata, timeout } = cfgRef.current;
+      const requests = Array.from(batch.values());
+      const newTranslations: Translations = {};
+      const resultsMap = new Map<string, TranslatedChildren | null>();
 
-  const {
-    i18next: registerI18nextForTranslation,
-    icu: registerIcuForTranslation,
-    jsx: registerJsxForTranslation,
-  } = useMemo(() => {
-    const createTranslationRegistrationFunction = <T extends DataFormat>(
-      dataFormat: T
-    ) => {
-      return (params: {
-        source: T extends 'I18NEXT'
-          ? Parameters<TranslateI18nextCallback>[0]['source']
-          : T extends 'ICU'
-            ? Parameters<TranslateIcuCallback>[0]['source']
-            : T extends 'JSX'
-              ? Parameters<TranslateChildrenCallback>[0]['source']
-              : never;
+      try {
+        const results = await gt.translateMany(requests, {
+          ...baseMetadata,
+          targetLocale: locale,
+          timeout,
+        });
+
+        results.forEach((result, index) => {
+          const req = requests[index];
+          const { hash, id } = req.metadata;
+          if ('translation' in result) {
+            const value = result.translation;
+            newTranslations[hash] = value;
+            resultsMap.set(hash, value);
+          } else if ('error' in result) {
+            const msg = createGenericRuntimeTranslationError(id, hash);
+            console.warn(
+              `${msg} ${result.error || 'An upstream error occurred.'}`
+            );
+            newTranslations[hash] = null;
+            resultsMap.set(hash, null);
+          } else {
+            const msg = createGenericRuntimeTranslationError(id, hash);
+            console.warn(`${msg} Unknown response format.`, result);
+            newTranslations[hash] = null;
+            resultsMap.set(hash, null);
+          }
+        });
+      } catch (e: any) {
+        if (e?.name === 'AbortError') {
+          console.warn(runtimeTranslationTimeoutWarning);
+        } else {
+          console.warn(dynamicTranslationError, e);
+        }
+        // Mark every request in this batch as null, and warn.
+        requests.forEach((r) => {
+          newTranslations[r.metadata.hash] = null;
+          resultsMap.set(r.metadata.hash, null);
+        });
+      } finally {
+        activeRequestsRef.current -= 1;
+        // Resolve the promises for this batch (never reject).
+        requests.forEach((r) => {
+          const res = resultsMap.get(r.metadata.hash);
+          if (res === undefined) {
+            console.warn(
+              `No translation result for ${r.metadata.hash}; resolving as null.`
+            );
+            r.resolve(null as unknown as TranslatedChildren);
+          } else {
+            r.resolve(res as TranslatedChildren);
+          }
+        });
+      }
+
+      return newTranslations;
+    },
+    []
+  );
+
+  // ---------- TIMER-DRIVEN FLUSHER (no polling effect) ---------- //
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tickRef = useRef<() => Promise<void>>(async () => {});
+
+  const stageAndScheduleNext = useCallback(
+    (batchResult: Translations) => {
+      // Stage results and request the commit effect to run
+      stageAndRequestFlush(batchResult);
+
+      // If more work remains, schedule another flush cycle
+      if (requestQueueRef.current.size > 0) {
+        flushTimerRef.current = setTimeout(() => {
+          flushTimerRef.current = null;
+          void tickRef.current();
+        }, batchInterval);
+      }
+    },
+    [stageAndRequestFlush]
+  );
+
+  const installTick = useCallback(() => {
+    tickRef.current = async () => {
+      // Respect concurrency cap
+      if (activeRequestsRef.current >= maxConcurrentRequests) {
+        flushTimerRef.current = setTimeout(() => {
+          flushTimerRef.current = null;
+          void tickRef.current();
+        }, batchInterval);
+        return;
+      }
+
+      const q = requestQueueRef.current;
+      if (q.size === 0) return;
+
+      const batchEntries = Array.from(q.entries()).slice(
+        0,
+        Math.min(maxBatchSize, q.size)
+      );
+      const batch = new Map(batchEntries);
+      batchEntries.forEach(([k]) => q.delete(k));
+
+      const batchResult = await sendBatchRequest(batch);
+      stageAndScheduleNext(batchResult);
+    };
+  }, [sendBatchRequest, stageAndScheduleNext]);
+
+  const scheduleFlush = useCallback(
+    (immediate = false) => {
+      installTick();
+      if (immediate) {
+        if (flushTimerRef.current) {
+          clearTimeout(flushTimerRef.current);
+          flushTimerRef.current = null;
+        }
+        void tickRef.current(); // Safe pre-mount: will only stage results
+        return;
+      }
+      if (flushTimerRef.current) return; // already armed
+      flushTimerRef.current = setTimeout(() => {
+        flushTimerRef.current = null;
+        void tickRef.current();
+      }, batchInterval);
+    },
+    [installTick]
+  );
+
+  // ---------- REGISTRATION (returns Promises for Suspense) ---------- //
+  const createRegistration = useCallback(
+    <T extends 'ICU' | 'JSX'>(dataFormat: T) =>
+      (params: {
+        source: T extends 'ICU' ? string : JsxChildren | undefined;
         targetLocale: string;
         metadata: TranslationRequestMetadata;
       }): Promise<TranslatedChildren> => {
-        // Get the key, which is a combination of hash and locale
         const key = `${params.metadata.hash}:${params.targetLocale}`;
 
-        // Return a promise to current request if it exists
-        const pendingRequest = pendingRequestQueueRef.current.get(key);
-        if (pendingRequest) {
-          return pendingRequest;
-        }
+        const existing = pendingRequestQueueRef.current.get(key);
+        if (existing) return existing;
 
-        // Promise for hooking into the translation request to know when complete
-        const translationPromise = new Promise<TranslatedChildren>(
-          (resolve, reject) => {
-            requestQueueRef.current.set(
-              key,
-              dataFormat === 'JSX'
-                ? {
-                    dataFormat: 'JSX' as const,
-                    source: params.source as JsxChildren,
-                    metadata: params.metadata,
-                    resolve,
-                    reject,
-                  }
-                : {
-                    dataFormat: dataFormat as 'ICU' | 'I18NEXT',
-                    source: params.source as string,
-                    metadata: params.metadata,
-                    resolve,
-                    reject,
-                  }
-            );
-          }
-        )
-          .catch((error) => {
-            throw error;
-          })
-          .finally(() => {
-            pendingRequestQueueRef.current.delete(key);
-          });
+        const p = new Promise<TranslatedChildren>((resolve /*, reject */) => {
+          const item: TranslationRequestQueueItem =
+            dataFormat === 'JSX'
+              ? {
+                  dataFormat: 'JSX',
+                  source: params.source as JsxChildren,
+                  metadata: params.metadata,
+                  resolve,
+                  reject: () => {}, // no-op; we no longer reject
+                }
+              : {
+                  dataFormat: 'ICU',
+                  source: params.source as string,
+                  metadata: params.metadata,
+                  resolve,
+                  reject: () => {}, // no-op; we no longer reject
+                };
 
-        pendingRequestQueueRef.current.set(key, translationPromise);
-        return translationPromise;
-      };
-    };
-    return {
-      i18next: createTranslationRegistrationFunction('I18NEXT'),
-      icu: createTranslationRegistrationFunction('ICU'),
-      jsx: createTranslationRegistrationFunction('JSX'),
-    };
-  }, []); // refs are stable so don't need to be included in dep array
+          requestQueueRef.current.set(key, item);
 
-  // ----- DEFINE FUNCTIONS ----- //
+          const canFlushNow =
+            requestQueueRef.current.size >= maxBatchSize &&
+            activeRequestsRef.current < maxConcurrentRequests;
 
-  // Send a request to the runtime server
-  const sendBatchRequest = useCallback(
-    async (batchRequests: Map<string, TranslationRequestQueueItem>) => {
-      if (requestQueueRef.current.size === 0) {
-        return [{}, {}];
-      }
-
-      // increment active requests
-      setActiveRequests((prev) => prev + 1);
-
-      const requests = Array.from(batchRequests.values());
-      const newTranslations: Translations = {};
-      const newTranslationsStatus: TranslationsStatus = {};
-
-      try {
-        // ----- TRANSLATION LOADING ----- //
-        const loadingTranslations: TranslationsStatus = Object.entries(
-          batchRequests
-        ).reduce((acc: TranslationsStatus, [, request]) => {
-          // loading state for jsx, render loading behavior
-          acc[request.metadata.hash] = {
-            status: 'loading',
-          };
-          return acc;
-        }, {});
-        setTranslationsStatus((prev) => {
-          return { ...(prev || {}), ...loadingTranslations };
+          // Kick the scheduler; immediate is safe (no state writes pre-mount)
+          scheduleFlush(canFlushNow);
+        }).finally(() => {
+          pendingRequestQueueRef.current.delete(key);
         });
 
-        // ----- RUNTIME TRANSLATION ----- //
-
-        const results = await gt.translateMany(requests, {
-          ...globalMetadata,
-          targetLocale: locale,
-        });
-
-        // ----- PARSE RESPONSE ----- //
-
-        // process each result
-        results.forEach((result, index) => {
-          const request = requests[index];
-          const hash = request.metadata.hash; // identical to reference hash
-
-          // translation received
-          if ('translation' in result) {
-            // set translation
-            newTranslations[hash] = result.translation;
-            newTranslationsStatus[hash] = {
-              status: 'success',
-            };
-            return;
-          }
-
-          // translation failure
-          if ('error' in result) {
-            // 0 and '' are falsey
-            // log error message
-            console.error(
-              createGenericRuntimeTranslationError(
-                request.metadata.id,
-                request.metadata.hash
-              ),
-              result.error || 'An upstream error occurred.'
-            );
-            // set error in translation object
-            newTranslationsStatus[hash] = {
-              status: 'error',
-              code: result.code || 500,
-              error: result.error || 'An upstream error occurred.',
-            };
-            return;
-          }
-
-          // unknown error
-          console.error(
-            createGenericRuntimeTranslationError(
-              request.metadata.id,
-              request.metadata.hash
-            ),
-            result
-          );
-          newTranslationsStatus[hash] = {
-            status: 'error',
-            code: 500,
-            error: 'An upstream error occurred.',
-          };
-        });
-      } catch (error) {
-        // log error
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.warn(runtimeTranslationTimeoutWarning);
-        } else {
-          console.error(dynamicTranslationError, error);
-        }
-
-        // add error message to all translations from this request
-        requests.forEach((request) => {
-          // id defaults to hash if none provided
-          newTranslationsStatus[request.metadata.hash] = {
-            status: 'error',
-            error: 'An error occurred.',
-            code: 500,
-          };
-        });
-      } finally {
-        // decrement active requests
-        setActiveRequests((prev) => prev - 1);
-
-        // resolve all promises
-        requests.forEach((request) => {
-          request.resolve(newTranslations[request.metadata.hash]);
-        });
-
-        // return the new translations
-        return [newTranslations, newTranslationsStatus];
-      }
-    },
-    [
-      runtimeUrl,
-      gt.projectId,
-      gt.devApiKey,
-      locale,
-      globalMetadata,
-      versionId,
-      renderSettings.timeout,
-    ]
+        pendingRequestQueueRef.current.set(key, p);
+        return p;
+      },
+    [scheduleFlush]
   );
 
-  // Create a ref to hold the latest activeRequests value.
-  const activeRequestsRef = useRef(activeRequests);
+  const registerIcuForTranslation = useMemo(
+    () => createRegistration('ICU'),
+    [createRegistration]
+  );
+  const registerJsxForTranslation = useMemo(
+    () => createRegistration('JSX'),
+    [createRegistration]
+  );
 
-  // Update the ref whenever activeRequests changes.
+  // Cleanup any stray timer on unmount (does not drive batching)
   useEffect(() => {
-    activeRequestsRef.current = activeRequests;
-  }, [activeRequests]);
-
-  useEffect(() => {
-    let storeResults = true;
-    const intervalId = setInterval(() => {
-      // Use the ref value for the current activeRequests
-      if (
-        requestQueueRef.current.size > 0 &&
-        activeRequestsRef.current < maxConcurrentRequests
-      ) {
-        const batchSize = Math.min(maxBatchSize, requestQueueRef.current.size);
-        const batchRequests = new Map(
-          Array.from(requestQueueRef.current.entries()).slice(0, batchSize)
-        );
-        (async () => {
-          // Update the translation result
-          const [batchResult, batchStatus] =
-            await sendBatchRequest(batchRequests);
-          if (storeResults) {
-            setTranslations((prev) => ({
-              ...(prev || {}),
-              ...batchResult,
-            }));
-            setTranslationsStatus((prev) => ({
-              ...(prev || {}),
-              ...batchStatus,
-            }));
-          }
-        })();
-        batchRequests.forEach((_, key) => requestQueueRef.current.delete(key));
-      }
-    }, batchInterval);
-
     return () => {
-      storeResults = false;
-      clearInterval(intervalId);
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
     };
-  }, [locale]);
+  }, []);
 
   return {
-    runtimeTranslationEnabled,
-    registerI18nextForTranslation,
+    developmentApiEnabled,
     registerIcuForTranslation,
     registerJsxForTranslation,
   };

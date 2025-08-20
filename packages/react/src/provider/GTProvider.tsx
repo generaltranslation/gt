@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -145,12 +145,7 @@ export default function GTProvider({
 
   // ---------- TRANSLATION STATE ---------- //
 
-  const {
-    translations,
-    setTranslations,
-    translationsStatus,
-    setTranslationsStatus,
-  } = useLoadTranslations({
+  const { translations, setTranslations } = useLoadTranslations({
     _translations,
     translationRequired,
     loadTranslationsType,
@@ -164,10 +159,9 @@ export default function GTProvider({
   // ------- RUNTIME TRANSLATION ----- //
 
   const {
-    registerI18nextForTranslation,
     registerIcuForTranslation,
     registerJsxForTranslation,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
   } = useRuntimeTranslation({
     gt,
     locale,
@@ -176,39 +170,35 @@ export default function GTProvider({
     runtimeUrl,
     renderSettings,
     setTranslations,
-    setTranslationsStatus,
     ...metadata,
   });
 
   // ---------- USE GT ---------- //
 
-  const _internalUseGTFunction = useCreateInternalUseGTFunction(
+  const { _tFunction, _filterMessagesForPreload, _preloadMessages } =
+    useCreateInternalUseGTFunction({
+      gt,
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      developmentApiEnabled,
+      registerIcuForTranslation,
+    });
+
+  // ---------- USE DICT ---------- //
+
+  const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
+    dictionary,
     translations,
-    translationsStatus,
     locale,
     defaultLocale,
     translationRequired,
     dialectTranslationRequired,
-    runtimeTranslationEnabled,
+    developmentApiEnabled,
     registerIcuForTranslation,
     renderSettings
   );
-
-  // ---------- USE DICT ---------- //
-
-  const _internalUseTranslationsFunction =
-    useCreateInternalUseTranslationsFunction(
-      dictionary,
-      translations,
-      translationsStatus,
-      locale,
-      defaultLocale,
-      translationRequired,
-      dialectTranslationRequired,
-      runtimeTranslationEnabled,
-      registerIcuForTranslation,
-      renderSettings
-    );
 
   // ----- RETURN ----- //
 
@@ -219,12 +209,13 @@ export default function GTProvider({
     <GTContext.Provider
       value={{
         gt,
-        registerI18nextForTranslation,
         registerIcuForTranslation,
         registerJsxForTranslation,
-        _internalUseGTFunction,
-        _internalUseTranslationsFunction,
-        runtimeTranslationEnabled,
+        _tFunction,
+        _filterMessagesForPreload,
+        _preloadMessages,
+        _dictionaryFunction,
+        developmentApiEnabled,
         locale,
         locales: approvedLocales,
         setLocale,
@@ -232,14 +223,13 @@ export default function GTProvider({
         region,
         setRegion,
         translations,
-        translationsStatus,
         translationRequired,
         dialectTranslationRequired,
         projectId,
         renderSettings,
       }}
     >
-      {display ? children : fallback}
+      <Suspense fallback={fallback}>{display ? children : fallback}</Suspense>
     </GTContext.Provider>
   );
 }

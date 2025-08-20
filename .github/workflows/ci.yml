@@ -22,6 +22,11 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
       - name: Install dependencies
         run: npm install
 

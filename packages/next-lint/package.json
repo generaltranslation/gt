@@ -1,0 +1,68 @@
+{
+  "name": "@generaltranslation/gt-next-lint",
+  "version": "0.0.1",
+  "description": "ESLint plugin for General Translation Next.js integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "gt-next",
+    "translation",
+    "internationalization",
+    "i18n",
+    "jsx",
+    "react",
+    "nextjs"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git",
+    "directory": "packages/next-lint"
+  },
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "patch": "npm version patch",
+    "transpile": "tsc",
+    "build": "npm run transpile",
+    "build:clean": "rm -rf dist && npm run build",
+    "build:release": "npm run build:clean",
+    "dev": "tsc --watch",
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build:clean"
+  },
+  "peerDependencies": {
+    "eslint": "^8.0.0 || ^9.0.0",
+    "gt-next": "^6.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/eslint": "^8.56.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  }
+}
