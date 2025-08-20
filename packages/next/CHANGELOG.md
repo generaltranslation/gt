@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.2.2
+
+### Patch Changes
+
+- [#572](https://github.com/generaltranslation/gt/pull/572) [`4e95824`](https://github.com/generaltranslation/gt/commit/4e958249a759eb531d053a38764f0a51e0284c73) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: turbopack relative import for plugin
+
 ## 6.2.1
 
 ### Patch Changes
