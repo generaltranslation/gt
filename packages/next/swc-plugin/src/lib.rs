@@ -359,7 +359,12 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 
   let config: PluginConfig = serde_json::from_str(&config_str).unwrap_or_default();
 
-  let filename = None;
+  // Try to get the filename from metadata
+  // First check what context kinds are available
+  use swc_core::common::plugin::metadata::TransformPluginMetadataContextKind;
+  let filename = metadata
+    .get_context(&TransformPluginMetadataContextKind::Filename)
+    .map(|f| f.to_string());
 
   // Create StringCollector for the two-pass system
   let string_collector = crate::ast::StringCollector::new();

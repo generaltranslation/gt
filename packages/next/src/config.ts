@@ -165,6 +165,12 @@ export function withGTConfig(
     ...props.headersAndCookies,
   };
 
+  // Merge experimentalSwcPluginOptions
+  const mergedExperimentalSwcPluginOptions = {
+    ...defaultWithGTConfigProps.experimentalSwcPluginOptions,
+    ...props.experimentalSwcPluginOptions,
+  };
+
   // precedence: input > env > config file > defaults
   const mergedConfig: withGTConfigProps = {
     ...defaultWithGTConfigProps,
@@ -172,6 +178,7 @@ export function withGTConfig(
     ...envConfig,
     ...props,
     headersAndCookies: mergedHeadersAndCookies,
+    experimentalSwcPluginOptions: mergedExperimentalSwcPluginOptions,
     _usingPlugin: true, // flag to indicate plugin usage
   };
 
