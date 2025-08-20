@@ -146,7 +146,7 @@ impl VisitMut for TransformVisitor {
     // Only check for violations if we're in a translation component and NOT in a JSX attribute
     if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
       // Check if the expression is allowed dynamic content
-      if !is_allowed_dynamic_content(&expr_container.expr) {
+      if !self.settings.disable_build_checks && !is_allowed_dynamic_content(&expr_container.expr) {
         self.statistics.dynamic_content_violations += 1;
         let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
         self.logger.log_error(&warning);
@@ -379,11 +379,12 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.log_level.clone(),
     config.compile_time_hash,
     filename.clone(),
+    config.disable_build_checks,
     string_collector,
   );
   program.visit_mut_with(&mut visitor);
 
-  if visitor.statistics.dynamic_content_violations > 0 {
+  if !config.disable_build_checks && visitor.statistics.dynamic_content_violations > 0 {
     panic!(
       "gt-next: Error: {} dynamic content violations found",
       visitor.statistics.dynamic_content_violations
@@ -395,6 +396,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.log_level,
     config.compile_time_hash,
     filename,
+    config.disable_build_checks,
     collected_data,
   );
   program.fold_with(&mut visitor)

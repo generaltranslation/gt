@@ -37,6 +37,7 @@ const defaultWithGTConfigProps = {
   experimentalSwcPluginOptions: {
     logLevel: 'warn',
     compileTimeHash: true,
+    disableBuildChecks: false,
   },
 } as const;
 

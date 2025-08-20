@@ -12,6 +12,7 @@ export type HeadersAndCookies = {
 export type SwcPluginOptions = {
   logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
   compileTimeHash?: boolean;
+  disableBuildChecks?: boolean;
 };
 
 type withGTConfigProps = {
