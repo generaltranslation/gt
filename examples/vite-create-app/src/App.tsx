@@ -2,7 +2,7 @@ import { useState } from 'react';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
-import { LocaleSelector, Num, T, useGT } from 'gt-react';
+import { LocaleSelector, Num, T } from 'gt-react';
 
 function App() {
   const [count, setCount] = useState(0);
