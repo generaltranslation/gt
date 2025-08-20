@@ -184,6 +184,18 @@ export function withGTConfig(
 
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
+  // Resolve wasm filepath
+  const turboPackEnabled = process.env.TURBOPACK === '1';
+  let resolvedWasmFilePath = '';
+  if (mergedConfig.experimentalSwcPluginOptions?.compileTimeHash) {
+    if (turboPackEnabled) {
+      const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+      resolvedWasmFilePath = './' + path.relative(process.cwd(), absolutePath);
+    } else {
+      resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+    }
+  }
+
   // Resolve dictionary filepath
   let resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
@@ -352,8 +364,11 @@ export function withGTConfig(
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-  const turboPackEnabled = process.env.TURBOPACK === '1';
   const I18NConfigParams = JSON.stringify(mergedConfig);
+
+  const swcPluginEntry = resolvedWasmFilePath
+    ? [resolvedWasmFilePath, { ...mergedConfig.experimentalSwcPluginOptions }]
+    : null;
 
   const turboAliases = {
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
@@ -411,12 +426,7 @@ export function withGTConfig(
       // SWC Plugin
       swcPlugins: [
         ...(nextConfig.experimental?.swcPlugins || []),
-        [
-          path.resolve(__dirname, './gt_swc_plugin.wasm'),
-          {
-            ...mergedConfig.experimentalSwcPluginOptions,
-          },
-        ],
+        ...(swcPluginEntry ? [swcPluginEntry] : []),
       ],
       ...(turboPackEnabled &&
         experimentalTurbopack && {
