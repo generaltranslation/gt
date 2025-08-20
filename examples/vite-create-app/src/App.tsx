@@ -6,7 +6,6 @@ import { LocaleSelector, Num, T, useGT } from 'gt-react';
 
 function App() {
   const [count, setCount] = useState(0);
-  const gt = useGT()
   return (
     <>
       <div>
@@ -18,7 +17,7 @@ function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
-      <LocaleSelector/>
+      <LocaleSelector />
       <T id='app.1'>
         <div className='card'>
           <button onClick={() => setCount((count) => count + 1)}>
