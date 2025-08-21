@@ -1,0 +1,49 @@
+{
+  "name": "gt-babel-plugin",
+  "version": "0.1.0",
+  "description": "A Babel plugin for compile-time optimization of GT translation components",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src"
+  },
+  "keywords": [
+    "babel",
+    "plugin",
+    "gt-next",
+    "translation",
+    "i18n"
+  ],
+  "author": "GT Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@babel/core": "^7.0.0"
+  },
+  "dependencies": {
+    "@babel/types": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "generaltranslation": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-typescript": "^7.23.0",
+    "@types/babel__core": "^7.20.0",
+    "@types/babel__traverse": "^7.20.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
