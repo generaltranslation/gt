@@ -1,4 +1,4 @@
-import { hashSource } from 'generaltranslation/id';
+import crypto from 'crypto';
 
 /**
  * Variable types matching the TypeScript definition
@@ -77,12 +77,14 @@ export interface SanitizedData {
  */
 export class JsxHasher {
   /**
-   * Hash a string using the generaltranslation library
-   * Returns first 16 hex characters to match Rust implementation
+   * Hash a string using SHA256 and return first 16 hex characters
+   * Matches the Rust implementation exactly
    */
   static hashString(input: string): string {
-    const fullHash = hashSource(input);
-    return fullHash.slice(0, 16);
+    const hash = crypto.createHash('sha256');
+    hash.update(input, 'utf8');
+    const result = hash.digest('hex');
+    return result.slice(0, 16);
   }
 
   /**

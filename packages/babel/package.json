@@ -1,9 +1,10 @@
 {
   "name": "gt-babel-plugin",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "A Babel plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "author": "General Translation, Inc.",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
@@ -18,8 +19,6 @@
     "translation",
     "i18n"
   ],
-  "author": "GT Team",
-  "license": "MIT",
   "peerDependencies": {
     "@babel/core": "^7.0.0"
   },

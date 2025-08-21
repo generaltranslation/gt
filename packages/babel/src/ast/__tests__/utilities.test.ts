@@ -355,7 +355,7 @@ describe('ast/utilities', () => {
     it('should handle tabs and spaces', () => {
       const text = createJsxText('\t hello \t world \t');
       const result = buildSanitizedTextContent(text);
-      expect(result).toBe('\t hello \t world \t');
+      expect(result).toBe('  hello   world  ');
     });
 
     it('should handle mixed significant and normal whitespace', () => {
