@@ -25,6 +25,28 @@ export type Options = {
   experimentalLocalizeStaticImports?: boolean;
 };
 
+export type TranslateFlags = {
+  config?: string;
+  apiKey?: string;
+  projectId?: string;
+  versionId?: string;
+  jsconfig?: string;
+  dictionary?: string;
+  defaultLocale?: string;
+  locales?: string[];
+  ignoreErrors?: boolean;
+  src?: string[];
+  timeout: string;
+  dryRun: boolean;
+  stageTranslations?: boolean;
+  experimentalLocalizeStaticUrls?: boolean;
+  experimentalHideDefaultLocale?: boolean;
+  experimentalFlattenJsonFiles?: boolean;
+  experimentalLocalizeStaticImports?: boolean;
+  excludeStaticUrls?: string[];
+  excludeStaticImports?: string[];
+};
+
 export type WrapOptions = {
   src?: string[];
   config: string;
@@ -121,10 +143,11 @@ export type FilesOptions = {
 // Shared settings between all API-related commands
 export type Settings = {
   config: string;
+  configDirectory: string;
   baseUrl: string;
   dashboardUrl: string;
-  apiKey: string;
-  projectId: string;
+  apiKey?: string;
+  projectId?: string;
   defaultLocale: string;
   locales: string[];
   files:
@@ -135,6 +158,7 @@ export type Settings = {
       }
     | undefined;
   stageTranslations: boolean; // if true, always stage the project during translate command
+  publish: boolean; // if true, publish the translations to the CDN
   _versionId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;

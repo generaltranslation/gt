@@ -33,7 +33,6 @@ export async function checkFileTranslations(
   locales: string[],
   timeoutDuration: number,
   resolveOutputPath: (sourcePath: string, locale: string) => string,
-  downloadStatus: { downloaded: Set<string>; failed: Set<string> },
   options: Settings
 ) {
   const startTime = Date.now();
@@ -44,6 +43,10 @@ export async function checkFileTranslations(
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
 
+  const downloadStatus = {
+    downloaded: new Set<string>(),
+    failed: new Set<string>(),
+  };
   // Do first check immediately
   const initialCheck = await checkTranslationDeployment(
     fileQueryData,

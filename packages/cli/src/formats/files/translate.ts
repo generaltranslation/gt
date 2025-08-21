@@ -21,13 +21,123 @@ import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
-import { TranslateOptions } from '../../cli/base.js';
+import { TranslateFlags } from '../../types/index.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import { createFileMapping } from './fileMapping.js';
 import parseYaml from '../yaml/parseYaml.js';
+import { determineLibrary } from '../../fs/determineFramework.js';
+import { CompletedFileTranslationData } from 'generaltranslation/types';
 
-const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+
+export async function aggregateFiles(
+  settings: Settings
+): Promise<FileToTranslate[]> {
+  // Aggregate all files to translate
+  const allFiles: FileToTranslate[] = [];
+  if (
+    !settings.files ||
+    (Object.keys(settings.files.placeholderPaths).length === 1 &&
+      settings.files.placeholderPaths.gt)
+  ) {
+    return allFiles;
+  }
+
+  const {
+    resolvedPaths: filePaths,
+    placeholderPaths,
+    transformPaths,
+  } = settings.files;
+
+  // Process JSON files
+  if (filePaths.json) {
+    const { library, additionalModules } = determineLibrary();
+
+    // Determine dataFormat for JSONs
+    let dataFormat: DataFormat;
+    if (library === 'next-intl') {
+      dataFormat = 'ICU';
+    } else if (library === 'i18next') {
+      if (additionalModules.includes('i18next-icu')) {
+        dataFormat = 'ICU';
+      } else {
+        dataFormat = 'I18NEXT';
+      }
+    } else {
+      dataFormat = 'JSX';
+    }
+
+    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+      logErrorAndExit(noSupportedFormatError);
+    }
+
+    const jsonFiles = filePaths.json.map((filePath) => {
+      const content = readFile(filePath);
+
+      const parsedJson = parseJson(
+        content,
+        filePath,
+        settings.options || {},
+        settings.defaultLocale
+      );
+
+      const relativePath = getRelative(filePath);
+      return {
+        content: parsedJson,
+        fileName: relativePath,
+        fileFormat: 'JSON' as const,
+        dataFormat,
+      };
+    });
+    allFiles.push(...jsonFiles);
+  }
+
+  // Process YAML files
+  if (filePaths.yaml) {
+    const yamlFiles = filePaths.yaml.map((filePath) => {
+      const content = readFile(filePath);
+      const { content: parsedYaml, fileFormat } = parseYaml(
+        content,
+        filePath,
+        settings.options || {}
+      );
+
+      const relativePath = getRelative(filePath);
+      return {
+        content: parsedYaml,
+        fileName: relativePath,
+        fileFormat,
+      };
+    });
+    allFiles.push(...yamlFiles);
+  }
+
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (fileType === 'json' || fileType === 'yaml') continue;
+    if (filePaths[fileType]) {
+      const files = filePaths[fileType].map((filePath) => {
+        const content = readFile(filePath);
+        const sanitizedContent = sanitizeFileContent(content);
+        const relativePath = getRelative(filePath);
+        return {
+          content: sanitizedContent,
+          fileName: relativePath,
+          fileFormat: fileType.toUpperCase() as FileFormat,
+        };
+      });
+      allFiles.push(...files);
+    }
+  }
+
+  if (allFiles.length === 0) {
+    logError(
+      'No files to translate were found. Please check your configuration and try again.'
+    );
+  }
+
+  return allFiles;
+}
 
 /**
  * Sends multiple files to the API for translation
@@ -43,7 +153,7 @@ export async function translateFiles(
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
   dataFormat: DataFormat = 'JSX',
-  options: Settings & TranslateOptions
+  options: Settings & TranslateFlags
 ): Promise<void> {
   // Collect all files to translate
   const allFiles: FileToTranslate[] = [];
@@ -152,11 +262,7 @@ export async function translateFiles(
 
   try {
     // Send all files in a single API call
-    const response = await sendFiles(allFiles, {
-      ...options,
-      publish: false,
-      wait: true,
-    });
+    const response = await sendFiles(allFiles, options, options);
 
     const { data, locales, translations } = response;
 
@@ -194,8 +300,8 @@ export async function translateFiles(
  * Processes translations that were already completed and returned with the initial API response
  * @returns Set of downloaded file+locale combinations
  */
-async function processInitialTranslations(
-  translations: any[] = [],
+export async function processInitialTranslations(
+  translations: CompletedFileTranslationData[],
   fileMapping: Record<string, Record<string, string>>,
   options: Settings
 ): Promise<{ downloaded: Set<string>; failed: Set<string> }> {

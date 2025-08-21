@@ -10,13 +10,11 @@ export default async function updateConfig({
   configFilepath,
   projectId,
   _versionId,
-  locales,
   stageTranslations,
 }: {
   configFilepath: string;
   projectId?: string;
   _versionId?: string;
-  locales?: string[];
   stageTranslations?: boolean;
 }): Promise<void> {
   // Filter out empty string values from the config object

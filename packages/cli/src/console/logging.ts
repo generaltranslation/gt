@@ -103,6 +103,10 @@ export function displayUpdatedConfigFile(configFilepath: string) {
   log.success(`Updated config file ${chalk.cyan(configFilepath)}`);
 }
 
+export function displayUpdatedVersionsFile(versionFilepath: string) {
+  log.success(`Updated versions file ${chalk.cyan(versionFilepath)}`);
+}
+
 // Spinner functionality
 export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });

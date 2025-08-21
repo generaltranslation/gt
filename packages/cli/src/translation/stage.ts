@@ -3,7 +3,7 @@ import { logErrorAndExit } from '../console/logging.js';
 import chalk from 'chalk';
 
 import findFilepath from '../fs/findFilepath.js';
-import { Options, Settings } from '../types/index.js';
+import { Settings, TranslateFlags, Updates } from '../types/index.js';
 import { logSuccess, logWarning, logError } from '../console/logging.js';
 
 import { createUpdates } from './parse.js';
@@ -15,8 +15,81 @@ import {
 } from '../console/index.js';
 import { sendUpdates } from '../api/sendUpdates.js';
 
+export async function aggregateReactTranslations(
+  options: TranslateFlags,
+  settings: Settings,
+  library: 'gt-react' | 'gt-next'
+): Promise<Updates> {
+  if (!options.dictionary) {
+    options.dictionary = findFilepath([
+      './dictionary.js',
+      './src/dictionary.js',
+      './dictionary.json',
+      './src/dictionary.json',
+      './dictionary.ts',
+      './src/dictionary.ts',
+    ]);
+  }
+
+  // ---- CREATING UPDATES ---- //
+  const { updates, errors, warnings } = await createUpdates(
+    options,
+    options.dictionary,
+    library,
+    false
+  );
+
+  if (warnings.length > 0) {
+    logWarning(
+      chalk.yellow(
+        `CLI tool encountered ${warnings.length} warnings while scanning for translatable content.\n` +
+          warnings
+            .map(
+              (warning) => chalk.yellow('• Warning: ') + chalk.white(warning)
+            )
+            .join('\n')
+      )
+    );
+  }
+
+  if (errors.length > 0) {
+    if (options.ignoreErrors) {
+      logWarning(
+        chalk.yellow(
+          `Warning: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content. These components will not be translated.\n` +
+            errors
+              .map((error) => chalk.yellow('• ') + chalk.white(error) + '\n')
+              .join('')
+        )
+      );
+    } else {
+      logErrorAndExit(
+        chalk.red(
+          `Error: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+            errors
+              .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
+              .join('')
+        )
+      );
+    }
+  }
+
+  if (updates.length == 0) {
+    logError(
+      chalk.red(
+        `No in-line content or dictionaries were found for ${chalk.green(
+          library
+        )}. Are you sure you're running this command in the right directory?`
+      )
+    );
+    return updates;
+  }
+
+  return updates;
+}
+
 export async function stageProject(
-  settings: Options & Settings,
+  settings: TranslateFlags,
   pkg: 'gt-react' | 'gt-next'
 ): Promise<{ versionId: string; locales: string[] } | null> {
   if (!settings.dictionary) {
@@ -29,11 +102,6 @@ export async function stageProject(
       './src/dictionary.ts',
     ]);
   }
-
-  // Separate defaultLocale from locales
-  settings.locales = settings.locales.filter(
-    (locale) => locale !== settings.defaultLocale
-  );
 
   // validate timeout
   const timeout = parseInt(settings.timeout);

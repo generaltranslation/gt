@@ -1,16 +1,11 @@
 import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
-import { Settings } from '../types/index.js';
+import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import {
   CompletedFileTranslationData,
   FileToTranslate,
 } from 'generaltranslation/types';
-
-export type ApiOptions = Settings & {
-  publish: boolean;
-  wait: boolean;
-};
 
 export type SendFilesResult = {
   data: Record<string, { fileName: string; versionId: string }>;
@@ -24,7 +19,11 @@ export type SendFilesResult = {
  * @param options - The options for the API call
  * @returns The translated content or version ID
  */
-export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
+export async function sendFiles(
+  files: FileToTranslate[],
+  options: TranslateFlags,
+  settings: Settings
+): Promise<SendFilesResult> {
   logMessage(
     chalk.cyan('Files to translate:') +
       '\n' +
@@ -39,12 +38,11 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   try {
     // Send the files to the API
     const responseData = await gt.enqueueFiles(files, {
-      publish: options.publish,
-      description: options.description,
-      sourceLocale: options.defaultLocale,
-      targetLocales: options.locales,
-      _versionId: options._versionId,
-      modelProvider: options.modelProvider,
+      publish: settings.publish,
+      sourceLocale: settings.defaultLocale,
+      targetLocales: settings.locales,
+      _versionId: settings._versionId,
+      modelProvider: settings.modelProvider,
     });
 
     // Handle version ID response (for async processing)
