@@ -103,7 +103,7 @@ describe('logging', () => {
       // Silent logger should not enable error messages
       expect(silentLogger.shouldLog('error')).toBe(false);
 
-      // Error logger should enable error messages  
+      // Error logger should enable error messages
       expect(errorLogger.shouldLog('error')).toBe(true);
     });
 
@@ -152,7 +152,7 @@ describe('logging', () => {
     it('silent level special behavior', () => {
       const logger = new Logger('silent');
 
-      // Silent should block everything, even itself  
+      // Silent should block everything, even itself
       expect(logger.shouldLog('silent')).toBe(false);
     });
 
@@ -167,7 +167,7 @@ describe('logging', () => {
         for (let j = 0; j < levels.length; j++) {
           const testLevel = levels[j];
           const shouldBeEnabled = j <= i; // Lower or equal index means higher or equal priority
-          
+
           expect(logger.shouldLog(testLevel)).toBe(shouldBeEnabled);
         }
       }

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { StringCollector, TranslationContent, TranslationJsx, TranslationHash } from '../string-collector';
+import {
+  StringCollector,
+  TranslationContent,
+  TranslationJsx,
+  TranslationHash,
+} from '../string-collector';
 
 describe('StringCollector', () => {
   let collector: StringCollector;
@@ -26,7 +31,7 @@ describe('StringCollector', () => {
       const collector2 = new StringCollector();
       const counterId1 = collector.incrementCounter();
       const counterId1Again = collector2.incrementCounter();
-      
+
       expect(counterId1).toBe(counterId1Again);
     });
   });
@@ -435,17 +440,33 @@ describe('StringCollector', () => {
       // Add some content
       collector.setTranslationContent(
         counterId,
-        StringCollector.createTranslationContent('First', 'hash1', 'id1', undefined)
+        StringCollector.createTranslationContent(
+          'First',
+          'hash1',
+          'id1',
+          undefined
+        )
       );
 
       collector.setTranslationContent(
         counterId,
-        StringCollector.createTranslationContent('Second', 'hash2', undefined, 'context2')
+        StringCollector.createTranslationContent(
+          'Second',
+          'hash2',
+          undefined,
+          'context2'
+        )
       );
 
       // Also add JSX and Hash (these should not appear in content array)
-      collector.setTranslationJsx(counterId, StringCollector.createTranslationJsx('jsx-hash'));
-      collector.setTranslationHash(counterId, StringCollector.createTranslationHash('simple-hash'));
+      collector.setTranslationJsx(
+        counterId,
+        StringCollector.createTranslationJsx('jsx-hash')
+      );
+      collector.setTranslationHash(
+        counterId,
+        StringCollector.createTranslationHash('simple-hash')
+      );
 
       // Get the call and create array from its content
       const call = collector.getTranslationData(counterId)!;
@@ -475,23 +496,47 @@ describe('StringCollector', () => {
       // Call 1: Multiple content + JSX + Hash
       collector.setTranslationContent(
         call1Id,
-        StringCollector.createTranslationContent('Call1 Content1', 'hash1-1', 'id1-1', undefined)
+        StringCollector.createTranslationContent(
+          'Call1 Content1',
+          'hash1-1',
+          'id1-1',
+          undefined
+        )
       );
       collector.setTranslationContent(
         call1Id,
-        StringCollector.createTranslationContent('Call1 Content2', 'hash1-2', undefined, 'ctx1-2')
+        StringCollector.createTranslationContent(
+          'Call1 Content2',
+          'hash1-2',
+          undefined,
+          'ctx1-2'
+        )
       );
-      collector.setTranslationJsx(call1Id, StringCollector.createTranslationJsx('jsx1'));
-      collector.setTranslationHash(call1Id, StringCollector.createTranslationHash('simple1'));
+      collector.setTranslationJsx(
+        call1Id,
+        StringCollector.createTranslationJsx('jsx1')
+      );
+      collector.setTranslationHash(
+        call1Id,
+        StringCollector.createTranslationHash('simple1')
+      );
 
       // Call 2: Only content
       collector.setTranslationContent(
         call2Id,
-        StringCollector.createTranslationContent('Call2 Only Content', 'hash2', undefined, undefined)
+        StringCollector.createTranslationContent(
+          'Call2 Only Content',
+          'hash2',
+          undefined,
+          undefined
+        )
       );
 
       // Call 3: Only JSX
-      collector.setTranslationJsx(call3Id, StringCollector.createTranslationJsx('jsx3'));
+      collector.setTranslationJsx(
+        call3Id,
+        StringCollector.createTranslationJsx('jsx3')
+      );
 
       // Verify Call 1
       const call1 = collector.getTranslationData(call1Id)!;

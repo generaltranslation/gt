@@ -274,7 +274,7 @@ describe('ScopeTracker', () => {
 
     it('should handle same variable name with different types', () => {
       tracker.enterScope();
-      
+
       // Track as translation function first
       tracker.trackTranslationVariable('t', 'useGT', 0);
       let variable = tracker.getVariable('t')!;

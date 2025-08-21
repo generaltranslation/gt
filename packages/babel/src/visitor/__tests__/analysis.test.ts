@@ -14,7 +14,15 @@ describe('analysis', () => {
     });
 
     it('rejects non-translation components', () => {
-      const components = ['Div', 'Span', 'T2', 't', 'Translation', 'Var', 'Branch'];
+      const components = [
+        'Div',
+        'Span',
+        'T2',
+        't',
+        'Translation',
+        'Var',
+        'Branch',
+      ];
       for (const component of components) {
         expect(isTranslationComponent(component)).toBe(false);
       }
@@ -34,7 +42,15 @@ describe('analysis', () => {
     });
 
     it('rejects non-variable components', () => {
-      const components = ['T', 'Branch', 'Plural', 'div', 'var', 'num', 'Variable'];
+      const components = [
+        'T',
+        'Branch',
+        'Plural',
+        'div',
+        'var',
+        'num',
+        'Variable',
+      ];
       for (const component of components) {
         expect(isVariableComponent(component)).toBe(false);
       }
@@ -56,7 +72,7 @@ describe('analysis', () => {
     it('rejects non-branch components', () => {
       const components = [
         'T',
-        'Var', 
+        'Var',
         'div',
         'branch',
         'plural',
@@ -104,7 +120,15 @@ describe('analysis', () => {
   describe('comprehensive validation', () => {
     it('no overlap between categories', () => {
       const allNames = [
-        'T', 'Var', 'Num', 'Currency', 'DateTime', 'Branch', 'Plural', 'useGT', 'getGT',
+        'T',
+        'Var',
+        'Num',
+        'Currency',
+        'DateTime',
+        'Branch',
+        'Plural',
+        'useGT',
+        'getGT',
       ];
 
       for (const name of allNames) {
@@ -115,7 +139,7 @@ describe('analysis', () => {
 
         // Each name should only match one category
         const matches = [isTranslation, isVariable, isBranch, isFunction];
-        const matchCount = matches.filter(x => x).length;
+        const matchCount = matches.filter((x) => x).length;
 
         expect(matchCount).toBe(1);
       }
