@@ -2222,4 +2222,122 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       await localizeStaticUrls(settings as any);
     });
   });
+
+  describe('same locale', () => {
+    it('should not modify URLs that already have the same locale', async () => {
+      const fileContent = `---
+title: "Introduction"
+description: "Bienvenue dans le nouvel espace pour votre documentation"
+---
+
+<Card title="Commencez ici" icon="rocket" href="/quickstart" horizontal>
+  Suivez notre guide de démarrage rapide en trois étapes.
+</Card>
+
+<Card href="https://www.google.com">
+  <p>Bonjour</p>
+</Card>
+
+[test](https://www.google.com)
+`;
+      const expected = `---
+title: "Introduction"
+description: "Bienvenue dans le nouvel espace pour votre documentation"
+---
+
+<Card title="Commencez ici" icon="rocket" href="/fr-CA/quickstart" horizontal>
+  Suivez notre guide de démarrage rapide en trois étapes.
+</Card>
+
+<Card href="https://www.google.com">
+  <p>Bonjour</p>
+</Card>
+
+[test](https://www.google.com)
+`;
+
+      const mockFileMapping = {
+        'fr-CA': { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      const settings = {
+        config: 'gt.config.json',
+        dryRun: false,
+        experimentalLocalizeStaticUrls: true,
+        experimentalHideDefaultLocale: true,
+        experimentalFlattenJsonFiles: false,
+        experimentalLocalizeStaticImports: true,
+        $schema: 'https://assets.gtx.dev/config-schema.json',
+        defaultLocale: 'en',
+        locales: ['fr-CA'],
+        files: {
+          resolvedPaths: {
+            json: ['/Users/samueleggert/github-copies/starter/docs.json'],
+            mdx: ['/Users/samueleggert/github-copies/starter/index.mdx'],
+          },
+          placeholderPaths: {
+            json: ['/Users/samueleggert/github-copies/starter/docs.json'],
+            mdx: ['/Users/samueleggert/github-copies/starter/index.mdx'],
+          },
+          transformPaths: {
+            mdx: {
+              match: '^(.*)$',
+              replace: '{locale}/$1',
+            },
+          },
+        },
+        options: {
+          jsonSchema: {
+            './docs.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [
+                    '$..group',
+                    '$..tab',
+                    '$..item',
+                    '$..anchor',
+                    '$..dropdown',
+                  ],
+                  transform: {
+                    '$..pages[*]': {
+                      match: '^(.*)$',
+                      replace: '{locale}/$1',
+                    },
+                    '$..root': {
+                      match: '^(.*)$',
+                      replace: '{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          docsUrlPattern: '/[locale]',
+          experimentalLocalizeStaticImports: true,
+          experimentalLocalizeStaticUrls: true,
+          experimentalHideDefaultLocale: true,
+          excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        },
+        apiKey:
+          'gtx-api-39bdcaced3a9da4d9cb8e971e6e144d403d5eb74e39ea6ce7758226187ca28e4',
+        projectId: 'prj_fkdakpsyhgn84nlwbyzlww06',
+        baseUrl: 'https://api2.gtx.dev',
+        dashboardUrl: 'https://dash.generaltranslation.com',
+        stageTranslations: false,
+        src: [
+          'src/**/*.{js,jsx,ts,tsx}',
+          'app/**/*.{js,jsx,ts,tsx}',
+          'pages/**/*.{js,jsx,ts,tsx}',
+          'components/**/*.{js,jsx,ts,tsx}',
+        ],
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+  });
 });

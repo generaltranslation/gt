@@ -139,6 +139,28 @@ function shouldProcessUrl(
   targetLocale: string,
   defaultLocale: string
 ): boolean {
+  // Skip absolute URLs (http://, https://, //, etc.)
+  if (
+    originalUrl.startsWith('http://') ||
+    originalUrl.startsWith('https://') ||
+    originalUrl.startsWith('//')
+  ) {
+    return false;
+  }
+
+  // Skip URLs with template literal variables or expressions
+  if (originalUrl.includes('${')) {
+    return false;
+  }
+
+  // Skip URLs that are just variables or function calls
+  if (
+    !originalUrl.startsWith('/') &&
+    !originalUrl.startsWith('./') &&
+    !originalUrl.startsWith('../')
+  ) {
+    return false;
+  }
   const patternWithoutSlash = patternHead.replace(/\/$/, '');
 
   if (targetLocale === defaultLocale) {
