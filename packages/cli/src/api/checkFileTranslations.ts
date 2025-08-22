@@ -46,6 +46,7 @@ export async function checkFileTranslations(
   const downloadStatus = {
     downloaded: new Set<string>(),
     failed: new Set<string>(),
+    skipped: new Set<string>(),
   };
   // Do first check immediately
   const initialCheck = await checkTranslationDeployment(
@@ -255,7 +256,11 @@ function generateStatusSuffixText(
  */
 async function checkTranslationDeployment(
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
-  downloadStatus: { downloaded: Set<string>; failed: Set<string> },
+  downloadStatus: {
+    downloaded: Set<string>;
+    failed: Set<string>;
+    skipped: Set<string>;
+  },
   spinner: Awaited<ReturnType<typeof createOraSpinner>>,
   resolveOutputPath: (sourcePath: string, locale: string) => string | null,
   options: Settings
@@ -265,7 +270,8 @@ async function checkTranslationDeployment(
     const currentQueryData = fileQueryData.filter(
       (item) =>
         !downloadStatus.downloaded.has(`${item.fileName}:${item.locale}`) &&
-        !downloadStatus.failed.has(`${item.fileName}:${item.locale}`)
+        !downloadStatus.failed.has(`${item.fileName}:${item.locale}`) &&
+        !downloadStatus.skipped.has(`${item.fileName}:${item.locale}`)
     );
 
     // If all files have been downloaded, we're done
@@ -291,6 +297,11 @@ async function checkTranslationDeployment(
           const translationId = translation.id;
           const outputPath = resolveOutputPath(fileName, locale);
 
+          // Skip downloading GTJSON files that are not in the files configuration
+          if (outputPath === null) {
+            downloadStatus.skipped.add(`${fileName}:${locale}`);
+            return null;
+          }
           return {
             translationId,
             inputPath: fileName,
@@ -299,7 +310,7 @@ async function checkTranslationDeployment(
             fileLocale: `${fileName}:${locale}`,
           };
         })
-        .filter((file) => file.outputPath !== null) as BatchedFiles;
+        .filter((file) => file !== null) as BatchedFiles;
 
       const batchResult = await downloadFileBatch(batchFiles, options);
 
@@ -322,7 +333,9 @@ async function checkTranslationDeployment(
 
     // If all files have been downloaded, we're done
     if (
-      downloadStatus.downloaded.size + downloadStatus.failed.size ===
+      downloadStatus.downloaded.size +
+        downloadStatus.failed.size +
+        downloadStatus.skipped.size ===
       fileQueryData.length
     ) {
       return true;

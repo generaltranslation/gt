@@ -387,19 +387,19 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       ? await promptConfirm({
           message: `Auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
             isUsingGTNext
-              ? 'https://generaltranslation.com/docs/next/reference/local-tx'
-              : 'https://generaltranslation.com/docs/react/reference/local-tx'
+              ? 'https://generaltranslation.com/en/docs/next/guides/local-tx'
+              : 'https://generaltranslation.com/en/docs/react/guides/local-tx'
           } for more information.\nIf you answer no, we'll configure the CLI tool to download completed translations.`,
           defaultValue: true,
         })
       : false;
     if (isUsingGT && !usingCDN) {
       logMessage(
-        `To prevent translations from being published, please disable the project setting on the dashboard: ${chalk.cyan(
-          'https://dash.generaltranslation.com/settings/project'
-        )}`
+        `Make sure to add a loadTranslations function to your app configuration to correctly use local translations.
+See https://generaltranslation.com/en/docs/next/guides/local-tx`
       );
     }
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
@@ -457,6 +457,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
+      publish: isUsingGT && usingCDN,
     });
 
     logSuccess(

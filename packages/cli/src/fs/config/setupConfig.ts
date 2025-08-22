@@ -20,6 +20,7 @@ export async function createOrUpdateConfig(
     files?: FilesOptions;
     framework?: SupportedFrameworks;
     baseUrl?: string;
+    publish?: boolean;
   }
 ): Promise<string> {
   // Filter out empty string values from the config object
@@ -29,6 +30,7 @@ export async function createOrUpdateConfig(
     ...(options.files && { files: options.files }),
     ...(options.framework && { framework: options.framework }),
     ...(options.baseUrl && { baseUrl: options.baseUrl }),
+    ...(options.publish && { publish: options.publish }),
   };
   try {
     // if file exists

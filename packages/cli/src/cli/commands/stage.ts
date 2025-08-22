@@ -10,6 +10,7 @@ import {
   noApiKeyError,
   noProjectIdError,
   devApiKeyError,
+  invalidConfigurationError,
 } from '../../console/index.js';
 import { aggregateFiles } from '../../formats/files/translate.js';
 import { aggregateReactTranslations } from '../../translation/stage.js';
@@ -59,6 +60,13 @@ export async function handleStage(
       library
     );
     if (updates.length > 0) {
+      if (
+        !options.dryRun &&
+        !settings.publish &&
+        !settings.files?.placeholderPaths.gt
+      ) {
+        logErrorAndExit(invalidConfigurationError);
+      }
       reactComponents = updates.length;
       // Convert updates to a file object
       const fileData: Record<string, JsxChildren> = {};
