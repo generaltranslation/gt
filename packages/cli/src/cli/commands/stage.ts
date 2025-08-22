@@ -73,7 +73,8 @@ export async function handleStage(
       const fileMetadata: Record<string, any> = {};
       // Convert updates to the proper data format
       for (const update of updates) {
-        const { source, metadata } = update;
+        const { source, metadata, dataFormat } = update;
+        metadata.dataFormat = dataFormat; // add the data format to the metadata
         const { hash, id } = metadata;
         if (id) {
           fileData[id] = source;

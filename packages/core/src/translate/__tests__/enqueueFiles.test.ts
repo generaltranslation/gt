@@ -16,27 +16,6 @@ vi.mock('../utils/validateResponse');
 vi.mock('../utils/handleFetchError');
 vi.mock('../utils/generateRequestHeaders');
 
-// Mock FormData
-global.FormData = class FormData {
-  private data: Map<string, any> = new Map();
-
-  append(name: string, value: any, filename?: string) {
-    this.data.set(name, value);
-  }
-
-  get(name: string) {
-    return this.data.get(name);
-  }
-
-  has(name: string) {
-    return this.data.has(name);
-  }
-} as any;
-
-global.Blob = class Blob {
-  constructor(private content: any[]) {}
-} as any;
-
 describe.sequential('_enqueueFiles', () => {
   const mockConfig: TranslationRequestConfig = {
     baseUrl: 'https://api.test.com',
@@ -96,7 +75,7 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es', 'fr'],
       publish: true,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test upload',
       timeout: 5000,
     };
@@ -116,6 +95,29 @@ describe.sequential('_enqueueFiles', () => {
       },
       5000
     );
+
+    // Verify the JSON body structure
+    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const bodyJson = JSON.parse(fetchCall[1].body as string);
+    expect(bodyJson).toEqual({
+      files: [
+        {
+          content: Buffer.from('{"hello": "world"}').toString('base64'),
+          fileName: 'test.json',
+          fileFormat: 'JSON',
+          fileDataFormat: undefined,
+          formatMetadata: undefined,
+        },
+      ],
+      sourceLocale: 'en',
+      targetLocales: ['es', 'fr'],
+      projectId: 'test-project',
+      publish: true,
+      requireApproval: undefined,
+      version: 'version-123',
+      modelProvider: undefined,
+    });
+
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
     expect(result).toEqual(mockEnqueueFilesResult);
   });
@@ -147,25 +149,33 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Multi-file upload',
     };
 
     await _enqueueFiles(files, options, mockConfig);
 
-    const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const body = formDataCall[1].body as FormData;
+    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const bodyJson = JSON.parse(fetchCall[1].body as string);
 
-    // Verify FormData contains correct file count
-    expect(body.get('fileCount')).toBe('2');
+    // Verify JSON body contains correct files array
+    expect(bodyJson.files).toHaveLength(2);
 
     // Verify file metadata is properly set
-    expect(body.get('fileName0')).toBe('test1.json');
-    expect(body.get('fileName1')).toBe('test2.yaml');
-    expect(body.get('fileFormat0')).toBe('JSON');
-    expect(body.get('fileFormat1')).toBe('YAML');
-    expect(body.get('fileDataFormat0')).toBe('JSX');
-    expect(body.get('fileDataFormat1')).toBe('ICU');
+    expect(bodyJson.files[0].fileName).toBe('test1.json');
+    expect(bodyJson.files[1].fileName).toBe('test2.yaml');
+    expect(bodyJson.files[0].fileFormat).toBe('JSON');
+    expect(bodyJson.files[1].fileFormat).toBe('YAML');
+    expect(bodyJson.files[0].fileDataFormat).toBe('JSX');
+    expect(bodyJson.files[1].fileDataFormat).toBe('ICU');
+
+    // Verify files contain base64 encoded content
+    expect(bodyJson.files[0].content).toBe(
+      Buffer.from('{"hello": "world"}').toString('base64')
+    );
+    expect(bodyJson.files[1].content).toBe(
+      Buffer.from('hello: world').toString('base64')
+    );
   });
 
   it('should use default timeout when not specified', async () => {
@@ -188,7 +198,7 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test',
     };
 
@@ -221,7 +231,7 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test',
       timeout: 99999,
     };
@@ -260,7 +270,7 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test',
     };
 
@@ -294,7 +304,7 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test',
     };
 
@@ -326,7 +336,7 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test',
     };
 
@@ -356,19 +366,19 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Test',
     };
 
     await _enqueueFiles(files, options, mockConfig);
 
-    const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const body = formDataCall[1].body as FormData;
+    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const bodyJson = JSON.parse(fetchCall[1].body as string);
 
-    // When dataFormat is not provided, it should be empty string
-    expect(body.get('fileDataFormat0')).toBe(undefined);
-    expect(body.get('fileFormat0')).toBe('MD');
-    expect(body.get('fileName0')).toBe('test.md');
+    // When dataFormat is not provided, it should be undefined
+    expect(bodyJson.files[0].fileDataFormat).toBe(undefined);
+    expect(bodyJson.files[0].fileFormat).toBe('MD');
+    expect(bodyJson.files[0].fileName).toBe('test.md');
   });
 
   it('should handle empty files array', async () => {
@@ -388,15 +398,15 @@ describe.sequential('_enqueueFiles', () => {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
-      _versionId: 'version-123',
+      version: 'version-123',
       description: 'Empty test',
     };
 
     const result = await _enqueueFiles(files, options, mockConfig);
 
-    const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const body = formDataCall[1].body as FormData;
-    expect(body.get('fileCount')).toBe('0');
+    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const bodyJson = JSON.parse(fetchCall[1].body as string);
+    expect(bodyJson.files).toHaveLength(0);
     expect((result.data as any).uploadedFiles).toEqual([]);
   });
 });
