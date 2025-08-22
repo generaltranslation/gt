@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.5
+
+### Patch Changes
+
+- [#576](https://github.com/generaltranslation/gt/pull/576) [`be9c1ff`](https://github.com/generaltranslation/gt/commit/be9c1ff24c9a15a35e3f0da26e9ec941e5b41eea) Thanks [@SamEggert](https://github.com/SamEggert)! - Fix url localization
+
 ## 2.1.4
 
 ### Patch Changes

@@ -2222,4 +2222,142 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       await localizeStaticUrls(settings as any);
     });
   });
+
+  describe('with real gt.config.json configuration', () => {
+    it('should process files according to gt.config.json settings', async () => {
+      // Mock file system operations
+      const mockFileMapping = {
+        'fr-CA': {
+          'index.mdx': '/path/fr-CA/index.mdx',
+          'index2.mdx': '/path/fr-CA/index2.mdx',
+        },
+      };
+
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      // Mock file contents that would be processed
+      const indexMdxContent = `# Welcome
+
+[Getting Started](/en/quickstart)
+[API Reference](/en/api)
+
+<Card href="/en/guide">
+  <Button href="/en/tutorial">Tutorial</Button>
+</Card>
+
+<Component href="/en/examples" />
+
+Some content with [another link](/en/docs).`;
+
+      const index2MdxContent = `# Documentation
+
+[Home](/en)
+[About](/en/about)
+
+<Navigation href="/en/nav">
+  <Link href="/en/contact">Contact</Link>
+</Navigation>`;
+
+      // Mock readFile to return different content for different files
+      vi.mocked(fs.promises.readFile).mockImplementation((filePath: any) => {
+        const path = String(filePath);
+        if (path.includes('index.mdx')) {
+          return Promise.resolve(indexMdxContent);
+        }
+        if (path.includes('index2.mdx')) {
+          return Promise.resolve(index2MdxContent);
+        }
+        return Promise.resolve('');
+      });
+
+      // Mock writeFile to just verify it's called
+      vi.mocked(fs.promises.writeFile).mockResolvedValue();
+
+      // Settings based on the gt.config.json configuration
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: {
+            mdx: ['index.mdx', 'index2.mdx'],
+          },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr-CA'],
+        experimentalHideDefaultLocale: true,
+        options: {
+          docsUrlPattern: '/[locale]',
+          excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+
+      // Verify that writeFile was called for both non-default locale files (fr-CA)
+      // and both default locale files (en) - total of 4 calls
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(4);
+
+      // Check non-default locale files
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        '/path/fr-CA/index.mdx',
+        expect.any(String)
+      );
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        '/path/fr-CA/index2.mdx',
+        expect.any(String)
+      );
+
+      // Check default locale files (processed separately when hideDefaultLocale=true)
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        'index.mdx',
+        expect.any(String)
+      );
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        'index2.mdx',
+        expect.any(String)
+      );
+    });
+
+    it('should handle default locale processing with experimentalHideDefaultLocale=true', async () => {
+      // Mock file system operations for default locale processing
+      const mockFileMapping = {};
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const defaultLocaleContent = `# Default Locale Content
+
+[Link](/en/guide)
+<Card href="/en/api">API</Card>
+[Another](/en/docs)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(defaultLocaleContent);
+
+      vi.mocked(fs.promises.writeFile).mockResolvedValue();
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: {
+            mdx: ['default.mdx'],
+          },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr-CA'],
+        experimentalHideDefaultLocale: true,
+        options: {
+          docsUrlPattern: '/[locale]',
+          excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+
+      // Verify that writeFile was called for the default locale file
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        'default.mdx',
+        expect.any(String)
+      );
+    });
+  });
 });
