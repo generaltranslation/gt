@@ -31,7 +31,8 @@ export default async function localizeStaticUrls(
   settings: Omit<
     Settings & Options,
     'ignoreErrors' | 'suppressWarnings' | 'timeout'
-  >
+  >,
+  targetLocales?: string[] // Optional filter for specific locales
 ) {
   if (
     !settings.files ||
@@ -42,11 +43,14 @@ export default async function localizeStaticUrls(
   }
   const { resolvedPaths: sourceFiles } = settings.files;
 
+  // Use filtered locales if provided, otherwise use all locales
+  const locales = targetLocales || settings.locales;
+
   const fileMapping = createFileMapping(
     sourceFiles,
     settings.files.placeholderPaths,
     settings.files.transformPaths,
-    settings.locales,
+    settings.locales, // Always use all locales for mapping, filter later
     settings.defaultLocale
   );
 
@@ -55,7 +59,8 @@ export default async function localizeStaticUrls(
 
   // First, process default locale files (from source files)
   // This is needed because they might not be in the fileMapping if they're not being translated
-  if (!fileMapping[settings.defaultLocale]) {
+  // Only process default locale if it's in the target locales filter
+  if (!fileMapping[settings.defaultLocale] && locales.includes(settings.defaultLocale)) {
     const defaultLocaleFiles: string[] = [];
 
     // Collect all .md and .mdx files from sourceFiles
@@ -90,8 +95,9 @@ export default async function localizeStaticUrls(
   }
 
   // Then process all other locales from fileMapping
-  const mappingPromises = Object.entries(fileMapping).map(
-    async ([locale, filesMap]) => {
+  const mappingPromises = Object.entries(fileMapping)
+    .filter(([locale, filesMap]) => locales.includes(locale)) // Filter by target locales
+    .map(async ([locale, filesMap]) => {
       // Get all files that are md or mdx
       const targetFiles = Object.values(filesMap).filter(
         (path) => path.endsWith('.md') || path.endsWith('.mdx')
@@ -178,156 +184,6 @@ function isUrlExcluded(
 }
 
 /**
- * Transforms URL for default locale processing
- */
-export function transformDefaultLocaleUrl(
-  originalUrl: string,
-  patternHead: string,
-  defaultLocale: string,
-  hideDefaultLocale: boolean
-): string | null {
-  if (hideDefaultLocale) {
-    // Skip if the pattern head doesn't match
-    if (!cleanPath(originalUrl).startsWith(cleanPath(patternHead))) {
-      return null;
-    }
-
-    // Remove locale from URLs that have it: '/docs/en/file' -> '/docs/file'
-    if (originalUrl.includes(`/${defaultLocale}/`)) {
-      return originalUrl.replace(`/${defaultLocale}/`, '/');
-    } else if (originalUrl.endsWith(`/${defaultLocale}`)) {
-      return originalUrl.replace(`/${defaultLocale}`, '');
-    }
-    return null; // URL doesn't have default locale
-  } else {
-    // Add locale to URLs that don't have it: '/docs/file' -> '/docs/en/file'
-    if (cleanPath(originalUrl).startsWith(cleanPath(patternHead))) {
-      return null; // Already has default locale
-    }
-
-    // Handle exact pattern match
-    if (originalUrl === patternHead.replace(/\/$/, '')) {
-      return `${patternHead.replace(/\/$/, '')}/${defaultLocale}`;
-    }
-
-    if (originalUrl.startsWith(patternHead)) {
-      const pathAfterHead = originalUrl.slice(patternHead.length);
-      if (pathAfterHead) {
-        // Remove leading slash from pathAfterHead if patternHead doesn't end with slash
-        const cleanPathAfterHead = pathAfterHead.startsWith('/')
-          ? pathAfterHead.slice(1)
-          : pathAfterHead;
-        return `${patternHead}${defaultLocale}/${cleanPathAfterHead}`;
-      } else {
-        return `${patternHead.replace(/\/$/, '')}/${defaultLocale}`;
-      }
-    }
-    return null; // URL doesn't match pattern
-  }
-}
-
-/**
- * Transforms URL for non-default locale processing with hideDefaultLocale=true
- */
-export function transformNonDefaultLocaleUrlWithHidden(
-  originalUrl: string,
-  patternHead: string,
-  targetLocale: string,
-  defaultLocale: string
-): string | null {
-  // Check if already localized
-  const cleanOriginalUrl = cleanPath(originalUrl);
-  const cleanPatternHead = cleanPath(patternHead);
-  if (!patternHead.endsWith('/')) {
-    patternHead = patternHead + '/';
-  }
-
-  // Already localized
-  if (
-    originalUrl.startsWith(`${patternHead}${targetLocale}/`) ||
-    originalUrl === `${patternHead}${targetLocale}`
-  ) {
-    return null;
-  }
-
-  // Replace default locale with target locale
-  const expectedPathWithDefaultLocale = `${patternHead}${defaultLocale}`;
-  if (
-    originalUrl.startsWith(`${expectedPathWithDefaultLocale}/`) ||
-    originalUrl === expectedPathWithDefaultLocale
-  ) {
-    return originalUrl.replace(
-      `${patternHead}${defaultLocale}`,
-      `${patternHead}${targetLocale}`
-    );
-  }
-
-  // Handle exact pattern match
-  // inserts locale after patternHead
-  // Input: originalUrl = "/docs"
-  // Output: "/docs/fr"
-  if (originalUrl === patternHead.replace(/\/$/, '')) {
-    return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
-  }
-
-  // Add target locale to URL without any locale
-  const pathAfterHead = cleanPath(
-    originalUrl.slice(
-      originalUrl.startsWith(patternHead) ? patternHead.length : 0
-    )
-  );
-
-  return pathAfterHead
-    ? `${patternHead}${targetLocale}/${pathAfterHead}`
-    : `${patternHead}${targetLocale}`;
-}
-
-/**
- * Transforms URL for non-default locale processing with hideDefaultLocale=false
- */
-function transformNonDefaultLocaleUrl(
-  originalUrl: string,
-  patternHead: string,
-  targetLocale: string,
-  defaultLocale: string
-): string | null {
-  const expectedPathWithLocale = `${patternHead}${defaultLocale}`;
-
-  if (
-    originalUrl.startsWith(`${expectedPathWithLocale}/`) ||
-    originalUrl === expectedPathWithLocale
-  ) {
-    // Replace existing default locale with target locale
-    return originalUrl.replace(
-      `${patternHead}${defaultLocale}`,
-      `${patternHead}${targetLocale}`
-    );
-  } else {
-    // Handle exact pattern match
-    if (originalUrl === patternHead.replace(/\/$/, '')) {
-      return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
-    }
-
-    if (originalUrl.startsWith(patternHead)) {
-      // Add target locale to URL that doesn't have any locale
-      const pathAfterHead = originalUrl.slice(patternHead.length);
-      if (pathAfterHead) {
-        // Remove leading slash from pathAfterHead if patternHead doesn't end with slash
-        const cleanPathAfterHead =
-          pathAfterHead.startsWith('/') && !patternHead.endsWith('/')
-            ? pathAfterHead.slice(1)
-            : pathAfterHead;
-        return `${patternHead}${targetLocale}/${cleanPathAfterHead}`;
-      } else {
-        return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
-      }
-    }
-  }
-
-  return null; // URL doesn't match pattern
-}
-
-/**
  * Main URL transformation function that delegates to specific scenarios
  */
 export function transformUrlPath(
@@ -410,29 +266,6 @@ export function transformUrlPath(
   }
 
   return result;
-
-  // if (targetLocale === defaultLocale) {
-  //   return transformDefaultLocaleUrl(
-  //     originalUrl,
-  //     patternHead,
-  //     defaultLocale,
-  //     hideDefaultLocale
-  //   );
-  // } else if (hideDefaultLocale) {
-  //   return transformNonDefaultLocaleUrlWithHidden(
-  //     originalUrl,
-  //     patternHead,
-  //     targetLocale,
-  //     defaultLocale
-  //   );
-  // } else {
-  //   return transformNonDefaultLocaleUrl(
-  //     originalUrl,
-  //     patternHead,
-  //     targetLocale,
-  //     defaultLocale
-  //   );
-  // }
 }
 
 /**

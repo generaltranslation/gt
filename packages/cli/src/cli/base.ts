@@ -398,6 +398,11 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       transformPaths,
     } = settings.files;
 
+    // Localize static urls in default locale BEFORE translation
+    if (settings.experimentalLocalizeStaticUrls) {
+      await localizeStaticUrls(settings, [settings.defaultLocale]);
+    }
+
     // Process all file types at once with a single call
     await translateFiles(
       sourceFiles,
@@ -407,9 +412,12 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       settings
     );
 
-    // Localize static urls (/docs -> /[locale]/docs)
+    // Localize static urls in other locales AFTER translation
     if (settings.experimentalLocalizeStaticUrls) {
-      await localizeStaticUrls(settings);
+      const otherLocales = settings.locales.filter(locale => locale !== settings.defaultLocale);
+      if (otherLocales.length > 0) {
+        await localizeStaticUrls(settings, otherLocales);
+      }
     }
 
     // Localize static imports (/docs -> /[locale]/docs)
