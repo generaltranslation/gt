@@ -22,7 +22,7 @@ export default async function _downloadFile(
 ): Promise<ArrayBuffer> {
   const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${baseUrl || defaultBaseUrl}/v1/project/translations/files/${translationId}/download`;
+  const url = `${baseUrl || defaultBaseUrl}/v2/project/translations/files/${translationId}/download`;
 
   // Request the file download
   let response;
@@ -42,6 +42,6 @@ export default async function _downloadFile(
   // Validate response
   await validateResponse(response);
 
-  const result = await response.arrayBuffer();
-  return result as ArrayBuffer;
+  const result = (await response.json()) as { data: string };
+  return Buffer.from(result.data, 'base64').buffer;
 }

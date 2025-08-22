@@ -41,7 +41,11 @@ import { areCredentialsSet } from '../utils/credentials.js';
 import { upload } from '../formats/files/upload.js';
 import { attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
-import { handleDownload, handleTranslate } from './commands/translate.js';
+import {
+  handleDownload,
+  handleTranslate,
+  postProcessTranslations,
+} from './commands/translate.js';
 import updateConfig from '../fs/config/updateConfig.js';
 
 export type UploadOptions = {
@@ -143,6 +147,7 @@ export class BaseCLI {
     } else {
       await handleDownload(initOptions, settings);
     }
+    await postProcessTranslations(settings);
   }
 
   protected setupUploadCommand(): void {

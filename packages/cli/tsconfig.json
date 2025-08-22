@@ -9,12 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
-    "baseUrl": "./",
-    "paths": {
-      "generaltranslation": ["../core/src/index.ts"],
-      "generaltranslation/*": ["../core/src/*"]
-    }
+    "jsx": "react-jsx"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/__tests__/**/*", "**/__mocks__/**/*"]

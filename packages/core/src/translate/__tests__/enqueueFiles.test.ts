@@ -104,7 +104,7 @@ describe.sequential('_enqueueFiles', () => {
     const result = await _enqueueFiles(files, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/upload',
+      'https://api.test.com/v2/project/translations/files/upload',
       {
         method: 'POST',
         headers: {
@@ -112,7 +112,7 @@ describe.sequential('_enqueueFiles', () => {
           'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
-        body: expect.any(FormData),
+        body: expect.any(String),
       },
       5000
     );
@@ -268,7 +268,7 @@ describe.sequential('_enqueueFiles', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v1/project/translations/files/upload'
+        'https://api2.gtx.dev/v2/project/translations/files/upload'
       ),
       expect.any(Object),
       expect.any(Number)

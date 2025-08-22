@@ -6,7 +6,7 @@ import { getRelative } from '../../fs/findFilepath.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { replaceLocalePlaceholders } from '../utils.js';
 import { FileMapping } from '../../types/files.js';
-import { TEMPLATE_FILE_NAME } from 'src/cli/commands/stage.js';
+import { TEMPLATE_FILE_NAME } from '../../cli/commands/stage.js';
 
 /**
  * Creates a mapping between source files and their translated counterparts for each locale

@@ -75,7 +75,7 @@ describe('checkFileTranslations', () => {
     fileId: 'file-1',
     versionId: 'v1',
     downloadUrl:
-      'https://api.test.com/v1/project/translations/files/translation-1',
+      'https://api.test.com/v2/project/translations/files/translation-1',
     ...overrides,
   });
 

@@ -5,6 +5,7 @@ import { downloadFile } from './downloadFile.js';
 import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
+import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -233,8 +234,10 @@ function generateStatusSuffixText(
     }
 
     // Format the line
+    const prettyFileName =
+      fileName === TEMPLATE_FILE_NAME ? '<React Elements>' : fileName;
     newSuffixText.push(
-      `${chalk.bold(fileName)} [${localeStatuses.join(', ')}]`
+      `${chalk.bold(prettyFileName)} [${localeStatuses.join(', ')}]`
     );
   }
 

@@ -6,6 +6,7 @@ import {
   CompletedFileTranslationData,
   FileToTranslate,
 } from 'generaltranslation/types';
+import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
 
 export type SendFilesResult = {
   data: Record<string, { fileName: string; versionId: string }>;
@@ -27,7 +28,14 @@ export async function sendFiles(
   logMessage(
     chalk.cyan('Files to translate:') +
       '\n' +
-      files.map((file) => `  - ${chalk.bold(file.fileName)}`).join('\n')
+      files
+        .map((file) => {
+          if (file.fileName === TEMPLATE_FILE_NAME) {
+            return `- <React Elements>`;
+          }
+          return `- ${file.fileName}`;
+        })
+        .join('\n')
   );
 
   const spinner = createSpinner('dots');
