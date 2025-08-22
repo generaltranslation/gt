@@ -3,7 +3,6 @@ import {
   Settings,
   SupportedLibraries,
   TranslateFlags,
-  Updates,
 } from '../../types/index.js';
 import {
   noLocalesError,
@@ -14,35 +13,36 @@ import {
 } from '../../console/index.js';
 import { aggregateFiles } from '../../formats/files/translate.js';
 import { aggregateReactTranslations } from '../../translation/stage.js';
-import { sendUpdates, SendUpdatesResult } from '../../api/sendUpdates.js';
 import { sendFiles, SendFilesResult } from '../../api/sendFiles.js';
-import updateConfig from '../../fs/config/updateConfig.js';
 import { updateVersions } from '../../fs/config/updateVersions.js';
+import { JsxChildren } from 'generaltranslation/types';
+import updateConfig from '../../fs/config/updateConfig.js';
+import { hashStringSync } from '../../utils/hash.js';
+
+export const TEMPLATE_FILE_NAME = '__INTERNAL_GT_TEMPLATE_NAME__';
+export const TEMPLATE_FILE_ID = hashStringSync(TEMPLATE_FILE_NAME);
 
 export async function handleStage(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries,
   stage: boolean
-): Promise<{
-  reactTranslationResponse: SendUpdatesResult | undefined;
-  filesTranslationResponse: SendFilesResult | undefined;
-}> {
+): Promise<SendFilesResult | undefined> {
   // Validate required settings are present if not in dry run
   if (!options.dryRun) {
-    if (!options.locales) {
+    if (!settings.locales) {
       logErrorAndExit(noLocalesError);
     }
-    if (!options.defaultLocale) {
+    if (!settings.defaultLocale) {
       logErrorAndExit(noDefaultLocaleError);
     }
-    if (!options.apiKey) {
+    if (!settings.apiKey) {
       logErrorAndExit(noApiKeyError);
     }
-    if (options.apiKey.startsWith('gtx-dev-')) {
+    if (settings.apiKey.startsWith('gtx-dev-')) {
       logErrorAndExit(devApiKeyError);
     }
-    if (!options.projectId) {
+    if (!settings.projectId) {
       logErrorAndExit(noProjectIdError);
     }
 
@@ -59,43 +59,57 @@ export async function handleStage(
   const allFiles = await aggregateFiles(settings);
 
   // Parse for React components
-  let updates: Updates = [];
+  let reactComponents = 0;
   if (library === 'gt-react' || library === 'gt-next') {
-    updates = await aggregateReactTranslations(options, settings, library);
+    const updates = await aggregateReactTranslations(
+      options,
+      settings,
+      library
+    );
+    if (updates.length > 0) {
+      reactComponents = updates.length;
+      // Convert updates to a file object
+      const fileData: Record<string, JsxChildren> = {};
+      const fileMetadata: Record<string, any> = {};
+      // Convert updates to the proper data format
+      for (const update of updates) {
+        const { source, metadata } = update;
+        const { hash, id } = metadata;
+        if (id) {
+          fileData[id] = source;
+          fileMetadata[id] = metadata;
+        } else {
+          fileData[hash] = source;
+          fileMetadata[hash] = metadata;
+        }
+      }
+      allFiles.push({
+        fileName: TEMPLATE_FILE_NAME,
+        content: JSON.stringify(fileData),
+        fileFormat: 'GTJSON',
+        formatMetadata: fileMetadata,
+      });
+    }
   }
 
   // Dry run
   if (options.dryRun) {
-    const fileNames = allFiles.map((file) => `- ${file.fileName}`).join('\n');
+    const fileNames = allFiles
+      .map((file) => {
+        if (file.fileName === TEMPLATE_FILE_NAME) {
+          return `- <React Elements> (${reactComponents})`;
+        }
+        return `- ${file.fileName}`;
+      })
+      .join('\n');
     logSuccess(
       `Dry run: No files were sent to General Translation. Found files:\n${fileNames}`
     );
-    logSuccess(
-      `Found ${updates.length} React translations to send to General Translation.`
-    );
-    return {
-      reactTranslationResponse: undefined,
-      filesTranslationResponse: undefined,
-    };
+    return undefined;
   }
 
   // Send translations to General Translation
-  let reactTranslationResponse: SendUpdatesResult | undefined;
   let filesTranslationResponse: SendFilesResult | undefined;
-  if (updates.length > 0) {
-    reactTranslationResponse = await sendUpdates(
-      updates,
-      options,
-      settings,
-      library,
-      stage
-    );
-    const { versionId } = reactTranslationResponse;
-    await updateConfig({
-      configFilepath: settings.config,
-      _versionId: versionId,
-    });
-  }
   if (allFiles.length > 0) {
     filesTranslationResponse = await sendFiles(allFiles, options, settings);
     if (stage) {
@@ -104,9 +118,13 @@ export async function handleStage(
         versionData: filesTranslationResponse.data,
       });
     }
+    const { versionId } = filesTranslationResponse.data[TEMPLATE_FILE_ID];
+    if (versionId) {
+      await updateConfig({
+        configFilepath: settings.config,
+        _versionId: versionId,
+      });
+    }
   }
-  return {
-    reactTranslationResponse,
-    filesTranslationResponse,
-  };
+  return filesTranslationResponse;
 }

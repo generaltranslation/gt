@@ -275,6 +275,7 @@ export class GT {
    * @returns {Promise<EnqueueTranslationEntriesResult>} The result of the enqueue operation.
    *
    * @example
+   * @deprecated Use the {@link enqueueFiles} method instead. Will be removed in v8.0.0.
    * const gt = new GT({
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',

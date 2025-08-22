@@ -27,7 +27,6 @@ import {
 import { DataFormat } from '../types/data.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
-import { translateFiles } from '../formats/files/translate.js';
 import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
 import { handleSetupReactCommand } from '../setup/wizard.js';
 import {
@@ -139,12 +138,7 @@ export class BaseCLI {
         false
       );
       if (results) {
-        await handleTranslate(
-          initOptions,
-          settings,
-          results.reactTranslationResponse,
-          results.filesTranslationResponse
-        );
+        await handleTranslate(initOptions, settings, results);
       }
     } else {
       await handleDownload(initOptions, settings);
@@ -354,46 +348,6 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     // Process all file types at once with a single call
     await upload(
-      sourceFiles,
-      placeholderPaths,
-      transformPaths,
-      dataFormat,
-      settings
-    );
-  }
-
-  protected async handleGenericTranslate(
-    settings: Settings & TranslateFlags
-  ): Promise<void> {
-    // dataFormat for JSONs
-    let dataFormat: DataFormat;
-    if (this.library === 'next-intl') {
-      dataFormat = 'ICU';
-    } else if (this.library === 'i18next') {
-      if (this.additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
-      } else {
-        dataFormat = 'I18NEXT';
-      }
-    } else {
-      dataFormat = 'JSX';
-    }
-
-    if (
-      !settings.files ||
-      (Object.keys(settings.files.placeholderPaths).length === 1 &&
-        settings.files.placeholderPaths.gt)
-    ) {
-      return;
-    }
-    const {
-      resolvedPaths: sourceFiles,
-      placeholderPaths,
-      transformPaths,
-    } = settings.files;
-
-    // Process all file types at once with a single call
-    await translateFiles(
       sourceFiles,
       placeholderPaths,
       transformPaths,

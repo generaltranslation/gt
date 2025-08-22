@@ -21,7 +21,6 @@ import { noFilesError, noVersionIdError } from '../../console/index.js';
 export async function handleTranslate(
   options: TranslateFlags,
   settings: Settings,
-  reactTranslationResponse: SendUpdatesResult | undefined,
   filesTranslationResponse: SendFilesResult | undefined
 ) {
   const timeout = parseInt(options.timeout);
@@ -47,28 +46,9 @@ export async function handleTranslate(
       data,
       settings.locales,
       timeout,
-      (sourcePath, locale) => fileMapping[locale][sourcePath],
+      (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
       settings
     );
-  }
-  if (reactTranslationResponse) {
-    const { versionId } = reactTranslationResponse;
-    const result = await waitForUpdates(versionId, Date.now(), timeout);
-
-    if (!result) {
-      logErrorAndExit(
-        chalk.red(
-          'Not all translations are live, please try again or contact support.'
-        )
-      );
-    }
-
-    const translations = await fetchTranslations(versionId);
-
-    // Save translations to local directory if files.gt.output is provided
-    if (settings.files && isUsingLocalTranslations(settings)) {
-      await saveTranslations(translations, settings.files.placeholderPaths);
-    }
   }
 }
 
@@ -106,25 +86,9 @@ export async function handleDownload(
     stagedVersionData,
     settings.locales,
     timeout,
-    (sourcePath, locale) => fileMapping[locale][sourcePath],
+    (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
     settings
   );
-
-  // React
-  const result = await waitForUpdates(settings._versionId, Date.now(), timeout);
-  if (!result) {
-    logErrorAndExit(
-      chalk.red(
-        'Not all translations are live, please try again or contact support.'
-      )
-    );
-  }
-  const translations = await fetchTranslations(settings._versionId);
-
-  // Save translations to local directory if files.gt.output is provided
-  if (settings.files && isUsingLocalTranslations(settings)) {
-    await saveTranslations(translations, settings.files.placeholderPaths);
-  }
 }
 
 export async function postProcessTranslations(settings: Settings) {

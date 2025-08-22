@@ -41,7 +41,7 @@ export async function sendFiles(
       publish: settings.publish,
       sourceLocale: settings.defaultLocale,
       targetLocales: settings.locales,
-      _versionId: settings._versionId,
+      version: settings.version, // not set ATM
       modelProvider: settings.modelProvider,
     });
 

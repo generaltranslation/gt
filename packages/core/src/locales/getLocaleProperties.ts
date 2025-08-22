@@ -2,7 +2,7 @@ import { libraryDefaultLocale } from '../internal';
 import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';
-import { intlCache } from 'src/cache/IntlCache';
+import { intlCache } from '../cache/IntlCache';
 import { CustomMapping, FullCustomMapping } from './customLocaleMapping';
 
 export type LocaleProperties = {

@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { createOraSpinner, logError, logMessage } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile.js';
-import { downloadFileBatch } from './downloadFileBatch.js';
+import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 
@@ -32,7 +32,7 @@ export async function checkFileTranslations(
   },
   locales: string[],
   timeoutDuration: number,
-  resolveOutputPath: (sourcePath: string, locale: string) => string,
+  resolveOutputPath: (sourcePath: string, locale: string) => string | null,
   options: Settings
 ) {
   const startTime = Date.now();
@@ -255,7 +255,7 @@ async function checkTranslationDeployment(
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
   downloadStatus: { downloaded: Set<string>; failed: Set<string> },
   spinner: Awaited<ReturnType<typeof createOraSpinner>>,
-  resolveOutputPath: (sourcePath: string, locale: string) => string,
+  resolveOutputPath: (sourcePath: string, locale: string) => string | null,
   options: Settings
 ): Promise<boolean> {
   try {
@@ -277,42 +277,34 @@ async function checkTranslationDeployment(
 
     // Filter for ready translations
     const readyTranslations = translations.filter(
-      (translation: any) => translation.isReady && translation.fileName
+      (translation) => translation.isReady && translation.fileName
     );
 
     if (readyTranslations.length > 0) {
       // Prepare batch download data
-      const batchFiles = readyTranslations.map((translation: any) => {
-        const locale = translation.locale;
-        const fileName = translation.fileName;
-        const translationId = translation.id;
-        const outputPath = resolveOutputPath(fileName, locale);
+      const batchFiles: BatchedFiles = readyTranslations
+        .map((translation) => {
+          const locale = translation.locale;
+          const fileName = translation.fileName;
+          const translationId = translation.id;
+          const outputPath = resolveOutputPath(fileName, locale);
 
-        return {
-          translationId,
-          inputPath: fileName,
-          outputPath,
-          locale,
-          fileLocale: `${fileName}:${locale}`,
-        };
-      });
+          return {
+            translationId,
+            inputPath: fileName,
+            outputPath,
+            locale,
+            fileLocale: `${fileName}:${locale}`,
+          };
+        })
+        .filter((file) => file.outputPath !== null) as BatchedFiles;
 
       // Use batch download if there are multiple files
       if (batchFiles.length > 1) {
-        const batchResult = await downloadFileBatch(
-          batchFiles.map(
-            ({ translationId, outputPath, inputPath, locale }: any) => ({
-              translationId,
-              outputPath,
-              inputPath,
-              locale,
-            })
-          ),
-          options
-        );
+        const batchResult = await downloadFileBatch(batchFiles, options);
 
         // Process results
-        batchFiles.forEach((file: any) => {
+        batchFiles.forEach((file) => {
           const { translationId, fileLocale } = file;
           if (batchResult.successful.includes(translationId)) {
             downloadStatus.downloaded.add(fileLocale);

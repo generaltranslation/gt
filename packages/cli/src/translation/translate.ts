@@ -22,10 +22,6 @@ export async function translate(
 
   // Save translations to local directory if files.gt.output is provided
   if (settings.files && isUsingLocalTranslations(settings)) {
-    await saveTranslations(
-      translations,
-      settings.files.placeholderPaths,
-      'JSX'
-    );
+    await saveTranslations(translations, settings.files.placeholderPaths);
   }
 }
