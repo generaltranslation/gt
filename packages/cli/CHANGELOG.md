@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.6
+
+### Patch Changes
+
+- [#584](https://github.com/generaltranslation/gt/pull/584) [`fd3d958`](https://github.com/generaltranslation/gt/commit/fd3d958dab3d14a7f1f9b49c5c49fba191077a57) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix version
+
 ## 2.1.5
 
 ### Patch Changes
