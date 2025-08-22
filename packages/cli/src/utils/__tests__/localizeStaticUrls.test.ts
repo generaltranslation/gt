@@ -2618,13 +2618,13 @@ describe('transformUrlPath', () => {
 
       it('should return null if URL already has target locale', () => {
         const result = transformUrlPath(
-          '/docs/japanaese/guide',
+          '/docs/japanese/guide',
           '/docs/',
           'ja',
           'en',
           true
         );
-        expect(result).toBe('/docs/ja/japanaese/guide');
+        expect(result).toBe('/docs/ja/japanese/guide');
       });
 
       it('should return null if URL equals target locale pattern', () => {
