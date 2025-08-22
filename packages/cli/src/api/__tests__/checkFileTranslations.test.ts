@@ -4,7 +4,6 @@ import {
   checkFileTranslations,
 } from '../checkFileTranslations.js';
 import { gt } from '../../utils/gt.js';
-import { downloadFile } from '../downloadFile.js';
 import { createOraSpinner } from '../../console/logging.js';
 import { Ora } from 'ora';
 import {
@@ -13,16 +12,13 @@ import {
 } from 'generaltranslation/types';
 import { getLocaleProperties } from 'generaltranslation';
 import { createMockSettings } from '../__mocks__/settings.js';
+import { downloadFileBatch } from '../downloadFileBatch.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
   gt: {
     checkFileTranslations: vi.fn(),
   },
-}));
-
-vi.mock('../downloadFile.js', () => ({
-  downloadFile: vi.fn(),
 }));
 
 vi.mock('../downloadFileBatch.js', () => ({
@@ -47,11 +43,6 @@ describe('checkFileTranslations', () => {
       fail: vi.fn(),
       start: vi.fn(),
     }) as unknown as Ora;
-
-  const createMockDownloadStatus = () => ({
-    downloaded: new Set<string>(),
-    failed: new Set<string>(),
-  });
 
   const createMockResolveOutputPath = () =>
     vi.fn(
@@ -148,13 +139,11 @@ describe('checkFileTranslations', () => {
   };
 
   let mockSpinner: Ora;
-  let mockDownloadStatus: ReturnType<typeof createMockDownloadStatus>;
   let mockResolveOutputPath: ReturnType<typeof createMockResolveOutputPath>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockSpinner = createMockSpinner();
-    mockDownloadStatus = createMockDownloadStatus();
     mockResolveOutputPath = createMockResolveOutputPath();
     vi.mocked(createOraSpinner).mockResolvedValue(mockSpinner);
 
@@ -162,6 +151,12 @@ describe('checkFileTranslations', () => {
     vi.mocked(getLocaleProperties).mockImplementation(
       createMockLocaleProperties
     );
+
+    // Mock downloadFileBatch to return successful results
+    vi.mocked(downloadFileBatch).mockResolvedValue({
+      successful: ['translation-1'],
+      failed: [],
+    });
   });
 
   it('should handle empty data', async () => {
@@ -191,7 +186,6 @@ describe('checkFileTranslations', () => {
     vi.mocked(gt.checkFileTranslations).mockResolvedValue(
       mockTranslationsResult
     );
-    vi.mocked(downloadFile).mockResolvedValue(true);
 
     await checkFileTranslations(
       mockData,
@@ -212,7 +206,6 @@ describe('checkFileTranslations', () => {
     const mockTranslations = createMockTranslationsResult([mockTranslation]);
 
     vi.mocked(gt.checkFileTranslations).mockResolvedValue(mockTranslations);
-    vi.mocked(downloadFile).mockResolvedValue(true);
 
     const result = await checkFileTranslations(
       mockData,
@@ -222,13 +215,6 @@ describe('checkFileTranslations', () => {
       createMockSettings()
     );
 
-    expect(downloadFile).toHaveBeenCalledWith(
-      'translation-1',
-      '/output/file1.json_es.json',
-      'file1.json',
-      'es',
-      createMockSettings()
-    );
     expect(result).toBe(true);
   });
 
@@ -242,7 +228,6 @@ describe('checkFileTranslations', () => {
     vi.mocked(gt.checkFileTranslations).mockResolvedValue(
       mockTranslationsResult
     );
-    vi.mocked(downloadFile).mockResolvedValue(true);
 
     await checkFileTranslations(
       mockData,

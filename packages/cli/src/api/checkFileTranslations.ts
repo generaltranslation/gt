@@ -1,7 +1,6 @@
 import chalk from 'chalk';
-import { createOraSpinner, logError, logMessage } from '../console/logging.js';
+import { createOraSpinner, logError } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
-import { downloadFile } from './downloadFile.js';
 import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
@@ -302,36 +301,17 @@ async function checkTranslationDeployment(
         })
         .filter((file) => file.outputPath !== null) as BatchedFiles;
 
-      // Use batch download if there are multiple files
-      if (batchFiles.length > 1) {
-        const batchResult = await downloadFileBatch(batchFiles, options);
+      const batchResult = await downloadFileBatch(batchFiles, options);
 
-        // Process results
-        batchFiles.forEach((file) => {
-          const { translationId, fileLocale } = file;
-          if (batchResult.successful.includes(translationId)) {
-            downloadStatus.downloaded.add(fileLocale);
-          } else if (batchResult.failed.includes(translationId)) {
-            downloadStatus.failed.add(fileLocale);
-          }
-        });
-      } else if (batchFiles.length === 1) {
-        // For a single file, use the original downloadFile method
-        const file = batchFiles[0];
-        const result = await downloadFile(
-          file.translationId,
-          file.outputPath,
-          file.inputPath,
-          file.locale,
-          options
-        );
-
-        if (result) {
-          downloadStatus.downloaded.add(file.fileLocale);
-        } else {
-          downloadStatus.failed.add(file.fileLocale);
+      // Process results
+      batchFiles.forEach((file) => {
+        const { translationId, fileLocale } = file;
+        if (batchResult.successful.includes(translationId)) {
+          downloadStatus.downloaded.add(fileLocale);
+        } else if (batchResult.failed.includes(translationId)) {
+          downloadStatus.failed.add(fileLocale);
         }
-      }
+      });
     }
 
     // Force a refresh of the spinner display
