@@ -27,7 +27,10 @@ const { isMatch } = micromatch;
  * - Support more file types
  * - Support more complex paths
  */
-export default async function localizeStaticUrls(settings: Settings) {
+export default async function localizeStaticUrls(
+  settings: Settings,
+  targetLocales?: string[]
+) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
