@@ -140,27 +140,10 @@ function shouldProcessUrl(
   defaultLocale: string
 ): boolean {
   // Skip absolute URLs (http://, https://, //, etc.)
-  if (
-    originalUrl.startsWith('http://') ||
-    originalUrl.startsWith('https://') ||
-    originalUrl.startsWith('//')
-  ) {
+  if (originalUrl.includes(':')) {
     return false;
   }
 
-  // Skip URLs with template literal variables or expressions
-  if (originalUrl.includes('${')) {
-    return false;
-  }
-
-  // Skip URLs that are just variables or function calls
-  if (
-    !originalUrl.startsWith('/') &&
-    !originalUrl.startsWith('./') &&
-    !originalUrl.startsWith('../')
-  ) {
-    return false;
-  }
   const patternWithoutSlash = patternHead.replace(/\/$/, '');
 
   if (targetLocale === defaultLocale) {
@@ -259,7 +242,9 @@ function transformNonDefaultLocaleUrlWithHidden(
   }
 
   // Add target locale to URL without any locale
-  const pathAfterHead = originalUrl.slice(patternHead.length);
+  const pathAfterHead = originalUrl.slice(
+    originalUrl.startsWith(patternHead) ? patternHead.length : 0
+  );
   return pathAfterHead
     ? `${patternHead}${targetLocale}/${pathAfterHead}`
     : `${patternHead}${targetLocale}`;
