@@ -152,7 +152,7 @@ function shouldProcessUrl(
   baseDomain?: string
 ): boolean {
   const patternWithoutSlash = patternHead.replace(/\/$/, '');
-  
+
   // Handle absolute URLs with baseDomain
   let urlToCheck = originalUrl;
   if (baseDomain && originalUrl.startsWith(baseDomain)) {
@@ -261,9 +261,10 @@ export function transformUrlPath(
     }
 
     // replace default locale with target locale
-    originalPathArray[patternHeadArray.length] = targetLocale;
+    const newPathArray = [...originalPathArray];
+    newPathArray[patternHeadArray.length] = targetLocale;
 
-    result = originalPathArray.join('/');
+    result = newPathArray.join('/');
   }
 
   // check for leading and trailing slashes
@@ -287,7 +288,7 @@ function transformMdxUrls(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
   exclude: string[] = [],
-  baseDomain: string
+  baseDomain?: string
 ): UrlTransformResult {
   const transformedUrls: Array<{
     originalPath: string;
@@ -355,7 +356,13 @@ function transformMdxUrls(
   ): string | null => {
     // Check if URL should be processed
     if (
-      !shouldProcessUrl(originalUrl, patternHead, targetLocale, defaultLocale, baseDomain)
+      !shouldProcessUrl(
+        originalUrl,
+        patternHead,
+        targetLocale,
+        defaultLocale,
+        baseDomain
+      )
     ) {
       return null;
     }
