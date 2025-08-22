@@ -57,7 +57,7 @@ export class Logger {
     if (this.logLevel === 'silent') {
       return false;
     }
-    
+
     const currentLevel = Logger.LOG_LEVELS[this.logLevel];
     const messageLevel = Logger.LOG_LEVELS[level];
     return messageLevel <= currentLevel;
