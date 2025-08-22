@@ -367,10 +367,7 @@ function transformMdxUrls(
     // Skip absolute URLs (http://, https://, //, etc.)
     if (baseDomain && shouldProcessAbsoluteUrl(originalUrl, baseDomain)) {
       // Get everything after the base domain
-      logMessage(`originalUrl: ${originalUrl}`);
-      logMessage(`baseDomain: ${baseDomain}`);
       const afterDomain = originalUrl.substring(baseDomain.length);
-      logMessage(`afterDomain: ${afterDomain}`);
 
       const transformedPath = transformUrlPath(
         afterDomain,
