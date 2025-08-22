@@ -60,7 +60,10 @@ export default async function localizeStaticUrls(
   // First, process default locale files (from source files)
   // This is needed because they might not be in the fileMapping if they're not being translated
   // Only process default locale if it's in the target locales filter
-  if (!fileMapping[settings.defaultLocale] && locales.includes(settings.defaultLocale)) {
+  if (
+    !fileMapping[settings.defaultLocale] &&
+    locales.includes(settings.defaultLocale)
+  ) {
     const defaultLocaleFiles: string[] = [];
 
     // Collect all .md and .mdx files from sourceFiles
@@ -122,8 +125,7 @@ export default async function localizeStaticUrls(
           await fs.promises.writeFile(filePath, localizedFile);
         })
       );
-    }
-  );
+    });
   processPromises.push(...mappingPromises);
 
   await Promise.all(processPromises);
@@ -359,16 +361,14 @@ function transformMdxUrls(
       const afterDomain = originalUrl.substring(baseDomain.length);
       logMessage(`afterDomain: ${afterDomain}`);
 
-      return (
-        baseDomain +
-        transformUrlPath(
-          afterDomain,
-          patternHead,
-          targetLocale,
-          defaultLocale,
-          hideDefaultLocale
-        )
+      const transformedPath = transformUrlPath(
+        afterDomain,
+        patternHead,
+        targetLocale,
+        defaultLocale,
+        hideDefaultLocale
       );
+      return transformedPath ? baseDomain + transformedPath : null;
     }
 
     // Exclude colon-prefixed URLs (http://, https://, //, etc.)
