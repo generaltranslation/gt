@@ -414,7 +414,9 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     // Localize static urls in other locales AFTER translation
     if (settings.experimentalLocalizeStaticUrls) {
-      const otherLocales = settings.locales.filter(locale => locale !== settings.defaultLocale);
+      const otherLocales = settings.locales.filter(
+        (locale) => locale !== settings.defaultLocale
+      );
       if (otherLocales.length > 0) {
         await localizeStaticUrls(settings, otherLocales);
       }
