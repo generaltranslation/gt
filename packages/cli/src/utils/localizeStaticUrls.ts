@@ -351,6 +351,7 @@ export function transformUrlPath(
     return null; // Pattern is longer than the URL path
   }
 
+  let result = null;
   if (targetLocale === defaultLocale) {
     if (hideDefaultLocale) {
       // check if default locale is already present
@@ -364,7 +365,7 @@ export function transformUrlPath(
         ...originalPathArray.slice(patternHeadArray.length + 1),
       ];
 
-      return newPathArray.join('/');
+      result = newPathArray.join('/');
     } else {
       // check if default locale is already present
       if (originalPathArray?.[patternHeadArray.length] === defaultLocale) {
@@ -378,7 +379,7 @@ export function transformUrlPath(
         ...originalPathArray.slice(patternHeadArray.length),
       ];
 
-      return newPathArray.join('/');
+      result = newPathArray.join('/');
     }
   } else if (hideDefaultLocale) {
     const newPathArray = [
@@ -387,7 +388,7 @@ export function transformUrlPath(
       ...originalPathArray.slice(patternHeadArray.length),
     ];
 
-    return newPathArray.join('/');
+    result = newPathArray.join('/');
   } else {
     // check default locale
     if (originalPathArray?.[patternHeadArray.length] !== defaultLocale) {
@@ -397,8 +398,19 @@ export function transformUrlPath(
     // replace default locale with target locale
     originalPathArray[patternHeadArray.length] = targetLocale;
 
-    return originalPathArray.join('/');
+    result = originalPathArray.join('/');
   }
+
+  // check for leading and trailing slashes
+  if (originalUrl.startsWith('/')) {
+    result = '/' + result;
+  }
+  if (originalUrl.endsWith('/')) {
+    result = result + '/';
+  }
+
+  return result;
+
   // if (targetLocale === defaultLocale) {
   //   return transformDefaultLocaleUrl(
   //     originalUrl,
