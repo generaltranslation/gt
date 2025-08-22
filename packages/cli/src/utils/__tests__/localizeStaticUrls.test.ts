@@ -2293,10 +2293,10 @@ Some content with [another link](/en/docs).`;
 
       await localizeStaticUrls(settings as any);
 
-      // Verify that writeFile was called for both non-default locale files (fr-CA) 
+      // Verify that writeFile was called for both non-default locale files (fr-CA)
       // and both default locale files (en) - total of 4 calls
       expect(fs.promises.writeFile).toHaveBeenCalledTimes(4);
-      
+
       // Check non-default locale files
       expect(fs.promises.writeFile).toHaveBeenCalledWith(
         '/path/fr-CA/index.mdx',
@@ -2306,7 +2306,7 @@ Some content with [another link](/en/docs).`;
         '/path/fr-CA/index2.mdx',
         expect.any(String)
       );
-      
+
       // Check default locale files (processed separately when hideDefaultLocale=true)
       expect(fs.promises.writeFile).toHaveBeenCalledWith(
         'index.mdx',
