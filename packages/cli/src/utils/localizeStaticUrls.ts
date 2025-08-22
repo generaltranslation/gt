@@ -10,6 +10,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
+import { logMessage } from '../console/logging.js';
 
 const { isMatch } = micromatch;
 
@@ -77,7 +78,8 @@ export default async function localizeStaticUrls(
             settings.defaultLocale, // Process as default locale
             settings.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
-            settings.options?.excludeStaticUrls
+            settings.options?.excludeStaticUrls,
+            settings.options?.baseDomain
           );
           // Write the localized file back to the same path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -107,7 +109,8 @@ export default async function localizeStaticUrls(
             locale,
             settings.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
-            settings.options?.excludeStaticUrls
+            settings.options?.excludeStaticUrls,
+            settings.options?.baseDomain
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -139,11 +142,6 @@ function shouldProcessUrl(
   targetLocale: string,
   defaultLocale: string
 ): boolean {
-  // Skip absolute URLs (http://, https://, //, etc.)
-  if (originalUrl.includes(':')) {
-    return false;
-  }
-
   const patternWithoutSlash = patternHead.replace(/\/$/, '');
 
   if (targetLocale === defaultLocale) {
@@ -153,6 +151,16 @@ function shouldProcessUrl(
     // For non-default locales, check if URL starts with pattern
     return originalUrl.startsWith(patternWithoutSlash);
   }
+}
+
+/**
+ * Determines if a URL should be processed based on the base domain
+ */
+function shouldProcessAbsoluteUrl(
+  originalUrl: string,
+  baseDomain: string
+): boolean {
+  return originalUrl.startsWith(baseDomain);
 }
 
 /**
@@ -172,13 +180,18 @@ function isUrlExcluded(
 /**
  * Transforms URL for default locale processing
  */
-function transformDefaultLocaleUrl(
+export function transformDefaultLocaleUrl(
   originalUrl: string,
   patternHead: string,
   defaultLocale: string,
   hideDefaultLocale: boolean
 ): string | null {
   if (hideDefaultLocale) {
+    // Skip if the pattern head doesn't match
+    if (!cleanPath(originalUrl).startsWith(cleanPath(patternHead))) {
+      return null;
+    }
+
     // Remove locale from URLs that have it: '/docs/en/file' -> '/docs/file'
     if (originalUrl.includes(`/${defaultLocale}/`)) {
       return originalUrl.replace(`/${defaultLocale}/`, '/');
@@ -188,17 +201,23 @@ function transformDefaultLocaleUrl(
     return null; // URL doesn't have default locale
   } else {
     // Add locale to URLs that don't have it: '/docs/file' -> '/docs/en/file'
-    if (
-      originalUrl.includes(`/${defaultLocale}/`) ||
-      originalUrl.endsWith(`/${defaultLocale}`)
-    ) {
+    if (cleanPath(originalUrl).startsWith(cleanPath(patternHead))) {
       return null; // Already has default locale
+    }
+
+    // Handle exact pattern match
+    if (originalUrl === patternHead.replace(/\/$/, '')) {
+      return `${patternHead.replace(/\/$/, '')}/${defaultLocale}`;
     }
 
     if (originalUrl.startsWith(patternHead)) {
       const pathAfterHead = originalUrl.slice(patternHead.length);
       if (pathAfterHead) {
-        return `${patternHead}${defaultLocale}/${pathAfterHead}`;
+        // Remove leading slash from pathAfterHead if patternHead doesn't end with slash
+        const cleanPathAfterHead = pathAfterHead.startsWith('/')
+          ? pathAfterHead.slice(1)
+          : pathAfterHead;
+        return `${patternHead}${defaultLocale}/${cleanPathAfterHead}`;
       } else {
         return `${patternHead.replace(/\/$/, '')}/${defaultLocale}`;
       }
@@ -210,13 +229,20 @@ function transformDefaultLocaleUrl(
 /**
  * Transforms URL for non-default locale processing with hideDefaultLocale=true
  */
-function transformNonDefaultLocaleUrlWithHidden(
+export function transformNonDefaultLocaleUrlWithHidden(
   originalUrl: string,
   patternHead: string,
   targetLocale: string,
   defaultLocale: string
 ): string | null {
   // Check if already localized
+  const cleanOriginalUrl = cleanPath(originalUrl);
+  const cleanPatternHead = cleanPath(patternHead);
+  if (!patternHead.endsWith('/')) {
+    patternHead = patternHead + '/';
+  }
+
+  // Already localized
   if (
     originalUrl.startsWith(`${patternHead}${targetLocale}/`) ||
     originalUrl === `${patternHead}${targetLocale}`
@@ -237,14 +263,20 @@ function transformNonDefaultLocaleUrlWithHidden(
   }
 
   // Handle exact pattern match
+  // inserts locale after patternHead
+  // Input: originalUrl = "/docs"
+  // Output: "/docs/fr"
   if (originalUrl === patternHead.replace(/\/$/, '')) {
     return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
   }
 
   // Add target locale to URL without any locale
-  const pathAfterHead = originalUrl.slice(
-    originalUrl.startsWith(patternHead) ? patternHead.length : 0
+  const pathAfterHead = cleanPath(
+    originalUrl.slice(
+      originalUrl.startsWith(patternHead) ? patternHead.length : 0
+    )
   );
+
   return pathAfterHead
     ? `${patternHead}${targetLocale}/${pathAfterHead}`
     : `${patternHead}${targetLocale}`;
@@ -270,13 +302,25 @@ function transformNonDefaultLocaleUrl(
       `${patternHead}${defaultLocale}`,
       `${patternHead}${targetLocale}`
     );
-  } else if (originalUrl.startsWith(patternHead)) {
-    // Add target locale to URL that doesn't have any locale
-    const pathAfterHead = originalUrl.slice(patternHead.length);
-    if (pathAfterHead) {
-      return `${patternHead}${targetLocale}/${pathAfterHead}`;
-    } else {
+  } else {
+    // Handle exact pattern match
+    if (originalUrl === patternHead.replace(/\/$/, '')) {
       return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
+    }
+
+    if (originalUrl.startsWith(patternHead)) {
+      // Add target locale to URL that doesn't have any locale
+      const pathAfterHead = originalUrl.slice(patternHead.length);
+      if (pathAfterHead) {
+        // Remove leading slash from pathAfterHead if patternHead doesn't end with slash
+        const cleanPathAfterHead =
+          pathAfterHead.startsWith('/') && !patternHead.endsWith('/')
+            ? pathAfterHead.slice(1)
+            : pathAfterHead;
+        return `${patternHead}${targetLocale}/${cleanPathAfterHead}`;
+      } else {
+        return `${patternHead.replace(/\/$/, '')}/${targetLocale}`;
+      }
     }
   }
 
@@ -286,35 +330,97 @@ function transformNonDefaultLocaleUrl(
 /**
  * Main URL transformation function that delegates to specific scenarios
  */
-function transformUrlPath(
+export function transformUrlPath(
   originalUrl: string,
   patternHead: string,
   targetLocale: string,
   defaultLocale: string,
   hideDefaultLocale: boolean
 ): string | null {
-  if (targetLocale === defaultLocale) {
-    return transformDefaultLocaleUrl(
-      originalUrl,
-      patternHead,
-      defaultLocale,
-      hideDefaultLocale
-    );
-  } else if (hideDefaultLocale) {
-    return transformNonDefaultLocaleUrlWithHidden(
-      originalUrl,
-      patternHead,
-      targetLocale,
-      defaultLocale
-    );
-  } else {
-    return transformNonDefaultLocaleUrl(
-      originalUrl,
-      patternHead,
-      targetLocale,
-      defaultLocale
-    );
+  const originalPathArray = originalUrl
+    .split('/')
+    .filter((path) => path !== '');
+  const patternHeadArray = patternHead.split('/').filter((path) => path !== '');
+
+  // check if the pattern head matches the original path
+  if (!checkIfPathMatchesPattern(originalPathArray, patternHeadArray)) {
+    return null;
   }
+
+  if (patternHeadArray.length > originalPathArray.length) {
+    return null; // Pattern is longer than the URL path
+  }
+
+  if (targetLocale === defaultLocale) {
+    if (hideDefaultLocale) {
+      // check if default locale is already present
+      if (originalPathArray?.[patternHeadArray.length] !== defaultLocale) {
+        return null;
+      }
+
+      // remove default locale
+      const newPathArray = [
+        ...originalPathArray.slice(0, patternHeadArray.length),
+        ...originalPathArray.slice(patternHeadArray.length + 1),
+      ];
+
+      return newPathArray.join('/');
+    } else {
+      // check if default locale is already present
+      if (originalPathArray?.[patternHeadArray.length] === defaultLocale) {
+        return null;
+      }
+
+      // insert default locale
+      const newPathArray = [
+        ...originalPathArray.slice(0, patternHeadArray.length),
+        defaultLocale,
+        ...originalPathArray.slice(patternHeadArray.length),
+      ];
+
+      return newPathArray.join('/');
+    }
+  } else if (hideDefaultLocale) {
+    const newPathArray = [
+      ...originalPathArray.slice(0, patternHeadArray.length),
+      targetLocale,
+      ...originalPathArray.slice(patternHeadArray.length),
+    ];
+
+    return newPathArray.join('/');
+  } else {
+    // check default locale
+    if (originalPathArray?.[patternHeadArray.length] !== defaultLocale) {
+      return null;
+    }
+
+    // replace default locale with target locale
+    originalPathArray[patternHeadArray.length] = targetLocale;
+
+    return originalPathArray.join('/');
+  }
+  // if (targetLocale === defaultLocale) {
+  //   return transformDefaultLocaleUrl(
+  //     originalUrl,
+  //     patternHead,
+  //     defaultLocale,
+  //     hideDefaultLocale
+  //   );
+  // } else if (hideDefaultLocale) {
+  //   return transformNonDefaultLocaleUrlWithHidden(
+  //     originalUrl,
+  //     patternHead,
+  //     targetLocale,
+  //     defaultLocale
+  //   );
+  // } else {
+  //   return transformNonDefaultLocaleUrl(
+  //     originalUrl,
+  //     patternHead,
+  //     targetLocale,
+  //     defaultLocale
+  //   );
+  // }
 }
 
 /**
@@ -326,7 +432,8 @@ function transformMdxUrls(
   targetLocale: string,
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
-  exclude: string[] = []
+  exclude: string[] = [],
+  baseDomain: string
 ): UrlTransformResult {
   const transformedUrls: Array<{
     originalPath: string;
@@ -396,6 +503,31 @@ function transformMdxUrls(
     if (
       !shouldProcessUrl(originalUrl, patternHead, targetLocale, defaultLocale)
     ) {
+      return null;
+    }
+
+    // Skip absolute URLs (http://, https://, //, etc.)
+    if (baseDomain && shouldProcessAbsoluteUrl(originalUrl, baseDomain)) {
+      // Get everything after the base domain
+      logMessage(`originalUrl: ${originalUrl}`);
+      logMessage(`baseDomain: ${baseDomain}`);
+      const afterDomain = originalUrl.substring(baseDomain.length);
+      logMessage(`afterDomain: ${afterDomain}`);
+
+      return (
+        baseDomain +
+        transformUrlPath(
+          afterDomain,
+          patternHead,
+          targetLocale,
+          defaultLocale,
+          hideDefaultLocale
+        )
+      );
+    }
+
+    // Exclude colon-prefixed URLs (http://, https://, //, etc.)
+    if (originalUrl.split('?')[0].includes(':')) {
       return null;
     }
 
@@ -571,7 +703,8 @@ function localizeStaticUrlsForFile(
   targetLocale: string,
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
-  exclude: string[] = []
+  exclude: string[] = [],
+  baseDomain?: string
 ): string {
   // Use AST-based transformation for MDX files
   const result = transformMdxUrls(
@@ -580,7 +713,30 @@ function localizeStaticUrlsForFile(
     targetLocale,
     hideDefaultLocale,
     pattern,
-    exclude
+    exclude,
+    baseDomain || ''
   );
   return result.content;
+}
+
+function cleanPath(path: string): string {
+  let cleanedPath = path.startsWith('/') ? path.slice(1) : path;
+  cleanedPath = cleanedPath.endsWith('/')
+    ? cleanedPath.slice(0, -1)
+    : cleanedPath;
+  return cleanedPath;
+}
+
+function checkIfPathMatchesPattern(
+  originalUrlArray: string[],
+  patternHeadArray: string[]
+): boolean {
+  // check if the pattern head matches the original path
+  for (let i = 0; i < patternHeadArray.length; i++) {
+    if (patternHeadArray[i] !== originalUrlArray?.[i]) {
+      return false;
+    }
+  }
+
+  return true;
 }

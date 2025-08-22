@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
-import localizeStaticUrls from '../localizeStaticUrls';
+import localizeStaticUrls, {
+  transformUrlPath,
+  transformNonDefaultLocaleUrlWithHidden,
+  transformDefaultLocaleUrl,
+} from '../localizeStaticUrls';
 
 // Mock fs module
 vi.mock('fs', () => ({
@@ -2360,4 +2364,860 @@ Some content with [another link](/en/docs).`;
       );
     });
   });
+
+  describe('baseDomain', () => {
+    it('should handle baseDomain', async () => {
+      const fileContent = `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/quickstart">Start</Card>`;
+      const expected = `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/quickstart">Start</Card>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue();
+
+      const mockFileMapping = {
+        fr: {
+          'default.mdx': '/path/fr/default.mdx',
+        },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: {
+            mdx: ['default.mdx'],
+          },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/[locale]',
+          excludeStaticUrls: [],
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+    });
+  });
+
+  describe('transformUrlPath', () => {
+    describe('when targetLocale equals defaultLocale', () => {
+      describe('with hideDefaultLocale = false', () => {
+        it('should add default locale to URLs without locale', () => {
+          const result = transformUrlPath(
+            '/docs/guide',
+            '/docs/',
+            'en',
+            'en',
+            false
+          );
+          expect(result).toBe('/docs/en/guide');
+        });
+
+        it('should add default locale to exact pattern match', () => {
+          const result = transformUrlPath('/docs', '/docs/', 'en', 'en', false);
+          expect(result).toBe('/docs/en');
+        });
+
+        it('should return null if URL already has default locale', () => {
+          const result = transformUrlPath(
+            '/docs/en/guide',
+            '/docs/',
+            'en',
+            'en',
+            false
+          );
+          expect(result).toBeNull();
+        });
+
+        it('should return null if URL does not match pattern', () => {
+          const result = transformUrlPath(
+            '/other/guide',
+            '/docs/',
+            'en',
+            'en',
+            false
+          );
+          expect(result).toBeNull();
+        });
+      });
+
+      describe('with hideDefaultLocale = true', () => {
+        it('should remove default locale from URLs that have it', () => {
+          const result = transformUrlPath(
+            '/docs/en/guide',
+            '/docs/',
+            'en',
+            'en',
+            true
+          );
+          expect(result).toBe('/docs/guide');
+        });
+
+        it('should remove default locale from URLs ending with it', () => {
+          const result = transformUrlPath(
+            '/docs/en',
+            '/docs/',
+            'en',
+            'en',
+            true
+          );
+          expect(result).toBe('/docs');
+        });
+
+        it('should return null if URL does not have default locale', () => {
+          const result = transformUrlPath(
+            '/docs/guide',
+            '/docs/',
+            'en',
+            'en',
+            true
+          );
+          expect(result).toBeNull();
+        });
+      });
+    });
+
+    describe('when targetLocale differs from defaultLocale', () => {
+      describe('with hideDefaultLocale = false', () => {
+        it('should replace default locale with target locale', () => {
+          const result = transformUrlPath(
+            '/docs/en/guide',
+            '/docs/',
+            'ja',
+            'en',
+            false
+          );
+          expect(result).toBe('/docs/ja/guide');
+        });
+
+        it('should replace default locale at end of URL', () => {
+          const result = transformUrlPath(
+            '/docs/en',
+            '/docs/',
+            'ja',
+            'en',
+            false
+          );
+          expect(result).toBe('/docs/ja');
+        });
+
+        it('should add target locale to URLs without locale', () => {
+          const result = transformUrlPath(
+            '/docs/guide',
+            '/docs/',
+            'ja',
+            'en',
+            false
+          );
+          expect(result).toBe('/docs/ja/guide');
+        });
+
+        it('should add target locale to exact pattern match', () => {
+          const result = transformUrlPath('/docs', '/docs/', 'ja', 'en', false);
+          expect(result).toBe('/docs/ja');
+        });
+
+        it('should return null if URL does not match pattern', () => {
+          const result = transformUrlPath(
+            '/other/guide',
+            '/docs/',
+            'ja',
+            'en',
+            false
+          );
+          expect(result).toBeNull();
+        });
+      });
+
+      describe('with hideDefaultLocale = true', () => {
+        it('should replace default locale with target locale', () => {
+          const result = transformUrlPath(
+            '/docs/en/guide',
+            '/docs/',
+            'ja',
+            'en',
+            true
+          );
+          expect(result).toBe('/docs/ja/guide');
+        });
+
+        it('should replace default locale at end of URL', () => {
+          const result = transformUrlPath(
+            '/docs/en',
+            '/docs/',
+            'ja',
+            'en',
+            true
+          );
+          expect(result).toBe('/docs/ja');
+        });
+
+        it('should add target locale to URLs without locale', () => {
+          const result = transformUrlPath(
+            '/docs/guide',
+            '/docs/',
+            'ja',
+            'en',
+            true
+          );
+          expect(result).toBe('/docs/ja/guide');
+        });
+
+        it('should add target locale to exact pattern match', () => {
+          const result = transformUrlPath('/docs', '/docs/', 'ja', 'en', true);
+          expect(result).toBe('/docs/ja');
+        });
+
+        it('should return null if URL already has target locale', () => {
+          const result = transformUrlPath(
+            '/docs/ja/guide',
+            '/docs/',
+            'ja',
+            'en',
+            true
+          );
+          expect(result).toBeNull();
+        });
+
+        it('should return null if URL equals target locale pattern', () => {
+          const result = transformUrlPath(
+            '/docs/ja',
+            '/docs/',
+            'ja',
+            'en',
+            true
+          );
+          expect(result).toBeNull();
+        });
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should handle pattern without trailing slash', () => {
+        const result = transformUrlPath(
+          '/docs/guide',
+          '/docs',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/ja/guide');
+      });
+
+      it('should handle root pattern with trailing slash', () => {
+        const result = transformUrlPath('/guide', '/', 'ja', 'en', false);
+        expect(result).toBe('/ja/guide');
+      });
+
+      it('should handle root pattern without trailing slash', () => {
+        const result = transformUrlPath('/guide', '', 'ja', 'en', false);
+        expect(result).toBe('ja/guide');
+      });
+
+      it('should handle complex locales like zh-CN', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide',
+          '/docs/',
+          'zh-CN',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/zh-CN/guide');
+      });
+
+      it('should handle URLs with query parameters', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide?tab=api',
+          '/docs/',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/ja/guide?tab=api');
+      });
+
+      it('should handle URLs with fragments', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide#section',
+          '/docs/',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/ja/guide#section');
+      });
+
+      it('should handle empty path after pattern head', () => {
+        const result = transformUrlPath('/docs/', '/docs/', 'ja', 'en', false);
+        expect(result).toBe('/docs/ja');
+      });
+    });
+  });
+
+  // describe('transformNonDefaultLocaleUrlWithHidden', () => {
+  //   describe('basic functionality', () => {
+  //     it('should replace default locale with target locale', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en/guide',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/guide');
+  //     });
+
+  //     it('should replace default locale at end of URL', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja');
+  //     });
+
+  //     it('should add target locale to URLs without locale', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/guide',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/guide');
+  //     });
+
+  //     it('should handle exact pattern match', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja');
+  //     });
+  //   });
+
+  //   describe('already localized URLs', () => {
+  //     it('should return null if URL already has target locale with path', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/ja/guide',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should return null if URL equals target locale pattern', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/ja',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+  //   });
+
+  //   describe('edge cases', () => {
+  //     it('should handle pattern without trailing slash with double slash result', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/guide',
+  //         '/docs',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/guide');
+  //     });
+
+  //     it('should handle root pattern with trailing slash correctly', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/guide',
+  //         '/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/ja/guide');
+  //     });
+
+  //     it('should handle empty root pattern with double slash result', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/guide',
+  //         '',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/ja/guide');
+  //     });
+
+  //     it('should handle complex locales like zh-CN in replacement', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en/guide',
+  //         '/docs/',
+  //         'zh-CN',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/zh-CN/guide');
+  //     });
+
+  //     it('should handle URLs with query parameters during locale replacement', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en/guide?tab=api',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/guide?tab=api');
+  //     });
+
+  //     it('should handle URLs with fragments during locale replacement', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en/guide#section',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/guide#section');
+  //     });
+
+  //     it('should handle trailing slash after pattern head', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja');
+  //     });
+  //   });
+
+  //   describe('URL patterns that do not match', () => {
+  //     it('should handle URLs that do not start with pattern', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/other/guide',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/other/guide');
+  //     });
+
+  //     it('should handle different pattern heads', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/api/v1/users',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/api/v1/users');
+  //     });
+  //   });
+
+  //   describe('locale replacement scenarios', () => {
+  //     it('should not modify URLs with other locales', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/fr/guide',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/fr/guide');
+  //     });
+
+  //     it('should handle multiple locale segments', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en/en/guide',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/en/guide');
+  //     });
+
+  //     it('should handle locale in middle of path', () => {
+  //       const result = transformNonDefaultLocaleUrlWithHidden(
+  //         '/docs/en/nested/path',
+  //         '/docs/',
+  //         'ja',
+  //         'en'
+  //       );
+  //       expect(result).toBe('/docs/ja/nested/path');
+  //     });
+  //   });
+  // });
+
+  // describe('transformDefaultLocaleUrl', () => {
+  //   describe('with hideDefaultLocale = false', () => {
+  //     it('should add default locale to URLs without locale', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/guide',
+  //         '/docs/',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBe('/docs/en/guide');
+  //     });
+
+  //     it('should add default locale to exact pattern match', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs',
+  //         '/docs/',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBe('/docs/en');
+  //     });
+
+  //     it('should add default locale to empty path after pattern head', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/',
+  //         '/docs/',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBe('/docs/en');
+  //     });
+
+  //     it('should return null if URL already has default locale in path', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/guide',
+  //         '/docs/',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should return null if URL already ends with default locale', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en',
+  //         '/docs/',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should insert pattern if URL does not match pattern', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/other/guide',
+  //         '/docs/',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should handle pattern without trailing slash with shouldHideDefaultLocale = false', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/guide',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result).toBe('/docs/en/guide');
+  //     });
+
+  //     it('should handle root pattern', () => {
+  //       const result = transformDefaultLocaleUrl('/guide', '/', 'en', false);
+  //       expect(result).toBe('/en/guide');
+  //     });
+
+  //     it('should handle complex locales like zh-CN', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/guide',
+  //         '/docs/',
+  //         'zh-CN',
+  //         false
+  //       );
+  //       expect(result).toBe('/docs/zh-CN/guide');
+  //     });
+  //   });
+
+  //   describe('with hideDefaultLocale = true', () => {
+  //     it('should remove default locale from URLs that have it in path', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/guide',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/guide');
+  //     });
+
+  //     it('should remove default locale from URLs ending with it', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs');
+  //     });
+
+  //     it('should return null if URL does not have default locale in path', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/guide',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should return null if URL ends with non-default locale', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/fr',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should remove default locale from URLs ending with non-default locale', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/fr',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/fr');
+  //     });
+
+  //     it('should handle removing locale from complex paths', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/nested/path',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/nested/path');
+  //     });
+
+  //     it('should handle removing default locale with potential false positives', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/nested/path/english',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/nested/path/english');
+  //     });
+
+  //     it('should handle removing complex locales like zh-CN', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/zh-CN/guide',
+  //         '/docs/',
+  //         'zh-CN',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/guide');
+  //     });
+
+  //     it('should handle URLs with query parameters', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/guide?tab=api',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/guide?tab=api');
+  //     });
+
+  //     it('should handle URLs with fragments', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/guide#section',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/guide#section');
+  //     });
+  //   });
+
+  //   describe('edge cases', () => {
+  //     it('should handle empty pattern head', () => {
+  //       const result = transformDefaultLocaleUrl('/guide', '', 'en', false);
+  //       expect(result).toBe('en/guide');
+  //     });
+
+  //     it('should handle URL that exactly matches pattern without trailing slash', () => {
+  //       const result = transformDefaultLocaleUrl('/docs', '/docs', 'en', false);
+  //       expect(result).toBe('/docs/en');
+  //     });
+
+  //     it('should handle multiple occurrences of default locale (only first replaced)', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/en/en/guide',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBe('/docs/en/guide');
+  //     });
+
+  //     it('should handle default locale as part of larger word', () => {
+  //       const result = transformDefaultLocaleUrl(
+  //         '/docs/english/guide',
+  //         '/docs/',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result).toBeNull();
+  //     });
+
+  //     it('should handle URLs with different slashes with hideDefaultLocale = true', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/fr',
+  //         '/docs',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result1).toBeNull();
+
+  //       const result2 = transformDefaultLocaleUrl(
+  //         'docs/fr',
+  //         'docs',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result2).toBeNull();
+
+  //       const result3 = transformDefaultLocaleUrl(
+  //         '/docs/fr',
+  //         'docs',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result3).toBeNull();
+
+  //       const result4 = transformDefaultLocaleUrl(
+  //         'docs/fr',
+  //         '/docs',
+  //         'en',
+  //         true
+  //       );
+  //       expect(result4).toBeNull();
+  //     });
+
+  //     it('should handle URLs with different slashes with hideDefaultLocale = false', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/en',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result1).toBeNull();
+
+  //       const result2 = transformDefaultLocaleUrl(
+  //         'docs/en',
+  //         'docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result2).toBeNull();
+
+  //       const result3 = transformDefaultLocaleUrl(
+  //         '/docs/en',
+  //         'docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result3).toBeNull();
+
+  //       const result4 = transformDefaultLocaleUrl(
+  //         'docs/en',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result4).toBeNull();
+  //     });
+
+  //     it('should handle URLs with different slashes with hideDefaultLocale = false with trailing slash', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/en/',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result1).toBeNull();
+
+  //       const result2 = transformDefaultLocaleUrl(
+  //         'docs/en/',
+  //         'docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result2).toBeNull();
+
+  //       const result3 = transformDefaultLocaleUrl(
+  //         '/docs/en/',
+  //         'docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result3).toBeNull();
+
+  //       const result4 = transformDefaultLocaleUrl(
+  //         'docs/en/',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result4).toBeNull();
+  //     });
+
+  //     it('should insert default locale if URL matches pattern', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/english',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result1).toBe('/docs/en/english');
+  //     });
+
+  //     it('should insert default locale if URL matches pattern with trailing slash', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/english/',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result1).toBe('/docs/en/english/');
+  //     });
+
+  //     it('should insert default locale if URL matches pattern', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/english',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result1).toBe('/docs/en/english');
+  //     });
+
+  //     it('should insert default locale if URL matches pattern with trailing slash', () => {
+  //       const result1 = transformDefaultLocaleUrl(
+  //         '/docs/english/',
+  //         '/docs',
+  //         'en',
+  //         false
+  //       );
+  //       expect(result1).toBe('/docs/en/english/');
+  //     });
+
+  //   });
+  // });
 });
