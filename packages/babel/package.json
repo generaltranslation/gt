@@ -1,5 +1,5 @@
 {
-  "name": "gt-babel-plugin",
+  "name": "@generaltranslation/babel-plugin",
   "version": "0.0.0",
   "description": "A Babel plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src"
   },

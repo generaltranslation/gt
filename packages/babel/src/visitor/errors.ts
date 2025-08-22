@@ -12,7 +12,7 @@ export function createDynamicContentWarning(
   if (filename) {
     return `gt-next in ${filename}: <${componentName}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{expression}</Var> components for proper translation handling.`;
   } else {
-    return `gt-next: <${componentName}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{expression}</Var> components for proper translation handling.`;
+    return `gt-next in : <${componentName}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{expression}</Var> components for proper translation handling.`;
   }
 }
 
@@ -27,6 +27,6 @@ export function createDynamicFunctionWarning(
   if (filename) {
     return `gt-next in ${filename}: ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
   } else {
-    return `gt-next: ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
+    return `gt-next in : ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
   }
 }

@@ -16,7 +16,7 @@ describe('errors', () => {
     it('creates warning without filename', () => {
       const warning = createDynamicContentWarning(undefined, 'T');
       expect(warning).toBe(
-        'gt-next: <T> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{expression}</Var> components for proper translation handling.'
+        'gt-next in : <T> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{expression}</Var> components for proper translation handling.'
       );
     });
 
@@ -64,7 +64,7 @@ describe('errors', () => {
         'string concatenation'
       );
       expect(warning).toBe(
-        'gt-next: t() function call uses string concatenation which prevents proper translation key generation. Use string literals instead.'
+        'gt-next in : t() function call uses string concatenation which prevents proper translation key generation. Use string literals instead.'
       );
     });
 
@@ -141,8 +141,8 @@ describe('errors', () => {
         'templates'
       );
 
-      expect(contentWarning.startsWith('gt-next:')).toBe(true);
-      expect(functionWarning.startsWith('gt-next:')).toBe(true);
+      expect(contentWarning.startsWith('gt-next in :')).toBe(true);
+      expect(functionWarning.startsWith('gt-next in :')).toBe(true);
     });
 
     it('messages contain appropriate context', () => {

@@ -151,21 +151,21 @@ export class ScopeTracker {
   /**
    * Find if a variable is accessible in the current scope
    */
-  getVariable(variableName: string): ScopedVariable | null {
+  getVariable(variableName: string): ScopedVariable | undefined {
     const variables = this.scopedVariables.get(variableName);
     if (variables && variables.length > 0) {
       // Return the last (most recent) variable - handles shadowing
       return variables[variables.length - 1];
     }
-    return null;
+    return undefined;
   }
 
   /**
    * Get the translation variable info if it exists in current scope
    */
-  getTranslationVariable(variableName: string): ScopedVariable | null {
+  getTranslationVariable(variableName: string): ScopedVariable | undefined {
     const variable = this.getVariable(variableName);
-    return variable && variable.isTranslationFunction ? variable : null;
+    return variable && variable.isTranslationFunction ? variable : undefined;
   }
 
   /**
@@ -185,7 +185,7 @@ export class ScopeTracker {
   /**
    * Get scope info for debugging
    */
-  getScopeInfo(scopeId: number): ScopeInfo | null {
-    return this.scopeInfo.get(scopeId) || null;
+  getScopeInfo(scopeId: number): ScopeInfo | undefined {
+    return this.scopeInfo.get(scopeId) || undefined;
   }
 }
