@@ -148,16 +148,23 @@ function shouldProcessUrl(
   originalUrl: string,
   patternHead: string,
   targetLocale: string,
-  defaultLocale: string
+  defaultLocale: string,
+  baseDomain?: string
 ): boolean {
   const patternWithoutSlash = patternHead.replace(/\/$/, '');
+  
+  // Handle absolute URLs with baseDomain
+  let urlToCheck = originalUrl;
+  if (baseDomain && originalUrl.startsWith(baseDomain)) {
+    urlToCheck = originalUrl.substring(baseDomain.length);
+  }
 
   if (targetLocale === defaultLocale) {
     // For default locale processing, check if URL contains the pattern
-    return originalUrl.includes(patternWithoutSlash);
+    return urlToCheck.includes(patternWithoutSlash);
   } else {
     // For non-default locales, check if URL starts with pattern
-    return originalUrl.startsWith(patternWithoutSlash);
+    return urlToCheck.startsWith(patternWithoutSlash);
   }
 }
 
@@ -348,7 +355,7 @@ function transformMdxUrls(
   ): string | null => {
     // Check if URL should be processed
     if (
-      !shouldProcessUrl(originalUrl, patternHead, targetLocale, defaultLocale)
+      !shouldProcessUrl(originalUrl, patternHead, targetLocale, defaultLocale, baseDomain)
     ) {
       return null;
     }

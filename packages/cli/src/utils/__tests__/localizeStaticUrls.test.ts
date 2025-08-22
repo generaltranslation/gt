@@ -2305,6 +2305,152 @@ describe('baseDomain', () => {
       return Promise.resolve();
     });
   });
+
+  describe('baseDomain edge cases', () => {
+    it('should not transform URLs that do not match pattern even with baseDomain', async () => {
+      const fileContent = `[Guide](https://example.com/images/logo.png) and [API](https://example.com/assets/icon.svg)`;
+      const expected = fileContent; // Should remain unchanged since /images and /assets don't match /docs pattern
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should handle baseDomain with hideDefaultLocale=true', async () => {
+      const fileContent = `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/api">API</Card>`;
+      const expected = `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/api">API</Card>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: true,
+        options: {
+          docsUrlPattern: '/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should not add literal null to baseDomain URLs when transformation fails', async () => {
+      const fileContent = `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`;
+      const expected = `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`; // Should remain unchanged when transformation fails
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        expect(content).not.toContain('null'); // Ensure no literal 'null' strings
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should handle multiple baseDomain URLs with mixed transformable/non-transformable paths', async () => {
+      const fileContent = `
+[Docs](https://example.com/docs/en/guide)
+[Images](https://example.com/images/photo.jpg)
+<Card href="https://example.com/docs/en/api">API</Card>
+<a href="https://example.com/assets/script.js">Script</a>
+`;
+      const expected = `
+[Docs](https://example.com/docs/fr/guide)
+[Images](https://example.com/images/photo.jpg)
+<Card href="https://example.com/docs/fr/api">API</Card>
+<a href="https://example.com/assets/script.js">Script</a>
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        expect(content).not.toContain('null');
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+  });
 });
 
 describe('transformUrlPath', () => {
