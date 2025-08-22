@@ -4,6 +4,15 @@
 
 ### Patch Changes
 
+- [#580](https://github.com/generaltranslation/gt/pull/580) [`9b05fda`](https://github.com/generaltranslation/gt/commit/9b05fda9959f9e24491c02f357bc2a2c49ba0276) Thanks [@brian-lou](https://github.com/brian-lou)! - Update API schema, combine files and JSX translation endpoints
+
+- Updated dependencies [[`9b05fda`](https://github.com/generaltranslation/gt/commit/9b05fda9959f9e24491c02f357bc2a2c49ba0276)]:
+  - generaltranslation@7.4.1
+
+## 2.1.5
+
+### Patch Changes
+
 - [#576](https://github.com/generaltranslation/gt/pull/576) [`be9c1ff`](https://github.com/generaltranslation/gt/commit/be9c1ff24c9a15a35e3f0da26e9ec941e5b41eea) Thanks [@SamEggert](https://github.com/SamEggert)! - Fix url localization
 
 ## 2.1.4
