@@ -2223,145 +2223,141 @@ description: "Bienvenido al nuevo hogar de tu documentación"
     });
   });
 
-  //   describe('same locale', () => {
-  //     it('should not modify URLs that already have the same locale', async () => {
-  //       const fileContent = `---
-  // title: "Introduction"
-  // description: "Bienvenue dans le nouvel espace pour votre documentation"
-  // ---
+  describe('with real gt.config.json configuration', () => {
+    it('should process files according to gt.config.json settings', async () => {
+      // Mock file system operations
+      const mockFileMapping = {
+        'fr-CA': {
+          'index.mdx': '/path/fr-CA/index.mdx',
+          'index2.mdx': '/path/fr-CA/index2.mdx',
+        },
+      };
 
-  // <Card title="Commencez ici" icon="rocket" href="/quickstart" horizontal>
-  //   Suivez notre guide de démarrage rapide en trois étapes.
-  // </Card>
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
 
-  // <CardGroup cols={3}>
-  //   <Card title="Quickstart guide" icon="rocket" href="getting-started/introduction">
-  //     Quickstart guide
-  //   </Card>
-  // </CardGroup>
+      // Mock file contents that would be processed
+      const indexMdxContent = `# Welcome
 
-  // <Card href="https://www.google.com">
-  //   <p>Bonjour</p>
-  // </Card>
+[Getting Started](/en/quickstart)
+[API Reference](/en/api)
 
-  // [test](https://www.google.com)
-  // `;
-  //       const expected = `---
-  // title: "Introduction"
-  // description: "Bienvenue dans le nouvel espace pour votre documentation"
-  // ---
+<Card href="/en/guide">
+  <Button href="/en/tutorial">Tutorial</Button>
+</Card>
 
-  // <Card title="Commencez ici" icon="rocket" href="/fr-CA/quickstart" horizontal>
-  //   Suivez notre guide de démarrage rapide en trois étapes.
-  // </Card>
+<Component href="/en/examples" />
 
-  // <CardGroup cols={3}>
-  //   <Card title="Quickstart guide" icon="rocket" href="/fr-CA/getting-started/introduction">
-  //     Quickstart guide
-  //   </Card>
-  // </CardGroup>
+Some content with [another link](/en/docs).`;
 
-  // <Card href="https://www.google.com">
-  //   <p>Bonjour</p>
-  // </Card>
+      const index2MdxContent = `# Documentation
 
-  // [test](https://www.google.com)
-  // `;
+[Home](/en)
+[About](/en/about)
 
-  //       vi.mocked(fs.promises.writeFile).mockImplementation(
-  //         (filePath, content) => {
-  //           if (filePath.toString().includes('fr-CA')) {
-  //             console.log('expected', expected);
-  //             expect(content).toBe(expected);
-  //           } else {
-  //             console.log('fileContent', fileContent);
-  //             expect(content).toBe(fileContent);
-  //           }
-  //           return Promise.resolve();
-  //         }
-  //       );
+<Navigation href="/en/nav">
+  <Link href="/en/contact">Contact</Link>
+</Navigation>`;
 
-  //       const mockFileMapping = {
-  //         'fr-CA': { 'test.mdx': '/path/test.mdx' },
-  //       };
-  //       vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-  //       vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      // Mock readFile to return different content for different files
+      vi.mocked(fs.promises.readFile).mockImplementation((filePath: any) => {
+        const path = String(filePath);
+        if (path.includes('index.mdx')) {
+          return Promise.resolve(indexMdxContent);
+        }
+        if (path.includes('index2.mdx')) {
+          return Promise.resolve(index2MdxContent);
+        }
+        return Promise.resolve('');
+      });
 
-  //       const settings = {
-  //         config: 'gt.config.json',
-  //         dryRun: false,
-  //         experimentalLocalizeStaticUrls: true,
-  //         experimentalHideDefaultLocale: true,
-  //         experimentalFlattenJsonFiles: false,
-  //         experimentalLocalizeStaticImports: true,
-  //         $schema: 'https://assets.gtx.dev/config-schema.json',
-  //         defaultLocale: 'en',
-  //         locales: ['fr-CA'],
-  //         files: {
-  //           resolvedPaths: {
-  //             json: ['/Users/samueleggert/github-copies/starter/docs.json'],
-  //             mdx: ['/Users/samueleggert/github-copies/starter/index.mdx'],
-  //           },
-  //           placeholderPaths: {
-  //             json: ['/Users/samueleggert/github-copies/starter/docs.json'],
-  //             mdx: ['/Users/samueleggert/github-copies/starter/index.mdx'],
-  //           },
-  //           transformPaths: {
-  //             mdx: {
-  //               match: '^(.*)$',
-  //               replace: '{locale}/$1',
-  //             },
-  //           },
-  //         },
-  //         options: {
-  //           jsonSchema: {
-  //             './docs.json': {
-  //               composite: {
-  //                 '$.navigation.languages': {
-  //                   type: 'array',
-  //                   key: '$.language',
-  //                   include: [
-  //                     '$..group',
-  //                     '$..tab',
-  //                     '$..item',
-  //                     '$..anchor',
-  //                     '$..dropdown',
-  //                   ],
-  //                   transform: {
-  //                     '$..pages[*]': {
-  //                       match: '^(.*)$',
-  //                       replace: '{locale}/$1',
-  //                     },
-  //                     '$..root': {
-  //                       match: '^(.*)$',
-  //                       replace: '{locale}/$1',
-  //                     },
-  //                   },
-  //                 },
-  //               },
-  //             },
-  //           },
-  //           docsUrlPattern: '/[locale]',
-  //           experimentalLocalizeStaticImports: true,
-  //           experimentalLocalizeStaticUrls: true,
-  //           experimentalHideDefaultLocale: true,
-  //           excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
-  //         },
-  //         apiKey:
-  //           'gtx-api-39bdcaced3a9da4d9cb8e971e6e144d403d5eb74e39ea6ce7758226187ca28e4',
-  //         projectId: 'prj_fkdakpsyhgn84nlwbyzlww06',
-  //         baseUrl: 'https://api2.gtx.dev',
-  //         dashboardUrl: 'https://dash.generaltranslation.com',
-  //         stageTranslations: false,
-  //         src: [
-  //           'src/**/*.{js,jsx,ts,tsx}',
-  //           'app/**/*.{js,jsx,ts,tsx}',
-  //           'pages/**/*.{js,jsx,ts,tsx}',
-  //           'components/**/*.{js,jsx,ts,tsx}',
-  //         ],
-  //       };
+      // Mock writeFile to just verify it's called
+      vi.mocked(fs.promises.writeFile).mockResolvedValue();
 
-  //       await localizeStaticUrls(settings as any);
-  //     });
-  //   });
+      // Settings based on the gt.config.json configuration
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: {
+            mdx: ['index.mdx', 'index2.mdx'],
+          },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr-CA'],
+        experimentalHideDefaultLocale: true,
+        options: {
+          docsUrlPattern: '/[locale]',
+          excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+
+      // Verify that writeFile was called for both non-default locale files (fr-CA)
+      // and both default locale files (en) - total of 4 calls
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(4);
+
+      // Check non-default locale files
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        '/path/fr-CA/index.mdx',
+        expect.any(String)
+      );
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        '/path/fr-CA/index2.mdx',
+        expect.any(String)
+      );
+
+      // Check default locale files (processed separately when hideDefaultLocale=true)
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        'index.mdx',
+        expect.any(String)
+      );
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        'index2.mdx',
+        expect.any(String)
+      );
+    });
+
+    it('should handle default locale processing with experimentalHideDefaultLocale=true', async () => {
+      // Mock file system operations for default locale processing
+      const mockFileMapping = {};
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const defaultLocaleContent = `# Default Locale Content
+
+[Link](/en/guide)
+<Card href="/en/api">API</Card>
+[Another](/en/docs)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(defaultLocaleContent);
+
+      vi.mocked(fs.promises.writeFile).mockResolvedValue();
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: {
+            mdx: ['default.mdx'],
+          },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr-CA'],
+        experimentalHideDefaultLocale: true,
+        options: {
+          docsUrlPattern: '/[locale]',
+          excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+
+      // Verify that writeFile was called for the default locale file
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        'default.mdx',
+        expect.any(String)
+      );
+    });
+  });
 });
