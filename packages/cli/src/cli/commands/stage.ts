@@ -119,11 +119,11 @@ export async function handleStage(
         versionData: filesTranslationResponse.data,
       });
     }
-    const { versionId } = filesTranslationResponse.data[TEMPLATE_FILE_ID];
-    if (versionId) {
+    const templateData = filesTranslationResponse.data[TEMPLATE_FILE_ID];
+    if (templateData?.versionId) {
       await updateConfig({
         configFilepath: settings.config,
-        _versionId: versionId,
+        _versionId: templateData.versionId,
       });
     }
   }
