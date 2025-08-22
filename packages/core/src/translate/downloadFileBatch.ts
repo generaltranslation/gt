@@ -24,7 +24,7 @@ export default async function _downloadFileBatch(
   config: TranslationRequestConfig
 ): Promise<DownloadFileBatchResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/batch-download`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/files/batch-download`;
 
   // Request the batch download
   let response;
@@ -46,6 +46,11 @@ export default async function _downloadFileBatch(
   await validateResponse(response);
 
   // Parse response
-  const result = await response.json();
-  return result as DownloadFileBatchResult;
+  const result = (await response.json()) as DownloadFileBatchResult;
+  // convert from base64 to string
+  const files = result.files.map((file) => ({
+    ...file,
+    data: Buffer.from(file.data, 'base64').toString('utf-8'),
+  }));
+  return { ...result, files } as DownloadFileBatchResult;
 }

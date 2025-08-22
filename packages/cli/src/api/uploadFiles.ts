@@ -63,8 +63,8 @@ export async function uploadFiles(
       body: JSON.stringify(uploadData),
       headers: {
         'Content-Type': 'application/json',
-        'x-gt-api-key': options.apiKey,
-        'x-gt-project-id': options.projectId,
+        'x-gt-api-key': options.apiKey!,
+        'x-gt-project-id': options.projectId!,
       },
     });
     if (!response.ok) {

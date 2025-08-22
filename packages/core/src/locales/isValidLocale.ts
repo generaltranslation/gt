@@ -1,4 +1,4 @@
-import { intlCache } from 'src/cache/IntlCache';
+import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 
 const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];

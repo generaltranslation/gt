@@ -25,7 +25,7 @@ export default async function _checkFileTranslations(
   config: TranslationRequestConfig
 ): Promise<CheckFileTranslationsResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/retrieve`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/files/retrieve`;
 
   // Request the file status
   let response;

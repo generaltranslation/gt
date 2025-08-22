@@ -58,7 +58,7 @@ describe.sequential('_checkTranslationStatus', () => {
     );
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/status/version-123',
+      'https://api.test.com/v2/project/translations/status/version-123',
       {
         method: 'GET',
         headers: {
@@ -87,7 +87,7 @@ describe.sequential('_checkTranslationStatus', () => {
     await _checkTranslationStatus(versionId, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/status/version-123',
+      'https://api.test.com/v2/project/translations/status/version-123',
       expect.any(Object),
       expect.any(Number)
     );
@@ -113,7 +113,7 @@ describe.sequential('_checkTranslationStatus', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v1/project/translations/status/version-123'
+        'https://api2.gtx.dev/v2/project/translations/status/version-123'
       ),
       expect.any(Object),
       expect.any(Number)
@@ -211,7 +211,7 @@ describe.sequential('_checkTranslationStatus', () => {
     await _checkTranslationStatus(versionId, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/status/version%20with%20spaces',
+      'https://api.test.com/v2/project/translations/status/version%20with%20spaces',
       expect.any(Object),
       expect.any(Number)
     );

@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { Settings } from '../types/index.js';
-import { TranslateOptions } from '../cli/base.js';
 import { logError } from '../console/logging.js';
 
 /**
@@ -9,7 +8,7 @@ import { logError } from '../console/logging.js';
  *
  * This is a naive approach, does not allow for wild cards
  */
-export default async function copyFile(settings: Settings & TranslateOptions) {
+export default async function copyFile(settings: Settings) {
   if (!settings.options?.copyFiles || settings.options.copyFiles.length === 0) {
     return;
   }
