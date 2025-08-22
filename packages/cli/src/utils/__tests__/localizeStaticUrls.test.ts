@@ -188,9 +188,9 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
+            experimentalHideDefaultLocale: true,
           },
         };
 
@@ -220,8 +220,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -288,8 +288,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -354,8 +354,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -386,8 +386,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -418,8 +418,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -500,8 +500,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images'],
           },
@@ -533,8 +533,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images'],
           },
@@ -566,8 +566,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
           },
@@ -634,8 +634,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**'],
           },
@@ -667,8 +667,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**'],
           },
@@ -700,8 +700,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**', '/docs/snippets/**'],
           },
@@ -733,10 +733,10 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**'],
+            experimentalHideDefaultLocale: true,
           },
         };
 
@@ -992,8 +992,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/[locale]',
           },
         };
@@ -1024,8 +1024,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/[locale]',
           },
         };
@@ -1091,8 +1091,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/[locale]',
             excludeStaticUrls: ['/[locale]/images/**'],
           },
@@ -1503,8 +1503,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1539,8 +1539,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1575,8 +1575,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1624,8 +1624,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1660,8 +1660,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1779,8 +1779,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1816,8 +1816,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1852,8 +1852,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1884,8 +1884,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1916,9 +1916,9 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
+            experimentalHideDefaultLocale: true,
           },
         };
 
@@ -2040,7 +2040,9 @@ description: "Bienvenido al nuevo hogar de tu documentación"
         },
         defaultLocale: 'en',
         locales: ['es'],
-        experimentalHideDefaultLocale: true,
+        options: {
+          experimentalHideDefaultLocale: true,
+        },
       };
 
       await localizeStaticUrls(settings as any);
@@ -2363,10 +2365,10 @@ describe('baseDomain', () => {
         },
         defaultLocale: 'en',
         locales: ['fr'],
-        experimentalHideDefaultLocale: true,
         options: {
           docsUrlPattern: '/[locale]',
           baseDomain: 'https://example.com',
+          experimentalHideDefaultLocale: true,
         },
       };
 
