@@ -44,7 +44,6 @@ npm install
 ```
 
 2. (Optional) Create a `.env` file and populate it with `REACT_APP_GT_PROJECT_ID` and `REACT_APP_GT_API_KEY`, obtainable via the GT Dashboard [here](https://generaltranslation.com/dashboard)
-
    - This example comes with translations for French, Spanish, and Chinese out of the box, but if you want to experiment with other locales or modify some content, you'll need to add your own API keys.
 
 3. Run `npm run dev`
@@ -122,4 +121,4 @@ import loadTranslations from './loadTranslations';
 npx gtx-cli translate
 ```
 
-For more information on local translation, check out our [guide on local translation](https://generaltranslation.com/docs/next/reference/local-tx).
+For more information on local translation, check out our [guide on local translation](https://generaltranslation.com/docs/next/guides/local-tx).

@@ -1,13 +1,8 @@
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import fs from 'node:fs';
-import { Settings, Options } from '../types/index.js';
+import { Settings } from '../types/index.js';
 
-export default async function flattenJsonFiles(
-  settings: Omit<
-    Settings & Options,
-    'ignoreErrors' | 'suppressWarnings' | 'timeout'
-  >
-) {
+export default async function flattenJsonFiles(settings: Settings) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&

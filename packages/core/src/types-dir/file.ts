@@ -1,6 +1,13 @@
 import { Entry } from './entry';
 
-export type FileFormat = 'JSON' | 'YAML' | 'MDX' | 'MD' | 'TS' | 'JS';
+export type FileFormat =
+  | 'GTJSON'
+  | 'JSON'
+  | 'YAML'
+  | 'MDX'
+  | 'MD'
+  | 'TS'
+  | 'JS';
 
 export type FileMetadata = {
   filePath: string;

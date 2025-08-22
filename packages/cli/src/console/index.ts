@@ -125,3 +125,4 @@ export const noApiKeyError = `No API key found! Please provide an API key using 
 export const devApiKeyError = `You are using a development API key. Please use a production API key to use the General Translation API.\nYou can generate a production API key with the command: npx gtx-cli auth -t production`;
 export const noProjectIdError = `No project ID found! Please provide a project ID using the --project-id flag, specify it in your gt.config.json file, or set the GT_PROJECT_ID environment variable.`;
 export const noVersionIdError = `No version ID found! Please provide a version ID using the --version-id flag or specify it in your gt.config.json file as the _versionId property.`;
+export const invalidConfigurationError = `Invalid files configuration! Please either provide a valid configuration to download local translations or set the --publish flag to true to upload translations to the CDN.`;

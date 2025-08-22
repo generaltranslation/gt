@@ -29,9 +29,9 @@ describe.sequential('_downloadFile', () => {
   });
 
   it('should download file content successfully', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
+    const mockData = Buffer.from('test-data').toString('base64');
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: mockData }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -45,7 +45,7 @@ describe.sequential('_downloadFile', () => {
     const result = await _downloadFile(translationId, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/test-translation-id/download',
+      'https://api.test.com/v2/project/translations/files/test-translation-id/download',
       {
         method: 'GET',
         headers: {
@@ -57,13 +57,12 @@ describe.sequential('_downloadFile', () => {
       5000
     );
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
-    expect(result).toBe(mockArrayBuffer);
+    expect(result).toStrictEqual(Buffer.from(mockData, 'base64').buffer);
   });
 
   it('should use default timeout when not specified', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -82,9 +81,8 @@ describe.sequential('_downloadFile', () => {
   });
 
   it('should enforce maximum timeout limit', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -105,9 +103,8 @@ describe.sequential('_downloadFile', () => {
   });
 
   it('should use default URL when baseUrl not provided in config', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -125,7 +122,7 @@ describe.sequential('_downloadFile', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v1/project/translations/files/test-translation-id/download'
+        'https://api2.gtx.dev/v2/project/translations/files/test-translation-id/download'
       ),
       expect.any(Object),
       expect.any(Number)
@@ -149,9 +146,8 @@ describe.sequential('_downloadFile', () => {
   });
 
   it('should handle validation errors', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -169,9 +165,8 @@ describe.sequential('_downloadFile', () => {
   });
 
   it('should construct correct URL with translation ID', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -183,7 +178,7 @@ describe.sequential('_downloadFile', () => {
     await _downloadFile(translationId, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/my-special-translation-123/download',
+      'https://api.test.com/v2/project/translations/files/my-special-translation-123/download',
       expect.any(Object),
       expect.any(Number)
     );
@@ -192,7 +187,7 @@ describe.sequential('_downloadFile', () => {
   it('should handle empty ArrayBuffer response', async () => {
     const mockArrayBuffer = new ArrayBuffer(0);
     const mockResponse = {
-      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+      json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -203,7 +198,7 @@ describe.sequential('_downloadFile', () => {
 
     const result = await _downloadFile(translationId, options, mockConfig);
 
-    expect(result).toBe(mockArrayBuffer);
+    expect(result).toStrictEqual(mockArrayBuffer);
     expect(result.byteLength).toBe(0);
   });
 });

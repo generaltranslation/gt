@@ -1,10 +1,10 @@
 import chalk from 'chalk';
-import { createOraSpinner, logError, logMessage } from '../console/logging.js';
+import { createOraSpinner, logError } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
-import { downloadFile } from './downloadFile.js';
-import { downloadFileBatch } from './downloadFileBatch.js';
+import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
+import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -32,8 +32,7 @@ export async function checkFileTranslations(
   },
   locales: string[],
   timeoutDuration: number,
-  resolveOutputPath: (sourcePath: string, locale: string) => string,
-  downloadStatus: { downloaded: Set<string>; failed: Set<string> },
+  resolveOutputPath: (sourcePath: string, locale: string) => string | null,
   options: Settings
 ) {
   const startTime = Date.now();
@@ -44,6 +43,11 @@ export async function checkFileTranslations(
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
 
+  const downloadStatus = {
+    downloaded: new Set<string>(),
+    failed: new Set<string>(),
+    skipped: new Set<string>(),
+  };
   // Do first check immediately
   const initialCheck = await checkTranslationDeployment(
     fileQueryData,
@@ -230,8 +234,10 @@ function generateStatusSuffixText(
     }
 
     // Format the line
+    const prettyFileName =
+      fileName === TEMPLATE_FILE_NAME ? '<React Elements>' : fileName;
     newSuffixText.push(
-      `${chalk.bold(fileName)} [${localeStatuses.join(', ')}]`
+      `${chalk.bold(prettyFileName)} [${localeStatuses.join(', ')}]`
     );
   }
 
@@ -250,9 +256,13 @@ function generateStatusSuffixText(
  */
 async function checkTranslationDeployment(
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
-  downloadStatus: { downloaded: Set<string>; failed: Set<string> },
+  downloadStatus: {
+    downloaded: Set<string>;
+    failed: Set<string>;
+    skipped: Set<string>;
+  },
   spinner: Awaited<ReturnType<typeof createOraSpinner>>,
-  resolveOutputPath: (sourcePath: string, locale: string) => string,
+  resolveOutputPath: (sourcePath: string, locale: string) => string | null,
   options: Settings
 ): Promise<boolean> {
   try {
@@ -260,7 +270,8 @@ async function checkTranslationDeployment(
     const currentQueryData = fileQueryData.filter(
       (item) =>
         !downloadStatus.downloaded.has(`${item.fileName}:${item.locale}`) &&
-        !downloadStatus.failed.has(`${item.fileName}:${item.locale}`)
+        !downloadStatus.failed.has(`${item.fileName}:${item.locale}`) &&
+        !downloadStatus.skipped.has(`${item.fileName}:${item.locale}`)
     );
 
     // If all files have been downloaded, we're done
@@ -274,66 +285,44 @@ async function checkTranslationDeployment(
 
     // Filter for ready translations
     const readyTranslations = translations.filter(
-      (translation: any) => translation.isReady && translation.fileName
+      (translation) => translation.isReady && translation.fileName
     );
 
     if (readyTranslations.length > 0) {
       // Prepare batch download data
-      const batchFiles = readyTranslations.map((translation: any) => {
-        const locale = translation.locale;
-        const fileName = translation.fileName;
-        const translationId = translation.id;
-        const outputPath = resolveOutputPath(fileName, locale);
+      const batchFiles: BatchedFiles = readyTranslations
+        .map((translation) => {
+          const locale = translation.locale;
+          const fileName = translation.fileName;
+          const translationId = translation.id;
+          const outputPath = resolveOutputPath(fileName, locale);
 
-        return {
-          translationId,
-          inputPath: fileName,
-          outputPath,
-          locale,
-          fileLocale: `${fileName}:${locale}`,
-        };
-      });
-
-      // Use batch download if there are multiple files
-      if (batchFiles.length > 1) {
-        const batchResult = await downloadFileBatch(
-          batchFiles.map(
-            ({ translationId, outputPath, inputPath, locale }: any) => ({
-              translationId,
-              outputPath,
-              inputPath,
-              locale,
-            })
-          ),
-          options
-        );
-
-        // Process results
-        batchFiles.forEach((file: any) => {
-          const { translationId, fileLocale } = file;
-          if (batchResult.successful.includes(translationId)) {
-            downloadStatus.downloaded.add(fileLocale);
-          } else if (batchResult.failed.includes(translationId)) {
-            downloadStatus.failed.add(fileLocale);
+          // Skip downloading GTJSON files that are not in the files configuration
+          if (outputPath === null) {
+            downloadStatus.skipped.add(`${fileName}:${locale}`);
+            return null;
           }
-        });
-      } else if (batchFiles.length === 1) {
-        // For a single file, use the original downloadFile method
-        const file = batchFiles[0];
-        const result = await downloadFile(
-          file.translationId,
-          file.outputPath,
-          file.inputPath,
-          file.locale,
-          options
-        );
+          return {
+            translationId,
+            inputPath: fileName,
+            outputPath,
+            locale,
+            fileLocale: `${fileName}:${locale}`,
+          };
+        })
+        .filter((file) => file !== null) as BatchedFiles;
 
-        if (result) {
-          downloadStatus.downloaded.add(file.fileLocale);
-        } else {
-          downloadStatus.failed.add(file.fileLocale);
+      const batchResult = await downloadFileBatch(batchFiles, options);
+
+      // Process results
+      batchFiles.forEach((file) => {
+        const { translationId, fileLocale } = file;
+        if (batchResult.successful.includes(translationId)) {
+          downloadStatus.downloaded.add(fileLocale);
+        } else if (batchResult.failed.includes(translationId)) {
+          downloadStatus.failed.add(fileLocale);
         }
-      }
+      });
     }
 
     // Force a refresh of the spinner display
@@ -344,7 +333,9 @@ async function checkTranslationDeployment(
 
     // If all files have been downloaded, we're done
     if (
-      downloadStatus.downloaded.size + downloadStatus.failed.size ===
+      downloadStatus.downloaded.size +
+        downloadStatus.failed.size +
+        downloadStatus.skipped.size ===
       fileQueryData.length
     ) {
       return true;

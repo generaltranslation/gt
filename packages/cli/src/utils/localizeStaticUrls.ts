@@ -26,12 +26,7 @@ const { isMatch } = micromatch;
  * - Support more file types
  * - Support more complex paths
  */
-export default async function localizeStaticUrls(
-  settings: Omit<
-    Settings & Options,
-    'ignoreErrors' | 'suppressWarnings' | 'timeout'
-  >
-) {
+export default async function localizeStaticUrls(settings: Settings) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
@@ -75,7 +70,7 @@ export default async function localizeStaticUrls(
             fileContent,
             settings.defaultLocale,
             settings.defaultLocale, // Process as default locale
-            settings.experimentalHideDefaultLocale || false,
+            settings.options?.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls
           );
@@ -105,7 +100,7 @@ export default async function localizeStaticUrls(
             fileContent,
             settings.defaultLocale,
             locale,
-            settings.experimentalHideDefaultLocale || false,
+            settings.options?.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls
           );

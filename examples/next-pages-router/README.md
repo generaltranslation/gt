@@ -42,7 +42,6 @@ npm install
 ```
 
 2. (Optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`, obtainable via the GT Dashboard [here](https://generaltranslation.com/dashboard)
-
    - This example comes with translations for French, Spanish, and Chinese out of the box, but if you want to experiment with other locales or modify some content, you'll need to add your own API keys.
 
 3. Run `npm run dev`
@@ -54,7 +53,6 @@ Here is a list of steps done to reach this repo state:
 1. `npx create-next-app@latest` (select Pages Router when prompted)
 2. `npm install gt-react gtx-cli`
 3. `npx gtx-cli setup && npx-gtx-cli init`
-
    - Setup will automatically add the `<T>` components to your app.
    - When calling `init` specify "remote" as the location of your language files and en, zh, and fr as your locales.
 
@@ -103,4 +101,4 @@ To learn more about Next.js Pages Router, take a look at the following resources
 - [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
 - [Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-For more information on local translation, check out our [guide on local translation](https://generaltranslation.com/docs/react/reference/local-tx).
+For more information on local translation, check out our [guide on local translation](https://generaltranslation.com/docs/react/guides/local-tx).

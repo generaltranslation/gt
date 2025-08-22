@@ -39,6 +39,23 @@ describe.sequential('_downloadFileBatch', () => {
     ],
     count: 2,
   };
+  const mockDownloadFileBatchResultBase64: DownloadFileBatchResult = {
+    files: [
+      {
+        id: 'translation-1',
+        fileName: 'file1.json',
+        data: Buffer.from('file content 1').toString('base64'),
+        metadata: { contentType: 'application/json' },
+      },
+      {
+        id: 'translation-2',
+        fileName: 'file2.json',
+        data: '',
+        metadata: { error: 'File not found' },
+      },
+    ],
+    count: 2,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,7 +68,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should download multiple files in batch successfully', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -66,7 +83,7 @@ describe.sequential('_downloadFileBatch', () => {
     const result = await _downloadFileBatch(files, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/batch-download',
+      'https://api.test.com/v2/project/translations/files/batch-download',
       {
         method: 'POST',
         headers: {
@@ -86,7 +103,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should handle single file in batch', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -112,7 +129,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should use default timeout when not specified', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -133,7 +150,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should enforce maximum timeout limit', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -156,7 +173,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should use default URL when baseUrl not provided in config', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -175,7 +192,7 @@ describe.sequential('_downloadFileBatch', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v1/project/translations/files/batch-download'
+        'https://api2.gtx.dev/v2/project/translations/files/batch-download'
       ),
       expect.any(Object),
       expect.any(Number)
@@ -201,7 +218,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should handle validation errors', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -252,7 +269,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should include fileIds in request body', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -272,7 +289,7 @@ describe.sequential('_downloadFileBatch', () => {
 
   it('should map fileIds correctly in request body', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResultBase64),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);

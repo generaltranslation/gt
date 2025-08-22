@@ -13,6 +13,7 @@ export type BatchedFiles = Array<{
   outputPath: string;
   inputPath: string;
   locale: string;
+  fileLocale: string; // key for a translated file
 }>;
 
 export type DownloadFileBatchResult = {

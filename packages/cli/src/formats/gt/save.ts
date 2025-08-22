@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { RetrievedTranslations } from 'generaltranslation/types';
 import { ResolvedFiles } from '../../types/index.js';
-import { DataFormat } from '../../types/data.js';
 import { logError } from '../../console/logging.js';
 import { noFilesError } from '../../console/index.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
@@ -14,8 +13,7 @@ import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
  */
 export async function saveTranslations(
   translations: RetrievedTranslations,
-  placeholderPaths: ResolvedFiles,
-  dataFormat: DataFormat
+  placeholderPaths: ResolvedFiles
 ) {
   for (const translation of translations) {
     const locale = translation.locale;
@@ -29,12 +27,9 @@ export async function saveTranslations(
     // Ensure directory exists
     await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
 
-    // Handle different file types
-    if (dataFormat === 'JSX') {
-      await fs.promises.writeFile(
-        filepath,
-        JSON.stringify(translationData, null, 2)
-      );
-    }
+    await fs.promises.writeFile(
+      filepath,
+      JSON.stringify(translationData, null, 2)
+    );
   }
 }

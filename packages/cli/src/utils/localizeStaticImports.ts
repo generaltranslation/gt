@@ -26,12 +26,7 @@ const { isMatch } = micromatch;
  * - Support more file types
  * - Support more complex paths
  */
-export default async function localizeStaticImports(
-  settings: Omit<
-    Settings & Options,
-    'ignoreErrors' | 'suppressWarnings' | 'timeout'
-  >
-) {
+export default async function localizeStaticImports(settings: Settings) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&

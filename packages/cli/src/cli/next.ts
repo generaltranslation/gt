@@ -20,7 +20,6 @@ export class NextCLI extends ReactCLI {
   public init() {
     this.setupStageCommand();
     this.setupTranslateCommand();
-    this.setupScanCommand();
     this.setupGenerateSourceCommand();
     this.setupValidateCommand();
   }
