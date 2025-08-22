@@ -39,6 +39,7 @@ export type TranslateFlags = {
   timeout: string;
   dryRun: boolean;
   stageTranslations?: boolean;
+  publish?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;

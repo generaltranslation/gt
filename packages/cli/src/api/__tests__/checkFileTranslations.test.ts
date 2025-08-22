@@ -172,7 +172,6 @@ describe('checkFileTranslations', () => {
       ['es', 'fr'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus,
       createMockSettings()
     );
 
@@ -199,7 +198,6 @@ describe('checkFileTranslations', () => {
       ['es'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus,
       createMockSettings()
     );
 
@@ -221,7 +219,6 @@ describe('checkFileTranslations', () => {
       ['es'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus,
       createMockSettings()
     );
 
@@ -252,7 +249,6 @@ describe('checkFileTranslations', () => {
       ['es'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus,
       createMockSettings()
     );
 
