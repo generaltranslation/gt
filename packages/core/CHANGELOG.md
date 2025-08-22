@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.4.1
+
+### Patch Changes
+
+- [#580](https://github.com/generaltranslation/gt/pull/580) [`9b05fda`](https://github.com/generaltranslation/gt/commit/9b05fda9959f9e24491c02f357bc2a2c49ba0276) Thanks [@brian-lou](https://github.com/brian-lou)! - Update API schema, combine files and JSX translation endpoints
+
 ## 7.4.0
 
 ### Minor Changes
