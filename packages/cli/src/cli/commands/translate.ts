@@ -17,13 +17,6 @@ export async function handleTranslate(
   settings: Settings,
   filesTranslationResponse: SendFilesResult | undefined
 ) {
-  const timeout = parseInt(options.timeout);
-  if (isNaN(timeout) || timeout < 0) {
-    logErrorAndExit(
-      `Invalid timeout: ${options.timeout}. Must be a positive integer.`
-    );
-  }
-
   if (filesTranslationResponse && settings.files) {
     const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
 
@@ -39,7 +32,7 @@ export async function handleTranslate(
     await checkFileTranslations(
       data,
       settings.locales,
-      timeout,
+      options.timeout,
       (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
       settings
     );
@@ -59,12 +52,6 @@ export async function handleDownload(
     logError(noFilesError);
     process.exit(1);
   }
-  const timeout = parseInt(options.timeout);
-  if (isNaN(timeout) || timeout < 0) {
-    logErrorAndExit(
-      `Invalid timeout: ${options.timeout}. Must be a positive integer.`
-    );
-  }
   // Files
   const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
   const fileMapping = createFileMapping(
@@ -79,7 +66,7 @@ export async function handleDownload(
   await checkFileTranslations(
     stagedVersionData,
     settings.locales,
-    timeout,
+    options.timeout,
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
     settings
   );

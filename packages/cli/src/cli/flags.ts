@@ -29,7 +29,17 @@ export function attachTranslateFlags(command: Command) {
     .option(
       '--timeout <seconds>',
       'Translation wait timeout in seconds',
-      DEFAULT_TIMEOUT.toString()
+      (value) => {
+        const parsedValue = parseInt(value, 10);
+        if (isNaN(parsedValue)) {
+          throw new Error('Not a number.');
+        }
+        if (parsedValue < 0) {
+          throw new Error('Timeout must be a positive number.');
+        }
+        return parsedValue;
+      },
+      DEFAULT_TIMEOUT
     )
     .option('--publish', 'Publish translations to the CDN', false)
     .option(

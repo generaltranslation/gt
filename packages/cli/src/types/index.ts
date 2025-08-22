@@ -17,7 +17,7 @@ export type Options = {
   ignoreErrors: boolean;
   suppressWarnings: boolean;
   dryRun: boolean;
-  timeout: string;
+  timeout: number;
   stageTranslations?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
@@ -36,7 +36,7 @@ export type TranslateFlags = {
   locales?: string[];
   ignoreErrors?: boolean;
   src?: string[];
-  timeout: string;
+  timeout: number;
   dryRun: boolean;
   stageTranslations?: boolean;
   publish?: boolean;

@@ -45,14 +45,6 @@ export async function handleStage(
     if (!settings.projectId) {
       logErrorAndExit(noProjectIdError);
     }
-
-    // validate timeout
-    const timeout = parseInt(options.timeout);
-    if (isNaN(timeout) || timeout < 0) {
-      logErrorAndExit(
-        `Invalid timeout: ${options.timeout}. Must be a positive integer.`
-      );
-    }
   }
 
   // Aggregate files
