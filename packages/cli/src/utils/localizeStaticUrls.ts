@@ -42,6 +42,7 @@ export default async function localizeStaticUrls(
 
   // Use filtered locales if provided, otherwise use all locales
   const locales = targetLocales || settings.locales;
+  logMessage(`locales: ${JSON.stringify(locales)}`);
 
   const fileMapping = createFileMapping(
     sourceFiles,
@@ -71,6 +72,7 @@ export default async function localizeStaticUrls(
       defaultLocaleFiles.push(...sourceFiles.mdx);
     }
 
+    logMessage(`defaultLocaleFiles: ${JSON.stringify(defaultLocaleFiles)}`);
     if (defaultLocaleFiles.length > 0) {
       const defaultPromise = Promise.all(
         defaultLocaleFiles.map(async (filePath: string) => {
@@ -89,6 +91,7 @@ export default async function localizeStaticUrls(
           // Only write the file if there were changes
           if (result.hasChanges) {
             await fs.promises.writeFile(filePath, result.content);
+            logMessage(`Wrote file: ${filePath}`);
           }
         })
       );
@@ -120,9 +123,11 @@ export default async function localizeStaticUrls(
             settings.options?.excludeStaticUrls,
             settings.options?.baseDomain
           );
+          logMessage(`result 1: ${JSON.stringify(result)}`);
           // Only write the file if there were changes
           if (result.hasChanges) {
             await fs.promises.writeFile(filePath, result.content);
+            logMessage(`Wrote file 1: ${filePath}`);
           }
         })
       );
@@ -311,6 +316,7 @@ function transformMdxUrls(
     // - paths with default locale (when hideDefaultLocale=true)
     const patternWithoutSlash = patternHead.replace(/\/$/, '');
     if (!mdxContent.includes(patternWithoutSlash)) {
+      logMessage(`No pattern found in mdxContent: ${mdxContent}`);
       return {
         content: mdxContent,
         hasChanges: false,
@@ -320,6 +326,9 @@ function transformMdxUrls(
   } else {
     // For non-default locales, use the original logic
     if (!mdxContent.includes(patternHead.replace(/\/$/, ''))) {
+      logMessage(
+        `No pattern found in mdxContent: ${mdxContent} for patternHead: ${patternHead}`
+      );
       return {
         content: mdxContent,
         hasChanges: false,
@@ -343,10 +352,15 @@ function transformMdxUrls(
       `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
     );
     console.warn('Returning original content unchanged due to parsing error.');
+    logMessage(
+      `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
+    );
+    logMessage('Returning original content unchanged due to parsing error.');
+
     return {
       content: mdxContent,
       hasChanges: false,
-      transformedUrls: [],
+      transformedUrls,
     };
   }
 
@@ -380,6 +394,14 @@ function transformMdxUrls(
         defaultLocale,
         hideDefaultLocale
       );
+      if (!transformedPath) {
+        return null;
+      }
+      transformedUrls.push({
+        originalPath: originalUrl,
+        newPath: transformedPath,
+        type: linkType,
+      });
       return transformedPath ? baseDomain + transformedPath : null;
     }
 
@@ -529,6 +551,10 @@ function transformMdxUrls(
     console.warn(
       'Returning original content unchanged due to stringify error.'
     );
+    logMessage(
+      `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`
+    );
+    logMessage('Returning original content unchanged due to stringify error.');
     return {
       content: mdxContent,
       hasChanges: false,
@@ -546,6 +572,10 @@ function transformMdxUrls(
     content = '\n' + content;
   }
 
+  logMessage('Cheese');
+  logMessage(`content: ${content}`);
+  logMessage(`transformedUrls: ${JSON.stringify(transformedUrls)}`);
+  logMessage(`hasChanges: ${transformedUrls.length > 0}`);
   return {
     content,
     hasChanges: transformedUrls.length > 0,
