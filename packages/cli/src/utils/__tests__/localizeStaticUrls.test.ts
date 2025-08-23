@@ -2248,20 +2248,26 @@ description: "Bienvenido al nuevo hogar de tu documentación"
         transformPaths: {},
       },
       defaultLocale: 'en',
-      locales: ['en', 'fr-CA'],
-      experimentalHideDefaultLocale: true,
+      locales: ['en'],
       options: {
         docsUrlPattern: '/[locale]',
         excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        experimentalHideDefaultLocale: true,
       },
     };
 
     await localizeStaticUrls(settings as any);
 
-    // Verify that writeFile was called for the default locale file
+    const expectedContent = `# Default Locale Content
+
+[Link](/guide)
+<Card href="/api">API</Card>
+[Another](/docs)`;
+
+    // Verify that writeFile was called with the correct transformed content
     expect(fs.promises.writeFile).toHaveBeenCalledWith(
       'default.mdx',
-      expect.any(String)
+      expectedContent
     );
   });
 });

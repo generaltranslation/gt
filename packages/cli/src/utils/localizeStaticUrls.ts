@@ -77,7 +77,7 @@ export default async function localizeStaticUrls(
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file using default locale
-          const localizedFile = localizeStaticUrlsForFile(
+          const result = localizeStaticUrlsForFile(
             fileContent,
             settings.defaultLocale,
             settings.defaultLocale, // Process as default locale
@@ -86,8 +86,10 @@ export default async function localizeStaticUrls(
             settings.options?.excludeStaticUrls,
             settings.options?.baseDomain
           );
-          // Write the localized file back to the same path
-          await fs.promises.writeFile(filePath, localizedFile);
+          // Only write the file if there were changes
+          if (result.hasChanges) {
+            await fs.promises.writeFile(filePath, result.content);
+          }
         })
       );
       processPromises.push(defaultPromise);
@@ -109,7 +111,7 @@ export default async function localizeStaticUrls(
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file (handles both URLs and hrefs in single AST pass)
-          const localizedFile = localizeStaticUrlsForFile(
+          const result = localizeStaticUrlsForFile(
             fileContent,
             settings.defaultLocale,
             locale,
@@ -118,8 +120,10 @@ export default async function localizeStaticUrls(
             settings.options?.excludeStaticUrls,
             settings.options?.baseDomain
           );
-          // Write the localized file to the target path
-          await fs.promises.writeFile(filePath, localizedFile);
+          // Only write the file if there were changes
+          if (result.hasChanges) {
+            await fs.promises.writeFile(filePath, result.content);
+          }
         })
       );
     });
@@ -558,9 +562,9 @@ function localizeStaticUrlsForFile(
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
   baseDomain?: string
-): string {
+): UrlTransformResult {
   // Use AST-based transformation for MDX files
-  const result = transformMdxUrls(
+  return transformMdxUrls(
     file,
     defaultLocale,
     targetLocale,
@@ -569,7 +573,6 @@ function localizeStaticUrlsForFile(
     exclude,
     baseDomain || ''
   );
-  return result.content;
 }
 
 function cleanPath(path: string): string {
