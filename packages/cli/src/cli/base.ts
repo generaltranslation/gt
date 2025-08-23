@@ -46,7 +46,6 @@ import {
   handleTranslate,
   postProcessTranslations,
 } from './commands/translate.js';
-import localizeStaticUrls from '../utils/localizeStaticUrls.js';
 import updateConfig from '../fs/config/updateConfig.js';
 
 export type UploadOptions = {
@@ -142,21 +141,10 @@ export class BaseCLI {
         this.library,
         false
       );
-
-      // Process default locale static URLs first, before translations
-      if (settings.options?.experimentalLocalizeStaticUrls) {
-        await localizeStaticUrls(settings, [settings.defaultLocale]);
-      }
-
       if (results) {
         await handleTranslate(initOptions, settings, results);
       }
     } else {
-      // Process default locale static URLs first, before downloading translations
-      if (settings.options?.experimentalLocalizeStaticUrls) {
-        await localizeStaticUrls(settings, [settings.defaultLocale]);
-      }
-
       await handleDownload(initOptions, settings);
     }
     await postProcessTranslations(settings);
