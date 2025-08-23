@@ -1,5 +1,15 @@
 # gt-next
 
+## 6.2.3
+
+### Patch Changes
+
+- [#583](https://github.com/generaltranslation/gt/pull/583) [`e0b92f4`](https://github.com/generaltranslation/gt/commit/e0b92f42234f4f8fbb9859508769b6ee973407f8) Thanks [@brian-lou](https://github.com/brian-lou)! - Bump core library version
+
+- Updated dependencies [[`9b05fda`](https://github.com/generaltranslation/gt/commit/9b05fda9959f9e24491c02f357bc2a2c49ba0276), [`e0b92f4`](https://github.com/generaltranslation/gt/commit/e0b92f42234f4f8fbb9859508769b6ee973407f8)]:
+  - generaltranslation@7.4.1
+  - gt-react@10.3.1
+
 ## 6.2.2
 
 ### Patch Changes

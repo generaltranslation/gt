@@ -1,5 +1,20 @@
 # gtx-cli
 
+## 2.1.6
+
+### Patch Changes
+
+- [#584](https://github.com/generaltranslation/gt/pull/584) [`fd3d958`](https://github.com/generaltranslation/gt/commit/fd3d958dab3d14a7f1f9b49c5c49fba191077a57) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix version
+
+## 2.1.5
+
+### Patch Changes
+
+- [#580](https://github.com/generaltranslation/gt/pull/580) [`9b05fda`](https://github.com/generaltranslation/gt/commit/9b05fda9959f9e24491c02f357bc2a2c49ba0276) Thanks [@brian-lou](https://github.com/brian-lou)! - Update API schema, combine files and JSX translation endpoints
+
+- Updated dependencies [[`9b05fda`](https://github.com/generaltranslation/gt/commit/9b05fda9959f9e24491c02f357bc2a2c49ba0276)]:
+  - generaltranslation@7.4.1
+
 ## 2.1.5
 
 ### Patch Changes
