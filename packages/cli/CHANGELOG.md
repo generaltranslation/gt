@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.7
+
+### Patch Changes
+
+- [#579](https://github.com/generaltranslation/gt/pull/579) [`a485533`](https://github.com/generaltranslation/gt/commit/a4855336dfe5242cfdb24fd2e981f86b0bffdf05) Thanks [@SamEggert](https://github.com/SamEggert)! - fix localize static urls, add baseDomain functionality
+
 ## 2.1.6
 
 ### Patch Changes
