@@ -73,14 +73,15 @@ export async function handleDownload(
 }
 
 export async function postProcessTranslations(settings: Settings) {
-  // Localize static urls (/docs -> /[locale]/docs)
+  // Localize static urls (/docs -> /[locale]/docs) for non-default locales only
+  // Default locale is processed earlier in the flow in base.ts
   if (settings.options?.experimentalLocalizeStaticUrls) {
-    await localizeStaticUrls(settings);
-  }
-
-  // Localize static imports (/docs -> /[locale]/docs)
-  if (settings.options?.experimentalLocalizeStaticImports) {
-    await localizeStaticImports(settings);
+    const nonDefaultLocales = settings.locales.filter(
+      (locale) => locale !== settings.defaultLocale
+    );
+    if (nonDefaultLocales.length > 0) {
+      await localizeStaticUrls(settings, nonDefaultLocales);
+    }
   }
 
   // Flatten json files into a single file
