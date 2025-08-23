@@ -152,7 +152,7 @@ export async function generateSettings(
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
   // Add publish if not provided
-  mergedOptions.publish = mergedOptions.publish ?? false;
+  mergedOptions.publish = (gtConfig.publish || options.publish) ?? false;
 
   // Populate src if not provided
   mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
