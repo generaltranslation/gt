@@ -469,6 +469,12 @@
         "type": "boolean",
         "description": "Flattens JSON files into a single file",
         "default": false
+      },
+      "baseDomain": {
+        "type": "string",
+        "format": "uri", 
+        "description": "The base http:// url where the project is hosted",
+        "examples": ["https://example.com", "https://docs.example.com"]
       }
     },
     "additionalProperties": false
