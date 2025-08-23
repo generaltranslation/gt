@@ -77,16 +77,11 @@ export async function postProcessTranslations(settings: Settings) {
   // Default locale is processed earlier in the flow in base.ts
   if (settings.options?.experimentalLocalizeStaticUrls) {
     const nonDefaultLocales = settings.locales.filter(
-      locale => locale !== settings.defaultLocale
+      (locale) => locale !== settings.defaultLocale
     );
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales);
     }
-  }
-
-  // Localize static imports (/docs -> /[locale]/docs)
-  if (settings.options?.experimentalLocalizeStaticImports) {
-    await localizeStaticImports(settings);
   }
 
   // Flatten json files into a single file
