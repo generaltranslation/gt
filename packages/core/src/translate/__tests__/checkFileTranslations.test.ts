@@ -85,7 +85,7 @@ describe.sequential('_checkFileTranslations', () => {
     const result = await _checkFileTranslations(data, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/retrieve',
+      'https://api.test.com/v2/project/translations/files/retrieve',
       {
         method: 'POST',
         headers: {
@@ -122,7 +122,7 @@ describe.sequential('_checkFileTranslations', () => {
     await _checkFileTranslations(data, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/retrieve',
+      'https://api.test.com/v2/project/translations/files/retrieve',
       expect.any(Object),
       expect.any(Number)
     );
@@ -155,7 +155,7 @@ describe.sequential('_checkFileTranslations', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v1/project/translations/files/retrieve'
+        'https://api2.gtx.dev/v2/project/translations/files/retrieve'
       ),
       expect.any(Object),
       expect.any(Number)

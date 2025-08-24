@@ -5,6 +5,8 @@ import path from 'node:path';
 import { getRelative } from '../../fs/findFilepath.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { replaceLocalePlaceholders } from '../utils.js';
+import { FileMapping } from '../../types/files.js';
+import { TEMPLATE_FILE_NAME } from '../../cli/commands/stage.js';
 
 /**
  * Creates a mapping between source files and their translated counterparts for each locale
@@ -20,14 +22,21 @@ export function createFileMapping(
   transformPaths: TransformFiles,
   targetLocales: string[],
   defaultLocale: string
-): Record<string, Record<string, string>> {
-  const fileMapping: Record<string, Record<string, string>> = {};
+): FileMapping {
+  const fileMapping: FileMapping = {};
 
   for (const locale of targetLocales) {
     const translatedPaths = resolveLocaleFiles(placeholderPaths, locale);
-    const localeMapping: Record<string, string> = {};
+    const localeMapping: FileMapping[string] = {};
 
     // Process each file type
+
+    // Start with GTJSON Template files
+    if (translatedPaths.gt) {
+      const filepath = translatedPaths.gt;
+      localeMapping[TEMPLATE_FILE_NAME] = filepath;
+    }
+
     for (const typeIndex of SUPPORTED_FILE_EXTENSIONS) {
       if (!filePaths[typeIndex] || !translatedPaths[typeIndex]) continue;
 

@@ -18,6 +18,7 @@ import generateRequestHeaders from './utils/generateRequestHeaders';
  * @param options - The options for the API call
  * @param config - The configuration for the API call
  * @returns The result of the API call
+ * @deprecated Use the {@link _enqueueFiles} method instead. Will be removed in v8.0.0.
  */
 export default async function _enqueueEntries(
   updates: Updates,

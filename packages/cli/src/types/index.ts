@@ -17,12 +17,35 @@ export type Options = {
   ignoreErrors: boolean;
   suppressWarnings: boolean;
   dryRun: boolean;
-  timeout: string;
+  timeout: number;
   stageTranslations?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+};
+
+export type TranslateFlags = {
+  config?: string;
+  apiKey?: string;
+  projectId?: string;
+  versionId?: string;
+  jsconfig?: string;
+  dictionary?: string;
+  defaultLocale?: string;
+  locales?: string[];
+  ignoreErrors?: boolean;
+  src?: string[];
+  timeout: number;
+  dryRun: boolean;
+  stageTranslations?: boolean;
+  publish?: boolean;
+  experimentalLocalizeStaticUrls?: boolean;
+  experimentalHideDefaultLocale?: boolean;
+  experimentalFlattenJsonFiles?: boolean;
+  experimentalLocalizeStaticImports?: boolean;
+  excludeStaticUrls?: string[];
+  excludeStaticImports?: string[];
 };
 
 export type WrapOptions = {
@@ -121,10 +144,11 @@ export type FilesOptions = {
 // Shared settings between all API-related commands
 export type Settings = {
   config: string;
+  configDirectory: string;
   baseUrl: string;
   dashboardUrl: string;
-  apiKey: string;
-  projectId: string;
+  apiKey?: string;
+  projectId?: string;
   defaultLocale: string;
   locales: string[];
   files:
@@ -135,6 +159,7 @@ export type Settings = {
       }
     | undefined;
   stageTranslations: boolean; // if true, always stage the project during translate command
+  publish: boolean; // if true, publish the translations to the CDN
   _versionId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
@@ -163,6 +188,7 @@ export type AdditionalOptions = {
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
+  baseDomain?: string; // The base http:// url where the project is hosted
 };
 
 export type JsonSchema = {

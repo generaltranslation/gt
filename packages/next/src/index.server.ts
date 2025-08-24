@@ -17,6 +17,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+import { GT } from 'generaltranslation';
 
 export { LocaleSelector, RegionSelector } from './index.client';
 
@@ -25,7 +26,7 @@ export function useGTClass() {
 }
 
 export function useLocaleProperties(locale: string) {
-  return useGTClass().getLocaleProperties(locale);
+  return (useGTClass() as GT).getLocaleProperties(locale);
 }
 
 export function useLocales() {

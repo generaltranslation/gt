@@ -1,4 +1,4 @@
-import { intlCache } from 'src/cache/IntlCache';
+import { intlCache } from '../cache/IntlCache';
 
 /**
  * @internal

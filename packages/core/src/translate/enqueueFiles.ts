@@ -25,41 +25,35 @@ export default async function _enqueueFiles(
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/upload`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/files/upload`;
   const { projectId } = config;
   const {
     sourceLocale,
     targetLocales,
     publish,
-    _versionId,
-    description,
+    requireApproval,
+    version,
     modelProvider,
   } = options;
 
-  // Create form data
-  const formData = new FormData();
+  const fileData = files.map((file) => ({
+    content: Buffer.from(file.content).toString('base64'),
+    fileName: file.fileName,
+    fileFormat: file.fileFormat,
+    fileDataFormat: file.dataFormat,
+    formatMetadata: file.formatMetadata,
+  }));
 
-  // Add each file to the form data
-  files.forEach((file, index) => {
-    formData.append(`file${index}`, new Blob([file.content]), file.fileName);
-    formData.append(`fileFormat${index}`, file.fileFormat);
-    formData.append(`fileDataFormat${index}`, file.dataFormat);
-    formData.append(`fileName${index}`, file.fileName);
-  });
-
-  // Add number of files
-  formData.append('fileCount', String(files.length));
-
-  // Add other metadata
-  formData.append('sourceLocale', sourceLocale);
-  formData.append('targetLocales', JSON.stringify(targetLocales));
-  formData.append('projectId', projectId);
-  formData.append('publish', String(publish));
-  formData.append('versionId', _versionId || '');
-  formData.append('description', description || '');
-  if (modelProvider) {
-    formData.append('modelProvider', modelProvider);
-  }
+  const uploadData = {
+    files: fileData,
+    sourceLocale,
+    targetLocales,
+    projectId,
+    publish,
+    requireApproval,
+    version,
+    modelProvider,
+  };
 
   // Request the file uploads
   let response;
@@ -68,8 +62,8 @@ export default async function _enqueueFiles(
       url,
       {
         method: 'POST',
-        headers: generateRequestHeaders(config, true),
-        body: formData,
+        headers: generateRequestHeaders(config, false),
+        body: JSON.stringify(uploadData),
       },
       timeout
     );

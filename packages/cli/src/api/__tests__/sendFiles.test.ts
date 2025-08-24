@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ApiOptions, sendFiles, SendFilesResult } from '../sendFiles.js';
+import { sendFiles, SendFilesResult } from '../sendFiles.js';
 import { gt } from '../../utils/gt.js';
 import { createSpinner, logSuccess } from '../../console/logging.js';
 import { SpinnerResult } from '@clack/prompts';
 import { EnqueueFilesResult, FileToTranslate } from 'generaltranslation/types';
+import { Settings, TranslateFlags } from '../../types/index.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -37,16 +38,14 @@ describe('sendFiles', () => {
     }));
   };
 
-  const createMockApiOptions = (
-    overrides: Partial<ApiOptions> = {}
-  ): ApiOptions => ({
+  const createMockSettings = (overrides: Partial<Settings> = {}): Settings => ({
     publish: true,
-    wait: false,
     defaultLocale: 'en',
     locales: ['es', 'fr'],
     config: '/path/to/config.json',
     baseUrl: 'https://api.generaltranslation.com',
     dashboardUrl: 'https://dashboard.generaltranslation.com',
+    configDirectory: '/path/to/.gt',
     apiKey: '1234567890',
     projectId: '1234567890',
     stageTranslations: false,
@@ -56,6 +55,16 @@ describe('sendFiles', () => {
       placeholderPaths: {},
       transformPaths: {},
     },
+    ...overrides,
+  });
+  const createMockFlags = (
+    overrides: Partial<TranslateFlags> = {}
+  ): TranslateFlags => ({
+    publish: true,
+    apiKey: '1234567890',
+    projectId: '1234567890',
+    timeout: '10000',
+    dryRun: false,
     ...overrides,
   });
 
@@ -95,10 +104,8 @@ describe('sendFiles', () => {
       },
     ];
 
-    const mockOptions = createMockApiOptions({
-      description: 'Test upload',
-      _versionId: 'version-123',
-    });
+    const mockFlags = createMockFlags();
+    const mockSettings = createMockSettings();
 
     const mockResponse = createMockEnqueueResponse({
       data: {
@@ -112,7 +119,7 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(mockFiles, mockFlags, mockSettings);
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
       'Sending 2 files to General Translation API...'
@@ -142,10 +149,12 @@ describe('sendFiles', () => {
       fileName: 'component.json',
       content: '{"hello": "world"}',
     });
-    const mockOptions = createMockApiOptions({
+    const mockSettings = createMockSettings({
       publish: false,
       locales: ['es'],
-      description: 'Test upload',
+    });
+    const mockFlags = createMockFlags({
+      publish: false,
     });
 
     const mockResponse = createMockEnqueueResponse({
@@ -160,7 +169,7 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(mockFiles, mockFlags, mockSettings);
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
       'Sending 1 file to General Translation API...'
@@ -168,10 +177,8 @@ describe('sendFiles', () => {
 
     expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, {
       publish: false,
-      description: 'Test upload',
       sourceLocale: 'en',
       targetLocales: ['es'],
-      _versionId: undefined,
     });
 
     expect(result).toEqual<SendFilesResult>({
@@ -191,14 +198,14 @@ describe('sendFiles', () => {
       fileName: 'component.json',
       content: '{"hello": "world"}',
     });
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
 
     const error = new Error('API Error');
     vi.mocked(gt.enqueueFiles).mockRejectedValue(error);
 
-    await expect(sendFiles(mockFiles, mockOptions)).rejects.toThrow(
-      'API Error'
-    );
+    await expect(
+      sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)
+    ).rejects.toThrow('API Error');
 
     expect(mockSpinner.start).toHaveBeenCalled();
     expect(mockSpinner.stop).toHaveBeenCalledWith(
@@ -208,7 +215,7 @@ describe('sendFiles', () => {
 
   it('should handle empty files array', async () => {
     const mockFiles: FileToTranslate[] = [];
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
     const mockResponse = createMockEnqueueResponse({
       data: {},
       message: 'No files to upload',
@@ -217,7 +224,11 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(
+      mockFiles,
+      { timeout: '10000', dryRun: false },
+      mockOptions
+    );
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
       'Sending 0 files to General Translation API...'
@@ -234,7 +245,7 @@ describe('sendFiles', () => {
 
   it('should handle large number of files', async () => {
     const mockFiles = createMockFiles(100);
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
     const mockResponse = createMockEnqueueResponse({
       data: {
         'file0.json': { versionId: 'version-456', fileName: 'file0.json' },
@@ -244,7 +255,11 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(
+      mockFiles,
+      { timeout: '10000', dryRun: false },
+      mockOptions
+    );
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
       'Sending 100 files to General Translation API...'
@@ -266,14 +281,14 @@ describe('sendFiles', () => {
       fileName: 'component.json',
       content: '{"hello": "world"}',
     });
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
 
     const timeoutError = new Error('Network timeout');
     vi.mocked(gt.enqueueFiles).mockRejectedValue(timeoutError);
 
-    await expect(sendFiles(mockFiles, mockOptions)).rejects.toThrow(
-      'Network timeout'
-    );
+    await expect(
+      sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)
+    ).rejects.toThrow('Network timeout');
 
     expect(mockSpinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('Failed to send files for translation')
@@ -285,14 +300,14 @@ describe('sendFiles', () => {
       fileName: 'component.json',
       content: '{"hello": "world"}',
     });
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
 
     const authError = new Error('Unauthorized');
     vi.mocked(gt.enqueueFiles).mockRejectedValue(authError);
 
-    await expect(sendFiles(mockFiles, mockOptions)).rejects.toThrow(
-      'Unauthorized'
-    );
+    await expect(
+      sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)
+    ).rejects.toThrow('Unauthorized');
 
     expect(mockSpinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('Failed to send files for translation')
@@ -313,7 +328,7 @@ describe('sendFiles', () => {
       },
     ];
 
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
     const mockResponse = createMockEnqueueResponse({
       data: {
         'component.jsx': {
@@ -327,7 +342,11 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(
+      mockFiles,
+      { timeout: '10000', dryRun: false },
+      mockOptions
+    );
 
     expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, expect.any(Object));
     expect(result).toEqual<SendFilesResult>({
@@ -348,7 +367,7 @@ describe('sendFiles', () => {
       fileName: 'component.json',
       content: '{"hello": "world"}',
     });
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
 
     const mockResponse = createMockEnqueueResponse({
       data: {
@@ -362,7 +381,11 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(
+      mockFiles,
+      { timeout: '10000', dryRun: false },
+      mockOptions
+    );
 
     expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, {
       publish: true,
@@ -389,7 +412,7 @@ describe('sendFiles', () => {
       fileName: 'component.json',
       content: '{"hello": "world"}',
     });
-    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockOptions = createMockSettings({ locales: ['es'] });
 
     const mockResponse = createMockEnqueueResponse({
       data: {
@@ -420,7 +443,11 @@ describe('sendFiles', () => {
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
-    const result = await sendFiles(mockFiles, mockOptions);
+    const result = await sendFiles(
+      mockFiles,
+      { timeout: '10000', dryRun: false },
+      mockOptions
+    );
 
     expect(result).toEqual<SendFilesResult>({
       data: {

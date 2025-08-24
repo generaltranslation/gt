@@ -1,4 +1,9 @@
-import { Options, GenerateSourceOptions, Updates } from '../types/index.js';
+import {
+  Options,
+  GenerateSourceOptions,
+  Updates,
+  TranslateFlags,
+} from '../types/index.js';
 import fs from 'fs';
 import { logError } from '../console/logging.js';
 import loadJSON from '../fs/loadJSON.js';
@@ -17,7 +22,7 @@ import chalk from 'chalk';
  * @returns An object containing the updates and errors
  */
 export async function createUpdates(
-  options: Options | GenerateSourceOptions,
+  options: TranslateFlags,
   sourceDictionary: string | undefined,
   pkg: 'gt-react' | 'gt-next',
   validate: boolean
@@ -58,16 +63,15 @@ export async function createUpdates(
     }
   }
   // Scan through project for <T> tags
-  if (options.inline) {
-    const {
-      updates: newUpdates,
-      errors: newErrors,
-      warnings: newWarnings,
-    } = await createInlineUpdates(pkg, validate, options.src);
-    errors = [...errors, ...newErrors];
-    warnings = [...warnings, ...newWarnings];
-    updates = [...updates, ...newUpdates];
-  }
+  const {
+    updates: newUpdates,
+    errors: newErrors,
+    warnings: newWarnings,
+  } = await createInlineUpdates(pkg, validate, options.src);
+
+  errors = [...errors, ...newErrors];
+  warnings = [...warnings, ...newWarnings];
+  updates = [...updates, ...newUpdates];
 
   // Metadata addition and validation
   const idHashMap = new Map<string, string>();

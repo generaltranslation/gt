@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
-import localizeStaticUrls from '../localizeStaticUrls';
+import localizeStaticUrls, { transformUrlPath } from '../localizeStaticUrls';
 
 // Mock fs module
 vi.mock('fs', () => ({
@@ -188,9 +188,9 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
+            experimentalHideDefaultLocale: true,
           },
         };
 
@@ -198,8 +198,8 @@ describe('localizeStaticUrls', () => {
       });
 
       it('should not modify already localized markdown links', async () => {
-        const fileContent = `[Guide](/docs/ja/guide)`;
-        const expected = fileContent; // Should remain unchanged
+        const fileContent = `[Guide](/docs/japanese/guide)`;
+        const expected = `[Guide](/docs/ja/japanese/guide)`;
 
         vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
@@ -220,8 +220,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -288,8 +288,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -354,8 +354,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -386,8 +386,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -396,8 +396,8 @@ describe('localizeStaticUrls', () => {
       });
 
       it('should not modify already localized href attributes', async () => {
-        const fileContent = `<a href="/docs/ja/guide">Guide</a>`;
-        const expected = fileContent; // Should remain unchanged
+        const fileContent = `<a href="/docs/japanese/guide">Guide</a>`;
+        const expected = `<a href="/docs/ja/japanese/guide">Guide</a>`;
 
         vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
@@ -418,8 +418,8 @@ describe('localizeStaticUrls', () => {
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -500,8 +500,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images'],
           },
@@ -533,8 +533,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images'],
           },
@@ -566,8 +566,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
+            experimentalHideDefaultLocale: false,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
           },
@@ -634,8 +634,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**'],
           },
@@ -667,8 +667,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**'],
           },
@@ -700,8 +700,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**', '/docs/snippets/**'],
           },
@@ -733,10 +733,10 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/images/**'],
+            experimentalHideDefaultLocale: true,
           },
         };
 
@@ -992,8 +992,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/[locale]',
           },
         };
@@ -1024,8 +1024,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/[locale]',
           },
         };
@@ -1091,8 +1091,8 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/[locale]',
             excludeStaticUrls: ['/[locale]/images/**'],
           },
@@ -1503,8 +1503,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1513,7 +1513,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
       });
 
       it('should replace default locale with target locale when href contains default locale', async () => {
-        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/en/quickstart" horizontal>
+        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/quickstart" horizontal>
   Follow our quickstart guide.
 </Card>`;
         const expected = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
@@ -1539,8 +1539,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1548,11 +1548,13 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         await localizeStaticUrls(settings as any);
       });
 
-      it('should not modify already localized JSX component href attributes', async () => {
-        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
+      it('should not modify already localized JSX component href attributes with hideDefaultLocale = true', async () => {
+        const fileContent = `<Card title="Start here" icon="rocket" href="/docs/quickstart" horizontal>
   Follow our quickstart guide.
 </Card>`;
-        const expected = fileContent; // Should remain unchanged
+        const expected = `<Card title="Start here" icon="rocket" href="/docs/ja/quickstart" horizontal>
+  Follow our quickstart guide.
+</Card>`;
 
         vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
@@ -1572,9 +1574,9 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
             transformPaths: {},
           },
           defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
+          locales: ['ja'],
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1622,8 +1624,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1658,8 +1660,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1777,8 +1779,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1814,8 +1816,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1827,7 +1829,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
   describe('enhanced hideDefaultLocale scenarios', () => {
     describe('non-default locale with hideDefaultLocale = true', () => {
-      it('should handle URLs without any locale by adding target locale', async () => {
+      it('should handle URLs without any locale by adding target locale with hideDefaultLocale = true', async () => {
         const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
         const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
 
@@ -1850,8 +1852,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1860,7 +1862,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
       });
 
       it('should replace default locale with target locale when URL contains default locale', async () => {
-        const fileContent = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
+        const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
         const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
 
         vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
@@ -1882,8 +1884,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
+            experimentalHideDefaultLocale: true,
             docsUrlPattern: '/docs/[locale]',
           },
         };
@@ -1914,9 +1916,9 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
+            experimentalHideDefaultLocale: true,
           },
         };
 
@@ -1925,8 +1927,8 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
     });
 
     describe('non-default locale with hideDefaultLocale = false', () => {
-      it('should handle URLs without any locale by adding target locale', async () => {
-        const fileContent = `[Guide](/docs/guide) and <Card href="/docs/quickstart">Start</Card>`;
+      it('should handle URLs without any locale by adding target locale with hideDefaultLocale = false', async () => {
+        const fileContent = `[Guide](/docs/en/guide) and <Card href="/docs/en/quickstart">Start</Card>`;
         const expected = `[Guide](/docs/ja/guide) and <Card href="/docs/ja/quickstart">Start</Card>`;
 
         vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
@@ -1947,7 +1949,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
             transformPaths: {},
           },
           defaultLocale: 'en',
-          locales: ['en', 'ja'],
+          locales: ['ja'],
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
@@ -1998,11 +2000,11 @@ title: "Introducción"
 description: "Bienvenido al nuevo hogar de tu documentación"
 ---
 
-<Card title="Comience aquí" icon="rocket" href="/en/quickstart" horizontal>
+<Card title="Comience aquí" icon="rocket" href="quickstart" horizontal>
   Siga nuestra guía de inicio rápido en tres pasos.
 </Card>
 
-<Card title="Edita localmente" icon="pen-to-square" href="/en/development">
+<Card title="Edita localmente" icon="pen-to-square" href="/development">
   Edita tu documentación de forma local.
 </Card>`;
 
@@ -2011,7 +2013,7 @@ title: "Introducción"
 description: "Bienvenido al nuevo hogar de tu documentación"
 ---
 
-<Card title="Comience aquí" icon="rocket" href="/es/quickstart" horizontal>
+<Card title="Comience aquí" icon="rocket" href="es/quickstart" horizontal>
   Siga nuestra guía de inicio rápido en tres pasos.
 </Card>
 
@@ -2037,10 +2039,9 @@ description: "Bienvenido al nuevo hogar de tu documentación"
           transformPaths: {},
         },
         defaultLocale: 'en',
-        locales: ['en', 'es'],
-        experimentalHideDefaultLocale: true,
+        locales: ['es'],
         options: {
-          docsUrlPattern: '/[locale]', // Root-level locale pattern
+          experimentalHideDefaultLocale: true,
         },
       };
 
@@ -2220,6 +2221,491 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       };
 
       await localizeStaticUrls(settings as any);
+    });
+  });
+
+  it('should handle default locale processing with experimentalHideDefaultLocale=true', async () => {
+    // Mock file system operations for default locale processing
+    const mockFileMapping = {};
+    vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+    const defaultLocaleContent = `# Default Locale Content
+
+[Link](/en/guide)
+<Card href="/en/api">API</Card>
+[Another](/en/docs)`;
+
+    vi.mocked(fs.promises.readFile).mockResolvedValue(defaultLocaleContent);
+
+    vi.mocked(fs.promises.writeFile).mockResolvedValue();
+
+    const settings = {
+      files: {
+        placeholderPaths: { docs: '/docs' },
+        resolvedPaths: {
+          mdx: ['default.mdx'],
+        },
+        transformPaths: {},
+      },
+      defaultLocale: 'en',
+      locales: ['en'],
+      options: {
+        docsUrlPattern: '/[locale]',
+        excludeStaticUrls: ['/images/**/*', '/logo/**/*'],
+        experimentalHideDefaultLocale: true,
+      },
+    };
+
+    await localizeStaticUrls(settings as any);
+
+    const expectedContent = `# Default Locale Content
+
+[Link](/guide)
+<Card href="/api">API</Card>
+[Another](/docs)`;
+
+    // Verify that writeFile was called with the correct transformed content
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(
+      'default.mdx',
+      expectedContent
+    );
+  });
+});
+
+describe('baseDomain', () => {
+  it('should handle baseDomain', async () => {
+    const fileContent = `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/quickstart">Start</Card>`;
+    const expected = `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/quickstart">Start</Card>`;
+
+    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+    vi.mocked(fs.promises.writeFile).mockResolvedValue();
+
+    const mockFileMapping = {
+      fr: {
+        'default.mdx': '/path/fr/default.mdx',
+      },
+    };
+    vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+    const settings = {
+      files: {
+        placeholderPaths: { docs: '/docs' },
+        resolvedPaths: {
+          mdx: ['default.mdx'],
+        },
+        transformPaths: {},
+      },
+      defaultLocale: 'en',
+      locales: ['fr'],
+      experimentalHideDefaultLocale: false,
+      options: {
+        docsUrlPattern: '/[locale]',
+        excludeStaticUrls: [],
+        baseDomain: 'https://example.com',
+      },
+    };
+
+    await localizeStaticUrls(settings as any);
+
+    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+    vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+      expect(content).toBe(expected);
+      return Promise.resolve();
+    });
+  });
+
+  describe('baseDomain edge cases', () => {
+    it('should not transform URLs that do not match pattern even with baseDomain', async () => {
+      const fileContent = `[Guide](https://example.com/images/logo.png) and [API](https://example.com/assets/icon.svg)`;
+      const expected = fileContent; // Should remain unchanged since /images and /assets don't match /docs pattern
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should handle baseDomain with hideDefaultLocale=true', async () => {
+      const fileContent = `[Guide](https://example.com/docs/guide) and <Card href="https://example.com/docs/api">API</Card>`;
+      const expected = `[Guide](https://example.com/fr/docs/guide) and <Card href="https://example.com/fr/docs/api">API</Card>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        options: {
+          docsUrlPattern: '/[locale]',
+          baseDomain: 'https://example.com',
+          experimentalHideDefaultLocale: true,
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should not add literal null to baseDomain URLs when transformation fails', async () => {
+      const fileContent = `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`;
+      const expected = `[External](https://example.com/other/page) and [Valid](https://example.com/docs/guide)`; // Should remain unchanged when transformation fails
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        expect(content).not.toContain('null'); // Ensure no literal 'null' strings
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+
+    it('should handle multiple baseDomain URLs with mixed transformable/non-transformable paths', async () => {
+      const fileContent = `
+[Docs](https://example.com/docs/en/guide)
+[Images](https://example.com/images/photo.jpg)
+<Card href="https://example.com/docs/en/api">API</Card>
+<a href="https://example.com/assets/script.js">Script</a>
+`;
+      const expected = `
+[Docs](https://example.com/docs/fr/guide)
+[Images](https://example.com/images/photo.jpg)
+<Card href="https://example.com/docs/fr/api">API</Card>
+<a href="https://example.com/assets/script.js">Script</a>
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
+        expect(content).toBe(expected);
+        expect(content).not.toContain('null');
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: { mdx: ['test.mdx'] },
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['fr'],
+        experimentalHideDefaultLocale: false,
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
+      };
+
+      await localizeStaticUrls(settings as any);
+    });
+  });
+});
+
+describe('transformUrlPath', () => {
+  describe('when targetLocale equals defaultLocale', () => {
+    describe('with hideDefaultLocale = false', () => {
+      it('should add default locale to URLs without locale', () => {
+        const result = transformUrlPath(
+          '/docs/guide',
+          '/docs/',
+          'en',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/en/guide');
+      });
+
+      it('should add default locale to exact pattern match with hideDefaultLocale = false', () => {
+        const result = transformUrlPath('/docs', '/docs/', 'en', 'en', false);
+        expect(result).toBe('/docs/en');
+      });
+
+      it('should return null if URL already has default locale', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide',
+          '/docs/',
+          'en',
+          'en',
+          false
+        );
+        expect(result).toBeNull();
+      });
+
+      it('should return null if URL does not match pattern', () => {
+        const result = transformUrlPath(
+          '/other/guide',
+          '/docs/',
+          'en',
+          'en',
+          false
+        );
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('with hideDefaultLocale = true', () => {
+      it('should remove default locale from URLs that have it', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide',
+          '/docs/',
+          'en',
+          'en',
+          true
+        );
+        expect(result).toBe('/docs/guide');
+      });
+
+      it('should remove default locale from URLs ending with it', () => {
+        const result = transformUrlPath('/docs/en', '/docs/', 'en', 'en', true);
+        expect(result).toBe('/docs');
+      });
+
+      it('should return null if URL does not have default locale', () => {
+        const result = transformUrlPath(
+          '/docs/guide',
+          '/docs/',
+          'en',
+          'en',
+          true
+        );
+        expect(result).toBeNull();
+      });
+    });
+  });
+
+  describe('when targetLocale differs from defaultLocale', () => {
+    describe('with hideDefaultLocale = false', () => {
+      it('should replace default locale with target locale with hideDefaultLocale = false', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide',
+          '/docs/',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/ja/guide');
+      });
+
+      it('should replace default locale at end of URL', () => {
+        const result = transformUrlPath(
+          '/docs/en',
+          '/docs/',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/ja');
+      });
+
+      it('should add target locale to URLs without locale with hideDefaultLocale = false', () => {
+        const result = transformUrlPath(
+          '/docs/en/guide',
+          '/docs/',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBe('/docs/ja/guide');
+      });
+
+      it('should add target locale to exact pattern match with hideDefaultLocale = false', () => {
+        const result = transformUrlPath('/docs', '/docs/', 'ja', 'en', false);
+        expect(result).toBeNull();
+      });
+
+      it('should return null if URL does not match pattern', () => {
+        const result = transformUrlPath(
+          '/other/guide',
+          '/docs/',
+          'ja',
+          'en',
+          false
+        );
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('with hideDefaultLocale = true', () => {
+      it('should replace default locale with target locale', () => {
+        const result = transformUrlPath(
+          '/docs/english/guide',
+          '/docs/',
+          'ja',
+          'en',
+          true
+        );
+        expect(result).toBe('/docs/ja/english/guide');
+      });
+
+      it('should replace default locale at end of URL', () => {
+        const result = transformUrlPath(
+          '/docs/english',
+          '/docs/',
+          'ja',
+          'en',
+          true
+        );
+        expect(result).toBe('/docs/ja/english');
+      });
+
+      it('should add target locale to URLs without locale with hideDefaultLocale = true', () => {
+        const result = transformUrlPath(
+          '/docs/guide',
+          '/docs/',
+          'ja',
+          'en',
+          true
+        );
+        expect(result).toBe('/docs/ja/guide');
+      });
+
+      it('should add target locale to exact pattern match', () => {
+        const result = transformUrlPath('/docs', '/docs/', 'ja', 'en', true);
+        expect(result).toBe('/docs/ja');
+      });
+
+      it('should return null if URL already has target locale', () => {
+        const result = transformUrlPath(
+          '/docs/japanese/guide',
+          '/docs/',
+          'ja',
+          'en',
+          true
+        );
+        expect(result).toBe('/docs/ja/japanese/guide');
+      });
+
+      it('should return null if URL equals target locale pattern', () => {
+        const result = transformUrlPath(
+          '/docs/japanese',
+          '/docs/',
+          'ja',
+          'en',
+          true
+        );
+        expect(result).toBe('/docs/ja/japanese');
+      });
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle pattern without trailing slash', () => {
+      const result = transformUrlPath(
+        '/docs/guide',
+        '/docs',
+        'ja',
+        'en',
+        false
+      );
+      expect(result).toBeNull();
+    });
+
+    it('should handle root pattern with trailing slash', () => {
+      const result = transformUrlPath('/guide', '/', 'ja', 'en', false);
+      expect(result).toBeNull();
+    });
+
+    it('should handle root pattern without trailing slash', () => {
+      const result = transformUrlPath('/guide', '', 'ja', 'en', false);
+      expect(result).toBeNull();
+    });
+
+    it('should handle complex locales like zh-CN', () => {
+      const result = transformUrlPath(
+        '/docs/en/guide',
+        '/docs/',
+        'zh-CN',
+        'en',
+        false
+      );
+      expect(result).toBe('/docs/zh-CN/guide');
+    });
+
+    it('should handle URLs with query parameters', () => {
+      const result = transformUrlPath(
+        '/docs/en/guide?tab=api',
+        '/docs/',
+        'ja',
+        'en',
+        false
+      );
+      expect(result).toBe('/docs/ja/guide?tab=api');
+    });
+
+    it('should handle URLs with fragments', () => {
+      const result = transformUrlPath(
+        '/docs/en/guide#section',
+        '/docs/',
+        'ja',
+        'en',
+        false
+      );
+      expect(result).toBe('/docs/ja/guide#section');
+    });
+
+    it('should handle empty path after pattern head', () => {
+      const result = transformUrlPath('/docs/', '/docs/', 'ja', 'en', false);
+      expect(result).toBeNull();
     });
   });
 });

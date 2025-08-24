@@ -22,11 +22,11 @@ import {
   Settings,
   SupportedLibraries,
   SetupOptions,
+  TranslateFlags,
 } from '../types/index.js';
 import { DataFormat } from '../types/data.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
-import { translateFiles } from '../formats/files/translate.js';
 import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
 import { handleSetupReactCommand } from '../setup/wizard.js';
 import {
@@ -38,31 +38,21 @@ import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
-import localizeStaticUrls from '../utils/localizeStaticUrls.js';
-import flattenJsonFiles from '../utils/flattenJsonFiles.js';
-import localizeStaticImports from '../utils/localizeStaticImports.js';
-import copyFile from '../fs/copyFile.js';
 import { upload } from '../formats/files/upload.js';
+import { attachTranslateFlags } from './flags.js';
+import { handleStage } from './commands/stage.js';
+import {
+  handleDownload,
+  handleTranslate,
+  postProcessTranslations,
+} from './commands/translate.js';
+import updateConfig from '../fs/config/updateConfig.js';
 
 export type UploadOptions = {
   config?: string;
   apiKey?: string;
   projectId?: string;
   defaultLocale?: string;
-};
-export type TranslateOptions = {
-  config?: string;
-  defaultLocale?: string;
-  locales?: string[];
-  apiKey?: string;
-  projectId?: string;
-  dryRun: boolean;
-  experimentalLocalizeStaticUrls?: boolean;
-  experimentalHideDefaultLocale?: boolean;
-  experimentalFlattenJsonFiles?: boolean;
-  experimentalLocalizeStaticImports?: boolean;
-  excludeStaticUrls?: string[];
-  excludeStaticImports?: string[];
 };
 
 export type LoginOptions = {
@@ -90,7 +80,7 @@ export class BaseCLI {
   }
   // Init is never called in a child class
   public init() {
-    this.setupGTCommand();
+    this.setupTranslateCommand();
   }
   // Execute is called by the main program
   public execute() {
@@ -100,63 +90,66 @@ export class BaseCLI {
     }
   }
 
-  protected setupGTCommand(): void {
-    this.program
-      .command('translate')
-      .description('Translate your project using General Translation')
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .option(
-        '--api-key <key>',
-        'API key for General Translation cloud service'
-      )
-      .option('--project-id <id>', 'Project ID for the translation service')
-      .option(
-        '--default-language, --default-locale <locale>',
-        'Default locale (e.g., en)'
-      )
-      .option(
-        '--new, --locales <locales...>',
-        'Space-separated list of locales (e.g., en fr es)'
-      )
-      .option(
-        '--dry-run',
-        'Dry run, does not send updates to General Translation API',
-        false
-      )
-      .option(
-        '--experimental-localize-static-urls',
-        'Triggering this will run a script after the cli tool that localizes all urls in content files. Currently only supported for md and mdx files.',
-        false
-      )
-      .option(
-        '--experimental-hide-default-locale',
-        'When localizing static locales, hide the default locale from the path',
-        false
-      )
-      .option(
-        '--experimental-flatten-json-files',
-        'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
-        false
-      )
-      .option(
-        '--experimental-localize-static-imports',
-        'Triggering this will run a script after the cli tool that localizes all static imports in content files. Currently only supported for md and mdx files.',
-        false
-      )
-      .action(async (initOptions: TranslateOptions) => {
-        displayHeader('Starting translation...');
-        const settings = await generateSettings(initOptions);
-
-        const options = { ...initOptions, ...settings };
-
-        await this.handleGenericTranslate(options);
-        endCommand('Done!');
-      });
+  protected setupStageCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('stage')
+        .description(
+          'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
+        )
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader(
+        'Staging project for translation with approval required...'
+      );
+      await this.handleStage(initOptions);
+      endCommand('Done!');
+    });
   }
+  protected setupTranslateCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('translate')
+        .description('Translate your project using General Translation')
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader('Starting translation...');
+      await this.handleTranslate(initOptions);
+      endCommand('Done!');
+    });
+  }
+
+  protected async handleStage(initOptions: TranslateFlags): Promise<void> {
+    const settings = await generateSettings(initOptions);
+
+    if (!settings.stageTranslations) {
+      // Update settings.stageTranslations to true
+      settings.stageTranslations = true;
+      await updateConfig({
+        configFilepath: settings.config,
+        stageTranslations: true,
+      });
+    }
+    await handleStage(initOptions, settings, this.library, true);
+  }
+
+  protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
+    const settings = await generateSettings(initOptions);
+
+    if (!settings.stageTranslations) {
+      const results = await handleStage(
+        initOptions,
+        settings,
+        this.library,
+        false
+      );
+      if (results) {
+        await handleTranslate(initOptions, settings, results);
+      }
+    } else {
+      await handleDownload(initOptions, settings);
+    }
+    await postProcessTranslations(settings);
+  }
+
   protected setupUploadCommand(): void {
     this.program
       .command('upload')
@@ -368,66 +361,6 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     );
   }
 
-  protected async handleGenericTranslate(
-    settings: Settings & TranslateOptions
-  ): Promise<void> {
-    // dataFormat for JSONs
-    let dataFormat: DataFormat;
-    if (this.library === 'next-intl') {
-      dataFormat = 'ICU';
-    } else if (this.library === 'i18next') {
-      if (this.additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
-      } else {
-        dataFormat = 'I18NEXT';
-      }
-    } else {
-      dataFormat = 'JSX';
-    }
-
-    if (
-      !settings.files ||
-      (Object.keys(settings.files.placeholderPaths).length === 1 &&
-        settings.files.placeholderPaths.gt)
-    ) {
-      return;
-    }
-    const {
-      resolvedPaths: sourceFiles,
-      placeholderPaths,
-      transformPaths,
-    } = settings.files;
-
-    // Process all file types at once with a single call
-    await translateFiles(
-      sourceFiles,
-      placeholderPaths,
-      transformPaths,
-      dataFormat,
-      settings
-    );
-
-    // Localize static urls (/docs -> /[locale]/docs)
-    if (settings.experimentalLocalizeStaticUrls) {
-      await localizeStaticUrls(settings);
-    }
-
-    // Localize static imports (/docs -> /[locale]/docs)
-    if (settings.experimentalLocalizeStaticImports) {
-      await localizeStaticImports(settings);
-    }
-
-    // Flatten json files into a single file
-    if (settings.experimentalFlattenJsonFiles) {
-      await flattenJsonFiles(settings);
-    }
-
-    // Copy files to the target locale
-    if (settings.options?.copyFiles) {
-      await copyFile(settings);
-    }
-  }
-
   protected async handleSetupReactCommand(
     options: SetupOptions
   ): Promise<void> {
@@ -454,19 +387,19 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       ? await promptConfirm({
           message: `Auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
             isUsingGTNext
-              ? 'https://generaltranslation.com/docs/next/reference/local-tx'
-              : 'https://generaltranslation.com/docs/react/reference/local-tx'
+              ? 'https://generaltranslation.com/en/docs/next/guides/local-tx'
+              : 'https://generaltranslation.com/en/docs/react/guides/local-tx'
           } for more information.\nIf you answer no, we'll configure the CLI tool to download completed translations.`,
           defaultValue: true,
         })
       : false;
     if (isUsingGT && !usingCDN) {
       logMessage(
-        `To prevent translations from being published, please disable the project setting on the dashboard: ${chalk.cyan(
-          'https://dash.generaltranslation.com/settings/project'
-        )}`
+        `Make sure to add a loadTranslations function to your app configuration to correctly use local translations.
+See https://generaltranslation.com/en/docs/next/guides/local-tx`
       );
     }
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
@@ -524,6 +457,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
+      publish: isUsingGT && usingCDN,
     });
 
     logSuccess(

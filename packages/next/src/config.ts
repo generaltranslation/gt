@@ -188,11 +188,17 @@ export function withGTConfig(
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
   if (mergedConfig.experimentalSwcPluginOptions?.compileTimeHash) {
-    if (turboPackEnabled) {
-      const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
-      resolvedWasmFilePath = './' + path.relative(process.cwd(), absolutePath);
-    } else {
-      resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+    try {
+      if (turboPackEnabled) {
+        const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath =
+          './' + path.relative(process.cwd(), absolutePath);
+      } else {
+        resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+      }
+    } catch (error) {
+      console.error('Error resolving wasm filepath:', error);
+      resolvedWasmFilePath = '';
     }
   }
 

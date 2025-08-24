@@ -1,4 +1,4 @@
-import { intlCache } from 'src/cache/IntlCache';
+import { intlCache } from '../cache/IntlCache';
 import { pluralForms, PluralType } from '../settings/plurals';
 import { libraryDefaultLocale } from '../settings/settings';
 

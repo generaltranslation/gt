@@ -4,7 +4,7 @@ import {
   warnApiKeyInConfig,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
-import { Settings, SupportedFrameworks } from '../types/index.js';
+import { FilesOptions, Settings, SupportedFrameworks } from '../types/index.js';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
@@ -110,11 +110,19 @@ export async function generateSettings(
   }
 
   // merge options
-  let mergedOptions = { ...gtConfig, ...options };
+  const mergedOptions: Settings = { ...gtConfig, ...options };
+
+  // Add defaultLocale if not provided
+  mergedOptions.defaultLocale =
+    mergedOptions.defaultLocale || libraryDefaultLocale;
 
   // merge locales
   mergedOptions.locales = Array.from(
     new Set([...(gtConfig.locales || []), ...(options.locales || [])])
+  );
+  // Separate defaultLocale from locales
+  mergedOptions.locales = mergedOptions.locales.filter(
+    (locale) => locale !== mergedOptions.defaultLocale
   );
 
   // Add apiKey if not provided
@@ -128,10 +136,6 @@ export async function generateSettings(
 
   // Add dashboardUrl if not provided
   mergedOptions.dashboardUrl = mergedOptions.dashboardUrl || GT_DASHBOARD_URL;
-
-  // Add defaultLocale if not provided
-  mergedOptions.defaultLocale =
-    mergedOptions.defaultLocale || libraryDefaultLocale;
 
   // Add locales if not provided
   mergedOptions.locales = mergedOptions.locales || [];
@@ -147,21 +151,24 @@ export async function generateSettings(
   // For human review, always stage the project
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
+  // Add publish if not provided
+  mergedOptions.publish = (gtConfig.publish || options.publish) ?? false;
+
   // Populate src if not provided
   mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
 
   // Resolve all glob patterns in the files object
   mergedOptions.files = mergedOptions.files
     ? resolveFiles(
-        mergedOptions.files,
+        mergedOptions.files as FilesOptions,
         mergedOptions.defaultLocale,
         mergedOptions.locales,
         cwd
       )
     : undefined;
 
-  mergedOptions = {
-    ...mergedOptions,
+  mergedOptions.options = {
+    ...(mergedOptions.options || {}),
     experimentalLocalizeStaticImports:
       gtConfig.options?.experimentalLocalizeStaticImports ||
       options.experimentalLocalizeStaticImports,
@@ -213,6 +220,9 @@ export async function generateSettings(
       framework: mergedOptions.framework as SupportedFrameworks,
     });
   }
+
+  mergedOptions.configDirectory = path.join(cwd, '.gt');
+
   validateSettings(mergedOptions);
 
   // Set up GT instance

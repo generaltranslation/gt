@@ -4,6 +4,8 @@ export const createMockSettings = (
   overrides: Partial<Settings> = {}
 ): Settings => {
   const defaultSettings = {
+    configDirectory: '',
+    publish: false,
     baseUrl: '',
     dashboardUrl: '',
     apiKey: '',
