@@ -142,7 +142,7 @@ function T({
     // !translationEnabled || // translation not enabled
     (translations && !translationEntry && !developmentApiEnabled) || // cache miss and dev runtime translation disabled (production)
     translationEntry === null || // error fetching translation
-    (!translationEntry && !developmentApiEnabled) // there's no translation and there's no chance to make one 
+    (!translationEntry && !developmentApiEnabled) // there's no translation and there's no chance to make one
   ) {
     return <>{renderDefault()}</>;
   }
@@ -178,11 +178,7 @@ function T({
     }
   };
 
-  if (
-    reactHasUse &&
-    developmentApiEnabled &&
-    translationRequired
-  ) {
+  if (reactHasUse && developmentApiEnabled && translationRequired) {
     const resolvedTranslation = React.use(
       useable(
         [
