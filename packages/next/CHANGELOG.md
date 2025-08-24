@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.2.4
+
+### Patch Changes
+
+- [#592](https://github.com/generaltranslation/gt/pull/592) [`753ac31`](https://github.com/generaltranslation/gt/commit/753ac31930f9184e81da172fac0ee155302b9512) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Fixed resolution error for plugin under different build tools
+
 ## 6.2.3
 
 ### Patch Changes
