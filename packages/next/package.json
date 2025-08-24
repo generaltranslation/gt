@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.2.3",
+  "version": "6.2.4",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
