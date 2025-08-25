@@ -376,7 +376,6 @@ export function withGTConfig(
     ? [resolvedWasmFilePath, { ...mergedConfig.experimentalSwcPluginOptions }]
     : null;
 
-
   const turboAliases = {
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
@@ -456,7 +455,9 @@ export function withGTConfig(
       if (!turboPackEnabled) {
         // Try to load GT unplugin if available
         try {
-          const { webpack: gtUnplugin } = require('@generaltranslation/unplugin');
+          const {
+            webpack: gtUnplugin,
+          } = require('@generaltranslation/unplugin');
           webpackConfig.plugins.unshift(
             gtUnplugin(mergedConfig.experimentalSwcPluginOptions || {})
           );

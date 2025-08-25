@@ -166,9 +166,11 @@ export class StringCollector {
 
   /**
    * Create an array literal for injection from TranslationContent
+   * Ported from Rust: create_content_array (lines 198-214)
    */
-  createContentArray(contents: TranslationContent[]): any {
+  createContentArray(contents: TranslationContent[], span?: any): any[] {
     // Return a structure that can be converted to Babel AST later
+    // The span parameter maintains source location information like in Rust
     return contents.map((content) => ({
       message: content.message,
       $_hash: content.hash,

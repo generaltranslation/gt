@@ -34,6 +34,12 @@ export default function useGT(_messages?: _Messages) {
     `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be called within a <GTProvider>.`
   );
 
+  if (_messages) {
+    console.log('messages', _messages);
+  } else {
+    console.log('no messages');
+  }
+
   let preloadedTranslations: Translations | undefined;
   if (
     _messages &&
