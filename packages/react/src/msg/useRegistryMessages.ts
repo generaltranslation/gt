@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import useGTContext from '../provider/GTContext';
-import { _Message, _Messages } from '../internal';
+import { _Messages } from '../internal';
 import { messageRegistry, MessageEntry } from './MessageRegistry';
 
 /**

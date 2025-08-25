@@ -1,4 +1,4 @@
-use crate::ast::ScopeTracker;
+use crate::visitor::ScopeTracker;
 use swc_core::ecma::atoms::Atom;
 
 // For tracking statistics for the plugin

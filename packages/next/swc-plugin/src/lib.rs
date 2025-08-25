@@ -367,7 +367,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .map(|f| f.to_string());
 
   // Create StringCollector for the two-pass system
-  let string_collector = crate::ast::StringCollector::new();
+  let string_collector = crate::visitor::StringCollector::new();
 
   let mut program = program;
 

@@ -1,4 +1,3 @@
-import { hashSource } from 'generaltranslation/id';
 import useGTContext from '../../provider/GTContext';
 import { useRegistryMessages } from '../../msg/useRegistryMessages';
 import { _Messages, reactHasUse } from '../../internal';

@@ -1,5 +1,5 @@
 use super::state::{ImportTracker, Statistics, TraversalState};
-use crate::ast::{JsxTraversal, StringCollector};
+use crate::ast::{JsxTraversal};
 use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
@@ -7,6 +7,7 @@ use crate::visitor::expr_utils::{
   create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options,
   extract_string_from_expr, has_prop, inject_new_args,
 };
+use crate::visitor::StringCollector;
 use swc_core::{
   common::SyntaxContext,
   ecma::{ast::*, atoms::Atom},
