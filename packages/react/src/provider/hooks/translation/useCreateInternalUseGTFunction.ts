@@ -4,10 +4,10 @@ import {
   Translations,
   _Messages,
   _Message,
-} from '../../types/types';
-import { TranslateIcuCallback } from '../../types/runtime';
+} from '../../../types/types';
+import { TranslateIcuCallback } from '../../../types/runtime';
 import { GT } from 'generaltranslation';
-import { createStringRenderError } from '../../errors/createErrors';
+import { createStringRenderError } from '../../../errors/createErrors';
 
 export default function useCreateInternalUseGTFunction({
   gt,
@@ -28,8 +28,14 @@ export default function useCreateInternalUseGTFunction({
 }): {
   _tFunction: (
     message: string,
-    options?: InlineTranslationOptions,
-    preloadedTranslations?: Translations
+    options: InlineTranslationOptions,
+    preloadedTranslations?: Translations | undefined
+  ) => string;
+  _mFunction: (
+    message: string,
+    options: InlineTranslationOptions,
+    preloadedTranslations: Translations | undefined,
+    hashMap: Map<string, _Message> | undefined
   ) => string;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
@@ -154,7 +160,7 @@ export default function useCreateInternalUseGTFunction({
     message: string,
     options: InlineTranslationOptions = {},
     preloadedTranslations: Translations | undefined
-  ) => {
+  ): string => {
     // ----- SET UP ----- //
     const init = initializeT(message, options);
     if (!init) return '';
@@ -175,38 +181,97 @@ export default function useCreateInternalUseGTFunction({
     // ----- RENDER TRANSLATION ----- //
 
     if (translationEntry === null) {
+      // Warn here
       return renderMessage(message, [defaultLocale]);
     }
 
     // If a translation already exists
     if (translationEntry) {
-      try {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]);
-      } catch (error) {
-        console.error(createStringRenderError(message, id), 'Error: ', error);
-        return renderMessage(message, [defaultLocale]);
-      }
+      return renderMessage(translationEntry as string, [locale, defaultLocale]);
     }
 
     if (preloadedTranslations?.[hash] !== 'undefined') {
       if (preloadedTranslations?.[hash]) {
-        try {
-          return renderMessage(preloadedTranslations?.[hash] as string, [
-            locale,
-            defaultLocale,
-          ]);
-        } catch (error) {
-          console.error(createStringRenderError(message, id), 'Error: ', error);
-          return renderMessage(message, [defaultLocale]);
-        }
+        return renderMessage(preloadedTranslations?.[hash] as string, [
+          locale,
+          defaultLocale,
+        ]);
       }
       return renderMessage(message, [defaultLocale]);
     }
 
     if (!developmentApiEnabled) {
+      // Warn here
+      renderMessage(message, [defaultLocale]);
+    }
+
+    registerIcuForTranslation({
+      source: message,
+      targetLocale: locale,
+      metadata: {
+        ...(context && { context }),
+        ...(id && { id }),
+        hash: hash || '',
+      },
+    });
+
+    return renderMessage(message, [defaultLocale]);
+  };
+
+  const _mFunction = (
+    message: string,
+    options: InlineTranslationOptions = {},
+    preloadedTranslations: Translations | undefined,
+    hashMap: Map<string, _Message> | undefined
+  ): string => {
+    // ----- SET UP ----- //
+
+    const init = initializeT(message, options);
+
+    if (!init) return '';
+
+    const { id, context, _hash, calculateHash, renderMessage } = init;
+
+    // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
+    // Check: translation required
+    if (!translationRequired) return renderMessage(message, [defaultLocale]);
+
+    // ----- GET TRANSLATION ----- //
+
+    const { translationEntry, hash } = getTranslationData(
+      calculateHash,
+      id,
+      _hash
+    );
+
+    // ----- RENDER TRANSLATION ----- //
+
+    if (translationEntry === null) {
+      // Warn here
+      return renderMessage(message, [defaultLocale]);
+    }
+
+    // If a translation already exists
+    if (translationEntry) {
+      return renderMessage(translationEntry as string, [locale, defaultLocale]);
+    }
+
+    if (preloadedTranslations?.[hash] !== 'undefined') {
+      if (preloadedTranslations?.[hash]) {
+        return renderMessage(preloadedTranslations?.[hash] as string, [
+          locale,
+          defaultLocale,
+        ]);
+      }
+      return renderMessage(message, [defaultLocale]);
+    }
+
+    if (!developmentApiEnabled) {
+      // Warn here
+      renderMessage(message, [defaultLocale]);
+    }
+
+    if (hashMap && !hashMap.has(hash)) {
       // Warn here
       return renderMessage(message, [defaultLocale]);
     }
@@ -224,5 +289,10 @@ export default function useCreateInternalUseGTFunction({
     return renderMessage(message, [defaultLocale]);
   };
 
-  return { _tFunction, _filterMessagesForPreload, _preloadMessages };
+  return {
+    _tFunction,
+    _mFunction,
+    _filterMessagesForPreload,
+    _preloadMessages,
+  };
 }

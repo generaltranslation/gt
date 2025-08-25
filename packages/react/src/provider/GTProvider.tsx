@@ -8,8 +8,8 @@ import {
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
 import { readAuthFromEnv } from '../utils/utils';
-import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
+import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
+import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import {
   defaultLocaleCookieName,
@@ -175,16 +175,20 @@ export default function GTProvider({
 
   // ---------- USE GT ---------- //
 
-  const { _tFunction, _filterMessagesForPreload, _preloadMessages } =
-    useCreateInternalUseGTFunction({
-      gt,
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      developmentApiEnabled,
-      registerIcuForTranslation,
-    });
+  const {
+    _tFunction,
+    _mFunction,
+    _filterMessagesForPreload,
+    _preloadMessages,
+  } = useCreateInternalUseGTFunction({
+    gt,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation,
+  });
 
   // ---------- USE DICT ---------- //
 
@@ -212,6 +216,7 @@ export default function GTProvider({
         registerIcuForTranslation,
         registerJsxForTranslation,
         _tFunction,
+        _mFunction,
         _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,

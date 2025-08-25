@@ -45,6 +45,7 @@ import {
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
 import { reactHasUse } from './promises/reactHasUse';
+import { messageRegistry } from './msg/MessageRegistry';
 
 export {
   addGTIdentifier,
@@ -87,4 +88,5 @@ export {
   _Message,
   _Messages,
   reactHasUse,
+  messageRegistry
 };

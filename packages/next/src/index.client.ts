@@ -18,6 +18,8 @@ import {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  useMessages,
+  msg,
 } from 'gt-react/client';
 import {
   gtProviderUseClientError,
@@ -57,6 +59,8 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  useMessages,
+  msg,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,

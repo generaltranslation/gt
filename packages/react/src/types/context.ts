@@ -4,6 +4,7 @@ import {
   InlineTranslationOptions,
   DictionaryTranslationOptions,
   _Messages,
+  _Message,
 } from './types';
 import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
 import { GT } from 'generaltranslation';
@@ -14,8 +15,14 @@ export type GTContextType = {
   registerJsxForTranslation: TranslateChildrenCallback;
   _tFunction: (
     message: string,
-    options?: InlineTranslationOptions,
-    preloadedTranslations?: Translations
+    options: InlineTranslationOptions,
+    preloadedTranslations: Translations | undefined
+  ) => string;
+  _mFunction: (
+    message: string,
+    options: InlineTranslationOptions,
+    preloadedTranslations: Translations | undefined,
+    hashSet: Map<string, _Message> | undefined
   ) => string;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;

@@ -18,6 +18,8 @@ import {
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
+import { useMessages } from './server-dir/buildtime/msg/useMessages';
+import { msg } from './server-dir/buildtime/msg/msg';
 
 export { LocaleSelector, RegionSelector } from './index.client';
 
@@ -51,6 +53,7 @@ export {
   useTranslations,
   useLocale,
   useLocaleDirection,
+  useMessages, msg,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,

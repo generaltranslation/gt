@@ -4,19 +4,19 @@ import {
   DictionaryTranslationOptions,
   RenderMethod,
   Translations,
-} from '../../types/types';
+} from '../../../types/types';
 import {
   getDictionaryEntry,
   isValidDictionaryEntry,
-} from '../../dictionaries/getDictionaryEntry';
-import getEntryAndMetadata from '../../dictionaries/getEntryAndMetadata';
+} from '../../../dictionaries/getDictionaryEntry';
+import getEntryAndMetadata from '../../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-} from '../../errors/createErrors';
+} from '../../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
-import { TranslateIcuCallback } from '../../types/runtime';
+import { TranslateIcuCallback } from '../../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,

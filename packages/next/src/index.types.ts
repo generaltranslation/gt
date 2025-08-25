@@ -18,6 +18,8 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
+  msg as _msg,
+  useMessages as _useMessages,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -375,6 +377,53 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
  * ```
  */
 export const RegionSelector: typeof _RegionSelector = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Registers an ICU message for translation and returns the original message.
+ * This function can be called outside of a context provider and is safe to use globally.
+ * It ensures the message is registered in the message registry for extraction and translation workflows.
+ *
+ * @param {string} message - The ICU message string to register.
+ * @param {Object} [options] - Optional variables and metadata for the message.
+ * @returns {string} The original message string.
+ *
+ * @example
+ * msg('Hello, {name}!');
+ *
+ * @remarks
+ * This function is intended for registering messages for translation extraction and can be used
+ * outside of a <GTProvider> context. It does not perform translation, only registration.
+ */
+export const msg: typeof _msg = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * React hook to obtain the `m()` translation function for registered ICU messages.
+ *
+ * This hook provides a translation function for messages that have been registered
+ * using the {@link msg} function. It must be used in conjunction with `msg()` to ensure
+ * messages are available for translation and extraction workflows.
+ *
+ * @returns {(msg: string, options?: { [variable: string]: string | undefined; $id?: string; $_hash?: string }) => string}
+ *   The `m()` function for translating registered messages.
+ *
+ * @example
+ * // Register your messages at the top level of your file or component
+ * const message = msg('Welcome, {name}!');
+ *
+ * // Use the m() function inside your component
+ * const m = useMessages();
+ * const welcome = m(message, { name: 'Alice' });
+ *
+ * @remarks
+ * - You must register all messages you wish to translate using {@link msg} before calling `m()`.
+ * - This hook must be used within a `<GTProvider>`.
+ * - The returned `m()` function will only translate messages that have been registered.
+ */
+export const useMessages: typeof _useMessages = () => {
   throw new Error(typesFileError);
 };
 

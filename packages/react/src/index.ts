@@ -24,6 +24,8 @@ import {
 import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 import { useRegionSelector } from './hooks/useRegionSelector';
 import { useLocaleDirection } from './hooks/useLocaleDirection';
+import { useMessages } from './translation/hooks/useMessages';
+import { msg } from './msg/MessageRegistry';
 
 export {
   Var,
@@ -46,6 +48,8 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  msg,
+  useMessages,
   LocaleSelector,
   RegionSelector,
   DictionaryTranslationOptions,
