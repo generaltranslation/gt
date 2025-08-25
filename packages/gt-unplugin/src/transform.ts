@@ -95,9 +95,6 @@ export function processImportDeclaration(
 ): void {
   const importDecl = path.node;
   const srcValue = importDecl.source.value;
-  if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log('[transform] processImportDeclaration', srcValue);
-  }
 
   // Only process gt-next imports
   if (
@@ -124,10 +121,11 @@ export function processImportDeclaration(
         ) {
           if (state.settings.filename?.endsWith('page.tsx')) {
             console.log(
-              '[transform] Tracking translation variable:',
+              '[transform] Tracking translation import: {',
               localName,
-              '->',
-              originalName
+              'as',
+              originalName,
+              '}'
             );
           }
           // Note: Need to implement these methods in ImportTracker
@@ -167,6 +165,14 @@ export function trackVariableAssignment(
         t.isCallExpression(varDeclarator.init) &&
         t.isIdentifier(varDeclarator.init.callee)
       ) {
+        if (state.settings.filename?.endsWith('page.tsx')) {
+          console.log(
+            '[transform] trackVariableAssignment',
+            variableName,
+            '=',
+            varDeclarator.init.callee.name
+          );
+        }
         // Only direct assignments can be translation functions
         trackFunctionCallAssignment(
           varDeclarator.init.callee.name,
@@ -178,6 +184,14 @@ export function trackVariableAssignment(
         t.isCallExpression(varDeclarator.init.argument) &&
         t.isIdentifier(varDeclarator.init.argument.callee)
       ) {
+        if (state.settings.filename?.endsWith('page.tsx')) {
+          console.log(
+            '[transform] trackVariableAssignment',
+            variableName,
+            '= await',
+            varDeclarator.init.argument.callee.name
+          );
+        }
         // Only direct assignments can be translation functions
         trackFunctionCallAssignment(
           varDeclarator.init.argument.callee.name,
@@ -229,12 +243,9 @@ export function trackFunctionCallAssignment(
         counterId
       );
 
-      if (state.settings.filename?.endsWith('page.js')) {
+      if (state.settings.filename?.endsWith('page.tsx')) {
         console.log(
-          '[transform] trackFunctionCallAssignment - tracked callback:',
-          variableName,
-          '->',
-          `${originalName}_callback`
+          `[transform] trackFunctionCallAssignment - tracked callback [${counterId}]: ${variableName} -> ${originalName}_callback`
         );
       }
     }
@@ -801,67 +812,90 @@ export function trackArrowParameterOverrides(
 
 /**
  * Perform the second pass transformation using collected data
- * Ported from Rust: (to be implemented)
+ * Ported from Rust: lib.rs Fold trait implementation (lines 195-351)
+ *
+ * This is a complete Fold-style traversal that processes the entire AST
+ * and applies transformations based on collected data from the first pass.
  */
 export function performSecondPassTransformation(
   ast: t.File,
   state: TransformState
 ): boolean {
-  // This is the second pass transformation that injects hash attributes and content arrays
-  // Based on the collected data from the first pass
+  if (state.settings.filename?.endsWith('page.tsx')) {
+    console.log('[gt-unplugin] ===============================');
+    console.log('[gt-unplugin]         PASS 2');
+    console.log('[gt-unplugin] ===============================');
+  }
+  // Reset counter for second pass - matches Rust TransformVisitor::new()
+  state.stringCollector.resetCounter();
 
   let hasTransformations = false;
 
-  // Traverse the AST again to find call expressions and JSX elements to transform
+  // Complete second-pass traversal matching Rust Fold trait
   traverse(ast, {
+    // Process import declarations to track GT-Next imports (fold_import_decl)
+    ImportDeclaration(path) {
+      processImportDeclaration(path, state);
+    },
+
+    // Process variable declarations to track assignments (fold_var_declarator)
+    VariableDeclarator(path) {
+      trackVariableAssignment(path, state);
+    },
+
+    // Process function calls - inject content arrays and hashes (fold_call_expr)
     CallExpression(callPath: NodePath<t.CallExpression>) {
       const callExpr = callPath.node;
 
-      // Get function name from callee - matches Rust fold_call_expr
       const functionName = getCalleeExprFunctionName(callExpr);
-      if (!functionName) {
-        return;
-      }
+      if (functionName) {
+        const translationVariable =
+          state.importTracker.scopeTracker.getTranslationVariable(functionName);
 
-      const translationVariable =
-        state.importTracker.scopeTracker.getTranslationVariable(functionName);
+        if (translationVariable) {
+          const originalName = translationVariable.originalName;
 
-      if (translationVariable) {
-        // Register the useGT/getGT as aggregators on the string collector
-        const originalName = translationVariable.originalName;
-
-        // Detect useGT/getGT calls (translation functions)
-        if (isTranslationFunction(originalName)) {
-          const modifiedCallExpr = injectContentArrayOnTranslationFunction(
-            callExpr,
-            state
-          );
-          if (modifiedCallExpr) {
-            callPath.replaceWith(modifiedCallExpr);
-            hasTransformations = true;
-            return;
+          // Detect useGT/getGT calls - inject content arrays
+          if (isTranslationFunction(originalName)) {
+            const modifiedCallExpr = injectContentArrayOnTranslationFunction(
+              callExpr,
+              state
+            );
+            if (modifiedCallExpr) {
+              callPath.replaceWith(modifiedCallExpr);
+              hasTransformations = true;
+              return;
+            }
           }
-        }
-        // Detect t() calls (translation function callbacks)
-        else if (isTranslationFunctionCallback(originalName)) {
-          const modifiedCallExpr = injectHashOnTranslationFunction(
-            callExpr,
-            state
-          );
-          if (modifiedCallExpr) {
-            callPath.replaceWith(modifiedCallExpr);
-            hasTransformations = true;
-            return;
+          // Detect t() calls - inject hash attributes
+          else if (isTranslationFunctionCallback(originalName)) {
+            const modifiedCallExpr = injectHashOnTranslationFunction(
+              callExpr,
+              state
+            );
+            if (modifiedCallExpr) {
+              callPath.replaceWith(modifiedCallExpr);
+              hasTransformations = true;
+              return;
+            }
           }
         }
       }
     },
 
+    // Process JSX attributes - matches Rust fold_jsx_attr
+    JSXAttribute(jsxPath) {
+      // TODO: Implement JSX attribute traversal state management
+      // This should track in_jsx_attribute state like Rust version
+    },
+
+    // Process JSX elements - inject hash attributes (fold_jsx_element)
     JSXElement(jsxPath: NodePath<t.JSXElement>) {
       const element = jsxPath.node;
       state.statistics.jsxElementCount += 1;
 
-      // Determine context - matches Rust determine_component_type
+      // TODO: Implement full traversal state management like Rust
+      // Save state, determine context, inject attributes, restore state
       const componentType = determineComponentType(element, state);
 
       // Inject hash attributes on translation components
@@ -873,8 +907,130 @@ export function performSecondPassTransformation(
         }
       }
     },
-  });
 
+    // Scope management - matches Rust fold_* methods
+    BlockStatement: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    Function: {
+      enter(path) {
+        state.importTracker.enterScope();
+        trackParameterOverrides(path, state);
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    ArrowFunctionExpression: {
+      enter(path) {
+        state.importTracker.enterScope();
+        trackArrowParameterOverrides(path, state);
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    // Missing from Rust Fold - function expressions
+    FunctionExpression: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    // Additional scope-creating constructs from Rust
+    ClassDeclaration: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    // Missing from Rust Fold - method definitions
+    ClassMethod: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    ObjectMethod: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    ForStatement: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    ForInStatement: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    ForOfStatement: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    CatchClause: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    WhileStatement: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+
+    SwitchStatement: {
+      enter(_path) {
+        state.importTracker.enterScope();
+      },
+      exit(_path) {
+        state.importTracker.exitScope();
+      },
+    },
+  });
   return hasTransformations;
 }
 

@@ -67,6 +67,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
+          if (id.endsWith('page.tsx')) {
+            console.log('[gt-unplugin] ===============================');
+            console.log('[gt-unplugin]         PASS 1');
+            console.log('[gt-unplugin] ===============================');
+          }
+
           // Parse the code into AST
           const ast = parser.parse(code, {
             sourceType: 'module',
@@ -77,9 +83,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
           // Two-pass transformation system
           // PASS 1: Collection phase - collect translation data without transforming
-          if (id.endsWith('page.tsx')) {
-            console.log('[gt-unplugin] Pass 1: Collection phase');
-          }
+
           traverse(ast, {
             Program: {
               enter(path) {
@@ -102,16 +106,28 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               processCallExpression(path, state); // Collection only, returns boolean but we ignore it
             },
 
+            // JSX processing - matches Rust VisitMut
             JSXElement(path) {
               processJSXElement(path, state); // Collection only, returns boolean but we ignore it
             },
 
-            // Scope management
+            // Missing JSX visitors from Rust VisitMut
+            JSXExpressionContainer(path) {
+              // TODO: Implement jsx expression container validation
+              // This should check for dynamic content violations in translation components
+            },
+
+            JSXAttribute(path) {
+              // TODO: Implement jsx attribute context tracking
+              // This should track in_jsx_attribute state to avoid false violations
+            },
+
+            // Scope management - must match second pass exactly
             BlockStatement: {
-              enter(path) {
+              enter(_path) {
                 state.importTracker.enterScope();
               },
-              exit(path) {
+              exit(_path) {
                 state.importTracker.exitScope();
               },
             },
@@ -121,7 +137,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
                 state.importTracker.enterScope();
                 trackParameterOverrides(path, state);
               },
-              exit(path) {
+              exit(_path) {
                 state.importTracker.exitScope();
               },
             },
@@ -131,32 +147,92 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
                 state.importTracker.enterScope();
                 trackArrowParameterOverrides(path, state);
               },
-              exit(path) {
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            // Missing from Rust VisitMut - function expressions
+            FunctionExpression: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ClassDeclaration: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ForStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ForInStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ForOfStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            CatchClause: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            WhileStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            SwitchStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
                 state.importTracker.exitScope();
               },
             },
           });
 
-          if (id.endsWith('page.tsx')) {
-            console.log('[gt-unplugin] state:', JSON.stringify(state, null, 2));
-          }
-
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
           let hasTransformations = false;
           if (state.settings.compileTimeHash) {
-            if (id.endsWith('page.tsx')) {
-              console.log('[gt-unplugin] Pass 2: Transformation phase');
-            }
             hasTransformations = performSecondPassTransformation(ast, state);
           }
 
           // Generate code if transformations were made
-          if (id.endsWith('page.tsx')) {
-            console.log(
-              '[gt-unplugin] hasTransformations:',
-              hasTransformations
-            );
-          }
           if (hasTransformations) {
             // Validate AST before generation
             try {
