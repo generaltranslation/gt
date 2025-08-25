@@ -1,6 +1,10 @@
 import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
+import {
+  INLINE_TRANSLATION_HOOK,
+  INLINE_TRANSLATION_HOOK_ASYNC,
+} from './constants.js';
 
 /**
  * Validate useGT() / await getGT() calls
@@ -26,7 +30,7 @@ export function validateStringFunction(
         // Check the function scope
         const functionScope = callPath.getFunctionParent();
 
-        if (originalImportName === 'useGT') {
+        if (originalImportName === INLINE_TRANSLATION_HOOK) {
           // useGT should NOT be in an async function
           if (functionScope && functionScope.node.async) {
             errors.push(
@@ -36,7 +40,7 @@ export function validateStringFunction(
               )
             );
           }
-        } else if (originalImportName === 'getGT') {
+        } else if (originalImportName === INLINE_TRANSLATION_HOOK_ASYNC) {
           // getGT should be in an async function
           if (!functionScope || !functionScope.node.async) {
             errors.push(
