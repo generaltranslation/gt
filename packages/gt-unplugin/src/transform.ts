@@ -852,6 +852,13 @@ export function performSecondPassTransformation(
         const translationVariable =
           state.importTracker.scopeTracker.getTranslationVariable(functionName);
 
+        if (state.settings.filename?.endsWith('page.tsx')) {
+          console.log(
+            `[transform] callExpression: ${functionName}`,
+            translationVariable
+          );
+        }
+
         if (translationVariable) {
           const originalName = translationVariable.originalName;
 
@@ -861,6 +868,11 @@ export function performSecondPassTransformation(
               callExpr,
               state
             );
+            if (state.settings.filename?.endsWith('page.tsx')) {
+              console.log(
+                `[transform] inject content array: ${originalName} ${modifiedCallExpr}`
+              );
+            }
             if (modifiedCallExpr) {
               callPath.replaceWith(modifiedCallExpr);
               hasTransformations = true;
