@@ -1,7 +1,7 @@
 {
-  "name": "@generaltranslation/babel-plugin",
+  "name": "@generaltranslation/unplugin",
   "version": "0.0.0",
-  "description": "A Babel plugin for compile-time optimization of GT translation components",
+  "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "General Translation, Inc.",
@@ -13,26 +13,26 @@
     "format": "prettier --write src"
   },
   "keywords": [
-    "babel",
-    "plugin",
+    "unplugin",
+    "webpack",
+    "vite",
+    "rollup",
     "gt-next",
     "translation",
     "i18n"
   ],
-  "peerDependencies": {
-    "@babel/core": "^7.0.0"
-  },
   "dependencies": {
     "@babel/types": "^7.23.0",
     "@babel/traverse": "^7.23.0",
+    "@babel/parser": "^7.23.0",
+    "@babel/generator": "^7.23.0",
+    "unplugin": "^1.0.0",
     "generaltranslation": "^2.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
-    "@babel/preset-typescript": "^7.23.0",
     "@types/babel__core": "^7.20.0",
     "@types/babel__traverse": "^7.20.0",
+    "@types/babel__generator": "^7.6.0",
     "@types/node": "^20.0.0",
     "eslint": "^8.0.0",
     "prettier": "^3.0.0",

@@ -13,6 +13,7 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
+    "@generaltranslation/babel-plugin": "^0.0.0",
     "@generaltranslation/supported-locales": "^2.0.13",
     "generaltranslation": "^7.4.1",
     "gt-react": "^10.3.1"

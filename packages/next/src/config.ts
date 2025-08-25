@@ -376,6 +376,7 @@ export function withGTConfig(
     ? [resolvedWasmFilePath, { ...mergedConfig.experimentalSwcPluginOptions }]
     : null;
 
+
   const turboAliases = {
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
@@ -390,7 +391,7 @@ export function withGTConfig(
     (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
   );
 
-  return {
+  const config: NextConfig = {
     ...nextConfig,
     env: {
       ...nextConfig.env,
@@ -429,11 +430,12 @@ export function withGTConfig(
       }),
     experimental: {
       ...nextConfig.experimental,
-      // SWC Plugin
-      swcPlugins: [
-        ...(nextConfig.experimental?.swcPlugins || []),
-        ...(swcPluginEntry ? [swcPluginEntry] : []),
-      ],
+      // TODO: uncomment
+      // // SWC Plugin
+      // swcPlugins: [
+      //   ...(nextConfig.experimental?.swcPlugins || []),
+      //   ...(swcPluginEntry ? swcPluginEntry : []),
+      // ],
       ...(turboPackEnabled &&
         experimentalTurbopack && {
           turbo: {
@@ -452,6 +454,16 @@ export function withGTConfig(
     ) {
       // Only apply webpack aliases if we're using webpack (not Turbopack)
       if (!turboPackEnabled) {
+        // Try to load GT unplugin if available
+        try {
+          const { webpack: gtUnplugin } = require('@generaltranslation/unplugin');
+          webpackConfig.plugins.unshift(
+            gtUnplugin(mergedConfig.experimentalSwcPluginOptions || {})
+          );
+          console.log('GT Unplugin loaded successfully');
+        } catch (e) {
+          console.warn('GT Unplugin not available:', e);
+        }
         // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
@@ -477,6 +489,7 @@ export function withGTConfig(
       return webpackConfig;
     },
   };
+  return config;
 }
 
 // Keep initGT for backward compatibility

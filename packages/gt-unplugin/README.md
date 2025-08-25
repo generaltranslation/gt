@@ -1,6 +1,6 @@
-# GT Babel Plugin
+# GT Universal Plugin
 
-A Babel plugin for compile-time optimization of GT translation components in React applications.
+A universal plugin for compile-time optimization of GT translation components that works across webpack, Vite, Rollup, and other bundlers.
 
 ## What It Does
 
@@ -51,9 +51,102 @@ Pre-computes translation keys at build time for better performance:
 - Injects hash attributes (`_hash`) into components  
 - Creates content arrays for translation functions
 
+## Installation
+
+```bash
+npm install @generaltranslation/gt-unplugin
+```
+
+## Usage
+
+### With Next.js (Automatic)
+
+If you're using `gt-next`, the plugin is automatically configured for you. No additional setup required!
+
+### With Webpack (Manual)
+
+```js
+// webpack.config.js
+const gtUnplugin = require('@generaltranslation/gt-unplugin/webpack');
+
+module.exports = {
+  plugins: [
+    gtUnplugin({
+      compileTimeHash: true,
+      logLevel: 'warn',
+    }),
+  ],
+};
+```
+
+### With Vite
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite';
+import gtUnplugin from '@generaltranslation/gt-unplugin/vite';
+
+export default defineConfig({
+  plugins: [
+    gtUnplugin({
+      compileTimeHash: true,
+      logLevel: 'warn',
+    }),
+  ],
+});
+```
+
+### With Rollup
+
+```js
+// rollup.config.js
+import gtUnplugin from '@generaltranslation/gt-unplugin/rollup';
+
+export default {
+  plugins: [
+    gtUnplugin({
+      compileTimeHash: true,
+      logLevel: 'warn',
+    }),
+  ],
+};
+```
+
+### With esbuild
+
+```js
+// esbuild.config.js
+const { build } = require('esbuild');
+const gtUnplugin = require('@generaltranslation/gt-unplugin/esbuild');
+
+build({
+  plugins: [
+    gtUnplugin({
+      compileTimeHash: true,
+      logLevel: 'warn',
+    }),
+  ],
+});
+```
+
+## Configuration Options
+
+```typescript
+interface GTUnpluginOptions {
+  /** Control warning output */
+  logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
+  
+  /** Enable hash generation at compile time */
+  compileTimeHash?: boolean;
+  
+  /** Skip dynamic content validation */
+  disableBuildChecks?: boolean;
+}
+```
+
 ## How It Works
 
-The plugin uses three core modules to analyze and transform your code:
+The plugin uses the [unplugin](https://unplugin.unjs.io/) framework to provide universal bundler support. It analyzes your code using Babel's parser and transformer to:
 
 ### String Collector
 Manages translation content across the two-pass transformation:
@@ -83,27 +176,29 @@ Converts JSX components into sanitized hash-able objects:
 
 The plugin uses a two-pass approach to handle the circular dependency between translation functions and their usage:
 
-### Pass 1: Collection (VisitMut)
+### Pass 1: Collection
 - **Discover translation functions**: Find `useGT()` and `getGT()` calls, assign unique counter IDs
 - **Track variable assignments**: Follow `const t = useGT()` patterns using scope tracker
 - **Collect content**: Gather `t()` calls and `<T>` components, associate with counter IDs
 - **Generate hashes**: Calculate stable hashes for JSX content using AST traversal
 - **Validate usage**: Check for dynamic content violations and report errors
 
-### Pass 2: Transformation (Fold)  
+### Pass 2: Transformation
 - **Inject content arrays**: Add collected `t()` strings to `useGT()`/`getGT()` calls
 - **Add hash attributes**: Insert `_hash` props into `<T>` components
 - **Preserve order**: Use the same counter sequence to match content with functions
 
 This approach solves the "chicken-and-egg" problem: we need to know what `t()` calls exist before we can inject content into the `useGT()` function that creates `t()`.
 
-## Plugin Flow
+## Supported Bundlers
 
-1. **Import Analysis**: Track GT imports and namespace usage
-2. **Variable Tracking**: Follow `useGT()`/`getGT()` assignments using scope tracker
-3. **Content Collection**: Use string collector to gather `t()` calls and JSX content
-4. **Hash Generation**: Create stable hashes via AST traversal 
-5. **Code Transformation**: Inject hash attributes and content arrays
+This plugin works with:
+- ✅ **Webpack** 4, 5
+- ✅ **Vite** 2, 3, 4, 5
+- ✅ **Rollup** 2, 3, 4
+- ✅ **esbuild** 0.15+
+- ✅ **Next.js** (via gt-next)
+- ✅ **Nuxt** (via unplugin auto-detection)
 
 ## Components Tracked
 
@@ -112,15 +207,12 @@ This approach solves the "chicken-and-egg" problem: we need to know what `t()` c
 - **Branching**: `Branch`, `Plural`
 - **Functions**: `useGT()`, `getGT()`, and their callbacks
 
-## Configuration
+## Development Status
 
-- **logLevel**: Control warning output (`silent`, `error`, `warn`, `info`, `debug`)
-- **compileTimeHash**: Enable hash generation at compile time
-- **disableBuildChecks**: Skip dynamic content validation
+Files ported from Rust SWC plugin with their implementation status:
 
-## Test Coverage Status
-
-Files ported from Rust SWC plugin with their test status:
+### ✅ Core Framework
+- **`src/index.ts`** - Universal plugin entry point with unplugin integration
 
 ### ✅ Completed (with tests)
 - **`src/visitor/analysis.ts`** - Component identification functions
@@ -128,7 +220,7 @@ Files ported from Rust SWC plugin with their test status:
 - **`src/logging.ts`** - Logger implementation  
 - **`src/visitor/errors.ts`** - Error message creation
 
-### 🚧 Implemented (needs tests)
+### 🚧 Implemented (needs integration)
 - **`src/visitor/scope-tracker.ts`** - Scope tracking and variable management
 - **`src/visitor/import-tracker.ts`** - Import tracking and component resolution
 
@@ -141,9 +233,15 @@ Files ported from Rust SWC plugin with their test status:
 - **`src/visitor/jsx-utils.ts`** - JSX processing utilities
 - **`src/visitor/expr-utils.ts`** - Expression analysis utilities
 
+## Contributing
+
+This plugin is part of the General Translation ecosystem. The transformation logic is gradually being ported from the existing Rust SWC plugin to provide broader bundler support.
+
 ### Test Files Structure
 ```
 src/
+├── __tests__/
+│   ├── index.test.ts (unplugin integration tests)
 ├── visitor/
 │   └── __tests__/
 │       ├── string-collector.test.ts ✅
@@ -151,7 +249,11 @@ src/
 │       ├── scope-tracker.test.ts (pending)
 │       └── import-tracker.test.ts (pending)
 ├── logging.test.ts (pending)
-└── visitor/
+└── ast/
     └── __tests__/
-        └── errors.test.ts (pending)
+        └── traversal.test.ts (pending)
 ```
+
+## License
+
+MIT - General Translation, Inc.
