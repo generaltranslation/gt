@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.8
+
+### Patch Changes
+
+- [#594](https://github.com/generaltranslation/gt/pull/594) [`3fa9c41`](https://github.com/generaltranslation/gt/commit/3fa9c41e2e37933b04e6c3d6c0f94271a07d0ff6) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix <GTProvider> wizard scan behavior
+
 ## 2.1.7
 
 ### Patch Changes
