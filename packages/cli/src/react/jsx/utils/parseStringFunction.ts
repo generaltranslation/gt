@@ -608,19 +608,29 @@ export function parseStrings(
         // Get the scope from the variable declaration
         const variableScope = effectiveParent.scope;
 
-        const tReferencePaths =
-          variableScope.bindings[tFuncName]?.referencePaths || [];
+        // Resolve all aliases of the translation function
+        // Example: translate -> [translate, t, a, b] for const t = translate; const a = t; const b = a;
+        const allTranslationNames = resolveVariableAliases(
+          variableScope,
+          tFuncName
+        );
 
-        for (const tPath of tReferencePaths) {
-          handleFunctionCall(
-            tPath,
-            updates,
-            errors,
-            file,
-            importMap,
-            ignoreAdditionalData
-          );
-        }
+        // Process references for all translation function names and their aliases
+        allTranslationNames.forEach((name) => {
+          const tReferencePaths =
+            variableScope.bindings[name]?.referencePaths || [];
+
+          for (const tPath of tReferencePaths) {
+            handleFunctionCall(
+              tPath,
+              updates,
+              errors,
+              file,
+              importMap,
+              ignoreAdditionalData
+            );
+          }
+        });
       }
     }
   }
