@@ -19,10 +19,10 @@ describe('parseStrings', () => {
     file: 'test.tsx',
   });
 
-  it('should handle direct msg() calls', () => {
+  it('should handle direct msg.encode() calls', () => {
     const code = `
       import { msg } from 'generaltranslation';
-      msg('hello world');
+      msg.encode('hello world');
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1041,6 +1041,305 @@ describe('parseStrings', () => {
         id: 'circular',
       },
     });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  // Additional tests for msg.encode() functionality
+  it('should handle msg.encode() with template literals without expressions', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      msg.encode(\`hello world\`);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should add errors for msg.encode() with template literals with expressions', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      const name = 'world';
+      msg.encode(\`hello \${name}\`);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should add errors for msg.encode() with non-string arguments', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      const message = 'hello world';
+      msg.encode(message);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should handle multiple msg.encode() calls', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      msg.encode('hello');
+      msg.encode('world');
+      msg.encode('goodbye');
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(3);
+    expect(params.updates).toEqual([
+      { dataFormat: 'ICU', source: 'hello', metadata: {} },
+      { dataFormat: 'ICU', source: 'world', metadata: {} },
+      { dataFormat: 'ICU', source: 'goodbye', metadata: {} },
+    ]);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle msg.encode() calls with different import aliases', () => {
+    const code = `
+      import { msg as message } from 'generaltranslation';
+      message.encode('aliased msg call');
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'aliased msg call',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should not handle msg.decode() calls (only encode should work)', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      msg.decode('should not work');
+      msg.encode('should work');
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'should work',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle msg.encode() calls in different contexts', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      
+      function test() {
+        const result = msg.encode('function context');
+        return result;
+      }
+      
+      const arrow = () => msg.encode('arrow function');
+      
+      if (true) {
+        msg.encode('conditional context');
+      }
+      
+      const obj = {
+        method() {
+          msg.encode('object method');
+        }
+      };
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(4);
+    expect(params.updates).toEqual([
+      { dataFormat: 'ICU', source: 'function context', metadata: {} },
+      { dataFormat: 'ICU', source: 'arrow function', metadata: {} },
+      { dataFormat: 'ICU', source: 'conditional context', metadata: {} },
+      { dataFormat: 'ICU', source: 'object method', metadata: {} },
+    ]);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should only handle msg.encode() calls', () => {
+    const code = `
+      import { msg } from 'generaltranslation';
+      msg.encode('encode call');
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates).toEqual([
+      { dataFormat: 'ICU', source: 'encode call', metadata: {} },
+    ]);
     expect(params.errors).toHaveLength(0);
   });
 });
