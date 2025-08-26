@@ -25,6 +25,18 @@ pub fn is_translation_function_callback(name: &Atom) -> bool {
   matches!(name.as_ref(), "useGT_callback" | "getGT_callback")
 }
 
+pub fn is_msg_function_name(name: &Atom) -> bool {
+  matches!(name.as_ref(), "msg")
+}
+
+pub fn is_messages_function_name(name: &Atom) -> bool {
+  matches!(name.as_ref(), "useMessages" | "getMessages")
+}
+
+pub fn is_messages_function_callback(name: &Atom) -> bool {
+  matches!(name.as_ref(), "useMessages_callback" | "getMessages_callback")
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

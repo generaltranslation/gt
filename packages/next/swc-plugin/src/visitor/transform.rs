@@ -1,5 +1,5 @@
 use super::state::{ImportTracker, Statistics, TraversalState};
-use crate::ast::{JsxTraversal, StringCollector};
+use crate::ast::{JsxTraversal};
 use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
@@ -7,14 +7,19 @@ use crate::visitor::expr_utils::{
   create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options,
   extract_string_from_expr, has_prop, inject_new_args,
 };
+use crate::visitor::StringCollector;
 use swc_core::{
   common::SyntaxContext,
   ecma::{ast::*, atoms::Atom},
 };
 
 use crate::visitor::analysis::{
-  is_branch_name, is_translation_component_name, is_translation_function_name,
+  is_branch_name,
+  is_messages_function_name,
+  is_translation_component_name,
+  is_translation_function_name,
   is_variable_component_name,
+  is_msg_function_name
 };
 
 /// Main transformation visitor for the SWC plugin
@@ -272,6 +277,8 @@ impl TransformVisitor {
                 || is_variable_component_name(&original_name)
                 || is_branch_name(&original_name)
                 || is_translation_function_name(&original_name)
+                || is_msg_function_name(&original_name)
+                || is_messages_function_name(&original_name)
               {
                 self
                   .import_tracker
@@ -553,8 +560,10 @@ impl TransformVisitor {
         // This will be either useGT or getGT, not the alias
         let original_name = translation_variable.original_name.clone();
 
-        // Check if its getGT or useGT
-        if is_translation_function_name(&original_name) {
+        // Check if its getGT or useGT or useMessages or getMessages
+        if is_translation_function_name(&original_name)
+          || is_messages_function_name(&original_name)
+        {
           // Get counter_id
           let counter_id = self.string_collector.increment_counter();
           // Create a new entry in the string collector for this call

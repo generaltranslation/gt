@@ -1,7 +1,22 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import useGTContext from '../provider/GTContext';
+<<<<<<< HEAD
 import { _Message, _Messages } from '../internal';
 import { messageRegistry } from './MessageRegistry';
+=======
+import { _Messages } from '../internal';
+import { messageRegistry, MessageEntry } from './MessageRegistry';
+
+/**
+ * The return type for useRegistryMessages, containing both messages and a hash map.
+ */
+export type RegistryMessagesResult =
+  | {
+      registryMessages: _Messages;
+      hashMap: Map<string, MessageEntry>;
+    }
+  | undefined;
+>>>>>>> 60d060dad7c8fc7730187e5f6881dd3e995114e6
 
 // ----- HELPER HOOKS ---- //
 

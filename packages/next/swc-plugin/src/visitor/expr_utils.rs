@@ -260,6 +260,23 @@ fn is_jsx_fragment_safe(fragment: &JSXFragment) -> bool {
   true
 }
 
+pub fn is_string_literal(arg: &ExprOrSpread) -> bool {
+  match arg.expr.as_ref() {
+    // Simple string literals: t("yoyoyo")
+    Expr::Lit(Lit::Str(_)) => true,
+    
+    // Template literals: t(`Hello ${name}`)
+    Expr::Tpl(tpl) => {
+      if !tpl.exprs.is_empty() {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    _ => false,
+  }
+}
+
 #[cfg(test)]
 #[path = "expr_utils_tests.rs"]
 mod tests;

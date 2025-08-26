@@ -736,7 +736,7 @@ mod tests {
       import_tracker: ImportTracker::default(),
       settings: PluginSettings::new(LogLevel::Silent, false, None, false),
       logger: Logger::new(LogLevel::Silent),
-      string_collector: crate::ast::StringCollector::new(),
+      string_collector: crate::visitor::StringCollector::new(),
     }
   }
 

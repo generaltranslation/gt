@@ -1,5 +1,7 @@
 import { messageRegistry } from "gt-react/internal";
 
+// ----- TYPES ----- //
+
 /**
  * Registers an ICU message for translation and returns the original message.
  * This function can be called outside of a context provider and is safe to use globally.
