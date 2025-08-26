@@ -1,33 +1,24 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import useGTContext from '../provider/GTContext';
 import { _Message, _Messages } from '../internal';
-import { messageRegistry, MessageEntry } from './MessageRegistry';
-
-/**
- * The return type for useRegistryMessages, containing both messages and a hash map.
- */
-export type RegistryMessagesResult =
-  | {
-      registryMessages: _Messages;
-      hashMap: Map<string, MessageEntry>;
-    }
-  | undefined;
+import { messageRegistry } from './MessageRegistry';
 
 // ----- HELPER HOOKS ---- //
 
 /**
- * React hook to subscribe to the message registry and receive both an array of _Message and a map of hashes to message data.
+ * React hook to subscribe to the message registry and receive the Set of registered messages.
  * Returns undefined when disabled to avoid unnecessary subscriptions/renders.
  *
- * @returns {RegistryMessagesResult} An object with registryMessages and hashMap, or undefined if disabled.
+ * @returns {Set<string> | undefined} The set of registered message strings, or undefined if disabled.
  */
-export function useRegistryMessages(): RegistryMessagesResult {
+export function useRegistryMessages(): Set<string> | undefined {
   const { translationRequired, developmentApiEnabled } = useGTContext(
     `useMessages(): No context provided. You're trying to get the m() function from the useMessages() hook, which can be called within a <GTProvider>.`
   );
+
   const disabled = !developmentApiEnabled || !translationRequired;
 
-  const get = useCallback<() => RegistryMessagesResult>(
+  const get = useCallback<() => Set<string> | undefined>(
     () => (disabled ? undefined : messageRegistry.getSnapshot()),
     [disabled]
   );
