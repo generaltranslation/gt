@@ -1,40 +1,30 @@
-# GT Next.js SWC Plugin
+# GT SWC Plugin
 
-A Rust-based SWC plugin that provides compile-time linting and transformations for GT translation components in Next.js applications.
+SWC plugin for GT translation components in Next.js.
 
-## Features
+## Quick Setup
 
-- **Dynamic Content Detection**: Errors on unwrapped dynamic content inside `<T>` components
-- **Compile-time Hash Generation**: Pre-computes translation keys for better performance
-
-## Development Setup
-
-### Prerequisites
-
-1. **Install Rust** (if not already installed):
-
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   source ~/.cargo/env
-   ```
-
-2. **Add WASM target**:
-   ```bash
-   rustup target add wasm32-wasip1
-   ```
-
-### Building the Plugin
-
+**macOS (one command):**
 ```bash
-# Development build
-npm run build:swc-plugin:dev
+curl -sSL https://raw.githubusercontent.com/generaltranslation/gt/main/packages/next/swc-plugin/setup.sh | bash
+```
 
-# Release build
-npm run build:swc-plugin
+Restart your terminal, then:
+```bash
+npm run build
+```
 
-# Or use Make commands
-make build      # Release build
-make build-dev  # Development build
+## Manual Setup
+
+**Install Rust:**
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+**Basic build (WASM only):**
+```bash
+rustup target add wasm32-wasip1
+cargo build --release --target wasm32-wasip1
 ```
 
 ### Testing

@@ -40,9 +40,21 @@ linker = "x86_64-linux-android21-clang"
 [target.aarch64-linux-android]
 linker = "aarch64-linux-android21-clang"
 
-# Android NDK environment (add to shell profile)
-# export ANDROID_NDK_HOME="/opt/homebrew/share/android-ndk"  
-# export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-arm64/bin:$PATH"
+# Cross-compilation environment variables (add to shell profile):
+# export ANDROID_NDK_HOME="/opt/homebrew/Caskroom/android-ndk/28c/AndroidNDK13676358.app/Contents/NDK"
+# export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$PATH"
+# 
+# For Linux targets:
+# export CC_x86_64_unknown_linux_gnu=x86_64-linux-musl-gcc
+# export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-musl-gcc
+# export CC_aarch64_unknown_linux_gnu=aarch64-linux-musl-gcc  
+# export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-musl-gcc
+#
+# For Android targets:
+# export CC_x86_64_linux_android=x86_64-linux-android21-clang
+# export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER=x86_64-linux-android21-clang
+# export CC_aarch64_linux_android=aarch64-linux-android21-clang
+# export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=aarch64-linux-android21-clang
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

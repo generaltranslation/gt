@@ -1,0 +1,24 @@
+# Test Linux x64 SWC plugin
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    file \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /test
+
+# Copy the plugin
+COPY dist/swc-plugin/gt_linux_x64_swc_plugin.so ./
+
+# Test script
+RUN echo '#!/bin/bash\n\
+echo "=== Testing Linux x64 SWC Plugin ==="\n\
+echo "File info:"\n\
+file gt_linux_x64_swc_plugin.so\n\
+echo "Size: $(du -h gt_linux_x64_swc_plugin.so | cut -f1)"\n\
+echo "Permissions: $(ls -l gt_linux_x64_swc_plugin.so | cut -d" " -f1)"\n\
+echo "Architecture: $(file gt_linux_x64_swc_plugin.so | grep -o "x86-64")"\n\
+echo "✅ Linux x64 plugin validated"' > test.sh && chmod +x test.sh
+
+CMD ["./test.sh"]

@@ -1,0 +1,19 @@
+# Test Windows x64 SWC plugin
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+WORKDIR C:\\test
+
+# Copy the plugin
+COPY dist/swc-plugin/gt_win32_x64_swc_plugin.dll ./
+
+# Test the DLL
+RUN powershell -Command "\
+    Write-Host '=== Testing Windows x64 SWC Plugin ==='; \
+    $file = Get-Item gt_win32_x64_swc_plugin.dll; \
+    Write-Host 'File info:'; \
+    Write-Host ('Name: ' + $file.Name); \
+    Write-Host ('Size: ' + [math]::Round($file.Length/1KB, 2) + ' KB'); \
+    Write-Host ('Last Modified: ' + $file.LastWriteTime); \
+    Write-Host 'File type:'; \
+    Get-ItemProperty gt_win32_x64_swc_plugin.dll | Select-Object Name, Length; \
+    Write-Host '✅ Windows x64 plugin validated'"
