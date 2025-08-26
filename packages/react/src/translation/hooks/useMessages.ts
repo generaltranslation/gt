@@ -53,7 +53,9 @@ export function useMessages(_messages?: _Messages) {
   ) {
     const untranslatedMessages = _filterMessagesForPreload([
       ...(_messages || []),
-      ...(messageSet ? Array.from(messageSet, (message: string) => ({ message })) : []),
+      ...(messageSet
+        ? Array.from(messageSet, (message: string) => ({ message }))
+        : []),
     ]);
     if (untranslatedMessages.length > 0) {
       preloadedTranslations = React.use(

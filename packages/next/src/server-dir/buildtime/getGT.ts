@@ -115,7 +115,6 @@ export async function getGT(
     translationRequired
   ) {
     preloadedTranslations = {};
-    console.log(_messages)
     const preload = async ({
       message,
       ...options
