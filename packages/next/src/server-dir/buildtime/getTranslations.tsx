@@ -17,7 +17,7 @@ import { getLocale } from '../../request/getLocale';
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
-import { Msg } from 'gt-react/internal';
+import { decodeMsg, decodeOptions } from 'gt-react/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -81,7 +81,7 @@ export async function getTranslations(
   const t = (id: string, options: Record<string, any> = {}): string => {
     // Check if is a message
     let isMessage = false;
-    const messageOptions = Msg.decodeOptions(id);
+    const messageOptions = decodeOptions(id);
     if (messageOptions) {
       isMessage = true;
       options = messageOptions;
@@ -91,7 +91,7 @@ export async function getTranslations(
     id = !isMessage ? getId(id) : id;
     const value = !isMessage
       ? getDictionaryEntry(dictionary, id)
-      : Msg.decode(id);
+      : decodeMsg(id);
 
     // Check: no entry found
     if (!value) {

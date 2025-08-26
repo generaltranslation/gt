@@ -24,7 +24,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import { Msg } from 'gt-react/internal';
+import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -385,4 +385,4 @@ export {
   RuntimeTranslationOptions,
 };
 
-export { Msg };
+export { msg, decodeMsg, decodeOptions };

@@ -17,7 +17,7 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../types/runtime';
-import Msg from '../../messages/messages';
+import { msg, decodeMsg, decodeOptions } from '../../messages/messages';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -39,7 +39,7 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check if is a message
       let isMessage = false;
-      const messageOptions = Msg.decodeOptions(id);
+      const messageOptions = decodeOptions(id);
       if (messageOptions) {
         isMessage = true;
         options = messageOptions;
@@ -48,7 +48,7 @@ export default function useCreateInternalUseTranslationsFunction(
       // Get entry
       const value = !isMessage
         ? getDictionaryEntry(dictionary, id)
-        : Msg.decode(id);
+        : decodeMsg(id);
 
       // Check: no entry found
       if (!value) {
