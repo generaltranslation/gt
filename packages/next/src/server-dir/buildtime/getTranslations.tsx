@@ -17,7 +17,7 @@ import { getLocale } from '../../request/getLocale';
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
-import { Msg } from 'gt-react';
+import { Msg } from 'gt-react/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.

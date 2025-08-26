@@ -14,6 +14,7 @@ import renderDefaultChildren from './rendering/renderDefaultChildren';
 import renderTranslatedChildren from './rendering/renderTranslatedChildren';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import renderSkeleton from './rendering/renderSkeleton';
+import Msg from './messages/messages';
 import {
   Dictionary,
   RenderMethod,
@@ -87,4 +88,5 @@ export {
   _Message,
   _Messages,
   reactHasUse,
+  Msg,
 };

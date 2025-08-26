@@ -12,7 +12,7 @@ import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
 import getI18NConfig from './config-dir/getI18NConfig';
-import Msg from 'gt-react';
+import { Msg } from 'gt-react/internal';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,

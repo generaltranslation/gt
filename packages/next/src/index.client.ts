@@ -19,7 +19,7 @@ import {
   useLocaleProperties,
   useLocaleDirection,
 } from 'gt-react/client';
-import Msg from 'gt-react';
+import { Msg } from 'gt-react/internal';
 import {
   gtProviderUseClientError,
   txUseClientError,
