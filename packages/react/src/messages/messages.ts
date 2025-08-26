@@ -1,3 +1,5 @@
+import { formatMessage } from 'generaltranslation';
+import { hashSource } from 'generaltranslation/id';
 import { InlineTranslationOptions } from '../types/types';
 
 class Msg {
@@ -23,7 +25,39 @@ class Msg {
    *
    */
   static encode(content: string, options?: InlineTranslationOptions): string {
-    throw new Error('Not implemented');
+    // get hash
+    const hash =
+      options?.$_hash ||
+      hashSource({
+        source: content,
+        ...(options?.$context && { context: options.$context }),
+        ...(options?.$id && { id: options.$id }),
+        dataFormat: 'ICU',
+      });
+
+    // Always add hash to options
+    if (options) {
+      options.$_hash = hash;
+    } else {
+      options = { $_hash: hash };
+    }
+
+    // get the options encoding
+    const optionsEncoding = Buffer.from(JSON.stringify(options)).toString(
+      'base64'
+    );
+
+    // Interpolated string
+    const interpolatedString = formatMessage(content, {
+      locales: ['en'], // TODO: get locale from gt.config.json or somewhere
+      variables: options,
+    });
+
+    // Construct message
+    const message =
+      interpolatedString + (optionsEncoding ? `:${optionsEncoding}` : '');
+
+    return message;
   }
 
   /**
@@ -32,7 +66,37 @@ class Msg {
    * @returns The decoded message.
    */
   static decode(content: string): string {
-    throw new Error('Not implemented');
+    return content.lastIndexOf(':') === -1
+      ? content
+      : content.slice(0, content.lastIndexOf(':'));
+  }
+
+  /**
+   * Decodes the options from a message.
+   * @param content The message to decode.
+   * @returns The decoded options.
+   */
+  static decodeOptions(content: string): InlineTranslationOptions | null {
+    // Extract encoded options
+    const optionsEncoding =
+      content.lastIndexOf(':') === -1
+        ? ''
+        : content.slice(content.lastIndexOf(':') + 1);
+
+    // If no options, return empty object
+    if (!optionsEncoding) {
+      return null;
+    }
+
+    try {
+      // Parse options
+      const options = JSON.parse(
+        Buffer.from(optionsEncoding, 'base64').toString()
+      );
+      return options;
+    } catch {
+      return null;
+    }
   }
 }
 

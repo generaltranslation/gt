@@ -17,6 +17,7 @@ import { getLocale } from '../../request/getLocale';
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
+import { Msg } from 'gt-react';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -78,9 +79,19 @@ export async function getTranslations(
    * t('greetings.greeting2', { variables: { name: 'John' } });
    */
   const t = (id: string, options: Record<string, any> = {}): string => {
+    // Check if is a message
+    let isMessage = false;
+    const messageOptions = Msg.decodeOptions(id);
+    if (messageOptions) {
+      isMessage = true;
+      options = messageOptions;
+    }
+
     // Get entry
-    id = getId(id);
-    const value = getDictionaryEntry(dictionary, id);
+    id = !isMessage ? getId(id) : id;
+    const value = !isMessage
+      ? getDictionaryEntry(dictionary, id)
+      : Msg.decode(id);
 
     // Check: no entry found
     if (!value) {

@@ -17,6 +17,7 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../types/runtime';
+import Msg from '../../messages/messages';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -36,8 +37,18 @@ export default function useCreateInternalUseTranslationsFunction(
         return '';
       }
 
+      // Check if is a message
+      let isMessage = false;
+      const messageOptions = Msg.decodeOptions(id);
+      if (messageOptions) {
+        isMessage = true;
+        options = messageOptions;
+      }
+
       // Get entry
-      const value = getDictionaryEntry(dictionary, id);
+      const value = !isMessage
+        ? getDictionaryEntry(dictionary, id)
+        : Msg.decode(id);
 
       // Check: no entry found
       if (!value) {
