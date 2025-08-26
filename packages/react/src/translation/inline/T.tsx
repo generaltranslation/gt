@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import {
   addGTIdentifier,

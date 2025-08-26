@@ -12,6 +12,13 @@ import { Logger } from './logging';
 // Analysis and utilities
 import { createDynamicContentWarning } from './visitor/errors';
 import { NodePath } from '@babel/traverse';
+import {
+  isTranslationComponent,
+  isVariableComponent,
+  isBranchComponent,
+  isTranslationFunction,
+  isTranslationFunctionCallback,
+} from './visitor/analysis';
 
 /**
  * Generate warning message for dynamic function call violations
@@ -42,34 +49,6 @@ export interface TransformState {
     jsxElementCount: number;
     dynamicContentViolations: number;
   };
-}
-
-/**
- * Helper functions for component and function identification
- * These should match the analysis functions from the Rust code
- */
-export function isTranslationComponent(name: string): boolean {
-  return name === 'T';
-}
-
-export function isVariableComponent(name: string): boolean {
-  return ['Var', 'Num', 'Currency', 'DateTime'].includes(name);
-}
-
-export function isBranchComponent(name: string): boolean {
-  return ['Branch', 'Plural'].includes(name);
-}
-
-export function isTranslationFunction(name: string): boolean {
-  return ['useGT', 'getGT'].includes(name);
-}
-
-/**
- * Check if this is a translation function callback (t function)
- * Ported from Rust: is_translation_function_callback
- */
-export function isTranslationFunctionCallback(originalName: string): boolean {
-  return originalName.endsWith('_callback');
 }
 
 /**
@@ -121,11 +100,11 @@ export function processImportDeclaration(
         ) {
           if (state.settings.filename?.endsWith('page.tsx')) {
             console.log(
-              '[transform] Tracking translation import: {',
+              '[transform] Tracking translation: import {',
               localName,
               'as',
               originalName,
-              '}'
+              '} from "gt-next";'
             );
           }
           // Note: Need to implement these methods in ImportTracker
