@@ -314,9 +314,9 @@ impl Fold for TransformVisitor {
             return modified_call_expr.fold_children_with(self);
           }
         }
-        // Detect t() or msg() calls
+        // Detect t() or msg() or m() calls
         else if is_translation_function_callback(&original_name)
-          || is_msg_function_name(&original_name)
+          // || is_msg_function_name(&original_name)
           || is_messages_function_callback(&original_name)
         {
           if let Some(modified_call_expr) =
