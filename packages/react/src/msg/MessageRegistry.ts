@@ -158,11 +158,14 @@ export const messageRegistry: MessageRegistry =
  * This function is intended for registering messages for translation extraction and can be used
  * outside of a <GTProvider> context. It does not perform translation, only registration.
  */
-export function msg(message: string) {
-  const hash = hashSource({
-    source: message,
-    dataFormat: 'ICU',
-  });
+export function msg(message: string, _options?: { $_hash?: string }) {
+  const { $_hash } = _options ?? {};
+  const hash =
+    $_hash ??
+    hashSource({
+      source: message,
+      dataFormat: 'ICU',
+    });
   if (!messageRegistry.has(hash)) {
     queueMicrotask(() => {
       if (!messageRegistry.has(hash)) {

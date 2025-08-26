@@ -1,8 +1,15 @@
+use crate::visitor::analysis::is_messages_function_name;
+use crate::visitor::expr_utils::is_string_literal;
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
   visitor::{
-    analysis::{is_translation_function_callback, is_translation_function_name},
+    analysis::{
+      is_messages_function_callback,
+      is_msg_function_name,
+      is_translation_function_callback,
+      is_translation_function_name,
+    },
     errors::create_dynamic_content_warning,
     expr_utils::{get_callee_expr_function_name, is_allowed_dynamic_content},
   },
@@ -126,14 +133,24 @@ impl VisitMut for TransformVisitor {
         let original_name = translation_variable.original_name.clone();
         let identifier = translation_variable.identifier;
 
-        // Detect t() calls
-        if is_translation_function_callback(&original_name) {
+        // Detect t() or msg() calls
+        if is_translation_function_callback(&original_name) || is_msg_function_name(&original_name) {
           if let Some(string) = call_expr.args.first() {
             // Check for violations
             self.check_call_expr_for_violations(string, &function_name);
 
             // Track the t() function call
             self.track_translation_callback(call_expr, string, identifier);
+          }
+        }
+        // detect m() calls
+        else if is_messages_function_callback(&original_name) {
+          if let Some(string) = call_expr.args.first() {
+            // Check that type is string
+            if is_string_literal(string) {
+              // Track the m() function call
+              self.track_translation_callback(call_expr, string, identifier);
+            }
           }
         }
       }
@@ -287,16 +304,21 @@ impl Fold for TransformVisitor {
         // Register the useGT/getGT as aggregators on the string collector
         let original_name = translation_variable.original_name.clone();
 
-        // Detect useGT/getGT calls
-        if is_translation_function_name(&original_name) {
+        // Detect useGT/getGT/useMessages/getMessages calls
+        if is_translation_function_name(&original_name)
+          || is_messages_function_name(&original_name)
+        {
           if let Some(modified_call_expr) =
             self.inject_content_array_on_translation_function_call(&call_expr)
           {
             return modified_call_expr.fold_children_with(self);
           }
         }
-        // Detect t() calls
-        else if is_translation_function_callback(&original_name) {
+        // Detect t() or msg() calls
+        else if is_translation_function_callback(&original_name)
+          || is_msg_function_name(&original_name)
+          || is_messages_function_callback(&original_name)
+        {
           if let Some(modified_call_expr) =
             self.inject_hash_attributes_on_translation_function_call(&call_expr)
           {

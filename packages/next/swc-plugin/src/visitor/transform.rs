@@ -14,8 +14,12 @@ use swc_core::{
 };
 
 use crate::visitor::analysis::{
-  is_branch_name, is_translation_component_name, is_translation_function_name,
+  is_branch_name,
+  is_messages_function_name,
+  is_translation_component_name,
+  is_translation_function_name,
   is_variable_component_name,
+  is_msg_function_name
 };
 
 /// Main transformation visitor for the SWC plugin
@@ -273,6 +277,8 @@ impl TransformVisitor {
                 || is_variable_component_name(&original_name)
                 || is_branch_name(&original_name)
                 || is_translation_function_name(&original_name)
+                || is_msg_function_name(&original_name)
+                || is_messages_function_name(&original_name)
               {
                 self
                   .import_tracker
@@ -554,8 +560,10 @@ impl TransformVisitor {
         // This will be either useGT or getGT, not the alias
         let original_name = translation_variable.original_name.clone();
 
-        // Check if its getGT or useGT
-        if is_translation_function_name(&original_name) {
+        // Check if its getGT or useGT or useMessages or getMessages
+        if is_translation_function_name(&original_name)
+          || is_messages_function_name(&original_name)
+        {
           // Get counter_id
           let counter_id = self.string_collector.increment_counter();
           // Create a new entry in the string collector for this call
