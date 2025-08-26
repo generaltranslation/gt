@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.2.5
+
+### Patch Changes
+
+- [#597](https://github.com/generaltranslation/gt/pull/597) [`e72c888`](https://github.com/generaltranslation/gt/commit/e72c888d70ef5ab521f1d1bc79f81f962b7431a3) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: disable compiler for apple
+
 ## 6.2.4
 
 ### Patch Changes
