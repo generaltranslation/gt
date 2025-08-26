@@ -4,7 +4,6 @@ import {
   InlineTranslationOptions,
   DictionaryTranslationOptions,
   _Messages,
-  _Message,
 } from './types';
 import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
 import { GT } from 'generaltranslation';
