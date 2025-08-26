@@ -22,7 +22,7 @@ export type GTContextType = {
     message: string,
     options: InlineTranslationOptions,
     preloadedTranslations: Translations | undefined,
-    hashSet: Map<string, _Message> | undefined
+    messageSet: Set<string> | undefined
   ) => string;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;

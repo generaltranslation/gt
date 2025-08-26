@@ -1,5 +1,6 @@
-import { hashSource } from "generaltranslation/id";
 import { messageRegistry } from "gt-react/internal";
+
+// ----- TYPES ----- //
 
 /**
  * Registers an ICU message for translation and returns the original message.
@@ -18,12 +19,8 @@ import { messageRegistry } from "gt-react/internal";
  * outside of a <GTProvider> context. It does not perform translation, only registration.
  */
 export function msg(message: string) {
-    const hash = hashSource({
-      source: message,
-      dataFormat: 'ICU',
-    });
-    if (!messageRegistry.has(hash)) {
-      messageRegistry.set(hash, message, { $_hash: hash })
+    if (!messageRegistry.has(message)) {
+      messageRegistry.set(message)
     }
     return message;
   }

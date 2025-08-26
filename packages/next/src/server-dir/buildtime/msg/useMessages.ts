@@ -60,8 +60,7 @@ export async function getMessages(_messages?: _Messages): Promise<
 
   // Pull the latest snapshot of registered messages from the server-side registry
   // (safe singleton; HMR-friendly).
-  const snap = messageRegistry.getSnapshot();
-  const registryMessages = snap?.registryMessages ?? [];
+  const messageSet = messageRegistry.getSnapshot();
 
   // --------- HELPER FUNCTIONS ------- //
 
@@ -124,7 +123,7 @@ export async function getMessages(_messages?: _Messages): Promise<
   let preloadedTranslations: Record<string, string> | undefined;
   if (
     reactHasUse &&
-    (_messages || registryMessages.length) &&
+    (_messages || messageSet) &&
     I18NConfig.isDevelopmentApiEnabled() &&
     translationRequired
   ) {
@@ -161,7 +160,7 @@ export async function getMessages(_messages?: _Messages): Promise<
     };
     await Promise.all([
       ..._messages || [],
-      ...registryMessages
+      ...(messageSet ? Array.from(messageSet, (message) => ({ message })) : [])
     ].map(preload));
   }
 

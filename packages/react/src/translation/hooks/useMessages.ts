@@ -42,18 +42,18 @@ export function useMessages(_messages?: _Messages) {
   );
 
   // relocate to provider
-  const { registryMessages, hashMap } = useRegistryMessages() || {};
+  const messageSet = useRegistryMessages();
 
   let preloadedTranslations = {};
   if (
     developmentApiEnabled &&
     translationRequired &&
     reactHasUse &&
-    (registryMessages || _messages)
+    (messageSet || _messages)
   ) {
     const untranslatedMessages = _filterMessagesForPreload([
       ...(_messages || []),
-      ...(registryMessages || []),
+      ...(messageSet ? Array.from(messageSet, (message: string) => ({ message })) : []),
     ]);
     if (untranslatedMessages.length > 0) {
       preloadedTranslations = React.use(
@@ -92,7 +92,7 @@ export function useMessages(_messages?: _Messages) {
       $_hash?: string;
     } = {}
   ) => {
-    return _mFunction(msg, options, preloadedTranslations, hashMap);
+    return _mFunction(msg, options, preloadedTranslations, messageSet);
   };
 
   return m;

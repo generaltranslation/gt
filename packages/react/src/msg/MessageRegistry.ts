@@ -2,21 +2,10 @@ import { hashSource } from 'generaltranslation/id';
 import { _Message, _Messages } from '../internal';
 
 /**
- * Message options for registry entries.
- */
-export type MessageOptions = {
-  $id?: string;
-  $context?: string;
-  $_hash?: string; // kept for compatibility
-  [key: string]: any;
-};
-
-/**
  * Message entry for the registry.
  */
 export type MessageEntry = {
   message: string;
-  options?: MessageOptions;
 };
 
 type Listener = () => void;
@@ -25,20 +14,17 @@ type Listener = () => void;
 
 /**
  * Singleton registry for messages, supporting subscription and snapshotting.
+ *
+ * This version uses a Set<string> to store unique message strings.
  */
 class MessageRegistry {
-  private map = new Map<string, MessageEntry>();
+  private messageSet = new Set<string>();
   private listeners = new Set<Listener>();
   private version = 0;
 
   // Cached snapshot (stable between version bumps)
   private cachedVersion = -1;
-  private cachedSnapshot:
-    | {
-        registryMessages: _Messages;
-        hashMap: Map<string, MessageEntry>;
-      }
-    | undefined;
+  private cachedSnapshot: Set<string> | undefined;
 
   /**
    * Subscribe to registry changes.
@@ -59,45 +45,30 @@ class MessageRegistry {
   }
 
   /**
-   * Set a message in the registry, only notifying if changed.
-   * @param hash Message hash.
+   * Add a message to the registry, only notifying if changed.
    * @param message Message string.
-   * @param options Message options.
    */
-  set(hash: string, message: string, options?: MessageOptions) {
-    const prev = this.map.get(hash);
-    if (
-      !prev ||
-      prev.message !== message ||
-      JSON.stringify(prev.options ?? {}) !== JSON.stringify(options ?? {})
-    ) {
-      this.map.set(hash, { message, options });
+  set(message: string) {
+    if (!this.messageSet.has(message)) {
+      this.messageSet.add(message);
       this.notify();
     }
   }
 
   /**
-   * Get a message entry by hash.
-   * @param hash Message hash.
+   * Check if a message exists in the registry.
+   * @param message Message string.
    */
-  get(hash: string) {
-    return this.map.get(hash);
+  has(message: string) {
+    return this.messageSet.has(message);
   }
 
   /**
-   * Check if a message exists by hash.
-   * @param hash Message hash.
-   */
-  has(hash: string) {
-    return this.map.has(hash);
-  }
-
-  /**
-   * Clear all messages from the registry.
+   * Remove all messages from the registry.
    */
   clear() {
-    if (this.map.size) {
-      this.map.clear();
+    if (this.messageSet.size) {
+      this.messageSet.clear();
       this.notify();
     }
   }
@@ -107,29 +78,15 @@ class MessageRegistry {
    * This ensures useSyncExternalStore's getSnapshot returns a stable reference
    * across renders when nothing has changed, preventing infinite re-render loops.
    *
-   * @returns An object containing registryMessages and a hashMap of hashes to message data.
+   * @returns An object containing registryMessages and the messageSet.
    */
-  getSnapshot():
-    | {
-        registryMessages: _Messages;
-        hashMap: Map<string, MessageEntry>;
-      }
-    | undefined {
+  getSnapshot(): Set<string> | undefined {
     if (this.cachedVersion === this.version) {
       return this.cachedSnapshot;
     }
-
-    // Recompute snapshot for the new version
-    const registryMessages: _Message[] = Array.from(this.map.values()).map(
-      (entry) => ({
-        message: entry.message,
-        ...(entry.options ? entry.options : {}),
-      })
-    );
-    // Return a new Map to avoid mutation issues
-    const hashMap = new Map(this.map);
-
-    this.cachedSnapshot = { registryMessages, hashMap };
+    // Return a new Set to avoid mutation issues
+    const messageSet = new Set(this.messageSet);
+    this.cachedSnapshot = messageSet;
     this.cachedVersion = this.version;
     return this.cachedSnapshot;
   }
@@ -158,6 +115,10 @@ export const messageRegistry: MessageRegistry =
  * This function is intended for registering messages for translation extraction and can be used
  * outside of a <GTProvider> context. It does not perform translation, only registration.
  */
+<<<<<<< HEAD
+export function msg(message: string) {
+  if (!messageRegistry.has(message)) {
+=======
 export function msg(message: string, _options?: { $_hash?: string }) {
   const { $_hash } = _options ?? {};
   const hash =
@@ -167,9 +128,10 @@ export function msg(message: string, _options?: { $_hash?: string }) {
       dataFormat: 'ICU',
     });
   if (!messageRegistry.has(hash)) {
+>>>>>>> 60d060dad7c8fc7730187e5f6881dd3e995114e6
     queueMicrotask(() => {
-      if (!messageRegistry.has(hash)) {
-        messageRegistry.set(hash, message, { $_hash: hash });
+      if (!messageRegistry.has(message)) {
+        messageRegistry.set(message);
       }
     });
   }

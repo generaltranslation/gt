@@ -34,7 +34,7 @@ export default function useCreateInternalUseGTFunction({
     message: string,
     options: InlineTranslationOptions,
     preloadedTranslations: Translations | undefined,
-    hashMap: Map<string, _Message> | undefined
+    messageSet: Set<string> | undefined
   ) => string;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
@@ -221,7 +221,7 @@ export default function useCreateInternalUseGTFunction({
     message: string,
     options: InlineTranslationOptions = {},
     preloadedTranslations: Translations | undefined,
-    hashMap: Map<string, _Message> | undefined
+    messageSet: Set<string> | undefined
   ): string => {
     // ----- SET UP ----- //
 
@@ -270,7 +270,7 @@ export default function useCreateInternalUseGTFunction({
       renderMessage(message, [defaultLocale]);
     }
 
-    if (hashMap && !hashMap.has(hash)) {
+    if (!messageSet?.has(message)) {
       // Warn here
       return renderMessage(message, [defaultLocale]);
     }
