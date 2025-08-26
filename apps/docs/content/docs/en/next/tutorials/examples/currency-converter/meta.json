@@ -1,4 +1,4 @@
 {
-    "title": "Currency Converter",
-    "pages": ["setup", "preptx", "t", "Variables", "Branches"]
+  "title": "Currency Converter",
+  "pages": ["setup", "preptx", "t"]
 }

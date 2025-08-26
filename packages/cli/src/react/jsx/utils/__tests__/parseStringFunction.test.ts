@@ -19,10 +19,10 @@ describe('parseStrings', () => {
     file: 'test.tsx',
   });
 
-  it('should handle direct msg.encode() calls', () => {
+  it('should handle direct msg() calls', () => {
     const code = `
       import { msg } from 'generaltranslation';
-      msg.encode('hello world');
+      msg('hello world');
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1044,11 +1044,11 @@ describe('parseStrings', () => {
     expect(params.errors).toHaveLength(0);
   });
 
-  // Additional tests for msg.encode() functionality
-  it('should handle msg.encode() with template literals without expressions', () => {
+  // Additional tests for msg() functionality
+  it('should handle msg() with template literals without expressions', () => {
     const code = `
       import { msg } from 'generaltranslation';
-      msg.encode(\`hello world\`);
+      msg(\`hello world\`);
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1081,11 +1081,11 @@ describe('parseStrings', () => {
     expect(params.errors).toHaveLength(0);
   });
 
-  it('should add errors for msg.encode() with template literals with expressions', () => {
+  it('should add errors for msg() with template literals with expressions', () => {
     const code = `
       import { msg } from 'generaltranslation';
       const name = 'world';
-      msg.encode(\`hello \${name}\`);
+      msg(\`hello \${name}\`);
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1113,11 +1113,11 @@ describe('parseStrings', () => {
     expect(params.errors.length).toBeGreaterThan(0);
   });
 
-  it('should add errors for msg.encode() with non-string arguments', () => {
+  it('should add errors for msg() with non-string arguments', () => {
     const code = `
       import { msg } from 'generaltranslation';
       const message = 'hello world';
-      msg.encode(message);
+      msg(message);
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1145,12 +1145,12 @@ describe('parseStrings', () => {
     expect(params.errors.length).toBeGreaterThan(0);
   });
 
-  it('should handle multiple msg.encode() calls', () => {
+  it('should handle multiple msg() calls', () => {
     const code = `
       import { msg } from 'generaltranslation';
-      msg.encode('hello');
-      msg.encode('world');
-      msg.encode('goodbye');
+      msg('hello');
+      msg('world');
+      msg('goodbye');
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1183,10 +1183,10 @@ describe('parseStrings', () => {
     expect(params.errors).toHaveLength(0);
   });
 
-  it('should handle msg.encode() calls with different import aliases', () => {
+  it('should handle msg() calls with different import aliases', () => {
     const code = `
       import { msg as message } from 'generaltranslation';
-      message.encode('aliased msg call');
+      message('aliased msg call');
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1223,7 +1223,7 @@ describe('parseStrings', () => {
     const code = `
       import { msg } from 'generaltranslation';
       msg.decode('should not work');
-      msg.encode('should work');
+      msg('should work');
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1256,24 +1256,24 @@ describe('parseStrings', () => {
     expect(params.errors).toHaveLength(0);
   });
 
-  it('should handle msg.encode() calls in different contexts', () => {
+  it('should handle msg() calls in different contexts', () => {
     const code = `
       import { msg } from 'generaltranslation';
       
       function test() {
-        const result = msg.encode('function context');
+        const result = msg('function context');
         return result;
       }
       
-      const arrow = () => msg.encode('arrow function');
+      const arrow = () => msg('arrow function');
       
       if (true) {
-        msg.encode('conditional context');
+        msg('conditional context');
       }
       
       const obj = {
         method() {
-          msg.encode('object method');
+          msg('object method');
         }
       };
     `;
@@ -1309,10 +1309,11 @@ describe('parseStrings', () => {
     expect(params.errors).toHaveLength(0);
   });
 
-  it('should only handle msg.encode() calls', () => {
+  it('should handle both msg() and msg() calls in the same code', () => {
     const code = `
       import { msg } from 'generaltranslation';
-      msg.encode('encode call');
+      msg('direct call');
+      msg('encode call');
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -1336,8 +1337,9 @@ describe('parseStrings', () => {
       },
     });
 
-    expect(params.updates).toHaveLength(1);
+    expect(params.updates).toHaveLength(2);
     expect(params.updates).toEqual([
+      { dataFormat: 'ICU', source: 'direct call', metadata: {} },
       { dataFormat: 'ICU', source: 'encode call', metadata: {} },
     ]);
     expect(params.errors).toHaveLength(0);
