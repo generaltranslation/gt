@@ -8,6 +8,8 @@ import {
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
   mapAttributeName,
+  INLINE_MESSAGE_HOOK,
+  INLINE_MESSAGE_HOOK_ASYNC,
 } from './constants.js';
 import {
   warnNonStaticExpressionSync,
@@ -43,7 +45,8 @@ function processTranslationCall(
   updates: Updates,
   errors: string[],
   file: string,
-  ignoreAdditionalData: boolean
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -98,21 +101,25 @@ function processTranslationCall(
       });
     } else if (t.isTemplateLiteral(arg)) {
       // warn if template literal
-      errors.push(
-        warnTemplateLiteralSync(
-          file,
-          generate(arg).code,
-          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-        )
-      );
+      if (!ignoreDynamicContent) {
+        errors.push(
+          warnTemplateLiteralSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      }
     } else {
-      errors.push(
-        warnNonStringSync(
-          file,
-          generate(arg).code,
-          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-        )
-      );
+      if (!ignoreDynamicContent) {
+        errors.push(
+          warnNonStringSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      }
     }
   }
 }
@@ -223,14 +230,22 @@ function handleFunctionCall(
   errors: string[],
   file: string,
   importMap: Map<string, string>,
-  ignoreAdditionalData: boolean
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
     tPath.parent.callee === tPath.node
   ) {
     // Direct translation call: t('hello')
-    processTranslationCall(tPath, updates, errors, file, ignoreAdditionalData);
+    processTranslationCall(
+      tPath,
+      updates,
+      errors,
+      file,
+      ignoreAdditionalData,
+      ignoreDynamicContent
+    );
   } else if (
     tPath.parent.type === 'CallExpression' &&
     t.isExpression(tPath.node) &&
@@ -253,7 +268,8 @@ function handleFunctionCall(
           updates,
           errors,
           file,
-          ignoreAdditionalData
+          ignoreAdditionalData,
+          ignoreDynamicContent
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -273,7 +289,8 @@ function handleFunctionCall(
           updates,
           errors,
           file,
-          ignoreAdditionalData
+          ignoreAdditionalData,
+          ignoreDynamicContent
         );
       }
       // If not found locally, check if it's an imported function
@@ -288,7 +305,8 @@ function handleFunctionCall(
             argIndex,
             updates,
             errors,
-            ignoreAdditionalData
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         }
       }
@@ -309,7 +327,8 @@ function processFunctionIfMatches(
   updates: Updates,
   errors: string[],
   filePath: string,
-  ignoreAdditionalData: boolean
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
@@ -322,7 +341,8 @@ function processFunctionIfMatches(
         updates,
         errors,
         filePath,
-        ignoreAdditionalData
+        ignoreAdditionalData,
+        ignoreDynamicContent
       );
     }
   }
@@ -342,7 +362,8 @@ function findFunctionParameterUsage(
   updates: Updates,
   errors: string[],
   file: string,
-  ignoreAdditionalData: boolean
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -370,7 +391,8 @@ function findFunctionParameterUsage(
             errors,
             file,
             importMap,
-            ignoreAdditionalData
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         });
       }
@@ -465,7 +487,8 @@ function findFunctionInFile(
   argIndex: number,
   updates: Updates,
   errors: string[],
-  ignoreAdditionalData: boolean
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -485,7 +508,8 @@ function findFunctionInFile(
             updates,
             errors,
             filePath,
-            ignoreAdditionalData
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         }
       },
@@ -507,7 +531,8 @@ function findFunctionInFile(
             updates,
             errors,
             filePath,
-            ignoreAdditionalData
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         }
       },
@@ -546,7 +571,8 @@ export function parseStrings(
   for (const refPath of referencePaths) {
     // Handle msg() calls directly without variable assignment
     if (originalName === MSG_TRANSLATION_HOOK) {
-      const ignoreAdditionalData = true;
+      const ignoreAdditionalData = false;
+      const ignoreDynamicContent = false;
 
       // Check if this is a direct call to msg('string')
       if (
@@ -558,13 +584,14 @@ export function parseStrings(
           updates,
           errors,
           file,
-          ignoreAdditionalData
+          ignoreAdditionalData,
+          ignoreDynamicContent
         );
       }
       continue;
     }
 
-    // Handle useGT() and getGT() calls that need variable assignment
+    // Handle useGT(), getGT(), useMessages(), and getMessages() calls that need variable assignment
     const callExpr = refPath.findParent((p) => p.isCallExpression());
     if (callExpr) {
       // Get the parent, handling both await and non-await cases
@@ -572,7 +599,11 @@ export function parseStrings(
 
       const parentFunction = refPath.getFunctionParent();
       const asyncScope = parentFunction?.node.async;
-      if (asyncScope && originalName === INLINE_TRANSLATION_HOOK) {
+      if (
+        asyncScope &&
+        (originalName === INLINE_TRANSLATION_HOOK ||
+          originalName === INLINE_MESSAGE_HOOK)
+      ) {
         errors.push(
           warnAsyncUseGT(
             file,
@@ -582,7 +613,8 @@ export function parseStrings(
         return;
       } else if (
         !asyncScope &&
-        originalName === INLINE_TRANSLATION_HOOK_ASYNC
+        (originalName === INLINE_TRANSLATION_HOOK_ASYNC ||
+          originalName === INLINE_MESSAGE_HOOK_ASYNC)
       ) {
         errors.push(
           warnSyncGetGT(
@@ -593,7 +625,11 @@ export function parseStrings(
         return;
       }
 
-      const ignoreAdditionalData = false;
+      const isMessageHook =
+        originalName === INLINE_MESSAGE_HOOK ||
+        originalName === INLINE_MESSAGE_HOOK_ASYNC;
+      const ignoreAdditionalData = isMessageHook;
+      const ignoreDynamicContent = isMessageHook;
 
       const effectiveParent =
         parentPath?.node.type === 'AwaitExpression'
@@ -627,7 +663,8 @@ export function parseStrings(
               errors,
               file,
               importMap,
-              ignoreAdditionalData
+              ignoreAdditionalData,
+              ignoreDynamicContent
             );
           }
         });
