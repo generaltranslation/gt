@@ -160,16 +160,20 @@ export async function getMessages(
   // ---------- THE m() FUNCTION ---------- //
 
   /**
-   * @param {string} message
-   * @param {InlineTranslationOptions} options For translating strings, the locale to translate to.
-   * @returns The translated version of content
+   * @param {string} encodedMsg - The encoded message string, typically created by the `msg()` utility.
+   * @param {InlineTranslationOptions} options
+   * @returns A translation
    *
    * @example
-   * t('Hello, world!'); // Translates 'Hello, world!'
+   * const example = msg("Hello, world")
+   * const m = useMessages()
+   * m(example); // Translates 'Hello, world!'
    *
    * @example
    * // With a context and a custom identifier:
-   * t('My name is {name}', { name: "John", $context: 'name is a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
+   * const example2 = msg("My name is name", { name: "John", $context: "name is a proper noun" })
+   * const m = useMessages()
+   * m(example2); // Translates 'My name is John' in context
    */
   const m = (encodedMsg: string, options: Record<string, any> = {}) => {
     // Decode message and return if it's invalid
