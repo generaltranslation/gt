@@ -119,9 +119,13 @@ export function addExplicitAnchorIds(
 
   // Pre-processing validation: check if header counts match
   if (sourceHeadingMap.length !== translatedHeadings.length) {
-    const sourceFile = sourcePath ? `Source file: ${sourcePath}` : 'Source file';
-    const translatedFile = translatedPath ? `translated file: ${translatedPath}` : 'translated file';
-    
+    const sourceFile = sourcePath
+      ? `Source file: ${sourcePath}`
+      : 'Source file';
+    const translatedFile = translatedPath
+      ? `translated file: ${translatedPath}`
+      : 'translated file';
+
     logErrorAndExit(
       `Header count mismatch detected! ${sourceFile} has ${sourceHeadingMap.length} headers but ${translatedFile} has ${translatedHeadings.length} headers. ` +
         `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
