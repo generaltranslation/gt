@@ -4,7 +4,7 @@ import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
-import { Root, Heading } from 'mdast';
+import { Root, Heading, Text, InlineCode, Node } from 'mdast';
 
 /**
  * Generates a slug from heading text
@@ -25,8 +25,8 @@ function generateSlug(text: string): string {
 function extractHeadingText(heading: Heading): string {
   let text = '';
 
-  visit(heading, ['text', 'inlineCode'], (node: any) => {
-    if (node.value) {
+  visit(heading, ['text', 'inlineCode'], (node: Node) => {
+    if ('value' in node && typeof node.value === 'string') {
       text += node.value;
     }
   });
