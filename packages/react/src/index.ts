@@ -25,7 +25,9 @@ import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 import { useRegionSelector } from './hooks/useRegionSelector';
 import { useLocaleDirection } from './hooks/useLocaleDirection';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
+import useMessages from './translation/hooks/useMessages';
 
+useMessages
 export {
   Var,
   Num,
@@ -55,4 +57,5 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  useMessages
 };

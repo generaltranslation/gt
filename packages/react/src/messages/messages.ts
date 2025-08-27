@@ -143,17 +143,17 @@ export function decodeMsg(encodedMsg: string): string {
  */
 export function decodeOptions(
   encodedMsg: string
-): InlineTranslationOptions | null {
-  // Extract encoded options
-  const optionsEncoding =
-    encodedMsg.lastIndexOf(':') === -1
-      ? ''
-      : encodedMsg.slice(encodedMsg.lastIndexOf(':') + 1);
+): {
+  $_source: string;
+  $_hash: string;
+} & InlineTranslationOptions | null {
 
-  // If no options, return empty object
-  if (!optionsEncoding) {
+  if (encodedMsg.lastIndexOf(':') === -1) {
     return null;
   }
+
+  // Extract encoded options
+  const optionsEncoding = encodedMsg.slice(encodedMsg.lastIndexOf(':') + 1);
 
   try {
     // Parse options

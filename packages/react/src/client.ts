@@ -23,6 +23,8 @@ import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 import useRegion from './hooks/useRegion';
 import { useRegionSelector } from './hooks/useRegionSelector';
 import { useLocaleDirection } from './hooks/useLocaleDirection';
+import { msg, decodeMsg, decodeOptions } from './messages/messages';
+import useMessages from './translation/hooks/useMessages';
 
 export {
   GTContext,
@@ -42,6 +44,8 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  msg, decodeMsg, decodeOptions,
+  useMessages,
   T,
   Var,
   Num,

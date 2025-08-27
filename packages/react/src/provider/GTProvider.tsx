@@ -175,7 +175,7 @@ export default function GTProvider({
 
   // ---------- USE GT ---------- //
 
-  const { _tFunction, _filterMessagesForPreload, _preloadMessages } =
+  const { _tFunction, _mFunction, _filterMessagesForPreload, _preloadMessages } =
     useCreateInternalUseGTFunction({
       gt,
       translations,
@@ -212,6 +212,7 @@ export default function GTProvider({
         registerIcuForTranslation,
         registerJsxForTranslation,
         _tFunction,
+        _mFunction,
         _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,
