@@ -1344,4 +1344,484 @@ describe('parseStrings', () => {
     ]);
     expect(params.errors).toHaveLength(0);
   });
+
+  // Tests for useMessages hook functionality
+  it('should handle useMessages() translation calls', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      const t = useMessages();
+      t('hello world', { $id: 'greeting' });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle getMessages() translation calls in async functions', () => {
+    const code = `
+      import { getMessages } from 'generaltranslation';
+      async function test() {
+        const t = await getMessages();
+        t('hello world', { $context: 'page' });
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle useMessages() with template literals without expressions', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      const t = useMessages();
+      t(\`hello world\`);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should NOT add errors for useMessages with template literals with expressions (since msg() may be passed)', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      const t = useMessages();
+      const name = 'world';
+      t(\`hello \${name}\`);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should NOT add errors for useMessages with non-string arguments (since msg() may be passed)', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      const t = useMessages();
+      const message = 'hello world';
+      t(message);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should NOT add errors for getMessages with template literals with expressions (since msg() may be passed)', () => {
+    const code = `
+      import { getMessages } from 'generaltranslation';
+      async function test() {
+        const t = await getMessages();
+        const name = 'world';
+        t(\`hello \${name}\`);
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should NOT add errors for getMessages with non-string arguments (since msg() may be passed)', () => {
+    const code = `
+      import { getMessages } from 'generaltranslation';
+      async function test() {
+        const t = await getMessages();
+        const message = 'hello world';
+        t(message);
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should add errors for useMessages in async functions', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      async function test() {
+        const t = useMessages();
+        t('hello world');
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should add errors for getMessages in non-async functions', () => {
+    const code = `
+      import { getMessages } from 'generaltranslation';
+      function test() {
+        const t = getMessages();
+        t('hello world');
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should handle useMessages with translation callback passed to other functions', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      
+      function getGreeting(t) {
+        return t('hello world', { $id: 'greeting' });
+      }
+      
+      const t = useMessages();
+      getGreeting(t);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle getMessages with translation callback passed to other functions', () => {
+    const code = `
+      import { getMessages } from 'generaltranslation';
+      
+      function getGreeting(t) {
+        return t('hello world', { $context: 'page' });
+      }
+      
+      async function test() {
+        const t = await getMessages();
+        getGreeting(t);
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle useMessages with multiple metadata attributes (ignores metadata)', () => {
+    const code = `
+      import { useMessages } from 'generaltranslation';
+      const t = useMessages();
+      t('hello world', { $id: 'greeting', $context: 'homepage' });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle getMessages with multiple metadata attributes (ignores metadata)', () => {
+    const code = `
+      import { getMessages } from 'generaltranslation';
+      async function test() {
+        const t = await getMessages();
+        t('hello world', { $id: 'greeting', $context: 'homepage' });
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors).toHaveLength(0);
+  });
 });
