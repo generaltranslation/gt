@@ -25,14 +25,14 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  *
  */
 export function msg(
-  content: string,
+  message: string,
   options?: InlineTranslationOptions
 ): string {
   // get hash
   const hash =
     options?.$_hash ||
     hashSource({
-      source: content,
+      source: message,
       ...(options?.$context && { context: options.$context }),
       ...(options?.$id && { id: options.$id }),
       dataFormat: 'ICU',
@@ -41,9 +41,9 @@ export function msg(
   // Always add hash to options
   if (options) {
     options.$_hash = hash;
-    options.$_source = content;
+    options.$_source = message;
   } else {
-    options = { $_hash: hash, $_source: content };
+    options = { $_hash: hash, $_source: message };
   }
 
   // get the options encoding
@@ -52,42 +52,45 @@ export function msg(
   );
 
   // Interpolated string
-  const interpolatedString = formatMessage(content, {
+  const interpolatedString = formatMessage(message, {
     locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
     variables: options,
   });
 
-  // Construct message
-  const message =
-    interpolatedString + (optionsEncoding ? `:${optionsEncoding}` : '');
+  // Construct result
+  let result = interpolatedString;
+  if (optionsEncoding) result += `:${optionsEncoding}`;
 
-  return message;
+  return result;
 }
 
 /**
- * Extracts the original interpolated content from a message.
- * @param message The message to decode.
- * @returns The decoded message.
+ * Extracts the original interpolated message string.
+ * If the message cannot be decoded (i.e., it does not contain a colon separator),
+ * the input is returned as-is.
+ * @param encodedMsg The message to decode.
+ * @returns The decoded message, or the input if it cannot be decoded.
  */
-export function decodeMsg(content: string): string {
-  return content.lastIndexOf(':') === -1
-    ? content
-    : content.slice(0, content.lastIndexOf(':'));
+export function decodeMsg(encodedMsg: string): string {
+  if (encodedMsg.lastIndexOf(':') !== -1) {
+    return encodedMsg.slice(0, encodedMsg.lastIndexOf(':'));
+  }
+  return encodedMsg;
 }
 
 /**
- * Decodes the options from a message.
- * @param content The message to decode.
+ * Decodes the options from an encoded message.
+ * @param encodedMsg The message to decode.
  * @returns The decoded options.
  */
 export function decodeOptions(
-  content: string
+  encodedMsg: string
 ): InlineTranslationOptions | null {
   // Extract encoded options
   const optionsEncoding =
-    content.lastIndexOf(':') === -1
+    encodedMsg.lastIndexOf(':') === -1
       ? ''
-      : content.slice(content.lastIndexOf(':') + 1);
+      : encodedMsg.slice(encodedMsg.lastIndexOf(':') + 1);
 
   // If no options, return empty object
   if (!optionsEncoding) {
