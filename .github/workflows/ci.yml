@@ -57,12 +57,29 @@ jobs:
       #     VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
       #   run: npm run test
 
-      - name: Test Builds
-        strategy:
-          matrix:
-            build-type: [build, build:turbopack]
-            test-app: [base, general-cases]
+      - name: Test Builds (Unix)
+        if: runner.os != 'Windows'
         run: |
-          cd test-apps/next/${{ matrix.test-app }}
+          cd test-apps/next/base
           npm install
-          npm run ${{ matrix.build-type }}
+          npm run build & npm run build:turbopack & wait
+          
+          cd ../general-cases
+          npm install  
+          npm run build & npm run build:turbopack & wait
+
+      - name: Test Builds (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd test-apps/next/base
+          npm install
+          $job1 = Start-Job -ScriptBlock { npm run build }
+          $job2 = Start-Job -ScriptBlock { npm run build:turbopack }
+          $job1, $job2 | Wait-Job | Receive-Job
+          
+          cd ../general-cases
+          npm install
+          $job3 = Start-Job -ScriptBlock { npm run build }  
+          $job4 = Start-Job -ScriptBlock { npm run build:turbopack }
+          $job3, $job4 | Wait-Job | Receive-Job
+
