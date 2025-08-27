@@ -7,8 +7,8 @@ import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
 import { Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
+import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
+import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,

@@ -4,20 +4,20 @@ import {
   DictionaryTranslationOptions,
   RenderMethod,
   Translations,
-} from '../../types/types';
+} from '../../../types/types';
 import {
   getDictionaryEntry,
   isValidDictionaryEntry,
-} from '../../dictionaries/getDictionaryEntry';
-import getEntryAndMetadata from '../../dictionaries/getEntryAndMetadata';
+} from '../../../dictionaries/getDictionaryEntry';
+import getEntryAndMetadata from '../../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-} from '../../errors/createErrors';
+} from '../../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
-import { TranslateIcuCallback } from '../../types/runtime';
-import { decodeMsg, decodeOptions } from '../../messages/messages';
+import { TranslateIcuCallback } from '../../../types/runtime';
+import { decodeMsg, decodeOptions } from '../../../messages/messages';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -32,6 +32,7 @@ export default function useCreateInternalUseTranslationsFunction(
 ) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
+      
       // Check: dictionary exists
       if (!dictionary) {
         return '';

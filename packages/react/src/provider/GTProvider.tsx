@@ -8,8 +8,8 @@ import {
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
 import { readAuthFromEnv } from '../utils/utils';
-import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
+import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
+import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import {
   defaultLocaleCookieName,

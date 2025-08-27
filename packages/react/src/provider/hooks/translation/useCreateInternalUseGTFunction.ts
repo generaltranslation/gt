@@ -4,10 +4,10 @@ import {
   Translations,
   _Messages,
   _Message,
-} from '../../types/types';
-import { TranslateIcuCallback } from '../../types/runtime';
+} from '../../../types/types';
+import { TranslateIcuCallback } from '../../../types/runtime';
 import { GT } from 'generaltranslation';
-import { createStringRenderError } from '../../errors/createErrors';
+import { createStringRenderError } from '../../../errors/createErrors';
 
 export default function useCreateInternalUseGTFunction({
   gt,
