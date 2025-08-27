@@ -18,7 +18,6 @@ import { getLocale } from '../../request/getLocale';
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
-import { decodeMsg, decodeOptions } from 'gt-react/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -80,22 +79,9 @@ export async function getTranslations(
    * t('greetings.greeting2', { variables: { name: 'John' } });
    */
   const t = (id: string, options: Record<string, any> = {}): string => {
-    // Check if is a message
-    let isMessage = false;
-    const messageOptions = decodeOptions(id);
-    if (messageOptions) {
-      isMessage = true;
-      options = {
-        ...messageOptions,
-        ...options,
-      };
-    }
-
     // Get entry
-    id = !isMessage ? getId(id) : id;
-    const value = !isMessage
-      ? getDictionaryEntry(dictionary, id)
-      : options?.$_source;
+    id = getId(id);
+    const value = getDictionaryEntry(dictionary, id);
 
     // Check: no entry found
     if (!value) {
@@ -153,14 +139,12 @@ export async function getTranslations(
 
     // ---------- TRANSLATION ---------- //
 
-    const hash = !isMessage
-      ? hashSource({
-          source: entry,
-          ...(metadata?.$context && { context: metadata.$context }),
-          id,
-          dataFormat: 'ICU',
-        })
-      : options?.$_hash || '';
+    const hash = hashSource({
+      source: entry,
+      ...(metadata?.$context && { context: metadata.$context }),
+      id,
+      dataFormat: 'ICU',
+    });
     const translationEntry = translations?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
@@ -187,7 +171,7 @@ export async function getTranslations(
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
-          ...(isMessage && { id }),
+          id,
           hash,
         },
       }).then((result) => {

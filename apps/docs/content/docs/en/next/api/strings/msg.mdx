@@ -11,7 +11,7 @@ The `msg()` function is a function that marks and encodes strings for translatio
 const encodedString = msg('Hello, world!');
 ```
 
-The encoded string should be passed to the [`useTranslations()`](/docs/next/api/dictionary/useTranslations) hook or [`getTranslations()`](/docs/next/api/dictionary/getTranslations) function to retrieve translations.
+The encoded string should be passed to the [`useMessages()`](/docs/next/api/dictionary/useMessages) hook or [`getMessages()`](/docs/next/api/dictionary/getMessages) function to retrieve translations.
 
 <Callout>
 **Encoding:**
@@ -80,15 +80,15 @@ i.e., using [`tx()`](/docs/next/api/strings/tx) or [`<Tx>`](/docs/next/api/compo
 You can use `msg()` to mark strings for translation.
 
 ```jsx copy
-import { msg, useTranslations } from 'gt-next';
+import { msg, useMessages } from 'gt-next';
 
 const encodedString = msg('Hello, world!');
 
 export default function TranslateGreeting() {
-  const t = useTranslations();
+  const m = useMessages();
   return (
     <p>
-      {t(encodedString)}
+      {m(encodedString)}
     </p>
   );
 }
@@ -101,16 +101,16 @@ Note: "Hello, world!" will be translated to the user's preferred language.
 You can pass variables to dictionary translations.
 
 ```jsx copy
-import { msg, useTranslations } from 'gt-next';
+import { msg, useMessages } from 'gt-next';
 
 const encodedString = msg('Hello, {name}!', { name: 'Alice' });
 
 export default function TranslateGreeting() {
-  const t = useTranslations();
+  const m = useMessages();
 
   return (
     <p>
-      {t(encodedString)}
+      {m(encodedString)}
     </p>
   );
 }
@@ -122,15 +122,15 @@ Note: "Alice" will not translated to the user's preferred language because it is
 `gt-next` supports ICU message format, which allows you to also format your variables.
 
 ```jsx copy
-import { msg, useTranslations } from 'gt-next';
+import { msg, useMessages } from 'gt-next';
 
 const encodedString = msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
 
 export default function TranslateGreeting() {
-  const t = useTranslations();
+  const m = useMessages();
   return (
     <p>
-      {t(encodedString)}
+      {m(encodedString)}
     </p>
   );
 }
@@ -149,6 +149,6 @@ export default function TranslateGreeting() {
  * Translations strings with `msg()` happen before runtime, during the build process (unless in development).
 
 ## Next steps
- * See [`useTranslations()`](/docs/next/api/dictionary/useTranslations) for translating strings.
- * See [`getTranslations()`](/docs/next/api/dictionary/getTranslations) for translating strings in async server-side components.
+ * See [`useMessages()`](/docs/next/api/dictionary/useMessages) for translating strings.
+ * See [`getMessages()`](/docs/next/api/dictionary/getMessages) for translating strings in async server-side components.
  * See [`InlineTranslationOptions`](/docs/next/api/types/InlineTranslationOptions) for more information on customizing translations.

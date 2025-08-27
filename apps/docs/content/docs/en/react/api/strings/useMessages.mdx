@@ -1,51 +1,40 @@
 ---
-title: msg()
-description: API Reference for the msg() string function
+title: useMessages()
+description: API Reference for the useMessages() string translation function
 ---
 
 ## Overview
 
-The `msg()` function is a function that marks and encodes strings for translation.
+The `useMessages()` function is a hook for translating encoded strings from `msg()` at build time.
 
 ```jsx
-const encodedString = msg('Hello, world!');
-```
+const m = useMessages();
 
-The encoded string should be passed to the [`useMessages()`](/docs/react/api/dictionary/useMessages) hook or [`getTranslations()`](/docs/react/api/dictionary/getTranslations) function to retrieve translations.
+<p>{  m(encodedString)  }</p>;
+```
 
 <Callout>
-**Encoding:**
-`msg()` encodes the input string, so you cannot use it directly in JSX or elsewhere.
-If want to get back the original string, you need to decode it with [`decodeMsg()`](#decodemsg)
+**Buildtime Translation:**
+`useMessages()` translations occur at buildtime, before your app deploys.
+You can pass encoded strings from `msg()` and they will be translated to the user's preferred language.
 </Callout>
-
-
-
-
-## Decoding [#decodemsg]
-
-To get back the original string, you need to decode it with [`decodeMsg()`](#decodemsg)
-
-```jsx
-import { msg, decodeMsg } from 'gt-react';
-const encodedString = msg('Hello, world!');
-const decodedString = decodeMsg(encodedString);
-console.log(decodedString); // "Hello, world!"
-```
-
-
 
 ## Reference
 ### Parameters
-
-| Name                  | Type | Description                                                                 |
-|-----------------------|--|-----------------------------------------------------------------------------|
-| `content`             | `string` | The string content to be encoded.                                     |
-| `options?`            | [`InlineTranslationOptions`](/docs/react/api/types/InlineTranslationOptions) | Translation options to customize the behavior of `msg()`. |
+None
 
 ### Returns
 
-An encoded string, with interpolated variables (if any) replaced with their values.
+A callback function, `m()`, which translates the provided encoded content from `msg()`.
+
+```jsx
+(encodedContent: string, options?: Record<string, any>) => string
+```
+
+| Name                  | Type | Description                                                                 |
+|-----------------------|--|-----------------------------------------------------------------------------|
+| `encodedContent`      | `string` | The encoded string content from `msg()` to be translated.               |
+| `options?`            | `Record<string, any>` | Optional parameters to override variables in the encoded string. |
 
 ---
 
@@ -63,7 +52,7 @@ If a translation is not found, it will fallback to the originial content.
 Make sure to follow the [deployment guide here](/docs/react/tutorials/quickdeploy).
 
 ### Development
-During development, the `msg()` function will translate content on demand.
+During development, the `m()` function will translate content on demand.
 This is useful for prototyping what your app will look like in different languages.
 Remember to add a Dev API key to your environment to enable this behavior.
 
@@ -77,45 +66,45 @@ i.e., using [`tx()`](/docs/react/api/strings/tx) or [`<Tx>`](/docs/react/api/com
 ## Example
 
 ### Basic Usage
-You can use `msg()` to mark strings for translation.
+You can use `useMessages()` to translate encoded strings from `msg()`.
 
 ```jsx copy
 import { msg, useMessages } from 'gt-react';
 
-const encodedString = msg('Hello, world!');
+const encodedGreeting = msg('Hello, Alice!');
 
 export default function TranslateGreeting() {
   const m = useMessages();
+
   return (
     <p>
-      {m(encodedString)}
+      {m(encodedGreeting)}
     </p>
   );
 }
 ```
-
-Note: "Hello, world!" will be translated to the user's preferred language.
+Note: "Alice" will be translated to the user's preferred language.
 
 
 ### Using variables [#variables]
-You can pass variables to dictionary translations.
+You can override variables in encoded strings.
 
 ```jsx copy
 import { msg, useMessages } from 'gt-react';
 
-const encodedString = msg('Hello, {name}!', { name: 'Alice' });
+const encodedGreeting = msg('Hello, {name}!', { name: 'Alice' });
 
 export default function TranslateGreeting() {
   const m = useMessages();
 
   return (
     <p>
-      {m(encodedString)}
+      {m(encodedGreeting, { name: 'Bob' })}
     </p>
   );
 }
 ```
-Note: "Alice" will not translated to the user's preferred language because it is a variable.
+Note: This will display "Hello, Bob!" - the variable is overridden at render time.
 
 ### Using ICU message format
 
@@ -124,13 +113,13 @@ Note: "Alice" will not translated to the user's preferred language because it is
 ```jsx copy
 import { msg, useMessages } from 'gt-react';
 
-const encodedString = msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
+const encodedMessage = msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
 
 export default function TranslateGreeting() {
   const m = useMessages();
   return (
     <p>
-      {m(encodedString)}
+      {m(encodedMessage)}
     </p>
   );
 }
@@ -145,9 +134,11 @@ export default function TranslateGreeting() {
 ---
 
 ## Notes
- * The `msg()` function is a function that marks strings for translation.
- * Translations strings with `msg()` happen before runtime, during the build process (unless in development).
+ * The `useMessages()` function is a hook that translates encoded strings from `msg()`.
+ * Translations strings with `useMessages()` happen before runtime, during the build process (unless in development).
 
 ## Next steps
- * See [`useMessages()`](/docs/react/api/dictionary/useMessages) for translating strings.
+ * See [`getMessages()`](/docs/react/api/strings/getMessages) for async string translations from encoded strings at buildtime.
+ * See [`msg()`](/docs/react/api/strings/msg) for encoding strings for translation.
+ * For runtime translations, see [`tx()`](/docs/react/api/strings/tx) and [`<Tx>`](/docs/react/api/components/tx).
  * See [`InlineTranslationOptions`](/docs/react/api/types/InlineTranslationOptions) for more information on customizing translations.

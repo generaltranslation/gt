@@ -6,7 +6,6 @@ description: API Reference for the getTranslations server-side translation funct
 ## Overview
 
 `getTranslations()` is used to get string translations from the [translation dictionary](/docs/next/guides/dictionaries) for server-side components.
-Alternatively, you can combine it with the `msg()` function to translate global strings.
 
 ```jsx
 const d = await getTranslations(); // Get the translation function
@@ -63,23 +62,6 @@ Promise<(id: string, options?: DictionaryTranslationOptions) => React.ReactNode>
 ---
 
 ## Examples
-
-### Using with `msg()`
-
-The `getTranslations()` function can be called on encoded strings returned by the `msg()` function.
-
-```jsx
-import { msg } from 'gt-next';
-import { getTranslations } from 'gt-next/server';
-
-const encodedString = msg('Hello, world!');
-
-export default async function MyComponent() {
-  const t = await getTranslations();
-  const translatedString = t(encodedString);
-  return <div>{translatedString}</div>; // Will be 'Hello, world!' in the selected language
-}
-```
 
 ### Basic Dictionary Usage
 Every entry in your dictionary gets translated.

@@ -19,9 +19,10 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * ```jsx
  * import { msg } from 'gt-react';
  * const message = msg('Hello, {name}!', { name: 'Brian' });
- * console.log(message); // "Hello, Brian:eyIiOiIweDEyMyIsIm5hbWUiOiJCcmlhbiJ9"
+ * console.log(message); // "Hello, Brian:eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9"
  * ```
- * eyIiOiIweDEyMyIsIm5hbWUiOiJCcmlhbiJ9 encodes to {"$hash": "0x123", "name": "Brian"}
+ * eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9
+ * encodes to {"$_hash": "0x123", "$_source": "Hello, {name}!", "name": "Brian"}
  *
  */
 export function msg(
