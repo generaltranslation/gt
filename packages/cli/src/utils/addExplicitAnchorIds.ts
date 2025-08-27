@@ -5,6 +5,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Heading, Text, InlineCode, Node } from 'mdast';
+import { logErrorAndExit } from '../console/logging.js';
 
 /**
  * Generates a slug from heading text
@@ -46,17 +47,6 @@ function hasExplicitId(heading: Heading, ast: Root): boolean {
 }
 
 /**
- * Detects if the project is using Mintlify based on JSON schema presets
- */
-function isMintlifyProject(settings: any): boolean {
-  if (!settings.options?.jsonSchema) return false;
-
-  return Object.values(settings.options.jsonSchema).some(
-    (schema: any) => schema?.preset === 'mintlify'
-  );
-}
-
-/**
  * Represents a heading with its position and metadata
  */
 export interface HeadingInfo {
@@ -65,6 +55,7 @@ export interface HeadingInfo {
   slug: string;
   position: number;
 }
+
 
 /**
  * Extracts heading information from content (read-only, no modifications)
@@ -119,10 +110,19 @@ export function addExplicitAnchorIds(
   addedIds: Array<{ heading: string; id: string }>;
 } {
   const addedIds: Array<{ heading: string; id: string }> = [];
-  const useDivWrapping = settings && isMintlifyProject(settings);
+  const useDivWrapping = settings?.options?.experimentalAddHeaderAnchorIds === 'mintlify';
 
   // Extract headings from translated content
   const translatedHeadings = extractHeadingInfo(translatedContent);
+
+  // Pre-processing validation: check if header counts match
+  if (sourceHeadingMap.length !== translatedHeadings.length) {
+    logErrorAndExit(
+      `Header count mismatch detected! Source file has ${sourceHeadingMap.length} headers but translated file has ${translatedHeadings.length} headers. ` +
+      `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
+      `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`
+    );
+  }
 
   // Create ID mapping based on positional matching
   const idMappings = new Map<number, string>();

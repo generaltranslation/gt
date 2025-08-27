@@ -85,6 +85,7 @@ export async function postProcessTranslations(settings: Settings) {
     }
 
     // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
+    // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
     await processAnchorIds(settings);
   }
 
