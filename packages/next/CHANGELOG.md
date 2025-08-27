@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.3.2
+
+### Patch Changes
+
+- [#602](https://github.com/generaltranslation/gt/pull/602) [`c1cfb63`](https://github.com/generaltranslation/gt/commit/c1cfb63c3f40f0bbe53fe3354431be38d2ab3b79) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: SWC plugin resolution for windows
+
 ## 6.3.1
 
 ### Patch Changes

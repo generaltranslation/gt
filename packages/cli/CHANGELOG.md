@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.10
+
+### Patch Changes
+
+- [#600](https://github.com/generaltranslation/gt/pull/600) [`e94aac2`](https://github.com/generaltranslation/gt/commit/e94aac2b2554a279245d090b0872f6f64eb71c62) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Added handling of fragment URLs (i.e. href="#my-mdx-id") for correct routing across locales.
+
 ## 2.1.9
 
 ### Patch Changes
