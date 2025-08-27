@@ -9,6 +9,7 @@ import copyFile from '../../fs/copyFile.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
+import processAnchorIds from '../../utils/processAnchorIds.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 
 // Downloads translations that were completed
@@ -82,6 +83,11 @@ export async function postProcessTranslations(settings: Settings) {
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales);
     }
+  }
+
+  // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
+  if (settings.options?.experimentalLocalizeStaticUrls) {
+    await processAnchorIds(settings);
   }
 
   // Flatten json files into a single file
