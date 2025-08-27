@@ -234,28 +234,17 @@ export default function useCreateInternalUseGTFunction({
     options: Record<string, any> = {},
     preloadedTranslations: Translations | undefined
   ) => {
-
     // Decode message and return if it's invalid
 
     const decodedOptions = decodeOptions(encodedMsg);
-    if (
-      !decodedOptions || 
-      !decodedOptions.$_hash || 
-      !decodedOptions.$_source
-    ) {
+    if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
       return encodedMsg;
     }
 
     // Disaggregate options and construct render function
 
-    const { 
-      $_hash, 
-      $_source, 
-      $context, 
-      $hash, 
-      $id, 
-      ...decodedVariables 
-    } = decodedOptions;
+    const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
+      decodedOptions;
 
     const renderMessage = (msg: string, locales: string[]) => {
       return gt.formatMessage(msg, {
@@ -270,7 +259,7 @@ export default function useCreateInternalUseGTFunction({
 
     // Check translation entry
 
-    const translationEntry = translations?.[decodedOptions.$_hash]
+    const translationEntry = translations?.[decodedOptions.$_hash];
 
     // Check translations
     if (translationEntry === null) {
@@ -285,7 +274,11 @@ export default function useCreateInternalUseGTFunction({
           defaultLocale,
         ]);
       } catch (error) {
-        console.error(createStringRenderError($_source, decodeMsg(encodedMsg)), 'Error: ', error);
+        console.error(
+          createStringRenderError($_source, decodeMsg(encodedMsg)),
+          'Error: ',
+          error
+        );
         return renderMessage($_source, [defaultLocale]);
       }
     }
@@ -303,7 +296,11 @@ export default function useCreateInternalUseGTFunction({
             defaultLocale,
           ]);
         } catch (error) {
-          console.error(createStringRenderError($_source, decodeMsg(encodedMsg)), 'Error: ', error);
+          console.error(
+            createStringRenderError($_source, decodeMsg(encodedMsg)),
+            'Error: ',
+            error
+          );
         }
       }
       return renderMessage($_source, [defaultLocale]);
@@ -319,7 +316,12 @@ export default function useCreateInternalUseGTFunction({
     });
 
     return renderMessage($_source, [defaultLocale]);
-  }
+  };
 
-  return { _tFunction, _mFunction, _filterMessagesForPreload, _preloadMessages };
+  return {
+    _tFunction,
+    _mFunction,
+    _filterMessagesForPreload,
+    _preloadMessages,
+  };
 }

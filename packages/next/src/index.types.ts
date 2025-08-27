@@ -18,7 +18,7 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
-  useMessages as _useMessages
+  useMessages as _useMessages,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -397,7 +397,7 @@ export const RegionSelector: typeof _RegionSelector = () => {
  */
 export const useMessages: typeof _useMessages = () => {
   throw new Error(typesFileError);
-}
+};
 
 export {
   DictionaryTranslationOptions,
