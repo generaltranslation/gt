@@ -1,5 +1,11 @@
 # gt-react
 
+## 10.4.1
+
+### Patch Changes
+
+- [#604](https://github.com/generaltranslation/gt/pull/604) [`43c6a76`](https://github.com/generaltranslation/gt/commit/43c6a76be3d3be420e892b86188ef41c45ae8ffe) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Refactored useGT and useMessages in order to make useMessages function like an unlintable useGT
+
 ## 10.4.0
 
 ### Minor Changes
