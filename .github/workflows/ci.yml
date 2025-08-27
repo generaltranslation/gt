@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        node: [18, 24]
+        node: [20, 24]
     runs-on: ${{ matrix.os }}
 
     steps:
