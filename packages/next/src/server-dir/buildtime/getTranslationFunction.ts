@@ -249,7 +249,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     // Fallback to t() if not an encoded message
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return t(encodedMsg, options);
+      return encodedMsg;
+      // return t(encodedMsg, options); (moved to compiler based solution instead)
     }
 
     const { $_hash, $_source, $context, $id, ...decodedVariables } =
