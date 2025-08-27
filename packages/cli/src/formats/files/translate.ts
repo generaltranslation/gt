@@ -7,6 +7,7 @@ import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import { determineLibrary } from '../../fs/determineFramework.js';
+import { addExplicitAnchorIds } from '../../utils/addExplicitAnchorIds.js';
 
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -88,7 +89,17 @@ export async function aggregateFiles(
     if (fileType === 'json' || fileType === 'yaml') continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
-        const content = readFile(filePath);
+        let content = readFile(filePath);
+        
+        // Apply preprocessor to add explicit anchor IDs for md/mdx files
+        if ((fileType === 'md' || fileType === 'mdx') && 
+            settings.options?.experimentalLocalizeStaticUrls) {
+          const result = addExplicitAnchorIds(content);
+          if (result.hasChanges) {
+            content = result.content;
+          }
+        }
+        
         const sanitizedContent = sanitizeFileContent(content);
         const relativePath = getRelative(filePath);
         return {
