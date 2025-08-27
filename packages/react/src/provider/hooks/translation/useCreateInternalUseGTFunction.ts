@@ -242,6 +242,7 @@ export default function useCreateInternalUseGTFunction({
     const decodedOptions = decodeOptions(encodedMsg);
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
       return encodedMsg;
+      // return _tFunction(encodedMsg, options, preloadedTranslations); (moved to compiler solution instead of this)
     }
 
     // Disaggregate options and construct render function
