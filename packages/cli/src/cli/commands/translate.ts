@@ -83,7 +83,7 @@ export async function postProcessTranslations(settings: Settings) {
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales);
     }
-    
+
     // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
     await processAnchorIds(settings);
   }
