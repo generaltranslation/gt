@@ -583,10 +583,14 @@ Contenido aquí.
 Más contenido.`;
 
       const sourceHeadingMap = extractHeadingInfo(sourceContent);
-      
+
       // This should work fine - same number of headers
-      const result = addExplicitAnchorIds(translatedContent, sourceHeadingMap, standardSettings);
-      
+      const result = addExplicitAnchorIds(
+        translatedContent,
+        sourceHeadingMap,
+        standardSettings
+      );
+
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(2);
       expect(result.content).toContain('## Cabecera 1 {#header-1}');

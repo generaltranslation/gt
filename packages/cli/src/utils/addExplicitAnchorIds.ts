@@ -56,7 +56,6 @@ export interface HeadingInfo {
   position: number;
 }
 
-
 /**
  * Extracts heading information from content (read-only, no modifications)
  */
@@ -110,7 +109,8 @@ export function addExplicitAnchorIds(
   addedIds: Array<{ heading: string; id: string }>;
 } {
   const addedIds: Array<{ heading: string; id: string }> = [];
-  const useDivWrapping = settings?.options?.experimentalAddHeaderAnchorIds === 'mintlify';
+  const useDivWrapping =
+    settings?.options?.experimentalAddHeaderAnchorIds === 'mintlify';
 
   // Extract headings from translated content
   const translatedHeadings = extractHeadingInfo(translatedContent);
@@ -119,8 +119,8 @@ export function addExplicitAnchorIds(
   if (sourceHeadingMap.length !== translatedHeadings.length) {
     logErrorAndExit(
       `Header count mismatch detected! Source file has ${sourceHeadingMap.length} headers but translated file has ${translatedHeadings.length} headers. ` +
-      `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
-      `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`
+        `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
+        `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`
     );
   }
 
