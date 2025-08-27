@@ -327,7 +327,7 @@ function applyDivWrappedIds(
       const headingPattern = new RegExp(`^${escapedLine}\\s*$`, 'gm');
 
       content = content.replace(headingPattern, (match) => {
-        return `<div id="${heading.id}">\n\n${match.trim()}\n\n</div>`;
+        return `<div id="${heading.id}">\n  ${match.trim()}\n</div>\n`;
       });
     }
   }

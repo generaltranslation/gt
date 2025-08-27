@@ -277,13 +277,13 @@ Another section here.
       expect(result.addedIds).toHaveLength(3);
 
       expect(result.content).toContain(
-        '<div id="getting-started">\n\n# Getting Started\n\n</div>'
+        '<div id="getting-started">\n  # Getting Started\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="code-based-workflow">\n\n## Code-based workflow\n\n</div>'
+        '<div id="code-based-workflow">\n  ## Code-based workflow\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="web-editor-workflow">\n\n## Web editor workflow\n\n</div>'
+        '<div id="web-editor-workflow">\n  ## Web editor workflow\n</div>'
       );
 
       // Should NOT contain {#id} format
@@ -333,13 +333,13 @@ Another section here.
       expect(result.addedIds).toHaveLength(3);
 
       expect(result.content).toContain(
-        '<div id="bold-heading-with-formatting">\n\n## **Bold Heading** with formatting\n\n</div>'
+        '<div id="bold-heading-with-formatting">\n  ## **Bold Heading** with formatting\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="code-heading-example">\n\n## `Code Heading` example\n\n</div>'
+        '<div id="code-heading-example">\n  ## `Code Heading` example\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="italic-and-mixed-formatting">\n\n## *Italic* and **mixed** formatting\n\n</div>'
+        '<div id="italic-and-mixed-formatting">\n  ## *Italic* and **mixed** formatting\n</div>'
       );
     });
   });
@@ -398,10 +398,10 @@ More content.
       expect(result.addedIds).toHaveLength(2);
 
       expect(result.content).toContain(
-        '<div id="real-heading">\n\n## Real Heading\n\n</div>'
+        '<div id="real-heading">\n  ## Real Heading\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="another-real-heading">\n\n## Another Real Heading\n\n</div>'
+        '<div id="another-real-heading">\n  ## Another Real Heading\n</div>'
       );
       expect(result.content).not.toContain(
         '<div id="fake-heading-in-code-block">'
@@ -459,16 +459,16 @@ More content.
       expect(result.addedIds).toHaveLength(4);
 
       expect(result.content).toContain(
-        '<div id="code-design-workflow">\n\n## Code & Design Workflow!\n\n</div>'
+        '<div id="code-design-workflow">\n  ## Code & Design Workflow!\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="api-reference-v20">\n\n## API Reference (v2.0)\n\n</div>'
+        '<div id="api-reference-v20">\n  ## API Reference (v2.0)\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="getting-started-step-1">\n\n## Getting Started: Step 1\n\n</div>'
+        '<div id="getting-started-step-1">\n  ## Getting Started: Step 1\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="whats-new">\n\n## What\'s New?\n\n</div>'
+        '<div id="whats-new">\n  ## What\'s New?\n</div>'
       );
     });
   });
@@ -518,22 +518,22 @@ More content.
       expect(result.addedIds).toHaveLength(6);
 
       expect(result.content).toContain(
-        '<div id="h1-heading">\n\n# H1 Heading\n\n</div>'
+        '<div id="h1-heading">\n  # H1 Heading\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="h2-heading">\n\n## H2 Heading\n\n</div>'
+        '<div id="h2-heading">\n  ## H2 Heading\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="h3-heading">\n\n### H3 Heading\n\n</div>'
+        '<div id="h3-heading">\n  ### H3 Heading\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="h4-heading">\n\n#### H4 Heading\n\n</div>'
+        '<div id="h4-heading">\n  #### H4 Heading\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="h5-heading">\n\n##### H5 Heading\n\n</div>'
+        '<div id="h5-heading">\n  ##### H5 Heading\n</div>'
       );
       expect(result.content).toContain(
-        '<div id="h6-heading">\n\n###### H6 Heading\n\n</div>'
+        '<div id="h6-heading">\n  ###### H6 Heading\n</div>'
       );
     });
   });

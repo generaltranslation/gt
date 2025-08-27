@@ -23,7 +23,7 @@ export default async function processAnchorIds(settings: Settings) {
     settings.defaultLocale
   );
 
-  // Process each locale's translated files (same approach as localizeStaticUrls)
+  // Process each locale's translated files
   const processPromises = Object.entries(fileMapping)
     .filter(([locale, filesMap]) => locale !== settings.defaultLocale) // Skip default locale
     .map(async ([locale, filesMap]) => {
