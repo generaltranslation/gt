@@ -9,7 +9,7 @@ on:
       - '.changeset/**'
 
 jobs:
-  lint:
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -26,6 +26,9 @@ jobs:
 
       - name: Run lint
         run: npm run lint
+
+      - name: Run tests
+        run: npm run test
 
   run-tests:
     strategy:
@@ -62,9 +65,6 @@ jobs:
       - name: Link packages (Windows)
         if: runner.os == 'Windows'
         run: .\scripts\linkPackages.ps1
-
-      - name: Run tests
-        run: npm run test
 
       - name: Test Builds
         run: |
