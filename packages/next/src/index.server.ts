@@ -7,7 +7,6 @@ import Branch from './branches/Branch';
 import Plural from './branches/Plural';
 import GTProvider from './provider/GTProvider';
 import { Tx } from './server';
-import { useGT } from './server-dir/buildtime/getGT';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
@@ -19,7 +18,7 @@ import {
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
-import { useMessages } from './server-dir/buildtime/getMessages';
+import { useMessages, useGT } from './server-dir/buildtime/getTranslationFunction';
 
 export { LocaleSelector, RegionSelector } from './index.client';
 
