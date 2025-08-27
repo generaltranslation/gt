@@ -1,0 +1,153 @@
+---
+title: msg()
+description: API Reference for the msg() string function
+---
+
+## Overview
+
+The `msg()` function is a function that marks and encodes strings for translation.
+
+```jsx
+const encodedString = msg('Hello, world!');
+```
+
+The encoded string should be passed to the [`useTranslations()`](/docs/react/api/dictionary/useTranslations) hook or [`getTranslations()`](/docs/react/api/dictionary/getTranslations) function to retrieve translations.
+
+<Callout>
+**Encoding:**
+`msg()` encodes the input string, so you cannot use it directly in JSX or elsewhere.
+If want to get back the original string, you need to decode it with [`decodeMsg()`](#decodemsg)
+</Callout>
+
+
+
+
+## Decoding [#decodemsg]
+
+To get back the original string, you need to decode it with [`decodeMsg()`](#decodemsg)
+
+```jsx
+import { msg, decodeMsg } from 'gt-react';
+const encodedString = msg('Hello, world!');
+const decodedString = decodeMsg(encodedString);
+console.log(decodedString); // "Hello, world!"
+```
+
+
+
+## Reference
+### Parameters
+
+| Name                  | Type | Description                                                                 |
+|-----------------------|--|-----------------------------------------------------------------------------|
+| `content`             | `string` | The string content to be encoded.                                     |
+| `options?`            | [`InlineTranslationOptions`](/docs/react/api/types/InlineTranslationOptions) | Translation options to customize the behavior of `msg()`. |
+
+### Returns
+
+An encoded string, with interpolated variables (if any) replaced with their values.
+
+---
+
+## Behavior
+
+
+### Production
+During the CD process, any content inside of a `msg()` function will be translated before your application is deployed.
+This ensures fast load times for all locales, but it can only translate content known at build time.
+
+Once generated, translations are either (1) stored in the CDN or (2) stored in your app's build output, according to your configuration.
+From there, the translated content is served to your users.
+If a translation is not found, it will fallback to the originial content.
+
+Make sure to follow the [deployment guide here](/docs/react/tutorials/quickdeploy).
+
+### Development
+During development, the `msg()` function will translate content on demand.
+This is useful for prototyping what your app will look like in different languages.
+Remember to add a Dev API key to your environment to enable this behavior.
+
+You will see a delay during on demand translation in development.
+This will not occur during for production builds unless content is explicitly being translated on demand,
+i.e., using [`tx()`](/docs/react/api/strings/tx) or [`<Tx>`](/docs/react/api/components/tx).
+
+---
+
+
+## Example
+
+### Basic Usage
+You can use `msg()` to mark strings for translation.
+
+```jsx copy
+import { msg, useTranslations } from 'gt-react';
+
+const encodedString = msg('Hello, world!');
+
+export default function TranslateGreeting() {
+  const t = useTranslations();
+  return (
+    <p>
+      {t(encodedString)}
+    </p>
+  );
+}
+```
+
+Note: "Hello, world!" will be translated to the user's preferred language.
+
+
+### Using variables [#variables]
+You can pass variables to dictionary translations.
+
+```jsx copy
+import { msg, useTranslations } from 'gt-react';
+
+const encodedString = msg('Hello, {name}!', { name: 'Alice' });
+
+export default function TranslateGreeting() {
+  const t = useTranslations();
+
+  return (
+    <p>
+      {t(encodedString)}
+    </p>
+  );
+}
+```
+Note: "Alice" will not translated to the user's preferred language because it is a variable.
+
+### Using ICU message format
+
+`gt-react` supports ICU message format, which allows you to also format your variables.
+
+```jsx copy
+import { msg, useTranslations } from 'gt-react';
+
+const encodedString = msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
+
+export default function TranslateGreeting() {
+  const t = useTranslations();
+  return (
+    <p>
+      {t(encodedString)}
+    </p>
+  );
+}
+```
+
+<Callout>
+  ICU message format is a powerful way to format your variables.
+  For more information, see the [ICU message format documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
+</Callout>
+
+
+---
+
+## Notes
+ * The `msg()` function is a function that marks strings for translation.
+ * Translations strings with `msg()` happen before runtime, during the build process (unless in development).
+
+## Next steps
+ * See [`useTranslations()`](/docs/react/api/dictionary/useTranslations) for translating strings.
+ * See [`InlineTranslationOptions`](/docs/react/api/types/InlineTranslationOptions) for more information on customizing translations.
