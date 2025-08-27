@@ -392,7 +392,7 @@ export const RegionSelector: typeof _RegionSelector = () => {
  *
  * @example
  * const encodedMessage = msg("My name is {name}", { name: "Brian" });
- * const m = useMessage();
+ * const m = useMessages();
  * m(encodedMessage) // returns "My name is Brian" translated
  */
 export const useMessages: typeof _useMessages = () => {

@@ -288,7 +288,7 @@ export async function getMessages(
  *
  * @example
  * const encodedMessage = msg("My name is {name}", { name: "Brian" });
- * const m = useMessage();
+ * const m = useMessages();
  * m(encodedMessage) // returns "My name is Brian" translated
  */
 export function useMessages(_messages?: _Messages) {
