@@ -74,7 +74,7 @@ export async function handleDownload(
 }
 
 export async function postProcessTranslations(settings: Settings) {
-  // Localize static urls (/docs -> /[locale]/docs) for non-default locales only
+  // Localize static urls (/docs -> /[locale]/docs) and preserve anchor IDs for non-default locales
   // Default locale is processed earlier in the flow in base.ts
   if (settings.options?.experimentalLocalizeStaticUrls) {
     const nonDefaultLocales = settings.locales.filter(
@@ -83,10 +83,8 @@ export async function postProcessTranslations(settings: Settings) {
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales);
     }
-  }
-
-  // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
-  if (settings.options?.experimentalLocalizeStaticUrls) {
+    
+    // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
     await processAnchorIds(settings);
   }
 
