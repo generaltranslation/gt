@@ -9,12 +9,29 @@ on:
       - '.changeset/**'
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run lint
+        run: npm run lint
+
   run-tests:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        # TODO: add 20 and 22
-        node: [24]
+        node: [18, 24]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -35,10 +52,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # TODO: reenable linting
-      # - name: Run lint
-      #   run: npm run lint
-
       - name: Build packages
         run: npm run build
 
@@ -50,12 +63,8 @@ jobs:
         if: runner.os == 'Windows'
         run: .\scripts\linkPackages.ps1
 
-      # TODO: reenable tests
-      # - name: Run tests
-      #   env:
-      #     VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
-      #     VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
-      #   run: npm run test
+      - name: Run tests
+        run: npm run test
 
       - name: Test Builds
         run: |
