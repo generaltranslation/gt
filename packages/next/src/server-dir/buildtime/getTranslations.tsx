@@ -9,6 +9,7 @@ import getDictionary from '../../dictionary/getDictionary';
 import {
   createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
+  createInvalidDictionaryTranslationEntryWarning,
   createNoEntryFoundWarning,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
@@ -118,13 +119,13 @@ export async function getTranslations(
       dictionaryTranslations || {},
       id
     );
-
     // Check: invalid entry
     if (
-      !isValidDictionaryEntry(dictionaryTranslation) ||
-      typeof dictionaryTranslation !== 'string'
+      dictionaryTranslation !== undefined &&
+      (!isValidDictionaryEntry(dictionaryTranslation) ||
+        typeof dictionaryTranslation !== 'string')
     ) {
-      console.warn(createInvalidDictionaryEntryWarning(id));
+      console.warn(createInvalidDictionaryTranslationEntryWarning(id));
       return renderContent(entry, [defaultLocale]);
     }
 
