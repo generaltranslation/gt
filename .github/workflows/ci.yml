@@ -62,24 +62,26 @@ jobs:
         run: |
           cd test-apps/next/base
           npm install
-          npm run build & npm run build:turbopack & wait
+          npm run build & BUILD_PID=$!
+          npm run build:turbopack & TURBO_PID=$!
+          wait $BUILD_PID && wait $TURBO_PID
           
           cd ../general-cases
-          npm install  
-          npm run build & npm run build:turbopack & wait
+          npm install
+          npm run build & BUILD_PID=$!
+          npm run build:turbopack & TURBO_PID=$!
+          wait $BUILD_PID && wait $TURBO_PID
 
       - name: Test Builds (Windows)
         if: runner.os == 'Windows'
         run: |
           cd test-apps/next/base
           npm install
-          $job1 = Start-Job -ScriptBlock { npm run build }
-          $job2 = Start-Job -ScriptBlock { npm run build:turbopack }
-          $job1, $job2 | Wait-Job | Receive-Job
+          npm run build
+          npm run build:turbopack
           
           cd ../general-cases
           npm install
-          $job3 = Start-Job -ScriptBlock { npm run build }  
-          $job4 = Start-Job -ScriptBlock { npm run build:turbopack }
-          $job3, $job4 | Wait-Job | Receive-Job
+          npm run build
+          npm run build:turbopack
 
