@@ -56,15 +56,14 @@ export const createStringRenderError = (
 ) =>
   `gt-react Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
 
-  export const createStringTranslationError = (
-    string: string,
-    id?: string,
-    functionName = 'tx'
-  ) =>
-    `gt-react string translation error. ${functionName}("${string}")${
-      id ? ` with id "${id}"` : ''
-    } could not locate translation.`;
-
+export const createStringTranslationError = (
+  string: string,
+  id?: string,
+  functionName = 'tx'
+) =>
+  `gt-react string translation error. ${functionName}("${string}")${
+    id ? ` with id "${id}"` : ''
+  } could not locate translation.`;
 
 // ---- WARNINGS ---- //
 

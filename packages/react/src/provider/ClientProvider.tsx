@@ -133,16 +133,20 @@ export default function ClientProvider({
 
   // ---------- USE GT() TRANSLATION ---------- //
 
-  const { _tFunction, _mFunction, _filterMessagesForPreload, _preloadMessages } =
-    useCreateInternalUseGTFunction({
-      gt,
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      developmentApiEnabled,
-      registerIcuForTranslation,
-    });
+  const {
+    _tFunction,
+    _mFunction,
+    _filterMessagesForPreload,
+    _preloadMessages,
+  } = useCreateInternalUseGTFunction({
+    gt,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation,
+  });
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 

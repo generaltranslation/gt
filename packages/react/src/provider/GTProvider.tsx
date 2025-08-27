@@ -175,16 +175,20 @@ export default function GTProvider({
 
   // ---------- USE GT ---------- //
 
-  const { _tFunction, _mFunction, _filterMessagesForPreload, _preloadMessages } =
-    useCreateInternalUseGTFunction({
-      gt,
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      developmentApiEnabled,
-      registerIcuForTranslation,
-    });
+  const {
+    _tFunction,
+    _mFunction,
+    _filterMessagesForPreload,
+    _preloadMessages,
+  } = useCreateInternalUseGTFunction({
+    gt,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation,
+  });
 
   // ---------- USE DICT ---------- //
 
