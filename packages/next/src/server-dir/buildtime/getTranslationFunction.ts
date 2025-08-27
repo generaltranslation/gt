@@ -180,7 +180,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   }
 
   // ---------- t() ---------- /
- 
+
   const t = (
     message: string,
     options: Record<string, any> & {
@@ -339,7 +339,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
  * @example
  * const t = await getGT();
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
-*/
+ */
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
@@ -363,7 +363,7 @@ export function useGT(_messages?: _Messages) {
  * const encodedMsg = msg('Hello, world!')
  * const m = await getMessages();
  * console.log(m(encodedMsg)); // Translates 'Hello, world!'
-*/
+ */
 export async function getMessages(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
