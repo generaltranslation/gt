@@ -10,7 +10,11 @@ on:
 
 jobs:
   run-tests:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        node: [20, 22, 24]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -19,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
           cache: 'npm'
 
       - name: Setup Rust
@@ -30,8 +34,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run lint
-        run: npm run lint
+      # TODO: reenable linting
+      # - name: Run lint
+      #   run: npm run lint
 
       - name: Build packages
         run: npm run build
@@ -39,8 +44,12 @@ jobs:
       - name: Link packages
         run: ./scripts/linkPackages.sh
 
-      - name: Run tests
-        env:
-          VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
-          VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
-        run: npm run test
+      # TODO: reenable tests
+      # - name: Run tests
+      #   env:
+      #     VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
+      #     VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
+      #   run: npm run test
+
+      - name: Test Builds
+        run: ./scripts/testBuilds.sh

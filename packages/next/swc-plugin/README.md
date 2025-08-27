@@ -5,11 +5,13 @@ SWC plugin for GT translation components in Next.js.
 ## Quick Setup
 
 **macOS (one command):**
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/generaltranslation/gt/main/packages/next/swc-plugin/setup.sh | bash
 ```
 
 Restart your terminal, then:
+
 ```bash
 npm run build
 ```
@@ -17,11 +19,13 @@ npm run build
 ## Manual Setup
 
 **Install Rust:**
+
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 **Basic build (WASM only):**
+
 ```bash
 rustup target add wasm32-wasip1
 cargo build --release --target wasm32-wasip1
@@ -32,8 +36,6 @@ cargo build --release --target wasm32-wasip1
 ```bash
 # Run Rust tests
 cargo test
-# Or
-make test
 
 # Run all tests (JS + Rust)
 npm test
