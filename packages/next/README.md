@@ -25,7 +25,7 @@ npm install gt-next-cli --save-dev
 
 Add the following environment variables to your `.env` file:
 
-```
+```bash
 GT_API_KEY="your-api-key"
 GT_PROJECT_ID="your-project-id"
 ```

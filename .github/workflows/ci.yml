@@ -9,9 +9,8 @@ on:
       - '.changeset/**'
 
 jobs:
-  run-tests:
+  lint-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,11 +35,55 @@ jobs:
       - name: Build packages
         run: npm run build
 
-      - name: Link packages
+      - name: Run tests
+        run: npm run test
+
+  run-tests:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        node: [20, 24]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Link packages (Unix)
+        if: runner.os != 'Windows'
         run: ./scripts/linkPackages.sh
 
-      - name: Run tests
-        env:
-          VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
-          VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
-        run: npm run test
+      - name: Link packages (Windows)
+        if: runner.os == 'Windows'
+        run: .\scripts\linkPackages.ps1
+
+      - name: Test Builds
+        run: |
+          cd test-apps/next/base
+          npm install
+          npm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
+          npm run build
+          npm run build:turbopack
+
+          cd ../general-cases
+          npm install
+          npm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
+          npm run build
+          npm run build:turbopack
