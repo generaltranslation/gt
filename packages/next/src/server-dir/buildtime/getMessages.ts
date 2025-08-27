@@ -224,7 +224,7 @@ export async function getMessages(
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
       console.warn(
-        createStringTranslationError($_source, decodeMsg(encodedMsg), 't')
+        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
       );
       return renderMessage($_source, [defaultLocale]);
     }

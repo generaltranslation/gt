@@ -7,7 +7,7 @@ import {
 } from '../../../types/types';
 import { TranslateIcuCallback } from '../../../types/runtime';
 import { GT } from 'generaltranslation';
-import { createStringRenderError } from '../../../errors/createErrors';
+import { createStringRenderError, createStringTranslationError } from '../../../errors/createErrors';
 import { decodeMsg, decodeOptions } from '../../../internal';
 
 export default function useCreateInternalUseGTFunction({
@@ -212,7 +212,9 @@ export default function useCreateInternalUseGTFunction({
     }
 
     if (!developmentApiEnabled) {
-      // Warn here
+      console.warn(
+        createStringTranslationError(message, id, 't')
+      );
       return renderMessage(message, [defaultLocale]);
     }
 
@@ -284,7 +286,9 @@ export default function useCreateInternalUseGTFunction({
     }
 
     if (!developmentApiEnabled) {
-      // Warn here
+      console.warn(
+        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
+      );
       return renderMessage($_source, [defaultLocale]);
     }
 
