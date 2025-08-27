@@ -179,7 +179,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     await Promise.all(_messages.map(preload));
   }
 
-  // ---------- t() ---------- //
+  // ---------- t() ---------- /
+ 
   const t = (
     message: string,
     options: Record<string, any> & {
@@ -331,8 +332,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 // ---------------- Public API (kept stable) ---------------- //
 
 /**
- * Returns a function that translates a plain ICU string (build-time marked).
- */
+ * getGT() returns a function that translates an ICU message string.
+ *
+ * @returns A promise of the t() function used for translating strings
+ *
+ * @example
+ * const t = await getGT();
+ * console.log(t('Hello, world!')); // Translates 'Hello, world!'
+*/
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
@@ -348,9 +355,15 @@ export function useGT(_messages?: _Messages) {
 }
 
 /**
- * Returns a function that decodes+translates an encoded message produced by msg().
- * If the input is not a valid encoded message, it falls back to t().
- */
+ * getMessages() returns a function that translates an encoded ICU message string.
+ *
+ * @returns A promise of the m() function used for translating encoded ICU message strings
+ *
+ * @example
+ * const encodedMsg = msg('Hello, world!')
+ * const m = await getMessages();
+ * console.log(m(encodedMsg)); // Translates 'Hello, world!'
+*/
 export async function getMessages(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
