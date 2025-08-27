@@ -1,0 +1,460 @@
+---
+title: Translating Shared Strings
+description: How to internationalize shared strings
+---
+
+## Overview
+
+Shared strings are strings or constants that are used in multiple places in your app.
+
+For example, you may have a string that is used in multiple components, or a constant that is used in multiple files.
+
+In traditional i18n libraries, you would need to create a dictionary for each shared string.
+
+This guide will walk you through how to easily internationalize shared strings in your Next.js app using the [`msg()`](/docs/next/api/strings/msg) function & [`useTranslations()`](/docs/next/api/dictionary/useTranslations) hook.
+
+We will cover the following:
+<Steps>
+  <Step>
+    When to use the `msg()` function
+  </Step>
+  <Step>
+    How to use the `msg()` function and `useTranslations()` hook
+  </Step>
+  <Step>
+    Using variables
+  </Step>
+  <Step>
+    Examples
+  </Step>
+  <Step>
+    Common pitfalls
+  </Step>
+</Steps>
+
+--- 
+
+## When to use the `msg()` function
+
+The `msg()` function is a simple function that is used to mark strings for translation.
+
+Let's look at an example of a shared object containing strings:
+
+```tsx title="src/navData.ts"
+export const navData = {
+  home: {
+    label: 'Home',
+    description: 'The home page',
+    icon: 'home',
+    href: '/',
+  },
+  about: {
+    label: 'About',
+    description: 'Information about the company',
+    icon: 'info',
+    href: '/about',
+  },
+}
+```
+
+Normally, to internationalize this object, you would need to either create a dictionary entry for each string, or refactor your object into a function that returns the data with translations.
+
+For example, you might have:
+```tsx title="src/navData.ts"
+export const getNavData = (t: (content: string) => string) => ({
+  home: {
+    label: t('Home'),
+    description: t('The home page'),
+    icon: 'home',
+    href: '/',
+  },
+  about: {
+    label: t('About'),
+    description: t('Information about the company'),
+    icon: 'info',
+    href: '/about',
+  },
+})
+```
+Everywhere else in your app where `navData` was imported, you would need to call `getNavData(t)` instead.
+
+```tsx title="src/app/page.tsx"
+import { getNavData } from '@/navData';
+
+export default function Home() {
+  const t = useGT();
+  const navData = getNavData(t);
+  return <div>{navData.home.label}</div>;
+}
+```
+
+This can lead to a lot of work. The solution is to use the `msg()` function.
+
+---
+
+## How to use the `msg()` function
+
+To use the `msg()` function, pass the string directly to the function.
+The function returns a special, encoded string that can be used for translations.
+
+```tsx title="src/navData.ts"
+import { msg } from 'gt-next';
+
+export const navData = [
+  {
+    label: msg('Home'), // Output has type `string`
+    description: msg('The home page'),
+    icon: 'home',
+    href: '/',
+  },
+  {
+    label: msg('About'),
+    description: msg('Information about the company'),
+    icon: 'info',
+    href: '/about',
+  },
+]
+```
+
+Then, simply pass the encoded string to the `useTranslations()` hook.
+
+```tsx title="src/app/page.tsx"
+import { useTranslations } from 'gt-next';
+import { navData } from '@/navData';
+
+export default function Home() {
+  const t = useTranslations();
+  return (
+    <div>
+      {navData.map((item) => (
+        <div key={item.label}>{t(item.label)}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+If you are in an async component, use the `getTranslations()` function instead of the `useTranslations()` hook.
+
+```tsx title="src/app/page.tsx"
+import { getTranslations } from 'gt-next/server';
+
+export default async function Home() {
+  const t = await getTranslations();
+  return (
+    <div>
+      {navData.map((item) => (
+        <div key={item.label}>{t(item.label)}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+<Callout type='warn'>
+  Beware! The string returned by the `msg()` function is encoded and will be different from the original input string.
+  If want to get back the original string, you need to decode it with [`decodeMsg()`](/docs/next/api/strings/msg#decodemsg)
+</Callout>
+
+---
+## Using variables
+
+If your string is a template string and contains variables, you can pass the variables to the `msg()` function.
+
+Simply change the `${}` notation in the template string to `{variable}`, and pass an object as the second argument to `msg()` with the variable name as the key.
+
+```tsx title="src/navData.ts"
+const items = 100;
+export const pricing = [
+  {
+    name: 'Basic',
+    price: 100,
+    description: `The basic plan includes ${items} items`
+  },
+]
+```
+
+Should be turned into:
+
+```tsx title="src/navData.ts"
+import { msg } from 'gt-next';
+
+const items = 100;
+export const pricing = [
+  {
+    name: 'Basic',
+    price: 100,
+    description: msg('The basic plan includes {items} items', { items })
+  },
+]
+```
+
+The `{items}` placeholder will be replaced with the value of the `items` variable.
+
+This allows you to display dynamic values in your translations.
+
+For more information on the API, see the [API reference](/docs/next/api/strings/msg).
+
+`gt-next` supports ICU message format, which allows you to also format your variables.
+
+```jsx copy
+const price = 100;
+msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
+```
+
+<Callout>
+  ICU message format is a powerful way to format your variables.
+  For more information, see the [ICU message format documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
+</Callout>
+
+
+---
+
+## Examples
+
+1. Translating a shared global object
+
+<Tabs items={['Result', 'Original']}>
+  <Tab value="Result">
+```jsx copy title="src/llms.ts"
+import { msg } from 'gt-next';
+
+export const llmData = [
+  {
+    name: 'GPT-4.1',
+    id: 'gpt-4.1',
+    description: msg('GPT-4.1 is a large language model developed by OpenAI'),
+  },
+  {
+    name: 'Claude 3.7 Sonnet',
+    id: 'claude-3-7-sonnet',
+    description: msg('Claude 3.7 Sonnet is a large language model developed by Anthropic'),
+  },
+];
+```
+
+```jsx copy title="src/app/page.tsx"
+import { llmData } from '@/llms';
+import { useTranslations } from 'gt-next';
+
+export default function MyComponent() {
+  const t = useTranslations();
+  return (
+    <div>
+      {llmData.map((llm) => (
+        <div key={llm.id}>
+          <h1>{llm.name}</h1>
+          <p>{t(llm.description)}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+  </Tab>
+
+<Tab value="Original">
+```jsx copy title="src/llms.ts"
+export const llms = [
+  {
+    name: 'GPT-4.1',
+    id: 'gpt-4.1',
+    description: 'GPT-4.1 is a large language model developed by OpenAI',
+  },
+  {
+    name: 'Claude 3.7 Sonnet',
+    id: 'claude-3-7-sonnet',
+    description: 'Claude 3.7 Sonnet is a large language model developed by Anthropic',
+  },
+]
+```
+
+```jsx copy title="src/app/page.tsx"
+import { llms } from '@/llms';
+
+export default function MyComponent() {
+  return (
+    <div>
+      {llms.map((llm) => (
+        <div key={llm.id}>
+          <h1>{llm.name}</h1>
+          <p>{llm.description}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+</Tab>
+</Tabs>
+
+2. Translating a function's return value
+
+<Tabs items={['Result', 'Original']}>
+  <Tab value="Result">
+```jsx copy title="src/llms.ts"
+import { msg } from 'gt-next';
+
+function mockData() {
+  return [
+    {
+      name: 'GPT-4.1',
+      id: 'gpt-4.1',
+      company: 'OpenAI',
+    },
+    {
+      name: 'Claude 3.7 Sonnet',
+      id: 'claude-3-7-sonnet',
+      company: 'Anthropic',
+    },
+  ];
+}
+
+export function getData() {
+  const data = mockData();
+  const modifiedData = data.map((item) => ({
+    ...item,
+    description: msg('{name} is a large language model developed by {company}', {
+      name: item.name,
+      company: item.company,
+    }),
+  }));
+  return modifiedData;
+}
+```
+
+```jsx copy title="src/app/page.tsx"
+import { getData } from '@/llms';
+import { useTranslations } from 'gt-next';
+
+export default function MyComponent() {
+  const t = useTranslations();
+  const data = getData();
+  return (
+    <div>
+      {data.map((item) => (
+        <div key={item.id}>
+          <h1>{item.name}</h1>
+          <p>{t(item.description)}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+  </Tab>
+
+<Tab value="Original">
+```jsx copy title="src/llms.ts"
+import { msg } from 'gt-next';
+
+function mockData() {
+  return [
+    {
+      name: 'GPT-4.1',
+      id: 'gpt-4.1',
+      company: 'OpenAI',
+    },
+    {
+      name: 'Claude 3.7 Sonnet',
+      id: 'claude-3-7-sonnet',
+      company: 'Anthropic',
+    },
+  ];
+}
+
+export function getData() {
+  const data = mockData();
+  const modifiedData = data.map((item) => ({
+    ...item,
+    description: `${item.name} is a large language model developed by ${item.company}`,
+  }));
+  return modifiedData;
+}
+```
+
+```jsx copy title="src/app/page.tsx"
+import { getData } from '@/llms';
+
+export default function MyComponent() {
+  const data = getData();
+  return (
+    <div>
+      {data.map((item) => (
+        <div key={item.id}>
+          <h1>{item.name}</h1>
+          <p>{item.description}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+</Tab>
+</Tabs>
+
+---
+
+## Common Pitfalls
+
+### Forgetting to call `useTranslations()`
+
+`msg()` encodes the input string, so you cannot use it directly in JSX or elsewhere. 
+
+If you attempt to use the encoded string directly, you will get a weird string that looks something like this:
+
+```jsx
+const encodedString = msg('Hello, world!');
+console.log(encodedString); // "Hello, world!:eyIkX2hhc2giOiJkMjA3MDliZGExNjNlZmM2In0="
+```
+
+To fix this, you need to use the `useTranslations()` hook to get the translated string.
+
+```jsx
+import { useTranslations } from 'gt-next';
+
+const encodedString = msg('Hello, world!');
+
+export default function MyComponent() {
+  const t = useTranslations();
+  return <div>{t(encodedString)}</div>; // 'Hello, world!' in the current language
+}
+```
+
+Alternatively, if you want to recover the original string, you can use the `decodeMsg()` function.
+
+```jsx
+import { decodeMsg } from 'gt-next';
+
+const encodedString = msg('Hello, world!');
+const decodedString = decodeMsg(encodedString);
+console.log(decodedString); // "Hello, world!"
+```
+
+### Wrapping dynamic content in `msg()`
+
+All strings must be known at build time. This means that you cannot wrap dynamic content in `msg()`.
+
+For example, this is invalid:
+
+```jsx
+const dynamicContent = msg(`Hello, ${name}`);
+```
+
+To fix this, provide the dynamic content as a variable, and then pass it to `msg()`.
+
+```jsx
+const dynamicContent = msg('Hello, {name}', { name });
+```
+
+<Callout type="warn">
+  The CLI tool will warn you if you try to wrap dynamic content with `msg()`.
+</Callout>
+
+
+---
+
+## Next Steps
+ * See the [API reference for `msg()`](/docs/next/api/strings/msg).
+ * See the [API reference for `useTranslations()`](/docs/next/api/dictionary/useTranslations).
+ * Learn more about the [`<T>` component](/docs/next/guides/jsx).

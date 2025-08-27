@@ -7,17 +7,21 @@ import Branch from './branches/Branch';
 import Plural from './branches/Plural';
 import GTProvider from './provider/GTProvider';
 import { Tx } from './server';
-import { useGT } from './server-dir/buildtime/getGT';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
 import getI18NConfig from './config-dir/getI18NConfig';
+import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
+import {
+  useMessages,
+  useGT,
+} from './server-dir/buildtime/getTranslationFunction';
 
 export { LocaleSelector, RegionSelector } from './index.client';
 
@@ -49,9 +53,13 @@ export {
   Plural,
   useGT,
   useTranslations,
+  useMessages,
   useLocale,
   useLocaleDirection,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
+  msg,
+  decodeMsg,
+  decodeOptions,
 };

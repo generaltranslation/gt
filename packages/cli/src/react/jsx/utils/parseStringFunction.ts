@@ -2,7 +2,15 @@ import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx.js';
-import { GT_ATTRIBUTES_WITH_SUGAR, mapAttributeName } from './constants.js';
+import {
+  GT_ATTRIBUTES_WITH_SUGAR,
+  MSG_TRANSLATION_HOOK,
+  INLINE_TRANSLATION_HOOK,
+  INLINE_TRANSLATION_HOOK_ASYNC,
+  mapAttributeName,
+  INLINE_MESSAGE_HOOK,
+  INLINE_MESSAGE_HOOK_ASYNC,
+} from './constants.js';
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
@@ -36,7 +44,9 @@ function processTranslationCall(
   tPath: NodePath,
   updates: Updates,
   errors: string[],
-  file: string
+  file: string,
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -75,7 +85,7 @@ function processTranslationCall(
                   )
                 );
               }
-              if (result.isStatic && result.value) {
+              if (result.isStatic && result.value && !ignoreAdditionalData) {
                 // Map $id and $context to id and context
                 metadata[mapAttributeName(attribute)] = result.value;
               }
@@ -91,21 +101,25 @@ function processTranslationCall(
       });
     } else if (t.isTemplateLiteral(arg)) {
       // warn if template literal
-      errors.push(
-        warnTemplateLiteralSync(
-          file,
-          generate(arg).code,
-          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-        )
-      );
+      if (!ignoreDynamicContent) {
+        errors.push(
+          warnTemplateLiteralSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      }
     } else {
-      errors.push(
-        warnNonStringSync(
-          file,
-          generate(arg).code,
-          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-        )
-      );
+      if (!ignoreDynamicContent) {
+        errors.push(
+          warnNonStringSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      }
     }
   }
 }
@@ -215,14 +229,23 @@ function handleFunctionCall(
   updates: Updates,
   errors: string[],
   file: string,
-  importMap: Map<string, string>
+  importMap: Map<string, string>,
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
     tPath.parent.callee === tPath.node
   ) {
     // Direct translation call: t('hello')
-    processTranslationCall(tPath, updates, errors, file);
+    processTranslationCall(
+      tPath,
+      updates,
+      errors,
+      file,
+      ignoreAdditionalData,
+      ignoreDynamicContent
+    );
   } else if (
     tPath.parent.type === 'CallExpression' &&
     t.isExpression(tPath.node) &&
@@ -244,7 +267,9 @@ function handleFunctionCall(
           functionPath,
           updates,
           errors,
-          file
+          file,
+          ignoreAdditionalData,
+          ignoreDynamicContent
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -263,7 +288,9 @@ function handleFunctionCall(
           initPath,
           updates,
           errors,
-          file
+          file,
+          ignoreAdditionalData,
+          ignoreDynamicContent
         );
       }
       // If not found locally, check if it's an imported function
@@ -277,7 +304,9 @@ function handleFunctionCall(
             callee.name,
             argIndex,
             updates,
-            errors
+            errors,
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         }
       }
@@ -297,7 +326,9 @@ function processFunctionIfMatches(
   functionPath: NodePath,
   updates: Updates,
   errors: string[],
-  filePath: string
+  filePath: string,
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
@@ -309,7 +340,9 @@ function processFunctionIfMatches(
         paramName,
         updates,
         errors,
-        filePath
+        filePath,
+        ignoreAdditionalData,
+        ignoreDynamicContent
       );
     }
   }
@@ -328,7 +361,9 @@ function findFunctionParameterUsage(
   parameterName: string,
   updates: Updates,
   errors: string[],
-  file: string
+  file: string,
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -350,7 +385,15 @@ function findFunctionParameterUsage(
       const binding = functionScope.bindings[name];
       if (binding) {
         binding.referencePaths.forEach((refPath) => {
-          handleFunctionCall(refPath, updates, errors, file, importMap);
+          handleFunctionCall(
+            refPath,
+            updates,
+            errors,
+            file,
+            importMap,
+            ignoreAdditionalData,
+            ignoreDynamicContent
+          );
         });
       }
     });
@@ -443,7 +486,9 @@ function findFunctionInFile(
   functionName: string,
   argIndex: number,
   updates: Updates,
-  errors: string[]
+  errors: string[],
+  ignoreAdditionalData: boolean,
+  ignoreDynamicContent: boolean
 ): void {
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -462,7 +507,9 @@ function findFunctionInFile(
             path,
             updates,
             errors,
-            filePath
+            filePath,
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         }
       },
@@ -483,7 +530,9 @@ function findFunctionInFile(
             initPath,
             updates,
             errors,
-            filePath
+            filePath,
+            ignoreAdditionalData,
+            ignoreDynamicContent
           );
         }
       },
@@ -520,7 +569,29 @@ export function parseStrings(
   const referencePaths = path.scope.bindings[importName]?.referencePaths || [];
 
   for (const refPath of referencePaths) {
-    // Find call expressions of useGT() / await getGT()
+    // Handle msg() calls directly without variable assignment
+    if (originalName === MSG_TRANSLATION_HOOK) {
+      const ignoreAdditionalData = false;
+      const ignoreDynamicContent = false;
+
+      // Check if this is a direct call to msg('string')
+      if (
+        refPath.parent.type === 'CallExpression' &&
+        refPath.parent.callee === refPath.node
+      ) {
+        processTranslationCall(
+          refPath,
+          updates,
+          errors,
+          file,
+          ignoreAdditionalData,
+          ignoreDynamicContent
+        );
+      }
+      continue;
+    }
+
+    // Handle useGT(), getGT(), useMessages(), and getMessages() calls that need variable assignment
     const callExpr = refPath.findParent((p) => p.isCallExpression());
     if (callExpr) {
       // Get the parent, handling both await and non-await cases
@@ -528,7 +599,11 @@ export function parseStrings(
 
       const parentFunction = refPath.getFunctionParent();
       const asyncScope = parentFunction?.node.async;
-      if (asyncScope && originalName === 'useGT') {
+      if (
+        asyncScope &&
+        (originalName === INLINE_TRANSLATION_HOOK ||
+          originalName === INLINE_MESSAGE_HOOK)
+      ) {
         errors.push(
           warnAsyncUseGT(
             file,
@@ -536,7 +611,11 @@ export function parseStrings(
           )
         );
         return;
-      } else if (!asyncScope && originalName === 'getGT') {
+      } else if (
+        !asyncScope &&
+        (originalName === INLINE_TRANSLATION_HOOK_ASYNC ||
+          originalName === INLINE_MESSAGE_HOOK_ASYNC)
+      ) {
         errors.push(
           warnSyncGetGT(
             file,
@@ -545,6 +624,12 @@ export function parseStrings(
         );
         return;
       }
+
+      const isMessageHook =
+        originalName === INLINE_MESSAGE_HOOK ||
+        originalName === INLINE_MESSAGE_HOOK_ASYNC;
+      const ignoreAdditionalData = isMessageHook;
+      const ignoreDynamicContent = isMessageHook;
 
       const effectiveParent =
         parentPath?.node.type === 'AwaitExpression'
@@ -559,12 +644,30 @@ export function parseStrings(
         // Get the scope from the variable declaration
         const variableScope = effectiveParent.scope;
 
-        const tReferencePaths =
-          variableScope.bindings[tFuncName]?.referencePaths || [];
+        // Resolve all aliases of the translation function
+        // Example: translate -> [translate, t, a, b] for const t = translate; const a = t; const b = a;
+        const allTranslationNames = resolveVariableAliases(
+          variableScope,
+          tFuncName
+        );
 
-        for (const tPath of tReferencePaths) {
-          handleFunctionCall(tPath, updates, errors, file, importMap);
-        }
+        // Process references for all translation function names and their aliases
+        allTranslationNames.forEach((name) => {
+          const tReferencePaths =
+            variableScope.bindings[name]?.referencePaths || [];
+
+          for (const tPath of tReferencePaths) {
+            handleFunctionCall(
+              tPath,
+              updates,
+              errors,
+              file,
+              importMap,
+              ignoreAdditionalData,
+              ignoreDynamicContent
+            );
+          }
+        });
       }
     }
   }

@@ -192,7 +192,7 @@ export function withGTConfig(
       if (turboPackEnabled) {
         const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
         resolvedWasmFilePath =
-          './' + path.relative(process.cwd(), absolutePath);
+          './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
         resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
       }

@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.2.4",
+  "version": "6.3.2",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -16,16 +16,16 @@
     "@generaltranslation/babel-plugin": "^0.0.0",
     "@generaltranslation/supported-locales": "^2.0.13",
     "generaltranslation": "^7.4.1",
-    "gt-react": "^10.3.1"
+    "gt-react": "^10.4.1"
   },
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build:swc-plugin": "cargo build --release --target wasm32-wasip1 --manifest-path ./swc-plugin/Cargo.toml && mkdir -p ./dist && cp -p ./swc-plugin/target/wasm32-wasip1/release/gt_swc_plugin.wasm ./dist/gt_swc_plugin.wasm",
-    "build:swc-plugin:dev": "cargo build --target wasm32-wasip1 --manifest-path ./swc-plugin/Cargo.toml && mkdir -p ./dist && cp -p ./swc-plugin/target/wasm32-wasip1/debug/gt_swc_plugin.wasm ./dist/gt_swc_plugin-dev.wasm",
     "build": "npm run build:swc-plugin && npm run transpile",
     "build:clean": "rm -rf ./swc-plugin/target && rm -rf dist; npm run build",
     "build:release": "npm run build:clean",
+    "build:swc-plugin": "cargo build --release --target wasm32-wasip1 --manifest-path ./swc-plugin/Cargo.toml && node scripts/copy-wasm.js",
+    "build:no-swc-plugin": "npm run transpile",
     "release": "npm run build:clean && npm publish",
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",

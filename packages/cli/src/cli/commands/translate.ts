@@ -9,6 +9,7 @@ import copyFile from '../../fs/copyFile.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
+import processAnchorIds from '../../utils/processAnchorIds.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 
 // Downloads translations that were completed
@@ -73,7 +74,7 @@ export async function handleDownload(
 }
 
 export async function postProcessTranslations(settings: Settings) {
-  // Localize static urls (/docs -> /[locale]/docs) for non-default locales only
+  // Localize static urls (/docs -> /[locale]/docs) and preserve anchor IDs for non-default locales
   // Default locale is processed earlier in the flow in base.ts
   if (settings.options?.experimentalLocalizeStaticUrls) {
     const nonDefaultLocales = settings.locales.filter(
@@ -82,6 +83,10 @@ export async function postProcessTranslations(settings: Settings) {
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales);
     }
+
+    // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
+    // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
+    await processAnchorIds(settings);
   }
 
   // Flatten json files into a single file

@@ -1,5 +1,29 @@
 # gtx-cli
 
+## 2.1.10
+
+### Patch Changes
+
+- [#600](https://github.com/generaltranslation/gt/pull/600) [`e94aac2`](https://github.com/generaltranslation/gt/commit/e94aac2b2554a279245d090b0872f6f64eb71c62) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Added handling of fragment URLs (i.e. href="#my-mdx-id") for correct routing across locales.
+
+## 2.1.9
+
+### Patch Changes
+
+- [#604](https://github.com/generaltranslation/gt/pull/604) [`43c6a76`](https://github.com/generaltranslation/gt/commit/43c6a76be3d3be420e892b86188ef41c45ae8ffe) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Refactored useGT and useMessages in order to make useMessages function like an unlintable useGT
+
+## 2.1.8
+
+### Patch Changes
+
+- [#599](https://github.com/generaltranslation/gt/pull/599) [`5950592`](https://github.com/generaltranslation/gt/commit/5950592ca44197915216ec5c8e26f9714cb4f55c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: msg() function
+
+## 2.1.8
+
+### Patch Changes
+
+- [#594](https://github.com/generaltranslation/gt/pull/594) [`3fa9c41`](https://github.com/generaltranslation/gt/commit/3fa9c41e2e37933b04e6c3d6c0f94271a07d0ff6) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix <GTProvider> wizard scan behavior
+
 ## 2.1.7
 
 ### Patch Changes

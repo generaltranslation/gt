@@ -88,11 +88,26 @@ export async function wrapContentNext(
           options.addGTProvider &&
           isHtmlElement(path.node.openingElement)
         ) {
-          // Find the body element in the HTML children
-          const bodyElement = path.node.children.find(
-            (child): child is t.JSXElement =>
-              t.isJSXElement(child) && isBodyElement(child.openingElement)
-          );
+          // Find the body element recursively in the HTML tree
+          const findBodyElement = (
+            children: t.JSXElement['children']
+          ): t.JSXElement | null => {
+            for (const child of children) {
+              if (
+                t.isJSXElement(child) &&
+                isBodyElement(child.openingElement)
+              ) {
+                return child;
+              }
+              if (t.isJSXElement(child)) {
+                const bodyInChild = findBodyElement(child.children);
+                if (bodyInChild) return bodyInChild;
+              }
+            }
+            return null;
+          };
+
+          const bodyElement = findBodyElement(path.node.children);
 
           if (!bodyElement) {
             warnings.push(

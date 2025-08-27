@@ -106,6 +106,17 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (_hash) {
+      if (hash === _hash) {
+        console.log(`<T>: _hash found`);
+      } else {
+        console.error(
+          `<T>: _hash mismatch: ${hash} (runtime) !== ${_hash} (buildtime)`
+        );
+      }
+    } else {
+      console.error(`<T>: No _hash found`);
+    }
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);
 
