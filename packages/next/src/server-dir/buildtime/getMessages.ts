@@ -179,7 +179,7 @@ export async function getMessages(
     // Decode message and return if it's invalid
     const decodedOptions = decodeOptions(encodedMsg);
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return encodedMsg;
+      return encodedMsg; // should actually return t(encodedMsg), with t() as defined in getGT()
     }
 
     const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
