@@ -548,32 +548,18 @@ export function parseStrings(
     if (originalName === MSG_TRANSLATION_HOOK) {
       const ignoreAdditionalData = true;
 
-      // Check if this is a member expression call like msg.encode('string')
+      // Check if this is a direct call to msg('string')
       if (
-        refPath.parent.type === 'MemberExpression' &&
-        refPath.parent.object === refPath.node &&
-        refPath.parent.property.type === 'Identifier' &&
-        refPath.parent.property.name === 'encode'
+        refPath.parent.type === 'CallExpression' &&
+        refPath.parent.callee === refPath.node
       ) {
-        // Check if the member expression is being called
-        const memberExprParent = refPath.parentPath?.parent;
-        if (
-          memberExprParent &&
-          memberExprParent.type === 'CallExpression' &&
-          memberExprParent.callee === refPath.parent
-        ) {
-          // Create a pseudo path for the member expression call to reuse processTranslationCall
-          const memberExprPath = refPath.parentPath;
-          if (memberExprPath) {
-            processTranslationCall(
-              memberExprPath,
-              updates,
-              errors,
-              file,
-              ignoreAdditionalData
-            );
-          }
-        }
+        processTranslationCall(
+          refPath,
+          updates,
+          errors,
+          file,
+          ignoreAdditionalData
+        );
       }
       continue;
     }
