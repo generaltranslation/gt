@@ -32,7 +32,6 @@ export default function useCreateInternalUseTranslationsFunction(
 ) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
-      
       // Check: dictionary exists
       if (!dictionary) {
         return '';
