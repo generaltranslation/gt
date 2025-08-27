@@ -290,6 +290,11 @@ export default function useCreateInternalUseGTFunction({
       }
     }
 
+    if (!developmentApiEnabled) {
+      // Warn here
+      return renderMessage($_source, [defaultLocale]);
+    }
+
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
       if (preloadedTranslations?.[$_hash]) {
         try {
@@ -301,11 +306,6 @@ export default function useCreateInternalUseGTFunction({
           console.error(createStringRenderError($_source, decodeMsg(encodedMsg)), 'Error: ', error);
         }
       }
-      return renderMessage($_source, [defaultLocale]);
-    }
-
-    if (!developmentApiEnabled) {
-      // Warn here
       return renderMessage($_source, [defaultLocale]);
     }
 

@@ -22,8 +22,10 @@ import {
   useRegion,
   useRegionSelector,
   useLocaleDirection,
-  msg, decodeMsg, decodeOptions,
-  useMessages
+  msg,
+  decodeMsg,
+  decodeOptions,
+  useMessages,
 } from 'gt-react/client';
 
 export {
@@ -40,7 +42,9 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
-  msg, decodeMsg, decodeOptions,
+  msg,
+  decodeMsg,
+  decodeOptions,
   useMessages,
   // Components
   GTProvider as GTClientProvider,

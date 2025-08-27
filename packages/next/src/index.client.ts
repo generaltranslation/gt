@@ -18,6 +18,7 @@ import {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  useMessages,
 } from 'gt-react/client';
 import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
 import {
@@ -58,6 +59,7 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  useMessages,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,

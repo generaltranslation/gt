@@ -84,13 +84,12 @@ export function decodeMsg(encodedMsg: string): string {
  * @param encodedMsg The message to decode.
  * @returns The decoded options.
  */
-export function decodeOptions(
-  encodedMsg: string
-): {
-  $_source: string;
-  $_hash: string;
-} & InlineTranslationOptions | null {
-
+export function decodeOptions(encodedMsg: string):
+  | ({
+      $_source: string;
+      $_hash: string;
+    } & InlineTranslationOptions)
+  | null {
   if (encodedMsg.lastIndexOf(':') === -1) {
     return null;
   }

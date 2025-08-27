@@ -18,6 +18,7 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
+  useMessages as _useMessages
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -378,6 +379,25 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
 export const RegionSelector: typeof _RegionSelector = () => {
   throw new Error(typesFileError);
 };
+
+/**
+ * Gets the message decoding and translation function `m` provided by `<GTProvider>`.
+ *
+ * @returns {Function} A translation function that accepts an encoded message, decodes it, and returns the translated value.
+ *
+ * @example
+ * const encodedMessage = msg("Hello, world")
+ * const m = useMessages();
+ * m(encodedMessage) // returns "Hello, world" translated
+ *
+ * @example
+ * const encodedMessage = msg("My name is {name}", { name: "Brian" });
+ * const m = useMessage();
+ * m(encodedMessage) // returns "My name is Brian" translated
+ */
+export const useMessages: typeof _useMessages = () => {
+  throw new Error(typesFileError);
+}
 
 export {
   DictionaryTranslationOptions,
