@@ -23,42 +23,45 @@ export default async function processAnchorIds(settings: Settings) {
     settings.defaultLocale
   );
 
-  // Process MD and MDX files for each locale
-  for (const fileType of ['md', 'mdx'] as const) {
-    const filePaths = fileType === 'md' ? resolvedPaths.md : resolvedPaths.mdx;
-    if (filePaths) {
-      for (const sourcePath of filePaths) {
+  // Process each locale's translated files (same approach as localizeStaticUrls)
+  const processPromises = Object.entries(fileMapping)
+    .filter(([locale, filesMap]) => locale !== settings.defaultLocale) // Skip default locale
+    .map(async ([locale, filesMap]) => {
+      // Get all translated files that are md or mdx
+      const translatedFiles = Object.values(filesMap).filter(
+        (path) => path && (path.endsWith('.md') || path.endsWith('.mdx'))
+      );
+
+      for (const translatedPath of translatedFiles) {
         try {
+          // Find the corresponding source file
+          const sourcePath = Object.keys(filesMap).find(key => filesMap[key] === translatedPath);
+          if (!sourcePath) {
+            continue;
+          }
+
           // Extract heading info from source file
           const sourceContent = readFile(sourcePath);
           const sourceHeadingMap = extractHeadingInfo(sourceContent);
 
-          // Apply anchor IDs to translated files for each locale
-          for (const locale of settings.locales) {
-            if (locale === settings.defaultLocale) continue; // Skip default locale
+          // Read translated file and apply anchor IDs
+          const translatedContent = readFile(translatedPath);
+          const result = addExplicitAnchorIds(
+            translatedContent,
+            sourceHeadingMap,
+            settings
+          );
 
-            const translatedPath = fileMapping[locale][sourcePath];
-            if (translatedPath) {
-              try {
-                const translatedContent = readFile(translatedPath);
-                const result = addExplicitAnchorIds(
-                  translatedContent,
-                  sourceHeadingMap,
-                  settings
-                );
-
-                if (result.hasChanges) {
-                  fs.writeFileSync(translatedPath, result.content, 'utf8');
-                }
-              } catch (error) {
-                // Silently continue if translated file doesn't exist yet
-              }
-            }
+          if (result.hasChanges) {
+            fs.writeFileSync(translatedPath, result.content, 'utf8');
           }
         } catch (error) {
-          // Silently continue if source file has issues
+          console.warn(
+            `Failed to process IDs for ${translatedPath}: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
       }
-    }
-  }
+    });
+
+  await Promise.all(processPromises);
 }
