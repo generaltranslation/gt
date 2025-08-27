@@ -17,6 +17,8 @@ import {
   GT_TRANSLATION_FUNCS,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
+  INLINE_MESSAGE_HOOK,
+  INLINE_MESSAGE_HOOK_ASYNC,
   MSG_TRANSLATION_HOOK,
 } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
@@ -69,6 +71,8 @@ export async function createInlineUpdates(
             if (
               name.original === INLINE_TRANSLATION_HOOK ||
               name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
+              name.original === INLINE_MESSAGE_HOOK ||
+              name.original === INLINE_MESSAGE_HOOK_ASYNC ||
               name.original === MSG_TRANSLATION_HOOK
             ) {
               translationPaths.push({
@@ -107,6 +111,8 @@ export async function createInlineUpdates(
                 if (
                   name.original === INLINE_TRANSLATION_HOOK ||
                   name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
+                  name.original === INLINE_MESSAGE_HOOK ||
+                  name.original === INLINE_MESSAGE_HOOK_ASYNC ||
                   name.original === MSG_TRANSLATION_HOOK
                 ) {
                   translationPaths.push({
