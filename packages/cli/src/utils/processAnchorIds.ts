@@ -35,7 +35,9 @@ export default async function processAnchorIds(settings: Settings) {
       for (const translatedPath of translatedFiles) {
         try {
           // Find the corresponding source file
-          const sourcePath = Object.keys(filesMap).find(key => filesMap[key] === translatedPath);
+          const sourcePath = Object.keys(filesMap).find(
+            (key) => filesMap[key] === translatedPath
+          );
           if (!sourcePath) {
             continue;
           }
