@@ -23,6 +23,7 @@ export type Options = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+  experimentalAddHeaderAnchorIds?: 'mintlify';
 };
 
 export type TranslateFlags = {
@@ -44,6 +45,7 @@ export type TranslateFlags = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+  experimentalAddHeaderAnchorIds?: 'mintlify';
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
 };
@@ -185,7 +187,8 @@ export type AdditionalOptions = {
   docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
   copyFiles?: string[]; // array of files to copy to the target locale
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
-  experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files
+  experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
+  experimentalAddHeaderAnchorIds?: 'mintlify'; // Format for anchor IDs when experimentalLocalizeStaticUrls is enabled: 'mintlify' for div wrapping, undefined for inline {#id}
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
   baseDomain?: string; // The base http:// url where the project is hosted
