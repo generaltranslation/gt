@@ -85,14 +85,17 @@ export async function getTranslations(
     const messageOptions = decodeOptions(id);
     if (messageOptions) {
       isMessage = true;
-      options = messageOptions;
+      options = {
+        ...messageOptions,
+        ...options,
+      };
     }
 
     // Get entry
     id = !isMessage ? getId(id) : id;
     const value = !isMessage
       ? getDictionaryEntry(dictionary, id)
-      : decodeMsg(id);
+      : options?.$_source;
 
     // Check: no entry found
     if (!value) {

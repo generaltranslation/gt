@@ -17,8 +17,8 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * @example - Basic usage
  *
  * ```jsx
- * import { Msg } from 'gt-react';
- * const message = Msg.encode('Hello, {name}!', { name: 'Brian' });
+ * import { msg } from 'gt-react';
+ * const message = msg('Hello, {name}!', { name: 'Brian' });
  * console.log(message); // "Hello, Brian:eyIiOiIweDEyMyIsIm5hbWUiOiJCcmlhbiJ9"
  * ```
  * eyIiOiIweDEyMyIsIm5hbWUiOiJCcmlhbiJ9 encodes to {"$hash": "0x123", "name": "Brian"}
@@ -41,8 +41,9 @@ export function msg(
   // Always add hash to options
   if (options) {
     options.$_hash = hash;
+    options.$_source = content;
   } else {
-    options = { $_hash: hash };
+    options = { $_hash: hash, $_source: content };
   }
 
   // get the options encoding

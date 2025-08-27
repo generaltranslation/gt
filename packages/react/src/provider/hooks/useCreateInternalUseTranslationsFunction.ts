@@ -42,13 +42,16 @@ export default function useCreateInternalUseTranslationsFunction(
       const messageOptions = decodeOptions(id);
       if (messageOptions) {
         isMessage = true;
-        options = messageOptions;
+        options = {
+          ...messageOptions,
+          ...options,
+        };
       }
 
       // Get entry
       const value = !isMessage
         ? getDictionaryEntry(dictionary, id)
-        : decodeMsg(id);
+        : options?.$_source;
 
       // Check: no entry found
       if (!value) {
