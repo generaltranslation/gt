@@ -2,7 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { addExplicitAnchorIds } from '../addExplicitAnchorIds';
 
 describe('addExplicitAnchorIds', () => {
-  it('should add explicit IDs to all headings', () => {
+  // Mock settings for different modes
+  const standardSettings = undefined; // No settings = standard mode
+  const mintlifySettings = {
+    options: {
+      jsonSchema: {
+        './docs.json': {
+          preset: 'mintlify'
+        }
+      }
+    }
+  };
+  it('should add explicit IDs to all headings (default {#id} format)', () => {
     const input = `# Getting Started
 
 ## Code-based workflow
@@ -28,15 +39,9 @@ Another section here.
       { heading: 'Web editor workflow', id: 'web-editor-workflow' },
     ]);
 
-    expect(result.content).toContain(
-      '<div id="getting-started">\n\n# Getting Started\n\n</div>'
-    );
-    expect(result.content).toContain(
-      '<div id="code-based-workflow">\n\n## Code-based workflow\n\n</div>'
-    );
-    expect(result.content).toContain(
-      '<div id="web-editor-workflow">\n\n## Web editor workflow\n\n</div>'
-    );
+    expect(result.content).toContain('# Getting Started {#getting-started}');
+    expect(result.content).toContain('## Code-based workflow {#code-based-workflow}');
+    expect(result.content).toContain('## Web editor workflow {#web-editor-workflow}');
   });
 
   it('should skip headings that already have explicit IDs', () => {
@@ -70,12 +75,8 @@ No links here either.
       { heading: 'No Links Here', id: 'no-links-here' },
       { heading: 'Another Section', id: 'another-section' },
     ]);
-    expect(result.content).toContain(
-      '<div id="no-links-here">\n\n## No Links Here\n\n</div>'
-    );
-    expect(result.content).toContain(
-      '<div id="another-section">\n\n## Another Section\n\n</div>'
-    );
+    expect(result.content).toContain('## No Links Here {#no-links-here}');
+    expect(result.content).toContain('## Another Section {#another-section}');
   });
 
   it('should handle JSX href attributes in raw JSX', () => {
@@ -94,9 +95,7 @@ No links here either.
       heading: 'Implementation Details',
       id: 'implementation-details',
     });
-    expect(result.content).toContain(
-      '<div id="implementation-details">\n\n## Implementation Details\n\n</div>'
-    );
+    expect(result.content).toContain('## Implementation Details {#implementation-details}');
   });
 
   it('should handle special characters in headings', () => {
@@ -129,9 +128,7 @@ Regular content without any anchor links.
       heading: 'Some Section',
       id: 'some-section',
     });
-    expect(result.content).toContain(
-      '<div id="some-section">\n\n## Some Section\n\n</div>'
-    );
+    expect(result.content).toContain('## Some Section {#some-section}');
   });
 
   it('should handle most markdown content successfully', () => {
@@ -148,9 +145,7 @@ Regular content without any anchor links.
       heading: 'Section',
       id: 'section',
     });
-    expect(result.content).toContain(
-      '<div id="section">\n\n## Section\n\n</div>'
-    );
+    expect(result.content).toContain('## Section {#section}');
   });
 
   // Edge case tests that we expect to fail currently
@@ -171,9 +166,9 @@ Regular content without any anchor links.
     expect(result.hasChanges).toBe(true);
     expect(result.addedIds).toHaveLength(2);
 
-    // These assertions will likely fail with current implementation
-    expect(result.content).toContain('<div id="bold-heading-with-formatting">');
-    expect(result.content).toContain('<div id="code-heading-example">');
+    // Should now handle formatted headings correctly
+    expect(result.content).toContain('## **Bold Heading** with formatting {#bold-heading-with-formatting}');
+    expect(result.content).toContain('## `Code Heading` example {#code-heading-example}');
   });
 
   it('should not process headings inside code blocks (currently fails)', () => {
@@ -199,10 +194,8 @@ This is just an example
       id: 'real-heading',
     });
 
-    // Should wrap real heading but NOT the code block heading
-    expect(result.content).toContain(
-      '<div id="real-heading">\n\n## Real Heading\n\n</div>'
-    );
+    // Should add ID to real heading but NOT the code block heading
+    expect(result.content).toContain('## Real Heading {#real-heading}');
     expect(result.content).not.toContain(
       '<div id="fake-heading-in-code-block">'
     );
@@ -211,5 +204,204 @@ This is just an example
     expect(result.content).toContain(
       '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
     );
+  });
+
+  // Comprehensive dual tests for both modes
+  describe('Standard Mode vs Mintlify Mode', () => {
+    const basicInput = `# Getting Started
+
+## Code-based workflow
+
+This section explains the code workflow.
+
+## Web editor workflow
+
+Another section here.
+`;
+
+    it('should add {#id} format in standard mode', () => {
+      const result = addExplicitAnchorIds(basicInput, standardSettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(3);
+      
+      expect(result.content).toContain('# Getting Started {#getting-started}');
+      expect(result.content).toContain('## Code-based workflow {#code-based-workflow}');
+      expect(result.content).toContain('## Web editor workflow {#web-editor-workflow}');
+      
+      // Should NOT contain div wrapping
+      expect(result.content).not.toContain('<div id="getting-started">');
+    });
+
+    it('should add div wrapping in Mintlify mode', () => {
+      const result = addExplicitAnchorIds(basicInput, mintlifySettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(3);
+      
+      expect(result.content).toContain('<div id="getting-started">\n\n# Getting Started\n\n</div>');
+      expect(result.content).toContain('<div id="code-based-workflow">\n\n## Code-based workflow\n\n</div>');
+      expect(result.content).toContain('<div id="web-editor-workflow">\n\n## Web editor workflow\n\n</div>');
+      
+      // Should NOT contain {#id} format
+      expect(result.content).not.toContain('{#getting-started}');
+    });
+  });
+
+  describe('Formatted Headings - Both Modes', () => {
+    const formattedInput = `## **Bold Heading** with formatting
+
+## \`Code Heading\` example
+
+## *Italic* and **mixed** formatting
+`;
+
+    it('should handle formatted headings in standard mode', () => {
+      const result = addExplicitAnchorIds(formattedInput, standardSettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(3);
+      
+      expect(result.content).toContain('## **Bold Heading** with formatting {#bold-heading-with-formatting}');
+      expect(result.content).toContain('## `Code Heading` example {#code-heading-example}');
+      expect(result.content).toContain('## _Italic_ and **mixed** formatting {#italic-and-mixed-formatting}');
+    });
+
+    it('should handle formatted headings in Mintlify mode', () => {
+      const result = addExplicitAnchorIds(formattedInput, mintlifySettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(3);
+      
+      expect(result.content).toContain('<div id="bold-heading-with-formatting">\n\n## **Bold Heading** with formatting\n\n</div>');
+      expect(result.content).toContain('<div id="code-heading-example">\n\n## `Code Heading` example\n\n</div>');
+      expect(result.content).toContain('<div id="italic-and-mixed-formatting">\n\n## *Italic* and **mixed** formatting\n\n</div>');
+    });
+  });
+
+  describe('Code Block Protection - Both Modes', () => {
+    const codeBlockInput = `## Real Heading
+
+This is real content.
+
+\`\`\`markdown
+## Fake Heading In Code Block
+This is just an example
+\`\`\`
+
+## Another Real Heading
+
+More content.
+`;
+
+    it('should ignore code blocks in standard mode', () => {
+      const result = addExplicitAnchorIds(codeBlockInput, standardSettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(2);
+      expect(result.addedIds).toEqual([
+        { heading: 'Real Heading', id: 'real-heading' },
+        { heading: 'Another Real Heading', id: 'another-real-heading' }
+      ]);
+      
+      expect(result.content).toContain('## Real Heading {#real-heading}');
+      expect(result.content).toContain('## Another Real Heading {#another-real-heading}');
+      expect(result.content).not.toContain('{#fake-heading-in-code-block}');
+      
+      // Code block should remain unchanged
+      expect(result.content).toContain('```markdown\n## Fake Heading In Code Block\nThis is just an example\n```');
+    });
+
+    it('should ignore code blocks in Mintlify mode', () => {
+      const result = addExplicitAnchorIds(codeBlockInput, mintlifySettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(2);
+      
+      expect(result.content).toContain('<div id="real-heading">\n\n## Real Heading\n\n</div>');
+      expect(result.content).toContain('<div id="another-real-heading">\n\n## Another Real Heading\n\n</div>');
+      expect(result.content).not.toContain('<div id="fake-heading-in-code-block">');
+      
+      // Code block should remain unchanged
+      expect(result.content).toContain('```markdown\n## Fake Heading In Code Block\nThis is just an example\n```');
+    });
+  });
+
+  describe('Special Characters - Both Modes', () => {
+    const specialCharsInput = `## Code & Design Workflow!
+
+## API Reference (v2.0)
+
+## Getting Started: Step 1
+
+## What's New?
+`;
+
+    it('should handle special characters in standard mode', () => {
+      const result = addExplicitAnchorIds(specialCharsInput, standardSettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(4);
+      
+      expect(result.content).toContain('## Code & Design Workflow! {#code-design-workflow}');
+      expect(result.content).toContain('## API Reference (v2.0) {#api-reference-v20}');
+      expect(result.content).toContain('## Getting Started: Step 1 {#getting-started-step-1}');
+      expect(result.content).toContain('## What\'s New? {#whats-new}');
+    });
+
+    it('should handle special characters in Mintlify mode', () => {
+      const result = addExplicitAnchorIds(specialCharsInput, mintlifySettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(4);
+      
+      expect(result.content).toContain('<div id="code-design-workflow">\n\n## Code & Design Workflow!\n\n</div>');
+      expect(result.content).toContain('<div id="api-reference-v20">\n\n## API Reference (v2.0)\n\n</div>');
+      expect(result.content).toContain('<div id="getting-started-step-1">\n\n## Getting Started: Step 1\n\n</div>');
+      expect(result.content).toContain('<div id="whats-new">\n\n## What\'s New?\n\n</div>');
+    });
+  });
+
+  describe('All Heading Levels - Both Modes', () => {
+    const allLevelsInput = `# H1 Heading
+
+## H2 Heading
+
+### H3 Heading
+
+#### H4 Heading
+
+##### H5 Heading
+
+###### H6 Heading
+`;
+
+    it('should handle all heading levels in standard mode', () => {
+      const result = addExplicitAnchorIds(allLevelsInput, standardSettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(6);
+      
+      expect(result.content).toContain('# H1 Heading {#h1-heading}');
+      expect(result.content).toContain('## H2 Heading {#h2-heading}');
+      expect(result.content).toContain('### H3 Heading {#h3-heading}');
+      expect(result.content).toContain('#### H4 Heading {#h4-heading}');
+      expect(result.content).toContain('##### H5 Heading {#h5-heading}');
+      expect(result.content).toContain('###### H6 Heading {#h6-heading}');
+    });
+
+    it('should handle all heading levels in Mintlify mode', () => {
+      const result = addExplicitAnchorIds(allLevelsInput, mintlifySettings);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toHaveLength(6);
+      
+      expect(result.content).toContain('<div id="h1-heading">\n\n# H1 Heading\n\n</div>');
+      expect(result.content).toContain('<div id="h2-heading">\n\n## H2 Heading\n\n</div>');
+      expect(result.content).toContain('<div id="h3-heading">\n\n### H3 Heading\n\n</div>');
+      expect(result.content).toContain('<div id="h4-heading">\n\n#### H4 Heading\n\n</div>');
+      expect(result.content).toContain('<div id="h5-heading">\n\n##### H5 Heading\n\n</div>');
+      expect(result.content).toContain('<div id="h6-heading">\n\n###### H6 Heading\n\n</div>');
+    });
   });
 });

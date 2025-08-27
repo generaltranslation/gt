@@ -96,7 +96,7 @@ export async function aggregateFiles(
           (fileType === 'md' || fileType === 'mdx') &&
           settings.options?.experimentalLocalizeStaticUrls
         ) {
-          const result = addExplicitAnchorIds(content);
+          const result = addExplicitAnchorIds(content, settings);
           if (result.hasChanges) {
             content = result.content;
           }
