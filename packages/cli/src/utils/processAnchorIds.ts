@@ -51,7 +51,9 @@ export default async function processAnchorIds(settings: Settings) {
           const result = addExplicitAnchorIds(
             translatedContent,
             sourceHeadingMap,
-            settings
+            settings,
+            sourcePath,
+            translatedPath
           );
 
           if (result.hasChanges) {

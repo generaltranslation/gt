@@ -102,7 +102,9 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
 export function addExplicitAnchorIds(
   translatedContent: string,
   sourceHeadingMap: HeadingInfo[],
-  settings?: any
+  settings?: any,
+  sourcePath?: string,
+  translatedPath?: string
 ): {
   content: string;
   hasChanges: boolean;
@@ -117,8 +119,11 @@ export function addExplicitAnchorIds(
 
   // Pre-processing validation: check if header counts match
   if (sourceHeadingMap.length !== translatedHeadings.length) {
+    const sourceFile = sourcePath ? `Source file: ${sourcePath}` : 'Source file';
+    const translatedFile = translatedPath ? `translated file: ${translatedPath}` : 'translated file';
+    
     logErrorAndExit(
-      `Header count mismatch detected! Source file has ${sourceHeadingMap.length} headers but translated file has ${translatedHeadings.length} headers. ` +
+      `Header count mismatch detected! ${sourceFile} has ${sourceHeadingMap.length} headers but ${translatedFile} has ${translatedHeadings.length} headers. ` +
         `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
         `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`
     );

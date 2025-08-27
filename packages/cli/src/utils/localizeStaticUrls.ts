@@ -151,6 +151,11 @@ function shouldProcessUrl(
   defaultLocale: string,
   baseDomain?: string
 ): boolean {
+  // Check fragment-only URLs like "#id-name"
+  if (/^\s*#/.test(originalUrl)) {
+    return false;
+  }
+
   const patternWithoutSlash = patternHead.replace(/\/$/, '');
 
   // Handle absolute URLs with baseDomain
