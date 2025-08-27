@@ -8,10 +8,10 @@ describe('addExplicitAnchorIds', () => {
     options: {
       jsonSchema: {
         './docs.json': {
-          preset: 'mintlify'
-        }
-      }
-    }
+          preset: 'mintlify',
+        },
+      },
+    },
   };
   it('should add explicit IDs to all headings (default {#id} format)', () => {
     const input = `# Getting Started
@@ -40,8 +40,12 @@ Another section here.
     ]);
 
     expect(result.content).toContain('# Getting Started {#getting-started}');
-    expect(result.content).toContain('## Code-based workflow {#code-based-workflow}');
-    expect(result.content).toContain('## Web editor workflow {#web-editor-workflow}');
+    expect(result.content).toContain(
+      '## Code-based workflow {#code-based-workflow}'
+    );
+    expect(result.content).toContain(
+      '## Web editor workflow {#web-editor-workflow}'
+    );
   });
 
   it('should skip headings that already have explicit IDs', () => {
@@ -95,7 +99,9 @@ No links here either.
       heading: 'Implementation Details',
       id: 'implementation-details',
     });
-    expect(result.content).toContain('## Implementation Details {#implementation-details}');
+    expect(result.content).toContain(
+      '## Implementation Details {#implementation-details}'
+    );
   });
 
   it('should handle special characters in headings', () => {
@@ -167,8 +173,12 @@ Regular content without any anchor links.
     expect(result.addedIds).toHaveLength(2);
 
     // Should now handle formatted headings correctly
-    expect(result.content).toContain('## **Bold Heading** with formatting {#bold-heading-with-formatting}');
-    expect(result.content).toContain('## `Code Heading` example {#code-heading-example}');
+    expect(result.content).toContain(
+      '## **Bold Heading** with formatting {#bold-heading-with-formatting}'
+    );
+    expect(result.content).toContain(
+      '## `Code Heading` example {#code-heading-example}'
+    );
   });
 
   it('should not process headings inside code blocks (currently fails)', () => {
@@ -224,11 +234,15 @@ Another section here.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
-      
+
       expect(result.content).toContain('# Getting Started {#getting-started}');
-      expect(result.content).toContain('## Code-based workflow {#code-based-workflow}');
-      expect(result.content).toContain('## Web editor workflow {#web-editor-workflow}');
-      
+      expect(result.content).toContain(
+        '## Code-based workflow {#code-based-workflow}'
+      );
+      expect(result.content).toContain(
+        '## Web editor workflow {#web-editor-workflow}'
+      );
+
       // Should NOT contain div wrapping
       expect(result.content).not.toContain('<div id="getting-started">');
     });
@@ -238,11 +252,17 @@ Another section here.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
-      
-      expect(result.content).toContain('<div id="getting-started">\n\n# Getting Started\n\n</div>');
-      expect(result.content).toContain('<div id="code-based-workflow">\n\n## Code-based workflow\n\n</div>');
-      expect(result.content).toContain('<div id="web-editor-workflow">\n\n## Web editor workflow\n\n</div>');
-      
+
+      expect(result.content).toContain(
+        '<div id="getting-started">\n\n# Getting Started\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="code-based-workflow">\n\n## Code-based workflow\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="web-editor-workflow">\n\n## Web editor workflow\n\n</div>'
+      );
+
       // Should NOT contain {#id} format
       expect(result.content).not.toContain('{#getting-started}');
     });
@@ -261,10 +281,16 @@ Another section here.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
-      
-      expect(result.content).toContain('## **Bold Heading** with formatting {#bold-heading-with-formatting}');
-      expect(result.content).toContain('## `Code Heading` example {#code-heading-example}');
-      expect(result.content).toContain('## _Italic_ and **mixed** formatting {#italic-and-mixed-formatting}');
+
+      expect(result.content).toContain(
+        '## **Bold Heading** with formatting {#bold-heading-with-formatting}'
+      );
+      expect(result.content).toContain(
+        '## `Code Heading` example {#code-heading-example}'
+      );
+      expect(result.content).toContain(
+        '## _Italic_ and **mixed** formatting {#italic-and-mixed-formatting}'
+      );
     });
 
     it('should handle formatted headings in Mintlify mode', () => {
@@ -272,10 +298,16 @@ Another section here.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
-      
-      expect(result.content).toContain('<div id="bold-heading-with-formatting">\n\n## **Bold Heading** with formatting\n\n</div>');
-      expect(result.content).toContain('<div id="code-heading-example">\n\n## `Code Heading` example\n\n</div>');
-      expect(result.content).toContain('<div id="italic-and-mixed-formatting">\n\n## *Italic* and **mixed** formatting\n\n</div>');
+
+      expect(result.content).toContain(
+        '<div id="bold-heading-with-formatting">\n\n## **Bold Heading** with formatting\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="code-heading-example">\n\n## `Code Heading` example\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="italic-and-mixed-formatting">\n\n## *Italic* and **mixed** formatting\n\n</div>'
+      );
     });
   });
 
@@ -301,15 +333,19 @@ More content.
       expect(result.addedIds).toHaveLength(2);
       expect(result.addedIds).toEqual([
         { heading: 'Real Heading', id: 'real-heading' },
-        { heading: 'Another Real Heading', id: 'another-real-heading' }
+        { heading: 'Another Real Heading', id: 'another-real-heading' },
       ]);
-      
+
       expect(result.content).toContain('## Real Heading {#real-heading}');
-      expect(result.content).toContain('## Another Real Heading {#another-real-heading}');
+      expect(result.content).toContain(
+        '## Another Real Heading {#another-real-heading}'
+      );
       expect(result.content).not.toContain('{#fake-heading-in-code-block}');
-      
+
       // Code block should remain unchanged
-      expect(result.content).toContain('```markdown\n## Fake Heading In Code Block\nThis is just an example\n```');
+      expect(result.content).toContain(
+        '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
+      );
     });
 
     it('should ignore code blocks in Mintlify mode', () => {
@@ -317,13 +353,21 @@ More content.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(2);
-      
-      expect(result.content).toContain('<div id="real-heading">\n\n## Real Heading\n\n</div>');
-      expect(result.content).toContain('<div id="another-real-heading">\n\n## Another Real Heading\n\n</div>');
-      expect(result.content).not.toContain('<div id="fake-heading-in-code-block">');
-      
+
+      expect(result.content).toContain(
+        '<div id="real-heading">\n\n## Real Heading\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="another-real-heading">\n\n## Another Real Heading\n\n</div>'
+      );
+      expect(result.content).not.toContain(
+        '<div id="fake-heading-in-code-block">'
+      );
+
       // Code block should remain unchanged
-      expect(result.content).toContain('```markdown\n## Fake Heading In Code Block\nThis is just an example\n```');
+      expect(result.content).toContain(
+        '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
+      );
     });
   });
 
@@ -342,11 +386,17 @@ More content.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(4);
-      
-      expect(result.content).toContain('## Code & Design Workflow! {#code-design-workflow}');
-      expect(result.content).toContain('## API Reference (v2.0) {#api-reference-v20}');
-      expect(result.content).toContain('## Getting Started: Step 1 {#getting-started-step-1}');
-      expect(result.content).toContain('## What\'s New? {#whats-new}');
+
+      expect(result.content).toContain(
+        '## Code & Design Workflow! {#code-design-workflow}'
+      );
+      expect(result.content).toContain(
+        '## API Reference (v2.0) {#api-reference-v20}'
+      );
+      expect(result.content).toContain(
+        '## Getting Started: Step 1 {#getting-started-step-1}'
+      );
+      expect(result.content).toContain("## What's New? {#whats-new}");
     });
 
     it('should handle special characters in Mintlify mode', () => {
@@ -354,11 +404,19 @@ More content.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(4);
-      
-      expect(result.content).toContain('<div id="code-design-workflow">\n\n## Code & Design Workflow!\n\n</div>');
-      expect(result.content).toContain('<div id="api-reference-v20">\n\n## API Reference (v2.0)\n\n</div>');
-      expect(result.content).toContain('<div id="getting-started-step-1">\n\n## Getting Started: Step 1\n\n</div>');
-      expect(result.content).toContain('<div id="whats-new">\n\n## What\'s New?\n\n</div>');
+
+      expect(result.content).toContain(
+        '<div id="code-design-workflow">\n\n## Code & Design Workflow!\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="api-reference-v20">\n\n## API Reference (v2.0)\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="getting-started-step-1">\n\n## Getting Started: Step 1\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="whats-new">\n\n## What\'s New?\n\n</div>'
+      );
     });
   });
 
@@ -381,7 +439,7 @@ More content.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(6);
-      
+
       expect(result.content).toContain('# H1 Heading {#h1-heading}');
       expect(result.content).toContain('## H2 Heading {#h2-heading}');
       expect(result.content).toContain('### H3 Heading {#h3-heading}');
@@ -395,13 +453,25 @@ More content.
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(6);
-      
-      expect(result.content).toContain('<div id="h1-heading">\n\n# H1 Heading\n\n</div>');
-      expect(result.content).toContain('<div id="h2-heading">\n\n## H2 Heading\n\n</div>');
-      expect(result.content).toContain('<div id="h3-heading">\n\n### H3 Heading\n\n</div>');
-      expect(result.content).toContain('<div id="h4-heading">\n\n#### H4 Heading\n\n</div>');
-      expect(result.content).toContain('<div id="h5-heading">\n\n##### H5 Heading\n\n</div>');
-      expect(result.content).toContain('<div id="h6-heading">\n\n###### H6 Heading\n\n</div>');
+
+      expect(result.content).toContain(
+        '<div id="h1-heading">\n\n# H1 Heading\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="h2-heading">\n\n## H2 Heading\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="h3-heading">\n\n### H3 Heading\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="h4-heading">\n\n#### H4 Heading\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="h5-heading">\n\n##### H5 Heading\n\n</div>'
+      );
+      expect(result.content).toContain(
+        '<div id="h6-heading">\n\n###### H6 Heading\n\n</div>'
+      );
     });
   });
 });

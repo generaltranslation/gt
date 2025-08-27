@@ -50,7 +50,7 @@ function hasExplicitId(heading: Heading, ast: Root): boolean {
  */
 function isMintlifyProject(settings: any): boolean {
   if (!settings.options?.jsonSchema) return false;
-  
+
   return Object.values(settings.options.jsonSchema).some(
     (schema: any) => schema?.preset === 'mintlify'
   );
@@ -60,7 +60,7 @@ function isMintlifyProject(settings: any): boolean {
  * Adds explicit IDs to headings that have corresponding anchor links
  */
 export function addExplicitAnchorIds(
-  mdxContent: string, 
+  mdxContent: string,
   settings?: any
 ): {
   content: string;
@@ -131,7 +131,7 @@ function addInlineIds(
     }
 
     const slug = generateSlug(headingText);
-    
+
     // Add explicit ID to all headings (for cross-file link support)
     const lastChild = heading.children[heading.children.length - 1];
     if (lastChild?.type === 'text') {
@@ -161,14 +161,14 @@ function addInlineIds(
           // Custom handler to prevent escaping of {#id} syntax
           text(node: any) {
             return node.value;
-          }
-        }
+          },
+        },
       })
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx);
 
     let content = stringifyProcessor.stringify(processedAst);
-    
+
     // Handle newline formatting to match original input
     if (content.endsWith('\n') && !mdxContent.endsWith('\n')) {
       content = content.slice(0, -1);
@@ -205,7 +205,8 @@ function addDivWrappedIds(
 
   // Extract all heading lines from the original markdown
   const lines = mdxContent.split('\n');
-  const headingLines: Array<{ line: string; level: number; index: number }> = [];
+  const headingLines: Array<{ line: string; level: number; index: number }> =
+    [];
 
   lines.forEach((line, index) => {
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
