@@ -9,6 +9,7 @@ import getDictionary from '../../dictionary/getDictionary';
 import {
   createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
+  createInvalidDictionaryTranslationEntryWarning,
   createNoEntryFoundWarning,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
@@ -129,13 +130,13 @@ export async function getTranslations(
       dictionaryTranslations || {},
       id
     );
-
     // Check: invalid entry
     if (
-      !isValidDictionaryEntry(dictionaryTranslation) ||
-      typeof dictionaryTranslation !== 'string'
+      dictionaryTranslation !== undefined &&
+      (!isValidDictionaryEntry(dictionaryTranslation) ||
+        typeof dictionaryTranslation !== 'string')
     ) {
-      console.warn(createInvalidDictionaryEntryWarning(id));
+      console.warn(createInvalidDictionaryTranslationEntryWarning(id));
       return renderContent(entry, [defaultLocale]);
     }
 
@@ -149,12 +150,14 @@ export async function getTranslations(
 
     // ---------- TRANSLATION ---------- //
 
-    const hash = hashSource({
-      source: entry,
-      ...(metadata?.$context && { context: metadata.$context }),
-      id,
-      dataFormat: 'ICU',
-    });
+    const hash = !isMessage
+      ? hashSource({
+          source: entry,
+          ...(metadata?.$context && { context: metadata.$context }),
+          id,
+          dataFormat: 'ICU',
+        })
+      : options?.$_hash || '';
     const translationEntry = translations?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
@@ -181,7 +184,7 @@ export async function getTranslations(
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
-          id,
+          ...(isMessage && { id }),
           hash,
         },
       }).then((result) => {

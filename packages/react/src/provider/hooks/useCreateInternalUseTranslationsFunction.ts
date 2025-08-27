@@ -17,7 +17,7 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../types/runtime';
-import { msg, decodeMsg, decodeOptions } from '../../messages/messages';
+import { decodeMsg, decodeOptions } from '../../messages/messages';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -84,12 +84,14 @@ export default function useCreateInternalUseTranslationsFunction(
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      const hash = hashSource({
-        source: entry,
-        ...(metadata?.$context && { context: metadata.$context }),
-        id,
-        dataFormat: 'ICU',
-      });
+      const hash = !isMessage
+        ? hashSource({
+            source: entry,
+            ...(metadata?.$context && { context: metadata.$context }),
+            id,
+            dataFormat: 'ICU',
+          })
+        : options?.$_hash || '';
 
       // Check id first
       const translationEntry = translations?.[hash];
@@ -120,7 +122,7 @@ export default function useCreateInternalUseTranslationsFunction(
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),
-          id,
+          ...(isMessage && { id }),
           hash,
         },
       });

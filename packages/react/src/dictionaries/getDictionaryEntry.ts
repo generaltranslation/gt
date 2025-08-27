@@ -4,7 +4,9 @@ import { Dictionary, DictionaryEntry } from '../types/types';
 export function isValidDictionaryEntry(
   value: unknown
 ): value is DictionaryEntry {
-  if (typeof value === 'string') return true;
+  if (typeof value === 'string') {
+    return true;
+  }
 
   if (Array.isArray(value)) {
     if (typeof value?.[0] !== 'string') {
