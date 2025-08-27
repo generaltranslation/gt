@@ -5,9 +5,12 @@ import getI18NConfig from './config-dir/getI18NConfig';
 import { getTranslations } from './server-dir/buildtime/getTranslations';
 import GTProvider from './provider/GTProvider';
 import Tx from './server-dir/runtime/_Tx';
-import { getGT } from './server-dir/buildtime/getGT';
 import { LocaleProperties } from 'generaltranslation/types';
 import { getLocaleDirection } from './request/getLocaleDirection';
+import {
+  getMessages,
+  getGT,
+} from './server-dir/buildtime/getTranslationFunction';
 
 export function getDefaultLocale(): string {
   return getI18NConfig().getDefaultLocale();
@@ -29,9 +32,10 @@ export {
   GTProvider,
   T,
   getGT,
+  getTranslations,
+  getMessages,
   tx,
   Tx,
   getLocale,
-  getTranslations,
   getLocaleDirection,
 };

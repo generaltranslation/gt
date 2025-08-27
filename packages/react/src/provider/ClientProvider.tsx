@@ -7,8 +7,8 @@ import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
 import { Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
+import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
+import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
@@ -133,16 +133,20 @@ export default function ClientProvider({
 
   // ---------- USE GT() TRANSLATION ---------- //
 
-  const { _tFunction, _filterMessagesForPreload, _preloadMessages } =
-    useCreateInternalUseGTFunction({
-      gt,
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      developmentApiEnabled,
-      registerIcuForTranslation,
-    });
+  const {
+    _tFunction,
+    _mFunction,
+    _filterMessagesForPreload,
+    _preloadMessages,
+  } = useCreateInternalUseGTFunction({
+    gt,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation,
+  });
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
@@ -171,6 +175,7 @@ export default function ClientProvider({
         registerJsxForTranslation,
         setLocale,
         _tFunction,
+        _mFunction,
         _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,

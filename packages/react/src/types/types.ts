@@ -87,6 +87,7 @@ export type InlineTranslationOptions = DictionaryTranslationOptions & {
   $context?: string;
   $id?: string;
   $_hash?: string;
+  $_source?: string;
 };
 
 export type RuntimeTranslationOptions = {

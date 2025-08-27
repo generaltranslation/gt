@@ -7,7 +7,7 @@ import { reactHasUse } from '../../promises/reactHasUse';
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
  *
- * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ * @returns {Function} A translation function that accepts an ICU message format string and returns the translation of that string.
  *
  * @example
  * const t = useGT();
@@ -15,12 +15,7 @@ import { reactHasUse } from '../../promises/reactHasUse';
  *
  * @example
  * const t = useGT();
- * return (<>
- *  {
- *     t('My name is {customName}', { customName: "Brian", id: 'my-name', context: 'a proper noun' } )
- *  }
- * </>);
- *
+ * t('My name is {customName}', { customName: "Brian", id: 'my-name', context: 'a proper noun' } )
  */
 export default function useGT(_messages?: _Messages) {
   const {
@@ -58,7 +53,7 @@ export default function useGT(_messages?: _Messages) {
 
   /**
    * @param {string} message
-   * @param {InlineTranslationOptions} options For translating strings, the locale to translate to.
+   * @param {InlineTranslationOptions} options Interpolated variables and translation context.
    * @returns The translated version of content
    *
    * @example
