@@ -90,16 +90,18 @@ export async function aggregateFiles(
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         let content = readFile(filePath);
-        
+
         // Apply preprocessor to add explicit anchor IDs for md/mdx files
-        if ((fileType === 'md' || fileType === 'mdx') && 
-            settings.options?.experimentalLocalizeStaticUrls) {
+        if (
+          (fileType === 'md' || fileType === 'mdx') &&
+          settings.options?.experimentalLocalizeStaticUrls
+        ) {
           const result = addExplicitAnchorIds(content);
           if (result.hasChanges) {
             content = result.content;
           }
         }
-        
+
         const sanitizedContent = sanitizeFileContent(content);
         const relativePath = getRelative(filePath);
         return {
