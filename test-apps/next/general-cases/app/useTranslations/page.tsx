@@ -1,10 +1,6 @@
-import { useTranslations } from "gt-next";
+import { useTranslations } from 'gt-next';
 
 export default function Page() {
   const d = useTranslations();
-  return (
-    <>
-      {d("greeting")}
-    </>
-  );
+  return <>{d('greeting')}</>;
 }

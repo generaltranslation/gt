@@ -1,6 +1,4 @@
-import { T } from "gt-next";
+import { T } from 'gt-next';
 export default function Home() {
-  return (
-    <>Hello</>
-  );
+  return <>Hello</>;
 }

@@ -1,7 +1,5 @@
-import { T } from "gt-next";
+import { T } from 'gt-next';
 
 export default function Page() {
-  return (
-    <T>Hello</T>
-  );
+  return <T>Hello</T>;
 }
