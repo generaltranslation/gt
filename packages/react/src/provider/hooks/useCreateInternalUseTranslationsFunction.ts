@@ -4,20 +4,19 @@ import {
   DictionaryTranslationOptions,
   RenderMethod,
   Translations,
-} from '../../../types/types';
+} from '../../types/types';
 import {
   getDictionaryEntry,
   isValidDictionaryEntry,
-} from '../../../dictionaries/getDictionaryEntry';
-import getEntryAndMetadata from '../../../dictionaries/getEntryAndMetadata';
+} from '../../dictionaries/getDictionaryEntry';
+import getEntryAndMetadata from '../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-} from '../../../errors/createErrors';
+} from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
-import { TranslateIcuCallback } from '../../../types/runtime';
-import { decodeMsg, decodeOptions } from '../../../messages/messages';
+import { TranslateIcuCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -37,21 +36,8 @@ export default function useCreateInternalUseTranslationsFunction(
         return '';
       }
 
-      // Check if is a message
-      let isMessage = false;
-      const messageOptions = decodeOptions(id);
-      if (messageOptions) {
-        isMessage = true;
-        options = {
-          ...messageOptions,
-          ...options,
-        };
-      }
-
       // Get entry
-      const value = !isMessage
-        ? getDictionaryEntry(dictionary, id)
-        : options?.$_source;
+      const value = getDictionaryEntry(dictionary, id);
 
       // Check: no entry found
       if (!value) {
@@ -87,14 +73,12 @@ export default function useCreateInternalUseTranslationsFunction(
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      const hash = !isMessage
-        ? hashSource({
-            source: entry,
-            ...(metadata?.$context && { context: metadata.$context }),
-            id,
-            dataFormat: 'ICU',
-          })
-        : options?.$_hash || '';
+      const hash = hashSource({
+        source: entry,
+        ...(metadata?.$context && { context: metadata.$context }),
+        id,
+        dataFormat: 'ICU',
+      });
 
       // Check id first
       const translationEntry = translations?.[hash];
@@ -125,7 +109,7 @@ export default function useCreateInternalUseTranslationsFunction(
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),
-          ...(isMessage && { id }),
+          id,
           hash,
         },
       });
