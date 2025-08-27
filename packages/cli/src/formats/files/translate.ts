@@ -7,7 +7,10 @@ import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import { determineLibrary } from '../../fs/determineFramework.js';
-import { addExplicitAnchorIds, extractHeadingInfo } from '../../utils/addExplicitAnchorIds.js';
+import {
+  addExplicitAnchorIds,
+  extractHeadingInfo,
+} from '../../utils/addExplicitAnchorIds.js';
 
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -97,7 +100,11 @@ export async function aggregateFiles(
           settings.options?.experimentalLocalizeStaticUrls
         ) {
           const sourceHeadingMap = extractHeadingInfo(content);
-          const result = addExplicitAnchorIds(content, sourceHeadingMap, settings);
+          const result = addExplicitAnchorIds(
+            content,
+            sourceHeadingMap,
+            settings
+          );
           if (result.hasChanges) {
             content = result.content;
           }

@@ -98,7 +98,7 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
         text: headingText,
         level: heading.depth,
         slug,
-        position: position++
+        position: position++,
       });
     }
   });
@@ -123,7 +123,7 @@ export function addExplicitAnchorIds(
 
   // Extract headings from translated content
   const translatedHeadings = extractHeadingInfo(translatedContent);
-  
+
   // Create ID mapping based on positional matching
   const idMappings = new Map<number, string>();
   sourceHeadingMap.forEach((sourceHeading, index) => {
@@ -131,9 +131,9 @@ export function addExplicitAnchorIds(
     // Match by position and level for safety
     if (translatedHeading && translatedHeading.level === sourceHeading.level) {
       idMappings.set(index, sourceHeading.slug);
-      addedIds.push({ 
-        heading: translatedHeading.text, 
-        id: sourceHeading.slug 
+      addedIds.push({
+        heading: translatedHeading.text,
+        id: sourceHeading.slug,
       });
     }
   });
@@ -149,7 +149,11 @@ export function addExplicitAnchorIds(
   // Apply IDs to translated content
   let content: string;
   if (useDivWrapping) {
-    content = applyDivWrappedIds(translatedContent, translatedHeadings, idMappings);
+    content = applyDivWrappedIds(
+      translatedContent,
+      translatedHeadings,
+      idMappings
+    );
   } else {
     content = applyInlineIds(translatedContent, idMappings);
   }
@@ -262,7 +266,8 @@ function applyDivWrappedIds(
 ): string {
   // Extract all heading lines from the translated markdown
   const lines = translatedContent.split('\n');
-  const headingLines: Array<{ line: string; level: number; index: number }> = [];
+  const headingLines: Array<{ line: string; level: number; index: number }> =
+    [];
 
   lines.forEach((line, index) => {
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);

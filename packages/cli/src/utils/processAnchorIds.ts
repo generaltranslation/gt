@@ -1,4 +1,7 @@
-import { addExplicitAnchorIds, extractHeadingInfo } from './addExplicitAnchorIds.js';
+import {
+  addExplicitAnchorIds,
+  extractHeadingInfo,
+} from './addExplicitAnchorIds.js';
 import { readFile } from '../fs/findFilepath.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
@@ -43,7 +46,7 @@ export default async function processAnchorIds(settings: Settings) {
                   sourceHeadingMap,
                   settings
                 );
-                
+
                 if (result.hasChanges) {
                   fs.writeFileSync(translatedPath, result.content, 'utf8');
                 }

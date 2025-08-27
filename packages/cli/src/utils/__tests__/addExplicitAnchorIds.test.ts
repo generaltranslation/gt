@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { addExplicitAnchorIds, extractHeadingInfo } from '../addExplicitAnchorIds';
+import {
+  addExplicitAnchorIds,
+  extractHeadingInfo,
+} from '../addExplicitAnchorIds';
 
 describe('addExplicitAnchorIds', () => {
   // Mock settings for different modes
@@ -241,7 +244,11 @@ Another section here.
 
     it('should add {#id} format in standard mode', () => {
       const sourceHeadingMap = extractHeadingInfo(basicInput);
-      const result = addExplicitAnchorIds(basicInput, sourceHeadingMap, standardSettings);
+      const result = addExplicitAnchorIds(
+        basicInput,
+        sourceHeadingMap,
+        standardSettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
@@ -260,7 +267,11 @@ Another section here.
 
     it('should add div wrapping in Mintlify mode', () => {
       const sourceHeadingMap = extractHeadingInfo(basicInput);
-      const result = addExplicitAnchorIds(basicInput, sourceHeadingMap, mintlifySettings);
+      const result = addExplicitAnchorIds(
+        basicInput,
+        sourceHeadingMap,
+        mintlifySettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
@@ -290,7 +301,11 @@ Another section here.
 
     it('should handle formatted headings in standard mode', () => {
       const sourceHeadingMap = extractHeadingInfo(formattedInput);
-      const result = addExplicitAnchorIds(formattedInput, sourceHeadingMap, standardSettings);
+      const result = addExplicitAnchorIds(
+        formattedInput,
+        sourceHeadingMap,
+        standardSettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
@@ -308,7 +323,11 @@ Another section here.
 
     it('should handle formatted headings in Mintlify mode', () => {
       const sourceHeadingMap = extractHeadingInfo(formattedInput);
-      const result = addExplicitAnchorIds(formattedInput, sourceHeadingMap, mintlifySettings);
+      const result = addExplicitAnchorIds(
+        formattedInput,
+        sourceHeadingMap,
+        mintlifySettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
@@ -342,7 +361,11 @@ More content.
 
     it('should ignore code blocks in standard mode', () => {
       const sourceHeadingMap = extractHeadingInfo(codeBlockInput);
-      const result = addExplicitAnchorIds(codeBlockInput, sourceHeadingMap, standardSettings);
+      const result = addExplicitAnchorIds(
+        codeBlockInput,
+        sourceHeadingMap,
+        standardSettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(2);
@@ -365,7 +388,11 @@ More content.
 
     it('should ignore code blocks in Mintlify mode', () => {
       const sourceHeadingMap = extractHeadingInfo(codeBlockInput);
-      const result = addExplicitAnchorIds(codeBlockInput, sourceHeadingMap, mintlifySettings);
+      const result = addExplicitAnchorIds(
+        codeBlockInput,
+        sourceHeadingMap,
+        mintlifySettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(2);
@@ -399,7 +426,11 @@ More content.
 
     it('should handle special characters in standard mode', () => {
       const sourceHeadingMap = extractHeadingInfo(specialCharsInput);
-      const result = addExplicitAnchorIds(specialCharsInput, sourceHeadingMap, standardSettings);
+      const result = addExplicitAnchorIds(
+        specialCharsInput,
+        sourceHeadingMap,
+        standardSettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(4);
@@ -418,7 +449,11 @@ More content.
 
     it('should handle special characters in Mintlify mode', () => {
       const sourceHeadingMap = extractHeadingInfo(specialCharsInput);
-      const result = addExplicitAnchorIds(specialCharsInput, sourceHeadingMap, mintlifySettings);
+      const result = addExplicitAnchorIds(
+        specialCharsInput,
+        sourceHeadingMap,
+        mintlifySettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(4);
@@ -454,7 +489,11 @@ More content.
 
     it('should handle all heading levels in standard mode', () => {
       const sourceHeadingMap = extractHeadingInfo(allLevelsInput);
-      const result = addExplicitAnchorIds(allLevelsInput, sourceHeadingMap, standardSettings);
+      const result = addExplicitAnchorIds(
+        allLevelsInput,
+        sourceHeadingMap,
+        standardSettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(6);
@@ -469,7 +508,11 @@ More content.
 
     it('should handle all heading levels in Mintlify mode', () => {
       const sourceHeadingMap = extractHeadingInfo(allLevelsInput);
-      const result = addExplicitAnchorIds(allLevelsInput, sourceHeadingMap, mintlifySettings);
+      const result = addExplicitAnchorIds(
+        allLevelsInput,
+        sourceHeadingMap,
+        mintlifySettings
+      );
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(6);
