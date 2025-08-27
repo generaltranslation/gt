@@ -6,7 +6,6 @@ description: API Reference for the useTranslations hook
 ## Overview
 
 `useTranslations()` is used to access string translations from the [translation dictionary](/docs/react/guides/dictionaries).
-Alternatively, you can combine it with the `msg()` function to translate global strings.
 
 It must be used within a component wrapped by a [`<GTProvider>`](/docs/react/api/components/gtprovider).
 
@@ -59,23 +58,6 @@ A translation function `d()` that, given an id, will return the translated versi
 ---
 
 ## Examples
-
-### Using with `msg()`
-
-The `useTranslations()` hook can be called on encoded strings returned by the `msg()` function.
-
-```jsx
-import { msg } from 'gt-react';
-import { useTranslations } from 'gt-react';
-
-const encodedString = msg('Hello, world!');
-
-export default function MyComponent() {
-  const t = useTranslations();
-  const translatedString = t(encodedString);
-  return <div>{translatedString}</div>; // Will be 'Hello, world!' in the selected language
-}
-```
 
 ### Basic Dictionary Usage
 Every entry in your dictionary gets translated.
