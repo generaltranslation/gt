@@ -57,31 +57,16 @@ jobs:
       #     VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
       #   run: npm run test
 
-      - name: Test Builds (Unix)
-        if: runner.os != 'Windows'
+      - name: Test Builds
         run: |
           cd test-apps/next/base
           npm install
-          npm run build & BUILD_PID=$!
-          npm run build:turbopack & TURBO_PID=$!
-          wait $BUILD_PID && wait $TURBO_PID
-          
-          cd ../general-cases
-          npm install
-          npm run build & BUILD_PID=$!
-          npm run build:turbopack & TURBO_PID=$!
-          wait $BUILD_PID && wait $TURBO_PID
-
-      - name: Test Builds (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cd test-apps/next/base
-          npm install
-          npm run build
-          npm run build:turbopack
-          
-          cd ../general-cases
-          npm install
+          npm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
           npm run build
           npm run build:turbopack
 
+          cd ../general-cases
+          npm install
+          npm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
+          npm run build
+          npm run build:turbopack
