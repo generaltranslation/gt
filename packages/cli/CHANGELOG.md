@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- [#599](https://github.com/generaltranslation/gt/pull/599) [`5950592`](https://github.com/generaltranslation/gt/commit/5950592ca44197915216ec5c8e26f9714cb4f55c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: msg() function
+
+## 2.1.8
+
+### Patch Changes
+
 - [#594](https://github.com/generaltranslation/gt/pull/594) [`3fa9c41`](https://github.com/generaltranslation/gt/commit/3fa9c41e2e37933b04e6c3d6c0f94271a07d0ff6) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix <GTProvider> wizard scan behavior
 
 ## 2.1.7
