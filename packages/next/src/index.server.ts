@@ -12,12 +12,14 @@ import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
 import getI18NConfig from './config-dir/getI18NConfig';
+import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
+import { useMessages } from './server-dir/buildtime/getMessages';
 
 export { LocaleSelector, RegionSelector } from './index.client';
 
@@ -49,9 +51,13 @@ export {
   Plural,
   useGT,
   useTranslations,
+  useMessages,
   useLocale,
   useLocaleDirection,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
+  msg,
+  decodeMsg,
+  decodeOptions,
 };

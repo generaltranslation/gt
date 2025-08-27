@@ -13,7 +13,12 @@ import { parseJSXElement } from '../jsx/utils/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logError } from '../../console/logging.js';
-import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
+import {
+  GT_TRANSLATION_FUNCS,
+  INLINE_TRANSLATION_HOOK,
+  INLINE_TRANSLATION_HOOK_ASYNC,
+  MSG_TRANSLATION_HOOK,
+} from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
@@ -61,7 +66,11 @@ export async function createInlineUpdates(
             GT_TRANSLATION_FUNCS
           );
           for (const name of importName) {
-            if (name.original === 'useGT' || name.original === 'getGT') {
+            if (
+              name.original === INLINE_TRANSLATION_HOOK ||
+              name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
+              name.original === MSG_TRANSLATION_HOOK
+            ) {
               translationPaths.push({
                 localName: name.local,
                 path,
@@ -95,7 +104,11 @@ export async function createInlineUpdates(
                 GT_TRANSLATION_FUNCS
               );
               for (const name of importName) {
-                if (name.original === 'useGT' || name.original === 'getGT') {
+                if (
+                  name.original === INLINE_TRANSLATION_HOOK ||
+                  name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
+                  name.original === MSG_TRANSLATION_HOOK
+                ) {
                   translationPaths.push({
                     localName: name.local,
                     path: parentPath,

@@ -8,6 +8,7 @@
     "---Guides---",
     "guides/jsx",
     "guides/strings",
+    "guides/shared-strings",
     "guides/variables",
     "guides/branches",
     "guides/languages",

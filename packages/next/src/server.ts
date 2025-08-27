@@ -8,6 +8,7 @@ import Tx from './server-dir/runtime/_Tx';
 import { getGT } from './server-dir/buildtime/getGT';
 import { LocaleProperties } from 'generaltranslation/types';
 import { getLocaleDirection } from './request/getLocaleDirection';
+import { getMessages } from './server-dir/buildtime/getMessages';
 
 export function getDefaultLocale(): string {
   return getI18NConfig().getDefaultLocale();
@@ -29,9 +30,10 @@ export {
   GTProvider,
   T,
   getGT,
+  getTranslations,
+  getMessages,
   tx,
   Tx,
   getLocale,
-  getTranslations,
   getLocaleDirection,
 };

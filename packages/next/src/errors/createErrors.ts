@@ -91,6 +91,9 @@ export const createNoEntryFoundWarning = (id: string) =>
 export const createInvalidDictionaryEntryWarning = (id: string) =>
   `gt-next: Invalid dictionary entry found for id: "${id}"`;
 
+export const createInvalidDictionaryTranslationEntryWarning = (id: string) =>
+  `gt-next: Invalid dictionary translation entry found for id: "${id}"`;
+
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-next: The following locales are currently unsupported by our service: ${locales
     .map((locale) => {
