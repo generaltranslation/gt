@@ -188,9 +188,9 @@ export function withGTConfig(
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
   if (
-    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash &&
-    process.platform === 'darwin' && // only on macos
-    process.arch === 'arm64' // only on arm64
+    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash // &&
+    // process.platform === 'darwin' && // only on macos
+    // process.arch === 'arm64' // only on arm64
   ) {
     try {
       if (turboPackEnabled) {

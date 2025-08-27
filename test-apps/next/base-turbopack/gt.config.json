@@ -1,6 +1,0 @@
-{
-  "$schema": "https://assets.gtx.dev/config-schema.json",
-  "framework": "next-app",
-  "defaultLocale": "en",
-  "locales": ["es", "fr"]
-}
