@@ -7,11 +7,11 @@ description: API Reference for the InlineTranslationOptions type
 
 The `InlineTranslationOptions` type is used to pass variables to inline translations and specify their render behavior.
 You can also add context and an identifier to the translation.
-It is used with [`useGT()`](/docs/react/api/strings/useGT) to pass variables to inline string translations.
+It is used with [`useGT()`](/docs/react/api/strings/useGT) and [`msg()`](/docs/react/api/strings/msg) to pass variables to inline string translations.
 
 <Callout>
   **Buildtime Translation:**
-  `useGT()` translations occur at buildtime; however, variables are never translated.
+  `useGT()` and `msg()` translations occur at buildtime; however, variables are never translated.
   Instead, they are inserted into the translation with formatting.
   Make sure to follow the [deployment guide here](/docs/next/tutorials/quickdeploy).
 </Callout>
@@ -99,7 +99,7 @@ See the [ICU message format documentation](https://unicode-org.github.io/icu/use
 ---
 
 ## Notes
- * `InlineTranslationOptions` is used for string translations.
+ * `InlineTranslationOptions` is used for inline string translations.
  * The `variables` object passes values to the text.
  * The `variablesOptions` object defines the behavior of the variables.
 
