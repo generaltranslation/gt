@@ -30,7 +30,14 @@ type InitResult = {
 };
 
 type Translator = {
-  t: (message: string, options?: InlineTranslationOptions & { $id?: string; $context?: string; $_hash?: string }) => string;
+  t: (
+    message: string,
+    options?: InlineTranslationOptions & {
+      $id?: string;
+      $context?: string;
+      $_hash?: string;
+    }
+  ) => string;
   m: (encodedMsg: string, options?: InlineTranslationOptions) => string;
 };
 
@@ -49,7 +56,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   // --------- HELPERS --------- //
   function initializeT(
     message: string,
-    options: Record<string, any> & { $context?: string; $id?: string; $_hash?: string } = {}
+    options: Record<string, any> & {
+      $context?: string;
+      $id?: string;
+      $_hash?: string;
+    } = {}
   ): InitResult | null {
     if (!message || typeof message !== 'string') return null;
 
@@ -114,7 +125,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           createTranslationLoadingWarning({
             ...(id && { id }),
             source: renderMessage(source, [defaultLocale]),
-            translation: renderMessage(result as string, [locale, defaultLocale]),
+            translation: renderMessage(result as string, [
+              locale,
+              defaultLocale,
+            ]),
           })
         );
       });
@@ -125,15 +139,27 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
   // ---------- PRELOAD TRANSLATIONS IF _MESSAGES SUPPLIED --------- //
   let preloadedTranslations: Record<string, string> | undefined;
-  if (reactHasUse && _messages && I18NConfig.isDevelopmentApiEnabled() && translationRequired) {
+  if (
+    reactHasUse &&
+    _messages &&
+    I18NConfig.isDevelopmentApiEnabled() &&
+    translationRequired
+  ) {
     preloadedTranslations = {};
-    const preload = async ({ message, ...options }: _Message): Promise<void> => {
+    const preload = async ({
+      message,
+      ...options
+    }: _Message): Promise<void> => {
       if (!message) return;
       const init = initializeT(message, options);
       if (!init) return;
 
       const { id, context, _hash, calculateHash } = init;
-      const { translationEntry, hash } = getTranslationData(calculateHash, id, _hash);
+      const { translationEntry, hash } = getTranslationData(
+        calculateHash,
+        id,
+        _hash
+      );
       if (translationEntry) return; // exists already
 
       try {
@@ -156,7 +182,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   // ---------- t() ---------- //
   const t = (
     message: string,
-    options: Record<string, any> & { $context?: string; $id?: string; $_hash?: string } = {}
+    options: Record<string, any> & {
+      $context?: string;
+      $id?: string;
+      $_hash?: string;
+    } = {}
   ): string => {
     const init = initializeT(message, options);
     if (!init) return '';
@@ -165,11 +195,18 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     // Early: no translation needed
     if (!translationRequired) return renderMessage(message, [defaultLocale]);
 
-    const { translationEntry, hash } = getTranslationData(calculateHash, id, _hash);
+    const { translationEntry, hash } = getTranslationData(
+      calculateHash,
+      id,
+      _hash
+    );
 
     if (translationEntry) {
       try {
-        return renderMessage(translationEntry as string, [locale, defaultLocale]);
+        return renderMessage(translationEntry as string, [
+          locale,
+          defaultLocale,
+        ]);
       } catch (error) {
         console.error(error);
         return renderMessage(message, [defaultLocale]);
@@ -183,7 +220,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     if (!translationEntry && preloadedTranslations?.[hash]) {
       try {
-        return renderMessage(preloadedTranslations[hash], [locale, defaultLocale]);
+        return renderMessage(preloadedTranslations[hash], [
+          locale,
+          defaultLocale,
+        ]);
       } catch (error) {
         console.error(createStringRenderError(message, id), 'Error: ', error);
         return renderMessage(message, [defaultLocale]);
@@ -191,7 +231,13 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     }
 
     // On-demand translate
-    scheduleTranslateOnDemand({ source: message, context, id, hash, renderMessage });
+    scheduleTranslateOnDemand({
+      source: message,
+      context,
+      id,
+      hash,
+      renderMessage,
+    });
     return renderMessage(message, [defaultLocale]);
   };
 
@@ -205,7 +251,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       return t(encodedMsg, options);
     }
 
-    const { $_hash, $_source, $context, $id, ...decodedVariables } = decodedOptions;
+    const { $_hash, $_source, $context, $id, ...decodedVariables } =
+      decodedOptions;
 
     const renderMessage: RenderFn = (msg, locales) =>
       gt.formatMessage(msg, {
@@ -225,7 +272,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     if (translationEntry) {
       try {
-        return renderMessage(translationEntry as string, [locale, defaultLocale]);
+        return renderMessage(translationEntry as string, [
+          locale,
+          defaultLocale,
+        ]);
       } catch (error) {
         console.error(
           createStringRenderError($_source, decodeMsg(encodedMsg)),
@@ -238,14 +288,19 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     // Dev-only paths for loading or preloaded
     if (!I18NConfig.isDevelopmentApiEnabled()) {
-      console.warn(createStringTranslationError($_source, decodeMsg(encodedMsg), 'm'));
+      console.warn(
+        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
+      );
       return renderMessage($_source, [defaultLocale]);
     }
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
       if (preloadedTranslations?.[$_hash]) {
         try {
-          return renderMessage(preloadedTranslations[$_hash] as string, [locale, defaultLocale]);
+          return renderMessage(preloadedTranslations[$_hash] as string, [
+            locale,
+            defaultLocale,
+          ]);
         } catch (error) {
           console.error(
             createStringRenderError($_source, decodeMsg(encodedMsg)),

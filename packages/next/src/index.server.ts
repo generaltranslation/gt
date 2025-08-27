@@ -18,7 +18,10 @@ import {
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
-import { useMessages, useGT } from './server-dir/buildtime/getTranslationFunction';
+import {
+  useMessages,
+  useGT,
+} from './server-dir/buildtime/getTranslationFunction';
 
 export { LocaleSelector, RegionSelector } from './index.client';
 
