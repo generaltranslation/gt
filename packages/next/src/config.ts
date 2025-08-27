@@ -200,6 +200,7 @@ export function withGTConfig(
       } else {
         resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
       }
+      console.log('resolvedWasmFilePath', resolvedWasmFilePath);
     } catch (error) {
       console.error('Error resolving wasm filepath:', error);
       resolvedWasmFilePath = '';
