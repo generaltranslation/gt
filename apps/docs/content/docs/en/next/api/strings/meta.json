@@ -1,4 +1,11 @@
 {
   "title": "Strings",
-  "pages": ["./useGT", "./getGT", "./msg", "./tx"]
+  "pages": [
+    "./useGT",
+    "./getGT",
+    "./msg",
+    "./useMessages",
+    "./getMessages",
+    "./tx"
+  ]
 }
