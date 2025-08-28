@@ -3,14 +3,14 @@ import { hashSource } from 'generaltranslation/id';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { StringCollector } from './visitor/string-collector';
-import { ImportTracker } from './visitor/import-tracker';
-import { JsxTraversal } from './ast/traversal';
-import { PluginSettings } from './config';
-import { Logger } from './logging';
+import { StringCollector } from '../visitor/string-collector';
+import { ImportTracker } from '../visitor/import-tracker';
+import { JsxTraversal } from '../ast/traversal';
+import { PluginSettings } from '../config';
+import { Logger } from '../logging';
 
 // Analysis and utilities
-import { createDynamicContentWarning } from './visitor/errors';
+import { createDynamicContentWarning } from '../visitor/errors';
 import { NodePath } from '@babel/traverse';
 import {
   isTranslationComponent,
@@ -19,7 +19,11 @@ import {
   isTranslationFunction,
   isTranslationFunctionCallback,
   isJsxFunction,
-} from './visitor/analysis';
+} from '../visitor/analysis';
+import {
+  extractComponentNameFromJSXCall,
+  extractPropFromJSXCall,
+} from './jsxUtils';
 
 /**
  * Generate warning message for dynamic function call violations
@@ -573,17 +577,18 @@ export function processCallExpression(
     return false;
   }
 
-  if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log(`[transform] functionName: ${functionName}`);
-  }
   // Check if this is a tracked translation function call
-  const translationVariable =
-    state.importTracker.scopeTracker.getTranslationVariable(functionName);
+  const variable = state.importTracker.scopeTracker.getVariable(functionName);
+  if (state.settings.filename?.endsWith('page.tsx')) {
+    console.log(
+      `[transform] functionName: ${functionName}, ${variable?.originalName}`
+    );
+  }
 
-  if (translationVariable) {
+  if (variable && variable.type !== 'other') {
     // Register the useGT/getGT as aggregators on the string collector
-    const originalName = translationVariable.originalName;
-    const identifier = translationVariable.identifier;
+    const originalName = variable.originalName;
+    const identifier = variable.identifier;
 
     // Detect t() calls (translation function callbacks)
     if (isTranslationFunctionCallback(originalName)) {
@@ -601,49 +606,48 @@ export function processCallExpression(
       }
     } else if (isJsxFunction(originalName)) {
       // For JSX function, process their children
-      if (callExpr.arguments && callExpr.arguments.length > 0) {
-        if (state.settings.filename?.endsWith('page.tsx')) {
-          console.log(`[transform] callExpr.arguments: ${callExpr.arguments}`);
-        }
-        const firstArg = callExpr.arguments[0];
-        if (t.isArgumentPlaceholder(firstArg)) {
+
+      // Get the name of the component
+      const componentName = extractComponentNameFromJSXCall(callExpr);
+      if (!componentName) {
+        return false;
+      }
+
+      // Map it back to an original name
+      const translationVariable =
+        state.importTracker.scopeTracker.getTranslationVariable(componentName);
+      if (!translationVariable) {
+        return false;
+      }
+      const originalName = translationVariable.originalName;
+      const identifier = translationVariable.identifier;
+
+      if (isTranslationComponent(originalName)) {
+        // Get children
+        const children = extractPropFromJSXCall(callExpr, 'children');
+        if (!children) {
           return false;
         }
 
-        // Check if this is a tracked translation function call
-        if (!t.isIdentifier(firstArg)) {
-          return false;
-        }
+        // Get id & context
+        const id = extractPropFromJSXCall(callExpr, 'id');
+        const context = extractPropFromJSXCall(callExpr, 'context');
 
-        const translationVariable =
-          state.importTracker.scopeTracker.getTranslationVariable(
-            firstArg.name
-          );
+        // TODO: Check for violations
 
-        if (translationVariable) {
-          // Register the useGT/getGT as aggregators on the string collector
-          const originalName = translationVariable.originalName;
-          const identifier = translationVariable.identifier;
+        // Calculate hash
+        // TODO: add id & context to options
+        // const { hash } = hashExpression(children, undefined);
+        // if (!hash) {
+        //   return false;
+        // }
 
-          // Detect t() calls (translation function callbacks)
-          if (isTranslationComponent(originalName)) {
-            if (state.settings.filename?.endsWith('page.tsx')) {
-              console.log(
-                `[transform] isTranslationComponent: ${originalName}`
-              );
-            }
-          } else if (isVariableComponent(originalName)) {
-            if (state.settings.filename?.endsWith('page.tsx')) {
-              console.log(`[transform] isVariableComponent: ${originalName}`);
-            }
-          } else if (isBranchComponent(originalName)) {
-            if (state.settings.filename?.endsWith('page.tsx')) {
-              console.log(`[transform] isBranchComponent: ${originalName}`);
-            }
-          } else {
-            return false;
-          }
-        }
+        // TODO: add to string collector
+        // TODO: add to string collector for the t() function
+      } else if (isVariableComponent(originalName)) {
+      } else if (isBranchComponent(originalName)) {
+      } else {
+        return false;
       }
     }
   }

@@ -1,4 +1,19 @@
 import crypto from 'crypto';
+import {
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  Variable,
+} from 'generaltranslation/types';
+import * as t from '@babel/types';
+import { hashSource } from 'generaltranslation/id';
+import { isVariable } from 'generaltranslation/internal';
+import { TransformState } from './transform/transform';
+import {
+  extractComponentNameFromJSXCall,
+  getOriginalNameFromExpression,
+} from './transform/jsxUtils';
+import { isVariableComponent } from './visitor/analysis';
 
 /**
  * Variable types matching the TypeScript definition
@@ -148,11 +163,11 @@ export class JsxHasher {
       dataFormat: 'JSX',
     };
   }
-
   /**
    * Hash JSX content directly from components
    */
   static hashJsxSource(
+    state: TransformState,
     source: SanitizedChildren,
     id?: string,
     context?: string
@@ -160,4 +175,95 @@ export class JsxHasher {
     const sanitizedData = this.createSanitizedData(source, id, context);
     return this.hashJsxContent(sanitizedData);
   }
+}
+
+/**
+ * Create jsx variable
+ */
+function createJsxVariable(state: TransformState, variable: any): Variable {
+  return;
+}
+
+/**
+ * Create jsx element
+ */
+function createJsxElement(
+  state: TransformState,
+  element: t.Expression | t.SpreadElement | null
+): JsxElement {
+  // Get rid of spread and null
+  return;
+}
+
+function isVariable(state: TransformState, child: t.Expression): boolean {
+  // Get original name
+  const originalName = getOriginalNameFromExpression(state, child);
+  if (!originalName) {
+    return false;
+  }
+
+  // Check if it's a variable component
+  if (!isVariableComponent(originalName)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Create jsx child
+ */
+function createJsxChild(
+  state: TransformState,
+  child: t.Expression | t.SpreadElement | null
+): JsxChild {
+  // handle string
+  if (t.isStringLiteral(child)) {
+    return child.value;
+  }
+
+  // handle variable
+  if (!t.isSpreadElement(child) && child !== null && isVariable(state, child)) {
+    return createJsxVariable(state, child);
+  }
+
+  // handle element
+  return createJsxElement(state, child);
+}
+
+/**
+ * Create jsxChildren
+ */
+function createJsxChildren(
+  state: TransformState,
+  children: t.Expression
+): JsxChildren {
+  if (t.isArrayExpression(children)) {
+    return children.elements
+      .filter((element) => element !== null && !t.isSpreadElement(element))
+      .map((element) => createJsxChild(state, element as t.Expression));
+  } else {
+    return createJsxChild(state, children);
+  }
+}
+
+/**
+ * Hash jsx source
+ */
+function hashExpression(
+  state: TransformState,
+  source: t.Expression,
+  id?: string,
+  context?: string
+): string {
+  // Calculate hash for the source
+  const jsxChildren = createJsxChildren(state, source);
+
+  // Hash the source
+  return hashSource({
+    source: jsxChildren,
+    id,
+    context,
+    dataFormat: 'JSX',
+  });
 }

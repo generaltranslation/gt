@@ -19,7 +19,7 @@ import {
   trackParameterOverrides,
   trackArrowParameterOverrides,
   performSecondPassTransformation,
-} from './transform';
+} from './transform/transform';
 
 /**
  * GT Universal Plugin Options
