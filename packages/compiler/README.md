@@ -1,4 +1,4 @@
-# GT Universal Plugin
+# GT Compiler
 
 A universal plugin for compile-time optimization of GT translation components that works across webpack, Vite, Rollup, and other bundlers.
 
@@ -7,9 +7,11 @@ A universal plugin for compile-time optimization of GT translation components th
 This plugin performs two main functions during the build process:
 
 ### 1. Dynamic Content Detection
+
 Detects and prevents invalid usage patterns in GT translation components:
 
 #### JSX Component Violations:
+
 ```jsx
 // ❌ Unwrapped expressions
 <T>Hello {userName}!</T>
@@ -26,35 +28,37 @@ Detects and prevents invalid usage patterns in GT translation components:
 ```
 
 #### Function Call Violations:
+
 ```js
-// ❌ Template literals  
+// ❌ Template literals
 const msg = t(`Hello ${name}!`);
 const error = t(`Error: ${code} - ${message}`);
 
 // ❌ String concatenation
-const welcome = t("Welcome " + username);
-const path = t("Go to " + destination + " page");
+const welcome = t('Welcome ' + username);
+const path = t('Go to ' + destination + ' page');
 
 // ❌ Dynamic expressions
 const dynamic = t(isError ? errorMsg : successMsg);
 
 // ✅ Correct usage
-const msg = t("Hello world!");
-const welcome = t("Welcome to our app");
-const error = t("Something went wrong", {context: "error"});
+const msg = t('Hello world!');
+const welcome = t('Welcome to our app');
+const error = t('Something went wrong', { context: 'error' });
 ```
 
 ### 2. Compile-Time Hash Generation
+
 Pre-computes translation keys at build time for better performance:
 
 - Generates stable hashes for `<T>` components and `t()` function calls
-- Injects hash attributes (`_hash`) into components  
+- Injects hash attributes (`_hash`) into components
 - Creates content arrays for translation functions
 
 ## Installation
 
 ```bash
-npm install @generaltranslation/gt-unplugin
+npm install @generaltranslation/compiler
 ```
 
 ## Usage
@@ -67,11 +71,11 @@ If you're using `gt-next`, the plugin is automatically configured for you. No ad
 
 ```js
 // webpack.config.js
-const gtUnplugin = require('@generaltranslation/gt-unplugin/webpack');
+const gtCompiler = require('@generaltranslation/compiler/webpack');
 
 module.exports = {
   plugins: [
-    gtUnplugin({
+    gtCompiler({
       compileTimeHash: true,
       logLevel: 'warn',
     }),
@@ -84,11 +88,11 @@ module.exports = {
 ```js
 // vite.config.js
 import { defineConfig } from 'vite';
-import gtUnplugin from '@generaltranslation/gt-unplugin/vite';
+import gtCompiler from '@generaltranslation/compiler/vite';
 
 export default defineConfig({
   plugins: [
-    gtUnplugin({
+    gtCompiler({
       compileTimeHash: true,
       logLevel: 'warn',
     }),
@@ -100,11 +104,11 @@ export default defineConfig({
 
 ```js
 // rollup.config.js
-import gtUnplugin from '@generaltranslation/gt-unplugin/rollup';
+import gtCompiler from '@generaltranslation/compiler/rollup';
 
 export default {
   plugins: [
-    gtUnplugin({
+    gtCompiler({
       compileTimeHash: true,
       logLevel: 'warn',
     }),
@@ -117,28 +121,28 @@ export default {
 ```js
 // esbuild.config.js
 const { build } = require('esbuild');
-const gtUnplugin = require('@generaltranslation/gt-unplugin/esbuild');
+const gtCompiler = require('@generaltranslation/compiler/esbuild');
 
 build({
   plugins: [
-    gtUnplugin({
+    gtCompiler({
       compileTimeHash: true,
       logLevel: 'warn',
     }),
   ],
-});
+};
 ```
 
 ## Configuration Options
 
 ```typescript
-interface GTUnpluginOptions {
+interface GTCompilerOptions {
   /** Control warning output */
   logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
-  
+
   /** Enable hash generation at compile time */
   compileTimeHash?: boolean;
-  
+
   /** Skip dynamic content validation */
   disableBuildChecks?: boolean;
 }
@@ -149,6 +153,7 @@ interface GTUnpluginOptions {
 The plugin uses the [unplugin](https://unplugin.unjs.io/) framework to provide universal bundler support. It analyzes your code using Babel's parser and transformer to:
 
 ### String Collector
+
 Manages translation content across the two-pass transformation:
 
 - **Pass 1**: Collects translation strings, JSX content, and hash data
@@ -156,7 +161,8 @@ Manages translation content across the two-pass transformation:
 - Associates content with function calls using deterministic counter IDs
 - Supports multiple `t()` calls per translation function
 
-### Scope Tracker  
+### Scope Tracker
+
 Handles variable scoping and import tracking:
 
 - Tracks `useGT`/`getGT` variable assignments across nested scopes
@@ -165,10 +171,11 @@ Handles variable scoping and import tracking:
 - Handles both named imports and namespace imports (`GT.T`)
 
 ### AST Traversal
+
 Converts JSX components into sanitized hash-able objects:
 
 - Recursively processes JSX elements and their children
-- Identifies GT components vs regular HTML elements  
+- Identifies GT components vs regular HTML elements
 - Extracts content from `Branch`/`Plural` component attributes
 - Generates stable hash representations for consistent builds
 
@@ -177,6 +184,7 @@ Converts JSX components into sanitized hash-able objects:
 The plugin uses a two-pass approach to handle the circular dependency between translation functions and their usage:
 
 ### Pass 1: Collection
+
 - **Discover translation functions**: Find `useGT()` and `getGT()` calls, assign unique counter IDs
 - **Track variable assignments**: Follow `const t = useGT()` patterns using scope tracker
 - **Collect content**: Gather `t()` calls and `<T>` components, associate with counter IDs
@@ -184,6 +192,7 @@ The plugin uses a two-pass approach to handle the circular dependency between tr
 - **Validate usage**: Check for dynamic content violations and report errors
 
 ### Pass 2: Transformation
+
 - **Inject content arrays**: Add collected `t()` strings to `useGT()`/`getGT()` calls
 - **Add hash attributes**: Insert `_hash` props into `<T>` components
 - **Preserve order**: Use the same counter sequence to match content with functions
@@ -193,6 +202,7 @@ This approach solves the "chicken-and-egg" problem: we need to know what `t()` c
 ## Supported Bundlers
 
 This plugin works with:
+
 - ✅ **Webpack** 4, 5
 - ✅ **Vite** 2, 3, 4, 5
 - ✅ **Rollup** 2, 3, 4
@@ -203,7 +213,7 @@ This plugin works with:
 ## Components Tracked
 
 - **Translation**: `T`
-- **Variables**: `Var`, `Num`, `Currency`, `DateTime`  
+- **Variables**: `Var`, `Num`, `Currency`, `DateTime`
 - **Branching**: `Branch`, `Plural`
 - **Functions**: `useGT()`, `getGT()`, and their callbacks
 
@@ -212,21 +222,25 @@ This plugin works with:
 Files ported from Rust SWC plugin with their implementation status:
 
 ### ✅ Core Framework
+
 - **`src/index.ts`** - Universal plugin entry point with unplugin integration
 
 ### ✅ Completed (with tests)
+
 - **`src/visitor/analysis.ts`** - Component identification functions
 - **`src/visitor/string-collector.ts`** - Two-pass transformation system
-- **`src/logging.ts`** - Logger implementation  
+- **`src/logging.ts`** - Logger implementation
 - **`src/visitor/errors.ts`** - Error message creation
 
 ### 🚧 Implemented (needs integration)
+
 - **`src/visitor/scope-tracker.ts`** - Scope tracking and variable management
 - **`src/visitor/import-tracker.ts`** - Import tracking and component resolution
 
 ### ❌ Not Yet Implemented
+
 - **`src/ast/traversal.ts`** - JSX to sanitized objects conversion
-- **`src/ast/utilities.ts`** - AST utility functions  
+- **`src/ast/utilities.ts`** - AST utility functions
 - **`src/hash.ts`** - Hash generation utilities
 - **`src/whitespace.ts`** - Whitespace handling utilities
 - **`src/visitor/transform.ts`** - Main transformation logic
@@ -238,6 +252,7 @@ Files ported from Rust SWC plugin with their implementation status:
 This plugin is part of the General Translation ecosystem. The transformation logic is gradually being ported from the existing Rust SWC plugin to provide broader bundler support.
 
 ### Test Files Structure
+
 ```
 src/
 ├── __tests__/

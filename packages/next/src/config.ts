@@ -453,17 +453,17 @@ export function withGTConfig(
     ) {
       // Only apply webpack aliases if we're using webpack (not Turbopack)
       if (!turboPackEnabled) {
-        // Try to load GT unplugin if available
+        // Try to load GT compiler if available
         try {
           const {
             webpack: gtUnplugin,
-          } = require('@generaltranslation/unplugin');
+          } = require('@generaltranslation/compiler');
           webpackConfig.plugins.unshift(
             gtUnplugin(mergedConfig.experimentalSwcPluginOptions || {})
           );
-          console.log('GT Unplugin loaded successfully');
+          console.log('GT Compiler loaded successfully');
         } catch (e) {
-          console.warn('GT Unplugin not available:', e);
+          console.warn('GT Compiler not available:', e);
         }
         // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
         if (process.env.NODE_ENV === 'development') {

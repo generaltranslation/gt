@@ -36,3 +36,10 @@ export function isTranslationFunction(name: string): boolean {
 export function isTranslationFunctionCallback(name: string): boolean {
   return ['useGT_callback', 'getGT_callback'].includes(name);
 }
+
+/**
+ * Check if it's a special Jsx function
+ */
+export function isJsxFunction(name: string): boolean {
+  return ['_jsxDev', '_jsx', '_jsxs', 'React.createElement'].includes(name);
+}

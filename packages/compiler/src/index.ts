@@ -51,6 +51,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       transform(code: string, id: string) {
         if (id.endsWith('page.tsx')) {
           console.log('[gt-unplugin] transforming', id);
+          console.log('[gt-unplugin] code content:');
+          console.log(code);
         }
         try {
           // Initialize processing state
@@ -95,6 +97,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
             // Collection phase visitors
             ImportDeclaration(path) {
+              if (state.settings.filename?.endsWith('page.tsx')) {
+                console.log(`[transform] ImportDeclaration: ${path.node}`);
+              }
               processImportDeclaration(path, state);
             },
 
@@ -108,6 +113,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
             // JSX processing - matches Rust VisitMut
             JSXElement(path) {
+              if (state.settings.filename?.endsWith('page.tsx')) {
+                console.log(`[transform] JSXElement: ${path.node}`);
+              } else {
+                console.log(state.settings.filename);
+              }
               processJSXElement(path, state); // Collection only, returns boolean but we ignore it
             },
 

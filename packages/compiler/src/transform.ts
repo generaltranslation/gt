@@ -18,6 +18,7 @@ import {
   isBranchComponent,
   isTranslationFunction,
   isTranslationFunctionCallback,
+  isJsxFunction,
 } from './visitor/analysis';
 
 /**
@@ -525,6 +526,9 @@ export function processCallExpression(
     return false;
   }
 
+  if (state.settings.filename?.endsWith('page.tsx')) {
+    console.log(`[transform] functionName: ${functionName}`);
+  }
   // Check if this is a tracked translation function call
   const translationVariable =
     state.importTracker.scopeTracker.getTranslationVariable(functionName);
@@ -548,6 +552,52 @@ export function processCallExpression(
         // Track the t() function call
         trackTranslationCallback(callExpr, firstArg, identifier, state);
       }
+    } else if (isJsxFunction(functionName)) {
+      // For JSX function, process their children
+      if (callExpr.arguments && callExpr.arguments.length > 0) {
+        if (state.settings.filename?.endsWith('page.tsx')) {
+          console.log(`[transform] callExpr.arguments: ${callExpr.arguments}`);
+        }
+        const firstArg = callExpr.arguments[0];
+        if (t.isArgumentPlaceholder(firstArg)) {
+          return false;
+        }
+
+        // Check if this is a tracked translation function call
+        if (!t.isIdentifier(firstArg)) {
+          return false;
+        }
+
+        const translationVariable =
+          state.importTracker.scopeTracker.getTranslationVariable(
+            firstArg.name
+          );
+
+        if (translationVariable) {
+          // Register the useGT/getGT as aggregators on the string collector
+          const originalName = translationVariable.originalName;
+          const identifier = translationVariable.identifier;
+
+          // Detect t() calls (translation function callbacks)
+          if (isTranslationComponent(originalName)) {
+            if (state.settings.filename?.endsWith('page.tsx')) {
+              console.log(
+                `[transform] isTranslationComponent: ${originalName}`
+              );
+            }
+          } else if (isVariableComponent(originalName)) {
+            if (state.settings.filename?.endsWith('page.tsx')) {
+              console.log(`[transform] isVariableComponent: ${originalName}`);
+            }
+          } else if (isBranchComponent(originalName)) {
+            if (state.settings.filename?.endsWith('page.tsx')) {
+              console.log(`[transform] isBranchComponent: ${originalName}`);
+            }
+          } else {
+            return false;
+          }
+        }
+      }
     }
   }
 
@@ -564,11 +614,17 @@ export function processJSXElement(
 ): boolean {
   const element = path.node;
   const componentType = determineComponentType(element, state);
+  if (state.settings.filename?.endsWith('page.tsx')) {
+    console.log(`[transform] componentType: ${componentType}`);
+  }
 
   if (componentType.isTranslation) {
     state.statistics.jsxElementCount += 1;
 
     if (state.settings.compileTimeHash) {
+      if (state.settings.filename?.endsWith('page.tsx')) {
+        console.log(`[transform] processJSXElement: ${element}`);
+      }
       trackHashAttributes(element, state);
       return true; // Transformation may be applied later
     }
@@ -694,6 +750,9 @@ export function trackHashAttributes(
     state.stringCollector.initializeAggregator(counterId);
 
     // Add the message to the string collector for the JSX element
+    if (state.settings.filename?.endsWith('page.tsx')) {
+      console.log(`[transform] trackHashAttributes: ${hash}`);
+    }
     state.stringCollector.setTranslationJsx(
       counterId,
       createTranslationJsx(hash)
