@@ -187,7 +187,10 @@ export function withGTConfig(
   // Resolve wasm filepath
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
-  if (mergedConfig.experimentalSwcPluginOptions?.compileTimeHash) {
+  if (
+    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash &&
+    process.platform !== 'win32' // TODO: figure out how to support windows as well
+  ) {
     try {
       if (turboPackEnabled) {
         const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
@@ -196,6 +199,7 @@ export function withGTConfig(
       } else {
         resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
       }
+      console.log('resolvedWasmFilePath', resolvedWasmFilePath);
     } catch (error) {
       console.error('Error resolving wasm filepath:', error);
       resolvedWasmFilePath = '';
@@ -248,6 +252,47 @@ export function withGTConfig(
     typeof mergedConfig.loadTranslationsPath === 'string'
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
+
+  // Warn if found in /app directory
+  if (
+    !resolvedDictionaryFilePath &&
+    resolveConfigFilepath('dictionary', ['.ts', '.js', '.json'], undefined, [
+      './app',
+      './src/app',
+    ])
+  ) {
+    console.warn(
+      'Found dictionary.ts in /app or /src/app directory. This is not supported. Please move it to your root directory.'
+    );
+  }
+
+  if (
+    !customLoadDictionaryPath &&
+    resolveConfigFilepath(
+      'loadDictionary',
+      ['.ts', '.js', '.json'],
+      undefined,
+      ['./app', './src/app']
+    )
+  ) {
+    console.warn(
+      'Found loadDictionary.ts in /app or /src/app directory. This is not supported. Please move it to your root directory.'
+    );
+  }
+
+  if (
+    !customLoadTranslationsPath &&
+    resolveConfigFilepath(
+      'loadTranslations',
+      ['.ts', '.js', '.json'],
+      undefined,
+      ['./app', './src/app']
+    )
+  ) {
+    console.warn(
+      'Found loadTranslations.ts in /app or /src/app directory. This is not supported. Please move it to your root directory.'
+    );
+  }
 
   // ----------- LOCALE STANDARDIZATION ----------- //
 
@@ -493,7 +538,8 @@ export const initGT = (props: withGTConfigProps) => (nextConfig: any) =>
 function resolveConfigFilepath(
   fileName: string,
   extensions: string[] = ['.ts', '.js'],
-  cwd?: string
+  cwd?: string,
+  prefixes: string[] = ['', 'src']
 ): string | undefined {
   function resolvePath(pathname: string) {
     const parts = [];
@@ -508,8 +554,9 @@ function resolveConfigFilepath(
 
   // Check for file existence in the root and src directories with supported extensions
   for (const candidate of [
-    ...extensions.map((ext) => `./${fileName}${ext}`),
-    ...extensions.map((ext) => `./src/${fileName}${ext}`),
+    ...prefixes.flatMap((prefix) =>
+      extensions.map((ext) => `./${prefix}/${fileName}${ext}`)
+    ),
   ]) {
     if (pathExists(candidate)) {
       return candidate;
