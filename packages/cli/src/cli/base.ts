@@ -404,12 +404,12 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
           })
         : null;
 
+    // Determine final translations directory with fallback
+    const finalTranslationsDir = translationsDir?.trim() || './public/_gt';
+
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
-      await createLoadTranslationsFile(
-        process.cwd(),
-        translationsDir?.trim() || './public/_gt'
-      );
+      await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
       logMessage(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
@@ -449,7 +449,6 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
 
     // Add GT translations if using GT and storing locally
     if (isUsingGT && !usingCDN) {
-      const finalTranslationsDir = translationsDir?.trim() || './public/_gt';
       files.gt = {
         output: path.join(finalTranslationsDir, `[locale].json`),
       };
