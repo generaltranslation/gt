@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.3.3
+
+### Patch Changes
+
+- [#609](https://github.com/generaltranslation/gt/pull/609) [`086d86e`](https://github.com/generaltranslation/gt/commit/086d86e0f6b5deeb62b78a68ebd61d398b7744ed) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: translation resolution error for useTranslations with local translations
+
+- Updated dependencies [[`086d86e`](https://github.com/generaltranslation/gt/commit/086d86e0f6b5deeb62b78a68ebd61d398b7744ed)]:
+  - gt-react@10.4.2
+
 ## 6.3.2
 
 ### Patch Changes
