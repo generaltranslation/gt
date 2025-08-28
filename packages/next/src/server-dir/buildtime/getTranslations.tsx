@@ -139,13 +139,19 @@ export async function getTranslations(
 
     // ---------- TRANSLATION ---------- //
 
-    const hash = hashSource({
-      source: entry,
-      ...(metadata?.$context && { context: metadata.$context }),
-      id,
-      dataFormat: 'ICU',
-    });
-    const translationEntry = translations?.[id] || translations?.[hash];
+    let translationEntry = translations?.[id];
+    let hash = '';
+    const getHash = () =>
+      hashSource({
+        source: entry,
+        ...(metadata?.$context && { context: metadata.$context }),
+        id,
+        dataFormat: 'ICU',
+      });
+    if (!translationEntry) {
+      hash = getHash();
+      translationEntry = translations?.[hash];
+    }
 
     // ----- RENDER TRANSLATION ----- //
 
@@ -172,7 +178,7 @@ export async function getTranslations(
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
           id,
-          hash,
+          hash: hash || getHash(),
         },
       }).then((result) => {
         // Log the translation result for debugging purposes

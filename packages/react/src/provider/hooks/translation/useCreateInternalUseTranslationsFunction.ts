@@ -87,14 +87,22 @@ export default function useCreateInternalUseTranslationsFunction(
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      const hash = !isMessage
-        ? hashSource({
+      const getHash = useCallback(
+        () =>
+          hashSource({
             source: entry,
             ...(metadata?.$context && { context: metadata.$context }),
             id,
             dataFormat: 'ICU',
-          })
-        : options?.$_hash || '';
+          }),
+        [entry, metadata?.$context, id]
+      );
+      let hash = '';
+      if (!isMessage) {
+        hash = getHash();
+      } else {
+        hash = options?.$_hash || '';
+      }
 
       // Check id first
       const translationEntry = translations?.[id] || translations?.[hash];
@@ -126,7 +134,7 @@ export default function useCreateInternalUseTranslationsFunction(
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),
           ...(isMessage && { id }),
-          hash,
+          hash: hash || getHash(),
         },
       });
 
