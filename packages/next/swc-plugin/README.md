@@ -2,20 +2,6 @@
 
 SWC plugin for GT translation components in Next.js.
 
-## Quick Setup
-
-**macOS (one command):**
-
-```bash
-curl -sSL https://raw.githubusercontent.com/generaltranslation/gt/main/packages/next/swc-plugin/setup.sh | bash
-```
-
-Restart your terminal, then:
-
-```bash
-npm run build
-```
-
 ## Manual Setup
 
 **Install Rust:**

@@ -8,6 +8,7 @@ import withGTConfigProps from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
+  createBadFilepathWarning,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
@@ -248,6 +249,47 @@ export function withGTConfig(
     typeof mergedConfig.loadTranslationsPath === 'string'
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
+
+  // Warn if found in /app directory
+  if (
+    !resolvedDictionaryFilePath &&
+    resolveConfigFilepath('dictionary', ['.ts', '.js', '.json'], undefined, [
+      './app',
+      './src/app',
+    ])
+  ) {
+    console.warn(
+      createBadFilepathWarning('dictionary', ['./app', './src/app'])
+    );
+  }
+
+  if (
+    !customLoadDictionaryPath &&
+    resolveConfigFilepath(
+      'loadDictionary',
+      ['.ts', '.js', '.json'],
+      undefined,
+      ['./app', './src/app']
+    )
+  ) {
+    console.warn(
+      createBadFilepathWarning('loadDictionary', ['./app', './src/app'])
+    );
+  }
+
+  if (
+    !customLoadTranslationsPath &&
+    resolveConfigFilepath(
+      'loadTranslations',
+      ['.ts', '.js', '.json'],
+      undefined,
+      ['./app', './src/app']
+    )
+  ) {
+    console.warn(
+      createBadFilepathWarning('loadTranslations', ['./app', './src/app'])
+    );
+  }
 
   // ----------- LOCALE STANDARDIZATION ----------- //
 
@@ -493,7 +535,8 @@ export const initGT = (props: withGTConfigProps) => (nextConfig: any) =>
 function resolveConfigFilepath(
   fileName: string,
   extensions: string[] = ['.ts', '.js'],
-  cwd?: string
+  cwd?: string,
+  prefixes: string[] = ['', 'src']
 ): string | undefined {
   function resolvePath(pathname: string) {
     const parts = [];
@@ -508,8 +551,9 @@ function resolveConfigFilepath(
 
   // Check for file existence in the root and src directories with supported extensions
   for (const candidate of [
-    ...extensions.map((ext) => `./${fileName}${ext}`),
-    ...extensions.map((ext) => `./src/${fileName}${ext}`),
+    ...prefixes.flatMap((prefix) =>
+      extensions.map((ext) => `./${prefix}/${fileName}${ext}`)
+    ),
   ]) {
     if (pathExists(candidate)) {
       return candidate;
