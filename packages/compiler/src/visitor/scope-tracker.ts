@@ -18,6 +18,11 @@ export interface ScopeInfo {
 }
 
 /**
+ * Variable type represents which group the variable belongs to
+ */
+export type VariableType = 'generaltranslation' | 'react' | 'other';
+
+/**
  * Information about a scoped variable assignment
  */
 export interface ScopedVariable {
@@ -29,6 +34,7 @@ export interface ScopedVariable {
   variableName: string;
   /** Whether the variable is a translation function */
   isTranslationFunction: boolean;
+  type: VariableType;
   /** The identifier for the variable */
   identifier: number;
 }
@@ -115,6 +121,7 @@ export class ScopeTracker {
     variableName: string,
     assignedValue: string,
     isTranslationFunction: boolean,
+    type: VariableType,
     identifier: number
   ): void {
     const scopedVar: ScopedVariable = {
@@ -122,6 +129,7 @@ export class ScopeTracker {
       originalName: assignedValue,
       variableName: variableName,
       isTranslationFunction,
+      type,
       identifier,
     };
 
@@ -138,14 +146,31 @@ export class ScopeTracker {
     functionName: string,
     identifier: number
   ): void {
-    this.trackVariable(variableName, functionName, true, identifier);
+    this.trackVariable(
+      variableName,
+      functionName,
+      true,
+      'generaltranslation',
+      identifier
+    );
+  }
+
+  /**
+   * Track react variable
+   */
+  trackReactVariable(
+    variableName: string,
+    assignedValue: string,
+    identifier: number
+  ): void {
+    this.trackVariable(variableName, assignedValue, false, 'react', identifier);
   }
 
   /**
    * Track a non-translation variable (convenience method)
    */
   trackRegularVariable(variableName: string, assignedValue: string): void {
-    this.trackVariable(variableName, assignedValue, false, 0); // 0 because we don't care about the identifier
+    this.trackVariable(variableName, assignedValue, false, 'other', 0); // 0 because we don't care about the identifier
   }
 
   /**

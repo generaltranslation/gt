@@ -2,7 +2,6 @@ import * as t from '@babel/types';
 import { PLURAL_FORMS } from './constants';
 import {
   buildSanitizedTextContent,
-  extractHtmlContentProps,
   filterJsxChildren,
   getTagName,
   getVariableType,

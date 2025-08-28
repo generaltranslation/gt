@@ -123,6 +123,12 @@ export function processImportDeclaration(
         // No action needed, matches Rust _ => {} pattern
       }
     }
+  } else if (srcValue === 'react/jsx-dev-runtime') {
+    // Handle react/jsx-dev-runtime import
+    // No action needed, matches Rust _ => {} pattern
+  } else {
+    // Handle other imports
+    // No action needed, matches Rust _ => {} pattern
   }
 }
 
