@@ -36,7 +36,6 @@ export interface GTUnpluginOptions extends PluginConfig {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
-    console.log('[gt-unplugin] creating unplugin');
     return {
       name: '@generaltranslation/gt-unplugin',
       transformInclude(id: string) {
@@ -97,9 +96,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
             // Collection phase visitors
             ImportDeclaration(path) {
-              if (state.settings.filename?.endsWith('page.tsx')) {
-                console.log(`[transform] ImportDeclaration: ${path.node}`);
-              }
               processImportDeclaration(path, state);
             },
 

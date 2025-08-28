@@ -65,6 +65,48 @@ export function getCalleeExprFunctionName(
   return null;
 }
 
+export function trackImportDeclaration(
+  state: TransformState,
+  importDecl: t.ImportDeclaration,
+  shouldTrackDeclaration: (originalName: string) => boolean,
+  trackDeclaration: (
+    localName: string,
+    originalName: string,
+    counterId: number
+  ) => void,
+  trackNamespaceImport: (localName: string) => void
+): void {
+  // Process named imports: import { T, Var, useGT } from 'gt-next'
+  for (const specifier of importDecl.specifiers) {
+    if (t.isImportSpecifier(specifier)) {
+      // Named import
+      const localName = specifier.local.name;
+      const originalName =
+        specifier.imported && t.isIdentifier(specifier.imported)
+          ? specifier.imported.name
+          : localName;
+
+      // Store the mapping: local_name -> original_name
+      if (shouldTrackDeclaration(originalName)) {
+        if (state.settings.filename?.endsWith('page.tsx')) {
+          console.log(
+            '[transform] Tracking translation: import {',
+            localName,
+            'as',
+            originalName,
+            '}'
+          );
+        }
+        // Note: Need to implement these methods in ImportTracker
+        trackDeclaration(localName, originalName, 0);
+      }
+    } else if (t.isImportNamespaceSpecifier(specifier)) {
+      // Handle namespace imports: import * as GT from 'gt-next'
+      trackNamespaceImport(specifier.local.name);
+    }
+  }
+}
+
 /**
  * Process import declarations to track GT imports
  * Ported from Rust: process_gt_import_declaration (lines 252-299)
@@ -82,53 +124,52 @@ export function processImportDeclaration(
     srcValue === 'gt-next/client' ||
     srcValue === 'gt-next/server'
   ) {
-    // Process named imports: import { T, Var, useGT } from 'gt-next'
-    for (const specifier of importDecl.specifiers) {
-      if (t.isImportSpecifier(specifier)) {
-        // Named import
-        const localName = specifier.local.name;
-        const originalName =
-          specifier.imported && t.isIdentifier(specifier.imported)
-            ? specifier.imported.name
-            : localName;
+    const shouldTrackDeclaration = (originalName: string) =>
+      isTranslationComponent(originalName) ||
+      isVariableComponent(originalName) ||
+      isBranchComponent(originalName) ||
+      isTranslationFunction(originalName);
 
-        // Store the mapping: local_name -> original_name
-        if (
-          isTranslationComponent(originalName) ||
-          isVariableComponent(originalName) ||
-          isBranchComponent(originalName) ||
-          isTranslationFunction(originalName)
-        ) {
-          if (state.settings.filename?.endsWith('page.tsx')) {
-            console.log(
-              '[transform] Tracking translation: import {',
-              localName,
-              'as',
-              originalName,
-              '} from "gt-next";'
-            );
-          }
-          // Note: Need to implement these methods in ImportTracker
-          state.importTracker.scopeTracker.trackTranslationVariable(
-            localName,
-            originalName,
-            0
-          );
-        }
-      } else if (t.isImportNamespaceSpecifier(specifier)) {
-        // Handle namespace imports: import * as GT from 'gt-next'
-        state.importTracker.namespaceImports.add(specifier.local.name);
-      } else {
-        // Handle other import specifier types (like ImportDefaultSpecifier)
-        // No action needed, matches Rust _ => {} pattern
-      }
-    }
+    const trackDeclaration = (
+      localName: string,
+      originalName: string,
+      counterId: number
+    ) =>
+      state.importTracker.scopeTracker.trackTranslationVariable(
+        localName,
+        originalName,
+        counterId
+      );
+
+    trackImportDeclaration(
+      state,
+      importDecl,
+      shouldTrackDeclaration,
+      trackDeclaration,
+      state.importTracker.namespaceImports.add
+    );
   } else if (srcValue === 'react/jsx-dev-runtime') {
-    // Handle react/jsx-dev-runtime import
-    // No action needed, matches Rust _ => {} pattern
-  } else {
-    // Handle other imports
-    // No action needed, matches Rust _ => {} pattern
+    const shouldTrackDeclaration = (originalName: string) =>
+      isJsxFunction(originalName);
+
+    const trackDeclaration = (
+      localName: string,
+      originalName: string,
+      counterId: number
+    ) =>
+      state.importTracker.scopeTracker.trackReactVariable(
+        localName,
+        originalName,
+        counterId
+      );
+
+    trackImportDeclaration(
+      state,
+      importDecl,
+      shouldTrackDeclaration,
+      trackDeclaration,
+      state.importTracker.namespaceImports.add
+    );
   }
 }
 
@@ -558,7 +599,7 @@ export function processCallExpression(
         // Track the t() function call
         trackTranslationCallback(callExpr, firstArg, identifier, state);
       }
-    } else if (isJsxFunction(functionName)) {
+    } else if (isJsxFunction(originalName)) {
       // For JSX function, process their children
       if (callExpr.arguments && callExpr.arguments.length > 0) {
         if (state.settings.filename?.endsWith('page.tsx')) {

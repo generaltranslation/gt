@@ -41,5 +41,5 @@ export function isTranslationFunctionCallback(name: string): boolean {
  * Check if it's a special Jsx function
  */
 export function isJsxFunction(name: string): boolean {
-  return ['_jsxDev', '_jsx', '_jsxs', 'React.createElement'].includes(name);
+  return ['jsxDEV', 'jsx', 'jsxs', 'React.createElement'].includes(name);
 }
