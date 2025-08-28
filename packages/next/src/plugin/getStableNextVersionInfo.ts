@@ -52,19 +52,21 @@ export type RootParam = 'unsupported' | 'unstable' | 'experimental' | 'stable';
 const rootParamStablity = {
   unsupported: '0.0.0',
   unstable: '15.1.0',
-  experimental: '15.3.0',
+  experimental: '15.5.0',
 };
 
-export const rootParam: RootParam = (() => {
+export const rootParamStability: RootParam = (() => {
   const nextVersion = getNextVersion();
-
   // Check if unsupported
-  if (comparePackageVersion(nextVersion, rootParamStablity.unsupported)) {
+  if (comparePackageVersion(rootParamStablity.unsupported, nextVersion)) {
     return 'unsupported';
   }
 
   // Check if unstable
-  if (comparePackageVersion(nextVersion, rootParamStablity.unstable)) {
+  if (comparePackageVersion(rootParamStablity.unstable, nextVersion)) {
     return 'unstable';
   }
+
+  // return experimental
+  return 'experimental';
 })();

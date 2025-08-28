@@ -1,6 +1,7 @@
 import { cookies, headers } from 'next/headers';
 import { determineLocale } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
+import { noLocalesCouldBeDeterminedWarning } from '../errors/createErrors';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -52,18 +53,14 @@ export async function getNextLocale(
 
     // Give a warning here
     if (preferredLocales.length === 0) {
-      console.warn('gt-next: no locales could be determined for this request.');
+      console.warn(noLocalesCouldBeDeterminedWarning);
     }
 
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);
 
     const result = determineLocale(preferredLocales, locales) || defaultLocale;
-    console.log(
-      `[getNextLocale] result: ${result} preferredLocales: ${preferredLocales.join(
-        ', '
-      )}`
-    );
+
     return result;
   })();
 
@@ -72,6 +69,7 @@ export async function getNextLocale(
 
 async function viaExperimentalModule(): Promise<string | null> {
   try {
+    // @ts-ignore - next/root-params may not exist in all Next.js versions
     const mod = await import('next/root-params');
 
     const maybeFns = ['lang', 'locale'] as const;
@@ -123,7 +121,7 @@ async function viaUnstableModule(): Promise<string | null> {
  * Uses environment variable to optimize API selection.
  */
 export async function getRootParams(): Promise<string | null> {
-  const apiVersion = process.env._GENERALTRANSLATION_NEXT_API_VERSION;
+  const apiVersion = process.env._GENERALTRANSLATION_ROOT_PARAMS_STABILITY;
 
   // Skip expensive try/catch when we know API isn't available
   if (apiVersion === 'unsupported') {

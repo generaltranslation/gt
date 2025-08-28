@@ -145,3 +145,6 @@ export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make su
 
 export const standardizedLocalesWarning = (locales: string[]) =>
   `gt-next: You are using The following locales were standardized: ${locales.join(', ')}.`;
+
+export const noLocalesCouldBeDeterminedWarning =
+  'gt-next: no locales could be determined for this request. If you are using SSG, penable middleware on your project: https://generaltranslation.com/en/docs/next/guides/middleware';

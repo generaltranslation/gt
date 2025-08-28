@@ -19,7 +19,10 @@ import {
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
-import { turboConfigStable } from './plugin/getStableNextVersionInfo';
+import {
+  rootParamStability,
+  turboConfigStable,
+} from './plugin/getStableNextVersionInfo';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -432,6 +435,9 @@ export function withGTConfig(
     (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
   );
 
+  // Get root params stability
+  const rootParams = rootParamStability;
+
   return {
     ...nextConfig,
     env: {
@@ -458,6 +464,7 @@ export function withGTConfig(
         'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
+      _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParams,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
@@ -471,6 +478,9 @@ export function withGTConfig(
       }),
     experimental: {
       ...nextConfig.experimental,
+      ...(rootParams === 'experimental' && {
+        rootParams: true,
+      }),
       // SWC Plugin
       swcPlugins: [
         ...(nextConfig.experimental?.swcPlugins || []),
