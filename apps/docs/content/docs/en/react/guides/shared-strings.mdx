@@ -11,7 +11,7 @@ For example, you may have a string that is used in multiple components, or a con
 
 In traditional i18n libraries, you would need to create a dictionary for each shared string.
 
-This guide will walk you through how to easily internationalize shared strings in your React app using the [`msg()`](/docs/react/api/strings/msg) function & [`useTranslations()`](/docs/react/api/dictionary/useTranslations) hook.
+This guide will walk you through how to easily internationalize shared strings in your React app using the [`msg()`](/docs/react/api/strings/msg) function & [`useMessages()`](/docs/react/api/dictionary/useMessages) hook.
 
 We will cover the following:
 <Steps>
@@ -19,7 +19,7 @@ We will cover the following:
     When to use the `msg()` function
   </Step>
   <Step>
-    How to use the `msg()` function and `useTranslations()` hook
+    How to use the `msg()` function and `useMessages()` hook
   </Step>
   <Step>
     Using variables
@@ -116,18 +116,18 @@ export const navData = [
 ]
 ```
 
-Then, simply pass the encoded string to the `useTranslations()` hook.
+Then, simply pass the encoded string to the `useMessages()` hook.
 
 ```tsx title="src/app/page.tsx"
-import { useTranslations } from 'gt-react';
+import { useMessages } from 'gt-react';
 import { navData } from '@/navData';
 
 export default function Home() {
-  const t = useTranslations();
+  const m = useMessages();
   return (
     <div>
       {navData.map((item) => (
-        <div key={item.label}>{t(item.label)}</div>
+        <div key={item.label}>{m(item.label)}</div>
       ))}
     </div>
   );
@@ -218,16 +218,16 @@ export const llmData = [
 
 ```jsx copy title="src/app/page.tsx"
 import { llmData } from '@/llms';
-import { useTranslations } from 'gt-react';
+import { useMessages } from 'gt-react';
 
 export default function MyComponent() {
-  const t = useTranslations();
+  const m = useMessages();
   return (
     <div>
       {llmData.map((llm) => (
         <div key={llm.id}>
           <h1>{llm.name}</h1>
-          <p>{t(llm.description)}</p>
+          <p>{m(llm.description)}</p>
         </div>
       ))}
     </div>
@@ -308,17 +308,17 @@ export function getData() {
 
 ```jsx copy title="src/app/page.tsx"
 import { getData } from '@/llms';
-import { useTranslations } from 'gt-react';
+import { useMessages } from 'gt-react';
 
 export default function MyComponent() {
-  const t = useTranslations();
+  const m = useMessages();
   const data = getData();
   return (
     <div>
       {data.map((item) => (
         <div key={item.id}>
           <h1>{item.name}</h1>
-          <p>{t(item.description)}</p>
+          <p>{m(item.description)}</p>
         </div>
       ))}
     </div>
@@ -380,7 +380,7 @@ export default function MyComponent() {
 
 ## Common Pitfalls
 
-### Forgetting to call `useTranslations()`
+### Forgetting to call `useMessages()`
 
 `msg()` encodes the input string, so you cannot use it directly in JSX or elsewhere. 
 
@@ -391,16 +391,16 @@ const encodedString = msg('Hello, world!');
 console.log(encodedString); // "Hello, world!:eyIkX2hhc2giOiJkMjA3MDliZGExNjNlZmM2In0="
 ```
 
-To fix this, you need to use the `useTranslations()` hook to get the translated string.
+To fix this, you need to use the `useMessages()` hook to get the translated string.
 
 ```jsx
-import { useTranslations } from 'gt-react';
+import { useMessages } from 'gt-react';
 
 const encodedString = msg('Hello, world!');
 
 export default function MyComponent() {
-  const t = useTranslations();
-  return <div>{t(encodedString)}</div>; // 'Hello, world!' in the current language
+  const m = useMessages();
+  return <div>{m(encodedString)}</div>; // 'Hello, world!' in the current language
 }
 ```
 
@@ -439,5 +439,5 @@ const dynamicContent = msg('Hello, {name}', { name });
 
 ## Next Steps
  * See the [API reference for `msg()`](/docs/react/api/strings/msg).
- * See the [API reference for `useTranslations()`](/docs/react/api/dictionary/useTranslations).
+ * See the [API reference for `useMessages()`](/docs/react/api/dictionary/useMessages).
  * Learn more about the [`<T>` component](/docs/react/guides/jsx).
