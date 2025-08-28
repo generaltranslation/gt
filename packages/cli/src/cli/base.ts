@@ -406,7 +406,10 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
-      await createLoadTranslationsFile(process.cwd(), translationsDir?.trim() || './public/_gt');
+      await createLoadTranslationsFile(
+        process.cwd(),
+        translationsDir?.trim() || './public/_gt'
+      );
       logMessage(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
