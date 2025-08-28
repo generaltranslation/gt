@@ -17,7 +17,7 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../../types/runtime';
-import { decodeMsg, decodeOptions } from '../../../messages/messages';
+import { decodeOptions } from '../../../messages/messages';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -97,7 +97,7 @@ export default function useCreateInternalUseTranslationsFunction(
         : options?.$_hash || '';
 
       // Check id first
-      const translationEntry = translations?.[hash];
+      const translationEntry = translations?.[id] || translations?.[hash];
 
       // Check translation successful
       if (translationEntry) {

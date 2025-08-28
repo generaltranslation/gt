@@ -82,6 +82,9 @@ export const createStringRenderError = (
 
 // ---- WARNINGS ---- //
 
+export const createBadFilepathWarning = (filename: string, dir: string[]) =>
+  `gt-next: Found ${filename} in ${dir.join(' or ')} directory. This is not supported. Please move it to your root directory.`;
+
 export const usingDefaultsWarning =
   'gt-next: Unable to access gt-next configuration. Using defaults.';
 

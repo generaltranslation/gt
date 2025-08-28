@@ -145,7 +145,7 @@ export async function getTranslations(
       id,
       dataFormat: 'ICU',
     });
-    const translationEntry = translations?.[hash];
+    const translationEntry = translations?.[id] || translations?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
 

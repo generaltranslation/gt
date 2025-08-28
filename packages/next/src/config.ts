@@ -8,6 +8,7 @@ import withGTConfigProps from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
+  createBadFilepathWarning,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
@@ -262,7 +263,7 @@ export function withGTConfig(
     ])
   ) {
     console.warn(
-      'Found dictionary.ts in /app or /src/app directory. This is not supported. Please move it to your root directory.'
+      createBadFilepathWarning('dictionary', ['./app', './src/app'])
     );
   }
 
@@ -276,7 +277,7 @@ export function withGTConfig(
     )
   ) {
     console.warn(
-      'Found loadDictionary.ts in /app or /src/app directory. This is not supported. Please move it to your root directory.'
+      createBadFilepathWarning('loadDictionary', ['./app', './src/app'])
     );
   }
 
@@ -290,7 +291,7 @@ export function withGTConfig(
     )
   ) {
     console.warn(
-      'Found loadTranslations.ts in /app or /src/app directory. This is not supported. Please move it to your root directory.'
+      createBadFilepathWarning('loadTranslations', ['./app', './src/app'])
     );
   }
 
