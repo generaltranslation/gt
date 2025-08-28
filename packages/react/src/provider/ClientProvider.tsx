@@ -50,8 +50,14 @@ export default function ClientProvider({
     _locale ? determineLocale(_locale, locales) || '' : ''
   );
 
+  console.log(`[ClientProvider] locale: ${locale}`);
+
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
+    console.log(
+      `[setLocale] OldLocale ${locale} -> NewLocale ${newLocale} =================`
+    );
+
     // validate locale
     newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
     // persist locale

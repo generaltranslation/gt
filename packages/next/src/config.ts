@@ -19,7 +19,7 @@ import {
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
-import { turboConfigStable } from './plugin/getTurboConfigStable';
+import { turboConfigStable } from './plugin/getStableNextVersionInfo';
 
 /**
  * Initializes General Translation settings for a Next.js application.

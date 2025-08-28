@@ -55,6 +55,10 @@ export default function ClientProvider(
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
 
+        console.log(
+          `[ClientProviderWrapper] Reloading page. locale: ${locale}, pathLocale: ${pathLocale}`
+        );
+
         // reload page
         window.location.reload();
       }

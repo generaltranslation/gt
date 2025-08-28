@@ -47,3 +47,24 @@ export const turboConfigStable = comparePackageVersion(
   getNextVersion(),
   STABLE_TURBO_CONFIG_VERSION
 );
+
+export type RootParam = 'unsupported' | 'unstable' | 'experimental' | 'stable';
+const rootParamStablity = {
+  unsupported: '0.0.0',
+  unstable: '15.1.0',
+  experimental: '15.3.0',
+};
+
+export const rootParam: RootParam = (() => {
+  const nextVersion = getNextVersion();
+
+  // Check if unsupported
+  if (comparePackageVersion(nextVersion, rootParamStablity.unsupported)) {
+    return 'unsupported';
+  }
+
+  // Check if unstable
+  if (comparePackageVersion(nextVersion, rootParamStablity.unstable)) {
+    return 'unstable';
+  }
+})();
