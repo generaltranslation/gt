@@ -17,7 +17,6 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../../types/runtime';
-import { decodeMsg, decodeOptions } from '../../../messages/messages';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -37,21 +36,8 @@ export default function useCreateInternalUseTranslationsFunction(
         return '';
       }
 
-      // Check if is a message
-      let isMessage = false;
-      const messageOptions = decodeOptions(id);
-      if (messageOptions) {
-        isMessage = true;
-        options = {
-          ...messageOptions,
-          ...options,
-        };
-      }
-
       // Get entry
-      const value = !isMessage
-        ? getDictionaryEntry(dictionary, id)
-        : options?.$_source;
+      const value = getDictionaryEntry(dictionary, id);
 
       // Check: no entry found
       if (!value) {
@@ -86,18 +72,19 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // ----- CHECK TRANSLATIONS ----- //
 
-      // Get hash
-      const hash = !isMessage
-        ? hashSource({
-            source: entry,
-            ...(metadata?.$context && { context: metadata.$context }),
-            id,
-            dataFormat: 'ICU',
-          })
-        : options?.$_hash || '';
-
-      // Check id first
-      const translationEntry = translations?.[hash];
+      let translationEntry = translations?.[id];
+      let hash = '';
+      const getHash = () =>
+        hashSource({
+          source: entry,
+          ...(metadata?.$context && { context: metadata.$context }),
+          id,
+          dataFormat: 'ICU',
+        });
+      if (!translationEntry) {
+        hash = getHash();
+        translationEntry = translations?.[hash];
+      }
 
       // Check translation successful
       if (translationEntry) {
@@ -125,8 +112,8 @@ export default function useCreateInternalUseTranslationsFunction(
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),
-          ...(isMessage && { id }),
-          hash,
+          id,
+          hash: hash || getHash(),
         },
       });
 
