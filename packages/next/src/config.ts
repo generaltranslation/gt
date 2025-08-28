@@ -188,10 +188,7 @@ export function withGTConfig(
   // Resolve wasm filepath
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
-  if (
-    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash &&
-    process.platform !== 'win32' // TODO: figure out how to support windows as well
-  ) {
+  if (mergedConfig.experimentalSwcPluginOptions?.compileTimeHash) {
     try {
       if (turboPackEnabled) {
         const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
