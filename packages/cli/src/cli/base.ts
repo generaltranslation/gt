@@ -47,6 +47,7 @@ import {
   postProcessTranslations,
 } from './commands/translate.js';
 import updateConfig from '../fs/config/updateConfig.js';
+import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 
 export type UploadOptions = {
   config?: string;
@@ -393,22 +394,28 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
           defaultValue: true,
         })
       : false;
-    if (isUsingGT && !usingCDN) {
-      logMessage(
-        `Make sure to add a loadTranslations function to your app configuration to correctly use local translations.
-See https://generaltranslation.com/en/docs/next/guides/local-tx`
-      );
-    }
-
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
         ? await promptText({
             message:
               'What is the path to the directory where you would like to locally store your translations?',
-            defaultValue: './public/locales',
+            defaultValue: './public/_gt',
           })
         : null;
+
+    // Determine final translations directory with fallback
+    const finalTranslationsDir = translationsDir?.trim() || './public/_gt';
+
+    if (isUsingGT && !usingCDN) {
+      // Create loadTranslations.js file for local translations
+      await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
+      logMessage(
+        `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+Make sure to add this function to your app configuration.
+See https://generaltranslation.com/en/docs/next/guides/local-tx`
+      );
+    }
 
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
@@ -441,9 +448,9 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     }
 
     // Add GT translations if using GT and storing locally
-    if (isUsingGT && !usingCDN && translationsDir) {
+    if (isUsingGT && !usingCDN) {
       files.gt = {
-        output: path.join(translationsDir, `[locale].json`),
+        output: path.join(finalTranslationsDir, `[locale].json`),
       };
     }
 

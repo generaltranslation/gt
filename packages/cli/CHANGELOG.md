@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.11
+
+### Patch Changes
+
+- [#610](https://github.com/generaltranslation/gt/pull/610) [`bfb4f53`](https://github.com/generaltranslation/gt/commit/bfb4f53658c785520373af53a1e9fadb6eca2d0b) Thanks [@SamEggert](https://github.com/SamEggert)! - create loadTranslations.js when user specifies local translations in gtx-cli init
+
 ## 2.1.10
 
 ### Patch Changes

@@ -2,8 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock Next.js APIs
 vi.mock('next/headers', () => ({
-  headers: vi.fn(() => Promise.resolve(new Map())),
-  cookies: vi.fn(() => Promise.resolve(new Map())),
+  headers: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => 'en'), // Mock accept-language header
+    })
+  ),
+  cookies: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => ({ value: 'en' })),
+    })
+  ),
 }));
 
 // Mock all dependencies
@@ -25,6 +33,9 @@ vi.mock('../../config-dir/getI18NConfig', () => ({
 }));
 vi.mock('../../request/getLocale', () => ({
   getLocale: mockGetLocale,
+}));
+vi.mock('../../next/getNextLocale', () => ({
+  getNextLocale: vi.fn(() => Promise.resolve('en')),
 }));
 vi.mock('../../utils/use', () => ({
   default: mockUse,
@@ -74,6 +85,9 @@ describe('getTranslations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Set environment variables for locale detection
+    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
 
     mockI18NConfig = {
       getDefaultLocale: vi.fn(() => 'en'),
