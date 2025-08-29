@@ -55,7 +55,7 @@
   },
   "exports": {
     ".": {
-      "node": "./dist/index.server.js",
+      "react-server": "./dist/index.server.js",
       "browser": "./dist/index.client.js",
       "types": "./dist/index.types.d.ts",
       "default": "./dist/index.client.js"
