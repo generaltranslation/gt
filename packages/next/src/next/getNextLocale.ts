@@ -57,10 +57,10 @@ export async function getNextLocale(
     //   preferredLocales.push(pathLocale);
     // }
 
-    // // Give an error here
-    // if (preferredLocales.length === 0) {
-    //   throw new Error(noLocalesCouldBeDeterminedError);
-    // }
+    // Give an error here
+    if (preferredLocales.length === 0) {
+      throw new Error(noLocalesCouldBeDeterminedError);
+    }
 
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);
@@ -75,7 +75,8 @@ export async function getNextLocale(
 
 // async function viaExperimentalModule(): Promise<string | null> {
 //   try {
-//     const mod = require('next/root-params');
+//     // const mod = require('next/root-params');
+//     const mod = await import('next/root-params');
 //     const maybeFns = ['lang', 'locale'] as const;
 //     const entries = await Promise.all(
 //       maybeFns.map(async (k): Promise<readonly [string, string] | null> => {

@@ -3,7 +3,7 @@
 import { getLocaleProperties } from 'generaltranslation';
 
 export const noLocalesCouldBeDeterminedError =
-  'gt-next: Error: no locales could be determined for this request. If you are using SSG, make sure to (1) use at least next@15.1.0 and (2) enable middleware on your project: https://generaltranslation.com/en/docs/next/guides/middleware';
+  'gt-next: Error: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
 
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';

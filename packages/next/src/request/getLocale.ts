@@ -34,8 +34,8 @@ export async function getLocale(): Promise<string> {
         );
       };
       return locale;
-    } catch (e) {
-      console.error(e);
+    } catch {
+      /* empty */
     }
   }
   getLocaleFunction = async () => {

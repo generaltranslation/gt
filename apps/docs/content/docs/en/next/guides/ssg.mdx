@@ -102,6 +102,42 @@ That's it! Your app should now support static site generation for multiple langu
   </Accordion>
 </Accordions>
 
+### SSG with custom getLocale [#ssg-custom-get-locale]
+
+SSG can disrupt locale resolution.
+Because of this, you will have to define your own `getLocale()` function that accesses the locale through the url path.
+Depending on your version of Next.js, your solution may be different.
+
+#### Next.js 15.5+
+
+Create a new file in the root of your project called `getLocale.ts`.
+
+```tsx title="getLocale.ts"
+import { locale } from "next/root-params";
+export default async function getLocale() {
+    return await locale();
+}
+```
+
+#### Next.js 15.1-15.4
+
+Create a new file in the root of your project called `getLocale.ts`.
+
+```tsx title="getLocale.ts"
+import { unstable_rootParams } from "next/server";
+export default async function getLocale() {
+  const result = (await unstable_rootParams())?.locale;
+  return result;
+}
+```
+
+
+#### Earlier versions
+
+Unfortunately, for earlier versions there is no way to access the url path parameters with SSG.
+You will have to upgrade to Next.js 15.1 or later.
+
+
 ## SSG for the `pages` router
 
 🚧 This section is currently under construction. 🚧
