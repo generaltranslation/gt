@@ -514,18 +514,45 @@ export function withGTConfig(
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
         }
+
+        // Prevent server-only modules from being bundled on the client side
+        if (!options.isServer) {
+          webpackConfig.externals = webpackConfig.externals || [];
+          if (Array.isArray(webpackConfig.externals)) {
+            webpackConfig.externals.push('gt-next/_request');
+          } else if (typeof webpackConfig.externals === 'function') {
+            const originalExternals = webpackConfig.externals;
+            webpackConfig.externals = function (
+              context: any,
+              request: any,
+              callback: any
+            ) {
+              if (request === 'gt-next/_request') {
+                return callback(null, 'commonjs ' + request);
+              }
+              return originalExternals(context, request, callback);
+            };
+          } else {
+            // Handle case where externals is an object
+            webpackConfig.externals = {
+              ...webpackConfig.externals,
+              'gt-next/_request': 'commonjs gt-next/_request',
+            };
+          }
+        }
+
         if (resolvedDictionaryFilePath) {
           webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
             webpackConfig.context,
             resolvedDictionaryFilePath
           );
         }
-        if (customGetLocalePath) {
-          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
-            webpackConfig.context,
-            customGetLocalePath
-          );
-        }
+        // if (customGetLocalePath && options.isServer) {
+        //   webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
+        //     webpackConfig.context,
+        //     customGetLocalePath
+        //   );
+        // }
         if (customLoadTranslationsPath) {
           webpackConfig.resolve.alias[`gt-next/_load-translations`] =
             path.resolve(webpackConfig.context, customLoadTranslationsPath);
