@@ -19,7 +19,11 @@ import {
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
-import { turboConfigStable } from './plugin/getTurboConfigStable';
+import {
+  rootParamStability,
+  swcPluginCompatible,
+  turboConfigStable,
+} from './plugin/getStableNextVersionInfo';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -153,11 +157,6 @@ export function withGTConfig(
     throw new Error(conflictingConfigurationBuildError(conflicts));
   }
 
-  // Validate getLocalePath
-  if (props.getLocalePath) {
-    throw new Error(unsupportedGetLocalePathBuildError);
-  }
-
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
@@ -188,7 +187,10 @@ export function withGTConfig(
   // Resolve wasm filepath
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
-  if (mergedConfig.experimentalSwcPluginOptions?.compileTimeHash) {
+  if (
+    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash &&
+    swcPluginCompatible
+  ) {
     try {
       if (turboPackEnabled) {
         const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
@@ -237,6 +239,12 @@ export function withGTConfig(
   if (resolvedDictionaryFilePathType) {
     mergedConfig._dictionaryFileType = resolvedDictionaryFilePathType;
   }
+
+  // Resolve getLocale path
+  const customGetLocalePath =
+    typeof mergedConfig.getLocalePath === 'string'
+      ? mergedConfig.getLocalePath
+      : resolveConfigFilepath('getLocale', ['.ts', '.js', '.json']);
 
   // Resolve custom dictionary loader path
   const customLoadDictionaryPath =
@@ -367,7 +375,7 @@ export function withGTConfig(
   // ---------- ERROR CHECKS ---------- //
 
   // Resolve getLocale path
-  const customLocaleEnabled = false;
+  const customLocaleEnabled = !!customGetLocalePath;
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
@@ -422,6 +430,10 @@ export function withGTConfig(
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+    'gt-next/_request': customGetLocalePath || '',
+    // ...(rootParamStability !== 'experimental' && {
+    //   'next/root-params': './_root-params',
+    // }),
   };
 
   // experimental.turbo is deprecated in next@15.3.0.
@@ -458,6 +470,7 @@ export function withGTConfig(
         'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
+      _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParamStability,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
@@ -471,6 +484,9 @@ export function withGTConfig(
       }),
     experimental: {
       ...nextConfig.experimental,
+      ...(rootParamStability === 'experimental' && {
+        rootParams: true,
+      }),
       // SWC Plugin
       swcPlugins: [
         ...(nextConfig.experimental?.swcPlugins || []),
@@ -504,6 +520,12 @@ export function withGTConfig(
             resolvedDictionaryFilePath
           );
         }
+        if (customGetLocalePath) {
+          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
+            webpackConfig.context,
+            customGetLocalePath
+          );
+        }
         if (customLoadTranslationsPath) {
           webpackConfig.resolve.alias[`gt-next/_load-translations`] =
             path.resolve(webpackConfig.context, customLoadTranslationsPath);
@@ -512,6 +534,12 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
+        // if (rootParamStability !== 'experimental') {
+        //   webpackConfig.resolve.alias['next/root-params'] = path.resolve(
+        //     webpackConfig.context,
+        //     './_root-params'
+        //   );
+        // }
       }
       if (typeof nextConfig?.webpack === 'function') {
         return nextConfig.webpack(webpackConfig, options);
