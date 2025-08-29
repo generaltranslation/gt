@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.3.4
+
+### Patch Changes
+
+- [#613](https://github.com/generaltranslation/gt/pull/613) [`48ddbd0`](https://github.com/generaltranslation/gt/commit/48ddbd00ff57a955a84b0f55ee2562052f3a9860) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: middleware and ssg
+
 ## 6.3.3
 
 ### Patch Changes
