@@ -26,6 +26,7 @@ export async function aggregateReactTranslations(
   // ---- CREATING UPDATES ---- //
   const { updates, errors, warnings } = await createUpdates(
     options,
+    settings.src,
     options.dictionary,
     library,
     false

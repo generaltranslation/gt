@@ -23,6 +23,7 @@ import chalk from 'chalk';
  */
 export async function createUpdates(
   options: TranslateFlags,
+  src: string[] | undefined,
   sourceDictionary: string | undefined,
   pkg: 'gt-react' | 'gt-next',
   validate: boolean
@@ -67,7 +68,7 @@ export async function createUpdates(
     updates: newUpdates,
     errors: newErrors,
     warnings: newWarnings,
-  } = await createInlineUpdates(pkg, validate, options.src);
+  } = await createInlineUpdates(pkg, validate, src);
 
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];
