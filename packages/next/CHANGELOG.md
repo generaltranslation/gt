@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.3.5
+
+### Patch Changes
+
+- [#615](https://github.com/generaltranslation/gt/pull/615) [`73f6b71`](https://github.com/generaltranslation/gt/commit/73f6b712e73e5dd54dd87c7f8a7e2b337a0379d1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: use client import locale
+
 ## 6.3.4
 
 ### Patch Changes
