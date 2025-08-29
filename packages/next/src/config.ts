@@ -157,11 +157,6 @@ export function withGTConfig(
     throw new Error(conflictingConfigurationBuildError(conflicts));
   }
 
-  // Validate getLocalePath
-  if (props.getLocalePath) {
-    throw new Error(unsupportedGetLocalePathBuildError);
-  }
-
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
@@ -244,6 +239,12 @@ export function withGTConfig(
   if (resolvedDictionaryFilePathType) {
     mergedConfig._dictionaryFileType = resolvedDictionaryFilePathType;
   }
+
+  // Resolve getLocale path
+  const customGetLocalePath =
+    typeof mergedConfig.getLocalePath === 'string'
+      ? mergedConfig.getLocalePath
+      : resolveConfigFilepath('getLocale', ['.ts', '.js', '.json']);
 
   // Resolve custom dictionary loader path
   const customLoadDictionaryPath =
@@ -374,7 +375,7 @@ export function withGTConfig(
   // ---------- ERROR CHECKS ---------- //
 
   // Resolve getLocale path
-  const customLocaleEnabled = false;
+  const customLocaleEnabled = !!customGetLocalePath;
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
@@ -429,6 +430,7 @@ export function withGTConfig(
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+    'gt-next/_request': customGetLocalePath || '',
     // ...(rootParamStability !== 'experimental' && {
     //   'next/root-params': './_root-params',
     // }),
@@ -518,6 +520,12 @@ export function withGTConfig(
             resolvedDictionaryFilePath
           );
         }
+        if (customGetLocalePath) {
+          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
+            webpackConfig.context,
+            customGetLocalePath
+          );
+        }
         if (customLoadTranslationsPath) {
           webpackConfig.resolve.alias[`gt-next/_load-translations`] =
             path.resolve(webpackConfig.context, customLoadTranslationsPath);
@@ -529,7 +537,7 @@ export function withGTConfig(
         // if (rootParamStability !== 'experimental') {
         //   webpackConfig.resolve.alias['next/root-params'] = path.resolve(
         //     webpackConfig.context,
-        //     './_root-params.js'
+        //     './_root-params'
         //   );
         // }
       }

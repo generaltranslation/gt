@@ -14,7 +14,8 @@ import { noLocalesCouldBeDeterminedError } from '../errors/createErrors';
  */
 export async function getNextLocale(
   defaultLocale: string = '',
-  locales: string[]
+  locales: string[],
+  preferredLocale?: string
 ): Promise<string> {
   const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
 
@@ -25,6 +26,11 @@ export async function getNextLocale(
 
   const userLocale = (() => {
     const preferredLocales: string[] = [];
+
+    // include preferredLocale if provided
+    if (preferredLocale) {
+      preferredLocales.push(preferredLocale);
+    }
 
     // Language routed to by middleware
     const headerLocale = headersList.get(I18NConfig.getLocaleHeaderName());
@@ -41,7 +47,7 @@ export async function getNextLocale(
       const acceptedLocales = headersList
         .get('accept-language')
         ?.split(',')
-        .map((item) => item.split(';')?.[0].trim());
+        .map((item: string) => item.split(';')?.[0].trim());
 
       if (acceptedLocales) preferredLocales.push(...acceptedLocales);
     }
@@ -51,10 +57,10 @@ export async function getNextLocale(
     //   preferredLocales.push(pathLocale);
     // }
 
-    // Give a warning here
-    if (preferredLocales.length === 0) {
-      throw new Error(noLocalesCouldBeDeterminedError);
-    }
+    // // Give an error here
+    // if (preferredLocales.length === 0) {
+    //   throw new Error(noLocalesCouldBeDeterminedError);
+    // }
 
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);

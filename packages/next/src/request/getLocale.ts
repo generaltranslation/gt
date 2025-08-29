@@ -16,19 +16,28 @@ let getLocaleFunction: () => Promise<string>;
 export async function getLocale(): Promise<string> {
   if (getLocaleFunction) return await getLocaleFunction();
   // Try catch is for dynamic imports from gt-next/_request for custom getLocale functions
+  const I18NConfig = getI18NConfig();
   if (process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true') {
     try {
       const customRequestConfig = require('gt-next/_request');
       const customGetLocale: () => Promise<string> =
-        customRequestConfig?.default || customRequestConfig.getLocale;
+        customRequestConfig?.default?.getLocale ||
+        customRequestConfig?.default ||
+        customRequestConfig.getLocale;
       const locale = await customGetLocale();
-      getLocaleFunction = customGetLocale;
+      getLocaleFunction = async () => {
+        const preferredLocale = await customGetLocale();
+        return await getNextLocale(
+          I18NConfig.getDefaultLocale(),
+          I18NConfig.getLocales(),
+          preferredLocale
+        );
+      };
       return locale;
-    } catch {
-      /* empty */
+    } catch (e) {
+      console.error(e);
     }
   }
-  const I18NConfig = getI18NConfig();
   getLocaleFunction = async () => {
     const res = await getNextLocale(
       I18NConfig.getDefaultLocale(),
