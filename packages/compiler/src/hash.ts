@@ -213,10 +213,7 @@ function isVariable(state: TransformState, child: t.Expression): boolean {
 /**
  * Create jsx child
  */
-function createJsxChild(
-  state: TransformState,
-  child: t.Expression | t.SpreadElement | null
-): JsxChild {
+function createJsxChild(state: TransformState, child: t.Expression): JsxChild {
   // handle string
   if (t.isStringLiteral(child)) {
     return child.value;
