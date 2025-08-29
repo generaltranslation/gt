@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.12
+
+### Patch Changes
+
+- [#618](https://github.com/generaltranslation/gt/pull/618) [`195b65f`](https://github.com/generaltranslation/gt/commit/195b65fcbdebc027156ba04409b48f3ad175e20f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: src sepcification
+
 ## 2.1.11
 
 ### Patch Changes
