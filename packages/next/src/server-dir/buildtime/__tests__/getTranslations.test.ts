@@ -2,12 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock Next.js APIs
 vi.mock('next/headers', () => ({
-  headers: vi.fn(() => Promise.resolve({
-    get: vi.fn(() => 'en'), // Mock accept-language header
-  })),
-  cookies: vi.fn(() => Promise.resolve({
-    get: vi.fn(() => ({ value: 'en' })),
-  })),
+  headers: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => 'en'), // Mock accept-language header
+    })
+  ),
+  cookies: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => ({ value: 'en' })),
+    })
+  ),
 }));
 
 // Mock all dependencies
@@ -81,7 +85,7 @@ describe('getTranslations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    
+
     // Set environment variables for locale detection
     process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
 

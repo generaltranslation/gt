@@ -91,9 +91,6 @@
     "./_load-dictionary": {
       "default": "./dist/_load-dictionary.js"
     },
-    "./next/root-params": {
-      "default": "./dist/_root-params.js"
-    },
     "./compiler": {
       "types": "./dist/compiler/index.d.ts",
       "default": "./dist/compiler/index.js"
@@ -132,9 +129,6 @@
       "_load-dictionary": [
         "./dist/_load-dictionary.d.ts"
       ],
-      "next/root-params": [
-        "./dist/_root-params.d.ts"
-      ],
       "compiler": [
         "./dist/compiler/index.d.ts"
       ],
@@ -172,9 +166,6 @@
       ],
       "gt-next/_load-dictionary": [
         "/dist/_load-dictionary"
-      ],
-      "next/root-params": [
-        "/dist/_root-params"
       ],
       "gt-next/compiler": [
         "/dist/compiler"
