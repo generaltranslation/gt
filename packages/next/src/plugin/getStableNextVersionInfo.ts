@@ -49,24 +49,31 @@ export const turboConfigStable = comparePackageVersion(
 );
 
 export type RootParam = 'unsupported' | 'unstable' | 'experimental' | 'stable';
-const rootParamStablity = {
+const ROOT_PARAM_STABILITY = {
   unsupported: '0.0.0',
-  unstable: '15.1.0',
+  unstable: '15.2.0',
   experimental: '15.5.0',
 };
 
 export const rootParamStability: RootParam = (() => {
   const nextVersion = getNextVersion();
-  // Check if unsupported
-  if (comparePackageVersion(rootParamStablity.unsupported, nextVersion)) {
-    return 'unsupported';
+
+  // Check if experimental
+  if (comparePackageVersion(nextVersion, ROOT_PARAM_STABILITY.experimental)) {
+    return 'experimental';
   }
 
   // Check if unstable
-  if (comparePackageVersion(rootParamStablity.unstable, nextVersion)) {
+  if (comparePackageVersion(nextVersion, ROOT_PARAM_STABILITY.unstable)) {
     return 'unstable';
   }
 
-  // return experimental
-  return 'experimental';
+  // return unsupported
+  return 'unsupported';
 })();
+
+const SWC_PLUGIN_SUPPORT = '15.2.0';
+export const swcPluginCompatible = comparePackageVersion(
+  getNextVersion(),
+  SWC_PLUGIN_SUPPORT
+);

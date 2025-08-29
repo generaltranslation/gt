@@ -21,6 +21,7 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
 import {
   rootParamStability,
+  swcPluginCompatible,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
 
@@ -191,7 +192,10 @@ export function withGTConfig(
   // Resolve wasm filepath
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
-  if (mergedConfig.experimentalSwcPluginOptions?.compileTimeHash) {
+  if (
+    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash &&
+    swcPluginCompatible
+  ) {
     try {
       if (turboPackEnabled) {
         const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
@@ -425,6 +429,9 @@ export function withGTConfig(
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+    // ...(rootParamStability !== 'experimental' && {
+    //   'next/root-params': './_root-params',
+    // }),
   };
 
   // experimental.turbo is deprecated in next@15.3.0.
@@ -434,9 +441,6 @@ export function withGTConfig(
     turboConfigStable &&
     (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
   );
-
-  // Get root params stability
-  const rootParams = rootParamStability;
 
   return {
     ...nextConfig,
@@ -464,7 +468,7 @@ export function withGTConfig(
         'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
-      _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParams,
+      _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParamStability,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
@@ -478,7 +482,7 @@ export function withGTConfig(
       }),
     experimental: {
       ...nextConfig.experimental,
-      ...(rootParams === 'experimental' && {
+      ...(rootParamStability === 'experimental' && {
         rootParams: true,
       }),
       // SWC Plugin
@@ -522,6 +526,12 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
+        // if (rootParamStability !== 'experimental') {
+        //   webpackConfig.resolve.alias['next/root-params'] = path.resolve(
+        //     webpackConfig.context,
+        //     './_root-params.js'
+        //   );
+        // }
       }
       if (typeof nextConfig?.webpack === 'function') {
         return nextConfig.webpack(webpackConfig, options);
