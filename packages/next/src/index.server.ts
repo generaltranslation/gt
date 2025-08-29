@@ -1,3 +1,5 @@
+import 'server-only';
+
 import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
