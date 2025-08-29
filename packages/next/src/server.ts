@@ -1,3 +1,5 @@
+import 'server-only';
+
 import T from './server-dir/buildtime/T';
 import tx from './server-dir/runtime/tx';
 import { getLocale } from './request/getLocale';
