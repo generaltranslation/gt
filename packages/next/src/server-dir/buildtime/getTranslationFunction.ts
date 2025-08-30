@@ -243,7 +243,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   };
 
   // ---------- m() ---------- //
-  const m = (encodedMsg: string, options: Record<string, any> = {}): string => {
+  const m = (
+    encodedMsg: string = '',
+    options: Record<string, any> = {}
+  ): string => {
     // Try to decode first
     const decodedOptions = decodeOptions(encodedMsg);
 

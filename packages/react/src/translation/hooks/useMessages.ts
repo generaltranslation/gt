@@ -69,7 +69,10 @@ export default function useMessages(_messages?: _Messages) {
    * const m = useMessages()
    * m(example2); // Translates 'My name is John' in context
    */
-  function m(encodedMsg: string, options: Record<string, any> = {}): string {
+  function m(
+    encodedMsg: string = '',
+    options: Record<string, any> = {}
+  ): string {
     return _mFunction(encodedMsg, options, preloadedTranslations);
   }
 
