@@ -45,6 +45,7 @@ export async function validateProject(
 
   const { updates, errors, warnings } = await createUpdates(
     settings,
+    settings.src,
     settings.dictionary,
     pkg,
     true
