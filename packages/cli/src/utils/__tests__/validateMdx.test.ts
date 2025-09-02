@@ -15,7 +15,7 @@ This is a valid MDX document.
 
 export const metadata = { title: 'Test' };
 `;
-    
+
     expect(isValidMdx(validMdx, 'test.mdx').isValid).toBe(true);
   });
 
@@ -24,7 +24,7 @@ export const metadata = { title: 'Test' };
 
 This is simple markdown content.
 `;
-    
+
     expect(isValidMdx(simpleMarkdown, 'test.mdx').isValid).toBe(true);
   });
 
@@ -37,7 +37,7 @@ title: Test Document
 
 <CustomComponent prop="unclosed tag
 `;
-    
+
     expect(isValidMdx(invalidMdx, 'test.mdx').isValid).toBe(false);
   });
 
@@ -48,7 +48,7 @@ title: Test Document
   <span>Unclosed div
 </span>
 `;
-    
+
     expect(isValidMdx(malformedMdx, 'test.mdx').isValid).toBe(false);
   });
 
@@ -59,7 +59,7 @@ title: Test Document
 
 Regular content.
 `;
-    
+
     expect(isValidMdx(invalidJsx, 'test.mdx').isValid).toBe(false);
   });
 
@@ -70,7 +70,7 @@ Regular content.
   <span>Content</div>
 </span>
 `;
-    
+
     expect(isValidMdx(mismatchedTags, 'test.mdx').isValid).toBe(false);
   });
 
@@ -79,7 +79,7 @@ Regular content.
 
 # Test Content
 `;
-    
+
     expect(isValidMdx(invalidImport, 'test.mdx').isValid).toBe(false);
   });
 
@@ -91,7 +91,7 @@ Regular content.
   other="complete"
 />
 `;
-    
+
     expect(isValidMdx(unclosedAttribute, 'test.mdx').isValid).toBe(false);
   });
 
@@ -100,13 +100,13 @@ Regular content.
 
 <Component prop={someVariable.} />
 `;
-    
+
     expect(isValidMdx(invalidExpression, 'test.mdx').isValid).toBe(false);
   });
 
   it('should return error message for invalid MDX', () => {
     const invalidMdx = `<Component prop="unclosed`;
-    
+
     const result = isValidMdx(invalidMdx, 'test.mdx');
     expect(result.isValid).toBe(false);
     expect(result.error).toBeDefined();

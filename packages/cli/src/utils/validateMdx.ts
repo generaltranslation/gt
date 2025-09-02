@@ -9,8 +9,11 @@ import remarkFrontmatter from 'remark-frontmatter';
  * @param filePath - The file path for error reporting
  * @returns object with isValid boolean and optional error message
  */
-export function isValidMdx(content: string, filePath: string): { 
-  isValid: boolean; 
+export function isValidMdx(
+  content: string,
+  filePath: string
+): {
+  isValid: boolean;
   error?: string;
 } {
   try {

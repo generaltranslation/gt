@@ -92,7 +92,7 @@ export async function aggregateFiles(
         .map((filePath) => {
           const content = readFile(filePath);
           const relativePath = getRelative(filePath);
-          
+
           if (fileType === 'mdx') {
             const validation = isValidMdx(content, filePath);
             if (!validation.isValid) {
@@ -103,7 +103,7 @@ export async function aggregateFiles(
               return null;
             }
           }
-          
+
           const sanitizedContent = sanitizeFileContent(content);
           return {
             content: sanitizedContent,
