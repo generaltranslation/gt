@@ -95,7 +95,9 @@ export async function aggregateFiles(
             const isValid = isValidMdx(content, filePath);
             if (!isValid) {
               const relativePath = getRelative(filePath);
-              logWarning(`Skipping ${relativePath}: MDX file is not AST parsable`);
+              logWarning(
+                `Skipping ${relativePath}: MDX file is not AST parsable`
+              );
               return false;
             }
           }
