@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.1.14
+
+### Patch Changes
+
+- [#623](https://github.com/generaltranslation/gt/pull/623) [`288d2c6`](https://github.com/generaltranslation/gt/commit/288d2c657ff46eb5f4a5cdbc76ecc3f9be85228f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add --force flag for overwriting cached translations
+
+- Updated dependencies [[`288d2c6`](https://github.com/generaltranslation/gt/commit/288d2c657ff46eb5f4a5cdbc76ecc3f9be85228f)]:
+  - generaltranslation@7.4.2
+
 ## 2.1.13
 
 ### Patch Changes
