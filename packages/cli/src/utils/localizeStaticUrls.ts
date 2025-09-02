@@ -107,6 +107,10 @@ export default async function localizeStaticUrls(
       // Replace the placeholder path with the target path
       await Promise.all(
         targetFiles.map(async (filePath) => {
+          // Check if file exists before processing
+          if (!fs.existsSync(filePath)) {
+            return;
+          }
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file (handles both URLs and hrefs in single AST pass)
