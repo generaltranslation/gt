@@ -1,4 +1,4 @@
-import { logError } from '../../console/logging.js';
+import { logError, logWarning } from '../../console/logging.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { Settings } from '../../types/index.js';
 import { FileFormat, DataFormat, FileToTranslate } from '../../types/data.js';
@@ -7,6 +7,7 @@ import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import { determineLibrary } from '../../fs/determineFramework.js';
+import { isValidMdx } from '../../utils/validateMdx.js';
 
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -87,16 +88,30 @@ export async function aggregateFiles(
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (fileType === 'json' || fileType === 'yaml') continue;
     if (filePaths[fileType]) {
-      const files = filePaths[fileType].map((filePath) => {
-        const content = readFile(filePath);
-        const sanitizedContent = sanitizeFileContent(content);
-        const relativePath = getRelative(filePath);
-        return {
-          content: sanitizedContent,
-          fileName: relativePath,
-          fileFormat: fileType.toUpperCase() as FileFormat,
-        };
-      });
+      const files = filePaths[fileType]
+        .map((filePath) => {
+          const content = readFile(filePath);
+          const relativePath = getRelative(filePath);
+
+          if (fileType === 'mdx') {
+            const validation = isValidMdx(content, filePath);
+            if (!validation.isValid) {
+              const errorMsg = validation.error ? `: ${validation.error}` : '';
+              logWarning(
+                `Skipping ${relativePath}: MDX file is not AST parsable${errorMsg}`
+              );
+              return null;
+            }
+          }
+
+          const sanitizedContent = sanitizeFileContent(content);
+          return {
+            content: sanitizedContent,
+            fileName: relativePath,
+            fileFormat: fileType.toUpperCase() as FileFormat,
+          };
+        })
+        .filter((file): file is NonNullable<typeof file> => file !== null);
       allFiles.push(...files);
     }
   }
