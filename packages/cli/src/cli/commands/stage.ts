@@ -1,4 +1,8 @@
-import { logErrorAndExit, logSuccess } from '../../console/logging.js';
+import {
+  logErrorAndExit,
+  logMessage,
+  logSuccess,
+} from '../../console/logging.js';
 import {
   Settings,
   SupportedLibraries,

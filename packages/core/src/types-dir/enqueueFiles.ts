@@ -56,6 +56,7 @@ export type EnqueueFilesOptions = {
   _versionId?: string; // @deprecated Will be removed in v8.0.0
   timeout?: number;
   modelProvider?: string;
+  force?: boolean;
 };
 
 export type RequiredEnqueueFilesOptions = EnqueueFilesOptions &

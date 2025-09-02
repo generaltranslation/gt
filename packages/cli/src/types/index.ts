@@ -18,6 +18,7 @@ export type Options = {
   suppressWarnings: boolean;
   dryRun: boolean;
   timeout: number;
+  force?: boolean;
   stageTranslations?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
@@ -41,6 +42,7 @@ export type TranslateFlags = {
   dryRun: boolean;
   stageTranslations?: boolean;
   publish?: boolean;
+  force?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
