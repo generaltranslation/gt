@@ -7,9 +7,12 @@ import remarkFrontmatter from 'remark-frontmatter';
  * Validates if an MDX file content can be parsed as a valid AST
  * @param content - The MDX file content to validate
  * @param filePath - The file path for error reporting
- * @returns true if parseable, false otherwise
+ * @returns object with isValid boolean and optional error message
  */
-export function isValidMdx(content: string, filePath: string): boolean {
+export function isValidMdx(content: string, filePath: string): { 
+  isValid: boolean; 
+  error?: string;
+} {
   try {
     const parseProcessor = unified()
       .use(remarkParse)
@@ -18,8 +21,9 @@ export function isValidMdx(content: string, filePath: string): boolean {
 
     const ast = parseProcessor.parse(content);
     parseProcessor.runSync(ast);
-    return true;
+    return { isValid: true };
   } catch (error) {
-    return false;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { isValid: false, error: errorMessage };
   }
 }

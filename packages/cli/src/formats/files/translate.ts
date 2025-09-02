@@ -89,30 +89,29 @@ export async function aggregateFiles(
     if (fileType === 'json' || fileType === 'yaml') continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType]
-        .filter((filePath) => {
-          if (fileType === 'mdx') {
-            const content = readFile(filePath);
-            const isValid = isValidMdx(content, filePath);
-            if (!isValid) {
-              const relativePath = getRelative(filePath);
-              logWarning(
-                `Skipping ${relativePath}: MDX file is not AST parsable`
-              );
-              return false;
-            }
-          }
-          return true;
-        })
         .map((filePath) => {
           const content = readFile(filePath);
-          const sanitizedContent = sanitizeFileContent(content);
           const relativePath = getRelative(filePath);
+          
+          if (fileType === 'mdx') {
+            const validation = isValidMdx(content, filePath);
+            if (!validation.isValid) {
+              const errorMsg = validation.error ? `: ${validation.error}` : '';
+              logWarning(
+                `Skipping ${relativePath}: MDX file is not AST parsable${errorMsg}`
+              );
+              return null;
+            }
+          }
+          
+          const sanitizedContent = sanitizeFileContent(content);
           return {
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
           };
-        });
+        })
+        .filter((file): file is NonNullable<typeof file> => file !== null);
       allFiles.push(...files);
     }
   }
