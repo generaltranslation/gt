@@ -1,0 +1,314 @@
+import { createUnplugin } from 'unplugin';
+import * as parser from '@babel/parser';
+import generate from '@babel/generator';
+import traverse from '@babel/traverse';
+
+// Core modules
+import { StringCollector } from './visitor/string-collector';
+import { ImportTracker } from './visitor/import-tracker';
+import { PluginConfig, PluginSettings } from './config';
+import { Logger } from './logging';
+
+// Import transformation functions
+import {
+  TransformState,
+  processImportDeclaration,
+  trackVariableAssignment,
+  processCallExpression,
+  processJSXElement,
+  trackParameterOverrides,
+  trackArrowParameterOverrides,
+  performSecondPassTransformation,
+} from './transform/transform';
+
+/**
+ * GT Universal Plugin Options
+ */
+export interface GTUnpluginOptions extends PluginConfig {
+  // Inherits from PluginConfig
+}
+
+/**
+ * GT Universal Plugin - Main entry point
+ *
+ * Universal plugin for compile-time optimization of GT translation components
+ * that works across webpack, Vite, Rollup, and other bundlers.
+ */
+const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
+  (options = {}) => {
+    return {
+      name: '@generaltranslation/gt-unplugin',
+      transformInclude(id: string) {
+        // Only transform TSX and JSX files
+        return (
+          id.endsWith('.tsx') ||
+          id.endsWith('.jsx') ||
+          id.endsWith('.ts') ||
+          id.endsWith('.js')
+        );
+      },
+      transform(code: string, id: string) {
+        if (id.endsWith('page.tsx')) {
+          console.log('[gt-unplugin] transforming', id);
+          console.log('[gt-unplugin] code content:');
+          console.log(code);
+        }
+        try {
+          // Initialize processing state
+          const state = initializeState(options, id);
+
+          // Skip transformation if not needed
+          if (
+            state.settings.disableBuildChecks &&
+            !state.settings.compileTimeHash
+          ) {
+            if (id.endsWith('page.tsx')) {
+              console.log('[gt-unplugin] skipping');
+            }
+            return null;
+          }
+
+          if (id.endsWith('page.tsx')) {
+            console.log('[gt-unplugin] ===============================');
+            console.log('[gt-unplugin]         PASS 1');
+            console.log('[gt-unplugin] ===============================');
+          }
+
+          // Parse the code into AST
+          const ast = parser.parse(code, {
+            sourceType: 'module',
+            plugins: ['jsx', 'typescript', 'decorators-legacy'],
+            allowImportExportEverywhere: true,
+            allowReturnOutsideFunction: true,
+          });
+
+          // Two-pass transformation system
+          // PASS 1: Collection phase - collect translation data without transforming
+
+          traverse(ast, {
+            Program: {
+              enter(path) {
+                // Initialize trackers for this program
+                state.importTracker = new ImportTracker();
+                state.stringCollector = new StringCollector();
+              },
+            },
+
+            // Collection phase visitors
+            ImportDeclaration(path) {
+              processImportDeclaration(path, state);
+            },
+
+            VariableDeclarator(path) {
+              trackVariableAssignment(path, state);
+            },
+
+            CallExpression(path) {
+              processCallExpression(path, state); // Collection only, returns boolean but we ignore it
+            },
+
+            // JSX processing - matches Rust VisitMut
+            JSXElement(path) {
+              if (state.settings.filename?.endsWith('page.tsx')) {
+                console.log(`[transform] JSXElement: ${path.node}`);
+              } else {
+                console.log(state.settings.filename);
+              }
+              processJSXElement(path, state); // Collection only, returns boolean but we ignore it
+            },
+
+            // Missing JSX visitors from Rust VisitMut
+            JSXExpressionContainer(path) {
+              // TODO: Implement jsx expression container validation
+              // This should check for dynamic content violations in translation components
+            },
+
+            JSXAttribute(path) {
+              // TODO: Implement jsx attribute context tracking
+              // This should track in_jsx_attribute state to avoid false violations
+            },
+
+            // Scope management - must match second pass exactly
+            BlockStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            Function: {
+              enter(path) {
+                state.importTracker.enterScope();
+                trackParameterOverrides(path, state);
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ArrowFunctionExpression: {
+              enter(path) {
+                state.importTracker.enterScope();
+                trackArrowParameterOverrides(path, state);
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            // Missing from Rust VisitMut - function expressions
+            FunctionExpression: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ClassDeclaration: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ForStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ForInStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            ForOfStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            CatchClause: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            WhileStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            SwitchStatement: {
+              enter(_path) {
+                state.importTracker.enterScope();
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+          });
+
+          // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
+          let hasTransformations = false;
+          if (state.settings.compileTimeHash) {
+            hasTransformations = performSecondPassTransformation(ast, state);
+          }
+
+          // Generate code if transformations were made
+          if (hasTransformations) {
+            // Validate AST before generation
+            try {
+              const result = generate(ast, {
+                retainLines: true,
+                compact: false,
+              });
+
+              if (id.endsWith('page.tsx')) {
+                console.log(`[GT Unplugin] Transformed: ${id}`);
+              }
+              return {
+                code: result.code,
+                map: result.map,
+              };
+            } catch (generateError) {
+              if (id.endsWith('page.tsx')) {
+                console.error(
+                  '[GT Unplugin] Code generation error:',
+                  generateError
+                );
+              }
+              // Return original code on generation error
+              return null;
+            }
+          }
+
+          // No transformations needed
+          return null;
+        } catch (error) {
+          if (id.endsWith('page.tsx')) {
+            console.error(`[GT Unplugin] Error processing ${id}:`, error);
+          }
+          // Return original code on error
+          return null;
+        }
+      },
+    };
+  }
+);
+
+/**
+ * Initialize processing state for a file
+ */
+function initializeState(
+  options: GTUnpluginOptions,
+  filename: string
+): TransformState {
+  const settings: PluginSettings = {
+    logLevel: options.logLevel || 'warn',
+    compileTimeHash: options.compileTimeHash || false,
+    disableBuildChecks: options.disableBuildChecks || false,
+    filename: filename,
+  };
+
+  return {
+    settings,
+    stringCollector: new StringCollector(),
+    importTracker: new ImportTracker(),
+    logger: new Logger(settings.logLevel),
+    statistics: {
+      jsxElementCount: 0,
+      dynamicContentViolations: 0,
+    },
+  };
+}
+
+// Export the unplugin with different bundler integrations
+export default gtUnplugin;
+export const webpack = gtUnplugin.webpack;
+export const vite = gtUnplugin.vite;
+export const rollup = gtUnplugin.rollup;
+export const esbuild = gtUnplugin.esbuild;

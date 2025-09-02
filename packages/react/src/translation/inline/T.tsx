@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import {
   addGTIdentifier,
@@ -106,6 +106,17 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (_hash) {
+      if (hash === _hash) {
+        console.log(`<T>: _hash found`);
+      } else {
+        console.error(
+          `<T>: _hash mismatch: ${hash} (runtime) !== ${_hash} (buildtime)`
+        );
+      }
+    } else {
+      console.error(`<T>: No _hash found`);
+    }
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);
 
@@ -141,11 +152,13 @@ function T({
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
     (translations && !translationEntry && !developmentApiEnabled) || // cache miss and dev runtime translation disabled (production)
-    translationEntry === null // error fetching translation
+    translationEntry === null || // error fetching translation
+    (!translationEntry && !developmentApiEnabled) // there's no translation and there's no chance to make one
   ) {
     return <>{renderDefault()}</>;
   }
 
+  // Display translation
   if (translationEntry) {
     return (
       <Suspense fallback={renderTranslation(translationEntry)}>
@@ -154,13 +167,9 @@ function T({
     );
   }
 
+  // ----- DEVELOPMENT ONLY ----- //
+
   const getTranslationPromise = async () => {
-    if (
-      !developmentApiEnabled || // runtime translation disabled
-      !locale // locale not loaded
-    ) {
-      return renderDefault();
-    }
     if (translationEntry) return renderTranslation(translationEntry);
     try {
       const translatedChildren = await registerJsxForTranslation({
@@ -180,7 +189,7 @@ function T({
     }
   };
 
-  if (reactHasUse) {
+  if (reactHasUse && developmentApiEnabled && translationRequired) {
     const resolvedTranslation = React.use(
       useable(
         [
