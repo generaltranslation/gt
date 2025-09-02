@@ -51,6 +51,7 @@ export async function sendFiles(
       targetLocales: settings.locales,
       version: settings.version, // not set ATM
       modelProvider: settings.modelProvider,
+      force: options?.force,
     });
 
     // Handle version ID response (for async processing)
