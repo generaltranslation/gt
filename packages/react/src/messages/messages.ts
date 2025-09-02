@@ -80,6 +80,11 @@ export function msg(
   message: string,
   options?: InlineTranslationOptions
 ): string {
+  // if its just a plain string, return it
+  if (!options) {
+    return message;
+  }
+
   // get hash
   const hash =
     options?.$_hash ||
