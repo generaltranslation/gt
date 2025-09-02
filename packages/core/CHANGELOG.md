@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.4.3
+
+### Patch Changes
+
+- [#626](https://github.com/generaltranslation/gt/pull/626) [`de93e08`](https://github.com/generaltranslation/gt/commit/de93e0824ebab1b9483739462027510498abfcfe) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add force flag
+
 ## 7.4.2
 
 ### Patch Changes
