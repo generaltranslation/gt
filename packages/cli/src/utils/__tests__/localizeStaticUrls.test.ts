@@ -8,6 +8,7 @@ vi.mock('fs', () => ({
     readFile: vi.fn(),
     writeFile: vi.fn(),
   },
+  existsSync: vi.fn(),
 }));
 
 // Mock other dependencies
@@ -20,6 +21,8 @@ import { createFileMapping } from '../../formats/files/fileMapping.js';
 describe('localizeStaticUrls', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock existsSync to return true by default
+    vi.mocked(fs.existsSync).mockReturnValue(true);
   });
 
   afterEach(() => {
