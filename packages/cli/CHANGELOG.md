@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.13
+
+### Patch Changes
+
+- [#620](https://github.com/generaltranslation/gt/pull/620) [`1404b8f`](https://github.com/generaltranslation/gt/commit/1404b8feda21acdfba42483d496c61816babd327) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Display warning on MDX header mismatch instead of failure
+
 ## 2.1.12
 
 ### Patch Changes
