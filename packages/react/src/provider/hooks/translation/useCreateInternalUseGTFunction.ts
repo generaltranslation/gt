@@ -237,12 +237,72 @@ export default function useCreateInternalUseGTFunction({
     options: Record<string, any> = {},
     preloadedTranslations: Translations | undefined
   ) => {
-    // Decode message and return if it's invalid
-
+    // Decode message
     const decodedOptions = decodeOptions(encodedMsg);
+
+    // Check for translations if not encoded
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return encodedMsg;
-      // return _tFunction(encodedMsg, options, preloadedTranslations); (moved to compiler solution instead of this)
+      // ----- SET UP ----- //
+      const init = initializeT(encodedMsg, options);
+      if (!init) return '';
+      const { id, _hash, calculateHash, renderMessage } = init;
+
+      // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
+      // Check: translation required
+      if (!translationRequired)
+        return renderMessage(encodedMsg, [defaultLocale]);
+
+      // ----- GET TRANSLATION ----- //
+
+      const { translationEntry, hash } = getTranslationData(
+        calculateHash,
+        id,
+        _hash
+      );
+
+      // ----- RENDER TRANSLATION ----- //
+
+      if (translationEntry === null) {
+        return renderMessage(encodedMsg, [defaultLocale]);
+      }
+
+      // If a translation already exists
+      if (translationEntry) {
+        try {
+          return renderMessage(translationEntry as string, [
+            locale,
+            defaultLocale,
+          ]);
+        } catch (error) {
+          console.error(
+            createStringRenderError(encodedMsg, id),
+            'Error: ',
+            error
+          );
+          return renderMessage(encodedMsg, [defaultLocale]);
+        }
+      }
+
+      if (typeof preloadedTranslations?.[hash] !== 'undefined') {
+        if (preloadedTranslations?.[hash]) {
+          try {
+            return renderMessage(preloadedTranslations?.[hash] as string, [
+              locale,
+              defaultLocale,
+            ]);
+          } catch (error) {
+            console.error(
+              createStringRenderError(encodedMsg, id),
+              'Error: ',
+              error
+            );
+          }
+        }
+        return renderMessage(encodedMsg, [defaultLocale]);
+      }
+
+      // Fallback to source (no on demand translation)
+      return renderMessage(encodedMsg, [defaultLocale]);
     }
 
     // Disaggregate options and construct render function
@@ -258,11 +318,9 @@ export default function useCreateInternalUseGTFunction({
     };
 
     // Return if default locale
-
     if (!translationRequired) return renderMessage($_source, [defaultLocale]);
 
     // Check translation entry
-
     const translationEntry = translations?.[decodedOptions.$_hash];
 
     // Check translations
