@@ -34,6 +34,7 @@ export default async function _enqueueFiles(
     requireApproval,
     version,
     modelProvider,
+    force,
   } = options;
 
   const fileData = files.map((file) => ({
@@ -53,6 +54,7 @@ export default async function _enqueueFiles(
     requireApproval,
     version,
     modelProvider,
+    force,
   };
 
   // Request the file uploads

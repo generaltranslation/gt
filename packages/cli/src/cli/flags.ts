@@ -61,6 +61,11 @@ export function attachTranslateFlags(command: Command) {
       '--experimental-localize-static-imports',
       'Triggering this will run a script after the cli tool that localizes all static imports in content files. Currently only supported for md and mdx files.',
       false
+    )
+    .option(
+      '--force',
+      'Force a retranslation, invalidating all existing cached translations if they exist.',
+      false
     );
   return command;
 }
