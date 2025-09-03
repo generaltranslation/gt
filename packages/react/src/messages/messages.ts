@@ -80,12 +80,8 @@ export function msg(
   message: string,
   options?: InlineTranslationOptions
 ): string {
-  // Skip encoding uninterpolated messages
-  if (
-    !options ||
-    (Object.keys(options).length === 1 &&
-      Object.keys(options).includes('$_hash'))
-  ) {
+  // Skip encoding uninterpolated messages (or keys only including $_hash from compiler)
+  if (!options || Object.keys(options).every((key) => key === '$_hash')) {
     return message;
   }
 
