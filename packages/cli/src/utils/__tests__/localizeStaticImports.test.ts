@@ -2501,7 +2501,9 @@ import AnotherExisting from '/components/ja/another.mdx'
       vi.mocked(fs.existsSync).mockImplementation((filePath) => {
         const pathStr = String(filePath);
         // Only original ./en/component.mdx exists (relative to current file)
-        return pathStr.includes('/en/component.mdx') && !pathStr.includes('/ja/');
+        return (
+          pathStr.includes('/en/component.mdx') && !pathStr.includes('/ja/')
+        );
       });
 
       const mockFileMapping = {
