@@ -58,14 +58,26 @@ export function icuMessageContainsVariables(message: string): boolean {
  * Encodes content into a message that contains important translation metadata
  * @param message The message to encode.
  * @param options The options to encode.
- * @returns The encoded message.
+ * @returns The same message, or an encoded message if the string contains interpolated values
+ * 
+ * @description - This function is used to register a message for translation.
+ * 
+ * @example - Uninterpolated usage
+ * 
+ * ```jsx
+ * import { msg } from 'gt-react';
+ * const message = msg('Hello, world!');
+ * console.log(message); // "Hello, world!"
+ * ```
+ * 
+ * Use the `m()` function from `useMessages()` to translate the message.
+ * ```jsx
+ * import { useMessages } from 'gt-react';
+ * const m = useMessages();
+ * console.log(m(message)); // "Bonjour, le monde!" (in French)
+ * ```
  *
- * @note - Message format
- * A message is broken into two parts separated by colons:
- * - interpolated content - the content with interpolated variables
- * - hash + options - a unique identifier for the source content and options for the translation
- *
- * @example - Basic usage
+ * @example - Interpolated usage
  *
  * ```jsx
  * import { msg } from 'gt-react';
@@ -74,7 +86,26 @@ export function icuMessageContainsVariables(message: string): boolean {
  * ```
  * eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9
  * encodes to {"$_hash": "0x123", "$_source": "Hello, {name}!", "name": "Brian"}
+ * 
+ * Use the `m()` function from `useMessages()` to translate the message.
+ * ```jsx
+ * import { useMessages } from 'gt-react';
+ * const m = useMessages();
+ * console.log(m(message)); // "Bonjour, Brian!" (in French)
+ * ```
+ * 
+ * Use the decodeMsg() function to get just the interpolated message.
+ * ```jsx
+ * import { decodeMsg } from 'gt-react';
+ * console.log(decodeMsg(message)); // "Hello, Brian!"
+ * ```
  *
+ *
+ * @note - Interpolated Message format
+ * A message is broken into two parts separated by colons:
+ * - interpolated content - the content with interpolated variables
+ * - hash + options - a unique identifier for the source content and options for the translation
+ 
  */
 export function msg(
   message: string,
