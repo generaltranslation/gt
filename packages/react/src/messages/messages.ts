@@ -129,9 +129,8 @@ export function msg(
   // Always add hash to options
   if (options) {
     options.$_hash = hash;
-    options.$_source = message;
   } else {
-    options = { $_hash: hash, $_source: message };
+    options = { $_hash: hash };
   }
 
   // get the options encoding
@@ -166,10 +165,25 @@ export function msg(
  * @returns The decoded message, or the input if it cannot be decoded.
  */
 export function decodeMsg(encodedMsg: string): string {
-  if (encodedMsg.lastIndexOf(':') !== -1) {
-    return encodedMsg.slice(0, encodedMsg.lastIndexOf(':'));
+  // Check if message is encoded
+  const isEncoded = encodedMsg.lastIndexOf(':') !== -1;
+
+  // Return if message is not encoded
+  if (!isEncoded) {
+    return encodedMsg;
   }
-  return encodedMsg;
+
+  // Interpolate string
+  const message = encodedMsg.slice(0, encodedMsg.lastIndexOf(':'));
+  const options = decodeOptions(encodedMsg);
+  let interpolatedString = message;
+  if (options && Object.keys(options).length > 1) {
+    interpolatedString = formatMessage(message, {
+      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+      variables: options,
+    });
+  }
+  return interpolatedString;
 }
 
 /**

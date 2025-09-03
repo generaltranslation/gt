@@ -246,26 +246,22 @@ export default function useCreateInternalUseGTFunction({
   };
 
   const _mFunction = (
-    encodedMsg: string,
+    message: string,
     options: Record<string, any> = {},
     preloadedTranslations: Translations | undefined
   ) => {
     // Decode message
-    const decodedOptions = decodeOptions(encodedMsg);
+    const interpolatedMessage = decodeMsg(message);
+    const decodedOptions = decodeOptions(message);
 
     // Check for translations if not encoded
-    if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return _tFunctionHelper(
-        encodedMsg,
-        options,
-        preloadedTranslations,
-        false
-      );
+    if (!decodedOptions || !decodedOptions.$_hash) {
+      return _tFunctionHelper(message, options, preloadedTranslations, false);
     }
 
     // Disaggregate options and construct render function
 
-    const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
+    const { $_hash, $context, $hash, $id, ...decodedVariables } =
       decodedOptions;
 
     const renderMessage = (msg: string, locales: string[]) => {
@@ -276,14 +272,15 @@ export default function useCreateInternalUseGTFunction({
     };
 
     // Return if default locale
-    if (!translationRequired) return renderMessage($_source, [defaultLocale]);
+    if (!translationRequired)
+      return renderMessage(interpolatedMessage, [defaultLocale]);
 
     // Check translation entry
     const translationEntry = translations?.[decodedOptions.$_hash];
 
     // Check translations
     if (translationEntry === null) {
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage(interpolatedMessage, [defaultLocale]);
     }
 
     // If a translation already exists
@@ -295,19 +292,17 @@ export default function useCreateInternalUseGTFunction({
         ]);
       } catch (error) {
         console.error(
-          createStringRenderError($_source, decodeMsg(encodedMsg)),
+          createStringRenderError(interpolatedMessage, $id),
           'Error: ',
           error
         );
-        return renderMessage($_source, [defaultLocale]);
+        return renderMessage(interpolatedMessage, [defaultLocale]);
       }
     }
 
     if (!developmentApiEnabled) {
-      console.warn(
-        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
-      );
-      return renderMessage($_source, [defaultLocale]);
+      console.warn(createStringTranslationError(interpolatedMessage, $id, 'm'));
+      return renderMessage(interpolatedMessage, [defaultLocale]);
     }
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
@@ -319,17 +314,17 @@ export default function useCreateInternalUseGTFunction({
           ]);
         } catch (error) {
           console.error(
-            createStringRenderError($_source, decodeMsg(encodedMsg)),
+            createStringRenderError(interpolatedMessage, $id),
             'Error: ',
             error
           );
         }
       }
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage(interpolatedMessage, [defaultLocale]);
     }
 
     registerIcuForTranslation({
-      source: $_source,
+      source: message,
       targetLocale: locale,
       metadata: {
         ...($context && { context: $context }),
@@ -337,7 +332,7 @@ export default function useCreateInternalUseGTFunction({
       },
     });
 
-    return renderMessage($_source, [defaultLocale]);
+    return renderMessage(interpolatedMessage, [defaultLocale]);
   };
 
   return {

@@ -259,17 +259,17 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   };
 
   // ---------- m() ---------- //
-  const m = (encodedMsg: string, options: Record<string, any> = {}): string => {
+  const m = (message: string, options: Record<string, any> = {}): string => {
     // Try to decode first
-    const decodedOptions = decodeOptions(encodedMsg);
+    const interpolatedMessage = decodeMsg(message);
+    const decodedOptions = decodeOptions(message);
 
     // Fallback to t() if not an encoded message
-    if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return _tFunctionHelper(encodedMsg, options, false);
+    if (!decodedOptions || !decodedOptions.$_hash) {
+      return _tFunctionHelper(message, options, false);
     }
 
-    const { $_hash, $_source, $context, $id, ...decodedVariables } =
-      decodedOptions;
+    const { $_hash, $context, $id, ...decodedVariables } = decodedOptions;
 
     const renderMessage: RenderFn = (msg, locales) =>
       gt.formatMessage(msg, {
@@ -278,13 +278,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       });
 
     // Early: default locale only
-    if (!translationRequired) return renderMessage($_source, [defaultLocale]);
+    if (!translationRequired)
+      return renderMessage(interpolatedMessage, [defaultLocale]);
 
     // Translation exists?
     const translationEntry = translations?.[$_hash];
 
     if (translationEntry === null) {
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage(interpolatedMessage, [defaultLocale]);
     }
 
     if (translationEntry) {
@@ -295,20 +296,24 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         ]);
       } catch (error) {
         console.error(
-          createStringRenderError($_source, decodeMsg(encodedMsg)),
+          createStringRenderError(interpolatedMessage, $id),
           'Error: ',
           error
         );
-        return renderMessage($_source, [defaultLocale]);
+        return renderMessage(interpolatedMessage, [defaultLocale]);
       }
     }
 
     // Dev-only paths for loading or preloaded
     if (!I18NConfig.isDevelopmentApiEnabled()) {
       console.warn(
-        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
+        createStringTranslationError(
+          interpolatedMessage,
+          decodeMsg(message),
+          'm'
+        )
       );
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage(interpolatedMessage, [defaultLocale]);
     }
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
@@ -320,18 +325,18 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           ]);
         } catch (error) {
           console.error(
-            createStringRenderError($_source, decodeMsg(encodedMsg)),
+            createStringRenderError(interpolatedMessage, $id),
             'Error: ',
             error
           );
         }
       }
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage(interpolatedMessage, [defaultLocale]);
     }
 
     // On-demand translate
     scheduleTranslateOnDemand({
-      source: $_source,
+      source: message,
       context: $context,
       id: $id,
       hash: $_hash,
@@ -339,7 +344,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     });
 
     // Default: return source while translation loads
-    return renderMessage($_source, [defaultLocale]);
+    return renderMessage(interpolatedMessage, [defaultLocale]);
   };
 
   return { t, m };
