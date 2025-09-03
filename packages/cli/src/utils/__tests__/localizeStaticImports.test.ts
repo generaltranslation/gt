@@ -2268,7 +2268,9 @@ Some content here`;
       // Mock file existence - target file doesn't exist
       vi.mocked(fs.existsSync).mockImplementation((filePath) => {
         // Only the original /components/en/component.mdx exists
-        return typeof filePath === 'string' && filePath.includes('/components/en/');
+        return (
+          typeof filePath === 'string' && filePath.includes('/components/en/')
+        );
       });
 
       const mockFileMapping = {
@@ -2388,7 +2390,9 @@ import AnotherExisting from '/components/ja/another.mdx'
       // Mock file existence - only some target files exist
       vi.mocked(fs.existsSync).mockImplementation((filePath) => {
         const pathStr = String(filePath);
-        return pathStr.includes('existing.mdx') || pathStr.includes('another.mdx');
+        return (
+          pathStr.includes('existing.mdx') || pathStr.includes('another.mdx')
+        );
       });
 
       const mockFileMapping = {
