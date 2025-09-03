@@ -2416,5 +2416,427 @@ import AnotherExisting from '/components/ja/another.mdx'
 
       await localizeStaticImports(settings as any);
     });
+
+    it('should handle relative import paths with proper separator', async () => {
+      const fileContent = `import Component from '../en/component.mdx'`;
+      const expected = `import Component from '../ja/component.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - relative path resolution should work
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/project/subdir/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '../[locale]/', // Relative pattern with trailing slash
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should handle absolute/root import paths', async () => {
+      const fileContent = `import Component from '/components/en/component.mdx'`;
+      const expected = `import Component from '/components/ja/component.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - absolute path resolution should work
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/project/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]', // Absolute pattern
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should not transform relative paths when target file does not exist', async () => {
+      const fileContent = `import Component from './en/component.mdx'`;
+      const expected = fileContent; // Should remain unchanged
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - target relative file doesn't exist
+      vi.mocked(fs.existsSync).mockImplementation((filePath) => {
+        const pathStr = String(filePath);
+        // Only original ./en/component.mdx exists (relative to current file)
+        return pathStr.includes('/en/component.mdx') && !pathStr.includes('/ja/');
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/project/subdir/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: './[locale]', // Relative pattern
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+  });
+
+  describe('complex nested patterns', () => {
+    it('should handle deeply nested locale patterns', async () => {
+      const fileContent = `import Guide from '/docs/advanced/en/tutorials/guide.mdx'`;
+      const expected = `import Guide from '/docs/advanced/ja/tutorials/guide.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/docs/advanced/[locale]/tutorials/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should handle locale at root level', async () => {
+      const fileContent = `import Component from '/en/docs/components/button.mdx'`;
+      const expected = `import Component from '/ja/docs/components/button.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/[locale]/docs/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should handle complex relative patterns with multiple levels', async () => {
+      const fileContent = `import Shared from '../../shared/en/components/header.mdx'`;
+      const expected = `import Shared from '../../shared/ja/components/header.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '../../shared/[locale]/components/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should not transform paths that contain pattern but are not at the expected position', async () => {
+      const fileContent = `import Component from '/other/components/en/nested.mdx'`;
+      const expected = fileContent; // Should remain unchanged
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]/', // Pattern doesn't match the path structure
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should handle patterns with multiple path segments after locale', async () => {
+      const fileContent = `import Guide from '/docs/en/category/subcategory/guide.mdx'`;
+      const expected = `import Guide from '/docs/ja/category/subcategory/guide.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/docs/[locale]/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should add locale to relative imports in non-default locale files', async () => {
+      const fileContent = `import Button from '../components/button.mdx'`; // No locale in source
+      const expected = `import Button from '../components/es/button.mdx'`; // Should add locale
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        es: { 'test.mdx': '/path/es/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '../components/[locale]/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should add locale to current directory relative imports', async () => {
+      const fileContent = `import Modal from './shared/modal.mdx'`; // No locale in source
+      const expected = `import Modal from './shared/fr/modal.mdx'`; // Should add locale
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        fr: { 'test.mdx': '/path/fr/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: './shared/[locale]/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should handle deeply nested relative imports without locale', async () => {
+      const fileContent = `import Utils from '../../utils/helpers/formatter.mdx'`; // No locale
+      const expected = `import Utils from '../../utils/helpers/de/formatter.mdx'`; // Should add locale
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        de: { 'test.mdx': '/path/de/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'de'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '../../utils/helpers/[locale]/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should not add locale to relative imports when target file does not exist', async () => {
+      const fileContent = `import Missing from '../components/missing.mdx'`; // No locale in source
+      const expected = fileContent; // Should remain unchanged since target doesn't exist
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock that the target with locale doesn't exist
+      vi.mocked(fs.existsSync).mockImplementation((filePath) => {
+        const pathStr = String(filePath);
+        // Original file exists, but not the one with locale added
+        return pathStr.includes('missing.mdx') && !pathStr.includes('/ja/');
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/ja/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '../components/[locale]/',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
   });
 });

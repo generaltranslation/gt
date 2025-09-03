@@ -358,7 +358,8 @@ function transformMdxImports(
   const transformedImports: Array<{ originalPath: string; newPath: string }> =
     [];
 
-  if (!pattern.startsWith('/')) {
+  // Don't auto-prefix relative patterns that start with . or ..
+  if (!pattern.startsWith('/') && !pattern.startsWith('.')) {
     pattern = '/' + pattern;
   }
 
