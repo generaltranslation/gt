@@ -418,7 +418,7 @@ function transformMdxImports(
     if (node.value && node.value.includes(patternHead.replace(/\/$/, ''))) {
       // Find import lines that need transformation
       const lines = node.value.split('\n');
-      
+
       lines.forEach((line: string) => {
         // Only process import lines that match our pattern
         if (!line.trim().startsWith('import ')) {
@@ -486,7 +486,7 @@ function transformMdxImports(
             `(import\\s+.*?from\\s+)(['"\`])${fullPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\2`,
             'g'
           );
-          
+
           content = content.replace(originalImportPattern, `$1$2${newPath}$2`);
           transformedImports.push({ originalPath: fullPath, newPath });
           break;
