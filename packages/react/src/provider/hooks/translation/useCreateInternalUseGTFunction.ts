@@ -159,10 +159,11 @@ export default function useCreateInternalUseGTFunction({
     return preloadedTranslations;
   };
 
-  const _tFunction = (
+  const _tFunctionHelper = (
     message: string,
     options: InlineTranslationOptions = {},
-    preloadedTranslations: Translations | undefined
+    preloadedTranslations: Translations | undefined,
+    enableRuntimeTranslation: boolean
   ) => {
     // ----- SET UP ----- //
     const init = initializeT(message, options);
@@ -214,6 +215,10 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage(message, [defaultLocale]);
     }
 
+    if (!enableRuntimeTranslation) {
+      return renderMessage(message, [defaultLocale]);
+    }
+
     if (!developmentApiEnabled) {
       console.warn(createStringTranslationError(message, id, 't'));
       return renderMessage(message, [defaultLocale]);
@@ -232,6 +237,14 @@ export default function useCreateInternalUseGTFunction({
     return renderMessage(message, [defaultLocale]);
   };
 
+  const _tFunction = (
+    message: string,
+    options: InlineTranslationOptions = {},
+    preloadedTranslations: Translations | undefined
+  ) => {
+    return _tFunctionHelper(message, options, preloadedTranslations, true);
+  };
+
   const _mFunction = (
     encodedMsg: string,
     options: Record<string, any> = {},
@@ -242,67 +255,12 @@ export default function useCreateInternalUseGTFunction({
 
     // Check for translations if not encoded
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      // ----- SET UP ----- //
-      const init = initializeT(encodedMsg, options);
-      if (!init) return '';
-      const { id, _hash, calculateHash, renderMessage } = init;
-
-      // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
-      // Check: translation required
-      if (!translationRequired)
-        return renderMessage(encodedMsg, [defaultLocale]);
-
-      // ----- GET TRANSLATION ----- //
-
-      const { translationEntry, hash } = getTranslationData(
-        calculateHash,
-        id,
-        _hash
+      return _tFunctionHelper(
+        encodedMsg,
+        options,
+        preloadedTranslations,
+        false
       );
-
-      // ----- RENDER TRANSLATION ----- //
-
-      if (translationEntry === null) {
-        return renderMessage(encodedMsg, [defaultLocale]);
-      }
-
-      // If a translation already exists
-      if (translationEntry) {
-        try {
-          return renderMessage(translationEntry as string, [
-            locale,
-            defaultLocale,
-          ]);
-        } catch (error) {
-          console.error(
-            createStringRenderError(encodedMsg, id),
-            'Error: ',
-            error
-          );
-          return renderMessage(encodedMsg, [defaultLocale]);
-        }
-      }
-
-      if (typeof preloadedTranslations?.[hash] !== 'undefined') {
-        if (preloadedTranslations?.[hash]) {
-          try {
-            return renderMessage(preloadedTranslations?.[hash] as string, [
-              locale,
-              defaultLocale,
-            ]);
-          } catch (error) {
-            console.error(
-              createStringRenderError(encodedMsg, id),
-              'Error: ',
-              error
-            );
-          }
-        }
-        return renderMessage(encodedMsg, [defaultLocale]);
-      }
-
-      // Fallback to source (no on demand translation)
-      return renderMessage(encodedMsg, [defaultLocale]);
     }
 
     // Disaggregate options and construct render function

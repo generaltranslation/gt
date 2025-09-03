@@ -181,13 +181,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
   // ---------- t() ---------- /
 
-  const t = (
+  const _tFunctionHelper = (
     message: string,
     options: Record<string, any> & {
       $context?: string;
       $id?: string;
       $_hash?: string;
-    } = {}
+    } = {},
+    enableRuntimeTranslation: boolean
   ): string => {
     const init = initializeT(message, options);
     if (!init) return '';
@@ -212,6 +213,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         console.error(error);
         return renderMessage(message, [defaultLocale]);
       }
+    }
+
+    if (!enableRuntimeTranslation) {
+      return renderMessage(message, [defaultLocale]);
     }
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
@@ -242,6 +247,17 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     return renderMessage(message, [defaultLocale]);
   };
 
+  const t = (
+    message: string,
+    options: Record<string, any> & {
+      $context?: string;
+      $id?: string;
+      $_hash?: string;
+    } = {}
+  ): string => {
+    return _tFunctionHelper(message, options, true);
+  };
+
   // ---------- m() ---------- //
   const m = (encodedMsg: string, options: Record<string, any> = {}): string => {
     // Try to decode first
@@ -249,8 +265,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     // Fallback to t() if not an encoded message
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return encodedMsg;
-      // return t(encodedMsg, options); (moved to compiler based solution instead)
+      return _tFunctionHelper(encodedMsg, options, false);
     }
 
     const { $_hash, $_source, $context, $id, ...decodedVariables } =
