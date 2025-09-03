@@ -481,13 +481,8 @@ function transformMdxImports(
           }
 
           // Apply the transformation to the original content
-          // Find this exact import statement in the original content and replace it
-          const originalImportPattern = new RegExp(
-            `(import\\s+.*?from\\s+)(['"\`])${fullPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\2`,
-            'g'
-          );
-
-          content = content.replace(originalImportPattern, `$1$2${newPath}$2`);
+          // Simply replace the import path with the new path
+          content = content.replace(`${quote}${fullPath}${quote}`, `${quote}${newPath}${quote}`);
           transformedImports.push({ originalPath: fullPath, newPath });
           break;
         }
