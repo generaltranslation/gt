@@ -8,6 +8,7 @@ vi.mock('fs', () => ({
     readFile: vi.fn(),
     writeFile: vi.fn(),
   },
+  existsSync: vi.fn(),
 }));
 
 // Mock other dependencies
@@ -25,6 +26,8 @@ import { createFileMapping } from '../../formats/files/fileMapping.js';
 describe('localizeStaticImports', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // By default, assume all files exist (most tests expect transformations to work)
+    vi.mocked(fs.existsSync).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -2226,6 +2229,166 @@ Some content here`;
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
         expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
         return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+  });
+
+  describe('file existence checking', () => {
+    it('should not transform imports when target file does not exist', async () => {
+      const fileContent = `import Component from '/components/en/component.mdx'`;
+      const expected = fileContent; // Should remain unchanged
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - target file doesn't exist
+      vi.mocked(fs.existsSync).mockImplementation((filePath) => {
+        // Only the original /components/en/component.mdx exists
+        return typeof filePath === 'string' && filePath.includes('/components/en/');
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should transform imports when target file exists', async () => {
+      const fileContent = `import Component from '/components/en/component.mdx'`;
+      const expected = `import Component from '/components/ja/component.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - both files exist
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should check for files with common extensions', async () => {
+      const fileContent = `import Component from '/components/en/component'`; // No extension
+      const expected = `import Component from '/components/ja/component'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - target exists with .mdx extension
+      vi.mocked(fs.existsSync).mockImplementation((filePath) => {
+        const pathStr = String(filePath);
+        // The transformed path /components/ja/component should match when we try with .mdx extension
+        return pathStr.includes('/components/ja/component');
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      };
+
+      await localizeStaticImports(settings as any);
+    });
+
+    it('should handle mixed scenarios - some files exist, others do not', async () => {
+      const fileContent = `
+import ExistingComponent from '/components/en/existing.mdx'
+import MissingComponent from '/components/en/missing.mdx'
+import AnotherExisting from '/components/en/another.mdx'
+`;
+      const expected = `
+import ExistingComponent from '/components/ja/existing.mdx'
+import MissingComponent from '/components/en/missing.mdx'
+import AnotherExisting from '/components/ja/another.mdx'
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      // Mock file existence - only some target files exist
+      vi.mocked(fs.existsSync).mockImplementation((filePath) => {
+        const pathStr = String(filePath);
+        return pathStr.includes('existing.mdx') || pathStr.includes('another.mdx');
       });
 
       const mockFileMapping = {
