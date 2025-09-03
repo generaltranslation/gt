@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
@@ -12,6 +13,17 @@ import { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
 
 const { isMatch } = micromatch;
+
+/**
+ * Checks if a file exists at the given path
+ */
+function fileExists(filePath: string): boolean {
+  try {
+    return fs.existsSync(filePath);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Localizes static imports in content files.
@@ -73,7 +85,7 @@ export default async function localizeStaticImports(settings: Settings) {
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
             settings.options?.excludeStaticImports,
-            filePath.endsWith('.md')
+            filePath
           );
           // Write the localized file back to the same path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -104,7 +116,7 @@ export default async function localizeStaticImports(settings: Settings) {
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
             settings.options?.excludeStaticImports,
-            filePath.endsWith('.md')
+            filePath
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -280,30 +292,55 @@ function transformImportPath(
   patternHead: string,
   targetLocale: string,
   defaultLocale: string,
-  hideDefaultLocale: boolean
+  hideDefaultLocale: boolean,
+  currentFilePath?: string,
+  projectRoot: string = process.cwd() // fallback if not provided
 ): string | null {
+  let newPath: string | null;
+
   if (targetLocale === defaultLocale) {
-    return transformDefaultLocaleImportPath(
+    newPath = transformDefaultLocaleImportPath(
       fullPath,
       patternHead,
       defaultLocale,
       hideDefaultLocale
     );
   } else if (hideDefaultLocale) {
-    return transformNonDefaultLocaleImportPathWithHidden(
+    newPath = transformNonDefaultLocaleImportPathWithHidden(
       fullPath,
       patternHead,
       targetLocale,
       defaultLocale
     );
   } else {
-    return transformNonDefaultLocaleImportPath(
+    newPath = transformNonDefaultLocaleImportPath(
       fullPath,
       patternHead,
       targetLocale,
       defaultLocale
     );
   }
+
+  if (!newPath) return null;
+
+  if (currentFilePath) {
+    let resolvedPath: string;
+    if (newPath.startsWith('/')) {
+      // Interpret as project-root relative
+      resolvedPath = path.join(projectRoot, newPath.replace(/^\//, ''));
+    } else {
+      // Relative to current file
+      const currentDir = path.dirname(currentFilePath);
+      resolvedPath = path.resolve(currentDir, newPath);
+    }
+
+    const pathExists = fileExists(resolvedPath);
+    if (!pathExists) {
+      return null;
+    }
+  }
+
+  return newPath;
 }
 
 /**
@@ -315,12 +352,14 @@ function transformMdxImports(
   targetLocale: string,
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
-  exclude: string[] = []
+  exclude: string[] = [],
+  currentFilePath?: string
 ): ImportTransformResult {
   const transformedImports: Array<{ originalPath: string; newPath: string }> =
     [];
 
-  if (!pattern.startsWith('/')) {
+  // Don't auto-prefix relative patterns that start with . or ..
+  if (!pattern.startsWith('/') && !pattern.startsWith('.')) {
     pattern = '/' + pattern;
   }
 
@@ -373,15 +412,18 @@ function transformMdxImports(
     };
   }
 
-  // Visit only mdxjsEsm nodes (import/export statements)
+  let content = mdxContent;
+
+  // Visit only mdxjsEsm nodes (import/export statements) to collect replacements
   visit(processedAst, 'mdxjsEsm', (node: MdxjsEsm) => {
     if (node.value && node.value.includes(patternHead.replace(/\/$/, ''))) {
-      // Find and transform import paths in the node value
+      // Find import lines that need transformation
       const lines = node.value.split('\n');
-      const transformedLines = lines.map((line: string) => {
+
+      lines.forEach((line: string) => {
         // Only process import lines that match our pattern
         if (!line.trim().startsWith('import ')) {
-          return line;
+          return;
         }
 
         // Check if this line should be processed
@@ -393,12 +435,11 @@ function transformMdxImports(
             defaultLocale
           )
         ) {
-          return line;
+          return;
         }
 
         // Extract the path from the import statement
         const quotes = ['"', "'", '`'];
-        let transformedLine = line;
 
         for (const quote of quotes) {
           // Try both with and without trailing slash
@@ -427,7 +468,8 @@ function transformMdxImports(
             patternHead,
             targetLocale,
             defaultLocale,
-            hideDefaultLocale
+            hideDefaultLocale,
+            currentFilePath
           );
 
           if (!newPath) {
@@ -439,52 +481,18 @@ function transformMdxImports(
             continue;
           }
 
-          // Apply the transformation
+          // Apply the transformation to the original content
+          // Simply replace the import path with the new path
+          content = content.replace(
+            `${quote}${fullPath}${quote}`,
+            `${quote}${newPath}${quote}`
+          );
           transformedImports.push({ originalPath: fullPath, newPath });
-          transformedLine =
-            line.slice(0, pathStart) + newPath + line.slice(pathEnd);
           break;
         }
-
-        return transformedLine;
       });
-
-      node.value = transformedLines.join('\n');
     }
   });
-
-  // Convert the modified AST back to MDX string
-  let content: string;
-  try {
-    const stringifyProcessor = unified()
-      .use(remarkStringify)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    content = stringifyProcessor.stringify(processedAst);
-  } catch (error) {
-    console.warn(
-      `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`
-    );
-    console.warn(
-      'Returning original content unchanged due to stringify error.'
-    );
-    return {
-      content: mdxContent,
-      hasChanges: false,
-      transformedImports: [],
-    };
-  }
-
-  // Handle newline formatting to match original input
-  if (content.endsWith('\n') && !mdxContent.endsWith('\n')) {
-    content = content.slice(0, -1);
-  }
-
-  // Preserve leading newlines from original content
-  if (mdxContent.startsWith('\n') && !content.startsWith('\n')) {
-    content = '\n' + content;
-  }
 
   return {
     content,
@@ -503,10 +511,10 @@ function localizeStaticImportsForFile(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
-  isMarkdown: boolean = false
+  currentFilePath?: string
 ): string {
   // Skip .md files entirely - they cannot have imports
-  if (isMarkdown) {
+  if (currentFilePath && currentFilePath.endsWith('.md')) {
     return file;
   }
 
@@ -517,7 +525,8 @@ function localizeStaticImportsForFile(
     targetLocale,
     hideDefaultLocale,
     pattern,
-    exclude
+    exclude,
+    currentFilePath
   );
   return result.content;
 }
