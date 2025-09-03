@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.16
+
+### Patch Changes
+
+- [#630](https://github.com/generaltranslation/gt/pull/630) [`1f0dc1b`](https://github.com/generaltranslation/gt/commit/1f0dc1b17f22737263938998f5c516e0aa136b1a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding localization of import paths to MDX files
+
 ## 2.1.15
 
 ### Patch Changes
