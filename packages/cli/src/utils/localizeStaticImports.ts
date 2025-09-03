@@ -482,7 +482,10 @@ function transformMdxImports(
 
           // Apply the transformation to the original content
           // Simply replace the import path with the new path
-          content = content.replace(`${quote}${fullPath}${quote}`, `${quote}${newPath}${quote}`);
+          content = content.replace(
+            `${quote}${fullPath}${quote}`,
+            `${quote}${newPath}${quote}`
+          );
           transformedImports.push({ originalPath: fullPath, newPath });
           break;
         }
