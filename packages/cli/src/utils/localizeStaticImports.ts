@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
@@ -12,6 +13,17 @@ import { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
 
 const { isMatch } = micromatch;
+
+/**
+ * Checks if a file exists at the given path
+ */
+function fileExists(filePath: string): boolean {
+  try {
+    return fs.existsSync(filePath);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Localizes static imports in content files.
@@ -73,7 +85,7 @@ export default async function localizeStaticImports(settings: Settings) {
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
             settings.options?.excludeStaticImports,
-            filePath.endsWith('.md')
+            filePath
           );
           // Write the localized file back to the same path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -104,7 +116,7 @@ export default async function localizeStaticImports(settings: Settings) {
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
             settings.options?.excludeStaticImports,
-            filePath.endsWith('.md')
+            filePath
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -280,30 +292,55 @@ function transformImportPath(
   patternHead: string,
   targetLocale: string,
   defaultLocale: string,
-  hideDefaultLocale: boolean
+  hideDefaultLocale: boolean,
+  currentFilePath?: string,
+  projectRoot: string = process.cwd() // fallback if not provided
 ): string | null {
+  let newPath: string | null;
+
   if (targetLocale === defaultLocale) {
-    return transformDefaultLocaleImportPath(
+    newPath = transformDefaultLocaleImportPath(
       fullPath,
       patternHead,
       defaultLocale,
       hideDefaultLocale
     );
   } else if (hideDefaultLocale) {
-    return transformNonDefaultLocaleImportPathWithHidden(
+    newPath = transformNonDefaultLocaleImportPathWithHidden(
       fullPath,
       patternHead,
       targetLocale,
       defaultLocale
     );
   } else {
-    return transformNonDefaultLocaleImportPath(
+    newPath = transformNonDefaultLocaleImportPath(
       fullPath,
       patternHead,
       targetLocale,
       defaultLocale
     );
   }
+
+  if (!newPath) return null;
+
+  if (currentFilePath) {
+    let resolvedPath: string;
+    if (newPath.startsWith('/')) {
+      // Interpret as project-root relative
+      resolvedPath = path.join(projectRoot, newPath.replace(/^\//, ''));
+    } else {
+      // Relative to current file
+      const currentDir = path.dirname(currentFilePath);
+      resolvedPath = path.resolve(currentDir, newPath);
+    }
+
+    const pathExists = fileExists(resolvedPath);
+    if (!pathExists) {
+      return null;
+    }
+  }
+
+  return newPath;
 }
 
 /**
@@ -315,7 +352,8 @@ function transformMdxImports(
   targetLocale: string,
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
-  exclude: string[] = []
+  exclude: string[] = [],
+  currentFilePath?: string
 ): ImportTransformResult {
   const transformedImports: Array<{ originalPath: string; newPath: string }> =
     [];
@@ -427,7 +465,8 @@ function transformMdxImports(
             patternHead,
             targetLocale,
             defaultLocale,
-            hideDefaultLocale
+            hideDefaultLocale,
+            currentFilePath
           );
 
           if (!newPath) {
@@ -503,10 +542,10 @@ function localizeStaticImportsForFile(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
-  isMarkdown: boolean = false
+  currentFilePath?: string
 ): string {
   // Skip .md files entirely - they cannot have imports
-  if (isMarkdown) {
+  if (currentFilePath && currentFilePath.endsWith('.md')) {
     return file;
   }
 
@@ -517,7 +556,8 @@ function localizeStaticImportsForFile(
     targetLocale,
     hideDefaultLocale,
     pattern,
-    exclude
+    exclude,
+    currentFilePath
   );
   return result.content;
 }

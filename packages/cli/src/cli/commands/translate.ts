@@ -10,6 +10,7 @@ import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
+import localizeStaticImports from '../../utils/localizeStaticImports.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -86,6 +87,11 @@ export async function postProcessTranslations(settings: Settings) {
     // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
     // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
     await processAnchorIds(settings);
+  }
+
+  // Localize static imports (import Snippet from /snippets/file.mdx -> import Snipper from /snippets/[locale]/file.mdx)
+  if (settings.options?.experimentalLocalizeStaticImports) {
+    await localizeStaticImports(settings);
   }
 
   // Flatten json files into a single file
