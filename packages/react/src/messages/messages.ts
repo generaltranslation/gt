@@ -129,9 +129,11 @@ export function msg(
  * @param encodedMsg The message to decode.
  * @returns The decoded message, or the input if it cannot be decoded.
  */
-export function decodeMsg(encodedMsg: string): string {
-  if (encodedMsg.lastIndexOf(':') !== -1) {
-    return encodedMsg.slice(0, encodedMsg.lastIndexOf(':'));
+export function decodeMsg<T extends string | null | undefined>(
+  encodedMsg: T
+): T {
+  if (encodedMsg && encodedMsg.lastIndexOf(':') !== -1) {
+    return encodedMsg.slice(0, encodedMsg.lastIndexOf(':')) as T;
   }
   return encodedMsg;
 }
