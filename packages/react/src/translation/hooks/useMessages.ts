@@ -3,6 +3,7 @@ import useGTContext from '../../provider/GTContext';
 import { _Messages, Translations } from '../../types/types';
 import { useable } from '../../promises/dangerouslyUsable';
 import { reactHasUse } from '../../promises/reactHasUse';
+import { MFunctionType } from '../../types/types';
 
 /**
  * Gets the message decoding and translation function `m` provided by `<GTProvider>`.
@@ -19,7 +20,7 @@ import { reactHasUse } from '../../promises/reactHasUse';
  * const m = useMessages();
  * m(encodedMessage) // returns "My name is Brian" translated
  */
-export default function useMessages(_messages?: _Messages) {
+export default function useMessages(_messages?: _Messages): MFunctionType {
   const {
     developmentApiEnabled,
     translationRequired,
@@ -69,7 +70,10 @@ export default function useMessages(_messages?: _Messages) {
    * const m = useMessages()
    * m(example2); // Translates 'My name is John' in context
    */
-  function m(encodedMsg: string, options: Record<string, any> = {}): string {
+  function m<T extends string | null | undefined>(
+    encodedMsg: T,
+    options: Record<string, any> = {}
+  ): T extends string ? string : T {
     return _mFunction(encodedMsg, options, preloadedTranslations);
   }
 

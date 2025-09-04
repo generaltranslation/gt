@@ -25,7 +25,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
+import { msg, decodeMsg, decodeOptions, _Messages } from 'gt-react/internal';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -250,7 +250,9 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
  * </>);
  *
  */
-export const useGT: typeof _useGT = () => {
+export const useGT: (
+  _messages?: _Messages
+) => (message: string, options?: InlineTranslationOptions) => string = () => {
   throw new Error(typesFileError);
 };
 
@@ -395,7 +397,12 @@ export const RegionSelector: typeof _RegionSelector = () => {
  * const m = useMessages();
  * m(encodedMessage) // returns "My name is Brian" translated
  */
-export const useMessages: typeof _useMessages = () => {
+export const useMessages: (
+  _messages?: _Messages
+) => <T extends string | null | undefined>(
+  encodedMsg: T,
+  options?: Record<string, any>
+) => T extends string ? string : T = () => {
   throw new Error(typesFileError);
 };
 
