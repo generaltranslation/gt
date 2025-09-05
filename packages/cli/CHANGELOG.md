@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.17
+
+### Patch Changes
+
+- [#635](https://github.com/generaltranslation/gt/pull/635) [`10aa051`](https://github.com/generaltranslation/gt/commit/10aa051592cea43f772615da200c8615d4dd1a78) Thanks [@brian-lou](https://github.com/brian-lou)! - Create dictionary with uuid to reduce flakiness
+
 ## 2.1.16
 
 ### Patch Changes
