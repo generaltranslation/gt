@@ -64,8 +64,13 @@
     "styled-components": "^6.1.19"
   },
   "peerDependencies": {
-    "react": "^18 || ^19",
-    "sanity": "^3 || ^4"
+    "react": ">=18.0.0",
+    "sanity": ">=4.0.0"
+  },
+  "sanityPlugin": {
+    "verifyPackage": {
+      "eslintImports": false
+    }
   },
   "engines": {
     "node": ">=18"
