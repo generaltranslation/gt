@@ -89,7 +89,7 @@ export async function postProcessTranslations(settings: Settings) {
     await processAnchorIds(settings);
   }
 
-  // Localize static imports (import Snippet from /snippets/file.mdx -> import Snipper from /snippets/[locale]/file.mdx)
+  // Localize static imports (import Snippet from /snippets/file.mdx -> import Snippet from /snippets/[locale]/file.mdx)
   if (settings.options?.experimentalLocalizeStaticImports) {
     await localizeStaticImports(settings);
   }

@@ -15,6 +15,7 @@ import renderTranslatedChildren from './rendering/renderTranslatedChildren';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import renderSkeleton from './rendering/renderSkeleton';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
+import { MFunctionType, TFunctionType } from './types/types';
 import {
   Dictionary,
   RenderMethod,
@@ -91,4 +92,6 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  MFunctionType,
+  TFunctionType,
 };

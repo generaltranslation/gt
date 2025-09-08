@@ -38,7 +38,10 @@ type Translator = {
       $_hash?: string;
     }
   ) => string;
-  m: (encodedMsg: string, options?: InlineTranslationOptions) => string;
+  m: <T extends string | null | undefined>(
+    encodedMsg: T,
+    options?: InlineTranslationOptions
+  ) => T extends string ? string : T;
 };
 
 async function createTranslator(_messages?: _Messages): Promise<Translator> {
@@ -243,13 +246,17 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   };
 
   // ---------- m() ---------- //
-  const m = (encodedMsg: string, options: Record<string, any> = {}): string => {
+  const m = <T extends string | null | undefined>(
+    encodedMsg: T,
+    options?: Record<string, any>
+  ): T extends string ? string : T => {
+    if (!encodedMsg) return encodedMsg as T extends string ? string : T;
     // Try to decode first
     const decodedOptions = decodeOptions(encodedMsg);
 
     // Fallback to t() if not an encoded message
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return encodedMsg;
+      return encodedMsg as T extends string ? string : T;
       // return t(encodedMsg, options); (moved to compiler based solution instead)
     }
 
@@ -263,13 +270,18 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       });
 
     // Early: default locale only
-    if (!translationRequired) return renderMessage($_source, [defaultLocale]);
+    if (!translationRequired)
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
 
     // Translation exists?
     const translationEntry = translations?.[$_hash];
 
     if (translationEntry === null) {
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
     }
 
     if (translationEntry) {
@@ -277,14 +289,16 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
-        ]);
+        ]) as T extends string ? string : T;
       } catch (error) {
         console.error(
           createStringRenderError($_source, decodeMsg(encodedMsg)),
           'Error: ',
           error
         );
-        return renderMessage($_source, [defaultLocale]);
+        return renderMessage($_source, [defaultLocale]) as T extends string
+          ? string
+          : T;
       }
     }
 
@@ -293,7 +307,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       console.warn(
         createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
       );
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
     }
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
@@ -302,7 +318,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           return renderMessage(preloadedTranslations[$_hash] as string, [
             locale,
             defaultLocale,
-          ]);
+          ]) as T extends string ? string : T;
         } catch (error) {
           console.error(
             createStringRenderError($_source, decodeMsg(encodedMsg)),
@@ -311,7 +327,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           );
         }
       }
-      return renderMessage($_source, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
     }
 
     // On-demand translate
@@ -324,7 +342,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     });
 
     // Default: return source while translation loads
-    return renderMessage($_source, [defaultLocale]);
+    return renderMessage($_source, [defaultLocale]) as T extends string
+      ? string
+      : T;
   };
 
   return { t, m };
@@ -367,7 +387,12 @@ export function useGT(_messages?: _Messages) {
  */
 export async function getMessages(
   _messages?: _Messages
-): Promise<(message: string, options?: InlineTranslationOptions) => string> {
+): Promise<
+  <T extends string | null | undefined>(
+    encodedMsg: T,
+    options?: Record<string, any>
+  ) => T extends string ? string : T
+> {
   const { m } = await createTranslator(_messages);
   return m;
 }
@@ -375,6 +400,11 @@ export async function getMessages(
 /**
  * Hook wrapper for getMessages
  */
-export function useMessages(_messages?: _Messages) {
+export function useMessages(
+  _messages?: _Messages
+): <T extends string | null | undefined>(
+  encodedMsg: T,
+  options?: Record<string, any>
+) => T extends string ? string : T {
   return use(getMessages(_messages));
 }
