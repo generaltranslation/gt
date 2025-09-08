@@ -48,7 +48,9 @@
     "watch": "pkg-utils watch --strict"
   },
   "dependencies": {
-    "@sanity/incompatible-plugin": "^1.0.5"
+    "@sanity/incompatible-plugin": "^1.0.5",
+    "generaltranslation": "^7.4.3",
+    "sanity-translations-tab": "^4.4.0"
   },
   "devDependencies": {
     "@sanity/pkg-utils": "^8.1.6",
