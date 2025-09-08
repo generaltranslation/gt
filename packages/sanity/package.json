@@ -1,0 +1,73 @@
+{
+  "name": "@generaltranslation/sanity",
+  "version": "1.0.0",
+  "description": "General Translation integration with Sanity",
+  "keywords": [
+    "sanity",
+    "sanity-plugin",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n",
+    "l10n"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "author": "General Translation, Inc.",
+  "sideEffects": false,
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "sanity.json",
+    "src",
+    "v2-incompatible.js"
+  ],
+  "scripts": {
+    "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
+    "format": "prettier --write --cache --ignore-unknown .",
+    "link-watch": "plugin-kit link-watch",
+    "lint": "eslint .",
+    "prepublishOnly": "npm run build",
+    "watch": "pkg-utils watch --strict"
+  },
+  "dependencies": {
+    "@sanity/incompatible-plugin": "^1.0.5"
+  },
+  "devDependencies": {
+    "@sanity/pkg-utils": "^8.1.6",
+    "@sanity/plugin-kit": "^4.0.19",
+    "@types/react": "^19.1.12",
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "eslint-config-sanity": "^7.1.4",
+    "prettier-plugin-packagejson": "^2.5.19",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "sanity": "^4.6.1",
+    "styled-components": "^6.1.19"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "sanity": "^3 || ^4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
