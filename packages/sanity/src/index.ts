@@ -1,4 +1,4 @@
-import {definePlugin} from 'sanity'
+import { definePlugin } from 'sanity';
 
 interface MyPluginConfig {
   /* nothing here yet */
@@ -19,8 +19,8 @@ interface MyPluginConfig {
  */
 export const myPlugin = definePlugin<MyPluginConfig | void>((config = {}) => {
   // eslint-disable-next-line no-console
-  console.log('hello from sanity-plugin-gt-sanity')
+  console.log('hello from sanity-plugin-gt-sanity');
   return {
     name: 'sanity-plugin-gt-sanity',
-  }
-})
+  };
+});
