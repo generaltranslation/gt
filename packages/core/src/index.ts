@@ -201,7 +201,7 @@ export class GT {
     // source locale
     if (sourceLocale) {
       this.sourceLocale = _standardizeLocale(sourceLocale);
-      if (!_isValidLocale(this.sourceLocale))
+      if (!_isValidLocale(this.sourceLocale, customMapping))
         throw new Error(invalidLocaleError(this.sourceLocale));
     }
 
