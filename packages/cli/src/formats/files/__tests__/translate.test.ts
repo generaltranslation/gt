@@ -28,12 +28,20 @@ const mockIsValidMdx = vi.mocked(isValidMdx);
 describe('aggregateFiles - Empty File Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mocks
-    mockGetRelative.mockImplementation((path) => path.replace('/full/path/', ''));
-    mockDetermineLibrary.mockReturnValue({ library: 'next-intl', additionalModules: [] });
+    mockGetRelative.mockImplementation((path) =>
+      path.replace('/full/path/', '')
+    );
+    mockDetermineLibrary.mockReturnValue({
+      library: 'next-intl',
+      additionalModules: [],
+    });
     mockParseJson.mockReturnValue('parsed-json-content');
-    mockParseYaml.mockReturnValue({ content: 'parsed-yaml-content', fileFormat: 'YAML' });
+    mockParseYaml.mockReturnValue({
+      content: 'parsed-yaml-content',
+      fileFormat: 'YAML',
+    });
     mockSanitizeFileContent.mockImplementation((content) => content);
     mockIsValidMdx.mockReturnValue({ isValid: true });
   });
@@ -47,12 +55,12 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            json: ['/full/path/empty.json', '/full/path/valid.json']
+            json: ['/full/path/empty.json', '/full/path/valid.json'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
         options: {},
-        defaultLocale: 'en'
+        defaultLocale: 'en',
       };
 
       mockReadFile
@@ -61,7 +69,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty.json: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.json: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
     });
@@ -70,12 +80,12 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            json: ['/full/path/whitespace.json', '/full/path/valid.json']
+            json: ['/full/path/whitespace.json', '/full/path/valid.json'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
         options: {},
-        defaultLocale: 'en'
+        defaultLocale: 'en',
       };
 
       mockReadFile
@@ -84,7 +94,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping whitespace.json: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping whitespace.json: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
     });
@@ -93,12 +105,12 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            json: ['/full/path/null.json', '/full/path/valid.json']
+            json: ['/full/path/null.json', '/full/path/valid.json'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
         options: {},
-        defaultLocale: 'en'
+        defaultLocale: 'en',
       };
 
       mockReadFile
@@ -107,7 +119,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping null.json: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping null.json: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
     });
@@ -118,11 +132,11 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            yaml: ['/full/path/empty.yaml', '/full/path/valid.yaml']
+            yaml: ['/full/path/empty.yaml', '/full/path/valid.yaml'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
-        options: {}
+        options: {},
       };
 
       mockReadFile
@@ -131,7 +145,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty.yaml: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.yaml: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.yaml');
     });
@@ -140,11 +156,11 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            yaml: ['/full/path/whitespace.yml', '/full/path/valid.yml']
+            yaml: ['/full/path/whitespace.yml', '/full/path/valid.yml'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
-        options: {}
+        options: {},
       };
 
       mockReadFile
@@ -153,23 +169,24 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping whitespace.yml: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping whitespace.yml: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.yml');
     });
   });
 
   describe('Other file types (MDX, MD, TS, etc.)', () => {
-
     it('should skip empty MDX files and log warning', async () => {
       const settings = {
         files: {
           resolvedPaths: {
-            mdx: ['/full/path/empty.mdx', '/full/path/valid.mdx']
+            mdx: ['/full/path/empty.mdx', '/full/path/valid.mdx'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
-        options: {}
+        options: {},
       };
 
       mockReadFile
@@ -178,7 +195,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty.mdx: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.mdx: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.mdx');
     });
@@ -187,11 +206,11 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            md: ['/full/path/sanitized-empty.md', '/full/path/valid.md']
+            md: ['/full/path/sanitized-empty.md', '/full/path/valid.md'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
-        options: {}
+        options: {},
       };
 
       mockReadFile
@@ -204,7 +223,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping sanitized-empty.md: File is empty after sanitization');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping sanitized-empty.md: File is empty after sanitization'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.md');
     });
@@ -213,11 +234,14 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            ts: ['/full/path/whitespace-after-sanitization.ts', '/full/path/valid.ts']
+            ts: [
+              '/full/path/whitespace-after-sanitization.ts',
+              '/full/path/valid.ts',
+            ],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
-        options: {}
+        options: {},
       };
 
       mockReadFile
@@ -230,7 +254,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping whitespace-after-sanitization.ts: File is empty after sanitization');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping whitespace-after-sanitization.ts: File is empty after sanitization'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.ts');
     });
@@ -243,12 +269,12 @@ describe('aggregateFiles - Empty File Handling', () => {
           resolvedPaths: {
             json: ['/full/path/empty.json', '/full/path/valid.json'],
             yaml: ['/full/path/empty.yaml'],
-            md: ['/full/path/valid.md']
+            md: ['/full/path/valid.md'],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
         options: {},
-        defaultLocale: 'en'
+        defaultLocale: 'en',
       };
 
       mockReadFile
@@ -260,14 +286,18 @@ describe('aggregateFiles - Empty File Handling', () => {
       const result = await aggregateFiles(settings as any);
 
       // Check that warnings were logged for empty files
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty.json: File is empty');
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty.yaml: File is empty');
-      
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.json: File is empty'
+      );
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.yaml: File is empty'
+      );
+
       // Should have 2 valid files
       expect(result).toHaveLength(2);
-      
+
       // Check the file names are correct (JSON processed first, then MD after YAML)
-      const fileNames = result.map(f => f.fileName);
+      const fileNames = result.map((f) => f.fileName);
       expect(fileNames).toContain('valid.json');
       expect(fileNames).toContain('valid.md');
     });
@@ -278,24 +308,32 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            json: ['/full/path/empty1.json', '/full/path/empty2.json', '/full/path/valid.json']
+            json: [
+              '/full/path/empty1.json',
+              '/full/path/empty2.json',
+              '/full/path/valid.json',
+            ],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
         options: {},
-        defaultLocale: 'en'
+        defaultLocale: 'en',
       };
 
       // Both empty files should be skipped, only valid file should remain
       mockReadFile
         .mockReturnValueOnce('') // empty file 1 - will return null from map
-        .mockReturnValueOnce('') // empty file 2 - will return null from map  
+        .mockReturnValueOnce('') // empty file 2 - will return null from map
         .mockReturnValueOnce('{"key": "value"}'); // valid file
 
       const result = await aggregateFiles(settings as any);
 
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty1.json: File is empty');
-      expect(mockLogWarning).toHaveBeenCalledWith('Skipping empty2.json: File is empty');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty1.json: File is empty'
+      );
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty2.json: File is empty'
+      );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
     });
@@ -304,12 +342,15 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            json: ['/full/path/valid-input-empty-output.json', '/full/path/valid.json']
+            json: [
+              '/full/path/valid-input-empty-output.json',
+              '/full/path/valid.json',
+            ],
           },
-          placeholderPaths: {}
+          placeholderPaths: {},
         },
         options: {},
-        defaultLocale: 'en'
+        defaultLocale: 'en',
       };
 
       mockReadFile
