@@ -37,7 +37,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       library: 'next-intl',
       additionalModules: [],
     });
-    
+
     // Mock parseJson to return empty string for empty/null content, valid content otherwise
     mockParseJson.mockImplementation((content) => {
       if (!content || !content.trim()) {
@@ -45,8 +45,8 @@ describe('aggregateFiles - Empty File Handling', () => {
       }
       return 'parsed-json-content';
     });
-    
-    // Mock parseYaml to return empty string for empty/null content, valid content otherwise  
+
+    // Mock parseYaml to return empty string for empty/null content, valid content otherwise
     mockParseYaml.mockImplementation((content) => {
       if (!content || !content.trim()) {
         return { content: '', fileFormat: 'YAML' }; // Empty files result in empty parsed content
@@ -56,7 +56,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         fileFormat: 'YAML',
       };
     });
-    
+
     mockSanitizeFileContent.mockImplementation((content) => content);
     mockIsValidMdx.mockReturnValue({ isValid: true });
   });
