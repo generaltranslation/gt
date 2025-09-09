@@ -532,7 +532,7 @@ export default class I18NConfiguration {
         }),
         {
           ...this.metadata,
-          targetLocale: this.gt.resolveCanonicalLocale(batch[0].targetLocale),
+          targetLocale: batch[0].targetLocale,
         }
       );
 
