@@ -67,9 +67,12 @@ export async function aggregateFiles(
           fileName: relativePath,
           fileFormat: 'JSON' as const,
           dataFormat,
-        };
+        } as FileToTranslate;
       })
-      .filter((file): file is NonNullable<typeof file> => file !== null);
+      .filter(
+        (file): file is FileToTranslate =>
+          !!file && typeof file.content === 'string' && !!file.content.trim()
+      );
     allFiles.push(...jsonFiles);
   }
 
@@ -96,9 +99,12 @@ export async function aggregateFiles(
           content: parsedYaml,
           fileName: relativePath,
           fileFormat,
-        };
+        } as FileToTranslate;
       })
-      .filter((file): file is NonNullable<typeof file> => file !== null);
+      .filter(
+        (file): file is FileToTranslate =>
+          !!file && typeof file.content === 'string' && !!file.content.trim()
+      );
     allFiles.push(...yamlFiles);
   }
 
@@ -139,9 +145,12 @@ export async function aggregateFiles(
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
-          };
+          } as FileToTranslate;
         })
-        .filter((file): file is NonNullable<typeof file> => file !== null);
+        .filter(
+          (file): file is FileToTranslate =>
+            !!file && typeof file.content === 'string' && !!file.content.trim()
+        );
       allFiles.push(...files);
     }
   }
