@@ -80,6 +80,7 @@ import {
   CustomRegionMapping,
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
+import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -1181,20 +1182,7 @@ export class GT {
   ): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('resolveAliasLocale'));
-
-    let reverseCustomMapping = this.reverseCustomMapping;
-    if (customMapping) {
-      reverseCustomMapping = Object.fromEntries(
-        Object.entries(customMapping)
-          .filter(
-            ([_, value]) =>
-              value && typeof value === 'object' && 'code' in value
-          )
-          .map(([key, value]) => [(value as { code: string }).code, key])
-      );
-    }
-
-    return reverseCustomMapping?.[locale] || locale;
+    return _resolveAliasLocale(locale, customMapping);
   }
 
   /**
@@ -1581,6 +1569,19 @@ export function isValidLocale(
   customMapping?: CustomMapping
 ): boolean {
   return _isValidLocale(locale, customMapping);
+}
+
+/**
+ * Resolves the alias locale for a given locale.
+ * @param {string} locale - The locale to resolve the alias locale for
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the alias locale
+ * @returns {string} The alias locale
+ */
+export function resolveAliasLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): string {
+  return _resolveAliasLocale(locale, customMapping);
 }
 
 /**

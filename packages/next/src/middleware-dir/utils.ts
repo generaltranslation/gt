@@ -72,9 +72,9 @@ export function getResponse({
 /**
  * Extracts the locale from the given pathname.
  */
-export function extractLocale(pathname: string): string | null {
+export function extractLocale(pathname: string, gt: GT): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
-  return matches ? matches[1] : null;
+  return matches ? gt.resolveAliasLocale(matches[1]) : null;
 }
 
 /**
@@ -269,7 +269,6 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  locales: string[],
   gt: GT
 ): {
   userLocale: string;
@@ -285,7 +284,7 @@ export function getLocaleFromRequest(
   // Check pathname locales
   let pathnameLocale, unstandardizedPathnameLocale;
   if (localeRouting) {
-    unstandardizedPathnameLocale = extractLocale(pathname);
+    unstandardizedPathnameLocale = extractLocale(pathname, gt);
     const extractedLocale = gtServicesEnabled
       ? standardizeLocale(unstandardizedPathnameLocale || '')
       : unstandardizedPathnameLocale;
@@ -293,9 +292,9 @@ export function getLocaleFromRequest(
     if (
       extractedLocale &&
       gt.isValidLocale(extractedLocale) &&
-      determineLocale([extractedLocale], approvedLocales)
+      gt.determineLocale([extractedLocale], approvedLocales)
     ) {
-      const determinedLocale = determineLocale(
+      const determinedLocale = gt.determineLocale(
         [extractedLocale],
         approvedLocales
       );
@@ -340,7 +339,7 @@ export function getLocaleFromRequest(
     !clearResetCookie
   ) {
     const referrerLocale = referrerLocaleCookie.value;
-    if (determineLocale([referrerLocale], approvedLocales)) {
+    if (gt.determineLocale([referrerLocale], approvedLocales)) {
       candidates.push(referrerLocale);
     }
   }
@@ -360,7 +359,7 @@ export function getLocaleFromRequest(
 
   // determine userLocale
   const unstandardizedUserLocale =
-    determineLocale(
+    gt.determineLocale(
       candidates.filter((locale) => gt.isValidLocale(locale)),
       approvedLocales
     ) || defaultLocale;

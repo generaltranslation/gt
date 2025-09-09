@@ -167,7 +167,6 @@ export default function createNextMiddleware({
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
-      locales,
       gt
     );
 

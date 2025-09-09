@@ -90,6 +90,7 @@ export default function GTProvider({
     locales,
     ssr,
     localeCookieName,
+    customMapping,
   });
 
   // Define the region instance

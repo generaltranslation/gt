@@ -65,7 +65,9 @@ export async function getNextLocale(
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);
 
-    const result = determineLocale(preferredLocales, locales) || defaultLocale;
+    const gt = getI18NConfig().getGTClass();
+    const result =
+      gt.determineLocale(preferredLocales, locales) || defaultLocale;
 
     return result;
   })();

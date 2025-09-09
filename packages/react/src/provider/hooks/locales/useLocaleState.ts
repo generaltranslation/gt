@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useDetermineLocale } from './useDetermineLocale';
-import { requiresTranslation, isSameLanguage } from 'generaltranslation';
+import { requiresTranslation, isSameLanguage, GT } from 'generaltranslation';
+import { CustomMapping } from 'generaltranslation/types';
 
 export function useLocaleState({
   _locale,
@@ -8,12 +9,14 @@ export function useLocaleState({
   locales: _locales,
   ssr,
   localeCookieName,
+  customMapping,
 }: {
   _locale: string;
   defaultLocale: string;
   locales: string[];
   ssr: boolean;
   localeCookieName: string;
+  customMapping: CustomMapping;
 }) {
   // Locale standardization
   const locales = useMemo(() => {
@@ -26,6 +29,7 @@ export function useLocaleState({
     locales,
     ssr,
     localeCookieName,
+    customMapping,
   });
 
   const [translationRequired, dialectTranslationRequired] = useMemo(() => {
