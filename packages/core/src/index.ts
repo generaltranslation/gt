@@ -1118,6 +1118,7 @@ export class GT {
    * Checks if a given BCP 47 locale code is valid.
    *
    * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to validate
+   * @param {customMapping} [customMapping=this.customMapping] - The custom mapping to use for validation
    * @returns {boolean} True if the locale code is valid, false otherwise
    * @throws {Error} If no target locale is provided
    *
@@ -1125,9 +1126,12 @@ export class GT {
    * gt.isValidLocale('en-US');
    * // Returns: true
    */
-  isValidLocale(locale = this.targetLocale): boolean {
+  isValidLocale(
+    locale = this.targetLocale,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
-    return isValidLocale(locale);
+    return isValidLocale(locale, customMapping);
   }
 
   /**
@@ -1505,10 +1509,14 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
 /**
  * Checks if a given BCP 47 locale code is valid.
  * @param {string} locale - The BCP 47 locale code to validate.
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
  * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
  */
-export function isValidLocale(locale: string): boolean {
-  return _isValidLocale(locale);
+export function isValidLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): boolean {
+  return _isValidLocale(locale, customMapping);
 }
 
 /**
