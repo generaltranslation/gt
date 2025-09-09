@@ -79,6 +79,7 @@ import {
   _getRegionProperties,
   CustomRegionMapping,
 } from './locales/getRegionProperties';
+import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -148,6 +149,9 @@ export class GT {
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
 
+  /** Lazily derived reverse custom mapping for alias locales */
+  reverseCustomMapping?: Record<string, string>;
+
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
 
@@ -204,7 +208,7 @@ export class GT {
     // target locale
     if (targetLocale) {
       this.targetLocale = _standardizeLocale(targetLocale);
-      if (!_isValidLocale(this.targetLocale))
+      if (!_isValidLocale(this.targetLocale, customMapping))
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
@@ -234,7 +238,17 @@ export class GT {
 
     // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
-    if (customMapping) this.customMapping = customMapping;
+    if (customMapping) {
+      this.customMapping = customMapping;
+      this.reverseCustomMapping = Object.fromEntries(
+        Object.entries(customMapping)
+          .filter(
+            ([_, value]) =>
+              value && typeof value === 'object' && 'code' in value
+          )
+          .map(([key, value]) => [(value as { code: string }).code, key])
+      );
+    }
   }
 
   // -------------- Private Methods -------------- //
@@ -1133,6 +1147,54 @@ export class GT {
   ): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
     return isValidLocale(locale, customMapping);
+  }
+
+  /**
+   * Resolves the canonical locale for a given locale.
+   * @param locale - The locale to resolve the canonical locale for
+   * @param customMapping - The custom mapping to use for resolving the canonical locale
+   * @returns The canonical locale
+   */
+  resolveCanonicalLocale(
+    locale: string | undefined = this.targetLocale,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): string {
+    if (!locale)
+      throw new Error(noTargetLocaleProvidedError('resolveCanonicalLocale'));
+
+    if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
+      return (customMapping[locale] as { code: string }).code;
+    }
+
+    return locale;
+  }
+
+  /**
+   * Resolves the alias locale for a given locale.
+   * @param locale - The locale to resolve the alias locale for
+   * @param customMapping - The custom mapping to use for resolving the alias locale
+   * @returns The alias locale
+   */
+  resolveAliasLocale(
+    locale: string,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): string {
+    if (!locale)
+      throw new Error(noTargetLocaleProvidedError('resolveAliasLocale'));
+
+    let reverseCustomMapping = this.reverseCustomMapping;
+    if (customMapping) {
+      reverseCustomMapping = Object.fromEntries(
+        Object.entries(customMapping)
+          .filter(
+            ([_, value]) =>
+              value && typeof value === 'object' && 'code' in value
+          )
+          .map(([key, value]) => [(value as { code: string }).code, key])
+      );
+    }
+
+    return reverseCustomMapping?.[locale] || locale;
   }
 
   /**
