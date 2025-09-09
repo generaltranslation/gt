@@ -63,10 +63,13 @@ export async function aggregateFiles(
           dataFormat,
         } as FileToTranslate;
       })
-      .filter(
-        (file): file is FileToTranslate =>
-          !!file && typeof file.content === 'string' && !!file.content.trim()
-      );
+      .filter((file): file is FileToTranslate => {
+        if (!file || typeof file.content !== 'string' || !file.content.trim()) {
+          logWarning(`Skipping ${file?.fileName ?? 'unknown'}: JSON file is empty`);
+          return false;
+        }
+        return true;
+      });
     allFiles.push(...jsonFiles);
   }
 
@@ -89,10 +92,13 @@ export async function aggregateFiles(
           fileFormat,
         } as FileToTranslate;
       })
-      .filter(
-        (file): file is FileToTranslate =>
-          !!file && typeof file.content === 'string' && !!file.content.trim()
-      );
+      .filter((file): file is FileToTranslate => {
+        if (!file || typeof file.content !== 'string' || !file.content.trim()) {
+          logWarning(`Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`);
+          return false;
+        }
+        return true;
+      });
     allFiles.push(...yamlFiles);
   }
 
@@ -107,32 +113,27 @@ export async function aggregateFiles(
           if (fileType === 'mdx') {
             const validation = isValidMdx(content, filePath);
             if (!validation.isValid) {
-              const errorMsg = validation.error ? `: ${validation.error}` : '';
               logWarning(
-                `Skipping ${relativePath}: MDX file is not AST parsable${errorMsg}`
+                `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
               );
               return null;
             }
           }
 
           const sanitizedContent = sanitizeFileContent(content);
-          if (!sanitizedContent || !sanitizedContent.trim()) {
-            logWarning(
-              `Skipping ${relativePath}: File is empty after sanitization`
-            );
-            return null;
-          }
-
           return {
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
-          } as FileToTranslate;
+          } as FileToTranslate | null;
         })
-        .filter(
-          (file): file is FileToTranslate =>
-            !!file && typeof file.content === 'string' && !!file.content.trim()
-        );
+        .filter((file): file is FileToTranslate => {
+          if (!file || typeof file.content !== 'string' || !file.content.trim()) {
+            logWarning(`Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`);
+            return false;
+          }
+          return true;
+        });
       allFiles.push(...files);
     }
   }
