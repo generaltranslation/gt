@@ -5,9 +5,25 @@ import { CustomMapping } from '../customLocaleMapping';
 describe('_isValidLocale', () => {
   it('should return true for valid standard locales', () => {
     const validLocales = [
-      'en', 'en-US', 'en-GB', 'fr', 'fr-FR', 'fr-CA',
-      'de', 'de-DE', 'de-AT', 'es', 'es-ES', 'es-MX',
-      'ja', 'ja-JP', 'zh', 'zh-CN', 'zh-TW', 'ar', 'ar-SA'
+      'en',
+      'en-US',
+      'en-GB',
+      'fr',
+      'fr-FR',
+      'fr-CA',
+      'de',
+      'de-DE',
+      'de-AT',
+      'es',
+      'es-ES',
+      'es-MX',
+      'ja',
+      'ja-JP',
+      'zh',
+      'zh-CN',
+      'zh-TW',
+      'ar',
+      'ar-SA',
     ];
 
     for (const locale of validLocales) {
@@ -17,9 +33,18 @@ describe('_isValidLocale', () => {
 
   it('should return true for valid locales with script codes', () => {
     const validLocalesWithScript = [
-      'zh-Hans', 'zh-Hans-CN', 'zh-Hant', 'zh-Hant-TW',
-      'sr-Latn', 'sr-Latn-RS', 'sr-Cyrl', 'sr-Cyrl-RS',
-      'uz-Latn', 'uz-Latn-UZ', 'uz-Cyrl', 'uz-Cyrl-UZ'
+      'zh-Hans',
+      'zh-Hans-CN',
+      'zh-Hant',
+      'zh-Hant-TW',
+      'sr-Latn',
+      'sr-Latn-RS',
+      'sr-Cyrl',
+      'sr-Cyrl-RS',
+      'uz-Latn',
+      'uz-Latn-UZ',
+      'uz-Cyrl',
+      'uz-Cyrl-UZ',
     ];
 
     for (const locale of validLocalesWithScript) {
@@ -30,7 +55,12 @@ describe('_isValidLocale', () => {
   it('should return true for locales with script exceptions', () => {
     // Test script exceptions that are allowed even if DisplayNames doesn't recognize them
     const scriptExceptionLocales = [
-      'cjm-Cham', 'ko-Jamo', 'ksw-Kawi', 'lis-Lisu', 'toq-Toto', 'th-Thai'
+      'cjm-Cham',
+      'ko-Jamo',
+      'ksw-Kawi',
+      'lis-Lisu',
+      'toq-Toto',
+      'th-Thai',
     ];
 
     for (const locale of scriptExceptionLocales) {
@@ -41,9 +71,7 @@ describe('_isValidLocale', () => {
   });
 
   it('should return true for private-use language codes (qaa-qtz)', () => {
-    const privateUseLocales = [
-      'qaa', 'qab', 'qac', 'qbb', 'qcc', 'qtz'
-    ];
+    const privateUseLocales = ['qaa', 'qab', 'qac', 'qbb', 'qcc', 'qtz'];
 
     for (const locale of privateUseLocales) {
       expect(_isValidLocale(locale)).toBe(true);
@@ -52,9 +80,16 @@ describe('_isValidLocale', () => {
 
   it('should return false for invalid locales', () => {
     const invalidLocales = [
-      'invalid', 'xyz', 'notvalid', 'abc123',
-      'toolong-invalid-locale-code', '123', '',
-      'en-INVALID', 'fr-NOTREAL', 'invalid-US'
+      'invalid',
+      'xyz',
+      'notvalid',
+      'abc123',
+      'toolong-invalid-locale-code',
+      '123',
+      '',
+      'en-INVALID',
+      'fr-NOTREAL',
+      'invalid-US',
     ];
 
     for (const locale of invalidLocales) {
@@ -96,7 +131,9 @@ describe('_isValidLocale', () => {
     expect(_isValidLocale('custom-invalid-locale', customMapping)).toBe(true);
     expect(_isValidLocale('made-up-code', customMapping)).toBe(true);
     expect(_isValidLocale('xyz-123', customMapping)).toBe(true);
-    expect(_isValidLocale('completely-fake-locale-code', customMapping)).toBe(true);
+    expect(_isValidLocale('completely-fake-locale-code', customMapping)).toBe(
+      true
+    );
 
     // Valid locales should still work
     expect(_isValidLocale('en-US', customMapping)).toBe(true);
@@ -131,7 +168,7 @@ describe('_isValidLocale', () => {
     const customMapping: CustomMapping = {
       'alias-locale': 'Simple String Name',
     };
-    
+
     // String mappings don't have canonical locale support
     expect(_isValidLocale('alias-locale', customMapping)).toBe(true);
   });
@@ -146,7 +183,7 @@ describe('_isValidLocale', () => {
         name: 'Another Test', // No code property
       },
     };
-    
+
     // Both should still be valid due to being in custom mapping
     expect(_isValidLocale('alias-locale', customMapping)).toBe(true);
     expect(_isValidLocale('another-alias', customMapping)).toBe(true);
@@ -244,7 +281,7 @@ describe('_standardizeLocale', () => {
   it('should handle edge cases', () => {
     expect(_standardizeLocale('root')).toBe('root');
     expect(_standardizeLocale('und')).toBe('und');
-    
+
     // Private use codes should be handled
     expect(_standardizeLocale('qaa')).toBe('qaa');
     expect(_standardizeLocale('QAA')).toBe('qaa');
@@ -254,14 +291,14 @@ describe('_standardizeLocale', () => {
     const locale = 'en-us';
     const result1 = _standardizeLocale(locale);
     const result2 = _standardizeLocale(locale);
-    
+
     expect(result1).toBe(result2);
     expect(result1).toBe('en-US');
   });
 
   it('should handle already canonical forms', () => {
     const canonicalLocales = ['en-US', 'fr-FR', 'zh-Hans-CN', 'de-DE'];
-    
+
     for (const locale of canonicalLocales) {
       expect(_standardizeLocale(locale)).toBe(locale);
     }
