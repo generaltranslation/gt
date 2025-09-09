@@ -154,6 +154,7 @@ export default function GTProvider({
     cacheUrl,
     projectId,
     _versionId,
+    gt,
   });
 
   // ------- RUNTIME TRANSLATION ----- //
