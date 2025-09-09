@@ -44,44 +44,61 @@ export async function aggregateFiles(
       dataFormat = 'JSX';
     }
 
-    const jsonFiles = filePaths.json.map((filePath) => {
-      const content = readFile(filePath);
+    const jsonFiles = filePaths.json
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
 
-      const parsedJson = parseJson(
-        content,
-        filePath,
-        settings.options || {},
-        settings.defaultLocale
-      );
+        // Skip empty files early to avoid failing the whole job
+        if (!content || !content.trim()) {
+          logWarning(`Skipping ${relativePath}: empty file`);
+          return null;
+        }
 
-      const relativePath = getRelative(filePath);
-      return {
-        content: parsedJson,
-        fileName: relativePath,
-        fileFormat: 'JSON' as const,
-        dataFormat,
-      };
-    });
+        const parsedJson = parseJson(
+          content,
+          filePath,
+          settings.options || {},
+          settings.defaultLocale
+        );
+
+        return {
+          content: parsedJson,
+          fileName: relativePath,
+          fileFormat: 'JSON' as const,
+          dataFormat,
+        };
+      })
+      .filter((file): file is NonNullable<typeof file> => file !== null);
     allFiles.push(...jsonFiles);
   }
 
   // Process YAML files
   if (filePaths.yaml) {
-    const yamlFiles = filePaths.yaml.map((filePath) => {
-      const content = readFile(filePath);
-      const { content: parsedYaml, fileFormat } = parseYaml(
-        content,
-        filePath,
-        settings.options || {}
-      );
+    const yamlFiles = filePaths.yaml
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
 
-      const relativePath = getRelative(filePath);
-      return {
-        content: parsedYaml,
-        fileName: relativePath,
-        fileFormat,
-      };
-    });
+        // Skip empty files early to avoid failing the whole job
+        if (!content || !content.trim()) {
+          logWarning(`Skipping ${relativePath}: empty file`);
+          return null;
+        }
+
+        const { content: parsedYaml, fileFormat } = parseYaml(
+          content,
+          filePath,
+          settings.options || {}
+        );
+
+        return {
+          content: parsedYaml,
+          fileName: relativePath,
+          fileFormat,
+        };
+      })
+      .filter((file): file is NonNullable<typeof file> => file !== null);
     allFiles.push(...yamlFiles);
   }
 
@@ -92,6 +109,12 @@ export async function aggregateFiles(
         .map((filePath) => {
           const content = readFile(filePath);
           const relativePath = getRelative(filePath);
+
+          // Skip empty files early to avoid failing the whole job
+          if (!content || !content.trim()) {
+            logWarning(`Skipping ${relativePath}: empty file`);
+            return null;
+          }
 
           if (fileType === 'mdx') {
             const validation = isValidMdx(content, filePath);
@@ -105,6 +128,11 @@ export async function aggregateFiles(
           }
 
           const sanitizedContent = sanitizeFileContent(content);
+          if (!sanitizedContent || !sanitizedContent.trim()) {
+            logWarning(`Skipping ${relativePath}: empty file after sanitization`);
+            return null;
+          }
+
           return {
             content: sanitizedContent,
             fileName: relativePath,

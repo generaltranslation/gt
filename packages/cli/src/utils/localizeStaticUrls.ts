@@ -73,6 +73,10 @@ export default async function localizeStaticUrls(
     if (defaultLocaleFiles.length > 0) {
       const defaultPromise = Promise.all(
         defaultLocaleFiles.map(async (filePath: string) => {
+          // Check if file exists before processing
+          if (!fs.existsSync(filePath)) {
+            return;
+          }
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file using default locale
