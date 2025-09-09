@@ -13,6 +13,8 @@ import {
 } from '../../../errors/createErrors';
 import { decodeMsg, decodeOptions } from '../../../internal';
 
+type MReturnType<T> = T extends string ? string : T;
+
 export default function useCreateInternalUseGTFunction({
   gt,
   translations,
@@ -35,11 +37,11 @@ export default function useCreateInternalUseGTFunction({
     options?: InlineTranslationOptions,
     preloadedTranslations?: Translations
   ) => string;
-  _mFunction: (
-    message: string,
+  _mFunction: <T extends string | null | undefined>(
+    message: T,
     options?: Record<string, any>,
     preloadedTranslations?: Translations
-  ) => string;
+  ) => T extends string ? string : T;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
 } {
@@ -159,11 +161,10 @@ export default function useCreateInternalUseGTFunction({
     return preloadedTranslations;
   };
 
-  const _tFunctionHelper = (
+  const _tFunction = (
     message: string,
     options: InlineTranslationOptions = {},
-    preloadedTranslations: Translations | undefined,
-    enableRuntimeTranslation: boolean
+    preloadedTranslations: Translations | undefined
   ) => {
     // ----- SET UP ----- //
     const init = initializeT(message, options);
@@ -215,10 +216,6 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage(message, [defaultLocale]);
     }
 
-    if (!enableRuntimeTranslation) {
-      return renderMessage(message, [defaultLocale]);
-    }
-
     if (!developmentApiEnabled) {
       console.warn(createStringTranslationError(message, id, 't'));
       return renderMessage(message, [defaultLocale]);
@@ -237,31 +234,23 @@ export default function useCreateInternalUseGTFunction({
     return renderMessage(message, [defaultLocale]);
   };
 
-  const _tFunction = (
-    message: string,
-    options: InlineTranslationOptions = {},
-    preloadedTranslations: Translations | undefined
-  ) => {
-    return _tFunctionHelper(message, options, preloadedTranslations, true);
-  };
-
-  const _mFunction = (
-    message: string,
+  const _mFunction = <T extends string | null | undefined>(
+    encodedMsg: T,
     options: Record<string, any> = {},
     preloadedTranslations: Translations | undefined
-  ) => {
-    // Decode message
-    const interpolatedMessage = decodeMsg(message);
-    const decodedOptions = decodeOptions(message);
+  ): T extends string ? string : T => {
+    // Decode message and return if it's invalid
+    if (!encodedMsg) return encodedMsg as MReturnType<T>;
 
-    // Check for translations if not encoded
-    if (!decodedOptions || !decodedOptions.$_hash) {
-      return _tFunctionHelper(message, options, preloadedTranslations, false);
+    const decodedOptions = decodeOptions(encodedMsg);
+    if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
+      return encodedMsg as MReturnType<T>;
+      // return _tFunction(encodedMsg, options, preloadedTranslations); (moved to compiler solution instead of this)
     }
 
     // Disaggregate options and construct render function
 
-    const { $_hash, $context, $hash, $id, ...decodedVariables } =
+    const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
       decodedOptions;
 
     const renderMessage = (msg: string, locales: string[]) => {
@@ -272,15 +261,17 @@ export default function useCreateInternalUseGTFunction({
     };
 
     // Return if default locale
+
     if (!translationRequired)
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
 
     // Check translation entry
+
     const translationEntry = translations?.[decodedOptions.$_hash];
 
     // Check translations
     if (translationEntry === null) {
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }
 
     // If a translation already exists
@@ -289,20 +280,22 @@ export default function useCreateInternalUseGTFunction({
         return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
-        ]);
+        ]) as MReturnType<T>;
       } catch (error) {
         console.error(
-          createStringRenderError(interpolatedMessage, $id),
+          createStringRenderError($_source, decodeMsg(encodedMsg)),
           'Error: ',
           error
         );
-        return renderMessage(interpolatedMessage, [defaultLocale]);
+        return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
       }
     }
 
     if (!developmentApiEnabled) {
-      console.warn(createStringTranslationError(interpolatedMessage, $id, 'm'));
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      console.warn(
+        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
+      );
+      return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
@@ -311,20 +304,20 @@ export default function useCreateInternalUseGTFunction({
           return renderMessage(preloadedTranslations?.[$_hash] as string, [
             locale,
             defaultLocale,
-          ]);
+          ]) as MReturnType<T>;
         } catch (error) {
           console.error(
-            createStringRenderError(interpolatedMessage, $id),
+            createStringRenderError($_source, decodeMsg(encodedMsg)),
             'Error: ',
             error
           );
         }
       }
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }
 
     registerIcuForTranslation({
-      source: message,
+      source: $_source,
       targetLocale: locale,
       metadata: {
         ...($context && { context: $context }),
@@ -332,7 +325,7 @@ export default function useCreateInternalUseGTFunction({
       },
     });
 
-    return renderMessage(interpolatedMessage, [defaultLocale]);
+    return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
   };
 
   return {

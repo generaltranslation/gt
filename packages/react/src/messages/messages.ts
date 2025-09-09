@@ -58,26 +58,14 @@ export function icuMessageContainsVariables(message: string): boolean {
  * Encodes content into a message that contains important translation metadata
  * @param message The message to encode.
  * @param options The options to encode.
- * @returns The same message, or an encoded message if the string contains interpolated values
- * 
- * @description - This function is used to register a message for translation.
- * 
- * @example - Uninterpolated usage
- * 
- * ```jsx
- * import { msg } from 'gt-react';
- * const message = msg('Hello, world!');
- * console.log(message); // "Hello, world!"
- * ```
- * 
- * Use the `m()` function from `useMessages()` to translate the message.
- * ```jsx
- * import { useMessages } from 'gt-react';
- * const m = useMessages();
- * console.log(m(message)); // "Bonjour, le monde!" (in French)
- * ```
+ * @returns The encoded message.
  *
- * @example - Interpolated usage
+ * @note - Message format
+ * A message is broken into two parts separated by colons:
+ * - interpolated content - the content with interpolated variables
+ * - hash + options - a unique identifier for the source content and options for the translation
+ *
+ * @example - Basic usage
  *
  * ```jsx
  * import { msg } from 'gt-react';
@@ -86,36 +74,12 @@ export function icuMessageContainsVariables(message: string): boolean {
  * ```
  * eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9
  * encodes to {"$_hash": "0x123", "$_source": "Hello, {name}!", "name": "Brian"}
- * 
- * Use the `m()` function from `useMessages()` to translate the message.
- * ```jsx
- * import { useMessages } from 'gt-react';
- * const m = useMessages();
- * console.log(m(message)); // "Bonjour, Brian!" (in French)
- * ```
- * 
- * Use the decodeMsg() function to get just the interpolated message.
- * ```jsx
- * import { decodeMsg } from 'gt-react';
- * console.log(decodeMsg(message)); // "Hello, Brian!"
- * ```
  *
- *
- * @note - Interpolated Message format
- * A message is broken into two parts separated by colons:
- * - interpolated content - the content with interpolated variables
- * - hash + options - a unique identifier for the source content and options for the translation
- 
  */
 export function msg(
   message: string,
   options?: InlineTranslationOptions
 ): string {
-  // Skip encoding uninterpolated messages (or keys only including $_hash from compiler)
-  if (!options || Object.keys(options).every((key) => key === '$_hash')) {
-    return message;
-  }
-
   // get hash
   const hash =
     options?.$_hash ||
@@ -129,8 +93,9 @@ export function msg(
   // Always add hash to options
   if (options) {
     options.$_hash = hash;
+    options.$_source = message;
   } else {
-    options = { $_hash: hash };
+    options = { $_hash: hash, $_source: message };
   }
 
   // get the options encoding
@@ -164,26 +129,13 @@ export function msg(
  * @param encodedMsg The message to decode.
  * @returns The decoded message, or the input if it cannot be decoded.
  */
-export function decodeMsg(encodedMsg: string): string {
-  // Check if message is encoded
-  const isEncoded = encodedMsg.lastIndexOf(':') !== -1;
-
-  // Return if message is not encoded
-  if (!isEncoded) {
-    return encodedMsg;
+export function decodeMsg<T extends string | null | undefined>(
+  encodedMsg: T
+): T {
+  if (encodedMsg && encodedMsg.lastIndexOf(':') !== -1) {
+    return encodedMsg.slice(0, encodedMsg.lastIndexOf(':')) as T;
   }
-
-  // Interpolate string
-  const message = encodedMsg.slice(0, encodedMsg.lastIndexOf(':'));
-  const options = decodeOptions(encodedMsg);
-  let interpolatedString = message;
-  if (options && Object.keys(options).length > 1) {
-    interpolatedString = formatMessage(message, {
-      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
-      variables: options,
-    });
-  }
-  return interpolatedString;
+  return encodedMsg;
 }
 
 /**

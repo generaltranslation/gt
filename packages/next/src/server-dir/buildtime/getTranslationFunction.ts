@@ -38,7 +38,10 @@ type Translator = {
       $_hash?: string;
     }
   ) => string;
-  m: (encodedMsg: string, options?: InlineTranslationOptions) => string;
+  m: <T extends string | null | undefined>(
+    encodedMsg: T,
+    options?: InlineTranslationOptions
+  ) => T extends string ? string : T;
 };
 
 async function createTranslator(_messages?: _Messages): Promise<Translator> {
@@ -181,14 +184,13 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
   // ---------- t() ---------- /
 
-  const _tFunctionHelper = (
+  const t = (
     message: string,
     options: Record<string, any> & {
       $context?: string;
       $id?: string;
       $_hash?: string;
-    } = {},
-    enableRuntimeTranslation: boolean
+    } = {}
   ): string => {
     const init = initializeT(message, options);
     if (!init) return '';
@@ -213,10 +215,6 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         console.error(error);
         return renderMessage(message, [defaultLocale]);
       }
-    }
-
-    if (!enableRuntimeTranslation) {
-      return renderMessage(message, [defaultLocale]);
     }
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
@@ -247,29 +245,23 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     return renderMessage(message, [defaultLocale]);
   };
 
-  const t = (
-    message: string,
-    options: Record<string, any> & {
-      $context?: string;
-      $id?: string;
-      $_hash?: string;
-    } = {}
-  ): string => {
-    return _tFunctionHelper(message, options, true);
-  };
-
   // ---------- m() ---------- //
-  const m = (message: string, options: Record<string, any> = {}): string => {
+  const m = <T extends string | null | undefined>(
+    encodedMsg: T,
+    options?: Record<string, any>
+  ): T extends string ? string : T => {
+    if (!encodedMsg) return encodedMsg as T extends string ? string : T;
     // Try to decode first
-    const interpolatedMessage = decodeMsg(message);
-    const decodedOptions = decodeOptions(message);
+    const decodedOptions = decodeOptions(encodedMsg);
 
     // Fallback to t() if not an encoded message
-    if (!decodedOptions || !decodedOptions.$_hash) {
-      return _tFunctionHelper(message, options, false);
+    if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
+      return encodedMsg as T extends string ? string : T;
+      // return t(encodedMsg, options); (moved to compiler based solution instead)
     }
 
-    const { $_hash, $context, $id, ...decodedVariables } = decodedOptions;
+    const { $_hash, $_source, $context, $id, ...decodedVariables } =
+      decodedOptions;
 
     const renderMessage: RenderFn = (msg, locales) =>
       gt.formatMessage(msg, {
@@ -279,13 +271,17 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     // Early: default locale only
     if (!translationRequired)
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
 
     // Translation exists?
     const translationEntry = translations?.[$_hash];
 
     if (translationEntry === null) {
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
     }
 
     if (translationEntry) {
@@ -293,27 +289,27 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
-        ]);
+        ]) as T extends string ? string : T;
       } catch (error) {
         console.error(
-          createStringRenderError(interpolatedMessage, $id),
+          createStringRenderError($_source, decodeMsg(encodedMsg)),
           'Error: ',
           error
         );
-        return renderMessage(interpolatedMessage, [defaultLocale]);
+        return renderMessage($_source, [defaultLocale]) as T extends string
+          ? string
+          : T;
       }
     }
 
     // Dev-only paths for loading or preloaded
     if (!I18NConfig.isDevelopmentApiEnabled()) {
       console.warn(
-        createStringTranslationError(
-          interpolatedMessage,
-          decodeMsg(message),
-          'm'
-        )
+        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
       );
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
     }
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
@@ -322,21 +318,23 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           return renderMessage(preloadedTranslations[$_hash] as string, [
             locale,
             defaultLocale,
-          ]);
+          ]) as T extends string ? string : T;
         } catch (error) {
           console.error(
-            createStringRenderError(interpolatedMessage, $id),
+            createStringRenderError($_source, decodeMsg(encodedMsg)),
             'Error: ',
             error
           );
         }
       }
-      return renderMessage(interpolatedMessage, [defaultLocale]);
+      return renderMessage($_source, [defaultLocale]) as T extends string
+        ? string
+        : T;
     }
 
     // On-demand translate
     scheduleTranslateOnDemand({
-      source: message,
+      source: $_source,
       context: $context,
       id: $id,
       hash: $_hash,
@@ -344,7 +342,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     });
 
     // Default: return source while translation loads
-    return renderMessage(interpolatedMessage, [defaultLocale]);
+    return renderMessage($_source, [defaultLocale]) as T extends string
+      ? string
+      : T;
   };
 
   return { t, m };
@@ -387,7 +387,12 @@ export function useGT(_messages?: _Messages) {
  */
 export async function getMessages(
   _messages?: _Messages
-): Promise<(message: string, options?: InlineTranslationOptions) => string> {
+): Promise<
+  <T extends string | null | undefined>(
+    encodedMsg: T,
+    options?: Record<string, any>
+  ) => T extends string ? string : T
+> {
   const { m } = await createTranslator(_messages);
   return m;
 }
@@ -395,6 +400,11 @@ export async function getMessages(
 /**
  * Hook wrapper for getMessages
  */
-export function useMessages(_messages?: _Messages) {
+export function useMessages(
+  _messages?: _Messages
+): <T extends string | null | undefined>(
+  encodedMsg: T,
+  options?: Record<string, any>
+) => T extends string ? string : T {
   return use(getMessages(_messages));
 }
