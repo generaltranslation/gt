@@ -51,7 +51,7 @@ export async function aggregateFiles(
 
         // Skip empty files early to avoid failing the whole job
         if (!content || !content.trim()) {
-          logWarning(`Skipping ${relativePath}: empty file`);
+          logWarning(`Skipping ${relativePath}: File is empty`);
           return null;
         }
 
@@ -82,7 +82,7 @@ export async function aggregateFiles(
 
         // Skip empty files early to avoid failing the whole job
         if (!content || !content.trim()) {
-          logWarning(`Skipping ${relativePath}: empty file`);
+          logWarning(`Skipping ${relativePath}: File is empty`);
           return null;
         }
 
@@ -112,7 +112,7 @@ export async function aggregateFiles(
 
           // Skip empty files early to avoid failing the whole job
           if (!content || !content.trim()) {
-            logWarning(`Skipping ${relativePath}: empty file`);
+            logWarning(`Skipping ${relativePath}: File is empty`);
             return null;
           }
 
@@ -130,7 +130,7 @@ export async function aggregateFiles(
           const sanitizedContent = sanitizeFileContent(content);
           if (!sanitizedContent || !sanitizedContent.trim()) {
             logWarning(
-              `Skipping ${relativePath}: empty file after sanitization`
+              `Skipping ${relativePath}: File is empty after sanitization`
             );
             return null;
           }
