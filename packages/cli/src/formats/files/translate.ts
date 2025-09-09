@@ -129,7 +129,9 @@ export async function aggregateFiles(
 
           const sanitizedContent = sanitizeFileContent(content);
           if (!sanitizedContent || !sanitizedContent.trim()) {
-            logWarning(`Skipping ${relativePath}: empty file after sanitization`);
+            logWarning(
+              `Skipping ${relativePath}: empty file after sanitization`
+            );
             return null;
           }
 
