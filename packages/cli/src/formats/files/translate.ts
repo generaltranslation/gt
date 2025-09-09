@@ -49,12 +49,6 @@ export async function aggregateFiles(
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
-        // Skip empty files early to avoid failing the whole job
-        if (!content || !content.trim()) {
-          logWarning(`Skipping ${relativePath}: File is empty`);
-          return null;
-        }
-
         const parsedJson = parseJson(
           content,
           filePath,
@@ -83,12 +77,6 @@ export async function aggregateFiles(
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
-        // Skip empty files early to avoid failing the whole job
-        if (!content || !content.trim()) {
-          logWarning(`Skipping ${relativePath}: File is empty`);
-          return null;
-        }
-
         const { content: parsedYaml, fileFormat } = parseYaml(
           content,
           filePath,
@@ -115,12 +103,6 @@ export async function aggregateFiles(
         .map((filePath) => {
           const content = readFile(filePath);
           const relativePath = getRelative(filePath);
-
-          // Skip empty files early to avoid failing the whole job
-          if (!content || !content.trim()) {
-            logWarning(`Skipping ${relativePath}: File is empty`);
-            return null;
-          }
 
           if (fileType === 'mdx') {
             const validation = isValidMdx(content, filePath);
