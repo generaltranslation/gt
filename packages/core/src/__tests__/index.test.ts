@@ -433,13 +433,13 @@ describe('GT Translation Methods', () => {
       const customMapping = {
         'custom-locale': {
           code: 'en-US',
-          name: 'Custom English'
-        }
+          name: 'Custom English',
+        },
       };
-      
+
       const gt = new GT({
         customMapping,
-        targetLocale: 'custom-locale'
+        targetLocale: 'custom-locale',
       });
 
       const result = gt.resolveCanonicalLocale('custom-locale');
@@ -448,12 +448,12 @@ describe('GT Translation Methods', () => {
 
     it('should return original locale when custom mapping does not have canonical locale', () => {
       const customMapping = {
-        'custom-locale': 'Custom English'
+        'custom-locale': 'Custom English',
       };
-      
+
       const gt = new GT({
         customMapping,
-        targetLocale: 'en-US'
+        targetLocale: 'en-US',
       });
 
       const result = gt.resolveCanonicalLocale('en-US');
@@ -462,7 +462,7 @@ describe('GT Translation Methods', () => {
 
     it('should return original locale when no custom mapping provided', () => {
       const gt = new GT({
-        targetLocale: 'fr-FR'
+        targetLocale: 'fr-FR',
       });
 
       const result = gt.resolveCanonicalLocale('fr-FR');
@@ -473,13 +473,13 @@ describe('GT Translation Methods', () => {
       const customMapping = {
         'alias-locale': {
           code: 'de-DE',
-          name: 'German'
-        }
+          name: 'German',
+        },
       };
-      
+
       const gt = new GT({
         customMapping,
-        targetLocale: 'alias-locale'
+        targetLocale: 'alias-locale',
       });
 
       const result = gt.resolveCanonicalLocale();
@@ -500,12 +500,12 @@ describe('GT Translation Methods', () => {
       const customMapping = {
         'my-custom-locale': {
           code: 'en-GB',
-          name: 'British English'
-        }
+          name: 'British English',
+        },
       };
-      
+
       const gt = new GT({
-        customMapping
+        customMapping,
       });
 
       const result = gt.resolveAliasLocale('en-GB');
@@ -516,12 +516,12 @@ describe('GT Translation Methods', () => {
       const customMapping = {
         'custom-locale': {
           code: 'fr-FR',
-          name: 'French'
-        }
+          name: 'French',
+        },
       };
-      
+
       const gt = new GT({
-        customMapping
+        customMapping,
       });
 
       const result = gt.resolveAliasLocale('es-ES');
@@ -530,11 +530,11 @@ describe('GT Translation Methods', () => {
 
     it('should return original locale when custom mapping contains string values only', () => {
       const customMapping = {
-        'custom-locale': 'Custom Name'
+        'custom-locale': 'Custom Name',
       };
-      
+
       const gt = new GT({
-        customMapping
+        customMapping,
       });
 
       const result = gt.resolveAliasLocale('en-US');
@@ -543,12 +543,12 @@ describe('GT Translation Methods', () => {
 
     it('should work with custom mapping parameter instead of instance mapping', () => {
       const gt = new GT();
-      
+
       const customMapping = {
         'special-locale': {
           code: 'ja-JP',
-          name: 'Japanese'
-        }
+          name: 'Japanese',
+        },
       };
 
       const result = gt.resolveAliasLocale('ja-JP', customMapping);
