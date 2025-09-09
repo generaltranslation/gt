@@ -1092,9 +1092,10 @@ export class GT {
    */
   determineLocale(
     locales: string | string[],
-    approvedLocales: string[] | undefined = this.locales || []
+    approvedLocales: string[] | undefined = this.locales || [],
+    customMapping: CustomMapping | undefined = this.customMapping
   ): string | undefined {
-    return _determineLocale(locales, approvedLocales);
+    return _determineLocale(locales, approvedLocales, customMapping);
   }
 
   /**
@@ -1491,9 +1492,10 @@ export function requiresTranslation(
  */
 export function determineLocale(
   locales: string | string[],
-  approvedLocales: string[] | undefined = []
+  approvedLocales: string[] | undefined = [],
+  customMapping: CustomMapping | undefined = undefined
 ): string | undefined {
-  return _determineLocale(locales, approvedLocales);
+  return _determineLocale(locales, approvedLocales, customMapping);
 }
 
 /**
