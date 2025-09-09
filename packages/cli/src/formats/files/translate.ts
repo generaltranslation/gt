@@ -65,7 +65,9 @@ export async function aggregateFiles(
       })
       .filter((file): file is FileToTranslate => {
         if (!file || typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(`Skipping ${file?.fileName ?? 'unknown'}: JSON file is empty`);
+          logWarning(
+            `Skipping ${file?.fileName ?? 'unknown'}: JSON file is empty`
+          );
           return false;
         }
         return true;
@@ -94,7 +96,9 @@ export async function aggregateFiles(
       })
       .filter((file): file is FileToTranslate => {
         if (!file || typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(`Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`);
+          logWarning(
+            `Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`
+          );
           return false;
         }
         return true;
@@ -128,8 +132,14 @@ export async function aggregateFiles(
           } as FileToTranslate | null;
         })
         .filter((file): file is FileToTranslate => {
-          if (!file || typeof file.content !== 'string' || !file.content.trim()) {
-            logWarning(`Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`);
+          if (
+            !file ||
+            typeof file.content !== 'string' ||
+            !file.content.trim()
+          ) {
+            logWarning(
+              `Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`
+            );
             return false;
           }
           return true;
