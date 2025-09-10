@@ -16,7 +16,7 @@ const IGNORE_PARENTS = [
 ];
 
 // & that is NOT already an entity: &word;  &#123;  &#x1A2B;
-const AMP_NOT_ENTITY = /&(?![a-zA-Z][a-zA-Z0-9]+;|#\d+;|#x[0-9A-Fa-f]+;)/g;
+const AMP_NOT_ENTITY = /&(?![a-zA-Z][a-zA-Z0-9]*;|#\d+;|#x[0-9A-Fa-f]+;)/g;
 
 /**
  * Escape HTML-sensitive characters (`&`, `<`, `>`, `"`, `'`) in text nodes,
