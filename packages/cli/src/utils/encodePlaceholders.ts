@@ -5,10 +5,6 @@ import { findAndReplace } from 'mdast-util-find-and-replace';
 const IGNORE_PARENTS = [
   'code',
   'inlineCode',
-  'html',
-  'jsx',
-  'mdxJsxFlowElement',
-  'mdxJsxTextElement',
   'mdxFlowExpression',
   'mdxTextExpression',
   'mdxjsEsm',
