@@ -232,12 +232,6 @@ function applyInlineIds(
       .use(remarkMdx)
       .use(encodeAnglePlaceholders)
       .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
         handlers: {
           // Custom handler to prevent escaping of {#id} syntax
           text(node: any) {
