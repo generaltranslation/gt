@@ -46,7 +46,9 @@ Another section here.
       { heading: 'Web editor workflow', id: 'web-editor-workflow' },
     ]);
 
-    expect(result.content).toContain('# Getting Started \\{#getting-started\\}');
+    expect(result.content).toContain(
+      '# Getting Started \\{#getting-started\\}'
+    );
     expect(result.content).toContain(
       '## Code-based workflow \\{#code-based-workflow\\}'
     );
@@ -89,7 +91,9 @@ No links here either.
       { heading: 'Another Section', id: 'another-section' },
     ]);
     expect(result.content).toContain('## No Links Here \\{#no-links-here\\}');
-    expect(result.content).toContain('## Another Section \\{#another-section\\}');
+    expect(result.content).toContain(
+      '## Another Section \\{#another-section\\}'
+    );
   });
 
   it('should handle JSX href attributes in raw JSX', () => {
@@ -255,7 +259,9 @@ Another section here.
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
 
-      expect(result.content).toContain('# Getting Started \\{#getting-started\\}');
+      expect(result.content).toContain(
+        '# Getting Started \\{#getting-started\\}'
+      );
       expect(result.content).toContain(
         '## Code-based workflow \\{#code-based-workflow\\}'
       );
@@ -279,7 +285,9 @@ Another section here.
       expect(result.addedIds).toHaveLength(3);
 
       // Should use inline \\{#id} format (same as standard mode)
-      expect(result.content).toContain('# Getting Started \\{#getting-started\\}');
+      expect(result.content).toContain(
+        '# Getting Started \\{#getting-started\\}'
+      );
       expect(result.content).toContain(
         '## Code-based workflow \\{#code-based-workflow\\}'
       );
