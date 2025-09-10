@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.19
+
+### Patch Changes
+
+- [#641](https://github.com/generaltranslation/gt/pull/641) [`4c67f77`](https://github.com/generaltranslation/gt/commit/4c67f775ee892b47eebcc3178c00ad6547a84d84) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Encoding placeholders that break MDX parse
+
 ## 2.1.18
 
 ### Patch Changes
