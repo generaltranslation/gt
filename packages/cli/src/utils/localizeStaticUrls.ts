@@ -536,12 +536,6 @@ function transformMdxUrls(
       .use(remarkMdx)
       .use(encodeAnglePlaceholders)
       .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
         handlers: {
           // Handler to prevent escaping (avoids '&lt;' -> '\&lt;')
           text(node: any) {
