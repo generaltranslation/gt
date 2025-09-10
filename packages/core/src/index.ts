@@ -81,6 +81,12 @@ import {
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
+import _uploadFiles from './translate/uploadFiles';
+import {
+  FileUpload,
+  RequiredUploadFilesOptions,
+  UploadFilesOptions,
+} from './types-dir/uploadFiles';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -762,6 +768,36 @@ export class GT {
     return await _translateMany(
       sources,
       globalMetadata,
+      this._getTranslationConfig()
+    );
+  }
+
+  async uploadFiles(
+    files: {
+      source: FileUpload;
+      translations: FileUpload[];
+    }[],
+    options: UploadFilesOptions
+  ): Promise<any> {
+    // Validation
+    this._validateAuth('uploadFiles');
+
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('uploadFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    return await _uploadFiles(
+      files,
+      mergedOptions,
       this._getTranslationConfig()
     );
   }
