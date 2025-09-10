@@ -305,6 +305,31 @@ describe('escapeHtmlInTextNodes', () => {
       expect(result).toContain('&lt;text&gt; &amp; &quot;quotes&quot;'); // Regular text escaped
       expect(result).toContain('`code <variable> & "value"`'); // Code span not escaped
     });
+
+    it('should not escape in headings', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [
+          {
+            type: 'heading',
+            depth: 1,
+            children: [createTextNode('Heading with <variable> & "quotes"')],
+          },
+          {
+            type: 'heading', 
+            depth: 2,
+            children: [createTextNode('Subheading <test> & more')],
+          },
+        ],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('# Heading with <variable> & "quotes"');
+      expect(result).toContain('## Subheading <test> & more');
+      expect(result).not.toContain('&lt;variable&gt;');
+      expect(result).not.toContain('&lt;test&gt;');
+      expect(result).not.toContain('&amp;');
+      expect(result).not.toContain('&quot;');
+    });
   });
 
   describe('edge cases', () => {
@@ -367,7 +392,9 @@ describe('escapeHtmlInTextNodes', () => {
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('&lt;placeholder&gt; &amp; &quot;quotes&quot;');
+      // Headings are now in IGNORE_PARENTS, so HTML characters are not escaped in headings
+      expect(result).toContain('# Heading with <placeholder> & "quotes"');
+      // But they should be escaped in other text nodes
       expect(result).toContain('&lt;text&gt; &amp; more');
       expect(result).toContain('&lt;content&gt; &amp; &quot;test&quot;');
     });
