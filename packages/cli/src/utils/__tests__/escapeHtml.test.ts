@@ -316,7 +316,7 @@ describe('escapeHtmlInTextNodes', () => {
             children: [createTextNode('Heading with <variable> & "quotes"')],
           },
           {
-            type: 'heading', 
+            type: 'heading',
             depth: 2,
             children: [createTextNode('Subheading <test> & more')],
           },
