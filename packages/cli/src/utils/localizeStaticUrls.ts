@@ -10,6 +10,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
+import { encodeAnglePlaceholders } from './encodePlaceholders.js';
 
 const { isMatch } = micromatch;
 
@@ -531,6 +532,9 @@ function transformMdxUrls(
   let content: string;
   try {
     const stringifyProcessor = unified()
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx)
+      .use(encodeAnglePlaceholders)
       .use(remarkStringify, {
         bullet: '-',
         emphasis: '_',
@@ -538,11 +542,16 @@ function transformMdxUrls(
         rule: '-',
         ruleRepetition: 3,
         ruleSpaces: false,
-      })
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
+        handlers: {
+          // Handler to prevent escaping (avoids '&lt;' -> '\&lt;')
+          text(node: any) {
+            return node.value;
+          },
+        },
+      });
 
-    content = stringifyProcessor.stringify(processedAst);
+    const outTree = stringifyProcessor.runSync(processedAst);
+    content = stringifyProcessor.stringify(outTree);
   } catch (error) {
     console.warn(
       `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`

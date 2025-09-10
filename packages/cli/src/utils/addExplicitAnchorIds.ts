@@ -6,6 +6,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logWarning } from '../console/logging.js';
+import { encodeAnglePlaceholders } from './encodePlaceholders.js';
 
 /**
  * Generates a slug from heading text
@@ -227,6 +228,9 @@ function applyInlineIds(
   // Convert the modified AST back to MDX string
   try {
     const stringifyProcessor = unified()
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx)
+      .use(encodeAnglePlaceholders)
       .use(remarkStringify, {
         bullet: '-',
         emphasis: '_',
@@ -240,11 +244,10 @@ function applyInlineIds(
             return node.value;
           },
         },
-      })
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
+      });
 
-    let content = stringifyProcessor.stringify(processedAst);
+    const outTree = stringifyProcessor.runSync(processedAst);
+    let content = stringifyProcessor.stringify(outTree);
 
     // Handle newline formatting to match original input
     if (content.endsWith('\n') && !translatedContent.endsWith('\n')) {
