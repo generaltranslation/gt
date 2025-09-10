@@ -61,7 +61,9 @@ describe('escapeHtmlInTextNodes', () => {
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('Tom &amp; Jerry are friends &amp; they love cookies');
+      expect(result).toContain(
+        'Tom &amp; Jerry are friends &amp; they love cookies'
+      );
     });
 
     it('should not escape HTML entities', () => {
@@ -69,7 +71,9 @@ describe('escapeHtmlInTextNodes', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Use &amp; &lt; &gt; &quot; &#39; &copy; &#123; &#x1A2B; entities'),
+            createTextNode(
+              'Use &amp; &lt; &gt; &quot; &#39; &copy; &#123; &#x1A2B; entities'
+            ),
           ]),
         ],
       };
@@ -130,9 +134,7 @@ describe('escapeHtmlInTextNodes', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('Text with <<nested>> brackets'),
-          ]),
+          createParagraph([createTextNode('Text with <<nested>> brackets')]),
         ],
       };
       const result = processAst(tree);
@@ -158,9 +160,7 @@ describe('escapeHtmlInTextNodes', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode("It's a beautiful day, isn't it?"),
-          ]),
+          createParagraph([createTextNode("It's a beautiful day, isn't it?")]),
         ],
       };
       const result = processAst(tree);
@@ -177,7 +177,9 @@ describe('escapeHtmlInTextNodes', () => {
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('Mix &quot;double&quot; and &#39;single&#39; quotes together');
+      expect(result).toContain(
+        'Mix &quot;double&quot; and &#39;single&#39; quotes together'
+      );
     });
   });
 
@@ -187,12 +189,16 @@ describe('escapeHtmlInTextNodes', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Test all: & < > " \' together in <tag attr="value">'),
+            createTextNode(
+              'Test all: & < > " \' together in <tag attr="value">'
+            ),
           ]),
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('Test all: &amp; &lt; &gt; &quot; &#39; together in &lt;tag attr=&quot;value&quot;&gt;');
+      expect(result).toContain(
+        'Test all: &amp; &lt; &gt; &quot; &#39; together in &lt;tag attr=&quot;value&quot;&gt;'
+      );
     });
 
     it('should handle complex HTML-like strings', () => {
@@ -200,12 +206,16 @@ describe('escapeHtmlInTextNodes', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('<div class="container" data-value=\'test & more\'>Content</div>'),
+            createTextNode(
+              '<div class="container" data-value=\'test & more\'>Content</div>'
+            ),
           ]),
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('&lt;div class=&quot;container&quot; data-value=&#39;test &amp; more&#39;&gt;Content&lt;/div&gt;');
+      expect(result).toContain(
+        '&lt;div class=&quot;container&quot; data-value=&#39;test &amp; more&#39;&gt;Content&lt;/div&gt;'
+      );
     });
   });
 
@@ -215,12 +225,16 @@ describe('escapeHtmlInTextNodes', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Already &amp; escaped &lt;content&gt; with &quot;quotes&quot;'),
+            createTextNode(
+              'Already &amp; escaped &lt;content&gt; with &quot;quotes&quot;'
+            ),
           ]),
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('Already &amp; escaped &lt;content&gt; with &quot;quotes&quot;');
+      expect(result).toContain(
+        'Already &amp; escaped &lt;content&gt; with &quot;quotes&quot;'
+      );
       expect(result).not.toContain('&amp;amp;');
       expect(result).not.toContain('&amp;lt;');
       expect(result).not.toContain('&amp;quot;');
@@ -231,12 +245,16 @@ describe('escapeHtmlInTextNodes', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Mixed &amp; unescaped & content with <tags> and "quotes"'),
+            createTextNode(
+              'Mixed &amp; unescaped & content with <tags> and "quotes"'
+            ),
           ]),
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('Mixed &amp; unescaped &amp; content with &lt;tags&gt; and &quot;quotes&quot;');
+      expect(result).toContain(
+        'Mixed &amp; unescaped &amp; content with &lt;tags&gt; and &quot;quotes&quot;'
+      );
     });
   });
 
@@ -262,9 +280,7 @@ describe('escapeHtmlInTextNodes', () => {
     it('should not escape in code blocks', () => {
       const tree: Root = {
         type: 'root',
-        children: [
-          createCode('const value = <placeholder> & "test";'),
-        ],
+        children: [createCode('const value = <placeholder> & "test";')],
       };
       const result = processAst(tree);
       expect(result).toContain('<placeholder>');
@@ -311,17 +327,15 @@ describe('escapeHtmlInTextNodes', () => {
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('Just regular text without any HTML characters.');
+      expect(result).toContain(
+        'Just regular text without any HTML characters.'
+      );
     });
 
     it('should handle text with only whitespace and HTML characters', () => {
       const tree: Root = {
         type: 'root',
-        children: [
-          createParagraph([
-            createTextNode('   < > & " \'   '),
-          ]),
-        ],
+        children: [createParagraph([createTextNode('   < > & " \'   ')])],
       };
       const result = processAst(tree);
       expect(result).toContain('   &lt; &gt; &amp; &quot; &#39;   ');
@@ -369,13 +383,17 @@ describe('escapeHtmlInTextNodes', () => {
               {
                 type: 'listItem',
                 children: [
-                  createParagraph([createTextNode('Item with <placeholder1> & "quotes"')]),
+                  createParagraph([
+                    createTextNode('Item with <placeholder1> & "quotes"'),
+                  ]),
                 ],
               },
               {
                 type: 'listItem',
                 children: [
-                  createParagraph([createTextNode('Another <placeholder2> & more')]),
+                  createParagraph([
+                    createTextNode('Another <placeholder2> & more'),
+                  ]),
                 ],
               },
             ],
@@ -395,7 +413,9 @@ describe('escapeHtmlInTextNodes', () => {
             type: 'blockquote',
             children: [
               createParagraph([
-                createTextNode('Quote with <placeholder> & "special" characters.'),
+                createTextNode(
+                  'Quote with <placeholder> & "special" characters.'
+                ),
               ]),
             ],
           },
