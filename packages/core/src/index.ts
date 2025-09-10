@@ -325,9 +325,17 @@ export class GT {
     this._validateAuth('enqueueTranslationEntries');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueEntriesOptions = {
+    let mergedOptions: EnqueueEntriesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales?.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
     };
 
     // Request the translation entry updates
@@ -374,7 +382,7 @@ export class GT {
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueFilesOptions = {
+    let mergedOptions: EnqueueFilesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
     };
@@ -385,6 +393,14 @@ export class GT {
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
+    };
 
     // Request the file updates
     return await _enqueueFiles(
@@ -422,6 +438,12 @@ export class GT {
   ): Promise<CheckFileTranslationsResult> {
     // Validation
     this._validateAuth('checkFileTranslations');
+
+    // Replace target locales with canonical locales
+    data = data.map((item) => ({
+      ...item,
+      locale: this.resolveCanonicalLocale(item.locale),
+    }));
 
     // Request the file translation status
     return await _checkFileTranslations(
@@ -619,6 +641,9 @@ export class GT {
       throw new Error(error);
     }
 
+    // Replace target locale with canonical locale
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
+
     // Request the translation
     return await _translate(
       source,
@@ -698,13 +723,19 @@ export class GT {
     }
 
     if (typeof this.customMapping?.[targetLocale] === 'object') {
-      const { regionCode, scriptCode } = this.customMapping[targetLocale];
+      const { regionCode, scriptCode } = this.customMapping[targetLocale] as {
+        regionCode: string;
+        scriptCode: string;
+      };
       metadata = {
         ...(regionCode && { regionCode }),
         ...(scriptCode && { scriptCode }),
         ...metadata,
       };
     }
+
+    // Replace target locale with canonical locale
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
 
     // Request the translation
     return await _translate(
@@ -763,6 +794,20 @@ export class GT {
         ...globalMetadata,
       };
     }
+
+    // Replace target locale with canonical locale
+    globalMetadata = {
+      ...globalMetadata,
+      ...(globalMetadata.targetLocale && {
+        targetLocale: this.resolveCanonicalLocale(globalMetadata.targetLocale),
+      }),
+    };
+    sources = sources.map((source) => ({
+      ...source,
+      ...(source.targetLocale && {
+        targetLocale: this.resolveCanonicalLocale(source.targetLocale),
+      }),
+    }));
 
     // Request the translation
     return await _translateMany(
@@ -1121,13 +1166,19 @@ export class GT {
   requiresTranslation(
     sourceLocale = this.sourceLocale,
     targetLocale = this.targetLocale,
-    approvedLocales: string[] | undefined = this.locales
+    approvedLocales: string[] | undefined = this.locales,
+    customMapping: CustomMapping | undefined = this.customMapping
   ): boolean {
     if (!sourceLocale)
       throw new Error(noSourceLocaleProvidedError('requiresTranslation'));
     if (!targetLocale)
       throw new Error(noTargetLocaleProvidedError('requiresTranslation'));
-    return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+    return _requiresTranslation(
+      sourceLocale,
+      targetLocale,
+      approvedLocales,
+      customMapping
+    );
   }
 
   /**
@@ -1565,9 +1616,15 @@ export function getRegionProperties(
 export function requiresTranslation(
   sourceLocale: string,
   targetLocale: string,
-  approvedLocales?: string[]
+  approvedLocales?: string[],
+  customMapping?: CustomMapping
 ): boolean {
-  return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+  return _requiresTranslation(
+    sourceLocale,
+    targetLocale,
+    approvedLocales,
+    customMapping
+  );
 }
 
 /**

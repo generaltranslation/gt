@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { isValidLocale } from 'generaltranslation';
 import path from 'node:path';
+import { gt } from '../../utils/gt.js';
 
 /**
  * Extracts projectId, defaultLocale, and locales from a next.config.js file.
@@ -50,7 +50,7 @@ export async function parseNextConfig(filePath: string): Promise<{
 
   // Ensure approvedLocales is an array of strings
   const validLocales =
-    locales && locales.every((locale) => isValidLocale(locale))
+    locales && locales.every((locale) => gt.isValidLocale(locale))
       ? locales
       : undefined;
 

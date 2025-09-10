@@ -45,7 +45,8 @@ export function useLocaleState({
     const translationRequired = requiresTranslation(
       defaultLocale,
       locale,
-      locales
+      locales,
+      customMapping
     );
 
     // User locale is not default locale but is a dialect of the same language

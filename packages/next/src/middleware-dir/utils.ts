@@ -34,7 +34,6 @@ export function getResponse({
   localeHeaderName,
 }: ResponseConfig): NextResponse<unknown> {
   // Get Response
-  console.log(`[GT-NEXT MIDDLEWARE]: response ${type} ${responsePath}`);
   let response;
   if (type === 'next') {
     response = NextResponse.next({

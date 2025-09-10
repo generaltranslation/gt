@@ -1,3 +1,4 @@
+import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
 export type { Updates } from 'generaltranslation/types';
@@ -155,6 +156,7 @@ export type Settings = {
   projectId?: string;
   defaultLocale: string;
   locales: string[];
+  customMapping?: CustomMapping;
   files:
     | {
         resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale

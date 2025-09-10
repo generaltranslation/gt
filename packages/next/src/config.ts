@@ -480,14 +480,6 @@ export function withGTConfig(
         standardizedCanonicalLocalesWarning(updatedCanonicalLocales)
       );
     }
-
-    // Warn about unsupported locales
-    const warningLocales = (
-      mergedConfig.locales || defaultWithGTConfigProps.locales
-    ).filter((locale) => !getSupportedLocale(locale));
-    if (warningLocales.length) {
-      console.warn(createUnsupportedLocalesWarning(warningLocales));
-    }
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
