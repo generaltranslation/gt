@@ -50,7 +50,7 @@ describe('_resolveAliasLocale', () => {
         name: 'German Alias',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('alias-en');
     expect(_resolveAliasLocale('fr-FR', customMapping)).toBe('alias-fr');
     expect(_resolveAliasLocale('de-DE', customMapping)).toBe('alias-de');
@@ -65,9 +65,11 @@ describe('_resolveAliasLocale', () => {
         name: 'Aliased American English',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('alias-locale');
-    expect(_resolveAliasLocale('string-only', customMapping)).toBe('string-only');
+    expect(_resolveAliasLocale('string-only', customMapping)).toBe(
+      'string-only'
+    );
   });
 
   it('should ignore custom mapping entries without code property', () => {
@@ -80,7 +82,7 @@ describe('_resolveAliasLocale', () => {
         name: 'With Code Property',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('with-code');
     expect(_resolveAliasLocale('no-code', customMapping)).toBe('no-code');
   });
@@ -94,10 +96,12 @@ describe('_resolveAliasLocale', () => {
         name: 'Valid Alias',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('valid-alias');
     expect(_resolveAliasLocale('null-value', customMapping)).toBe('null-value');
-    expect(_resolveAliasLocale('undefined-value', customMapping)).toBe('undefined-value');
+    expect(_resolveAliasLocale('undefined-value', customMapping)).toBe(
+      'undefined-value'
+    );
   });
 
   it('should handle empty code property', () => {
@@ -111,7 +115,7 @@ describe('_resolveAliasLocale', () => {
         name: 'Valid Alias',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('valid-alias');
     expect(_resolveAliasLocale('', customMapping)).toBe('empty-code');
     expect(_resolveAliasLocale('empty-code', customMapping)).toBe('empty-code');
@@ -128,7 +132,7 @@ describe('_resolveAliasLocale', () => {
         name: 'Second Alias',
       },
     };
-    
+
     const result = _resolveAliasLocale('en-US', customMapping);
     expect(['alias-one', 'alias-two']).toContain(result);
     expect(result).not.toBe('en-US');
@@ -141,7 +145,7 @@ describe('_resolveAliasLocale', () => {
         name: 'Case Sensitive Alias',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('alias-locale');
     expect(_resolveAliasLocale('en-us', customMapping)).toBe('en-us');
     expect(_resolveAliasLocale('EN-US', customMapping)).toBe('EN-US');
@@ -166,13 +170,15 @@ describe('_resolveAliasLocale', () => {
       },
       'string-entry': 'String Only',
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('custom-english');
     expect(_resolveAliasLocale('fr-FR', customMapping)).toBe('brand-french');
     expect(_resolveAliasLocale('de-DE', customMapping)).toBe('legacy-german');
     expect(_resolveAliasLocale('es-ES', customMapping)).toBe('es-ES');
     expect(_resolveAliasLocale('no-mapping', customMapping)).toBe('no-mapping');
-    expect(_resolveAliasLocale('string-entry', customMapping)).toBe('string-entry');
+    expect(_resolveAliasLocale('string-entry', customMapping)).toBe(
+      'string-entry'
+    );
   });
 
   it('should handle edge case with mixed data types in custom mapping', () => {
@@ -186,9 +192,11 @@ describe('_resolveAliasLocale', () => {
         name: 'Valid Entry',
       },
     };
-    
+
     expect(_resolveAliasLocale('en-US', customMapping)).toBe('valid-entry');
-    expect(_resolveAliasLocale('mixed-entry', customMapping)).toBe('mixed-entry');
+    expect(_resolveAliasLocale('mixed-entry', customMapping)).toBe(
+      'mixed-entry'
+    );
   });
 
   it('should return original locale for non-existent locale codes', () => {
@@ -198,8 +206,12 @@ describe('_resolveAliasLocale', () => {
         name: 'Existing Alias',
       },
     };
-    
-    expect(_resolveAliasLocale('nonexistent-locale', customMapping)).toBe('nonexistent-locale');
-    expect(_resolveAliasLocale('invalid-code', customMapping)).toBe('invalid-code');
+
+    expect(_resolveAliasLocale('nonexistent-locale', customMapping)).toBe(
+      'nonexistent-locale'
+    );
+    expect(_resolveAliasLocale('invalid-code', customMapping)).toBe(
+      'invalid-code'
+    );
   });
 });
