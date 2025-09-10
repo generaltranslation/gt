@@ -213,12 +213,12 @@ function applyInlineIds(
       // Add the ID to the heading
       const lastChild = heading.children[heading.children.length - 1];
       if (lastChild?.type === 'text') {
-        lastChild.value += ` {#${id}}`;
+        lastChild.value += ` \\{#${id}\\}`;
       } else {
         // If last child is not text, add a new text node
         heading.children.push({
           type: 'text',
-          value: ` {#${id}}`,
+          value: ` \\{#${id}\\}`,
         });
       }
     }
