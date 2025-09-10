@@ -6,7 +6,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logWarning } from '../console/logging.js';
-import { encodeAnglePlaceholders } from './encodePlaceholders.js';
+import { escapeHtmlInTextNodes } from './escapeHtml.js';
 
 /**
  * Generates a slug from heading text
@@ -230,7 +230,7 @@ function applyInlineIds(
     const stringifyProcessor = unified()
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx)
-      .use(encodeAnglePlaceholders)
+      .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
         handlers: {
           // Custom handler to prevent escaping of {#id} syntax
