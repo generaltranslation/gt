@@ -7,47 +7,46 @@ import type { Root, Text, Paragraph, Code, InlineCode } from 'mdast';
 describe('encodeAnglePlaceholders', () => {
   const createTextNode = (value: string): Text => ({
     type: 'text',
-    value
+    value,
   });
 
   const createParagraph = (children: Array<Text | InlineCode>): Paragraph => ({
     type: 'paragraph',
-    children
+    children,
   });
 
   const createInlineCode = (value: string): InlineCode => ({
     type: 'inlineCode',
-    value
+    value,
   });
 
   const createCode = (value: string, lang?: string): Code => ({
     type: 'code',
     value,
-    lang: lang || null
+    lang: lang || null,
   });
 
   const processAst = (tree: Root) => {
     // Apply the plugin to transform the tree
     const pluginProcessor = unified().use(encodeAnglePlaceholders);
     const transformedTree = pluginProcessor.runSync(tree);
-    
+
     // Then stringify
-    const stringifyProcessor = unified()
-      .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
-        handlers: {
-          // Custom handler to prevent escaping (matches production usage)
-          text(node: any) {
-            return node.value;
-          },
+    const stringifyProcessor = unified().use(remarkStringify, {
+      bullet: '-',
+      emphasis: '_',
+      strong: '*',
+      rule: '-',
+      ruleRepetition: 3,
+      ruleSpaces: false,
+      handlers: {
+        // Custom handler to prevent escaping (matches production usage)
+        text(node: any) {
+          return node.value;
         },
-      });
-    
+      },
+    });
+
     return stringifyProcessor.stringify(transformedTree);
   };
 
@@ -57,9 +56,9 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Hello <name>, welcome to <service>!')
-          ])
-        ]
+            createTextNode('Hello <name>, welcome to <service>!'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;name&gt;');
@@ -71,9 +70,9 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('User <user123> has <count2> items.')
-          ])
-        ]
+            createTextNode('User <user123> has <count2> items.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;user123&gt;');
@@ -84,10 +83,8 @@ describe('encodeAnglePlaceholders', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('Your <account-name> is ready.')
-          ])
-        ]
+          createParagraph([createTextNode('Your <account-name> is ready.')]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;account-name&gt;');
@@ -97,10 +94,8 @@ describe('encodeAnglePlaceholders', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('File <config.json> not found.')
-          ])
-        ]
+          createParagraph([createTextNode('File <config.json> not found.')]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;config.json&gt;');
@@ -111,9 +106,9 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Variable <user_name> is required.')
-          ])
-        ]
+            createTextNode('Variable <user_name> is required.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;user_name&gt;');
@@ -124,9 +119,9 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Replace <old> with <new> in <file>.')
-          ])
-        ]
+            createTextNode('Replace <old> with <new> in <file>.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;old&gt;');
@@ -140,10 +135,8 @@ describe('encodeAnglePlaceholders', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('Hello &lt;name&gt;, welcome!')
-          ])
-        ]
+          createParagraph([createTextNode('Hello &lt;name&gt;, welcome!')]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;name&gt;');
@@ -155,9 +148,9 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Hello &lt;encodedName&gt; and <unencodedName>!')
-          ])
-        ]
+            createTextNode('Hello &lt;encodedName&gt; and <unencodedName>!'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;encodedName&gt;');
@@ -174,9 +167,9 @@ describe('encodeAnglePlaceholders', () => {
           createParagraph([
             createTextNode('Use '),
             createInlineCode('<variable>'),
-            createTextNode(' in your code.')
-          ])
-        ]
+            createTextNode(' in your code.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('`<variable>`');
@@ -186,9 +179,7 @@ describe('encodeAnglePlaceholders', () => {
     it('should not encode in code blocks', () => {
       const tree: Root = {
         type: 'root',
-        children: [
-          createCode('const value = <placeholder>;')
-        ]
+        children: [createCode('const value = <placeholder>;')],
       };
       const result = processAst(tree);
       expect(result).toContain('<placeholder>');
@@ -202,9 +193,9 @@ describe('encodeAnglePlaceholders', () => {
           createParagraph([
             createTextNode('Regular <text> and '),
             createInlineCode('code <variable>'),
-            createTextNode(' here.')
-          ])
-        ]
+            createTextNode(' here.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;text&gt;'); // Regular text encoded
@@ -218,9 +209,11 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Invalid <> and < incomplete and <123invalid> formats.')
-          ])
-        ]
+            createTextNode(
+              'Invalid <> and < incomplete and <123invalid> formats.'
+            ),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('<>'); // Empty brackets unchanged
@@ -232,16 +225,10 @@ describe('encodeAnglePlaceholders', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('<startLine>')
-          ]),
-          createParagraph([
-            createTextNode('middle content')
-          ]),
-          createParagraph([
-            createTextNode('<endLine>')
-          ])
-        ]
+          createParagraph([createTextNode('<startLine>')]),
+          createParagraph([createTextNode('middle content')]),
+          createParagraph([createTextNode('<endLine>')]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;startLine&gt;');
@@ -251,7 +238,7 @@ describe('encodeAnglePlaceholders', () => {
     it('should handle empty input', () => {
       const tree: Root = {
         type: 'root',
-        children: []
+        children: [],
       };
       const result = processAst(tree);
       expect(result.trim()).toBe('');
@@ -262,9 +249,9 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Just regular text without any angle brackets.')
-          ])
-        ]
+            createTextNode('Just regular text without any angle brackets.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('Just regular text without any angle brackets.');
@@ -275,9 +262,11 @@ describe('encodeAnglePlaceholders', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('Complex <variable-name.with_all123.valid-chars> here.')
-          ])
-        ]
+            createTextNode(
+              'Complex <variable-name.with_all123.valid-chars> here.'
+            ),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;variable-name.with_all123.valid-chars&gt;');
@@ -292,27 +281,21 @@ describe('encodeAnglePlaceholders', () => {
           {
             type: 'heading',
             depth: 1,
-            children: [
-              createTextNode('Heading with <placeholder>')
-            ]
+            children: [createTextNode('Heading with <placeholder>')],
           },
           createParagraph([
             {
               type: 'strong',
-              children: [
-                createTextNode('Bold <text>')
-              ]
+              children: [createTextNode('Bold <text>')],
             },
             createTextNode(' and '),
             {
               type: 'emphasis',
-              children: [
-                createTextNode('italic <content>')
-              ]
+              children: [createTextNode('italic <content>')],
             },
-            createTextNode('.')
-          ])
-        ]
+            createTextNode('.'),
+          ]),
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;placeholder&gt;');
@@ -331,22 +314,18 @@ describe('encodeAnglePlaceholders', () => {
               {
                 type: 'listItem',
                 children: [
-                  createParagraph([
-                    createTextNode('Item with <placeholder1>')
-                  ])
-                ]
+                  createParagraph([createTextNode('Item with <placeholder1>')]),
+                ],
               },
               {
                 type: 'listItem',
                 children: [
-                  createParagraph([
-                    createTextNode('Another <placeholder2>')
-                  ])
-                ]
-              }
-            ]
-          }
-        ]
+                  createParagraph([createTextNode('Another <placeholder2>')]),
+                ],
+              },
+            ],
+          },
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;placeholder1&gt;');
@@ -361,11 +340,11 @@ describe('encodeAnglePlaceholders', () => {
             type: 'blockquote',
             children: [
               createParagraph([
-                createTextNode('Quote with <placeholder> text.')
-              ])
-            ]
-          }
-        ]
+                createTextNode('Quote with <placeholder> text.'),
+              ]),
+            ],
+          },
+        ],
       };
       const result = processAst(tree);
       expect(result).toContain('&lt;placeholder&gt;');
