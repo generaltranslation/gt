@@ -343,7 +343,7 @@ Another section here.
         '## `Code Heading` example {#code-heading-example}'
       );
       expect(result.content).toContain(
-        '## _Italic_ and **mixed** formatting {#italic-and-mixed-formatting}'
+        '## *Italic* and **mixed** formatting {#italic-and-mixed-formatting}'
       );
     });
 
