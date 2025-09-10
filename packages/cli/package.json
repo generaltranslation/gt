@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.2.0-alpha.0",
+  "version": "2.1.18",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -87,7 +87,7 @@
     "esbuild": "^0.25.4",
     "fast-glob": "^3.3.3",
     "form-data": "^4.0.4",
-    "generaltranslation": "^7.5.0-alpha.0",
+    "generaltranslation": "^7.4.2",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
