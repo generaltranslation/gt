@@ -58,7 +58,7 @@ Another section here.
   });
 
   it('should skip headings that already have explicit IDs', () => {
-    const input = `## Already has ID \\{#custom-id}
+    const input = `## Already has ID {#custom-id}
 
 <Card href="#custom-id">Link to section</Card>
 `;
