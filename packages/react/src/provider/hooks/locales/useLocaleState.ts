@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import { useDetermineLocale } from './useDetermineLocale';
-import { requiresTranslation, isSameLanguage, GT } from 'generaltranslation';
+import {
+  requiresTranslation,
+  isSameLanguage,
+  isValidLocale,
+} from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
+import {
+  invalidCanonicalLocalesError,
+  invalidLocalesError,
+} from '../../../errors/createErrors';
 
 export function useLocaleState({
   _locale,
@@ -16,7 +24,7 @@ export function useLocaleState({
   locales: string[];
   ssr: boolean;
   localeCookieName: string;
-  customMapping: CustomMapping;
+  customMapping?: CustomMapping;
 }) {
   // Locale standardization
   const locales = useMemo(() => {
@@ -43,6 +51,32 @@ export function useLocaleState({
     // User locale is not default locale but is a dialect of the same language
     const dialectTranslationRequired =
       translationRequired && isSameLanguage(defaultLocale, locale);
+
+    // Check: invalid locale
+    if (!customMapping) {
+      const invalidLocales: string[] = [];
+      locales.forEach((locale) => {
+        if (!isValidLocale(locale)) {
+          invalidLocales.push(locale);
+        }
+      });
+      if (invalidLocales.length) {
+        throw new Error(invalidLocalesError(invalidLocales));
+      }
+    }
+
+    // Check: invalid canonical locale
+    if (customMapping) {
+      const invalidCanonicalLocales: string[] = [];
+      locales.forEach((locale) => {
+        if (!isValidLocale(locale, customMapping)) {
+          invalidCanonicalLocales.push(locale);
+        }
+      });
+      if (invalidCanonicalLocales.length) {
+        throw new Error(invalidCanonicalLocalesError(invalidCanonicalLocales));
+      }
+    }
 
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
