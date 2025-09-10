@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.18
+
+### Patch Changes
+
+- [#637](https://github.com/generaltranslation/gt/pull/637) [`9c40a3c`](https://github.com/generaltranslation/gt/commit/9c40a3c729bf690381959679078c11c9c29bcdf2) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skipping over empty files when sending for translation
+
 ## 2.1.17
 
 ### Patch Changes
