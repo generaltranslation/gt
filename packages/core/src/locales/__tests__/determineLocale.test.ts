@@ -108,6 +108,7 @@ describe('_determineLocale', () => {
   it('should work with custom mapping for locales', () => {
     const customMapping: CustomMapping = {
       'custom-locale': {
+        code: 'fr-FR',
         name: 'Custom Language',
       },
       'alias-locale': {
@@ -160,6 +161,7 @@ describe('_determineLocale', () => {
   it('should handle mixed standard and custom locales', () => {
     const customMapping: CustomMapping = {
       'custom-en': {
+        code: 'en-US',
         name: 'Custom English',
       },
     };
@@ -171,7 +173,7 @@ describe('_determineLocale', () => {
     const result = _determineLocale(locales, approvedLocales, customMapping);
     expect(result).toBeDefined();
     expect(typeof result).toBe('string');
-    expect(result.toLowerCase()).toContain('custom');
+    expect(result?.toLowerCase()).toContain('custom');
   });
 
   it('should standardize locale codes during processing', () => {

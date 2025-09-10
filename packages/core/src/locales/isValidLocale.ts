@@ -21,7 +21,14 @@ export const _isValidLocale = (
   customMapping?: CustomMapping
 ): boolean => {
   // If in custom mapping, return true
-  if (customMapping?.[locale]) return true;
+  if (
+    customMapping?.[locale] &&
+    typeof customMapping[locale] === 'object' &&
+    'code' in (customMapping[locale] as Object) &&
+    (customMapping[locale] as { code: string }).code
+  ) {
+    locale = (customMapping[locale] as { code: string }).code;
+  }
 
   try {
     const { language, region, script } = intlCache.get('Locale', locale);

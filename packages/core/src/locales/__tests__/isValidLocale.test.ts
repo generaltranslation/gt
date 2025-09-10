@@ -118,6 +118,7 @@ describe('_isValidLocale', () => {
       },
       'made-up-code': 'Made Up Language',
       'xyz-123': {
+        code: 'fr-FR',
         name: 'XYZ Language',
         emoji: '🎯',
       },
@@ -128,11 +129,11 @@ describe('_isValidLocale', () => {
     };
 
     // These would normally be invalid, but should return true due to custom mapping
-    expect(_isValidLocale('custom-invalid-locale', customMapping)).toBe(true);
-    expect(_isValidLocale('made-up-code', customMapping)).toBe(true);
+    expect(_isValidLocale('custom-invalid-locale', customMapping)).toBe(false);
+    expect(_isValidLocale('made-up-code', customMapping)).toBe(false);
     expect(_isValidLocale('xyz-123', customMapping)).toBe(true);
     expect(_isValidLocale('completely-fake-locale-code', customMapping)).toBe(
-      true
+      false
     );
 
     // Valid locales should still work
@@ -170,7 +171,7 @@ describe('_isValidLocale', () => {
     };
 
     // String mappings don't have canonical locale support
-    expect(_isValidLocale('alias-locale', customMapping)).toBe(true);
+    expect(_isValidLocale('alias-locale', customMapping)).toBe(false);
   });
 
   it('should not use canonical locale when code property is empty or falsy', () => {
@@ -185,8 +186,8 @@ describe('_isValidLocale', () => {
     };
 
     // Both should still be valid due to being in custom mapping
-    expect(_isValidLocale('alias-locale', customMapping)).toBe(true);
-    expect(_isValidLocale('another-alias', customMapping)).toBe(true);
+    expect(_isValidLocale('alias-locale', customMapping)).toBe(false);
+    expect(_isValidLocale('another-alias', customMapping)).toBe(false);
   });
 
   it('should handle custom mapping with different property types', () => {
@@ -203,8 +204,8 @@ describe('_isValidLocale', () => {
     };
 
     // All should be valid due to being in custom mapping
-    expect(_isValidLocale('string-type', customMapping)).toBe(true);
-    expect(_isValidLocale('object-type', customMapping)).toBe(true);
+    expect(_isValidLocale('string-type', customMapping)).toBe(false);
+    expect(_isValidLocale('object-type', customMapping)).toBe(false);
     expect(_isValidLocale('object-with-code', customMapping)).toBe(true);
   });
 
@@ -236,6 +237,7 @@ describe('_isValidLocale', () => {
         emoji: '🎯',
       },
       'custom-locale': {
+        code: 'fr-FR',
         name: 'Custom Locale',
       },
     };

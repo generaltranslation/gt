@@ -60,6 +60,5 @@ export default async function _uploadFiles(
 
   // Parse response
   const responseData = await response.json();
-  console.log(JSON.stringify(responseData, null, 2));
   return responseData as any;
 }

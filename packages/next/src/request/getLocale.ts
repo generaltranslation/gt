@@ -28,12 +28,12 @@ export async function getLocale(): Promise<string> {
       const locale = gt.resolveAliasLocale(await customGetLocale());
       getLocaleFunction = async () => {
         const preferredLocale = await customGetLocale();
-        const result = await getNextLocale(
+        const nextLocale = await getNextLocale(
           I18NConfig.getDefaultLocale(),
           I18NConfig.getLocales(),
           preferredLocale
         );
-        return gt.resolveAliasLocale(result);
+        return gt.resolveAliasLocale(nextLocale);
       };
       return locale;
     } catch {

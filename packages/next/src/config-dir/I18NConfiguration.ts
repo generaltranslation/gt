@@ -229,7 +229,6 @@ export default class I18NConfiguration {
     this._queue = [];
     this._activeRequests = 0;
     this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
-    console.log('gt-next: starting batching1');
     this._startBatching();
     // Headers and cookies
     this.localeHeaderName =
@@ -244,13 +243,6 @@ export default class I18NConfiguration {
       defaultLocaleRoutingEnabledCookieName;
     this.resetLocaleCookieName =
       headersAndCookies.resetLocaleCookieName || defaultResetLocaleCookieName;
-
-    // log feature flags
-    console.log('gt-next: feature flags');
-    console.log('translationEnabled', this.translationEnabled);
-    console.log('developmentApiEnabled', this.developmentApiEnabled);
-    console.log('productionApiEnabled', this.productionApiEnabled);
-    console.log('dictionaryEnabled', this.dictionaryEnabled);
   }
 
   // ------ CONFIG ----- //
@@ -533,7 +525,6 @@ export default class I18NConfiguration {
     this._activeRequests++;
     try {
       // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
-      console.log('gt-next: sending batch request');
       const results = await this.gt.translateMany(
         batch.map((item) => {
           const { source, metadata, dataFormat } = item;
@@ -598,7 +589,6 @@ export default class I18NConfiguration {
    * Start the batching process with a set interval
    */
   private _startBatching(): void {
-    console.log('gt-next: starting batching');
     setInterval(() => {
       if (
         this._queue.length > 0 &&
