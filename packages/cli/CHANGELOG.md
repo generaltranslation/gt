@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.20
+
+### Patch Changes
+
+- [#643](https://github.com/generaltranslation/gt/pull/643) [`4f553c0`](https://github.com/generaltranslation/gt/commit/4f553c00c119f272edc5ccb3616f2d0effec8586) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Removing custom configuration on remarkStringify
+
 ## 2.1.19
 
 ### Patch Changes
