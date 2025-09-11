@@ -58,7 +58,9 @@ vi.mock('generaltranslation', () => ({
   formatMessage: mockFormatMessage,
   // Add other exports that might be needed
   GT: vi.fn().mockImplementation(() => ({
-    determineLocale: vi.fn((preferred, available) => preferred[0] || available[0]),
+    determineLocale: vi.fn(
+      (preferred, available) => preferred[0] || available[0]
+    ),
     requiresTranslation: vi.fn(() => false),
     resolveAliasLocale: vi.fn((locale) => locale),
     isValidLocale: vi.fn(() => true),
