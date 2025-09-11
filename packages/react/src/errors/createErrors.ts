@@ -65,6 +65,14 @@ export const createStringTranslationError = (
     id ? ` with id "${id}"` : ''
   } could not locate translation.`;
 
+export const invalidLocalesError = (locales: string[]) =>
+  `gt-react Error: You are using invalid locale codes in your configuration. ` +
+  `You must either specify a list of valid locales or use "customMapping" to ` +
+  `specify aliases for the following invalid locales: ${locales.join(', ')}.`;
+
+export const invalidCanonicalLocalesError = (locales: string[]) =>
+  `gt-react Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =

@@ -427,4 +427,139 @@ describe('GT Translation Methods', () => {
       expect(gt.targetLocale).toBe('es');
     });
   });
+
+  describe('resolveCanonicalLocale', () => {
+    it('should return canonical locale from custom mapping when available', () => {
+      const customMapping = {
+        'custom-locale': {
+          code: 'en-US',
+          name: 'Custom English',
+        },
+      };
+
+      const gt = new GT({
+        customMapping,
+        targetLocale: 'custom-locale',
+      });
+
+      const result = gt.resolveCanonicalLocale('custom-locale');
+      expect(result).toBe('en-US');
+    });
+
+    it('should return original locale when custom mapping does not have canonical locale', () => {
+      const customMapping = {
+        'custom-locale': 'Custom English',
+      };
+
+      const gt = new GT({
+        customMapping,
+        targetLocale: 'en-US',
+      });
+
+      const result = gt.resolveCanonicalLocale('en-US');
+      expect(result).toBe('en-US');
+    });
+
+    it('should return original locale when no custom mapping provided', () => {
+      const gt = new GT({
+        targetLocale: 'fr-FR',
+      });
+
+      const result = gt.resolveCanonicalLocale('fr-FR');
+      expect(result).toBe('fr-FR');
+    });
+
+    it('should use instance target locale when no locale parameter provided', () => {
+      const customMapping = {
+        'alias-locale': {
+          code: 'de-DE',
+          name: 'German',
+        },
+      };
+
+      const gt = new GT({
+        customMapping,
+        targetLocale: 'alias-locale',
+      });
+
+      const result = gt.resolveCanonicalLocale();
+      expect(result).toBe('de-DE');
+    });
+
+    it('should throw error when no target locale is provided and no parameter', () => {
+      const gt = new GT();
+
+      expect(() => gt.resolveCanonicalLocale()).toThrow(
+        'GT Error: Cannot call `resolveCanonicalLocale` without a specified locale. Either pass a locale to the `resolveCanonicalLocale` function or specify a targetLocale in the GT constructor.'
+      );
+    });
+  });
+
+  describe('resolveAliasLocale', () => {
+    it('should return alias locale from reverse custom mapping when available', () => {
+      const customMapping = {
+        'my-custom-locale': {
+          code: 'en-GB',
+          name: 'British English',
+        },
+      };
+
+      const gt = new GT({
+        customMapping,
+      });
+
+      const result = gt.resolveAliasLocale('en-GB');
+      expect(result).toBe('my-custom-locale');
+    });
+
+    it('should return original locale when no alias exists in reverse mapping', () => {
+      const customMapping = {
+        'custom-locale': {
+          code: 'fr-FR',
+          name: 'French',
+        },
+      };
+
+      const gt = new GT({
+        customMapping,
+      });
+
+      const result = gt.resolveAliasLocale('es-ES');
+      expect(result).toBe('es-ES');
+    });
+
+    it('should return original locale when custom mapping contains string values only', () => {
+      const customMapping = {
+        'custom-locale': 'Custom Name',
+      };
+
+      const gt = new GT({
+        customMapping,
+      });
+
+      const result = gt.resolveAliasLocale('en-US');
+      expect(result).toBe('en-US');
+    });
+
+    it('should work with custom mapping parameter instead of instance mapping', () => {
+      const gt = new GT();
+
+      const customMapping = {
+        'special-locale': {
+          code: 'ja-JP',
+          name: 'Japanese',
+        },
+      };
+
+      const result = gt.resolveAliasLocale('ja-JP', customMapping);
+      expect(result).toBe('special-locale');
+    });
+
+    it('should return original locale when no custom mapping provided', () => {
+      const gt = new GT();
+
+      const result = gt.resolveAliasLocale('zh-CN');
+      expect(result).toBe('zh-CN');
+    });
+  });
 });

@@ -369,7 +369,7 @@ export default class I18NConfiguration {
    */
   requiresTranslation(locale: string): [boolean, boolean] {
     if (!this.translationEnabled) return [false, false];
-    const translationRequired = requiresTranslation(
+    const translationRequired = this.gt.requiresTranslation(
       this.defaultLocale,
       locale,
       this.locales

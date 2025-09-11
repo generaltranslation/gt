@@ -3,7 +3,11 @@ import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';
 import { intlCache } from '../cache/IntlCache';
-import { CustomMapping, FullCustomMapping } from './customLocaleMapping';
+import {
+  CustomMapping,
+  FullCustomMapping,
+  shouldUseCanonicalLocale,
+} from './customLocaleMapping';
 
 export type LocaleProperties = {
   // assume code = "de-AT", defaultLocale = "en-US"
@@ -51,7 +55,7 @@ export type LocaleProperties = {
  * @param customMapping - Optional custom mapping of locale codes to names.
  * @returns A partial set of locale properties, or undefined if no custom mapping is provided.
  */
-function createCustomLocaleProperties(
+export function createCustomLocaleProperties(
   lArray: string[],
   customMapping?: CustomMapping
 ): Partial<LocaleProperties> | undefined {
@@ -80,6 +84,13 @@ export default function _getLocaleProperties(
   defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomMapping
 ): LocaleProperties {
+  // Check for canonical locale
+  const aliasedLocale = locale;
+  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
+    // Override locale with canonical locale
+    locale = (customMapping[locale] as { code: string }).code;
+  }
+
   defaultLocale ||= libraryDefaultLocale;
 
   try {
@@ -89,7 +100,7 @@ export default function _getLocaleProperties(
     const languageCode = localeObject.language; // "de"
 
     const customLocaleProperties = createCustomLocaleProperties(
-      [locale, standardizedLocale, languageCode],
+      [aliasedLocale, locale, standardizedLocale, languageCode],
       customMapping
     );
 
