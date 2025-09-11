@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.3.6
+
+### Patch Changes
+
+- [#633](https://github.com/generaltranslation/gt/pull/633) [`c21ca5a`](https://github.com/generaltranslation/gt/commit/c21ca5a187c64942d4702ebd99aee8aff8ae7dab) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added typing and allowed null | undefined for the useMessages m function
+
+- Updated dependencies [[`c21ca5a`](https://github.com/generaltranslation/gt/commit/c21ca5a187c64942d4702ebd99aee8aff8ae7dab)]:
+  - gt-react@10.4.3
+
 ## 6.3.5
 
 ### Patch Changes

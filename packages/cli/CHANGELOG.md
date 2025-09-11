@@ -1,5 +1,41 @@
 # gtx-cli
 
+## 2.1.21
+
+### Patch Changes
+
+- [#645](https://github.com/generaltranslation/gt/pull/645) [`58cfaee`](https://github.com/generaltranslation/gt/commit/58cfaee5cc1dcd187f0b72b2761f96c19b4f313e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Escaping HTML to avoid parsing issues from MDX consumers
+
+## 2.1.20
+
+### Patch Changes
+
+- [#643](https://github.com/generaltranslation/gt/pull/643) [`4f553c0`](https://github.com/generaltranslation/gt/commit/4f553c00c119f272edc5ccb3616f2d0effec8586) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Removing custom configuration on remarkStringify
+
+## 2.1.19
+
+### Patch Changes
+
+- [#641](https://github.com/generaltranslation/gt/pull/641) [`4c67f77`](https://github.com/generaltranslation/gt/commit/4c67f775ee892b47eebcc3178c00ad6547a84d84) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Encoding placeholders that break MDX parse
+
+## 2.1.18
+
+### Patch Changes
+
+- [#637](https://github.com/generaltranslation/gt/pull/637) [`9c40a3c`](https://github.com/generaltranslation/gt/commit/9c40a3c729bf690381959679078c11c9c29bcdf2) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skipping over empty files when sending for translation
+
+## 2.1.17
+
+### Patch Changes
+
+- [#635](https://github.com/generaltranslation/gt/pull/635) [`10aa051`](https://github.com/generaltranslation/gt/commit/10aa051592cea43f772615da200c8615d4dd1a78) Thanks [@brian-lou](https://github.com/brian-lou)! - Create dictionary with uuid to reduce flakiness
+
+## 2.1.16
+
+### Patch Changes
+
+- [#630](https://github.com/generaltranslation/gt/pull/630) [`1f0dc1b`](https://github.com/generaltranslation/gt/commit/1f0dc1b17f22737263938998f5c516e0aa136b1a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding localization of import paths to MDX files
+
 ## 2.1.15
 
 ### Patch Changes

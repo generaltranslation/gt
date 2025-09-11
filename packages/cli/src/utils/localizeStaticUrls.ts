@@ -10,6 +10,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
+import { escapeHtmlInTextNodes } from './escapeHtml.js';
 
 const { isMatch } = micromatch;
 
@@ -73,6 +74,10 @@ export default async function localizeStaticUrls(
     if (defaultLocaleFiles.length > 0) {
       const defaultPromise = Promise.all(
         defaultLocaleFiles.map(async (filePath: string) => {
+          // Check if file exists before processing
+          if (!fs.existsSync(filePath)) {
+            return;
+          }
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file using default locale
@@ -527,18 +532,20 @@ function transformMdxUrls(
   let content: string;
   try {
     const stringifyProcessor = unified()
-      .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
-      })
       .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
+      .use(remarkMdx)
+      .use(escapeHtmlInTextNodes)
+      .use(remarkStringify, {
+        handlers: {
+          // Handler to prevent escaping (avoids '&lt;' -> '\&lt;')
+          text(node: any) {
+            return node.value;
+          },
+        },
+      });
 
-    content = stringifyProcessor.stringify(processedAst);
+    const outTree = stringifyProcessor.runSync(processedAst);
+    content = stringifyProcessor.stringify(outTree);
   } catch (error) {
     console.warn(
       `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`

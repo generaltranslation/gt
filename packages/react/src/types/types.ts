@@ -117,3 +117,12 @@ export type _Message = {
   $_hash?: string;
 };
 export type _Messages = _Message[];
+
+export type MFunctionType = <T extends string | null | undefined>(
+  encodedMsg: T,
+  options: Record<string, any>
+) => T extends string ? string : T;
+export type TFunctionType = (
+  message: string,
+  options?: InlineTranslationOptions
+) => string;

@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.1.18",
+  "version": "2.1.21",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -91,6 +91,7 @@
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
+    "mdast-util-find-and-replace": "^3.0.2",
     "micromatch": "^4.0.8",
     "open": "^10.1.1",
     "ora": "^8.2.0",
