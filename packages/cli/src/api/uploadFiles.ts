@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { createSpinner, exit, logMessage } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { DataFormat, FileFormat } from '../types/data.js';
+import { gt } from '../utils/gt.js';
 
 export type FileUpload = {
   content: string;
@@ -48,34 +49,15 @@ export async function uploadFiles(
     `Uploading ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation...`
   );
 
-  const uploadData: UploadData = {
-    data: files.map((file) => ({
-      source: file.source,
-      translations: file.translations,
-    })),
-    sourceLocale: options.defaultLocale,
-    ...(options.modelProvider && { modelProvider: options.modelProvider }),
-  };
-
   try {
-    const response = await fetch(`${options.baseUrl}/v1/project/files/upload`, {
-      method: 'POST',
-      body: JSON.stringify(uploadData),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-gt-api-key': options.apiKey!,
-        'x-gt-project-id': options.projectId!,
-      },
+    const result = gt.uploadFiles(files, {
+      ...options,
+      sourceLocale: options.defaultLocale,
     });
-    if (!response.ok) {
-      throw new Error(
-        `Failed to upload files: ${response.statusText} (${response.status})`
-      );
-    }
     spinner.stop(chalk.green('Files uploaded successfully'));
 
-    return response;
-  } catch (error) {
+    return result;
+  } catch {
     spinner.stop(
       chalk.red('An unexpected error occurred while uploading files')
     );

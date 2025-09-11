@@ -44,44 +44,65 @@ export async function aggregateFiles(
       dataFormat = 'JSX';
     }
 
-    const jsonFiles = filePaths.json.map((filePath) => {
-      const content = readFile(filePath);
+    const jsonFiles = filePaths.json
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
 
-      const parsedJson = parseJson(
-        content,
-        filePath,
-        settings.options || {},
-        settings.defaultLocale
-      );
+        const parsedJson = parseJson(
+          content,
+          filePath,
+          settings.options || {},
+          settings.defaultLocale
+        );
 
-      const relativePath = getRelative(filePath);
-      return {
-        content: parsedJson,
-        fileName: relativePath,
-        fileFormat: 'JSON' as const,
-        dataFormat,
-      };
-    });
+        return {
+          content: parsedJson,
+          fileName: relativePath,
+          fileFormat: 'JSON' as const,
+          dataFormat,
+        } as FileToTranslate;
+      })
+      .filter((file): file is FileToTranslate => {
+        if (!file || typeof file.content !== 'string' || !file.content.trim()) {
+          logWarning(
+            `Skipping ${file?.fileName ?? 'unknown'}: JSON file is empty`
+          );
+          return false;
+        }
+        return true;
+      });
     allFiles.push(...jsonFiles);
   }
 
   // Process YAML files
   if (filePaths.yaml) {
-    const yamlFiles = filePaths.yaml.map((filePath) => {
-      const content = readFile(filePath);
-      const { content: parsedYaml, fileFormat } = parseYaml(
-        content,
-        filePath,
-        settings.options || {}
-      );
+    const yamlFiles = filePaths.yaml
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
 
-      const relativePath = getRelative(filePath);
-      return {
-        content: parsedYaml,
-        fileName: relativePath,
-        fileFormat,
-      };
-    });
+        const { content: parsedYaml, fileFormat } = parseYaml(
+          content,
+          filePath,
+          settings.options || {}
+        );
+
+        return {
+          content: parsedYaml,
+          fileName: relativePath,
+          fileFormat,
+        } as FileToTranslate;
+      })
+      .filter((file): file is FileToTranslate => {
+        if (!file || typeof file.content !== 'string' || !file.content.trim()) {
+          logWarning(
+            `Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`
+          );
+          return false;
+        }
+        return true;
+      });
     allFiles.push(...yamlFiles);
   }
 
@@ -96,9 +117,8 @@ export async function aggregateFiles(
           if (fileType === 'mdx') {
             const validation = isValidMdx(content, filePath);
             if (!validation.isValid) {
-              const errorMsg = validation.error ? `: ${validation.error}` : '';
               logWarning(
-                `Skipping ${relativePath}: MDX file is not AST parsable${errorMsg}`
+                `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
               );
               return null;
             }
@@ -109,9 +129,21 @@ export async function aggregateFiles(
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
-          };
+          } as FileToTranslate | null;
         })
-        .filter((file): file is NonNullable<typeof file> => file !== null);
+        .filter((file): file is FileToTranslate => {
+          if (
+            !file ||
+            typeof file.content !== 'string' ||
+            !file.content.trim()
+          ) {
+            logWarning(
+              `Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`
+            );
+            return false;
+          }
+          return true;
+        });
       allFiles.push(...files);
     }
   }

@@ -33,6 +33,7 @@ type withGTConfigProps = {
   ignoreBrowserLocales?: boolean;
   getLocalePath?: string;
   // Custom mapping
+  /**@deprecated Use customMapping in gt.config.json instead */
   customMapping?: CustomMapping;
   // Rendering
   renderSettings?: {

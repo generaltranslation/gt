@@ -178,7 +178,7 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    const response = await uploadFiles(uploadData, options);
+    await uploadFiles(uploadData, options);
   } catch (error) {
     logErrorAndExit(`Error uploading files: ${error}`);
   }

@@ -4,6 +4,7 @@ import {
   remoteTranslationsError,
 } from '../errors/createErrors';
 import resolveTranslationLoader from '../resolvers/resolveTranslationLoader';
+import getI18NConfig from './getI18NConfig';
 
 type RemoteLoadTranslationsInput = {
   targetLocale: string;
@@ -55,8 +56,10 @@ export default async function loadTranslations(
       _props: RemoteLoadTranslationsInput
     ): Promise<any> => {
       try {
+        const gt = getI18NConfig().getGTClass();
+        const targetLocale = gt.resolveCanonicalLocale(_props.targetLocale);
         const response = await fetch(
-          `${_props.cacheUrl}/${_props.projectId}/${_props.targetLocale}${
+          `${_props.cacheUrl}/${_props.projectId}/${targetLocale}${
             _props._versionId ? `/${_props._versionId}` : ''
           }`
         );

@@ -47,30 +47,18 @@ export default function ClientProvider({
 
   // Maintain the locale state
   const [locale, _setLocale] = useState<string>(
-    _locale ? determineLocale(_locale, locales) || '' : ''
+    _locale ? determineLocale(_locale, locales, customMapping) || '' : ''
   );
-
-  // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
-  const setLocale = (newLocale: string): void => {
-    // validate locale
-    newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
-    // persist locale
-    document.cookie = `${localeCookieName}=${newLocale};path=/`;
-    document.cookie = `${resetLocaleCookieName}=true;path=/`;
-    // set locale
-    _setLocale(newLocale);
-    // TODO: abort in-flight requests
-
-    // re-render server components
-    window.location.reload();
-  };
 
   // Check for an invalid cookie and update it
   useEffect(() => {
-    const cookieLocale = document.cookie
+    let cookieLocale = document.cookie
       .split('; ')
       .find((row) => row.startsWith(`${localeCookieName}=`))
       ?.split('=')[1];
+    if (cookieLocale) {
+      cookieLocale = gt.resolveAliasLocale(cookieLocale);
+    }
     if (locale && cookieLocale && cookieLocale !== locale) {
       document.cookie = `${localeCookieName}=;path=/`;
     }
@@ -116,6 +104,23 @@ export default function ClientProvider({
       }),
     [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
   );
+
+  // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
+  const setLocale = (newLocale: string): void => {
+    // validate locale
+    newLocale =
+      determineLocale(newLocale, locales, customMapping) ||
+      locale ||
+      defaultLocale;
+    newLocale = gt.resolveAliasLocale(newLocale);
+    // persist locale
+    document.cookie = `${localeCookieName}=${newLocale};path=/`;
+    document.cookie = `${resetLocaleCookieName}=true;path=/`;
+    // set locale
+    _setLocale(newLocale);
+    // re-render server components
+    window.location.reload();
+  };
 
   // ---------- TRANSLATION METHODS ---------- //
 

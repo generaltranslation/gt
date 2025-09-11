@@ -7,23 +7,11 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
-import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
 
 const { isMatch } = micromatch;
-
-/**
- * Checks if a file exists at the given path
- */
-function fileExists(filePath: string): boolean {
-  try {
-    return fs.existsSync(filePath);
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Localizes static imports in content files.
@@ -75,6 +63,10 @@ export default async function localizeStaticImports(settings: Settings) {
     if (defaultLocaleFiles.length > 0) {
       const defaultPromise = Promise.all(
         defaultLocaleFiles.map(async (filePath: string) => {
+          // Check if file exists before processing
+          if (!fs.existsSync(filePath)) {
+            return;
+          }
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file using default locale
@@ -106,6 +98,10 @@ export default async function localizeStaticImports(settings: Settings) {
       // Replace the placeholder path with the target path
       await Promise.all(
         targetFiles.map(async (filePath) => {
+          // Check if file exists before processing
+          if (!fs.existsSync(filePath)) {
+            return;
+          }
           // Get file content
           const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file
@@ -334,8 +330,7 @@ function transformImportPath(
       resolvedPath = path.resolve(currentDir, newPath);
     }
 
-    const pathExists = fileExists(resolvedPath);
-    if (!pathExists) {
+    if (!fs.existsSync(resolvedPath)) {
       return null;
     }
   }

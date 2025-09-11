@@ -292,7 +292,7 @@ async function checkTranslationDeployment(
       // Prepare batch download data
       const batchFiles: BatchedFiles = readyTranslations
         .map((translation) => {
-          const locale = translation.locale;
+          const locale = gt.resolveAliasLocale(translation.locale);
           const fileName = translation.fileName;
           const translationId = translation.id;
           const outputPath = resolveOutputPath(fileName, locale);

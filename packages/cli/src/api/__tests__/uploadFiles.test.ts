@@ -4,6 +4,7 @@ import { createSpinner, exit, logMessage } from '../../console/logging.js';
 import { SpinnerResult } from '@clack/prompts';
 import { Settings } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
+import { gt } from '../../utils/gt.js';
 
 // Mock dependencies
 vi.mock('../../console/logging.js', () => ({
@@ -12,7 +13,11 @@ vi.mock('../../console/logging.js', () => ({
   logMessage: vi.fn(),
 }));
 
-global.fetch = vi.fn();
+vi.mock('../../utils/gt.js', () => ({
+  gt: {
+    uploadFiles: vi.fn(),
+  },
+}));
 
 describe('uploadFiles', () => {
   const mockSpinner = {
@@ -79,6 +84,9 @@ describe('uploadFiles', () => {
     vi.mocked(createSpinner).mockReturnValue(
       mockSpinner as unknown as SpinnerResult
     );
+    vi.mocked(gt.uploadFiles).mockReturnValue(
+      Promise.resolve({ success: true })
+    );
   });
 
   it('should upload files successfully', async () => {
@@ -102,11 +110,6 @@ describe('uploadFiles', () => {
     ];
 
     const mockSettings = createMockSettings();
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     const result = await uploadFiles(mockFiles, mockSettings);
 
@@ -118,19 +121,13 @@ describe('uploadFiles', () => {
       'Uploading 1 file to General Translation...'
     );
 
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.generaltranslation.com/v1/project/files/upload',
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
       expect.objectContaining({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': '1234567890',
-          'x-gt-project-id': '1234567890',
-        },
-        body: JSON.stringify({
-          data: mockFiles,
-          sourceLocale: 'en',
-        }),
+        sourceLocale: 'en',
+        apiKey: '1234567890',
+        projectId: '1234567890',
+        baseUrl: 'https://api.generaltranslation.com',
       })
     );
 
@@ -138,17 +135,12 @@ describe('uploadFiles', () => {
       expect.stringContaining('Files uploaded successfully')
     );
 
-    expect(result).toBe(mockResponse);
+    expect(result).toEqual({ success: true });
   });
 
   it('should handle multiple files upload', async () => {
     const mockFiles = createMockFiles(3);
     const mockSettings = createMockSettings();
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
@@ -156,13 +148,10 @@ describe('uploadFiles', () => {
       'Uploading 3 files to General Translation...'
     );
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
       expect.objectContaining({
-        body: JSON.stringify({
-          data: mockFiles,
-          sourceLocale: 'en',
-        }),
+        sourceLocale: 'en',
       })
     );
   });
@@ -170,11 +159,6 @@ describe('uploadFiles', () => {
   it('should handle single file upload', async () => {
     const mockFiles = createMockFiles(1);
     const mockSettings = createMockSettings();
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
@@ -188,22 +172,14 @@ describe('uploadFiles', () => {
     const mockSettings = createMockSettings({
       modelProvider: 'openai',
     });
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
       expect.objectContaining({
-        body: JSON.stringify({
-          data: mockFiles,
-          sourceLocale: 'en',
-          modelProvider: 'openai',
-        }),
+        sourceLocale: 'en',
+        modelProvider: 'openai',
       })
     );
   });
@@ -211,12 +187,10 @@ describe('uploadFiles', () => {
   it('should handle API errors', async () => {
     const mockFiles = createMockFiles(1);
     const mockSettings = createMockSettings();
-    const mockResponse = new Response('Bad Request', {
-      status: 400,
-      statusText: 'Bad Request',
-    });
 
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
+    vi.mocked(gt.uploadFiles).mockImplementation(() => {
+      throw new Error('API Error');
+    });
 
     await uploadFiles(mockFiles, mockSettings);
 
@@ -233,7 +207,9 @@ describe('uploadFiles', () => {
     const mockFiles = createMockFiles(1);
     const mockSettings = createMockSettings();
 
-    vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
+    vi.mocked(gt.uploadFiles).mockImplementation(() => {
+      throw new Error('Network error');
+    });
 
     await uploadFiles(mockFiles, mockSettings);
 
@@ -267,21 +243,13 @@ describe('uploadFiles', () => {
     ];
 
     const mockSettings = createMockSettings();
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
       expect.objectContaining({
-        body: JSON.stringify({
-          data: mockFiles,
-          sourceLocale: 'en',
-        }),
+        sourceLocale: 'en',
       })
     );
   });
@@ -309,21 +277,13 @@ describe('uploadFiles', () => {
     ];
 
     const mockSettings = createMockSettings();
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
       expect.objectContaining({
-        body: JSON.stringify({
-          data: mockFiles,
-          sourceLocale: 'en',
-        }),
+        sourceLocale: 'en',
       })
     );
   });
@@ -355,11 +315,6 @@ describe('uploadFiles', () => {
     ];
 
     const mockSettings = createMockSettings();
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
@@ -367,13 +322,10 @@ describe('uploadFiles', () => {
       expect.stringContaining('messages.json -> es, fr')
     );
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
       expect.objectContaining({
-        body: JSON.stringify({
-          data: mockFiles,
-          sourceLocale: 'en',
-        }),
+        sourceLocale: 'en',
       })
     );
   });
@@ -383,17 +335,15 @@ describe('uploadFiles', () => {
     const mockSettings = createMockSettings({
       baseUrl: 'https://custom-api.example.com',
     });
-    const mockResponse = new Response(JSON.stringify({ success: true }), {
-      status: 200,
-    });
-
-    vi.mocked(fetch).mockResolvedValue(mockResponse);
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(fetch).toHaveBeenCalledWith(
-      'https://custom-api.example.com/v1/project/files/upload',
-      expect.any(Object)
+    expect(gt.uploadFiles).toHaveBeenCalledWith(
+      mockFiles,
+      expect.objectContaining({
+        sourceLocale: 'en',
+        baseUrl: 'https://custom-api.example.com',
+      })
     );
   });
 });

@@ -45,7 +45,10 @@ export async function downloadFileBatch(
     files.map((file) => [file.translationId, file.inputPath])
   );
   const localeMap = new Map(
-    files.map((file) => [file.translationId, file.locale])
+    files.map((file) => [
+      file.translationId,
+      gt.resolveAliasLocale(file.locale),
+    ])
   );
 
   while (retries <= maxRetries) {

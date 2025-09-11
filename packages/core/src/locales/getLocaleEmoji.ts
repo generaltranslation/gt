@@ -3,6 +3,7 @@ import {
   CustomMapping,
   FullCustomMapping,
   getCustomProperty,
+  shouldUseCanonicalLocale,
 } from './customLocaleMapping';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 
@@ -13,6 +14,13 @@ export default function _getLocaleEmoji(
   locale: string,
   customMapping?: CustomMapping
 ): string {
+  // Check for canonical locale
+  const aliasedLocale = locale;
+  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
+    // Override locale with canonical locale
+    locale = (customMapping[locale] as { code: string }).code;
+  }
+
   try {
     const standardizedLocale = _standardizeLocale(locale);
     const localeObject = intlCache.get('Locale', standardizedLocale);
@@ -20,7 +28,7 @@ export default function _getLocaleEmoji(
 
     // if a custom mapping is specified, use it
     if (customMapping) {
-      for (const l of [locale, standardizedLocale, language]) {
+      for (const l of [aliasedLocale, locale, standardizedLocale, language]) {
         const customEmoji = getCustomProperty(customMapping, l, 'emoji');
         if (customEmoji) return customEmoji;
       }

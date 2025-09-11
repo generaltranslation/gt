@@ -231,6 +231,7 @@ export async function generateSettings(
     apiKey: mergedOptions.apiKey,
     baseUrl: mergedOptions.baseUrl,
     sourceLocale: mergedOptions.defaultLocale,
+    customMapping: mergedOptions.customMapping,
   });
 
   return mergedOptions;

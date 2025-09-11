@@ -120,7 +120,7 @@ export type _Messages = _Message[];
 
 export type MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
-  options: Record<string, any>
+  options?: Record<string, any>
 ) => T extends string ? string : T;
 export type TFunctionType = (
   message: string,
