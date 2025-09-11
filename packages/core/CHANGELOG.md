@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.5.0
+
+### Minor Changes
+
+- [#638](https://github.com/generaltranslation/gt/pull/638) [`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale aliasing
+
 ## 7.4.3
 
 ### Patch Changes

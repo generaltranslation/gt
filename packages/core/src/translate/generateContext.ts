@@ -5,7 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
-import { UploadedFileRef } from './uploadFiles';
+import { UploadedFileRef } from 'src/types-dir/uploadFilesForTranslation';
 
 export type GenerateContextResult = {
   contextJobId: string;

@@ -44,7 +44,7 @@ export async function sendFiles(
     uploadSpinner.start(
       `Uploading ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation API...`
     );
-    const upload = await gt.uploadFiles(files, {
+    const upload = await gt.uploadFilesForTranslation(files, {
       sourceLocale: settings.defaultLocale,
       targetLocales: settings.locales,
       publish: settings.publish,

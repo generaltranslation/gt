@@ -18,7 +18,7 @@ import {
 import { GTProviderProps } from '../types/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
-import { GT } from 'generaltranslation';
+import { GT, resolveAliasLocale } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useRegionState } from './hooks/useRegionState';
@@ -68,6 +68,9 @@ export default function GTProvider({
   ...metadata
 }: GTProviderProps) {
   // ---------- PROPS ---------- //
+  if (_locale) {
+    _locale = resolveAliasLocale(_locale, customMapping);
+  }
 
   // Read env to get projectId and API key
   const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
@@ -90,6 +93,7 @@ export default function GTProvider({
     locales,
     ssr,
     localeCookieName,
+    customMapping,
   });
 
   // Define the region instance
@@ -154,6 +158,7 @@ export default function GTProvider({
     cacheUrl,
     projectId,
     _versionId,
+    gt,
   });
 
   // ------- RUNTIME TRANSLATION ----- //

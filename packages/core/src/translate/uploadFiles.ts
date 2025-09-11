@@ -5,59 +5,41 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
-import { FileToTranslate } from '../types';
+import {
+  FileUpload,
+  RequiredUploadFilesOptions,
+  UploadData,
+} from '../types-dir/uploadFiles';
 
-export type UploadFilesOptions = {
-  sourceLocale: string;
-  targetLocales?: string[];
-  publish?: boolean;
-  requireApproval?: boolean;
-  modelProvider?: string;
-  force?: boolean;
-  timeout?: number;
-};
-
-export type UploadedFileRef = {
-  fileId: string;
-  versionId: string;
-  fileName: string;
-  fileFormat: string;
-  dataFormat?: string;
-};
-
-export type UploadFilesResult = {
-  shouldGenerateContext: boolean;
-  uploadedFiles: UploadedFileRef[];
-};
-
+/**
+ * @internal
+ * Uploads multiple files to the General Translation API.
+ * @param files - The files to translate
+ * @param options - The options for the API call
+ * @param config - The configuration for the API call
+ * @returns The result of the API call
+ */
 export default async function _uploadFiles(
-  files: FileToTranslate[],
-  options: UploadFilesOptions,
+  files: {
+    source: FileUpload;
+    translations: FileUpload[];
+  }[],
+  options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
-): Promise<UploadFilesResult> {
-  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload`;
+): Promise<any> {
+  const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
+  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/files/upload`;
 
-  const fileData = files.map((file) => ({
-    content: Buffer.from(file.content).toString('base64'),
-    fileName: file.fileName,
-    fileFormat: file.fileFormat,
-    fileDataFormat: file.dataFormat,
-    formatMetadata: file.formatMetadata,
-  }));
-
-  const body = {
-    files: fileData,
+  const uploadData: UploadData = {
+    data: files.map((file) => ({
+      source: file.source,
+      translations: file.translations,
+    })),
     sourceLocale: options.sourceLocale,
-    ...(options.targetLocales && { targetLocales: options.targetLocales }),
-    // Optional fields included for parity, server ignores publish/requireApproval here
-    publish: options.publish,
-    requireApproval: options.requireApproval,
-    modelProvider: options.modelProvider,
-    force: options.force,
-    projectId: config.projectId,
+    ...(options.modelProvider && { modelProvider: options.modelProvider }),
   };
 
+  // Request the file uploads
   let response;
   try {
     response = await fetchWithTimeout(
@@ -65,7 +47,7 @@ export default async function _uploadFiles(
       {
         method: 'POST',
         headers: generateRequestHeaders(config, false),
-        body: JSON.stringify(body),
+        body: JSON.stringify(uploadData),
       },
       timeout
     );
@@ -73,7 +55,10 @@ export default async function _uploadFiles(
     handleFetchError(error, timeout);
   }
 
+  // Validate response
   await validateResponse(response);
-  const result = (await response.json()) as UploadFilesResult;
-  return result;
+
+  // Parse response
+  const responseData = await response.json();
+  return responseData as any;
 }

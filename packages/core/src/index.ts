@@ -63,11 +63,11 @@ import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
 import _enqueueFiles from './translate/enqueueFiles';
-import _uploadFiles, {
-  UploadFilesOptions,
-  UploadFilesResult,
+import _uploadFilesForTranslation from './translate/uploadFilesForTranslation';
+import {
+  UploadFilesForTranslationOptions,
   UploadedFileRef,
-} from './translate/uploadFiles';
+  UploadFilesForTranslationResult } from './types-dir/uploadFilesForTranslation';
 import _generateContext, {
   GenerateContextResult,
 } from './translate/generateContext';
@@ -93,6 +93,14 @@ import {
   _getRegionProperties,
   CustomRegionMapping,
 } from './locales/getRegionProperties';
+import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
+import { _resolveAliasLocale } from './locales/resolveAliasLocale';
+import _uploadFiles from './translate/uploadFiles';
+import {
+  FileUpload,
+  RequiredUploadFilesOptions,
+  UploadFilesOptions,
+} from './types-dir/uploadFiles';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -162,6 +170,9 @@ export class GT {
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
 
+  /** Lazily derived reverse custom mapping for alias locales */
+  reverseCustomMapping?: Record<string, string>;
+
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
 
@@ -211,14 +222,14 @@ export class GT {
     // source locale
     if (sourceLocale) {
       this.sourceLocale = _standardizeLocale(sourceLocale);
-      if (!_isValidLocale(this.sourceLocale))
+      if (!_isValidLocale(this.sourceLocale, customMapping))
         throw new Error(invalidLocaleError(this.sourceLocale));
     }
 
     // target locale
     if (targetLocale) {
       this.targetLocale = _standardizeLocale(targetLocale);
-      if (!_isValidLocale(this.targetLocale))
+      if (!_isValidLocale(this.targetLocale, customMapping))
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
@@ -248,7 +259,17 @@ export class GT {
 
     // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
-    if (customMapping) this.customMapping = customMapping;
+    if (customMapping) {
+      this.customMapping = customMapping;
+      this.reverseCustomMapping = Object.fromEntries(
+        Object.entries(customMapping)
+          .filter(
+            ([_, value]) =>
+              value && typeof value === 'object' && 'code' in value
+          )
+          .map(([key, value]) => [(value as { code: string }).code, key])
+      );
+    }
   }
 
   // -------------- Private Methods -------------- //
@@ -318,9 +339,17 @@ export class GT {
     this._validateAuth('enqueueTranslationEntries');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueEntriesOptions = {
+    let mergedOptions: EnqueueEntriesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales?.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
     };
 
     // Request the translation entry updates
@@ -367,7 +396,7 @@ export class GT {
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueFilesOptions = {
+    let mergedOptions: EnqueueFilesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
     };
@@ -378,6 +407,14 @@ export class GT {
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
+    };
 
     // Request the file updates
     return await _enqueueFiles(
@@ -390,21 +427,35 @@ export class GT {
   /**
    * Uploads files to the project and returns references for further steps.
    */
-  async uploadFiles(
+  async uploadFilesForTranslation(
     files: FileToTranslate[],
-    options: UploadFilesOptions
-  ): Promise<UploadFilesResult> {
+    options: UploadFilesForTranslationOptions
+  ): Promise<UploadFilesForTranslationResult> {
+    // Validation
     this._validateAuth('uploadFiles');
-    const mergedOptions: UploadFilesOptions = {
+    
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesForTranslationOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
+      targetLocales: options.targetLocales ?? [this.targetLocale!],
     };
+
+    // Require source locale
     if (!mergedOptions.sourceLocale) {
       const error = noSourceLocaleProvidedError('uploadFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
-    return await _uploadFiles(
+
+    // Require target locale(s)
+    if (!mergedOptions.targetLocales) {
+      const error = noTargetLocaleProvidedError('uploadFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    return await _uploadFilesForTranslation(
       files,
       mergedOptions,
       this._getTranslationConfig()
@@ -448,16 +499,30 @@ export class GT {
     files: UploadedFileRef[],
     options: EnqueueByRefOptions
   ): Promise<EnqueueFilesResult> {
+    // Validation
     this._validateAuth('enqueueFilesByRef');
+    
+    // Merge instance settings with options
     const mergedOptions: EnqueueByRefOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
+      targetLocales: options.targetLocales ?? [this.targetLocale!]
     };
+
+    // Require source locale
     if (!mergedOptions.sourceLocale) {
       const error = noSourceLocaleProvidedError('enqueueFilesByRef');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
+
+    // Require target locale(s)
+    if (!mergedOptions.targetLocales) {
+      const error = noTargetLocaleProvidedError('enqueueFilesByRef');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
     return await _enqueueFilesByRef(
       files,
       mergedOptions,
@@ -493,6 +558,12 @@ export class GT {
   ): Promise<CheckFileTranslationsResult> {
     // Validation
     this._validateAuth('checkFileTranslations');
+
+    // Replace target locales with canonical locales
+    data = data.map((item) => ({
+      ...item,
+      locale: this.resolveCanonicalLocale(item.locale),
+    }));
 
     // Request the file translation status
     return await _checkFileTranslations(
@@ -690,6 +761,9 @@ export class GT {
       throw new Error(error);
     }
 
+    // Replace target locale with canonical locale
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
+
     // Request the translation
     return await _translate(
       source,
@@ -769,13 +843,19 @@ export class GT {
     }
 
     if (typeof this.customMapping?.[targetLocale] === 'object') {
-      const { regionCode, scriptCode } = this.customMapping[targetLocale];
+      const { regionCode, scriptCode } = this.customMapping[targetLocale] as {
+        regionCode: string;
+        scriptCode: string;
+      };
       metadata = {
         ...(regionCode && { regionCode }),
         ...(scriptCode && { scriptCode }),
         ...metadata,
       };
     }
+
+    // Replace target locale with canonical locale
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
 
     // Request the translation
     return await _translate(
@@ -835,10 +915,54 @@ export class GT {
       };
     }
 
+    // Replace target locale with canonical locale
+    globalMetadata = {
+      ...globalMetadata,
+      ...(globalMetadata.targetLocale && {
+        targetLocale: this.resolveCanonicalLocale(globalMetadata.targetLocale),
+      }),
+    };
+    sources = sources.map((source) => ({
+      ...source,
+      ...(source.targetLocale && {
+        targetLocale: this.resolveCanonicalLocale(source.targetLocale),
+      }),
+    }));
+
     // Request the translation
     return await _translateMany(
       sources,
       globalMetadata,
+      this._getTranslationConfig()
+    );
+  }
+
+  async uploadFiles(
+    files: {
+      source: FileUpload;
+      translations: FileUpload[];
+    }[],
+    options: UploadFilesOptions
+  ): Promise<any> {
+    // Validation
+    this._validateAuth('uploadFiles');
+
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('uploadFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    return await _uploadFiles(
+      files,
+      mergedOptions,
       this._getTranslationConfig()
     );
   }
@@ -1162,13 +1286,19 @@ export class GT {
   requiresTranslation(
     sourceLocale = this.sourceLocale,
     targetLocale = this.targetLocale,
-    approvedLocales: string[] | undefined = this.locales
+    approvedLocales: string[] | undefined = this.locales,
+    customMapping: CustomMapping | undefined = this.customMapping
   ): boolean {
     if (!sourceLocale)
       throw new Error(noSourceLocaleProvidedError('requiresTranslation'));
     if (!targetLocale)
       throw new Error(noTargetLocaleProvidedError('requiresTranslation'));
-    return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+    return _requiresTranslation(
+      sourceLocale,
+      targetLocale,
+      approvedLocales,
+      customMapping
+    );
   }
 
   /**
@@ -1184,9 +1314,10 @@ export class GT {
    */
   determineLocale(
     locales: string | string[],
-    approvedLocales: string[] | undefined = this.locales || []
+    approvedLocales: string[] | undefined = this.locales || [],
+    customMapping: CustomMapping | undefined = this.customMapping
   ): string | undefined {
-    return _determineLocale(locales, approvedLocales);
+    return _determineLocale(locales, approvedLocales, customMapping);
   }
 
   /**
@@ -1210,6 +1341,7 @@ export class GT {
    * Checks if a given BCP 47 locale code is valid.
    *
    * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to validate
+   * @param {customMapping} [customMapping=this.customMapping] - The custom mapping to use for validation
    * @returns {boolean} True if the locale code is valid, false otherwise
    * @throws {Error} If no target locale is provided
    *
@@ -1217,9 +1349,47 @@ export class GT {
    * gt.isValidLocale('en-US');
    * // Returns: true
    */
-  isValidLocale(locale = this.targetLocale): boolean {
+  isValidLocale(
+    locale = this.targetLocale,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
-    return isValidLocale(locale);
+    return isValidLocale(locale, customMapping);
+  }
+
+  /**
+   * Resolves the canonical locale for a given locale.
+   * @param locale - The locale to resolve the canonical locale for
+   * @param customMapping - The custom mapping to use for resolving the canonical locale
+   * @returns The canonical locale
+   */
+  resolveCanonicalLocale(
+    locale: string | undefined = this.targetLocale,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): string {
+    if (!locale)
+      throw new Error(noTargetLocaleProvidedError('resolveCanonicalLocale'));
+
+    if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
+      return (customMapping[locale] as { code: string }).code;
+    }
+
+    return locale;
+  }
+
+  /**
+   * Resolves the alias locale for a given locale.
+   * @param locale - The locale to resolve the alias locale for
+   * @param customMapping - The custom mapping to use for resolving the alias locale
+   * @returns The alias locale
+   */
+  resolveAliasLocale(
+    locale: string,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): string {
+    if (!locale)
+      throw new Error(noTargetLocaleProvidedError('resolveAliasLocale'));
+    return _resolveAliasLocale(locale, customMapping);
   }
 
   /**
@@ -1566,9 +1736,15 @@ export function getRegionProperties(
 export function requiresTranslation(
   sourceLocale: string,
   targetLocale: string,
-  approvedLocales?: string[]
+  approvedLocales?: string[],
+  customMapping?: CustomMapping
 ): boolean {
-  return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+  return _requiresTranslation(
+    sourceLocale,
+    targetLocale,
+    approvedLocales,
+    customMapping
+  );
 }
 
 /**
@@ -1579,9 +1755,10 @@ export function requiresTranslation(
  */
 export function determineLocale(
   locales: string | string[],
-  approvedLocales: string[] | undefined = []
+  approvedLocales: string[] | undefined = [],
+  customMapping: CustomMapping | undefined = undefined
 ): string | undefined {
-  return _determineLocale(locales, approvedLocales);
+  return _determineLocale(locales, approvedLocales, customMapping);
 }
 
 /**
@@ -1597,10 +1774,27 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
 /**
  * Checks if a given BCP 47 locale code is valid.
  * @param {string} locale - The BCP 47 locale code to validate.
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
  * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
  */
-export function isValidLocale(locale: string): boolean {
-  return _isValidLocale(locale);
+export function isValidLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): boolean {
+  return _isValidLocale(locale, customMapping);
+}
+
+/**
+ * Resolves the alias locale for a given locale.
+ * @param {string} locale - The locale to resolve the alias locale for
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the alias locale
+ * @returns {string} The alias locale
+ */
+export function resolveAliasLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): string {
+  return _resolveAliasLocale(locale, customMapping);
 }
 
 /**
