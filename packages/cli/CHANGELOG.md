@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.1.21
+
+### Patch Changes
+
+- [#645](https://github.com/generaltranslation/gt/pull/645) [`58cfaee`](https://github.com/generaltranslation/gt/commit/58cfaee5cc1dcd187f0b72b2761f96c19b4f313e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Escaping HTML to avoid parsing issues from MDX consumers
+
 ## 2.1.20
 
 ### Patch Changes
