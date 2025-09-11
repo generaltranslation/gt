@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.4.1
+
+### Patch Changes
+
+- [#648](https://github.com/generaltranslation/gt/pull/648) [`c8facea`](https://github.com/generaltranslation/gt/commit/c8facead18a3c581e9d4ca53224ab17b8ce1e059) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: MFunctionType required fields
+
+- Updated dependencies [[`c8facea`](https://github.com/generaltranslation/gt/commit/c8facead18a3c581e9d4ca53224ab17b8ce1e059)]:
+  - gt-react@10.5.1
+
 ## 6.4.0
 
 ### Minor Changes
