@@ -18,6 +18,7 @@ import { downloadFileBatch } from '../downloadFileBatch.js';
 vi.mock('../../utils/gt.js', () => ({
   gt: {
     checkFileTranslations: vi.fn(),
+    resolveAliasLocale: vi.fn((locale) => locale), // Return locale as-is for testing
   },
 }));
 
