@@ -67,7 +67,8 @@ import _uploadFilesForTranslation from './translate/uploadFilesForTranslation';
 import {
   UploadFilesForTranslationOptions,
   UploadedFileRef,
-  UploadFilesForTranslationResult } from './types-dir/uploadFilesForTranslation';
+  UploadFilesForTranslationResult,
+} from './types-dir/uploadFilesForTranslation';
 import _generateContext, {
   GenerateContextResult,
 } from './translate/generateContext';
@@ -433,7 +434,7 @@ export class GT {
   ): Promise<UploadFilesForTranslationResult> {
     // Validation
     this._validateAuth('uploadFiles');
-    
+
     // Merge instance settings with options
     const mergedOptions: UploadFilesForTranslationOptions = {
       ...options,
@@ -501,12 +502,12 @@ export class GT {
   ): Promise<EnqueueFilesResult> {
     // Validation
     this._validateAuth('enqueueFilesByRef');
-    
+
     // Merge instance settings with options
     const mergedOptions: EnqueueByRefOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
-      targetLocales: options.targetLocales ?? [this.targetLocale!]
+      targetLocales: options.targetLocales ?? [this.targetLocale!],
     };
 
     // Require source locale

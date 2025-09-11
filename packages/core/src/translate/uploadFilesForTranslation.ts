@@ -7,8 +7,8 @@ import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { FileToTranslate } from '../types';
 import {
-    UploadFilesForTranslationOptions,
-    UploadFilesForTranslationResult
+  UploadFilesForTranslationOptions,
+  UploadFilesForTranslationResult,
 } from 'src/types-dir/uploadFilesForTranslation';
 
 export default async function _uploadFilesForTranslation(
