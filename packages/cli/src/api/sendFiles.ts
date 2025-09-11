@@ -1,9 +1,5 @@
 import chalk from 'chalk';
-import {
-  createSpinner,
-  logMessage,
-  logSuccess,
-} from '../console/logging.js';
+import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import {
@@ -67,15 +63,15 @@ export async function sendFiles(
 
       const start = Date.now();
       // Use CLI --timeout (seconds) for overall context wait; default is set by flag parser
-      const timeoutMs = (typeof options?.timeout === 'number'
-        ? options.timeout
-        : 600) /* seconds */ * 1000;
+      const timeoutMs =
+        (typeof options?.timeout === 'number'
+          ? options.timeout
+          : 600) /* seconds */ * 1000;
       const pollInterval = 2000;
 
       let contextCompleted = false;
       let contextFailedMessage: string | null = null;
 
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const status = await gt.checkContextStatus(contextJobId);
 
@@ -88,7 +84,8 @@ export async function sendFiles(
           break;
         }
         if (Date.now() - start > timeoutMs) {
-          contextFailedMessage = 'Timed out while waiting for context generation';
+          contextFailedMessage =
+            'Timed out while waiting for context generation';
           break;
         }
         await new Promise((r) => setTimeout(r, pollInterval));
@@ -120,7 +117,9 @@ export async function sendFiles(
     });
 
     const { data, message, locales, translations } = enqueueResult;
-    enqueueSpinner.stop(chalk.green('Files for translation uploaded successfully'));
+    enqueueSpinner.stop(
+      chalk.green('Files for translation uploaded successfully')
+    );
     logSuccess(message);
 
     return { data, locales, translations };
