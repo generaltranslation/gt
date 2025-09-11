@@ -6,7 +6,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logWarning } from '../console/logging.js';
-import { encodeAnglePlaceholders } from './encodePlaceholders.js';
+import { escapeHtmlInTextNodes } from './escapeHtml.js';
 
 /**
  * Generates a slug from heading text
@@ -213,12 +213,12 @@ function applyInlineIds(
       // Add the ID to the heading
       const lastChild = heading.children[heading.children.length - 1];
       if (lastChild?.type === 'text') {
-        lastChild.value += ` {#${id}}`;
+        lastChild.value += ` \\{#${id}\\}`;
       } else {
         // If last child is not text, add a new text node
         heading.children.push({
           type: 'text',
-          value: ` {#${id}}`,
+          value: ` \\{#${id}\\}`,
         });
       }
     }
@@ -230,14 +230,8 @@ function applyInlineIds(
     const stringifyProcessor = unified()
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx)
-      .use(encodeAnglePlaceholders)
+      .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
         handlers: {
           // Custom handler to prevent escaping of {#id} syntax
           text(node: any) {

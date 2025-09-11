@@ -10,7 +10,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
-import { encodeAnglePlaceholders } from './encodePlaceholders.js';
+import { escapeHtmlInTextNodes } from './escapeHtml.js';
 
 const { isMatch } = micromatch;
 
@@ -534,14 +534,8 @@ function transformMdxUrls(
     const stringifyProcessor = unified()
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx)
-      .use(encodeAnglePlaceholders)
+      .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
         handlers: {
           // Handler to prevent escaping (avoids '&lt;' -> '\&lt;')
           text(node: any) {
