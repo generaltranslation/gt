@@ -39,4 +39,3 @@ export default async function _checkContextStatus(
   await validateResponse(response);
   return (await response.json()) as CheckContextStatusResult;
 }
-

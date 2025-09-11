@@ -48,4 +48,3 @@ export default async function _generateContext(
   await validateResponse(response);
   return (await response.json()) as GenerateContextResult;
 }
-

@@ -63,10 +63,20 @@ import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
 import _enqueueFiles from './translate/enqueueFiles';
-import _uploadFiles, { UploadFilesOptions, UploadFilesResult, UploadedFileRef } from './translate/uploadFiles';
-import _generateContext, { GenerateContextResult } from './translate/generateContext';
-import _checkContextStatus, { CheckContextStatusResult } from './translate/checkContextStatus';
-import _enqueueFilesByRef, { EnqueueByRefOptions } from './translate/enqueueFilesByRef';
+import _uploadFiles, {
+  UploadFilesOptions,
+  UploadFilesResult,
+  UploadedFileRef,
+} from './translate/uploadFiles';
+import _generateContext, {
+  GenerateContextResult,
+} from './translate/generateContext';
+import _checkContextStatus, {
+  CheckContextStatusResult,
+} from './translate/checkContextStatus';
+import _enqueueFilesByRef, {
+  EnqueueByRefOptions,
+} from './translate/enqueueFilesByRef';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
 import _downloadFile from './translate/downloadFile';
@@ -394,7 +404,11 @@ export class GT {
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
-    return await _uploadFiles(files, mergedOptions, this._getTranslationConfig());
+    return await _uploadFiles(
+      files,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
   }
 
   /**
@@ -405,7 +419,11 @@ export class GT {
     timeoutMs?: number
   ): Promise<GenerateContextResult> {
     this._validateAuth('generateContext');
-    return await _generateContext(files, this._getTranslationConfig(), timeoutMs);
+    return await _generateContext(
+      files,
+      this._getTranslationConfig(),
+      timeoutMs
+    );
   }
 
   /**
@@ -416,7 +434,11 @@ export class GT {
     timeoutMs?: number
   ): Promise<CheckContextStatusResult> {
     this._validateAuth('checkContextStatus');
-    return await _checkContextStatus(jobId, this._getTranslationConfig(), timeoutMs);
+    return await _checkContextStatus(
+      jobId,
+      this._getTranslationConfig(),
+      timeoutMs
+    );
   }
 
   /**

@@ -58,4 +58,3 @@ export default async function _enqueueFilesByRef(
   const result = (await response.json()) as EnqueueFilesResult;
   return result;
 }
-
