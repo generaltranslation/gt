@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.6.1
+
+### Patch Changes
+
+- [#653](https://github.com/generaltranslation/gt/pull/653) [`55d3619`](https://github.com/generaltranslation/gt/commit/55d36190b8f61fff7ddcb3d9aecf1cd3474c420b) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding return type to file uploads
+
 ## 7.6.0
 
 ### Minor Changes
