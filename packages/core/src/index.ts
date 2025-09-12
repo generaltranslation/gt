@@ -62,15 +62,14 @@ import {
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _generateContext, {
-  GenerateContextResult,
-} from './translate/generateContext';
+import _setupProject, {
+  SetupProjectResult,
+} from './translate/setupProject';
 import {
-  _checkContextStatus,
-  CheckContextStatusResult,
-  _shouldGenerateContext,
-  ShouldGenerateContextResult,
-} from './translate/checkContextStatus';
+  _checkSetupStatus,
+  CheckSetupStatusResult,
+} from './translate/checkSetupStatus';
+import _shouldSetupProject, { ShouldSetupProjectResult} from './translate/shouldSetupProject';
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
@@ -90,7 +89,7 @@ import {
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import _uploadSourceFiles from './translate/uploadSourceFIles';
+import _uploadSourceFiles from './translate/uploadSourceFiles';
 import _uploadTranslations from './translate/uploadTranslations';
 import {
   FileUpload,
@@ -358,14 +357,14 @@ export class GT {
   }
 
   /**
-   * Enqueues context generation jobs for uploaded files by reference.
+   * Enqueues setup generation jobs for uploaded files by reference.
    */
-  async generateContext(
+  async setupProject(
     files: FileUploadRef[],
     timeoutMs?: number
-  ): Promise<GenerateContextResult> {
-    this._validateAuth('generateContext');
-    return await _generateContext(
+  ): Promise<SetupProjectResult> {
+    this._validateAuth('setupProject');
+    return await _setupProject(
       files,
       this._getTranslationConfig(),
       timeoutMs
@@ -373,23 +372,23 @@ export class GT {
   }
 
   /**
-   * Checks context job status by ID.
+   * Checks setup job status by ID.
    */
-  async checkContextStatus(
+  async checkSetupStatus(
     jobId: string,
     timeoutMs?: number
-  ): Promise<CheckContextStatusResult> {
-    this._validateAuth('checkContextStatus');
-    return await _checkContextStatus(
+  ): Promise<CheckSetupStatusResult> {
+    this._validateAuth('checkSetupStatus');
+    return await _checkSetupStatus(
       jobId,
       this._getTranslationConfig(),
       timeoutMs
     );
   }
 
-  async shouldGenerateContext(): Promise<ShouldGenerateContextResult> {
-    this._validateAuth('shouldGenerateContext');
-    return await _shouldGenerateContext(this._getTranslationConfig());
+  async shouldSetupProject(): Promise<ShouldSetupProjectResult> {
+    this._validateAuth('shouldSetupProject');
+    return await _shouldSetupProject(this._getTranslationConfig());
   }
 
   /**

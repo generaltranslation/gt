@@ -7,18 +7,18 @@ import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { FileUploadRef } from 'src/types-dir/uploadFiles';
 
-export type GenerateContextResult = {
-  contextJobId: string;
+export type SetupProjectResult = {
+  setupJobId: string;
   status: 'queued';
 };
 
-export default async function _generateContext(
+export default async function _setupProject(
   files: FileUploadRef[],
   config: TranslationRequestConfig,
   timeoutMs?: number
-): Promise<GenerateContextResult> {
+): Promise<SetupProjectResult> {
   const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/context/generate`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/generate`;
 
   const body = {
     files: files.map((f) => ({
@@ -46,5 +46,5 @@ export default async function _generateContext(
   }
 
   await validateResponse(response);
-  return (await response.json()) as GenerateContextResult;
+  return (await response.json()) as SetupProjectResult;
 }

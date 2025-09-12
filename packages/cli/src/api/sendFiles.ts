@@ -81,52 +81,52 @@ export async function sendFiles(
     });
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
-    // Check if context is needed
-    const { shouldGenerateContext } = await gt.shouldGenerateContext();
+    // Check if setup is needed
+    const { shouldSetupProject } = await gt.shouldSetupProject();
 
-    // Step 2: Generate context if needed and poll until complete
-    if (shouldGenerateContext) {
-      // Calculate timeout once for context fetching
-      const contextTimeoutMs =
+    // Step 2: Setup if needed and poll until complete
+    if (shouldSetupProject) {
+      // Calculate timeout once for setup fetching
+      const setupTimeoutMs =
         (typeof options?.timeout === 'number' ? options.timeout : 600) * 1000;
 
-      const { contextJobId } = await gt.generateContext(upload.uploadedFiles);
+      const { setupJobId } = await gt.setupProject(upload.uploadedFiles);
 
-      const contextSpinner = createSpinner('dots');
-      contextSpinner.start('Generating project context...');
+      const setupSpinner = createSpinner('dots');
+      setupSpinner.start('Setting up project...');
 
       const start = Date.now();
       const pollInterval = 2000;
 
-      let contextCompleted = false;
-      let contextFailedMessage: string | null = null;
+      let setupCompleted = false;
+      let setupFailedMessage: string | null = null;
 
       while (true) {
-        const status = await gt.checkContextStatus(contextJobId);
+        const status = await gt.checkSetupStatus(setupJobId);
 
         if (status.status === 'completed') {
-          contextCompleted = true;
+          setupCompleted = true;
           break;
         }
         if (status.status === 'failed') {
-          contextFailedMessage = status.error?.message || 'Unknown error';
+          setupFailedMessage = status.error?.message || 'Unknown error';
           break;
         }
-        if (Date.now() - start > contextTimeoutMs) {
-          contextFailedMessage =
-            'Timed out while waiting for context generation';
+        if (Date.now() - start > setupTimeoutMs) {
+          setupFailedMessage =
+            'Timed out while waiting for setup generation';
           break;
         }
         await new Promise((r) => setTimeout(r, pollInterval));
       }
 
-      if (contextCompleted) {
-        contextSpinner.stop(chalk.green('Context successfully generated'));
+      if (setupCompleted) {
+        setupSpinner.stop(chalk.green('Setup successfully completed'));
       } else {
-        contextSpinner.stop(
+        setupSpinner.stop(
           chalk.yellow(
-            `Context generation ${contextFailedMessage ? 'failed' : 'timed out'} — proceeding without context${
-              contextFailedMessage ? ` (${contextFailedMessage})` : ''
+            `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
+              setupFailedMessage ? ` (${setupFailedMessage})` : ''
             }`
           )
         );
