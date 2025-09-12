@@ -44,7 +44,7 @@ describe('_enqueueFiles', () => {
     vi.mocked(validateResponse).mockReset();
     vi.mocked(handleFetchError).mockReset();
     vi.mocked(generateRequestHeaders).mockReset();
-    
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -353,9 +353,7 @@ describe('_enqueueFiles', () => {
     await _enqueueFiles(mockFiles, mockOptions, configWithoutBaseUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'api2.gtx.dev/v2/project/translations/enqueue'
-      ),
+      expect.stringContaining('api2.gtx.dev/v2/project/translations/enqueue'),
       expect.any(Object),
       expect.any(Number)
     );
@@ -403,7 +401,6 @@ describe('_enqueueFiles', () => {
     expect(result.translations[0].locale).toBe('es');
     expect(result.translations[0].isReady).toBe(false);
   });
-
 
   it('should handle validation errors', async () => {
     const mockFiles = [createMockFile()];

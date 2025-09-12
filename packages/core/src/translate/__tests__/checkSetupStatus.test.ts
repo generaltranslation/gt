@@ -28,7 +28,7 @@ describe('_checkSetupStatus', () => {
     vi.mocked(validateResponse).mockReset();
     vi.mocked(handleFetchError).mockReset();
     vi.mocked(generateRequestHeaders).mockReset();
-    
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -163,7 +163,6 @@ describe('_checkSetupStatus', () => {
 
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
-
 
   it('should handle validation errors', async () => {
     const mockFetchResponse = {

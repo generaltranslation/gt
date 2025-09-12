@@ -35,7 +35,7 @@ describe('_setupProject', () => {
     vi.mocked(validateResponse).mockReset();
     vi.mocked(handleFetchError).mockReset();
     vi.mocked(generateRequestHeaders).mockReset();
-    
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -410,7 +410,6 @@ describe('_setupProject', () => {
       expect.any(Number)
     );
   });
-
 
   it('should use default timeout when not provided', async () => {
     const mockFiles = [createMockFile()];

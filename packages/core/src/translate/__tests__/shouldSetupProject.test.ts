@@ -23,7 +23,7 @@ describe('_shouldSetupProject', () => {
     mockFetch.mockReset();
     vi.mocked(validateResponse).mockReset();
     vi.mocked(generateRequestHeaders).mockReset();
-    
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -31,8 +31,6 @@ describe('_shouldSetupProject', () => {
     });
     global.fetch = mockFetch;
   });
-
-
 
   it('should handle fetch errors', async () => {
     const fetchError = new Error('Network error');

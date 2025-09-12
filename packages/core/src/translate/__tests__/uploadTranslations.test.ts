@@ -46,7 +46,7 @@ describe('_uploadTranslations', () => {
     vi.mocked(validateResponse).mockReset();
     vi.mocked(handleFetchError).mockReset();
     vi.mocked(generateRequestHeaders).mockReset();
-    
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -274,7 +274,7 @@ describe('_uploadTranslations', () => {
           sourceLocale: 'en',
         }),
       },
-      expect.any(Number)
+      expect.any(Number),
     ]);
   });
 
@@ -404,7 +404,6 @@ describe('_uploadTranslations', () => {
     );
   });
 
-
   it('should handle fetch errors', async () => {
     const mockFiles = [
       {
@@ -426,8 +425,6 @@ describe('_uploadTranslations', () => {
 
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
-
-
 
   it('should handle empty translations array', async () => {
     const mockFiles = [

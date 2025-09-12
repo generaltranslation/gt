@@ -46,7 +46,7 @@ describe('_uploadSourceFiles', () => {
     vi.mocked(validateResponse).mockReset();
     vi.mocked(handleFetchError).mockReset();
     vi.mocked(generateRequestHeaders).mockReset();
-    
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -369,7 +369,6 @@ describe('_uploadSourceFiles', () => {
       expect.any(Number)
     );
   });
-
 
   it('should handle empty files array', async () => {
     const mockFiles: { source: FileUpload }[] = [];
