@@ -63,12 +63,6 @@ import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
 import _enqueueFiles from './translate/enqueueFiles';
-import _uploadFilesForTranslation from './translate/uploadFilesForTranslation';
-import {
-  UploadFilesForTranslationOptions,
-  UploadedFileRef,
-  UploadFilesForTranslationResult,
-} from './types-dir/uploadFilesForTranslation';
 import _generateContext, {
   GenerateContextResult,
 } from './translate/generateContext';
@@ -96,9 +90,10 @@ import {
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import _uploadFiles from './translate/uploadFiles';
+import { _uploadSourceFiles, _uploadTranslations } from './translate/uploadFiles';
 import {
   FileUpload,
+  FileUploadRef,
   RequiredUploadFilesOptions,
   UploadFilesOptions,
 } from './types-dir/uploadFiles';
@@ -426,48 +421,10 @@ export class GT {
   }
 
   /**
-   * Uploads files to the project and returns references for further steps.
-   */
-  async uploadFilesForTranslation(
-    files: FileToTranslate[],
-    options: UploadFilesForTranslationOptions
-  ): Promise<UploadFilesForTranslationResult> {
-    // Validation
-    this._validateAuth('uploadFiles');
-
-    // Merge instance settings with options
-    const mergedOptions: UploadFilesForTranslationOptions = {
-      ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale!,
-      targetLocales: options.targetLocales ?? [this.targetLocale!],
-    };
-
-    // Require source locale
-    if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('uploadFiles');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // Require target locale(s)
-    if (!mergedOptions.targetLocales) {
-      const error = noTargetLocaleProvidedError('uploadFiles');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    return await _uploadFilesForTranslation(
-      files,
-      mergedOptions,
-      this._getTranslationConfig()
-    );
-  }
-
-  /**
    * Enqueues context generation jobs for uploaded files by reference.
    */
   async generateContext(
-    files: UploadedFileRef[],
+    files: FileUploadRef[],
     timeoutMs?: number
   ): Promise<GenerateContextResult> {
     this._validateAuth('generateContext');
@@ -497,7 +454,7 @@ export class GT {
    * Enqueues translation jobs by reference to previously uploaded files.
    */
   async enqueueFilesByRef(
-    files: UploadedFileRef[],
+    files: FileUploadRef[],
     options: EnqueueByRefOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
@@ -938,15 +895,15 @@ export class GT {
     );
   }
 
-  async uploadFiles(
-    files: {
-      source: FileUpload;
-      translations: FileUpload[];
-    }[],
+  /**
+   * Uploads source files (no translations) to create/replace source entries.
+   */
+  async uploadSourceFiles(
+    files: { source: FileUpload }[],
     options: UploadFilesOptions
   ): Promise<any> {
     // Validation
-    this._validateAuth('uploadFiles');
+    this._validateAuth('uploadSourceFiles');
 
     // Merge instance settings with options
     const mergedOptions: UploadFilesOptions = {
@@ -956,14 +913,48 @@ export class GT {
 
     // Require source locale
     if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('uploadFiles');
+      const error = noSourceLocaleProvidedError('uploadSourceFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    return await _uploadFiles(
+    return await _uploadSourceFiles(
       files,
-      mergedOptions,
+      mergedOptions as RequiredUploadFilesOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Uploads translation files for existing source files.
+   * Each item must reference an existing source (versionId/fileId) and provide translated content with locale.
+   */
+  async uploadTranslations(
+    files: {
+      source: FileUpload;                         // reference only (no content)
+      translations: FileUpload[];  // each has content + ids + locale
+    }[],
+    options: UploadFilesOptions
+  ): Promise<any> {
+    // Validation
+    this._validateAuth('uploadTranslations');
+
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('uploadTranslations');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    return await _uploadTranslations(
+      files,
+      mergedOptions as RequiredUploadFilesOptions,
       this._getTranslationConfig()
     );
   }

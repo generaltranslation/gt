@@ -5,7 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
-import { UploadedFileRef } from 'src/types-dir/uploadFilesForTranslation';
+import { FileUploadRef } from 'src/types-dir/uploadFiles';
 
 export type GenerateContextResult = {
   contextJobId: string;
@@ -13,7 +13,7 @@ export type GenerateContextResult = {
 };
 
 export default async function _generateContext(
-  files: UploadedFileRef[],
+  files: FileUploadRef[],
   config: TranslationRequestConfig,
   timeoutMs?: number
 ): Promise<GenerateContextResult> {

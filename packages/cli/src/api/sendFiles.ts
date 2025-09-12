@@ -1,12 +1,15 @@
 import chalk from 'chalk';
-import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
+import { createSpinner, logMessage, logSuccess, logWarning } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import {
   CompletedFileTranslationData,
   FileToTranslate,
 } from 'generaltranslation/types';
+import { FileUpload } from './uploadFiles.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
+
+type SourceUpload = { source: FileUpload };
 
 export type SendFilesResult = {
   data: Record<string, { fileName: string; versionId: string }>;
@@ -44,13 +47,27 @@ export async function sendFiles(
     uploadSpinner.start(
       `Uploading ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation API...`
     );
-    const upload = await gt.uploadFilesForTranslation(files, {
-      sourceLocale: settings.defaultLocale,
-      targetLocales: settings.locales,
-      publish: settings.publish,
-      requireApproval: settings.stageTranslations,
+
+    const sourceLocale = settings.defaultLocale;
+    if (!sourceLocale) {
+      uploadSpinner.stop(chalk.red('Missing default source locale'));
+      throw new Error('sendFiles: settings.defaultLocale is required to upload source files');
+    }
+
+    // Convert FileToTranslate[] -> { source: FileUpload }[]
+    const uploads: SourceUpload[] = files.map(({ content, fileName, fileFormat, dataFormat }) => ({
+      source: {
+        content: Buffer.from(content).toString('base64'),
+        fileName,
+        fileFormat,
+        dataFormat,
+        locale: sourceLocale },
+    }));
+
+    logWarning(uploads[0].source.locale)
+    const upload = await gt.uploadSourceFiles(uploads, {
+      sourceLocale,
       modelProvider: settings.modelProvider,
-      force: options?.force,
     });
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
