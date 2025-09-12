@@ -8,6 +8,7 @@ import generateRequestHeaders from './utils/generateRequestHeaders';
 
 import {
   FileUpload,
+  UploadFilesResponse,
   RequiredUploadFilesOptions,
 } from '../types-dir/uploadFiles';
 
@@ -26,7 +27,7 @@ export default async function _uploadTranslations(
   }[],
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
-): Promise<any> {
+): Promise<UploadFilesResponse> {
   const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-translations`;
 
@@ -68,5 +69,5 @@ export default async function _uploadTranslations(
 
   // Validate response
   await validateResponse(response);
-  return response!.json();
+  return (await response!.json()) as UploadFilesResponse;
 }
