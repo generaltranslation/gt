@@ -398,7 +398,7 @@ export class GT {
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueOptions = {
+    let mergedOptions: EnqueueOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
       targetLocales: options.targetLocales ?? [this.targetLocale!],
@@ -420,6 +420,13 @@ export class GT {
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+    )};
 
     return await _enqueueFiles(
       files,
