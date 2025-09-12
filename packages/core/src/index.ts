@@ -70,7 +70,7 @@ import {
   _checkContextStatus,
   CheckContextStatusResult,
   _shouldGenerateContext,
-  ShouldGenerateContextResult
+  ShouldGenerateContextResult,
 } from './translate/checkContextStatus';
 import _enqueueFilesByRef, {
   EnqueueByRefOptions,

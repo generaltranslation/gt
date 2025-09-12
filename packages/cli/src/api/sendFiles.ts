@@ -85,7 +85,9 @@ export async function sendFiles(
       (typeof options?.timeout === 'number' ? options.timeout : 600) * 1000;
 
     // Check if context is needed
-    const { shouldGenerateContext } = await gt.shouldGenerateContext(contextCheckTimeoutMs);
+    const { shouldGenerateContext } = await gt.shouldGenerateContext(
+      contextCheckTimeoutMs
+    );
 
     // Step 2: Generate context if needed and poll until complete
     if (shouldGenerateContext) {
