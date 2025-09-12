@@ -15,6 +15,7 @@ export type FileUploadRef = {
   fileName: string;
   fileFormat: FileFormat;
   dataFormat?: DataFormat;
+  locale?: string;
 };
 
 export type UploadData = {
@@ -27,6 +28,12 @@ export type UploadFilesOptions = {
   sourceLocale: string;
   modelProvider?: string;
   timeout?: number;
+};
+
+export type UploadFilesResponse = {
+  uploadedFiles: FileUploadRef[];
+  count: number;
+  message: string;
 };
 
 export type RequiredUploadFilesOptions = UploadFilesOptions &
