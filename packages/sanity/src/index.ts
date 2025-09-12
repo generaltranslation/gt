@@ -20,8 +20,6 @@ export {
 } from 'sanity-translations-tab';
 import { GTAdapter } from './adapter';
 
-import { definePlugin } from 'sanity';
-
 interface ConfigOptions {
   adapter: Adapter;
   secretsNamespace: string | null;
@@ -61,24 +59,3 @@ export {
   defaultFieldLevelConfig,
   legacyDocumentLevelConfig,
 };
-
-/**
- * Usage in `sanity.config.ts` (or .js)
- *
- * ```ts
- * import {defineConfig} from 'sanity'
- * import {myPlugin} from 'sanity-plugin-gt-sanity'
- *
- * export default defineConfig({
- *   // ...
- *   plugins: [myPlugin()],
- * })
- * ```
- */
-export const myPlugin = definePlugin<void>(() => {
-  // eslint-disable-next-line no-console
-  console.log('hello from @generaltranslation/sanity');
-  return {
-    name: '@generaltranslation/sanity',
-  };
-});

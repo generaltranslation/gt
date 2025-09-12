@@ -1,5 +1,5 @@
 import { Adapter, Secrets } from 'sanity-translations-tab';
-import { getLocales } from './getLocales';
+import { gt } from './core';
 
 // note: this function is used to get the status of a current translation task
 export const getTranslationTask: Adapter['getTranslationTask'] = async (
@@ -13,10 +13,18 @@ export const getTranslationTask: Adapter['getTranslationTask'] = async (
       locales: [],
     };
   }
+  const { fileId, versionId } = JSON.parse(documentId);
+  const task = await gt.querySourceFile({
+    fileId,
+    versionId,
+  });
 
   return {
-    taskId: documentId,
+    taskId: documentId, // same as documentId since we are using the fileId and versionId to uniquely identify the task
     documentId: documentId,
-    locales: [],
+    locales: task.translations.map((translation) => ({
+      localeId: translation.locale,
+      progress: translation.completedAt ? 100 : 0,
+    })),
   };
 };

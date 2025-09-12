@@ -45,3 +45,46 @@ export default async function _downloadFile(
   const result = (await response.json()) as { data: string };
   return Buffer.from(result.data, 'base64').buffer;
 }
+
+/**
+ * @internal
+ * Downloads a single translation file content without writing to filesystem.
+ * @param file - The file to download
+ * @param options - The options for the API call
+ * @param config - The configuration for the request
+ * @returns The downloaded file content as an ArrayBuffer
+ */
+export async function _downloadFileV2(
+  file: {
+    fileId: string;
+    versionId: string;
+    locale: string;
+  },
+  options: DownloadFileOptions,
+  config: TranslationRequestConfig
+): Promise<ArrayBuffer> {
+  const { baseUrl } = config;
+  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
+  const url = `${baseUrl || defaultBaseUrl}/v2/project/files/download/${file.fileId}/${file.versionId}?locale=${file.locale}`;
+
+  // Request the file download
+  let response;
+  try {
+    response = await fetchWithTimeout(
+      url,
+      {
+        method: 'GET',
+        headers: generateRequestHeaders(config, true),
+      },
+      timeout
+    );
+  } catch (error) {
+    handleFetchError(error, timeout);
+  }
+
+  // Validate response
+  await validateResponse(response);
+
+  const result = (await response.json()) as { data: string };
+  return Buffer.from(result.data, 'base64').buffer;
+}
