@@ -96,6 +96,7 @@ import {
   FileUploadRef,
   RequiredUploadFilesOptions,
   UploadFilesOptions,
+  UploadFilesResponse,
 } from './types-dir/uploadFiles';
 import _querySourceFile from './translate/querySourceFile';
 import { ProjectData } from './types-dir/project';
@@ -1013,12 +1014,12 @@ export class GT {
    *
    * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
    * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings
-   * @returns {Promise<any>} Upload result containing file IDs, version information, and upload status
+   * @returns {Promise<UploadFilesResponse>} Upload result containing file IDs, version information, and upload status
    */
   async uploadSourceFiles(
     files: { source: FileUpload }[],
     options: UploadFilesOptions
-  ): Promise<any> {
+  ): Promise<UploadFilesResponse> {
     // Validation
     this._validateAuth('uploadSourceFiles');
 
@@ -1054,7 +1055,7 @@ export class GT {
    *   - `source`: Reference to the existing source file (contains IDs but no content)
    *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
    * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings
-   * @returns {Promise<any>} Upload result containing translation IDs, status, and processing information
+   * @returns {Promise<UploadFilesResponse>} Upload result containing translation IDs, status, and processing information
    */
   async uploadTranslations(
     files: {
@@ -1062,7 +1063,7 @@ export class GT {
       translations: FileUpload[]; // each has content + ids + locale
     }[],
     options: UploadFilesOptions
-  ): Promise<any> {
+  ): Promise<UploadFilesResponse> {
     // Validation
     this._validateAuth('uploadTranslations');
 
