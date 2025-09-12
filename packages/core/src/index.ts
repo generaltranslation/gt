@@ -357,7 +357,16 @@ export class GT {
   }
 
   /**
-   * Enqueues setup generation jobs for uploaded files by reference.
+   * Enqueues project setup job using the specified file references
+   *
+   * This method creates setup jobs that will process source file references
+   * and generate a project setup. The files parameter contains references (IDs) to source
+   * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
+   * for processing and will generate a project setup based on the source files.
+   *
+   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
    */
   async setupProject(
     files: FileUploadRef[],
@@ -390,6 +399,14 @@ export class GT {
     );
   }
 
+  /**
+   * Checks if a prpject requires setup.
+   *
+   * This method queries API to check if a project has been set up and returns
+   * true if setup is missing
+   *
+   * @returns {Promise<ShouldSetupProjectResult>} Object containing shouldSetupProject
+   */
   async shouldSetupProject(): Promise<ShouldSetupProjectResult> {
     this._validateAuth('shouldSetupProject');
     return await _shouldSetupProject(this._getTranslationConfig());
