@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _uploadSourceFiles from '../uploadSourceFiles';
 import { TranslationRequestConfig } from '../../types';
-import { FileUpload, RequiredUploadFilesOptions } from '../../types-dir/uploadFiles';
+import {
+  FileUpload,
+  RequiredUploadFilesOptions,
+} from '../../types-dir/uploadFiles';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
@@ -19,7 +22,9 @@ describe('_uploadSourceFiles', () => {
     apiKey: 'test-api-key',
   };
 
-  const createMockFileUpload = (overrides: Partial<FileUpload> = {}): FileUpload => ({
+  const createMockFileUpload = (
+    overrides: Partial<FileUpload> = {}
+  ): FileUpload => ({
     content: '{"key": "value"}',
     fileName: 'test.json',
     fileFormat: 'JSON',
@@ -27,7 +32,9 @@ describe('_uploadSourceFiles', () => {
     ...overrides,
   });
 
-  const createMockOptions = (overrides: Partial<RequiredUploadFilesOptions> = {}): RequiredUploadFilesOptions => ({
+  const createMockOptions = (
+    overrides: Partial<RequiredUploadFilesOptions> = {}
+  ): RequiredUploadFilesOptions => ({
     sourceLocale: 'en',
     timeout: 60000,
     ...overrides,
@@ -48,7 +55,10 @@ describe('_uploadSourceFiles', () => {
         source: createMockFileUpload({ fileName: 'component.json' }),
       },
       {
-        source: createMockFileUpload({ fileName: 'page.json', content: '{"title": "Page"}' }),
+        source: createMockFileUpload({
+          fileName: 'page.json',
+          content: '{"title": "Page"}',
+        }),
       },
     ];
 
@@ -57,7 +67,11 @@ describe('_uploadSourceFiles', () => {
     const mockResponse = {
       success: true,
       uploadedFiles: [
-        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+        {
+          fileId: 'file-123',
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
         { fileId: 'file-789', versionId: 'version-012', fileName: 'page.json' },
       ],
     };
@@ -240,7 +254,9 @@ describe('_uploadSourceFiles', () => {
           data: [
             {
               source: {
-                content: Buffer.from('export const Hello = () => "Hello"').toString('base64'),
+                content: Buffer.from(
+                  'export const Hello = () => "Hello"'
+                ).toString('base64'),
                 fileName: 'component.js',
                 fileFormat: 'JS',
                 locale: 'en',

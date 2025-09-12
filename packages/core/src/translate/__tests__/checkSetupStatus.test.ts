@@ -152,9 +152,9 @@ describe('_checkSetupStatus', () => {
       throw fetchError;
     });
 
-    await expect(
-      _checkSetupStatus('job-123', mockConfig)
-    ).rejects.toThrow('Network error');
+    await expect(_checkSetupStatus('job-123', mockConfig)).rejects.toThrow(
+      'Network error'
+    );
 
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
@@ -243,7 +243,9 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockRejectedValue(validationError);
 
-    await expect(_checkSetupStatus('job-123', mockConfig)).rejects.toThrow('Invalid response');
+    await expect(_checkSetupStatus('job-123', mockConfig)).rejects.toThrow(
+      'Invalid response'
+    );
 
     expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
   });

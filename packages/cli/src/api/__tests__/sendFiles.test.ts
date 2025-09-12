@@ -114,7 +114,11 @@ describe('sendFiles', () => {
 
     const mockUploadResponse = {
       uploadedFiles: [
-        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+        {
+          fileId: 'file-123',
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
         { fileId: 'file-789', versionId: 'version-012', fileName: 'page.json' },
       ],
     };
@@ -130,7 +134,9 @@ describe('sendFiles', () => {
     });
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: false });
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
+      shouldSetupProject: false,
+    });
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
@@ -177,7 +183,11 @@ describe('sendFiles', () => {
 
     const mockUploadResponse = {
       uploadedFiles: [
-        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+        {
+          fileId: 'file-123',
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
       ],
     };
 
@@ -192,7 +202,9 @@ describe('sendFiles', () => {
     });
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: false });
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
+      shouldSetupProject: false,
+    });
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
@@ -231,7 +243,11 @@ describe('sendFiles', () => {
 
     const mockUploadResponse = {
       uploadedFiles: [
-        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+        {
+          fileId: 'file-123',
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
       ],
     };
 
@@ -255,7 +271,9 @@ describe('sendFiles', () => {
     });
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: true });
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
+      shouldSetupProject: true,
+    });
     vi.mocked(gt.setupProject).mockResolvedValue(mockSetupResponse);
     vi.mocked(gt.checkSetupStatus).mockResolvedValue(mockSetupStatusResponse);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
@@ -263,7 +281,9 @@ describe('sendFiles', () => {
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
 
     expect(gt.shouldSetupProject).toHaveBeenCalled();
-    expect(gt.setupProject).toHaveBeenCalledWith(mockUploadResponse.uploadedFiles);
+    expect(gt.setupProject).toHaveBeenCalledWith(
+      mockUploadResponse.uploadedFiles
+    );
     expect(gt.checkSetupStatus).toHaveBeenCalledWith('setup-job-789');
     expect(gt.enqueueFiles).toHaveBeenCalled();
 
@@ -293,7 +313,11 @@ describe('sendFiles', () => {
 
     const mockUploadResponse = {
       uploadedFiles: [
-        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+        {
+          fileId: 'file-123',
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
       ],
     };
 
@@ -310,7 +334,9 @@ describe('sendFiles', () => {
     const mockEnqueueResponse = createMockEnqueueResponse();
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: true });
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
+      shouldSetupProject: true,
+    });
     vi.mocked(gt.setupProject).mockResolvedValue(mockSetupResponse);
     vi.mocked(gt.checkSetupStatus).mockResolvedValue(mockSetupStatusResponse);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);

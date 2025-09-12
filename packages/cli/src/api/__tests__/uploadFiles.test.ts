@@ -130,7 +130,7 @@ describe('uploadFiles', () => {
         baseUrl: 'https://api.generaltranslation.com',
       })
     );
-    
+
     expect(gt.uploadTranslations).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({

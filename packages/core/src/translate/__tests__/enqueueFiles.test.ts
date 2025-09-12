@@ -19,7 +19,9 @@ describe('_enqueueFiles', () => {
     apiKey: 'test-api-key',
   };
 
-  const createMockFile = (overrides: Partial<FileUploadRef> = {}): FileUploadRef => ({
+  const createMockFile = (
+    overrides: Partial<FileUploadRef> = {}
+  ): FileUploadRef => ({
     fileId: 'file-123',
     versionId: 'version-456',
     fileName: 'test.json',
@@ -27,7 +29,9 @@ describe('_enqueueFiles', () => {
     ...overrides,
   });
 
-  const createMockOptions = (overrides: Partial<EnqueueOptions> = {}): EnqueueOptions => ({
+  const createMockOptions = (
+    overrides: Partial<EnqueueOptions> = {}
+  ): EnqueueOptions => ({
     sourceLocale: 'en',
     targetLocales: ['es', 'fr'],
     publish: true,
@@ -53,7 +57,10 @@ describe('_enqueueFiles', () => {
 
     const mockResponse: EnqueueFilesResult = {
       data: {
-        'component.json': { versionId: 'version-456', fileName: 'component.json' },
+        'component.json': {
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
         'page.json': { versionId: 'version-789', fileName: 'page.json' },
       },
       message: 'Files enqueued successfully',
@@ -144,7 +151,9 @@ describe('_enqueueFiles', () => {
     });
 
     const mockResponse: EnqueueFilesResult = {
-      data: { 'test.json': { versionId: 'version-456', fileName: 'test.json' } },
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
       translations: [],
@@ -189,7 +198,9 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions({ timeout: 60000 });
 
     const mockResponse: EnqueueFilesResult = {
-      data: { 'test.json': { versionId: 'version-456', fileName: 'test.json' } },
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
       translations: [],
@@ -216,7 +227,9 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions({ timeout: 1000000 }); // Very large timeout
 
     const mockResponse: EnqueueFilesResult = {
-      data: { 'test.json': { versionId: 'version-456', fileName: 'test.json' } },
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
       translations: [],
@@ -246,7 +259,9 @@ describe('_enqueueFiles', () => {
     });
 
     const mockResponse: EnqueueFilesResult = {
-      data: { 'test.json': { versionId: 'version-456', fileName: 'test.json' } },
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr', 'de', 'it', 'pt'],
       translations: [],
@@ -315,7 +330,9 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions();
 
     const mockResponse: EnqueueFilesResult = {
-      data: { 'test.json': { versionId: 'version-456', fileName: 'test.json' } },
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
       translations: [],
@@ -331,7 +348,9 @@ describe('_enqueueFiles', () => {
     await _enqueueFiles(mockFiles, mockOptions, configWithoutBaseUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('generaltranslation.com/v2/project/translations/enqueue'),
+      expect.stringContaining(
+        'generaltranslation.com/v2/project/translations/enqueue'
+      ),
       expect.any(Object),
       expect.any(Number)
     );
@@ -342,7 +361,9 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions();
 
     const mockResponse: EnqueueFilesResult = {
-      data: { 'test.json': { versionId: 'version-456', fileName: 'test.json' } },
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
       translations: [
@@ -381,8 +402,16 @@ describe('_enqueueFiles', () => {
   it('should handle different file formats', async () => {
     const mockFiles = [
       createMockFile({ fileName: 'component.js', fileFormat: 'JS' }),
-      createMockFile({ fileName: 'styles.css', fileFormat: 'CSS', fileId: 'file-456' }),
-      createMockFile({ fileName: 'content.md', fileFormat: 'MD', fileId: 'file-789' }),
+      createMockFile({
+        fileName: 'styles.css',
+        fileFormat: 'CSS',
+        fileId: 'file-456',
+      }),
+      createMockFile({
+        fileName: 'content.md',
+        fileFormat: 'MD',
+        fileId: 'file-789',
+      }),
     ];
 
     const mockOptions = createMockOptions();

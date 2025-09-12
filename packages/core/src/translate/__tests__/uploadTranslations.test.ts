@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _uploadTranslations from '../uploadTranslations';
 import { TranslationRequestConfig } from '../../types';
-import { FileUpload, RequiredUploadFilesOptions } from '../../types-dir/uploadFiles';
+import {
+  FileUpload,
+  RequiredUploadFilesOptions,
+} from '../../types-dir/uploadFiles';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
@@ -19,7 +22,9 @@ describe('_uploadTranslations', () => {
     apiKey: 'test-api-key',
   };
 
-  const createMockFileUpload = (overrides: Partial<FileUpload> = {}): FileUpload => ({
+  const createMockFileUpload = (
+    overrides: Partial<FileUpload> = {}
+  ): FileUpload => ({
     content: '{"key": "value"}',
     fileName: 'test.json',
     fileFormat: 'JSON',
@@ -27,7 +32,9 @@ describe('_uploadTranslations', () => {
     ...overrides,
   });
 
-  const createMockOptions = (overrides: Partial<RequiredUploadFilesOptions> = {}): RequiredUploadFilesOptions => ({
+  const createMockOptions = (
+    overrides: Partial<RequiredUploadFilesOptions> = {}
+  ): RequiredUploadFilesOptions => ({
     sourceLocale: 'en',
     timeout: 60000,
     ...overrides,
@@ -66,8 +73,16 @@ describe('_uploadTranslations', () => {
     const mockResponse = {
       success: true,
       translations: [
-        { translationId: 'trans-123', locale: 'es', fileName: 'component.es.json' },
-        { translationId: 'trans-456', locale: 'fr', fileName: 'component.fr.json' },
+        {
+          translationId: 'trans-123',
+          locale: 'es',
+          fileName: 'component.es.json',
+        },
+        {
+          translationId: 'trans-456',
+          locale: 'fr',
+          fileName: 'component.fr.json',
+        },
       ],
     };
 
@@ -78,7 +93,11 @@ describe('_uploadTranslations', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const result = await _uploadTranslations(mockFiles, mockOptions, mockConfig);
+    const result = await _uploadTranslations(
+      mockFiles,
+      mockOptions,
+      mockConfig
+    );
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v2/project/files/upload-translations',
@@ -346,14 +365,18 @@ describe('_uploadTranslations', () => {
           data: [
             {
               source: {
-                content: Buffer.from('export const Hello = () => "Hello"').toString('base64'),
+                content: Buffer.from(
+                  'export const Hello = () => "Hello"'
+                ).toString('base64'),
                 fileName: 'component.js',
                 fileFormat: 'JS',
                 locale: 'en',
               },
               translations: [
                 {
-                  content: Buffer.from('export const Hello = () => "Hola"').toString('base64'),
+                  content: Buffer.from(
+                    'export const Hello = () => "Hola"'
+                  ).toString('base64'),
                   fileName: 'component.es.js',
                   fileFormat: 'JS',
                   locale: 'es',
@@ -470,7 +493,9 @@ describe('_uploadTranslations', () => {
     await _uploadTranslations(mockFiles, mockOptions, configWithoutBaseUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('api2.gtx.dev/v2/project/files/upload-translations'),
+      expect.stringContaining(
+        'api2.gtx.dev/v2/project/files/upload-translations'
+      ),
       expect.any(Object),
       expect.any(Number)
     );

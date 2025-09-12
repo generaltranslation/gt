@@ -19,7 +19,9 @@ describe('_setupProject', () => {
     apiKey: 'test-api-key',
   };
 
-  const createMockFile = (overrides: Partial<FileUploadRef> = {}): FileUploadRef => ({
+  const createMockFile = (
+    overrides: Partial<FileUploadRef> = {}
+  ): FileUploadRef => ({
     fileId: 'file-123',
     versionId: 'version-456',
     fileName: 'test.json',
@@ -258,9 +260,21 @@ describe('_setupProject', () => {
   it('should handle different file formats', async () => {
     const mockFiles = [
       createMockFile({ fileName: 'component.js', fileFormat: 'JS' }),
-      createMockFile({ fileName: 'styles.css', fileFormat: 'CSS', fileId: 'file-456' }),
-      createMockFile({ fileName: 'content.md', fileFormat: 'MD', fileId: 'file-789' }),
-      createMockFile({ fileName: 'template.tsx', fileFormat: 'TSX', fileId: 'file-012' }),
+      createMockFile({
+        fileName: 'styles.css',
+        fileFormat: 'CSS',
+        fileId: 'file-456',
+      }),
+      createMockFile({
+        fileName: 'content.md',
+        fileFormat: 'MD',
+        fileId: 'file-789',
+      }),
+      createMockFile({
+        fileName: 'template.tsx',
+        fileFormat: 'TSX',
+        fileId: 'file-012',
+      }),
     ];
 
     const mockResponse: SetupProjectResult = {
@@ -356,9 +370,9 @@ describe('_setupProject', () => {
       throw fetchError;
     });
 
-    await expect(
-      _setupProject(mockFiles, mockConfig)
-    ).rejects.toThrow('Network error');
+    await expect(_setupProject(mockFiles, mockConfig)).rejects.toThrow(
+      'Network error'
+    );
 
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
@@ -403,9 +417,9 @@ describe('_setupProject', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockRejectedValue(validationError);
 
-    await expect(
-      _setupProject(mockFiles, mockConfig)
-    ).rejects.toThrow('Invalid request');
+    await expect(_setupProject(mockFiles, mockConfig)).rejects.toThrow(
+      'Invalid request'
+    );
 
     expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
   });

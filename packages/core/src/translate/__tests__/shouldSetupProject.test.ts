@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _shouldSetupProject, { ShouldSetupProjectResult } from '../shouldSetupProject';
+import _shouldSetupProject, {
+  ShouldSetupProjectResult,
+} from '../shouldSetupProject';
 import { TranslationRequestConfig } from '../../types';
 import validateResponse from '../utils/validateResponse';
 import generateRequestHeaders from '../utils/generateRequestHeaders';
@@ -108,7 +110,9 @@ describe('_shouldSetupProject', () => {
     mockFetch.mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockRejectedValue(validationError);
 
-    await expect(_shouldSetupProject(mockConfig)).rejects.toThrow('Invalid response');
+    await expect(_shouldSetupProject(mockConfig)).rejects.toThrow(
+      'Invalid response'
+    );
 
     expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
   });
@@ -117,7 +121,9 @@ describe('_shouldSetupProject', () => {
     const fetchError = new Error('Network error');
     mockFetch.mockRejectedValue(fetchError);
 
-    await expect(_shouldSetupProject(mockConfig)).rejects.toThrow('Network error');
+    await expect(_shouldSetupProject(mockConfig)).rejects.toThrow(
+      'Network error'
+    );
 
     expect(mockFetch).toHaveBeenCalledWith(
       'https://api.test.com/v2/project/setup/should-generate',
@@ -147,17 +153,14 @@ describe('_shouldSetupProject', () => {
     await _shouldSetupProject(mockConfig);
 
     expect(generateRequestHeaders).toHaveBeenCalledWith(mockConfig, true);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-      }
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.any(String), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-gt-api-key': 'test-api-key',
+        'x-gt-project-id': 'test-project',
+      },
+    });
   });
 
   it('should handle different response structures', async () => {
