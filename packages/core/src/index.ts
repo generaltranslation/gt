@@ -66,8 +66,11 @@ import _enqueueFiles from './translate/enqueueFiles';
 import _generateContext, {
   GenerateContextResult,
 } from './translate/generateContext';
-import _checkContextStatus, {
+import {
+  _checkContextStatus,
   CheckContextStatusResult,
+  _shouldGenerateContext,
+  ShouldGenerateContextResult
 } from './translate/checkContextStatus';
 import _enqueueFilesByRef, {
   EnqueueByRefOptions,
@@ -448,6 +451,16 @@ export class GT {
     this._validateAuth('checkContextStatus');
     return await _checkContextStatus(
       jobId,
+      this._getTranslationConfig(),
+      timeoutMs
+    );
+  }
+
+  async shouldGenerateContext(
+    timeoutMs?: number
+  ): Promise<ShouldGenerateContextResult> {
+    this._validateAuth('shouldGenerateContext');
+    return await _shouldGenerateContext(
       this._getTranslationConfig(),
       timeoutMs
     );
