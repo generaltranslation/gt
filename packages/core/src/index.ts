@@ -62,7 +62,6 @@ import {
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _enqueueFiles from './translate/enqueueFiles';
 import _generateContext, {
   GenerateContextResult,
 } from './translate/generateContext';
@@ -358,70 +357,6 @@ export class GT {
     return await _enqueueEntries(
       updates,
       mergedOptions,
-      this._getTranslationConfig()
-    );
-  }
-
-  /**
-   * Enqueues files for translation processing.
-   *
-   * @param {FileToTranslate[]} files - Array of files to enqueue for translation.
-   * @param {EnqueueFilesOptions} options - Options for enqueueing files.
-   * @returns {Promise<EnqueueFilesResult>} The result of the enqueue operation.
-   *
-   * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
-   *
-   * const result = await gt.enqueueFiles([
-   *   {
-   *     content: 'Hello, world!',
-   *     fileName: 'Button.tsx',
-   *     fileFormat: 'TS',
-   *     dataFormat: 'JSX',
-   *   },
-   * ], {
-   *   sourceLocale: 'en-US',
-   *   targetLocales: ['es-ES', 'fr-FR'],
-   *   publish: true,
-   *   description: 'Translations for the Button component',
-   * });
-   */
-  async enqueueFiles(
-    files: FileToTranslate[],
-    options: EnqueueFilesOptions
-  ): Promise<EnqueueFilesResult> {
-    // Validation
-    this._validateAuth('enqueueFiles');
-
-    // Merge instance settings with options
-    let mergedOptions: EnqueueFilesOptions = {
-      ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale,
-    };
-
-    // Require source locale
-    if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('enqueueFiles');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // Replace target locales with canonical locales
-    mergedOptions = {
-      ...mergedOptions,
-      targetLocales: mergedOptions.targetLocales.map((locale) =>
-        this.resolveCanonicalLocale(locale)
-      ),
-    };
-
-    // Request the file updates
-    return await _enqueueFiles(
-      files,
-      mergedOptions as RequiredEnqueueFilesOptions,
       this._getTranslationConfig()
     );
   }
