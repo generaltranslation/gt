@@ -23,7 +23,7 @@ export async function _uploadSourceFiles(
   const body = {
     data: files.map(({ source }) => ({
       source: {
-        content: source.content,
+        content: Buffer.from(source.content).toString('base64'),
         fileName: source.fileName,
         fileFormat: source.fileFormat,
         locale: source.locale,
@@ -79,14 +79,14 @@ export async function _uploadTranslations(
   const body = {
     data: files.map(({ source, translations }) => ({
       source: {
-        content: source.content,
+        content: Buffer.from(source.content).toString('base64'),
         fileName: source.fileName,
         fileFormat: source.fileFormat,
         locale: source.locale,
         ...(source.dataFormat && { dataFormat: source.dataFormat }),
       },
       translations: translations.map((t) => ({
-        content: t.content,
+        content: Buffer.from(t.content).toString('base64'),
         fileName: t.fileName,
         fileFormat: t.fileFormat,
         ...(t.dataFormat && { dataFormat: t.dataFormat }),

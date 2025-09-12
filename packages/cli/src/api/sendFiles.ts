@@ -66,7 +66,7 @@ export async function sendFiles(
     const uploads: SourceUpload[] = files.map(
       ({ content, fileName, fileFormat, dataFormat }) => ({
         source: {
-          content: Buffer.from(content).toString('base64'),
+          content,
           fileName,
           fileFormat,
           dataFormat,
