@@ -17,6 +17,14 @@ export type EnqueueOptions = {
   timeout?: number;
 };
 
+/**
+ * @internal
+ * Enqueues files for translation in the General Translation API.
+ * @param files - References of files to translate (file content already uploaded)
+ * @param options - The options for the API call
+ * @param config - The configuration for the API call
+ * @returns The result of the API call
+ */
 export default async function _enqueueFiles(
   files: FileUploadRef[],
   options: EnqueueOptions,
@@ -41,6 +49,7 @@ export default async function _enqueueFiles(
 
   let response;
   try {
+    // Request translations
     response = await fetchWithTimeout(
       url,
       {
@@ -54,6 +63,7 @@ export default async function _enqueueFiles(
     handleFetchError(error, timeout);
   }
 
+  // Validate response
   await validateResponse(response);
   const result = (await response.json()) as EnqueueFilesResult;
   return result;
