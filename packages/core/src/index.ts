@@ -955,8 +955,17 @@ export class GT {
       throw new Error(error);
     }
 
+    // Ensure all translation locales use canonical locales
+    const targetFiles = files.map((f) => ({
+      ...f,
+      translations: f.translations.map((t) => ({
+        ...t,
+        locale: this.resolveCanonicalLocale(t.locale),
+      })),
+    }));
+
     return await _uploadTranslations(
-      files,
+      targetFiles,
       mergedOptions as RequiredUploadFilesOptions,
       this._getTranslationConfig()
     );
