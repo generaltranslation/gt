@@ -495,6 +495,7 @@ export class GT {
    * @returns {Promise<TranslationStatusResult>} The translation status of the version.
    *
    * @example
+   * @deprecated Use the {@link checkFileTranslations} method instead. Will be removed in v7.0.0.
    * const gt = new GT({
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',
