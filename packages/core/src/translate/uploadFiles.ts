@@ -18,7 +18,7 @@ export async function _uploadSourceFiles(
   config: TranslationRequestConfig
 ): Promise<any> {
   const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/uploadFiles`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-files`;
 
   const body = {
     data: files.map(({ source }) => ({
@@ -75,7 +75,7 @@ export async function _uploadTranslations(
   config: TranslationRequestConfig
 ): Promise<any> {
   const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/uploadTranslations`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-translations`;
 
   const body = {
     data: files.map(({ source, translations }) => ({

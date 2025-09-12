@@ -491,7 +491,10 @@ export class GT {
     }
 
     // Require target locale(s)
-    if (!mergedOptions.targetLocales || mergedOptions.targetLocales.length === 0) {
+    if (
+      !mergedOptions.targetLocales ||
+      mergedOptions.targetLocales.length === 0
+    ) {
       const error = noTargetLocaleProvidedError('enqueueFilesByRef');
       gtInstanceLogger.error(error);
       throw new Error(error);
