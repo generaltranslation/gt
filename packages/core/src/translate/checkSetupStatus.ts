@@ -14,6 +14,14 @@ export type CheckSetupStatusResult = {
   error?: { message: string };
 };
 
+/**
+ * @internal
+ * Queries setup status for a project
+ * @param jobId - Setup job ID
+ * @param config - The configuration for the API call
+ * @param timeoutMS - The timeout in milliseconds
+ * @returns The result of the API call
+ */
 export async function _checkSetupStatus(
   jobId: string,
   config: TranslationRequestConfig,

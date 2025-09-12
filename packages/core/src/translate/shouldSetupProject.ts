@@ -7,6 +7,12 @@ export type ShouldSetupProjectResult = {
   shouldSetupProject: boolean;
 };
 
+/**
+ * @internal
+ * Checks if a project requires setup
+ * @param config - The configuration for the API call
+ * @returns The result of the API call
+ */
 export default async function _shouldSetupProject(
   config: TranslationRequestConfig
 ): Promise<ShouldSetupProjectResult> {
