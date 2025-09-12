@@ -9,6 +9,14 @@ export type FileUpload = {
   locale: string;
 };
 
+export type FileUploadRef = {
+  fileId: string;
+  versionId: string;
+  fileName: string;
+  fileFormat: FileFormat;
+  dataFormat?: DataFormat;
+};
+
 export type UploadData = {
   data: { source: FileUpload; translations: FileUpload[] }[];
   sourceLocale: string;
