@@ -368,7 +368,15 @@ export class GT {
   }
 
   /**
-   * Checks setup job status by ID.
+   * Checks the current status of a project setup job by its unique identifier.
+   * 
+   * This method polls the API to determine whether a setup job is still running,
+   * has completed successfully, or has failed. Setup jobs are created when 
+   * uploading source files to initialize project translation workflows.
+   *
+   * @param {string} jobId - The unique identifier of the setup job to check
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @returns {Promise<CheckSetupStatusResult>} Object containing the job status
    */
   async checkSetupStatus(
     jobId: string,
@@ -844,7 +852,16 @@ export class GT {
   }
 
   /**
-   * Uploads source files (no translations) to create/replace source entries.
+   * Uploads source files to the translation service without any translation content.
+   * 
+   * This method creates or replaces source file entries in your project. Each uploaded
+   * file becomes a source that can later be translated into target languages. The files
+   * are processed and stored as base entries that serve as the foundation for generating
+   * translations through the translation workflow.
+   *
+   * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
+   * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings
+   * @returns {Promise<any>} Upload result containing file IDs, version information, and upload status
    */
   async uploadSourceFiles(
     files: { source: FileUpload }[],
@@ -874,8 +891,18 @@ export class GT {
   }
 
   /**
-   * Uploads translation files for existing source files.
-   * Each item must reference an existing source (versionId/fileId) and provide translated content with locale.
+   * Uploads translation files that correspond to previously uploaded source files.
+   * 
+   * This method allows you to provide translated content for existing source files in your project.
+   * Each translation must reference an existing source file and include the translated content
+   * along with the target locale information. This is used when you have pre-existing translations
+   * that you want to upload directly rather than generating them through the translation service.
+   *
+   * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
+   *   - `source`: Reference to the existing source file (contains IDs but no content)
+   *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
+   * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings
+   * @returns {Promise<any>} Upload result containing translation IDs, status, and processing information
    */
   async uploadTranslations(
     files: {
