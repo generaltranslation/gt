@@ -94,8 +94,10 @@ export async function sendFiles(
     if (shouldSetupProject) {
       // Calculate timeout once for setup fetching
       // Accept number or numeric string, default to 600s
-      const timeoutVal = options?.timeout !== undefined ? Number(options.timeout) : 600;
-      const setupTimeoutMs = (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+      const timeoutVal =
+        options?.timeout !== undefined ? Number(options.timeout) : 600;
+      const setupTimeoutMs =
+        (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
 
       const { setupJobId } = await gt.setupProject(upload.uploadedFiles);
 
@@ -162,9 +164,7 @@ export async function sendFiles(
     return { data, locales, translations };
   } catch (error) {
     if (currentSpinner) {
-      currentSpinner.stop(
-        chalk.red('Failed to send files for translation')
-      );
+      currentSpinner.stop(chalk.red('Failed to send files for translation'));
     }
     logError('Failed to send files for translation');
     throw error;

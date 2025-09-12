@@ -94,7 +94,9 @@ describe('sendFiles', () => {
       mockSpinner as unknown as SpinnerResult
     );
     // By default, do not require setup unless a test overrides it
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: false });
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
+      shouldSetupProject: false,
+    });
   });
 
   it('should send files successfully', async () => {
@@ -411,12 +413,16 @@ describe('sendFiles', () => {
       },
       locales: ['es'],
     });
-    const mockUploadResponse = { uploadedFiles: mockFiles.map((f, i) => ({
-      fileId: `file-${i}`,
-      versionId: 'version-456',
-      fileName: f.fileName,
-    })) };
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
+    const mockUploadResponse = {
+      uploadedFiles: mockFiles.map((f, i) => ({
+        fileId: `file-${i}`,
+        versionId: 'version-456',
+        fileName: f.fileName,
+      })),
+    };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
+      mockUploadResponse as any
+    );
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -508,12 +514,16 @@ describe('sendFiles', () => {
       },
       locales: ['es'],
     });
-    const mockUploadResponse = { uploadedFiles: mockFiles.map((f, i) => ({
-      fileId: `file-${i}`,
-      versionId: 'version-456',
-      fileName: f.fileName,
-    })) };
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
+    const mockUploadResponse = {
+      uploadedFiles: mockFiles.map((f, i) => ({
+        fileId: `file-${i}`,
+        versionId: 'version-456',
+        fileName: f.fileName,
+      })),
+    };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
+      mockUploadResponse as any
+    );
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -555,12 +565,16 @@ describe('sendFiles', () => {
       },
       locales: ['es'],
     });
-    const mockUploadResponse = { uploadedFiles: mockFiles.map((f, i) => ({
-      fileId: `file-${i}`,
-      versionId: 'version-456',
-      fileName: f.fileName,
-    })) };
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
+    const mockUploadResponse = {
+      uploadedFiles: mockFiles.map((f, i) => ({
+        fileId: `file-${i}`,
+        versionId: 'version-456',
+        fileName: f.fileName,
+      })),
+    };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
+      mockUploadResponse as any
+    );
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -633,7 +647,9 @@ describe('sendFiles', () => {
         },
       ],
     };
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
+      mockUploadResponse as any
+    );
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
