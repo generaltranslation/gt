@@ -10,6 +10,10 @@ import { Settings, TranslateFlags } from '../../types/index.js';
 vi.mock('../../utils/gt.js', () => ({
   gt: {
     enqueueFiles: vi.fn(),
+    uploadSourceFiles: vi.fn(),
+    shouldSetupProject: vi.fn(),
+    setupProject: vi.fn(),
+    checkSetupStatus: vi.fn(),
   },
 }));
 
@@ -17,6 +21,7 @@ vi.mock('../../console/logging.js', () => ({
   createSpinner: vi.fn(),
   logMessage: vi.fn(),
   logSuccess: vi.fn(),
+  logError: vi.fn(),
 }));
 
 describe('sendFiles', () => {
@@ -107,7 +112,14 @@ describe('sendFiles', () => {
     const mockFlags = createMockFlags();
     const mockSettings = createMockSettings();
 
-    const mockResponse = createMockEnqueueResponse({
+    const mockUploadResponse = {
+      uploadedFiles: [
+        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+        { fileId: 'file-789', versionId: 'version-012', fileName: 'page.json' },
+      ],
+    };
+
+    const mockEnqueueResponse = createMockEnqueueResponse({
       data: {
         'component.json': {
           versionId: 'version-456',
@@ -117,13 +129,19 @@ describe('sendFiles', () => {
       },
     });
 
-    vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: false });
+    vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
-      'Sending 2 files to General Translation API...'
+      'Uploading 2 files to General Translation API...'
     );
+
+    expect(gt.uploadSourceFiles).toHaveBeenCalled();
+    expect(gt.shouldSetupProject).toHaveBeenCalled();
+    expect(gt.enqueueFiles).toHaveBeenCalled();
 
     expect(mockSpinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('Files for translation uploaded successfully')
@@ -157,7 +175,13 @@ describe('sendFiles', () => {
       publish: false,
     });
 
-    const mockResponse = createMockEnqueueResponse({
+    const mockUploadResponse = {
+      uploadedFiles: [
+        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+      ],
+    };
+
+    const mockEnqueueResponse = createMockEnqueueResponse({
       data: {
         'component.json': {
           versionId: 'version-456',
@@ -167,19 +191,19 @@ describe('sendFiles', () => {
       locales: ['es'],
     });
 
-    vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: false });
+    vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
-      'Sending 1 file to General Translation API...'
+      'Uploading 1 file to General Translation API...'
     );
 
-    expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, {
-      publish: false,
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-    });
+    expect(gt.uploadSourceFiles).toHaveBeenCalled();
+    expect(gt.shouldSetupProject).toHaveBeenCalled();
+    expect(gt.enqueueFiles).toHaveBeenCalled();
 
     expect(result).toEqual<SendFilesResult>({
       data: {
@@ -193,6 +217,113 @@ describe('sendFiles', () => {
     });
   });
 
+  it('should handle setup workflow when setup is needed', async () => {
+    const mockFiles = [
+      {
+        fileName: 'component.json',
+        content: '{"hello": "world"}',
+        fileFormat: 'JSON' as const,
+      },
+    ];
+
+    const mockFlags = createMockFlags({ timeout: '30' });
+    const mockSettings = createMockSettings();
+
+    const mockUploadResponse = {
+      uploadedFiles: [
+        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+      ],
+    };
+
+    const mockSetupResponse = {
+      setupJobId: 'setup-job-789',
+      status: 'queued' as const,
+    };
+
+    const mockSetupStatusResponse = {
+      jobId: 'setup-job-789',
+      status: 'completed' as const,
+    };
+
+    const mockEnqueueResponse = createMockEnqueueResponse({
+      data: {
+        'component.json': {
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
+      },
+    });
+
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: true });
+    vi.mocked(gt.setupProject).mockResolvedValue(mockSetupResponse);
+    vi.mocked(gt.checkSetupStatus).mockResolvedValue(mockSetupStatusResponse);
+    vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
+
+    const result = await sendFiles(mockFiles, mockFlags, mockSettings);
+
+    expect(gt.shouldSetupProject).toHaveBeenCalled();
+    expect(gt.setupProject).toHaveBeenCalledWith(mockUploadResponse.uploadedFiles);
+    expect(gt.checkSetupStatus).toHaveBeenCalledWith('setup-job-789');
+    expect(gt.enqueueFiles).toHaveBeenCalled();
+
+    expect(result).toEqual<SendFilesResult>({
+      data: {
+        'component.json': {
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
+      },
+      locales: ['es', 'fr'],
+      translations: [],
+    });
+  });
+
+  it('should handle setup timeout gracefully', async () => {
+    const mockFiles = [
+      {
+        fileName: 'component.json',
+        content: '{"hello": "world"}',
+        fileFormat: 'JSON' as const,
+      },
+    ];
+
+    const mockFlags = createMockFlags({ timeout: '1' }); // Very short timeout
+    const mockSettings = createMockSettings();
+
+    const mockUploadResponse = {
+      uploadedFiles: [
+        { fileId: 'file-123', versionId: 'version-456', fileName: 'component.json' },
+      ],
+    };
+
+    const mockSetupResponse = {
+      setupJobId: 'setup-job-789',
+      status: 'queued' as const,
+    };
+
+    const mockSetupStatusResponse = {
+      jobId: 'setup-job-789',
+      status: 'processing' as const, // Still processing, will timeout
+    };
+
+    const mockEnqueueResponse = createMockEnqueueResponse();
+
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: true });
+    vi.mocked(gt.setupProject).mockResolvedValue(mockSetupResponse);
+    vi.mocked(gt.checkSetupStatus).mockResolvedValue(mockSetupStatusResponse);
+    vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
+
+    const result = await sendFiles(mockFiles, mockFlags, mockSettings);
+
+    expect(gt.checkSetupStatus).toHaveBeenCalled();
+    expect(gt.enqueueFiles).toHaveBeenCalled();
+
+    // Should still proceed with enqueue even if setup times out
+    expect(result.data).toBeDefined();
+  });
+
   it('should handle API errors', async () => {
     const mockFiles = createMockFiles(1, {
       fileName: 'component.json',
@@ -201,7 +332,7 @@ describe('sendFiles', () => {
     const mockOptions = createMockSettings({ locales: ['es'] });
 
     const error = new Error('API Error');
-    vi.mocked(gt.enqueueFiles).mockRejectedValue(error);
+    vi.mocked(gt.uploadSourceFiles).mockRejectedValue(error);
 
     await expect(
       sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)

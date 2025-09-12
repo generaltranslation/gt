@@ -15,7 +15,8 @@ vi.mock('../../console/logging.js', () => ({
 
 vi.mock('../../utils/gt.js', () => ({
   gt: {
-    uploadFiles: vi.fn(),
+    uploadSourceFiles: vi.fn(),
+    uploadTranslations: vi.fn(),
   },
 }));
 
@@ -84,9 +85,8 @@ describe('uploadFiles', () => {
     vi.mocked(createSpinner).mockReturnValue(
       mockSpinner as unknown as SpinnerResult
     );
-    vi.mocked(gt.uploadFiles).mockReturnValue(
-      Promise.resolve({ success: true })
-    );
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ success: true });
+    vi.mocked(gt.uploadTranslations).mockResolvedValue({ success: true });
   });
 
   it('should upload files successfully', async () => {
@@ -121,7 +121,17 @@ describe('uploadFiles', () => {
       'Uploading 1 file to General Translation...'
     );
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
+      mockFiles,
+      expect.objectContaining({
+        sourceLocale: 'en',
+        apiKey: '1234567890',
+        projectId: '1234567890',
+        baseUrl: 'https://api.generaltranslation.com',
+      })
+    );
+    
+    expect(gt.uploadTranslations).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',
@@ -148,7 +158,7 @@ describe('uploadFiles', () => {
       'Uploading 3 files to General Translation...'
     );
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',
@@ -188,7 +198,7 @@ describe('uploadFiles', () => {
     const mockFiles = createMockFiles(1);
     const mockSettings = createMockSettings();
 
-    vi.mocked(gt.uploadFiles).mockImplementation(() => {
+    vi.mocked(gt.uploadSourceFiles).mockImplementation(() => {
       throw new Error('API Error');
     });
 
@@ -246,7 +256,7 @@ describe('uploadFiles', () => {
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',
@@ -280,7 +290,7 @@ describe('uploadFiles', () => {
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',
@@ -322,7 +332,7 @@ describe('uploadFiles', () => {
       expect.stringContaining('messages.json -> es, fr')
     );
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',
