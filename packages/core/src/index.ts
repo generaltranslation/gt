@@ -391,9 +391,7 @@ export class GT {
 
   async shouldGenerateContext(): Promise<ShouldGenerateContextResult> {
     this._validateAuth('shouldGenerateContext');
-    return await _shouldGenerateContext(
-      this._getTranslationConfig()
-    );
+    return await _shouldGenerateContext(this._getTranslationConfig());
   }
 
   /**
