@@ -50,13 +50,22 @@ export async function uploadFiles(
   );
 
   try {
-    const result = gt.uploadFiles(files, {
+    // Upload sources
+    await gt.uploadSourceFiles(files, {
       ...options,
       sourceLocale: options.defaultLocale,
     });
-    spinner.stop(chalk.green('Files uploaded successfully'));
 
-    return result;
+    // Upload translations (if any exist)
+    const withTranslations = files.filter((f) => f.translations.length > 0);
+    if (withTranslations.length > 0) {
+      await gt.uploadTranslations(withTranslations, {
+        ...options,
+        sourceLocale: options.defaultLocale, // optional, safe to include
+      });
+    }
+
+    spinner.stop(chalk.green('Files uploaded successfully'));
   } catch {
     spinner.stop(
       chalk.red('An unexpected error occurred while uploading files')

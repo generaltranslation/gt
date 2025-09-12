@@ -1,53 +1,50 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _enqueueFiles from '../enqueueFiles';
+import _enqueueFiles, { EnqueueOptions } from '../enqueueFiles';
+import { TranslationRequestConfig, EnqueueFilesResult } from '../../types';
+import { FileUploadRef } from '../../types-dir/uploadFiles';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
 import generateRequestHeaders from '../utils/generateRequestHeaders';
-import { TranslationRequestConfig } from '../../types';
-import {
-  FileToTranslate,
-  EnqueueFilesResult,
-  RequiredEnqueueFilesOptions,
-} from '../../types-dir/enqueueFiles';
 
 vi.mock('../utils/fetchWithTimeout');
 vi.mock('../utils/validateResponse');
 vi.mock('../utils/handleFetchError');
 vi.mock('../utils/generateRequestHeaders');
 
-describe.sequential('_enqueueFiles', () => {
+describe('_enqueueFiles', () => {
   const mockConfig: TranslationRequestConfig = {
     baseUrl: 'https://api.test.com',
     projectId: 'test-project',
     apiKey: 'test-api-key',
   };
 
-  const mockEnqueueFilesResult: EnqueueFilesResult = {
-    translations: [
-      {
-        locale: 'es',
-        metadata: {},
-        fileId: 'file-1',
-        fileName: 'test.json',
-        versionId: 'version-123',
-        id: 'translation-1',
-        isReady: true,
-        downloadUrl: 'https://example.com/download/1',
-      },
-    ],
-    data: {
-      'test.json': {
-        fileName: 'test.json',
-        versionId: 'version-123',
-      },
-    },
-    locales: ['es', 'fr'],
-    message: 'Files uploaded successfully',
-  };
+  const createMockFile = (
+    overrides: Partial<FileUploadRef> = {}
+  ): FileUploadRef => ({
+    fileId: 'file-123',
+    versionId: 'version-456',
+    fileName: 'test.json',
+    fileFormat: 'JSON',
+    ...overrides,
+  });
+
+  const createMockOptions = (
+    overrides: Partial<EnqueueOptions> = {}
+  ): EnqueueOptions => ({
+    sourceLocale: 'en',
+    targetLocales: ['es', 'fr'],
+    publish: true,
+    ...overrides,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchWithTimeout).mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(handleFetchError).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -55,35 +52,38 @@ describe.sequential('_enqueueFiles', () => {
     });
   });
 
-  it('should upload files successfully', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON',
-      },
+  it('should enqueue files successfully', async () => {
+    const mockFiles = [
+      createMockFile({ fileName: 'component.json' }),
+      createMockFile({ fileName: 'page.json', fileId: 'file-456' }),
     ];
 
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es', 'fr'],
-      publish: true,
-      version: 'version-123',
-      description: 'Test upload',
-      timeout: 5000,
+    const mockOptions = createMockOptions();
+
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'component.json': {
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
+        'page.json': { versionId: 'version-789', fileName: 'page.json' },
+      },
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr'],
+      translations: [],
     };
 
-    const result = await _enqueueFiles(files, options, mockConfig);
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/upload',
+      'https://api.test.com/v2/project/translations/enqueue',
       {
         method: 'POST',
         headers: {
@@ -91,118 +91,134 @@ describe.sequential('_enqueueFiles', () => {
           'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
-        body: expect.any(String),
+        body: JSON.stringify({
+          files: [
+            {
+              fileId: 'file-123',
+              versionId: 'version-456',
+              fileName: 'component.json',
+            },
+            {
+              fileId: 'file-456',
+              versionId: 'version-456',
+              fileName: 'page.json',
+            },
+          ],
+          targetLocales: ['es', 'fr'],
+          sourceLocale: 'en',
+          publish: true,
+          requireApproval: undefined,
+          modelProvider: undefined,
+          force: undefined,
+        }),
       },
-      5000
+      60000
     );
 
-    // Verify the JSON body structure
-    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const bodyJson = JSON.parse(fetchCall[1].body as string);
-    expect(bodyJson).toEqual({
-      files: [
-        {
-          content: Buffer.from('{"hello": "world"}').toString('base64'),
-          fileName: 'test.json',
-          fileFormat: 'JSON',
-          fileDataFormat: undefined,
-          formatMetadata: undefined,
-        },
-      ],
-      sourceLocale: 'en',
-      targetLocales: ['es', 'fr'],
-      projectId: 'test-project',
-      publish: true,
-      requireApproval: undefined,
-      version: 'version-123',
-      modelProvider: undefined,
+    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
+    expect(result).toEqual(mockResponse);
+  });
+
+  it('should handle single file enqueueing', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions({ targetLocales: ['es'] });
+
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
+      message: 'File enqueued successfully',
+      locales: ['es'],
+      translations: [],
+    };
+
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
+
+    expect(result.locales).toEqual(['es']);
+    expect(Object.keys(result.data)).toHaveLength(1);
+  });
+
+  it('should handle all optional parameters', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions({
+      publish: false,
+      requireApproval: true,
+      modelProvider: 'openai',
+      force: true,
+      timeout: 30000,
     });
 
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
-    expect(result).toEqual(mockEnqueueFilesResult);
-  });
-
-  it('should handle multiple files', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test1.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON',
-        dataFormat: 'JSX',
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
       },
-      {
-        fileName: 'test2.yaml',
-        content: 'hello: world',
-        fileFormat: 'YAML',
-        dataFormat: 'ICU',
-      },
-    ];
-
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Multi-file upload',
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr'],
+      translations: [],
     };
 
-    await _enqueueFiles(files, options, mockConfig);
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
 
-    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const bodyJson = JSON.parse(fetchCall[1].body as string);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    // Verify JSON body contains correct files array
-    expect(bodyJson.files).toHaveLength(2);
+    await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
-    // Verify file metadata is properly set
-    expect(bodyJson.files[0].fileName).toBe('test1.json');
-    expect(bodyJson.files[1].fileName).toBe('test2.yaml');
-    expect(bodyJson.files[0].fileFormat).toBe('JSON');
-    expect(bodyJson.files[1].fileFormat).toBe('YAML');
-    expect(bodyJson.files[0].fileDataFormat).toBe('JSX');
-    expect(bodyJson.files[1].fileDataFormat).toBe('ICU');
-
-    // Verify files contain base64 encoded content
-    expect(bodyJson.files[0].content).toBe(
-      Buffer.from('{"hello": "world"}').toString('base64')
-    );
-    expect(bodyJson.files[1].content).toBe(
-      Buffer.from('hello: world').toString('base64')
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        method: 'POST',
+        headers: expect.any(Object),
+        body: JSON.stringify({
+          files: [
+            {
+              fileId: 'file-123',
+              versionId: 'version-456',
+              fileName: 'test.json',
+            },
+          ],
+          targetLocales: ['es', 'fr'],
+          sourceLocale: 'en',
+          publish: false,
+          requireApproval: true,
+          modelProvider: 'openai',
+          force: true,
+        }),
+      },
+      30000
     );
   });
 
-  it('should use default timeout when not specified', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
-    } as unknown as Response;
+  it('should use custom timeout when provided', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions({ timeout: 60000 });
 
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.json',
-        content: '{}',
-        fileFormat: 'JSON',
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
       },
-    ];
-
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Test',
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr'],
+      translations: [],
     };
 
-    await _enqueueFiles(files, options, mockConfig);
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
@@ -211,33 +227,29 @@ describe.sequential('_enqueueFiles', () => {
     );
   });
 
-  it('should enforce maximum timeout limit', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
-    } as unknown as Response;
+  it('should limit timeout to maxTimeout', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions({ timeout: 1000000 }); // Very large timeout
 
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.json',
-        content: '{}',
-        fileFormat: 'JSON',
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
       },
-    ];
-
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Test',
-      timeout: 99999,
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr'],
+      translations: [],
     };
 
-    await _enqueueFiles(files, options, mockConfig);
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
 
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    await _enqueueFiles(mockFiles, mockOptions, mockConfig);
+
+    // Should use maxTimeout (60000) instead of the large provided timeout
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
@@ -245,168 +257,167 @@ describe.sequential('_enqueueFiles', () => {
     );
   });
 
-  it('should use default URL when baseUrl not provided in config', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+  it('should handle multiple target locales', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions({
+      targetLocales: ['es', 'fr', 'de', 'it', 'pt'],
+    });
+
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr', 'de', 'it', 'pt'],
+      translations: [],
+    };
+
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
     } as unknown as Response;
 
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const configWithoutUrl: TranslationRequestConfig = {
-      projectId: 'test-project',
-      apiKey: 'test-api-key',
-    };
+    const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.json',
-        content: '{}',
-        fileFormat: 'JSON',
-      },
-    ];
-
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Test',
-    };
-
-    await _enqueueFiles(files, options, configWithoutUrl);
-
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'https://api2.gtx.dev/v2/project/translations/files/upload'
-      ),
-      expect.any(Object),
-      expect.any(Number)
-    );
+    expect(result.locales).toEqual(['es', 'fr', 'de', 'it', 'pt']);
   });
 
-  it('should handle fetch errors through handleFetchError', async () => {
+  it('should handle empty files array', async () => {
+    const mockFiles: FileUploadRef[] = [];
+    const mockOptions = createMockOptions();
+
+    const mockResponse: EnqueueFilesResult = {
+      data: {},
+      message: 'No files to enqueue',
+      locales: ['es', 'fr'],
+      translations: [],
+    };
+
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
+
+    expect(result.data).toEqual({});
+    expect(Object.keys(result.data)).toHaveLength(0);
+  });
+
+  it('should handle fetch errors', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions();
+
     const fetchError = new Error('Network error');
     vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
     vi.mocked(handleFetchError).mockImplementation(() => {
       throw fetchError;
     });
 
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.json',
-        content: '{}',
-        fileFormat: 'JSON',
-      },
-    ];
+    await expect(
+      _enqueueFiles(mockFiles, mockOptions, mockConfig)
+    ).rejects.toThrow('Network error');
 
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Test',
-    };
-
-    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow(
-      'Network error'
-    );
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
-  it('should handle validation errors', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockImplementationOnce(() => {
-      throw new Error('Validation failed');
-    });
-
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.json',
-        content: '{}',
-        fileFormat: 'JSON',
-      },
-    ];
-
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Test',
+  it('should use default base URL when not provided', async () => {
+    const configWithoutBaseUrl = {
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
     };
 
-    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow(
-      'Validation failed'
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions();
+
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      },
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr'],
+      translations: [],
+    };
+
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    await _enqueueFiles(mockFiles, mockOptions, configWithoutBaseUrl);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.stringContaining('api2.gtx.dev/v2/project/translations/enqueue'),
+      expect.any(Object),
+      expect.any(Number)
     );
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
-  it('should handle files without dataFormat', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
-    } as unknown as Response;
+  it('should handle response with translations', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions();
 
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const files: FileToTranslate[] = [
-      {
-        fileName: 'test.md',
-        content: '# Hello World',
-        fileFormat: 'MD',
+    const mockResponse: EnqueueFilesResult = {
+      data: {
+        'test.json': { versionId: 'version-456', fileName: 'test.json' },
       },
-    ];
-
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Test',
+      message: 'Files enqueued successfully',
+      locales: ['es', 'fr'],
+      translations: [
+        {
+          locale: 'es',
+          metadata: {
+            context: 'test',
+            id: 'test-id',
+            sourceLocale: 'en',
+            actionType: 'standard',
+          },
+          fileId: 'file-123',
+          fileName: 'test.json',
+          versionId: 'version-456',
+          id: 'translation-1',
+          isReady: false,
+          downloadUrl: null,
+        },
+      ],
     };
 
-    await _enqueueFiles(files, options, mockConfig);
-
-    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const bodyJson = JSON.parse(fetchCall[1].body as string);
-
-    // When dataFormat is not provided, it should be undefined
-    expect(bodyJson.files[0].fileDataFormat).toBe(undefined);
-    expect(bodyJson.files[0].fileFormat).toBe('MD');
-    expect(bodyJson.files[0].fileName).toBe('test.md');
-  });
-
-  it('should handle empty files array', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue({
-        ...mockEnqueueFilesResult,
-        data: { ...(mockEnqueueFilesResult.data as any), uploadedFiles: [] },
-      }),
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
     } as unknown as Response;
 
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: FileToTranslate[] = [];
+    const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
-    const options: RequiredEnqueueFilesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      publish: false,
-      version: 'version-123',
-      description: 'Empty test',
-    };
+    expect(result.translations).toHaveLength(1);
+    expect(result.translations[0].locale).toBe('es');
+    expect(result.translations[0].isReady).toBe(false);
+  });
 
-    const result = await _enqueueFiles(files, options, mockConfig);
+  it('should handle validation errors', async () => {
+    const mockFiles = [createMockFile()];
+    const mockOptions = createMockOptions();
 
-    const fetchCall = vi.mocked(fetchWithTimeout).mock.calls[0];
-    const bodyJson = JSON.parse(fetchCall[1].body as string);
-    expect(bodyJson.files).toHaveLength(0);
-    expect((result.data as any).uploadedFiles).toEqual([]);
+    const mockFetchResponse = {
+      json: vi.fn(),
+    } as unknown as Response;
+
+    const validationError = new Error('Invalid request');
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockRejectedValue(validationError);
+
+    await expect(
+      _enqueueFiles(mockFiles, mockOptions, mockConfig)
+    ).rejects.toThrow('Invalid request');
+
+    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
   });
 });

@@ -62,7 +62,15 @@ import {
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _enqueueFiles from './translate/enqueueFiles';
+import _setupProject, { SetupProjectResult } from './translate/setupProject';
+import {
+  _checkSetupStatus,
+  CheckSetupStatusResult,
+} from './translate/checkSetupStatus';
+import _shouldSetupProject, {
+  ShouldSetupProjectResult,
+} from './translate/shouldSetupProject';
+import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
 import _downloadFile from './translate/downloadFile';
@@ -81,9 +89,11 @@ import {
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import _uploadFiles from './translate/uploadFiles';
+import _uploadSourceFiles from './translate/uploadSourceFiles';
+import _uploadTranslations from './translate/uploadTranslations';
 import {
   FileUpload,
+  FileUploadRef,
   RequiredUploadFilesOptions,
   UploadFilesOptions,
 } from './types-dir/uploadFiles';
@@ -347,49 +357,101 @@ export class GT {
   }
 
   /**
-   * Enqueues files for translation processing.
+   * Enqueues project setup job using the specified file references
    *
-   * @param {FileToTranslate[]} files - Array of files to enqueue for translation.
-   * @param {EnqueueFilesOptions} options - Options for enqueueing files.
-   * @returns {Promise<EnqueueFilesResult>} The result of the enqueue operation.
+   * This method creates setup jobs that will process source file references
+   * and generate a project setup. The files parameter contains references (IDs) to source
+   * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
+   * for processing and will generate a project setup based on the source files.
    *
-   * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
+   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
+   */
+  async setupProject(
+    files: FileUploadRef[],
+    timeoutMs?: number
+  ): Promise<SetupProjectResult> {
+    this._validateAuth('setupProject');
+    return await _setupProject(files, this._getTranslationConfig(), timeoutMs);
+  }
+
+  /**
+   * Checks the current status of a project setup job by its unique identifier.
    *
-   * const result = await gt.enqueueFiles([
-   *   {
-   *     content: 'Hello, world!',
-   *     fileName: 'Button.tsx',
-   *     fileFormat: 'TS',
-   *     dataFormat: 'JSX',
-   *   },
-   * ], {
-   *   sourceLocale: 'en-US',
-   *   targetLocales: ['es-ES', 'fr-FR'],
-   *   publish: true,
-   *   description: 'Translations for the Button component',
-   * });
+   * This method polls the API to determine whether a setup job is still running,
+   * has completed successfully, or has failed. Setup jobs are created when
+   * uploading source files to initialize project translation workflows.
+   *
+   * @param {string} jobId - The unique identifier of the setup job to check
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @returns {Promise<CheckSetupStatusResult>} Object containing the job status
+   */
+  async checkSetupStatus(
+    jobId: string,
+    timeoutMs?: number
+  ): Promise<CheckSetupStatusResult> {
+    this._validateAuth('checkSetupStatus');
+    return await _checkSetupStatus(
+      jobId,
+      this._getTranslationConfig(),
+      timeoutMs
+    );
+  }
+
+  /**
+   * Checks if a prpject requires setup.
+   *
+   * This method queries API to check if a project has been set up and returns
+   * true if setup is missing
+   *
+   * @returns {Promise<ShouldSetupProjectResult>} Object containing shouldSetupProject
+   */
+  async shouldSetupProject(): Promise<ShouldSetupProjectResult> {
+    this._validateAuth('shouldSetupProject');
+    return await _shouldSetupProject(this._getTranslationConfig());
+  }
+
+  /**
+   * Enqueues translation jobs for previously uploaded source files.
+   *
+   * This method creates translation jobs that will process existing source files
+   * and generate translations in the specified target languages. The files parameter
+   * contains references (IDs) to source files that have already been uploaded via
+   * uploadSourceFiles. The translation jobs are queued for processing and will
+   * generate translated content based on the source files and target locales provided.
+   *
+   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
+   * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
-    files: FileToTranslate[],
-    options: EnqueueFilesOptions
+    files: FileUploadRef[],
+    options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options
-    let mergedOptions: EnqueueFilesOptions = {
+    let mergedOptions: EnqueueOptions = {
       ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale!,
+      targetLocales: options.targetLocales ?? [this.targetLocale!],
     };
 
     // Require source locale
     if (!mergedOptions.sourceLocale) {
       const error = noSourceLocaleProvidedError('enqueueFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Require target locale(s)
+    if (
+      !mergedOptions.targetLocales ||
+      mergedOptions.targetLocales.length === 0
+    ) {
+      const error = noTargetLocaleProvidedError('enqueueFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
@@ -402,10 +464,9 @@ export class GT {
       ),
     };
 
-    // Request the file updates
     return await _enqueueFiles(
       files,
-      mergedOptions as RequiredEnqueueFilesOptions,
+      mergedOptions,
       this._getTranslationConfig()
     );
   }
@@ -461,6 +522,7 @@ export class GT {
    * @returns {Promise<TranslationStatusResult>} The translation status of the version.
    *
    * @example
+   * @deprecated Use the {@link checkFileTranslations} method instead. Will be removed in v7.0.0.
    * const gt = new GT({
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',
@@ -817,15 +879,24 @@ export class GT {
     );
   }
 
-  async uploadFiles(
-    files: {
-      source: FileUpload;
-      translations: FileUpload[];
-    }[],
+  /**
+   * Uploads source files to the translation service without any translation content.
+   *
+   * This method creates or replaces source file entries in your project. Each uploaded
+   * file becomes a source that can later be translated into target languages. The files
+   * are processed and stored as base entries that serve as the foundation for generating
+   * translations through the translation workflow.
+   *
+   * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
+   * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings
+   * @returns {Promise<any>} Upload result containing file IDs, version information, and upload status
+   */
+  async uploadSourceFiles(
+    files: { source: FileUpload }[],
     options: UploadFilesOptions
   ): Promise<any> {
     // Validation
-    this._validateAuth('uploadFiles');
+    this._validateAuth('uploadSourceFiles');
 
     // Merge instance settings with options
     const mergedOptions: UploadFilesOptions = {
@@ -835,14 +906,67 @@ export class GT {
 
     // Require source locale
     if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('uploadFiles');
+      const error = noSourceLocaleProvidedError('uploadSourceFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    return await _uploadFiles(
+    return await _uploadSourceFiles(
       files,
-      mergedOptions,
+      mergedOptions as RequiredUploadFilesOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Uploads translation files that correspond to previously uploaded source files.
+   *
+   * This method allows you to provide translated content for existing source files in your project.
+   * Each translation must reference an existing source file and include the translated content
+   * along with the target locale information. This is used when you have pre-existing translations
+   * that you want to upload directly rather than generating them through the translation service.
+   *
+   * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
+   *   - `source`: Reference to the existing source file (contains IDs but no content)
+   *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
+   * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings
+   * @returns {Promise<any>} Upload result containing translation IDs, status, and processing information
+   */
+  async uploadTranslations(
+    files: {
+      source: FileUpload; // reference only (no content)
+      translations: FileUpload[]; // each has content + ids + locale
+    }[],
+    options: UploadFilesOptions
+  ): Promise<any> {
+    // Validation
+    this._validateAuth('uploadTranslations');
+
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('uploadTranslations');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Ensure all translation locales use canonical locales
+    const targetFiles = files.map((f) => ({
+      ...f,
+      translations: f.translations.map((t) => ({
+        ...t,
+        locale: this.resolveCanonicalLocale(t.locale),
+      })),
+    }));
+
+    return await _uploadTranslations(
+      targetFiles,
+      mergedOptions as RequiredUploadFilesOptions,
       this._getTranslationConfig()
     );
   }

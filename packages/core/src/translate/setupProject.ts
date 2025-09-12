@@ -1,4 +1,4 @@
-import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
+import { TranslationRequestConfig } from '../types';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
@@ -7,49 +7,39 @@ import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { FileUploadRef } from 'src/types-dir/uploadFiles';
 
-export type EnqueueOptions = {
-  sourceLocale: string;
-  targetLocales: string[];
-  publish?: boolean;
-  requireApproval?: boolean;
-  modelProvider?: string;
-  force?: boolean;
-  timeout?: number;
+export type SetupProjectResult = {
+  setupJobId: string;
+  status: 'queued';
 };
 
 /**
  * @internal
- * Enqueues files for translation in the General Translation API.
+ * Enqueues files for project setup the General Translation API.
  * @param files - References of files to translate (file content already uploaded)
- * @param options - The options for the API call
  * @param config - The configuration for the API call
+ * @param timeoutMS - The timeout in milliseconds
  * @returns The result of the API call
  */
-export default async function _enqueueFiles(
+export default async function _setupProject(
   files: FileUploadRef[],
-  options: EnqueueOptions,
-  config: TranslationRequestConfig
-): Promise<EnqueueFilesResult> {
-  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/enqueue`;
+  config: TranslationRequestConfig,
+  timeoutMs?: number
+): Promise<SetupProjectResult> {
+  const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/generate`;
 
   const body = {
     files: files.map((f) => ({
       fileId: f.fileId,
       versionId: f.versionId,
       fileName: f.fileName,
+      fileFormat: f.fileFormat,
+      ...(f.dataFormat && { dataFormat: f.dataFormat }),
     })),
-    targetLocales: options.targetLocales,
-    sourceLocale: options.sourceLocale,
-    publish: options.publish,
-    requireApproval: options.requireApproval,
-    modelProvider: options.modelProvider,
-    force: options.force,
   };
 
   let response;
   try {
-    // Request translations
     response = await fetchWithTimeout(
       url,
       {
@@ -63,8 +53,6 @@ export default async function _enqueueFiles(
     handleFetchError(error, timeout);
   }
 
-  // Validate response
   await validateResponse(response);
-  const result = (await response.json()) as EnqueueFilesResult;
-  return result;
+  return (await response.json()) as SetupProjectResult;
 }

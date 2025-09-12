@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.6.0
+
+### Minor Changes
+
+- [#651](https://github.com/generaltranslation/gt/pull/651) [`3e5705b`](https://github.com/generaltranslation/gt/commit/3e5705bc96005441798619fec97574fa15a5a2bd) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Split up file upload into source/translation specific uploads; added project setup visibility
+
 ## 7.5.0
 
 ### Minor Changes
