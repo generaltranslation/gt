@@ -80,8 +80,10 @@ export async function _uploadTranslations(
   const body = {
     data: files.map(({ source, translations }) => ({
       source: {
+        content: source.content,
         fileName: source.fileName,
         fileFormat: source.fileFormat,
+        locale: source.locale,
         ...(source.dataFormat && { dataFormat: source.dataFormat }),
       },
       translations: translations.map((t) => ({
