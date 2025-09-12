@@ -33,10 +33,15 @@ export async function _uploadSourceFiles(
     sourceLocale: options.sourceLocale,
     ...(options.modelProvider && { modelProvider: options.modelProvider }),
   } satisfies {
-    data: Array<{ source: {
-      content: string; fileName: string; fileFormat: FileUpload['fileFormat'];
-      locale: string; dataFormat?: FileUpload['dataFormat'];
-    }}>;
+    data: Array<{
+      source: {
+        content: string;
+        fileName: string;
+        fileFormat: FileUpload['fileFormat'];
+        locale: string;
+        dataFormat?: FileUpload['dataFormat'];
+      };
+    }>;
     sourceLocale: string;
     modelProvider?: string;
   };
@@ -45,7 +50,11 @@ export async function _uploadSourceFiles(
   try {
     response = await fetchWithTimeout(
       url,
-      { method: 'POST', headers: generateRequestHeaders(config, false), body: JSON.stringify(body) },
+      {
+        method: 'POST',
+        headers: generateRequestHeaders(config, false),
+        body: JSON.stringify(body),
+      },
       timeout
     );
   } catch (err) {
@@ -91,7 +100,11 @@ export async function _uploadTranslations(
   try {
     response = await fetchWithTimeout(
       url,
-      { method: 'POST', headers: generateRequestHeaders(config, false), body: JSON.stringify(body) },
+      {
+        method: 'POST',
+        headers: generateRequestHeaders(config, false),
+        body: JSON.stringify(body),
+      },
       timeout
     );
   } catch (err) {

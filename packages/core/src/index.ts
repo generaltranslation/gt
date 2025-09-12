@@ -90,7 +90,10 @@ import {
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import { _uploadSourceFiles, _uploadTranslations } from './translate/uploadFiles';
+import {
+  _uploadSourceFiles,
+  _uploadTranslations,
+} from './translate/uploadFiles';
 import {
   FileUpload,
   FileUploadRef,
@@ -931,8 +934,8 @@ export class GT {
    */
   async uploadTranslations(
     files: {
-      source: FileUpload;                         // reference only (no content)
-      translations: FileUpload[];  // each has content + ids + locale
+      source: FileUpload; // reference only (no content)
+      translations: FileUpload[]; // each has content + ids + locale
     }[],
     options: UploadFilesOptions
   ): Promise<any> {

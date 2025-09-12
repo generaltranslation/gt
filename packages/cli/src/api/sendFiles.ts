@@ -1,5 +1,10 @@
 import chalk from 'chalk';
-import { createSpinner, logMessage, logSuccess, logWarning } from '../console/logging.js';
+import {
+  createSpinner,
+  logMessage,
+  logSuccess,
+  logWarning,
+} from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import {
@@ -51,20 +56,25 @@ export async function sendFiles(
     const sourceLocale = settings.defaultLocale;
     if (!sourceLocale) {
       uploadSpinner.stop(chalk.red('Missing default source locale'));
-      throw new Error('sendFiles: settings.defaultLocale is required to upload source files');
+      throw new Error(
+        'sendFiles: settings.defaultLocale is required to upload source files'
+      );
     }
 
     // Convert FileToTranslate[] -> { source: FileUpload }[]
-    const uploads: SourceUpload[] = files.map(({ content, fileName, fileFormat, dataFormat }) => ({
-      source: {
-        content: Buffer.from(content).toString('base64'),
-        fileName,
-        fileFormat,
-        dataFormat,
-        locale: sourceLocale },
-    }));
+    const uploads: SourceUpload[] = files.map(
+      ({ content, fileName, fileFormat, dataFormat }) => ({
+        source: {
+          content: Buffer.from(content).toString('base64'),
+          fileName,
+          fileFormat,
+          dataFormat,
+          locale: sourceLocale,
+        },
+      })
+    );
 
-    logWarning(uploads[0].source.locale)
+    logWarning(uploads[0].source.locale);
     const upload = await gt.uploadSourceFiles(uploads, {
       sourceLocale,
       modelProvider: settings.modelProvider,
