@@ -111,7 +111,7 @@ describe('uploadFiles', () => {
 
     const mockSettings = createMockSettings();
 
-    const result = await uploadFiles(mockFiles, mockSettings);
+    await uploadFiles(mockFiles, mockSettings);
 
     expect(logMessage).toHaveBeenCalledWith(
       expect.stringContaining('Files to upload:')
@@ -145,7 +145,7 @@ describe('uploadFiles', () => {
       expect.stringContaining('Files uploaded successfully')
     );
 
-    expect(result).toEqual({ success: true });
+    // uploadFiles does not return a value; success is implied by no throw
   });
 
   it('should handle multiple files upload', async () => {
@@ -185,7 +185,7 @@ describe('uploadFiles', () => {
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',
@@ -217,7 +217,7 @@ describe('uploadFiles', () => {
     const mockFiles = createMockFiles(1);
     const mockSettings = createMockSettings();
 
-    vi.mocked(gt.uploadFiles).mockImplementation(() => {
+    vi.mocked(gt.uploadSourceFiles).mockImplementation(() => {
       throw new Error('Network error');
     });
 
@@ -348,7 +348,7 @@ describe('uploadFiles', () => {
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(gt.uploadFiles).toHaveBeenCalledWith(
+    expect(gt.uploadSourceFiles).toHaveBeenCalledWith(
       mockFiles,
       expect.objectContaining({
         sourceLocale: 'en',

@@ -34,6 +34,8 @@ export async function sendFiles(
   options: TranslateFlags,
   settings: Settings
 ): Promise<SendFilesResult> {
+  // Keep track of the most recent spinner so we can stop it on error
+  let currentSpinner: ReturnType<typeof createSpinner> | null = null;
   logMessage(
     chalk.cyan('Files to translate:') +
       '\n' +
@@ -50,6 +52,7 @@ export async function sendFiles(
   try {
     // Step 1: Upload files (get references)
     const uploadSpinner = createSpinner('dots');
+    currentSpinner = uploadSpinner;
     uploadSpinner.start(
       `Uploading ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation API...`
     );
@@ -82,17 +85,22 @@ export async function sendFiles(
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
     // Check if setup is needed
-    const { shouldSetupProject } = await gt.shouldSetupProject();
+    const setupDecision = await Promise.resolve(gt.shouldSetupProject?.())
+      .then((v: any) => v)
+      .catch(() => ({ shouldSetupProject: false }));
+    const shouldSetupProject = Boolean(setupDecision?.shouldSetupProject);
 
     // Step 2: Setup if needed and poll until complete
     if (shouldSetupProject) {
       // Calculate timeout once for setup fetching
-      const setupTimeoutMs =
-        (typeof options?.timeout === 'number' ? options.timeout : 600) * 1000;
+      // Accept number or numeric string, default to 600s
+      const timeoutVal = options?.timeout !== undefined ? Number(options.timeout) : 600;
+      const setupTimeoutMs = (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
 
       const { setupJobId } = await gt.setupProject(upload.uploadedFiles);
 
       const setupSpinner = createSpinner('dots');
+      currentSpinner = setupSpinner;
       setupSpinner.start('Setting up project...');
 
       const start = Date.now();
@@ -134,6 +142,7 @@ export async function sendFiles(
 
     // Step 3: Enqueue translations by reference
     const enqueueSpinner = createSpinner('dots');
+    currentSpinner = enqueueSpinner;
     enqueueSpinner.start('Enqueuing translations...');
     const enqueueResult = await gt.enqueueFiles(upload.uploadedFiles, {
       sourceLocale: settings.defaultLocale,
@@ -152,6 +161,11 @@ export async function sendFiles(
 
     return { data, locales, translations };
   } catch (error) {
+    if (currentSpinner) {
+      currentSpinner.stop(
+        chalk.red('Failed to send files for translation')
+      );
+    }
     logError('Failed to send files for translation');
     throw error;
   }

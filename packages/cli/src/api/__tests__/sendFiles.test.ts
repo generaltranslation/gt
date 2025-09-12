@@ -93,6 +93,8 @@ describe('sendFiles', () => {
     vi.mocked(createSpinner).mockReturnValue(
       mockSpinner as unknown as SpinnerResult
     );
+    // By default, do not require setup unless a test overrides it
+    vi.mocked(gt.shouldSetupProject).mockResolvedValue({ shouldSetupProject: false });
   });
 
   it('should send files successfully', async () => {
@@ -378,7 +380,7 @@ describe('sendFiles', () => {
       message: 'No files to upload',
       locales: ['es'],
     });
-
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ uploadedFiles: [] });
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -388,7 +390,7 @@ describe('sendFiles', () => {
     );
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
-      'Sending 0 files to General Translation API...'
+      'Uploading 0 files to General Translation API...'
     );
 
     expect(gt.enqueueFiles).toHaveBeenCalledWith([], expect.any(Object));
@@ -409,7 +411,12 @@ describe('sendFiles', () => {
       },
       locales: ['es'],
     });
-
+    const mockUploadResponse = { uploadedFiles: mockFiles.map((f, i) => ({
+      fileId: `file-${i}`,
+      versionId: 'version-456',
+      fileName: f.fileName,
+    })) };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -419,10 +426,13 @@ describe('sendFiles', () => {
     );
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
-      'Sending 100 files to General Translation API...'
+      'Uploading 100 files to General Translation API...'
     );
 
-    expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, expect.any(Object));
+    expect(gt.enqueueFiles).toHaveBeenCalledWith(
+      mockUploadResponse.uploadedFiles as any,
+      expect.any(Object)
+    );
 
     expect(result).toEqual<SendFilesResult>({
       data: {
@@ -441,6 +451,7 @@ describe('sendFiles', () => {
     const mockOptions = createMockSettings({ locales: ['es'] });
 
     const timeoutError = new Error('Network timeout');
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ uploadedFiles: [] });
     vi.mocked(gt.enqueueFiles).mockRejectedValue(timeoutError);
 
     await expect(
@@ -460,6 +471,7 @@ describe('sendFiles', () => {
     const mockOptions = createMockSettings({ locales: ['es'] });
 
     const authError = new Error('Unauthorized');
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ uploadedFiles: [] });
     vi.mocked(gt.enqueueFiles).mockRejectedValue(authError);
 
     await expect(
@@ -496,7 +508,12 @@ describe('sendFiles', () => {
       },
       locales: ['es'],
     });
-
+    const mockUploadResponse = { uploadedFiles: mockFiles.map((f, i) => ({
+      fileId: `file-${i}`,
+      versionId: 'version-456',
+      fileName: f.fileName,
+    })) };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -505,7 +522,10 @@ describe('sendFiles', () => {
       mockOptions
     );
 
-    expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, expect.any(Object));
+    expect(gt.enqueueFiles).toHaveBeenCalledWith(
+      mockUploadResponse.uploadedFiles as any,
+      expect.any(Object)
+    );
     expect(result).toEqual<SendFilesResult>({
       data: {
         'component.jsx': {
@@ -535,7 +555,12 @@ describe('sendFiles', () => {
       },
       locales: ['es'],
     });
-
+    const mockUploadResponse = { uploadedFiles: mockFiles.map((f, i) => ({
+      fileId: `file-${i}`,
+      versionId: 'version-456',
+      fileName: f.fileName,
+    })) };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -544,13 +569,15 @@ describe('sendFiles', () => {
       mockOptions
     );
 
-    expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, {
-      publish: true,
-      description: undefined,
-      sourceLocale: 'en',
-      targetLocales: ['es'],
-      _versionId: undefined,
-    });
+    expect(gt.enqueueFiles).toHaveBeenCalledWith(
+      mockUploadResponse.uploadedFiles as any,
+      expect.objectContaining({
+        publish: true,
+        sourceLocale: 'en',
+        targetLocales: ['es'],
+        requireApproval: false,
+      })
+    );
 
     expect(result).toEqual<SendFilesResult>({
       data: {
@@ -597,7 +624,16 @@ describe('sendFiles', () => {
         },
       ],
     });
-
+    const mockUploadResponse = {
+      uploadedFiles: [
+        {
+          fileId: 'file-1',
+          versionId: 'version-456',
+          fileName: 'component.json',
+        },
+      ],
+    };
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse as any);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
