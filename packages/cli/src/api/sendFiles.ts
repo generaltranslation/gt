@@ -81,16 +81,15 @@ export async function sendFiles(
     });
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
-    // Calculate timeout once for all context operations
-    const contextTimeoutMs =
-      (typeof options?.timeout === 'number' ? options.timeout : 600) * 1000;
-
     // Check if context is needed
-    const { shouldGenerateContext } =
-      await gt.shouldGenerateContext(contextTimeoutMs);
+    const { shouldGenerateContext } = await gt.shouldGenerateContext();
 
     // Step 2: Generate context if needed and poll until complete
     if (shouldGenerateContext) {
+      // Calculate timeout once for context fetching
+      const contextTimeoutMs =
+        (typeof options?.timeout === 'number' ? options.timeout : 600) * 1000;
+
       const { contextJobId } = await gt.generateContext(upload.uploadedFiles);
 
       const contextSpinner = createSpinner('dots');

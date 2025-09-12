@@ -45,25 +45,14 @@ export async function _checkContextStatus(
 }
 
 export async function _shouldGenerateContext(
-  config: TranslationRequestConfig,
-  timeoutMs?: number
+  config: TranslationRequestConfig
 ): Promise<ShouldGenerateContextResult> {
-  const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/context/should-generate`;
 
-  let response: Response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'GET',
-        headers: generateRequestHeaders(config, true),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: generateRequestHeaders(config, true),
+  });
 
   await validateResponse(response);
   return (await response.json()) as ShouldGenerateContextResult;

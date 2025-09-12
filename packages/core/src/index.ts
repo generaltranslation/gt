@@ -389,13 +389,10 @@ export class GT {
     );
   }
 
-  async shouldGenerateContext(
-    timeoutMs?: number
-  ): Promise<ShouldGenerateContextResult> {
+  async shouldGenerateContext(): Promise<ShouldGenerateContextResult> {
     this._validateAuth('shouldGenerateContext');
     return await _shouldGenerateContext(
-      this._getTranslationConfig(),
-      timeoutMs
+      this._getTranslationConfig()
     );
   }
 
