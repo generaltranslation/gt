@@ -2,6 +2,7 @@ import { customLoadTranslationsError } from '../../errors/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
 import { CustomLoader, Translations } from '../../types/types';
 import { useEffect, useState } from 'react';
+import { GT } from 'generaltranslation';
 
 export function useLoadTranslations({
   _translations,
@@ -12,6 +13,7 @@ export function useLoadTranslations({
   cacheUrl,
   projectId,
   _versionId,
+  gt,
 }: {
   _translations: Translations | null;
   translationRequired: boolean;
@@ -21,6 +23,7 @@ export function useLoadTranslations({
   cacheUrl: string;
   projectId: string;
   _versionId?: string;
+  gt: GT;
 }) {
   /** Key for translation tracking:
    * Cache Loading            -> translations = null
@@ -73,6 +76,7 @@ export function useLoadTranslations({
               projectId,
               locale,
               versionId: _versionId,
+              gt,
             });
           } catch (error) {
             console.error(error);
@@ -103,6 +107,7 @@ export function useLoadTranslations({
     projectId,
     locale,
     _versionId,
+    gt,
   ]);
 
   return {

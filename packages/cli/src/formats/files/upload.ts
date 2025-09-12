@@ -145,9 +145,8 @@ export async function upload(
 
   // construct object
   const uploadData = allFiles.map((file) => {
-    const encodedContent = Buffer.from(file.content).toString('base64');
     const sourceFile: FileUpload = {
-      content: encodedContent,
+      content: file.content,
       fileName: file.fileName,
       fileFormat: file.fileFormat,
       dataFormat: file.dataFormat,
@@ -159,10 +158,8 @@ export async function upload(
       const translatedFileName = fileMapping[locale][file.fileName];
       if (translatedFileName && existsSync(translatedFileName)) {
         const translatedContent = readFileSync(translatedFileName, 'utf8');
-        const encodedTranslatedContent =
-          Buffer.from(translatedContent).toString('base64');
         translations.push({
-          content: encodedTranslatedContent,
+          content: translatedContent,
           fileName: translatedFileName,
           fileFormat: file.fileFormat,
           dataFormat: file.dataFormat,
@@ -178,7 +175,7 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    const response = await uploadFiles(uploadData, options);
+    await uploadFiles(uploadData, options);
   } catch (error) {
     logErrorAndExit(`Error uploading files: ${error}`);
   }

@@ -1,5 +1,45 @@
 # gtx-cli
 
+## 2.3.0
+
+### Minor Changes
+
+- [#651](https://github.com/generaltranslation/gt/pull/651) [`3e5705b`](https://github.com/generaltranslation/gt/commit/3e5705bc96005441798619fec97574fa15a5a2bd) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Split up file upload into source/translation specific uploads; added project setup visibility
+
+### Patch Changes
+
+- Updated dependencies [[`3e5705b`](https://github.com/generaltranslation/gt/commit/3e5705bc96005441798619fec97574fa15a5a2bd)]:
+  - generaltranslation@7.6.0
+
+## 2.2.0
+
+### Minor Changes
+
+- [#638](https://github.com/generaltranslation/gt/pull/638) [`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale aliasing
+
+### Patch Changes
+
+- Updated dependencies [[`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d)]:
+  - generaltranslation@7.5.0
+
+## 2.1.21
+
+### Patch Changes
+
+- [#645](https://github.com/generaltranslation/gt/pull/645) [`58cfaee`](https://github.com/generaltranslation/gt/commit/58cfaee5cc1dcd187f0b72b2761f96c19b4f313e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Escaping HTML to avoid parsing issues from MDX consumers
+
+## 2.1.20
+
+### Patch Changes
+
+- [#643](https://github.com/generaltranslation/gt/pull/643) [`4f553c0`](https://github.com/generaltranslation/gt/commit/4f553c00c119f272edc5ccb3616f2d0effec8586) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Removing custom configuration on remarkStringify
+
+## 2.1.19
+
+### Patch Changes
+
+- [#641](https://github.com/generaltranslation/gt/pull/641) [`4c67f77`](https://github.com/generaltranslation/gt/commit/4c67f775ee892b47eebcc3178c00ad6547a84d84) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Encoding placeholders that break MDX parse
+
 ## 2.1.18
 
 ### Patch Changes

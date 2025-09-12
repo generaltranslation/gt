@@ -12,6 +12,7 @@ import { createMockSettings } from '../__mocks__/settings.js';
 vi.mock('../../utils/gt.js', () => ({
   gt: {
     downloadFileBatch: vi.fn(),
+    resolveAliasLocale: vi.fn((locale) => locale), // Return locale as-is for testing
   },
 }));
 
@@ -68,6 +69,7 @@ describe('downloadFileBatch', () => {
       outputPath: `/output/file${i + 1}.json`,
       inputPath: `/input/file${i + 1}.json`,
       locale: 'en',
+      fileLocale: 'en', // Add required fileLocale property
       ...overrides,
     }));
   };

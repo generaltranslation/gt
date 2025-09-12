@@ -10,15 +10,23 @@ import {
   conflictingConfigurationBuildError,
   createBadFilepathWarning,
   createUnsupportedLocalesWarning,
+  deprecatedLocaleMappingWarning,
   devApiKeyIncludedInProductionError,
+  invalidCanonicalLocalesError,
+  invalidLocalesError,
   projectIdMissingWarn,
+  standardizedCanonicalLocalesWarning,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
   unsupportedGetLocalePathBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
+import {
+  getLocaleProperties,
+  isValidLocale,
+  standardizeLocale,
+} from 'generaltranslation';
 import {
   rootParamStability,
   swcPluginCompatible,
@@ -333,6 +341,31 @@ export function withGTConfig(
     }
   );
 
+  // Standardize canonical locales
+  const updatedCanonicalLocales: string[] = [];
+  if (mergedConfig.customMapping) {
+    mergedConfig.customMapping = Object.fromEntries(
+      Object.entries(mergedConfig.customMapping).map(([key, value]) => {
+        if (typeof value !== 'object' || !('code' in value)) {
+          return [key, value];
+        }
+        const updatedLocale = gtServicesEnabled
+          ? standardizeLocale((value as { code: string }).code)
+          : (value as { code: string }).code;
+        if (updatedLocale !== (value as { code: string }).code) {
+          updatedCanonicalLocales.push(`${key} -> ${updatedLocale}`);
+        }
+        return [
+          key,
+          {
+            ...value,
+            code: updatedLocale,
+          },
+        ];
+      })
+    );
+  }
+
   // ---------- DERIVED CONFIG ATTRIBUTES ---------- //
 
   // Local dictionary flag
@@ -374,6 +407,37 @@ export function withGTConfig(
 
   // ---------- ERROR CHECKS ---------- //
 
+  // Check: using deprecated localeMapping
+  if (props.customMapping) {
+    console.warn(deprecatedLocaleMappingWarning);
+  }
+
+  // Check: invalid locale
+  if (!mergedConfig.customMapping && gtServicesEnabled) {
+    const invalidLocales: string[] = [];
+    mergedConfig.locales.forEach((locale) => {
+      if (!isValidLocale(locale)) {
+        invalidLocales.push(locale);
+      }
+    });
+    if (invalidLocales.length) {
+      throw new Error(invalidLocalesError(invalidLocales));
+    }
+  }
+
+  // Check: invalid canonical locale
+  if (mergedConfig.customMapping && gtServicesEnabled) {
+    const invalidCanonicalLocales: string[] = [];
+    mergedConfig.locales.forEach((locale) => {
+      if (!isValidLocale(locale, mergedConfig.customMapping)) {
+        invalidCanonicalLocales.push(locale);
+      }
+    });
+    if (invalidCanonicalLocales.length) {
+      throw new Error(invalidCanonicalLocalesError(invalidCanonicalLocales));
+    }
+  }
+
   // Resolve getLocale path
   const customLocaleEnabled = !!customGetLocalePath;
 
@@ -410,12 +474,11 @@ export function withGTConfig(
       console.warn(standardizedLocalesWarning(updatedLocales));
     }
 
-    // Warn about unsupported locales
-    const warningLocales = (
-      mergedConfig.locales || defaultWithGTConfigProps.locales
-    ).filter((locale) => !getSupportedLocale(locale));
-    if (warningLocales.length) {
-      console.warn(createUnsupportedLocalesWarning(warningLocales));
+    // Warn about standardized canonical locales
+    if (updatedCanonicalLocales.length) {
+      console.warn(
+        standardizedCanonicalLocalesWarning(updatedCanonicalLocales)
+      );
     }
   }
 

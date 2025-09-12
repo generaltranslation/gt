@@ -1,6 +1,10 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
-import { CustomMapping, getCustomProperty } from './customLocaleMapping';
+import {
+  CustomMapping,
+  getCustomProperty,
+  shouldUseCanonicalLocale,
+} from './customLocaleMapping';
 import { _standardizeLocale } from './isValidLocale';
 
 /**
@@ -16,11 +20,19 @@ export function _getLocaleName(
   defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomMapping
 ): string {
+  // Check for canonical locale
+  const aliasedLocale = locale;
+  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
+    // Override locale with canonical locale
+    locale = (customMapping[locale] as { code: string }).code;
+  }
+
   defaultLocale ||= libraryDefaultLocale;
   try {
     const standardizedLocale = _standardizeLocale(locale);
     if (customMapping) {
       for (const l of [
+        aliasedLocale,
         locale,
         standardizedLocale,
         intlCache.get('Locale', standardizedLocale).language,

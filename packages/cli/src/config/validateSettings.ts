@@ -3,17 +3,21 @@ import { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import { gt } from '../utils/gt.js';
 
 export function validateSettings(settings: Settings) {
   // Validate locales
   for (const locale of settings.locales) {
-    if (!isValidLocale(locale)) {
+    if (!isValidLocale(locale, settings.customMapping)) {
       logErrorAndExit(
         `Provided locales: "${settings?.locales?.join()}", ${locale} is not a valid locale!`
       );
     }
   }
-  if (settings.defaultLocale && !isValidLocale(settings.defaultLocale)) {
+  if (
+    settings.defaultLocale &&
+    !isValidLocale(settings.defaultLocale, settings.customMapping)
+  ) {
     logErrorAndExit(
       `defaultLocale: ${settings.defaultLocale} is not a valid locale!`
     );
