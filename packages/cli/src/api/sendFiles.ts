@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import {
   createSpinner,
+  logError,
   logMessage,
   logSuccess,
   logWarning,
@@ -74,19 +75,19 @@ export async function sendFiles(
       })
     );
 
-    logWarning(uploads[0].source.locale);
     const upload = await gt.uploadSourceFiles(uploads, {
       sourceLocale,
       modelProvider: settings.modelProvider,
     });
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
-    const contextCheckTimeoutMs =
+    // Calculate timeout once for all context operations
+    const contextTimeoutMs =
       (typeof options?.timeout === 'number' ? options.timeout : 600) * 1000;
 
     // Check if context is needed
     const { shouldGenerateContext } = await gt.shouldGenerateContext(
-      contextCheckTimeoutMs
+      contextTimeoutMs
     );
 
     // Step 2: Generate context if needed and poll until complete
@@ -97,11 +98,6 @@ export async function sendFiles(
       contextSpinner.start('Generating project context...');
 
       const start = Date.now();
-      // Use CLI --timeout (seconds) for overall context wait; default is set by flag parser
-      const timeoutMs =
-        (typeof options?.timeout === 'number'
-          ? options.timeout
-          : 600) /* seconds */ * 1000;
       const pollInterval = 2000;
 
       let contextCompleted = false;
@@ -118,7 +114,7 @@ export async function sendFiles(
           contextFailedMessage = status.error?.message || 'Unknown error';
           break;
         }
-        if (Date.now() - start > timeoutMs) {
+        if (Date.now() - start > contextTimeoutMs) {
           contextFailedMessage =
             'Timed out while waiting for context generation';
           break;
@@ -159,11 +155,7 @@ export async function sendFiles(
 
     return { data, locales, translations };
   } catch (error) {
-    // Attempt to stop any running spinner gracefully
-    // Note: individual phase spinners stop themselves on success paths
-    // Fall back message on unexpected error
-    const failSpinner = createSpinner('dots');
-    failSpinner.stop(chalk.red('Failed to send files for translation'));
+    logError('Failed to send files for translation');
     throw error;
   }
 }

@@ -26,7 +26,7 @@ export async function _checkContextStatus(
   const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/context/status/${encodeURIComponent(jobId)}`;
 
-  let response;
+  let response: Response;
   try {
     response = await fetchWithTimeout(
       url,
@@ -51,7 +51,7 @@ export async function _shouldGenerateContext(
   const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/context/should-generate`;
 
-  let response: Response | undefined;
+  let response: Response;
   try {
     response = await fetchWithTimeout(
       url,
@@ -65,6 +65,6 @@ export async function _shouldGenerateContext(
     handleFetchError(error, timeout);
   }
 
-  await validateResponse(response!);
-  return (await response!.json()) as ShouldGenerateContextResult;
+  await validateResponse(response);
+  return (await response.json()) as ShouldGenerateContextResult;
 }

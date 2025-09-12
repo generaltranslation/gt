@@ -66,7 +66,7 @@ export async function uploadFiles(
     }
 
     spinner.stop(chalk.green('Files uploaded successfully'));
-  } catch (err) {
+  } catch {
     spinner.stop(
       chalk.red('An unexpected error occurred while uploading files')
     );
