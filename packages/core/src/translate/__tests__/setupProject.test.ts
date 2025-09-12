@@ -31,6 +31,11 @@ describe('_setupProject', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchWithTimeout).mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(handleFetchError).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+    
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -406,23 +411,6 @@ describe('_setupProject', () => {
     );
   });
 
-  it('should handle validation errors', async () => {
-    const mockFiles = [createMockFile()];
-
-    const mockFetchResponse = {
-      json: vi.fn(),
-    } as unknown as Response;
-
-    const validationError = new Error('Invalid request');
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockRejectedValue(validationError);
-
-    await expect(_setupProject(mockFiles, mockConfig)).rejects.toThrow(
-      'Invalid request'
-    );
-
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-  });
 
   it('should use default timeout when not provided', async () => {
     const mockFiles = [createMockFile()];

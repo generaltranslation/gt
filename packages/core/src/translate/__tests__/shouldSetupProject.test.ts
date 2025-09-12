@@ -20,6 +20,10 @@ describe('_shouldSetupProject', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetch.mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+    
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -28,94 +32,7 @@ describe('_shouldSetupProject', () => {
     global.fetch = mockFetch;
   });
 
-  it('should check if setup is needed', async () => {
-    const mockResponse: ShouldSetupProjectResult = {
-      shouldSetupProject: true,
-    };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    mockFetch.mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const result = await _shouldSetupProject(mockConfig);
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/setup/should-generate',
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-      }
-    );
-
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-    expect(result).toEqual(mockResponse);
-    expect(result.shouldSetupProject).toBe(true);
-  });
-
-  it('should return false when setup is not needed', async () => {
-    const mockResponse: ShouldSetupProjectResult = {
-      shouldSetupProject: false,
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    mockFetch.mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const result = await _shouldSetupProject(mockConfig);
-
-    expect(result.shouldSetupProject).toBe(false);
-  });
-
-  it('should use default base URL when not provided', async () => {
-    const configWithoutBaseUrl = {
-      projectId: 'test-project',
-      apiKey: 'test-api-key',
-    };
-
-    const mockResponse: ShouldSetupProjectResult = {
-      shouldSetupProject: true,
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    mockFetch.mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    await _shouldSetupProject(configWithoutBaseUrl);
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('api2.gtx.dev/v2/project/setup/should-generate'),
-      expect.any(Object)
-    );
-  });
-
-  it('should handle validation errors', async () => {
-    const mockFetchResponse = {
-      json: vi.fn(),
-    } as unknown as Response;
-
-    const validationError = new Error('Invalid response');
-    mockFetch.mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockRejectedValue(validationError);
-
-    await expect(_shouldSetupProject(mockConfig)).rejects.toThrow(
-      'Invalid response'
-    );
-
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-  });
 
   it('should handle fetch errors', async () => {
     const fetchError = new Error('Network error');

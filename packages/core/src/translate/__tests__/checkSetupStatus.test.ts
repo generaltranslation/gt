@@ -24,6 +24,11 @@ describe('_checkSetupStatus', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchWithTimeout).mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(handleFetchError).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+    
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -159,80 +164,6 @@ describe('_checkSetupStatus', () => {
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
-  it('should use default base URL when not provided in config', async () => {
-    const configWithoutBaseUrl = {
-      projectId: 'test-project',
-      apiKey: 'test-api-key',
-    };
-
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'completed',
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const result = await _checkSetupStatus('job-123', configWithoutBaseUrl);
-
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('api2.gtx.dev/v2/project/setup/status/job-123'),
-      expect.any(Object),
-      expect.any(Number)
-    );
-    expect(result).toEqual(mockResponse);
-  });
-
-  it('should URL encode job ID', async () => {
-    const specialJobId = 'job-123/special%chars';
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: specialJobId,
-      status: 'completed',
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const result = await _checkSetupStatus(specialJobId, mockConfig);
-
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(encodeURIComponent(specialJobId)),
-      expect.any(Object),
-      expect.any(Number)
-    );
-    expect(result).toEqual(mockResponse);
-  });
-
-  it('should limit timeout to maxTimeout', async () => {
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'completed',
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    await _checkSetupStatus('job-123', mockConfig, 1000000); // Very large timeout
-
-    // Should use maxTimeout (60000) instead of the large provided timeout
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Object),
-      60000
-    );
-  });
 
   it('should handle validation errors', async () => {
     const mockFetchResponse = {

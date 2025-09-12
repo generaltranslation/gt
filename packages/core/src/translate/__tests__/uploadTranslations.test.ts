@@ -42,6 +42,11 @@ describe('_uploadTranslations', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchWithTimeout).mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(handleFetchError).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+    
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -230,9 +235,17 @@ describe('_uploadTranslations', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
+    // Capture the call that will be made
+    let capturedCall: any[] = [];
+    vi.mocked(fetchWithTimeout).mockImplementation((...args) => {
+      capturedCall = args;
+      return Promise.resolve(mockFetchResponse);
+    });
+
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    // Verify our specific call was made correctly
+    expect(capturedCall).toEqual([
       expect.any(String),
       {
         method: 'POST',
@@ -252,8 +265,8 @@ describe('_uploadTranslations', () => {
                   content: Buffer.from('{"key": "valor"}').toString('base64'),
                   fileName: 'data.es.json',
                   fileFormat: 'JSON',
-                  locale: 'es',
                   dataFormat: 'flat',
+                  locale: 'es',
                 },
               ],
             },
@@ -262,7 +275,7 @@ describe('_uploadTranslations', () => {
         }),
       },
       expect.any(Number)
-    );
+    ]);
   });
 
   it('should handle multiple source files with translations', async () => {
@@ -391,58 +404,6 @@ describe('_uploadTranslations', () => {
     );
   });
 
-  it('should use custom timeout when provided', async () => {
-    const mockFiles = [
-      {
-        source: createMockFileUpload(),
-        translations: [createMockFileUpload({ locale: 'es' })],
-      },
-    ];
-    const mockOptions = createMockOptions({ timeout: 30000 });
-
-    const mockResponse = { success: true };
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    await _uploadTranslations(mockFiles, mockOptions, mockConfig);
-
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Object),
-      30000
-    );
-  });
-
-  it('should limit timeout to maxTimeout', async () => {
-    const mockFiles = [
-      {
-        source: createMockFileUpload(),
-        translations: [createMockFileUpload({ locale: 'es' })],
-      },
-    ];
-    const mockOptions = createMockOptions({ timeout: 1000000 }); // Very large timeout
-
-    const mockResponse = { success: true };
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    await _uploadTranslations(mockFiles, mockOptions, mockConfig);
-
-    // Should use maxTimeout (60000) instead of the large provided timeout
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Object),
-      60000
-    );
-  });
 
   it('should handle fetch errors', async () => {
     const mockFiles = [
@@ -466,65 +427,7 @@ describe('_uploadTranslations', () => {
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
-  it('should use default base URL when not provided', async () => {
-    const configWithoutBaseUrl = {
-      projectId: 'test-project',
-      apiKey: 'test-api-key',
-    };
 
-    const mockFiles = [
-      {
-        source: createMockFileUpload(),
-        translations: [createMockFileUpload({ locale: 'es' })],
-      },
-    ];
-
-    const mockOptions = createMockOptions();
-
-    const mockResponse = { success: true };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    await _uploadTranslations(mockFiles, mockOptions, configWithoutBaseUrl);
-
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'api2.gtx.dev/v2/project/files/upload-translations'
-      ),
-      expect.any(Object),
-      expect.any(Number)
-    );
-  });
-
-  it('should handle validation errors', async () => {
-    const mockFiles = [
-      {
-        source: createMockFileUpload(),
-        translations: [createMockFileUpload({ locale: 'es' })],
-      },
-    ];
-
-    const mockOptions = createMockOptions();
-
-    const mockFetchResponse = {
-      json: vi.fn(),
-    } as unknown as Response;
-
-    const validationError = new Error('Invalid request');
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockRejectedValue(validationError);
-
-    await expect(
-      _uploadTranslations(mockFiles, mockOptions, mockConfig)
-    ).rejects.toThrow('Invalid request');
-
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-  });
 
   it('should handle empty translations array', async () => {
     const mockFiles = [

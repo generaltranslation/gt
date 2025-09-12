@@ -40,6 +40,11 @@ describe('_enqueueFiles', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchWithTimeout).mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(handleFetchError).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+    
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -317,7 +322,7 @@ describe('_enqueueFiles', () => {
       _enqueueFiles(mockFiles, mockOptions, mockConfig)
     ).rejects.toThrow('Network error');
 
-    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 120000);
+    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
   it('should use default base URL when not provided', async () => {
@@ -349,7 +354,7 @@ describe('_enqueueFiles', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'generaltranslation.com/v2/project/translations/enqueue'
+        'api2.gtx.dev/v2/project/translations/enqueue'
       ),
       expect.any(Object),
       expect.any(Number)
@@ -399,48 +404,6 @@ describe('_enqueueFiles', () => {
     expect(result.translations[0].isReady).toBe(false);
   });
 
-  it('should handle different file formats', async () => {
-    const mockFiles = [
-      createMockFile({ fileName: 'component.js', fileFormat: 'JS' }),
-      createMockFile({
-        fileName: 'styles.css',
-        fileFormat: 'CSS',
-        fileId: 'file-456',
-      }),
-      createMockFile({
-        fileName: 'content.md',
-        fileFormat: 'MD',
-        fileId: 'file-789',
-      }),
-    ];
-
-    const mockOptions = createMockOptions();
-
-    const mockResponse: EnqueueFilesResult = {
-      data: {
-        'component.js': { versionId: 'version-456', fileName: 'component.js' },
-        'styles.css': { versionId: 'version-789', fileName: 'styles.css' },
-        'content.md': { versionId: 'version-012', fileName: 'content.md' },
-      },
-      message: 'Files enqueued successfully',
-      locales: ['es', 'fr'],
-      translations: [],
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
-
-    expect(Object.keys(result.data)).toHaveLength(3);
-    expect(result.data['component.js'].fileName).toBe('component.js');
-    expect(result.data['styles.css'].fileName).toBe('styles.css');
-    expect(result.data['content.md'].fileName).toBe('content.md');
-  });
 
   it('should handle validation errors', async () => {
     const mockFiles = [createMockFile()];

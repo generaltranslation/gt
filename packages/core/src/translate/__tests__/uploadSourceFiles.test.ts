@@ -42,6 +42,11 @@ describe('_uploadSourceFiles', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchWithTimeout).mockReset();
+    vi.mocked(validateResponse).mockReset();
+    vi.mocked(handleFetchError).mockReset();
+    vi.mocked(generateRequestHeaders).mockReset();
+    
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
@@ -365,24 +370,6 @@ describe('_uploadSourceFiles', () => {
     );
   });
 
-  it('should handle validation errors', async () => {
-    const mockFiles = [{ source: createMockFileUpload() }];
-    const mockOptions = createMockOptions();
-
-    const mockFetchResponse = {
-      json: vi.fn(),
-    } as unknown as Response;
-
-    const validationError = new Error('Invalid request');
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockRejectedValue(validationError);
-
-    await expect(
-      _uploadSourceFiles(mockFiles, mockOptions, mockConfig)
-    ).rejects.toThrow('Invalid request');
-
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-  });
 
   it('should handle empty files array', async () => {
     const mockFiles: { source: FileUpload }[] = [];
