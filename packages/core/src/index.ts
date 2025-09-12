@@ -426,7 +426,8 @@ export class GT {
       ...mergedOptions,
       targetLocales: mergedOptions.targetLocales.map((locale) =>
         this.resolveCanonicalLocale(locale)
-    )};
+      ),
+    };
 
     return await _enqueueFiles(
       files,
