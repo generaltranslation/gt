@@ -71,9 +71,7 @@ import {
   _shouldGenerateContext,
   ShouldGenerateContextResult,
 } from './translate/checkContextStatus';
-import _enqueueFiles, {
-  EnqueueOptions,
-} from './translate/enqueueFiles';
+import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
 import _downloadFile from './translate/downloadFile';
