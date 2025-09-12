@@ -31,7 +31,6 @@ export async function _uploadSourceFiles(
       },
     })),
     sourceLocale: options.sourceLocale,
-    ...(options.modelProvider && { modelProvider: options.modelProvider }),
   } satisfies {
     data: Array<{
       source: {
@@ -95,7 +94,6 @@ export async function _uploadTranslations(
       })),
     })),
     sourceLocale: options.sourceLocale,
-    ...(options.modelProvider && { modelProvider: options.modelProvider }),
   };
 
   let response: Response | undefined;
