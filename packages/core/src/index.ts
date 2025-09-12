@@ -396,7 +396,17 @@ export class GT {
   }
 
   /**
-   * Enqueues translation jobs by reference to previously uploaded files.
+   * Enqueues translation jobs for previously uploaded source files.
+   * 
+   * This method creates translation jobs that will process existing source files
+   * and generate translations in the specified target languages. The files parameter
+   * contains references (IDs) to source files that have already been uploaded via
+   * uploadSourceFiles. The translation jobs are queued for processing and will
+   * generate translated content based on the source files and target locales provided.
+   *
+   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
+   * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
     files: FileUploadRef[],
