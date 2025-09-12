@@ -90,10 +90,8 @@ import {
 } from './locales/getRegionProperties';
 import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import {
-  _uploadSourceFiles,
-  _uploadTranslations,
-} from './translate/uploadFiles';
+import _uploadSourceFiles from './translate/uploadSourceFIles';
+import _uploadTranslations from './translate/uploadTranslations';
 import {
   FileUpload,
   FileUploadRef,
