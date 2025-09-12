@@ -137,7 +137,7 @@ export async function sendFiles(
     // Step 3: Enqueue translations by reference
     const enqueueSpinner = createSpinner('dots');
     enqueueSpinner.start('Enqueuing translations...');
-    const enqueueResult = await gt.enqueueFilesByRef(upload.uploadedFiles, {
+    const enqueueResult = await gt.enqueueFiles(upload.uploadedFiles, {
       sourceLocale: settings.defaultLocale,
       targetLocales: settings.locales,
       publish: settings.publish,

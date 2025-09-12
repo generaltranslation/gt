@@ -7,7 +7,7 @@ import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { FileUploadRef } from 'src/types-dir/uploadFiles';
 
-export type EnqueueByRefOptions = {
+export type EnqueueOptions = {
   sourceLocale: string;
   targetLocales: string[];
   publish?: boolean;
@@ -17,9 +17,9 @@ export type EnqueueByRefOptions = {
   timeout?: number;
 };
 
-export default async function _enqueueFilesByRef(
+export default async function _enqueueFiles(
   files: FileUploadRef[],
-  options: EnqueueByRefOptions,
+  options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);

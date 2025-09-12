@@ -71,9 +71,9 @@ import {
   _shouldGenerateContext,
   ShouldGenerateContextResult,
 } from './translate/checkContextStatus';
-import _enqueueFilesByRef, {
-  EnqueueByRefOptions,
-} from './translate/enqueueFilesByRef';
+import _enqueueFiles, {
+  EnqueueOptions,
+} from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
 import _downloadFile from './translate/downloadFile';
@@ -404,15 +404,15 @@ export class GT {
   /**
    * Enqueues translation jobs by reference to previously uploaded files.
    */
-  async enqueueFilesByRef(
+  async enqueueFiles(
     files: FileUploadRef[],
-    options: EnqueueByRefOptions
+    options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
-    this._validateAuth('enqueueFilesByRef');
+    this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueByRefOptions = {
+    const mergedOptions: EnqueueOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
       targetLocales: options.targetLocales ?? [this.targetLocale!],
@@ -420,7 +420,7 @@ export class GT {
 
     // Require source locale
     if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('enqueueFilesByRef');
+      const error = noSourceLocaleProvidedError('enqueueFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
@@ -430,12 +430,12 @@ export class GT {
       !mergedOptions.targetLocales ||
       mergedOptions.targetLocales.length === 0
     ) {
-      const error = noTargetLocaleProvidedError('enqueueFilesByRef');
+      const error = noTargetLocaleProvidedError('enqueueFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    return await _enqueueFilesByRef(
+    return await _enqueueFiles(
       files,
       mergedOptions,
       this._getTranslationConfig()
