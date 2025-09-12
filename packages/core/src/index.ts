@@ -369,9 +369,9 @@ export class GT {
 
   /**
    * Checks the current status of a project setup job by its unique identifier.
-   * 
+   *
    * This method polls the API to determine whether a setup job is still running,
-   * has completed successfully, or has failed. Setup jobs are created when 
+   * has completed successfully, or has failed. Setup jobs are created when
    * uploading source files to initialize project translation workflows.
    *
    * @param {string} jobId - The unique identifier of the setup job to check
@@ -853,7 +853,7 @@ export class GT {
 
   /**
    * Uploads source files to the translation service without any translation content.
-   * 
+   *
    * This method creates or replaces source file entries in your project. Each uploaded
    * file becomes a source that can later be translated into target languages. The files
    * are processed and stored as base entries that serve as the foundation for generating
@@ -892,7 +892,7 @@ export class GT {
 
   /**
    * Uploads translation files that correspond to previously uploaded source files.
-   * 
+   *
    * This method allows you to provide translated content for existing source files in your project.
    * Each translation must reference an existing source file and include the translated content
    * along with the target locale information. This is used when you have pre-existing translations
