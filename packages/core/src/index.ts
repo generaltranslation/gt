@@ -62,14 +62,14 @@ import {
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _setupProject, {
-  SetupProjectResult,
-} from './translate/setupProject';
+import _setupProject, { SetupProjectResult } from './translate/setupProject';
 import {
   _checkSetupStatus,
   CheckSetupStatusResult,
 } from './translate/checkSetupStatus';
-import _shouldSetupProject, { ShouldSetupProjectResult} from './translate/shouldSetupProject';
+import _shouldSetupProject, {
+  ShouldSetupProjectResult,
+} from './translate/shouldSetupProject';
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
@@ -364,11 +364,7 @@ export class GT {
     timeoutMs?: number
   ): Promise<SetupProjectResult> {
     this._validateAuth('setupProject');
-    return await _setupProject(
-      files,
-      this._getTranslationConfig(),
-      timeoutMs
-    );
+    return await _setupProject(files, this._getTranslationConfig(), timeoutMs);
   }
 
   /**

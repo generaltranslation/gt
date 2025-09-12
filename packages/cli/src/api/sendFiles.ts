@@ -113,8 +113,7 @@ export async function sendFiles(
           break;
         }
         if (Date.now() - start > setupTimeoutMs) {
-          setupFailedMessage =
-            'Timed out while waiting for setup generation';
+          setupFailedMessage = 'Timed out while waiting for setup generation';
           break;
         }
         await new Promise((r) => setTimeout(r, pollInterval));
