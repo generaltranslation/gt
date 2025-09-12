@@ -397,7 +397,7 @@ export class GT {
 
   /**
    * Enqueues translation jobs for previously uploaded source files.
-   * 
+   *
    * This method creates translation jobs that will process existing source files
    * and generate translations in the specified target languages. The files parameter
    * contains references (IDs) to source files that have already been uploaded via
