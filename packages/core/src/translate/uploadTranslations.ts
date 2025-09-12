@@ -11,7 +11,14 @@ import {
   RequiredUploadFilesOptions,
 } from '../types-dir/uploadFiles';
 
-// Upload translations for existing sources
+/**
+ * @internal
+ * Uploads multiple translations to the General Translation API.
+ * @param files - Translations to upload with their source
+ * @param options - The options for the API call
+ * @param config - The configuration for the API call
+ * @returns The result of the API call
+ */
 export default async function _uploadTranslations(
   files: {
     source: FileUpload;
@@ -45,6 +52,7 @@ export default async function _uploadTranslations(
 
   let response: Response | undefined;
   try {
+    // Request the file uploads
     response = await fetchWithTimeout(
       url,
       {
@@ -58,6 +66,7 @@ export default async function _uploadTranslations(
     handleFetchError(err, timeout);
   }
 
+  // Validate response
   await validateResponse(response);
   return response!.json();
 }
