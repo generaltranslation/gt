@@ -30,6 +30,8 @@ export const escapeHtmlInTextNodes: Plugin<[], Root> = function () {
       [
         // Order matters: & first (idempotency), then the rest
         [AMP_NOT_ENTITY, '&amp;'],
+        [/\{/g, '&#123;'],
+        [/\}/g, '&#125;'],
         [/</g, '&lt;'],
         [/>/g, '&gt;'],
         [/"/g, '&quot;'],
