@@ -19,7 +19,7 @@ const IGNORE_PARENTS = [
 const AMP_NOT_ENTITY = /&(?![a-zA-Z][a-zA-Z0-9]*;|#\d+;|#x[0-9A-Fa-f]+;)/g;
 
 /**
- * Escape HTML-sensitive characters (`&`, `<`, `>`, `"`, `'`) in text nodes,
+ * Escape HTML-sensitive characters ('{', '}', `&`, `<`, `>`, `"`, `'`) in text nodes,
  * leaving code, math, MDX expressions, and front-matter untouched.
  * Ensures literals render safely without altering already-escaped entities.
  */
