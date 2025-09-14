@@ -121,7 +121,7 @@ export default async function Layout({
                         <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-100/20">
                           <h3 className="font-semibold text-sm flex items-center gap-2">
                             <SiGithub />
-                            Star us on GitHub!
+                            Star on GitHub
                           </h3>
                         </div>
                       </a>
