@@ -1,8 +1,9 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Logo from '@/components/Logo';
 
-import { Book, Earth, MessageSquareText } from 'lucide-react';
-import { SiDiscord } from '@icons-pack/react-simple-icons';
+import { Earth } from 'lucide-react';
+// import { Book, MessageSquareText } from 'lucide-react';
+// import { SiDiscord } from '@icons-pack/react-simple-icons';
 
 /**
  * Shared layout configurations
