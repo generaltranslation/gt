@@ -32,19 +32,19 @@ export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
       url: '/',
     },
     links: [
-      {
+      /*{
         text: translations?.docs || 'Docs',
         url: '/docs',
         active: 'nested-url',
         icon: <Book />,
-      },
+      },*/
       {
         text: translations?.dashboard || 'Dashboard',
         url: '/dashboard',
         active: 'nested-url',
         icon: <Earth />,
       },
-      {
+      /*{
         text: translations?.blog || 'Blog',
         url: '/blog',
         active: 'nested-url',
@@ -55,7 +55,7 @@ export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
         url: 'https://discord.gg/W99K6fchSu',
         active: 'nested-url',
         icon: <SiDiscord />,
-      },
+      },*/
     ],
     githubUrl: 'https://github.com/generaltranslation/gt',
   };
