@@ -10,12 +10,13 @@ export const getTranslation: Adapter['getTranslation'] = async (
   if (!secrets) {
     return '';
   }
-  const { fileId, versionId } = JSON.parse(taskId);
-  const result = await gt.downloadTranslatedFile({
-    fileId,
-    versionId,
+  gt.setConfig({
+    projectId: secrets?.project,
+    apiKey: secrets?.secret,
+  });
+  const text = await gt.downloadTranslatedFile({
+    fileId: taskId,
     locale: localeId,
   });
-  const text = Buffer.from(result).toString('utf-8');
   return text;
 };

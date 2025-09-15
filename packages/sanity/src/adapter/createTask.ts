@@ -13,12 +13,17 @@ export const createTask: Adapter['createTask'] = async (
   callbackUrl?: string
 ) => {
   const fileName = `sanity-${serializedDocument.name}`;
+  gt.setConfig({
+    projectId: secrets?.project,
+    apiKey: secrets?.secret,
+  });
   const uploadResult = await gt.uploadSourceFiles(
     [
       {
         source: {
           content: serializedDocument.content,
           fileName,
+          fileId: serializedDocument.name,
           fileFormat: 'HTML',
           locale: 'en',
         },
@@ -28,18 +33,10 @@ export const createTask: Adapter['createTask'] = async (
       sourceLocale: 'en',
     }
   );
-  console.log('uploadResult', uploadResult);
   const enqueueResult = await gt.enqueueFiles(uploadResult.uploadedFiles, {
     sourceLocale: 'en',
     targetLocales: localeIds,
   });
-  console.log('enqueueResult', enqueueResult);
-  const fileId = uploadResult.uploadedFiles[0].fileId;
-  const versionId = uploadResult.uploadedFiles[0].versionId;
-  const task = await getTranslationTask(
-    JSON.stringify({ fileId, versionId }),
-    secrets
-  );
-  console.log('task', task);
+  const task = await getTranslationTask(serializedDocument.name, secrets);
   return task;
 };

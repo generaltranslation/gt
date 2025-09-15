@@ -6,6 +6,7 @@ import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import { DownloadFileOptions } from '../types-dir/downloadFile';
 import generateRequestHeaders from './utils/generateRequestHeaders';
+import { decode } from '../utils/base64';
 
 /**
  * @internal
@@ -52,20 +53,25 @@ export default async function _downloadFile(
  * @param file - The file to download
  * @param options - The options for the API call
  * @param config - The configuration for the request
- * @returns The downloaded file content as an ArrayBuffer
+ * @returns The downloaded file content as a UTF-8 string
  */
 export async function _downloadFileV2(
   file: {
     fileId: string;
-    versionId: string;
     locale: string;
+    versionId?: string;
   },
   options: DownloadFileOptions,
   config: TranslationRequestConfig
-): Promise<ArrayBuffer> {
+): Promise<string> {
   const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${baseUrl || defaultBaseUrl}/v2/project/files/download/${file.fileId}/${file.versionId}?locale=${file.locale}`;
+  const searchParams = new URLSearchParams();
+  if (file.versionId) {
+    searchParams.set('versionId', file.versionId);
+  }
+  searchParams.set('locale', file.locale);
+  const url = `${baseUrl || defaultBaseUrl}/v2/project/files/download/${file.fileId}?${searchParams.toString()}`;
 
   // Request the file download
   let response;
@@ -86,5 +92,5 @@ export async function _downloadFileV2(
   await validateResponse(response);
 
   const result = (await response.json()) as { data: string };
-  return Buffer.from(result.data, 'base64').buffer;
+  return decode(result.data);
 }

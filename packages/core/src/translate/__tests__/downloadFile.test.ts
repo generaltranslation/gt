@@ -6,6 +6,7 @@ import handleFetchError from '../utils/handleFetchError';
 import generateRequestHeaders from '../utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../types';
 import { DownloadFileOptions } from '../../types-dir/downloadFile';
+import { decode } from '../../utils/base64';
 
 vi.mock('../utils/fetchWithTimeout');
 vi.mock('../utils/validateResponse');
@@ -252,7 +253,7 @@ describe.sequential('_downloadFileV2', () => {
       5000
     );
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
-    expect(result).toStrictEqual(Buffer.from(mockData, 'base64').buffer);
+    expect(result).toStrictEqual(decode(mockData));
   });
 
   it('should construct correct URL with file parameters', async () => {
@@ -428,7 +429,6 @@ describe.sequential('_downloadFileV2', () => {
   });
 
   it('should handle empty ArrayBuffer response', async () => {
-    const mockArrayBuffer = new ArrayBuffer(0);
     const mockResponse = {
       json: vi.fn().mockResolvedValue({ data: '' }),
     } as unknown as Response;
@@ -445,7 +445,6 @@ describe.sequential('_downloadFileV2', () => {
 
     const result = await _downloadFileV2(file, options, mockConfig);
 
-    expect(result).toStrictEqual(mockArrayBuffer);
-    expect(result.byteLength).toBe(0);
+    expect(result).toStrictEqual('');
   });
 });

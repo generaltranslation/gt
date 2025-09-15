@@ -13,10 +13,12 @@ export const getTranslationTask: Adapter['getTranslationTask'] = async (
       locales: [],
     };
   }
-  const { fileId, versionId } = JSON.parse(documentId);
+  gt.setConfig({
+    projectId: secrets?.project,
+    apiKey: secrets?.secret,
+  });
   const task = await gt.querySourceFile({
-    fileId,
-    versionId,
+    fileId: documentId,
   });
 
   return {

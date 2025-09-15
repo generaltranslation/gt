@@ -8,6 +8,10 @@ export const getLocales: Adapter['getLocales'] = async (
   if (!secrets?.project) {
     return [];
   }
+  gt.setConfig({
+    projectId: secrets?.project,
+    apiKey: secrets?.secret,
+  });
   const data = await gt.getProjectData(secrets?.project);
   return data.currentLocales.map((locale: string) => ({
     localeId: locale,

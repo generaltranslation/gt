@@ -38,19 +38,19 @@ interface ConfigOptions {
 const defaultDocumentLevelConfig: ConfigOptions = {
   ...baseDocumentLevelConfig,
   adapter: GTAdapter,
-  secretsNamespace: 'gt',
+  secretsNamespace: 'generaltranslation',
 };
 
 const legacyDocumentLevelConfig: ConfigOptions = {
   ...baseLegacyDocumentLevelConfig,
   adapter: GTAdapter,
-  secretsNamespace: 'gt',
+  secretsNamespace: 'generaltranslation',
 };
 
 const defaultFieldLevelConfig: ConfigOptions = {
   ...baseFieldLevelConfig,
   adapter: GTAdapter,
-  secretsNamespace: 'gt',
+  secretsNamespace: 'generaltranslation',
 };
 
 export {

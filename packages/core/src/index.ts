@@ -642,7 +642,7 @@ export class GT {
    * @param {string} translationId - The ID of the translation to download.
    * @param {DownloadFileOptions} options - Options for downloading the file.
    * @returns {Promise<DownloadFileResult>} The downloaded file content and metadata.
-   *
+   * @deprecated Use the {@link downloadTranslatedFile} method instead. Will be removed in v7.0.0.
    * @example
    * const gt = new GT({
    *   sourceLocale: 'en-US',
@@ -672,7 +672,7 @@ export class GT {
    *
    * @param {string} file - The file to download.
    * @param {DownloadFileOptions} options - Options for downloading the file.
-   * @returns {Promise<DownloadFileResult>} The downloaded file content and metadata.
+   * @returns {Promise<string>} The downloaded file content.
    *
    * @example
    * const gt = new GT({
@@ -683,8 +683,8 @@ export class GT {
    *
    * const result = await gt.downloadTranslatedFile({
    *   fileId: '1234567890',
-   *   versionId: '1234567890',
    *   locale: 'es-ES',
+   *   versionId: '1234567890',
    * }, {
    *   timeout: 10000,
    * });
@@ -692,11 +692,11 @@ export class GT {
   async downloadTranslatedFile(
     file: {
       fileId: string;
-      versionId: string;
       locale: string;
+      versionId?: string;
     },
     options: DownloadFileOptions = {}
-  ): Promise<ArrayBuffer> {
+  ): Promise<string> {
     // Validation
     this._validateAuth('downloadTranslatedFile');
 
