@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Rebuild packages
+        run: npm rebuild
+
       - name: Link packages
         run: ./scripts/linkPackages.sh
 
@@ -65,6 +68,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+      - name: Rebuild packages
+        run: npm rebuild
 
       - name: Build packages
         run: npm run build
