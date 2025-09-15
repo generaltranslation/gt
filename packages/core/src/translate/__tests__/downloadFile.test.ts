@@ -241,7 +241,7 @@ describe.sequential('_downloadFileV2', () => {
     const result = await _downloadFileV2(file, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/files/download/test-file-id/test-version-id?locale=en-US',
+      'https://api.test.com/v2/project/files/download/test-file-id?versionId=test-version-id&locale=en-US',
       {
         method: 'GET',
         headers: {
@@ -274,7 +274,7 @@ describe.sequential('_downloadFileV2', () => {
     await _downloadFileV2(file, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/files/download/my-file-123/v2.1.0?locale=fr-CA',
+      'https://api.test.com/v2/project/files/download/my-file-123?versionId=v2.1.0&locale=fr-CA',
       expect.any(Object),
       expect.any(Number)
     );
@@ -354,7 +354,7 @@ describe.sequential('_downloadFileV2', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v2/project/files/download/test-file-id/test-version-id?locale=en-US'
+        'https://api2.gtx.dev/v2/project/files/download/test-file-id?versionId=test-version-id&locale=en-US'
       ),
       expect.any(Object),
       expect.any(Number)
@@ -422,7 +422,7 @@ describe.sequential('_downloadFileV2', () => {
     await _downloadFileV2(file, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/files/download/test-file-id/test-version-id?locale=zh-Hans-CN',
+      'https://api.test.com/v2/project/files/download/test-file-id?versionId=test-version-id&locale=zh-Hans-CN',
       expect.any(Object),
       expect.any(Number)
     );
