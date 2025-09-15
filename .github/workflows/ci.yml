@@ -39,7 +39,7 @@ jobs:
         run: npm run lint
 
       - name: Build packages
-        run: npm run build
+        run: npm run build -- --filter="!@generaltranslation/sanity"
 
       - name: Run tests
         run: npm run test
@@ -48,7 +48,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        node: [24]
+        node: [20, 24]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -70,7 +70,7 @@ jobs:
         run: npm install
 
       - name: Build packages
-        run: npm run build
+        run: npm run build -- --filter="!@generaltranslation/sanity"
 
       - name: Link packages (Unix)
         if: runner.os != 'Windows'

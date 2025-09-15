@@ -67,8 +67,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sanity": "^4.6.1",
-    "styled-components": "^6.1.19",
-    "lightningcss": "^1.30.1"
+    "styled-components": "^6.1.19"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
