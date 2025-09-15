@@ -383,7 +383,7 @@ describe('_enqueueFiles', () => {
           versionId: 'version-456',
           id: 'translation-1',
           isReady: false,
-          downloadUrl: null,
+          downloadUrl: '',
         },
       ],
     };

@@ -5,6 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
+import { encode } from '../utils/base64';
 
 import {
   FileUpload,
@@ -31,11 +32,13 @@ export default async function _uploadSourceFiles(
   const body = {
     data: files.map(({ source }) => ({
       source: {
-        content: Buffer.from(source.content).toString('base64'),
+        content: encode(source.content),
         fileName: source.fileName,
         fileFormat: source.fileFormat,
         locale: source.locale,
         ...(source.dataFormat && { dataFormat: source.dataFormat }),
+        ...(source.fileId && { fileId: source.fileId }),
+        ...(source.versionId && { versionId: source.versionId }),
       },
     })),
     sourceLocale: options.sourceLocale,
@@ -47,6 +50,8 @@ export default async function _uploadSourceFiles(
         fileFormat: FileUpload['fileFormat'];
         locale: string;
         dataFormat?: FileUpload['dataFormat'];
+        fileId?: FileUpload['fileId'];
+        versionId?: FileUpload['versionId'];
       };
     }>;
     sourceLocale: string;
