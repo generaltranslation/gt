@@ -44,7 +44,7 @@ jobs:
       - name: Run tests
         run: npm run test
 
-  run-tests:
+  test-builds:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
