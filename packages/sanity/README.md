@@ -24,7 +24,7 @@ export default defineConfig({
 
 ## License
 
-[FSL-1.1-ALv2](LICENSE) © General Translation, Inc.
+[FSL-1.1-ALv2](LICENSE.md) © General Translation, Inc.
 
 ## Develop & test
 
