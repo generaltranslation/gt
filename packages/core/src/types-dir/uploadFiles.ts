@@ -7,6 +7,8 @@ export type FileUpload = {
   fileFormat: FileFormat;
   dataFormat?: DataFormat;
   locale: string;
+  versionId?: string; // Optional versionId. Only use this if you know what you are doing.
+  fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
 
 export type FileUploadRef = {

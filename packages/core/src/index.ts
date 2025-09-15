@@ -26,9 +26,7 @@ import {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-  EnqueueFilesOptions,
   EnqueueFilesResult,
-  FileToTranslate,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
   DownloadFileBatchOptions,
@@ -57,7 +55,6 @@ import {
   invalidLocalesError,
   noProjectIdProvidedError,
   noApiKeyProvidedError,
-  invalidAuthError,
 } from './logging/errors';
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
@@ -73,11 +70,14 @@ import _shouldSetupProject, {
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
-import _downloadFile from './translate/downloadFile';
+import _downloadFile, { _downloadFileV2 } from './translate/downloadFile';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import _fetchTranslations from './translate/fetchTranslations';
-import { FileTranslationQuery } from './types-dir/checkFileTranslations';
-import { RequiredEnqueueFilesOptions } from './types-dir/enqueueFiles';
+import {
+  FileQuery,
+  FileQueryResult,
+  FileTranslationQuery,
+} from './types-dir/checkFileTranslations';
 import {
   CheckTranslationStatusOptions,
   TranslationStatusResult,
@@ -98,6 +98,9 @@ import {
   UploadFilesOptions,
   UploadFilesResponse,
 } from './types-dir/uploadFiles';
+import _querySourceFile from './translate/querySourceFile';
+import { ProjectData } from './types-dir/project';
+import _getProjectData from './projects/getProjectData';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -516,6 +519,90 @@ export class GT {
   }
 
   /**
+   * Gets source and translation information for a given file ID and version ID.
+   *
+   * @param {FileQuery} data - File query containing file ID and version ID.
+   * @param {CheckFileTranslationsOptions} options - Options for getting source and translation information.
+   * @returns {Promise<FileQueryResult>} The source file and translation information.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.querySourceFile(
+   *   { fileId: '1234567890', versionId: '1234567890' },
+   *   { timeout: 10000 }
+   * );
+   *
+   */
+  async querySourceFile(
+    data: FileQuery,
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<FileQueryResult> {
+    // Validation
+    this._validateAuth('querySourceFile');
+
+    // Request the file translation status
+    const result = await _querySourceFile(
+      data,
+      options,
+      this._getTranslationConfig()
+    );
+    // Replace locales with canonical locales
+    result.translations = result.translations.map((item) => ({
+      ...item,
+      locale: this.resolveAliasLocale(item.locale),
+    }));
+    result.sourceFile.locales = result.sourceFile.locales.map((locale) =>
+      this.resolveAliasLocale(locale)
+    );
+    result.sourceFile.sourceLocale = this.resolveAliasLocale(
+      result.sourceFile.sourceLocale
+    );
+    return result;
+  }
+  /**
+   * Get project data for a given project ID.
+   *
+   * @param {string} projectId - The ID of the project to get the data for.
+   * @returns {Promise<ProjectData>} The project data.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.getProjectData(
+   *   '1234567890'
+   * );
+   *
+   */
+  async getProjectData(
+    projectId: string,
+    options: { timeout?: number } = {}
+  ): Promise<ProjectData> {
+    // Validation
+    this._validateAuth('getProjectData');
+
+    // Request the file translation status
+    const result = await _getProjectData(
+      projectId,
+      options,
+      this._getTranslationConfig()
+    );
+    // Replace locales with canonical locales
+    result.currentLocales = result.currentLocales.map((item) =>
+      this.resolveAliasLocale(item)
+    );
+    result.defaultLocale = this.resolveAliasLocale(result.defaultLocale);
+    return result;
+  }
+  /**
    * Checks the translation status of a version.
    *
    * @param {string} versionId - The ID of the version to check.
@@ -555,7 +642,7 @@ export class GT {
    * @param {string} translationId - The ID of the translation to download.
    * @param {DownloadFileOptions} options - Options for downloading the file.
    * @returns {Promise<DownloadFileResult>} The downloaded file content and metadata.
-   *
+   * @deprecated Use the {@link downloadTranslatedFile} method instead. Will be removed in v7.0.0.
    * @example
    * const gt = new GT({
    *   sourceLocale: 'en-US',
@@ -579,6 +666,43 @@ export class GT {
       options,
       this._getTranslationConfig()
     );
+  }
+  /**
+   * Downloads a single translated file.
+   *
+   * @param {string} file - The file to download.
+   * @param {DownloadFileOptions} options - Options for downloading the file.
+   * @returns {Promise<string>} The downloaded file content.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.downloadTranslatedFile({
+   *   fileId: '1234567890',
+   *   locale: 'es-ES',
+   *   versionId: '1234567890',
+   * }, {
+   *   timeout: 10000,
+   * });
+   */
+  async downloadTranslatedFile(
+    file: {
+      fileId: string;
+      locale: string;
+      versionId?: string;
+    },
+    options: DownloadFileOptions = {}
+  ): Promise<string> {
+    // Validation
+    this._validateAuth('downloadTranslatedFile');
+
+    file.locale = this.resolveCanonicalLocale(file.locale);
+
+    return await _downloadFileV2(file, options, this._getTranslationConfig());
   }
 
   /**

@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.1
+
+### Patch Changes
+
+- [#655](https://github.com/generaltranslation/gt/pull/655) [`26a296c`](https://github.com/generaltranslation/gt/commit/26a296c113666dde77165c260dfb692bb8611ade) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Addng literal braces ('{' and '}') to list of characters to escape during AST stringify
+
 ## 2.3.0
 
 ### Minor Changes

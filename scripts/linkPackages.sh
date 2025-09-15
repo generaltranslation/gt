@@ -29,3 +29,9 @@ npm link generaltranslation
 npm link @generaltranslation/supported-locales
 npm link gt-react
 cd ../..
+
+# Link sanity
+cd packages/sanity
+npm link
+npm link generaltranslation
+cd ../..

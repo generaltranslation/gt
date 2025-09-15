@@ -7,7 +7,8 @@ export type FileFormat =
   | 'MDX'
   | 'MD'
   | 'TS'
-  | 'JS';
+  | 'JS'
+  | 'HTML';
 
 export type FileMetadata = {
   filePath: string;

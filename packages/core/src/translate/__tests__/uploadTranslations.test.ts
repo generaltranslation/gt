@@ -211,14 +211,14 @@ describe('_uploadTranslations', () => {
       {
         source: createMockFileUpload({
           fileName: 'data.json',
-          dataFormat: 'flat',
+          dataFormat: 'JSX',
         }),
         translations: [
           createMockFileUpload({
             fileName: 'data.es.json',
             content: '{"key": "valor"}',
             locale: 'es',
-            dataFormat: 'flat',
+            dataFormat: 'JSX',
           }),
         ],
       },
@@ -258,15 +258,15 @@ describe('_uploadTranslations', () => {
                 fileName: 'data.json',
                 fileFormat: 'JSON',
                 locale: 'en',
-                dataFormat: 'flat',
+                dataFormat: 'JSX',
               },
               translations: [
                 {
                   content: Buffer.from('{"key": "valor"}').toString('base64'),
                   fileName: 'data.es.json',
                   fileFormat: 'JSON',
-                  dataFormat: 'flat',
                   locale: 'es',
+                  dataFormat: 'JSX',
                 },
               ],
             },
