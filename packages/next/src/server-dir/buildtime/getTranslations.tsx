@@ -1,4 +1,6 @@
 import {
+  Dictionary,
+  DictionaryEntry,
   DictionaryTranslationOptions,
   getDictionaryEntry,
   getEntryAndMetadata,
@@ -18,6 +20,7 @@ import { getLocale } from '../../request/getLocale';
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
+import { getSubtree, getUntranslatedEntries } from 'gt-react/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -200,6 +203,57 @@ export async function getTranslations(
 
     // Default is returning source, rather than returning a loading state
     return renderContent(entry, [defaultLocale]);
+  };
+
+  /**
+   * @description A function that translates a dictionary object and returns it
+   * @param id The identifier of the dictionary entry to translate.
+   * @param options The options for the dictionary entry (if applicable)
+   */
+  t.obj = (
+    id: string,
+    options: Record<string, any> = {}
+  ): Dictionary | DictionaryEntry | string => {
+    // (1) Get subtree
+    id = getId(id);
+    const subtree = getSubtree(dictionary, id);
+    const subTreeTranslation = getSubtree(dictionaryTranslations || {}, id);
+
+    // Check: no subtree found
+    if (!subtree) {
+      console.warn(createNoEntryFoundWarning(id));
+      return {};
+    }
+
+    // (2) Get untranslated entries
+    const untranslatedEntries = getUntranslatedEntries(
+      subtree,
+      subTreeTranslation
+    );
+
+    // (3) For each untranslated entry, translate it
+    for (const untranslatedEntry of untranslatedEntries) {
+      const { source, metadata } = untranslatedEntry;
+
+      // (3.a) Calculate hash
+      const hash = hashSource({
+        source,
+        ...(metadata?.$context && { context: metadata.$context }),
+        id: metadata?.$id,
+        dataFormat: 'ICU',
+      });
+
+      // (3.b) Translate
+      I18NConfig.translateIcu({
+        source: source,
+        targetLocale: locale,
+        options: {
+          ...(metadata?.$context && { context: metadata.$context }),
+          id,
+          hash: hash,
+        },
+      });
+    }
   };
 
   return t;

@@ -47,6 +47,8 @@ import {
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
 import { reactHasUse } from './promises/reactHasUse';
+import { getUntranslatedEntries } from './dictionaries/getUntranslatedEntries';
+import { getSubtree } from './dictionaries/getSubtree';
 
 export {
   addGTIdentifier,
@@ -94,4 +96,6 @@ export {
   decodeOptions,
   MFunctionType,
   TFunctionType,
+  getSubtree,
+  getUntranslatedEntries,
 };
