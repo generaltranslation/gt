@@ -1,11 +1,11 @@
-# sanity-plugin-gt-sanity
+# @generaltranslation/sanity
 
 > This is a **Sanity Studio v3** plugin.
 
 ## Installation
 
 ```sh
-npm install sanity-plugin-gt-sanity
+npm install @generaltranslation/sanity
 ```
 
 ## Usage
@@ -13,18 +13,18 @@ npm install sanity-plugin-gt-sanity
 Add it as a plugin in `sanity.config.ts` (or .js):
 
 ```ts
-import {defineConfig} from 'sanity'
-import {myPlugin} from 'sanity-plugin-gt-sanity'
+import { defineConfig } from 'sanity';
+import { myPlugin } from '@generaltranslation/sanity';
 
 export default defineConfig({
   //...
   plugins: [myPlugin({})],
-})
+});
 ```
 
 ## License
 
-[Apache License 2.0](LICENSE) © General Translation, Inc.
+[FSL-1.1-ALv2](LICENSE) © General Translation, Inc.
 
 ## Develop & test
 
