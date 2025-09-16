@@ -35,7 +35,7 @@ const escapeHtmlInTextNodes: Plugin<[], Root> = function () {
         [/>/g, '&gt;'],
         [/"/g, '&quot;'],
         [/'/g, '&#39;'],
-        [/_/g, '&#95;']
+        [/_/g, '&#95;'],
       ],
       { ignore: IGNORE_PARENTS }
     );
