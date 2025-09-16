@@ -1,4 +1,4 @@
-# gt-stringify-mdx
+# gt-remark
 
 A small Remark plugin to help safely stringify MDX/Markdown by escaping HTML-sensitive characters in text nodes, while leaving code, math, MDX expressions, and front-matter untouched.
 
@@ -9,7 +9,7 @@ A small Remark plugin to help safely stringify MDX/Markdown by escaping HTML-sen
 ## Install
 
 ```bash
-npm install gt-stringify-mdx
+npm install gt-remark
 # or
 pnpm add @generaltranslation/remark-escape-html
 # or
@@ -22,7 +22,7 @@ yarn add @generaltranslation/remark-escape-html
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
-import escapeHtmlInTextNodes from 'gt-stringify-mdx';
+import escapeHtmlInTextNodes from 'gt-remark';
 
 const file = await unified()
   .use(remarkParse)
