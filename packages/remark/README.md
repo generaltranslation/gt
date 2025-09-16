@@ -3,7 +3,7 @@
 A small Remark plugin to help safely stringify MDX/Markdown by escaping HTML-sensitive characters in text nodes, while leaving code, math, MDX expressions, and front-matter untouched.
 
 - Escapes: `{`, `}`, `&`, `<`, `>`, `"`, `'`, `_`
-- Ignores parents: `code`, `inlineCode`, `mdxFlowExpression`, `mdxTextExpression`, `mdxjsEsm`, `heading`, `yaml`, `toml`, `math`, `inlineMath`
+- Ignores parents: `code`, `inlineCode`, `mdxFlowExpression`, `mdxTextExpression`, `mdxjsEsm`, `yaml`, `toml`, `math`, `inlineMath`
 - Idempotent for `&` (does not double-escape existing entities)
 
 ## Install

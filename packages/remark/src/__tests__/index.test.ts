@@ -323,7 +323,7 @@ describe('escapeHtmlInTextNodes', () => {
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('# Heading with <variable> & "quotes"');
+      expect(result).toContain('# Heading with &lt;variable&gt; &amp; &quot;quotes&quot;');
       expect(result).toContain('Subheading &lt;test&gt; &amp; more');
     });
   });
