@@ -27,7 +27,7 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: npm install
+        run: npm install && npm install lightningcss
 
       - name: Rebuild packages
         run: npm rebuild
@@ -67,7 +67,7 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: npm install
+        run: npm install && npm install lightningcss
 
       - name: Build packages
         run: npm run build -- --filter="!@generaltranslation/sanity"
