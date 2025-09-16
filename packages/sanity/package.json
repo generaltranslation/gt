@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/sanity",
-  "version": "0.0.3-alpha.2",
+  "version": "0.0.3",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@sanity/incompatible-plugin": "^1.0.5",
-    "generaltranslation": "^7.4.3",
+    "generaltranslation": "^7.6.2",
     "sanity-translations-tab": "^4.4.0"
   },
   "devDependencies": {
