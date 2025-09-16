@@ -6,7 +6,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logWarning } from '../console/logging.js';
-import { escapeHtmlInTextNodes } from './escapeHtml.js';
+import escapeHtmlInTextNodes from 'gt-remark';
 
 /**
  * Generates a slug from heading text
