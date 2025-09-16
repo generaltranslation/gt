@@ -478,7 +478,7 @@ More content.
       expect(result.content).toContain(
         '## Getting Started: Step 1 \\{#getting-started-step-1\\}'
       );
-      expect(result.content).toContain("## What's New? \\{#whats-new\\}");
+      expect(result.content).toContain("## What&#39;s New? \\{#whats-new\\}");
     });
 
     it('should handle special characters in Mintlify mode', () => {
