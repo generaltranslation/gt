@@ -10,10 +10,6 @@ A small Remark plugin to help safely stringify MDX/Markdown by escaping HTML-sen
 
 ```bash
 npm install gt-remark
-# or
-pnpm add @generaltranslation/remark-escape-html
-# or
-yarn add @generaltranslation/remark-escape-html
 ```
 
 ## Usage
