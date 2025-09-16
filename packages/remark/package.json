@@ -1,0 +1,55 @@
+{
+  "name": "gt-remark",
+  "version": "1.0.0",
+  "description": "Remark plugin for processing MDX/Markdown by escaping HTML-sensitive characters in text nodes.",
+  "keywords": [
+    "remark",
+    "remark-stringify",
+    "unified",
+    "mdast",
+    "markdown",
+    "plugin",
+    "html",
+    "escape",
+    "mdx"
+  ],
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "build:clean": "rm -rf dist && npm run build",
+    "build:release": "npm run build:clean",
+    "lint": "eslint \"src/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "dependencies": {
+    "mdast-util-find-and-replace": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}
