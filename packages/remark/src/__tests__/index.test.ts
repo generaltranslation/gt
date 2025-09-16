@@ -306,7 +306,7 @@ describe('escapeHtmlInTextNodes', () => {
       expect(result).toContain('`code <variable> & "value"`'); // Code span not escaped
     });
 
-    it('should not escape in headings', () => {
+    it('should escape in headings', () => {
       const tree: Root = {
         type: 'root',
         children: [
