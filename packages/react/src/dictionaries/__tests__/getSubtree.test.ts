@@ -9,20 +9,20 @@ describe('getSubtree', () => {
       name: 'John',
       profile: {
         bio: 'Software developer',
-        location: 'New York'
-      }
+        location: 'New York',
+      },
     },
     messages: {
       welcome: ['Welcome to our app', { $context: 'greeting' }],
-      goodbye: 'Goodbye!'
+      goodbye: 'Goodbye!',
     },
     nested: {
       deeply: {
         nested: {
-          value: 'Deep value'
-        }
-      }
-    }
+          value: 'Deep value',
+        },
+      },
+    },
   };
 
   describe('should return correct values for valid paths', () => {
@@ -37,8 +37,8 @@ describe('getSubtree', () => {
         name: 'John',
         profile: {
           bio: 'Software developer',
-          location: 'New York'
-        }
+          location: 'New York',
+        },
       });
     });
 
@@ -51,7 +51,7 @@ describe('getSubtree', () => {
       const result = getSubtree(mockDictionary, 'user.profile');
       expect(result).toEqual({
         bio: 'Software developer',
-        location: 'New York'
+        location: 'New York',
       });
     });
 

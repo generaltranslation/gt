@@ -9,31 +9,38 @@ describe('getUntranslatedEntries', () => {
       name: 'John',
       profile: {
         bio: ['Software developer', { $context: 'profession' }],
-        location: 'New York'
-      }
+        location: 'New York',
+      },
     },
     messages: {
       welcome: ['Welcome to our app', { $context: 'greeting' }],
       goodbye: 'Goodbye!',
       nested: {
-        deep: 'Deep message'
-      }
-    }
+        deep: 'Deep message',
+      },
+    },
   };
 
   describe('should find all untranslated entries when translation is empty', () => {
     it('should return all entries from empty translation tree', () => {
       const translatedTree: Dictionary = {};
       const result = getUntranslatedEntries(originalTree, translatedTree);
-      
-      expect(result).toHaveLength(6);
+
+      expect(result).toHaveLength(7);
       expect(result).toEqual([
         { source: 'Hello', metadata: { $id: 'greeting' } },
         { source: 'John', metadata: { $id: 'user.name' } },
-        { source: 'Software developer', metadata: { $id: 'user.profile.bio', $context: 'profession' } },
+        {
+          source: 'Software developer',
+          metadata: { $id: 'user.profile.bio', $context: 'profession' },
+        },
         { source: 'New York', metadata: { $id: 'user.profile.location' } },
-        { source: 'Welcome to our app', metadata: { $id: 'messages.welcome', $context: 'greeting' } },
-        { source: 'Goodbye!', metadata: { $id: 'messages.goodbye' } }
+        {
+          source: 'Welcome to our app',
+          metadata: { $id: 'messages.welcome', $context: 'greeting' },
+        },
+        { source: 'Goodbye!', metadata: { $id: 'messages.goodbye' } },
+        { source: 'Deep message', metadata: { $id: 'messages.nested.deep' } },
       ]);
     });
   });
@@ -43,20 +50,24 @@ describe('getUntranslatedEntries', () => {
       const translatedTree: Dictionary = {
         greeting: 'Hola',
         user: {
-          name: 'Juan'
+          name: 'Juan',
         },
         messages: {
-          welcome: 'Bienvenido a nuestra app'
-        }
+          welcome: 'Bienvenido a nuestra app',
+        },
       };
-      
+
       const result = getUntranslatedEntries(originalTree, translatedTree);
-      
-      expect(result).toHaveLength(3);
+
+      expect(result).toHaveLength(4);
       expect(result).toEqual([
-        { source: 'Software developer', metadata: { $id: 'user.profile.bio', $context: 'profession' } },
+        {
+          source: 'Software developer',
+          metadata: { $id: 'user.profile.bio', $context: 'profession' },
+        },
         { source: 'New York', metadata: { $id: 'user.profile.location' } },
-        { source: 'Goodbye!', metadata: { $id: 'messages.goodbye' } }
+        { source: 'Goodbye!', metadata: { $id: 'messages.goodbye' } },
+        { source: 'Deep message', metadata: { $id: 'messages.nested.deep' } },
       ]);
     });
 
@@ -64,24 +75,28 @@ describe('getUntranslatedEntries', () => {
       const translatedTree: Dictionary = {
         user: {
           profile: {
-            bio: 'Desarrollador de software'
-          }
+            bio: 'Desarrollador de software',
+          },
         },
         messages: {
           nested: {
-            deep: 'Mensaje profundo'
-          }
-        }
+            deep: 'Mensaje profundo',
+          },
+        },
       };
-      
+
       const result = getUntranslatedEntries(originalTree, translatedTree);
-      
-      expect(result).toHaveLength(4);
+
+      expect(result).toHaveLength(5);
       expect(result).toEqual([
         { source: 'Hello', metadata: { $id: 'greeting' } },
         { source: 'John', metadata: { $id: 'user.name' } },
         { source: 'New York', metadata: { $id: 'user.profile.location' } },
-        { source: 'Welcome to our app', metadata: { $id: 'messages.welcome', $context: 'greeting' } }
+        {
+          source: 'Welcome to our app',
+          metadata: { $id: 'messages.welcome', $context: 'greeting' },
+        },
+        { source: 'Goodbye!', metadata: { $id: 'messages.goodbye' } },
       ]);
     });
   });
@@ -94,18 +109,18 @@ describe('getUntranslatedEntries', () => {
           name: 'Juan',
           profile: {
             bio: 'Desarrollador de software',
-            location: 'Nueva York'
-          }
+            location: 'Nueva York',
+          },
         },
         messages: {
           welcome: 'Bienvenido a nuestra app',
           goodbye: 'Adiós!',
           nested: {
-            deep: 'Mensaje profundo'
-          }
-        }
+            deep: 'Mensaje profundo',
+          },
+        },
       };
-      
+
       const result = getUntranslatedEntries(originalTree, translatedTree);
       expect(result).toHaveLength(0);
       expect(result).toEqual([]);
@@ -116,7 +131,7 @@ describe('getUntranslatedEntries', () => {
     it('should handle empty original tree', () => {
       const emptyTree: Dictionary = {};
       const translatedTree: Dictionary = { some: 'translation' };
-      
+
       const result = getUntranslatedEntries(emptyTree, translatedTree);
       expect(result).toEqual([]);
     });
@@ -124,32 +139,34 @@ describe('getUntranslatedEntries', () => {
     it('should handle single entry tree', () => {
       const singleTree: Dictionary = { hello: 'world' };
       const emptyTranslation: Dictionary = {};
-      
+
       const result = getUntranslatedEntries(singleTree, emptyTranslation);
-      expect(result).toEqual([
-        { source: 'world', metadata: { $id: 'hello' } }
-      ]);
+      expect(result).toEqual([{ source: 'world', metadata: { $id: 'hello' } }]);
     });
 
     it('should handle custom id prefix', () => {
       const simpleTree: Dictionary = { test: 'value' };
       const emptyTranslation: Dictionary = {};
-      
-      const result = getUntranslatedEntries(simpleTree, emptyTranslation, 'prefix');
+
+      const result = getUntranslatedEntries(
+        simpleTree,
+        emptyTranslation,
+        'prefix'
+      );
       expect(result).toEqual([
-        { source: 'value', metadata: { $id: 'prefix.test' } }
+        { source: 'value', metadata: { $id: 'prefix.test' } },
       ]);
     });
 
     it('should preserve context metadata from original entries', () => {
       const treeWithContext: Dictionary = {
-        button: ['Click me', { $context: 'action', customField: 'custom' }]
+        button: ['Click me', { $context: 'action', customField: 'custom' }],
       };
       const emptyTranslation: Dictionary = {};
-      
+
       const result = getUntranslatedEntries(treeWithContext, emptyTranslation);
       expect(result).toEqual([
-        { source: 'Click me', metadata: { $id: 'button', $context: 'action' } }
+        { source: 'Click me', metadata: { $id: 'button', $context: 'action' } },
       ]);
     });
 
@@ -157,16 +174,16 @@ describe('getUntranslatedEntries', () => {
       const mixedTree: Dictionary = {
         simple: 'Simple string',
         complex: {
-          nested: 'Nested string'
-        }
+          nested: 'Nested string',
+        },
       };
       const partialTranslation: Dictionary = {
-        simple: 'Cadena simple'
+        simple: 'Cadena simple',
       };
-      
+
       const result = getUntranslatedEntries(mixedTree, partialTranslation);
       expect(result).toEqual([
-        { source: 'Nested string', metadata: { $id: 'complex.nested' } }
+        { source: 'Nested string', metadata: { $id: 'complex.nested' } },
       ]);
     });
   });

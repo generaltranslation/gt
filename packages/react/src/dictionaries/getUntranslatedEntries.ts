@@ -1,5 +1,5 @@
 import { Dictionary, DictionaryEntry } from '../types/types';
-import { getDictionaryEntry } from './getDictionaryEntry';
+import { getDictionaryEntry as getDictionaryEntryFunction } from './getDictionaryEntry';
 import getEntryAndMetadata from './getEntryAndMetadata';
 import { isDictionaryEntry } from './isDictionaryEntry';
 
@@ -9,7 +9,7 @@ import { isDictionaryEntry } from './isDictionaryEntry';
  * @param id - The ID to look up in the dictionary
  * @returns The resolved DictionaryEntry or undefined if not found
  */
-function resolveDictionaryEntry(
+function getDictionaryEntry(
   tree: Dictionary | DictionaryEntry,
   id: string
 ): Dictionary | DictionaryEntry | undefined {
@@ -19,7 +19,7 @@ function resolveDictionaryEntry(
   }
   // Check if tree is a Dictionary before calling getDictionaryEntry
   if (typeof tree === 'object' && !Array.isArray(tree)) {
-    return getDictionaryEntry(tree, id);
+    return getDictionaryEntryFunction(tree, id);
   }
   return undefined;
 }
@@ -37,11 +37,11 @@ export function getUntranslatedEntries(
   id: string = ''
 ): {
   source: string;
-  metadata: { $id?: string; $context?: string };
+  metadata: { $id: string; $context?: string };
 }[] {
   const untranslatedEntries: {
     source: string;
-    metadata: { $id?: string; $context?: string };
+    metadata: { $id: string; $context?: string };
   }[] = [];
   // If the translated tree is undefined, return an empty array
   if (transaltedTree === undefined) {
@@ -53,7 +53,7 @@ export function getUntranslatedEntries(
     const $id = `${id ? `${id}.` : ''}${key}`;
     if (isDictionaryEntry(subtree)) {
       // Resolve the translated entry
-      const translatedEntry = resolveDictionaryEntry(transaltedTree, $id);
+      const translatedEntry = getDictionaryEntry(transaltedTree, $id);
 
       // Check if the translated entry is undefined (e.g. not translated)
       if (translatedEntry === undefined) {

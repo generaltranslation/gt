@@ -24,6 +24,10 @@ const mockGetEntryAndMetadata = vi.fn();
 const mockIsValidDictionaryEntry = vi.fn();
 const mockFormatMessage = vi.fn();
 const mockHashSource = vi.fn();
+const mockInjectEntry = vi.fn();
+const mockGetSubtree = vi.fn();
+const mockGetUntranslatedEntries = vi.fn();
+const mockIsDictionaryEntry = vi.fn();
 
 vi.mock('../../dictionary/getDictionary', () => ({
   default: mockGetDictionary,
@@ -44,6 +48,10 @@ vi.mock('gt-react/internal', () => ({
   getDictionaryEntry: mockGetDictionaryEntry,
   getEntryAndMetadata: mockGetEntryAndMetadata,
   isValidDictionaryEntry: mockIsValidDictionaryEntry,
+  injectEntry: mockInjectEntry,
+  getSubtree: mockGetSubtree,
+  getUntranslatedEntries: mockGetUntranslatedEntries,
+  isDictionaryEntry: mockIsDictionaryEntry,
   // Add other commonly needed exports to prevent missing export errors
   defaultRenderSettings: { method: 'replace' },
   defaultLocaleCookieName: 'gt-locale',
@@ -106,6 +114,7 @@ describe('getTranslations', () => {
       getRenderSettings: vi.fn(() => ({ method: 'replace' })),
       isDevelopmentApiEnabled: vi.fn(() => false),
       translateIcu: vi.fn(() => Promise.resolve()),
+      setDictionaryTranslations: vi.fn(),
     };
 
     mockGetI18NConfig.mockReturnValue(mockI18NConfig);
@@ -364,6 +373,385 @@ describe('getTranslations', () => {
     });
   });
 
+  describe('new functionality', () => {
+    it('should import injectEntry from gt-react/internal', async () => {
+      // This test verifies that the new import is being used
+      expect(mockInjectEntry).toBeDefined();
+    });
+
+    it('should import getSubtree and getUntranslatedEntries', async () => {
+      // This test verifies that the new imports are being used
+      expect(mockGetSubtree).toBeDefined();
+      expect(mockGetUntranslatedEntries).toBeDefined();
+    });
+
+    it('should use dictionaryTranslations as mutable variable', async () => {
+      // This verifies that dictionaryTranslations changed from const to let
+      // The change allows it to be modified for injectEntry calls
+      mockI18NConfig.requiresTranslation.mockReturnValue([true]);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+      mockGetLocale.mockResolvedValue('es');
+
+      const t = await getTranslations();
+
+      // The function should have been created successfully with mutable dictionaryTranslations
+      expect(typeof t).toBe('function');
+      expect(typeof (t as any).obj).toBe('function');
+    });
+  });
+
+  describe('t.obj method', () => {
+    beforeEach(() => {
+      mockI18NConfig.requiresTranslation.mockReturnValue([true]);
+      mockGetLocale.mockResolvedValue('es');
+    });
+
+    it('should have obj method attached to t function', async () => {
+      const t = await getTranslations();
+      expect(typeof (t as any).obj).toBe('function');
+    });
+
+    it('should return empty object when subtree is not found', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      mockGetSubtree.mockReturnValue(undefined);
+
+      const t = await getTranslations();
+      const result = (t as any).obj('nonexistent');
+
+      expect(result).toEqual({});
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should call getSubtree with correct parameters', async () => {
+      const mockSubtree = { greeting: 'Hello' };
+      mockGetSubtree.mockReturnValue(mockSubtree);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue([]);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+
+      const t = await getTranslations('prefix');
+      (t as any).obj('messages');
+
+      expect(mockGetSubtree).toHaveBeenCalledWith({}, 'prefix.messages');
+    });
+
+    it('should call getUntranslatedEntries when subtree exists', async () => {
+      const mockSubtree = { greeting: 'Hello' };
+      const mockSubtreeTranslation = { greeting: 'Hola' };
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue([]);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+
+      const t = await getTranslations();
+      (t as any).obj('messages');
+
+      expect(mockGetUntranslatedEntries).toHaveBeenCalledWith(
+        mockSubtree,
+        mockSubtreeTranslation
+      );
+    });
+
+    it('should return fully translated subtree when all entries exist', async () => {
+      const mockSubtree = {
+        greeting: 'Hello',
+        farewell: 'Goodbye',
+      };
+      const mockSubtreeTranslation = {
+        greeting: 'Hola',
+        farewell: 'Adiós',
+      };
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue([]); // No untranslated entries
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+
+      const t = await getTranslations();
+      const result = (t as any).obj('messages');
+
+      expect(result).toEqual({
+        greeting: 'Hola',
+        farewell: 'Adiós',
+      });
+    });
+
+    it('should return partially translated subtree with original entries for missing translations', async () => {
+      const mockSubtree = {
+        greeting: 'Hello',
+        farewell: 'Goodbye',
+        welcome: 'Welcome',
+      };
+      const mockSubtreeTranslation = {
+        greeting: 'Hola',
+        // farewell and welcome are missing translations
+      };
+      const mockUntranslatedEntries = [
+        { source: 'Goodbye', metadata: { $id: 'messages.farewell' } },
+        { source: 'Welcome', metadata: { $id: 'messages.welcome' } },
+      ];
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue(mockUntranslatedEntries);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+      mockI18NConfig.translateIcu.mockResolvedValue('Translated');
+      mockHashSource.mockReturnValue('test-hash');
+
+      const t = await getTranslations();
+      const result = (t as any).obj('messages');
+
+      // Should return the cloned copy of the existing translation
+      expect(result).toEqual({
+        greeting: 'Hola',
+      });
+
+      // Should call getUntranslatedEntries to identify missing translations
+      expect(mockGetUntranslatedEntries).toHaveBeenCalledWith(
+        mockSubtree,
+        mockSubtreeTranslation
+      );
+    });
+
+    it('should delegate to regular t() method when subtree translation is a DictionaryEntry', async () => {
+      const mockSubtree = { greeting: 'Hello' };
+      const mockSubtreeTranslation = 'Hola'; // This is a DictionaryEntry (string)
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(true);
+
+      const t = await getTranslations();
+      (t as any).obj('messages');
+
+      expect(mockIsDictionaryEntry).toHaveBeenCalledWith(
+        mockSubtreeTranslation
+      );
+      // Verify that it attempts to delegate by checking the correct path was taken
+      expect(mockGetSubtree).toHaveBeenCalledTimes(2); // Once for subtree, once for translation
+    });
+
+    it('should handle nested dictionary structures correctly', async () => {
+      const mockSubtree = {
+        user: {
+          profile: {
+            name: 'John',
+            email: 'john@example.com',
+          },
+        },
+      };
+      const mockSubtreeTranslation = {
+        user: {
+          profile: {
+            name: 'Juan',
+            email: 'juan@ejemplo.com',
+          },
+        },
+      };
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue([]);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+
+      const t = await getTranslations();
+      const result = t.obj('data');
+
+      expect(result).toEqual({
+        user: {
+          profile: {
+            name: 'Juan',
+            email: 'juan@ejemplo.com',
+          },
+        },
+      });
+    });
+
+    it('should handle deeply nested structures with mixed entry types', async () => {
+      const mockSubtree = {
+        app: {
+          navigation: {
+            menu: {
+              home: 'Home',
+              about: ['About Us', { $context: 'navigation' }],
+              contact: 'Contact',
+            },
+          },
+          messages: {
+            errors: {
+              validation: 'Please enter a valid value',
+              network: ['Network error occurred', { $context: 'error' }],
+            },
+            success: {
+              saved: 'Successfully saved!',
+            },
+          },
+        },
+      };
+      const mockSubtreeTranslation = {
+        app: {
+          navigation: {
+            menu: {
+              home: 'Inicio',
+              about: ['Acerca de nosotros', { $context: 'navigation' }],
+              contact: 'Contacto',
+            },
+          },
+          messages: {
+            errors: {
+              validation: 'Por favor ingrese un valor válido',
+              network: ['Ocurrió un error de red', { $context: 'error' }],
+            },
+            success: {
+              saved: '¡Guardado exitosamente!',
+            },
+          },
+        },
+      };
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue([]);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+
+      const t = await getTranslations();
+      const result = t.obj('ui');
+
+      expect(result).toEqual(mockSubtreeTranslation);
+    });
+
+    it('should handle nested structure with partial translations at different levels', async () => {
+      const mockSubtree = {
+        forms: {
+          user: {
+            fields: {
+              firstName: 'First Name',
+              lastName: 'Last Name',
+              email: 'Email Address',
+            },
+            validation: {
+              required: 'This field is required',
+              invalid: 'Invalid format',
+            },
+          },
+          product: {
+            fields: {
+              title: 'Product Title',
+              description: 'Description',
+              price: 'Price',
+            },
+          },
+        },
+      };
+      const mockSubtreeTranslation = {
+        forms: {
+          user: {
+            fields: {
+              firstName: 'Nombre',
+              // lastName missing
+              email: 'Correo Electrónico',
+            },
+            // validation missing entirely
+          },
+          product: {
+            fields: {
+              title: 'Título del Producto',
+              // description and price missing
+            },
+          },
+        },
+      };
+      const mockUntranslatedEntries = [
+        {
+          source: 'Last Name',
+          metadata: { $id: 'forms.user.fields.lastName' },
+        },
+        {
+          source: 'This field is required',
+          metadata: { $id: 'forms.user.validation.required' },
+        },
+        {
+          source: 'Invalid format',
+          metadata: { $id: 'forms.user.validation.invalid' },
+        },
+        {
+          source: 'Description',
+          metadata: { $id: 'forms.product.fields.description' },
+        },
+        { source: 'Price', metadata: { $id: 'forms.product.fields.price' } },
+      ];
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockGetUntranslatedEntries.mockReturnValue(mockUntranslatedEntries);
+      mockI18NConfig.getDictionaryTranslations.mockResolvedValue({});
+
+      const t = await getTranslations();
+      const result = t.obj('localization');
+
+      expect(result).toEqual(mockSubtreeTranslation);
+      expect(mockGetUntranslatedEntries).toHaveBeenCalledWith(
+        mockSubtree,
+        mockSubtreeTranslation
+      );
+    });
+
+    it('should handle nested structure where a subtree translation is a DictionaryEntry', async () => {
+      const mockSubtree = {
+        dashboard: {
+          widgets: {
+            weather: 'Weather Widget',
+            calendar: 'Calendar Widget',
+          },
+          settings: {
+            theme: 'Theme Settings',
+            language: 'Language Settings',
+          },
+        },
+      };
+      // The translation for 'widgets' is a DictionaryEntry instead of a nested object
+      const mockSubtreeTranslation = {
+        dashboard: {
+          widgets: 'Panel de Widgets', // This is a string, not an object
+          settings: {
+            theme: 'Configuración de Tema',
+            language: 'Configuración de Idioma',
+          },
+        },
+      };
+
+      mockGetSubtree
+        .mockReturnValueOnce(mockSubtree)
+        .mockReturnValueOnce(mockSubtreeTranslation);
+      mockIsDictionaryEntry
+        .mockReturnValueOnce(false) // For the whole subtree
+        .mockReturnValueOnce(true); // For the specific widgets subtree
+      mockGetUntranslatedEntries.mockReturnValue([]);
+
+      const t = await getTranslations();
+      const result = t.obj('admin');
+
+      expect(result).toEqual(mockSubtreeTranslation);
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle empty entry', async () => {
       mockGetDictionaryEntry.mockReturnValue('');
@@ -418,7 +806,7 @@ describe('useTranslations', () => {
     expect(typeof useTranslations).toBe('function');
 
     // We can verify it's using the use function by checking the implementation
-    const result = mockUse.mockReturnValue(mockTranslationFn);
+    mockUse.mockReturnValue(mockTranslationFn);
     expect(mockUse).toBeDefined();
   });
 

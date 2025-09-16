@@ -4,6 +4,8 @@ import {
   DictionaryTranslationOptions,
   getDictionaryEntry,
   getEntryAndMetadata,
+  injectEntry,
+  isDictionaryEntry,
   isValidDictionaryEntry,
 } from 'gt-react/internal';
 
@@ -35,9 +37,14 @@ import { getSubtree, getUntranslatedEntries } from 'gt-react/internal';
  * const t = await getTranslations();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export async function getTranslations(
-  id?: string
-): Promise<(id: string, options?: DictionaryTranslationOptions) => string> {
+export async function getTranslations(id?: string): Promise<
+  ((id: string, options?: DictionaryTranslationOptions) => string) & {
+    obj: (
+      id: string,
+      options?: Record<string, any>
+    ) => Dictionary | DictionaryEntry | string | undefined;
+  }
+> {
   // ---------- SET UP ---------- //
 
   const getId = (suffix: string) => {
@@ -51,7 +58,7 @@ export async function getTranslations(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
-  const dictionaryTranslations = translationRequired
+  let dictionaryTranslations = translationRequired
     ? await I18NConfig.getDictionaryTranslations(locale)
     : undefined;
   const translations = translationRequired
@@ -196,6 +203,9 @@ export async function getTranslations(
             ]),
           })
         );
+
+        // inject
+        injectEntry(result as string, dictionaryTranslations!, id);
       });
     } catch (error) {
       console.warn(error);
@@ -207,22 +217,30 @@ export async function getTranslations(
 
   /**
    * @description A function that translates a dictionary object and returns it
-   * @param id The identifier of the dictionary entry to translate.
+   * @param idWithParent The identifier of the dictionary entry to translate.
    * @param options The options for the dictionary entry (if applicable)
    */
   t.obj = (
     id: string,
     options: Record<string, any> = {}
-  ): Dictionary | DictionaryEntry | string => {
+  ): Dictionary | DictionaryEntry | string | undefined => {
     // (1) Get subtree
-    id = getId(id);
-    const subtree = getSubtree(dictionary, id);
-    const subTreeTranslation = getSubtree(dictionaryTranslations || {}, id);
-
+    const idWithParent = getId(id);
+    const subtree = getSubtree(dictionary, idWithParent);
     // Check: no subtree found
     if (!subtree) {
-      console.warn(createNoEntryFoundWarning(id));
+      console.warn(createNoEntryFoundWarning(idWithParent));
       return {};
+    }
+    // Set up the dictionaryTranslations object if it doesn't exist
+    if (!dictionaryTranslations) {
+      dictionaryTranslations = {};
+      I18NConfig.setDictionaryTranslations(locale, dictionaryTranslations);
+    }
+    const subTreeTranslation = getSubtree(dictionaryTranslations, idWithParent);
+    // Check: if subTreeTranslation is a dictionaryEntry
+    if (isDictionaryEntry(subTreeTranslation)) {
+      return t(id, options);
     }
 
     // (2) Get untranslated entries
@@ -231,29 +249,43 @@ export async function getTranslations(
       subTreeTranslation
     );
 
-    // (3) For each untranslated entry, translate it
+    // (3) Copy the dictionaryTranslations object
+    const subtreeTranslationCopy = structuredClone(subTreeTranslation);
+
+    // (4) For each untranslated entry, translate it
     for (const untranslatedEntry of untranslatedEntries) {
       const { source, metadata } = untranslatedEntry;
+      const $id = metadata.$id;
 
-      // (3.a) Calculate hash
+      // (4.a) Inject the untranslated source into the subtreeTranslationCopy object
+      injectEntry(source, dictionaryTranslations, idWithParent);
+
+      // (4.b) Calculate hash
       const hash = hashSource({
         source,
         ...(metadata?.$context && { context: metadata.$context }),
-        id: metadata?.$id,
+        id: $id,
         dataFormat: 'ICU',
       });
 
-      // (3.b) Translate
+      // (4.c) Translate
       I18NConfig.translateIcu({
         source: source,
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
-          id,
+          id: $id,
           hash: hash,
         },
-      });
+      })
+        // (4.d) Inject the translation into the translations object
+        .then((result) => {
+          injectEntry(result as string, dictionaryTranslations!, idWithParent);
+        });
     }
+
+    // (5) Return the translations object
+    return subtreeTranslationCopy;
   };
 
   return t;

@@ -22,7 +22,7 @@ describe('isDictionaryEntry', () => {
     it('should return true for array with string and complex metadata', () => {
       const entry: DictionaryEntry = [
         'Hello {name}',
-        { $context: 'greeting', $id: 'hello', customField: 'custom' }
+        { $context: 'greeting', $id: 'hello', customField: 'custom' },
       ];
       expect(isDictionaryEntry(entry)).toBe(true);
     });
@@ -84,7 +84,9 @@ describe('isDictionaryEntry', () => {
     });
 
     it('should return false for array with 3 elements', () => {
-      expect(isDictionaryEntry(['hello', { $context: 'greeting' }, 'extra'])).toBe(false);
+      expect(
+        isDictionaryEntry(['hello', { $context: 'greeting' }, 'extra'])
+      ).toBe(false);
     });
   });
 

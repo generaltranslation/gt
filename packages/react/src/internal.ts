@@ -49,6 +49,8 @@ import { GTProp } from 'generaltranslation/types';
 import { reactHasUse } from './promises/reactHasUse';
 import { getUntranslatedEntries } from './dictionaries/getUntranslatedEntries';
 import { getSubtree } from './dictionaries/getSubtree';
+import { injectEntry } from './dictionaries/injectEntry';
+import { isDictionaryEntry } from './dictionaries/isDictionaryEntry';
 
 export {
   addGTIdentifier,
@@ -98,4 +100,6 @@ export {
   TFunctionType,
   getSubtree,
   getUntranslatedEntries,
+  injectEntry,
+  isDictionaryEntry,
 };
