@@ -1,6 +1,6 @@
 {
   "name": "gt-remark",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Remark plugin for processing MDX/Markdown by escaping HTML-sensitive characters in text nodes.",
   "keywords": [
     "remark",

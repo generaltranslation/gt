@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.3.3
+
+### Patch Changes
+
+- [#665](https://github.com/generaltranslation/gt/pull/665) [`814cb12`](https://github.com/generaltranslation/gt/commit/814cb122e68a51ea1a513e9f6e51249af345db64) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Migrating CLI to gt-remark plugin, updating plugin
+
+- Updated dependencies [[`814cb12`](https://github.com/generaltranslation/gt/commit/814cb122e68a51ea1a513e9f6e51249af345db64)]:
+  - gt-remark@1.0.1
+
 ## 2.3.2
 
 ### Patch Changes
