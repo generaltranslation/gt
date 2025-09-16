@@ -14,6 +14,7 @@ const IGNORE_ALWAYS = [
   'inlineMath',
 ];
 
+// Want to ignore braces in headings to avoid escaping fragment ids ( {#my-id} )
 const IGNORE_FOR_BRACES = [...IGNORE_ALWAYS, 'heading'];
 
 // & that is NOT already an entity: &word;  &#123;  &#x1A2B;
@@ -36,7 +37,6 @@ const escapeHtmlInTextNodes: Plugin<[], Root> = function () {
         [/"/g, '&quot;'],
         [/'/g, '&#39;'],
         [/_/g, '&#95;'],
-        // NOTE: no { or } here
       ],
       { ignore: IGNORE_ALWAYS }
     );
