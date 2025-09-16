@@ -470,7 +470,7 @@ More content.
       expect(result.addedIds).toHaveLength(4);
 
       expect(result.content).toContain(
-        '## Code & Design Workflow! \\{#code-design-workflow\\}'
+        '## Code &amp; Design Workflow! \\{#code-design-workflow\\}'
       );
       expect(result.content).toContain(
         '## API Reference (v2.0) \\{#api-reference-v20\\}'
