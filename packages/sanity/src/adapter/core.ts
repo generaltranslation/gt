@@ -1,6 +1,6 @@
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { Secrets } from 'sanity-translations-tab';
+import type { Secrets } from '../types';
 
 export const gt = new GT();
 
