@@ -1,14 +1,5 @@
 import { useCallback, useContext, useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Flex,
-  Text,
-  Stack,
-  useToast,
-  Spinner,
-  Switch,
-} from '@sanity/ui';
+import { Box, Button, Flex, Text, Stack, useToast, Switch } from '@sanity/ui';
 import {
   ArrowTopRightIcon,
   DownloadIcon,

@@ -20,8 +20,11 @@ export const LanguageStatus = ({
 
   const handleImport = useCallback(async () => {
     setIsBusy(true);
-    await importFile();
-    setIsBusy(false);
+    try {
+      await importFile();
+    } finally {
+      setIsBusy(false);
+    }
   }, [importFile, setIsBusy]);
 
   return (

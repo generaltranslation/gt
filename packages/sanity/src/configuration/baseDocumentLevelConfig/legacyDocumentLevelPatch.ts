@@ -64,6 +64,6 @@ export const legacyDocumentLevelPatch = async (
     merged._id = targetId;
 
     merged.__i18n_lang = localeId;
-    client.create(merged);
+    await client.create(merged);
   }
 };

@@ -62,9 +62,13 @@ export const TranslationView = () => {
   }, [context, toast]);
 
   const refreshTask = useCallback(async () => {
-    await context?.adapter
-      .getTranslationTask(context.documentInfo, context.secrets)
-      .then(setTask);
+    const task = await context?.adapter.getTranslationTask(
+      context.documentInfo,
+      context.secrets
+    );
+    if (task) {
+      setTask(task);
+    }
   }, [context, setTask]);
 
   return (

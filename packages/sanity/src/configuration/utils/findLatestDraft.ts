@@ -11,6 +11,6 @@ export const findLatestDraft = (
     .fetch(query, params)
     .then(
       (docs: SanityDocument[]) =>
-        docs.find((doc) => doc._id.includes('draft')) ?? docs[0]
+        docs.find((doc) => doc._id.startsWith('drafts.')) ?? docs[0]
     );
 };

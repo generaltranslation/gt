@@ -10,7 +10,7 @@ export const patchI18nDoc = (
   Object.entries(mergedDocument).forEach(([key, value]) => {
     if (
       //only patch those fields that had translated strings
-      Object.keys(translatedFields).includes(key) &&
+      key in translatedFields &&
       //don't overwrite any existing system values on the i18n doc
       !['_id', '_rev', '_updatedAt', 'language'].includes(key)
     ) {
