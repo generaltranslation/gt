@@ -7,7 +7,6 @@ export type ContextProps = {
   adapter: Adapter;
   importTranslation: (languageId: string, document: string) => Promise<void>;
   exportForTranslation: (documentInfo: GTFile) => Promise<GTSerializedDocument>;
-  baseLanguage: string;
   secrets: Secrets;
   workflowOptions?: WorkflowIdentifiers[];
   localeIdAdapter?: (id: string) => string | Promise<string>;

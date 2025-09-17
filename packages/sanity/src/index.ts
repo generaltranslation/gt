@@ -53,6 +53,7 @@ import { GTAdapter } from './adapter';
 import { definePlugin } from 'sanity';
 import { gt, gtConfig } from './adapter/core';
 import { GTSerializedDocument } from './types';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 interface ConfigOptions {
   adapter: Adapter;
@@ -106,6 +107,7 @@ export const gtPlugin = definePlugin<
   Omit<Parameters<typeof gt.setConfig>[0], 'locales'> & { locales: string[] }
 >(({ sourceLocale, locales, customMapping, apiKey, projectId }) => {
   gtConfig.setLocales(locales);
+  gtConfig.setSourceLocale(sourceLocale || libraryDefaultLocale);
   gt.setConfig({
     sourceLocale: sourceLocale,
     customMapping: customMapping,

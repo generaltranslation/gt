@@ -15,16 +15,17 @@ import type {
   ImportTranslation,
 } from '../types';
 import { findLatestDraft, findDocumentAtRevision } from './utils';
+import { gtConfig } from '../adapter/core';
 
 export const fieldLevelPatch = async (
   docInfo: GTFile,
   translatedFields: SanityDocument,
   localeId: string,
   client: SanityClient,
-  baseLanguage: string = 'en',
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
   let baseDoc: SanityDocument;
+  const baseLanguage = gtConfig.getSourceLocale();
   if (docInfo.documentId && docInfo.versionId) {
     baseDoc = await findDocumentAtRevision(
       docInfo.documentId,
@@ -49,8 +50,8 @@ export const baseFieldLevelConfig = {
   exportForTranslation: async (
     ...params: Parameters<ExportForTranslation>
   ): Promise<GTSerializedDocument> => {
-    const [docInfo, context, baseLanguage = 'en', serializationOptions = {}] =
-      params;
+    const [docInfo, context, serializationOptions = {}] = params;
+    const baseLanguage = gtConfig.getSourceLocale();
     const { client, schema } = context;
     const stopTypes = [
       ...(serializationOptions.additionalStopTypes ?? []),
@@ -85,7 +86,6 @@ export const baseFieldLevelConfig = {
       localeId,
       document,
       context,
-      baseLanguage = 'en',
       serializationOptions = {},
       ,
       mergeWithTargetLocale,
@@ -111,10 +111,8 @@ export const baseFieldLevelConfig = {
       deserialized,
       localeId,
       client,
-      baseLanguage,
       mergeWithTargetLocale
     );
   },
   secretsNamespace: 'translationService',
-  baseLanguage: 'en',
 };

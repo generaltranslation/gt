@@ -73,7 +73,6 @@ export type GTSerializedDocument = Omit<SerializedDocument, 'name'> & GTFile;
 export type ExportForTranslation = (
   documentInfo: GTFile,
   context: TranslationFunctionContext,
-  baseLanguage?: string,
   serializationOptions?: {
     additionalStopTypes?: string[];
     additionalSerializers?: Record<
@@ -89,7 +88,6 @@ export type ImportTranslation = (
   localeId: string,
   document: string,
   context: TranslationFunctionContext,
-  baseLanguage?: string,
   serializationOptions?: {
     additionalDeserializers?: Record<
       string,
@@ -103,7 +101,6 @@ export type ImportTranslation = (
 
 export type TranslationsTabConfigOptions = {
   adapter: Adapter;
-  baseLanguage: string;
   secretsNamespace: string | null;
   exportForTranslation: ExportForTranslation;
   importTranslation: ImportTranslation;

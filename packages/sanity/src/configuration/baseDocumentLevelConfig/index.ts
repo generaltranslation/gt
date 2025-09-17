@@ -14,6 +14,7 @@ import {
   customSerializers,
   customBlockDeserializers,
 } from 'sanity-naive-html-serializer';
+import { gtConfig } from '../../adapter/core';
 
 export const baseDocumentLevelConfig = {
   exportForTranslation: async (
@@ -22,7 +23,6 @@ export const baseDocumentLevelConfig = {
     const [
       docInfo,
       context,
-      baseLanguage = 'en',
       serializationOptions = {},
       languageField = 'language',
     ] = params;
@@ -40,6 +40,7 @@ export const baseDocumentLevelConfig = {
     };
     const doc = await findLatestDraft(docInfo.documentId, client);
     delete doc[languageField];
+    const baseLanguage = gtConfig.getSourceLocale();
     const serialized = BaseDocumentSerializer(schema).serializeDocument(
       doc,
       'document',
@@ -61,7 +62,6 @@ export const baseDocumentLevelConfig = {
       localeId,
       document,
       context,
-      baseLanguage = 'en',
       serializationOptions = {},
       languageField = 'language',
       mergeWithTargetLocale = false,
@@ -87,13 +87,11 @@ export const baseDocumentLevelConfig = {
       deserialized,
       localeId,
       client,
-      baseLanguage,
       languageField,
       mergeWithTargetLocale
     );
   },
   secretsNamespace: 'translationService',
-  baseLanguage: 'en',
 };
 
 export const legacyDocumentLevelConfig = {
@@ -101,7 +99,7 @@ export const legacyDocumentLevelConfig = {
   importTranslation: (
     ...params: Parameters<ImportTranslation>
   ): Promise<void> => {
-    const [docInfo, localeId, document, context, , serializationOptions = {}] =
+    const [docInfo, localeId, document, context, serializationOptions = {}] =
       params;
     const { client } = context;
     const deserializers = {

@@ -8,16 +8,17 @@ import {
   patchI18nDoc,
 } from './helpers';
 import type { GTFile } from '../../types';
+import { gtConfig } from '../../adapter/core';
 
 export const documentLevelPatch = async (
   docInfo: GTFile,
   translatedFields: SanityDocument,
   localeId: string,
   client: SanityClient,
-  baseLanguage: string = 'en',
   languageField: string = 'language',
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
+  const baseLanguage = gtConfig.getSourceLocale();
   //this is the document we use to merge with the translated fields
   let baseDoc: SanityDocument | null = null;
 

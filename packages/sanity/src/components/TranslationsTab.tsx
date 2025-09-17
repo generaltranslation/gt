@@ -39,12 +39,8 @@ const TranslationTab = (props: TranslationTabProps) => {
   const revisionId = displayed && displayed._rev ? displayed._rev : undefined;
 
   const { errors, importTranslation, exportForTranslation } = useMemo(() => {
-    const {
-      serializationOptions,
-      baseLanguage,
-      languageField,
-      mergeWithTargetLocale,
-    } = props.options;
+    const { serializationOptions, languageField, mergeWithTargetLocale } =
+      props.options;
     const ctx = {
       client,
       schema,
@@ -71,7 +67,6 @@ const TranslationTab = (props: TranslationTabProps) => {
         localeId,
         doc,
         ctx,
-        baseLanguage,
         serializationOptions,
         languageField,
         mergeWithTargetLocale
@@ -95,7 +90,6 @@ const TranslationTab = (props: TranslationTabProps) => {
       return exportTranslationFunc(
         docInfo,
         ctx,
-        baseLanguage,
         serializationOptions,
         languageField
       );
@@ -164,7 +158,6 @@ const TranslationTab = (props: TranslationTabProps) => {
                   importTranslation,
                   exportForTranslation,
                   adapter: props.options.adapter,
-                  baseLanguage: props.options.baseLanguage,
                   workflowOptions: props.options.workflowOptions,
                   localeIdAdapter: props.options.localeIdAdapter,
                   callbackUrl: props.options.callbackUrl,
