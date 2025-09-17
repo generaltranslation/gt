@@ -41,7 +41,9 @@ export const LanguageStatus = ({
           {isImported ? (
             <Flex align='center' justify='center' style={{ color: 'green' }}>
               <CheckmarkCircleIcon />
-              <Text size={1} style={{ marginLeft: '4px' }}>Imported</Text>
+              <Text size={1} style={{ marginLeft: '4px' }}>
+                Imported
+              </Text>
             </Flex>
           ) : (
             <Button
