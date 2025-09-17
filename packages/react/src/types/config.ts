@@ -54,6 +54,7 @@ export type GTProviderProps = {
 export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
+  dictionaryTranslations: Dictionary;
   translations: Translations;
   locale: string;
   locales: string[];

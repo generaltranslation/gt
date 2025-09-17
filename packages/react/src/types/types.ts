@@ -31,12 +31,15 @@ export type TaggedChildren = TaggedChild[] | TaggedChild;
 export type Entry = string;
 export type MetaEntry = {
   $context?: string;
+  $_hash?: string;
   [key: string]: unknown;
 };
 export type DictionaryEntry = Entry | [Entry] | [Entry, MetaEntry];
-export type Dictionary = {
-  [key: string]: Dictionary | DictionaryEntry;
-};
+export type Dictionary =
+  | {
+      [key: string]: Dictionary | DictionaryEntry;
+    }
+  | (Dictionary | DictionaryEntry)[];
 export type FlattenedDictionary = {
   [key: string]: DictionaryEntry;
 };

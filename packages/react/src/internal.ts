@@ -47,10 +47,11 @@ import {
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
 import { reactHasUse } from './promises/reactHasUse';
-import { getUntranslatedEntries } from './dictionaries/getUntranslatedEntries';
-import { getSubtree } from './dictionaries/getSubtree';
+import { getSubtree, getSubtreeWithCreation } from './dictionaries/getSubtree';
 import { injectEntry } from './dictionaries/injectEntry';
 import { isDictionaryEntry } from './dictionaries/isDictionaryEntry';
+import { constructTranslationSubtree } from './dictionaries/constructTranslationSubtree';
+import { stripMetadataFromEntries } from './dictionaries/stripMetadataFromEntries';
 
 export {
   addGTIdentifier,
@@ -99,7 +100,9 @@ export {
   MFunctionType,
   TFunctionType,
   getSubtree,
-  getUntranslatedEntries,
+  getSubtreeWithCreation,
   injectEntry,
   isDictionaryEntry,
+  constructTranslationSubtree,
+  stripMetadataFromEntries,
 };

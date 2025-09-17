@@ -32,7 +32,9 @@ export function isDictionaryEntry(
     // If there's a second element, it must be an object (MetaEntry)
     if (
       value.length === 2 &&
-      (typeof value[1] !== 'object' || value[1] === null)
+      (typeof value[1] !== 'object' ||
+        value[1] === null ||
+        (!('$context' in value[1]) && !('$_hash' in value[1])))
     ) {
       return false;
     }

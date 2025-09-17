@@ -29,7 +29,7 @@ describe('isDictionaryEntry', () => {
 
     it('should return true for array with string and empty object metadata', () => {
       const entry: DictionaryEntry = ['Hello', {}];
-      expect(isDictionaryEntry(entry)).toBe(true);
+      expect(isDictionaryEntry(entry)).toBe(false);
     });
   });
 

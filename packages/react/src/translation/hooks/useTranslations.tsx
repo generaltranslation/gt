@@ -1,3 +1,4 @@
+import { Dictionary, DictionaryEntry } from '../../internal';
 import useGTContext from '../../provider/GTContext';
 
 /**
@@ -13,16 +14,22 @@ import useGTContext from '../../provider/GTContext';
  * const t = useTranslations();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export default function useTranslations(
-  id?: string
-): (id: string, options?: Record<string, any>) => string {
+export default function useTranslations(id?: string): ((
+  id: string,
+  options?: Record<string, any>
+) => string) & {
+  obj: (
+    id: string,
+    options?: Record<string, any>
+  ) => Dictionary | DictionaryEntry | string | undefined;
+} {
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
 
   // Get the translation context
-  const { _dictionaryFunction } = useGTContext(
+  const { _dictionaryFunction, _dictionaryObjFunction } = useGTContext(
     `useTranslations('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
   );
 
@@ -54,6 +61,16 @@ export default function useTranslations(
     const prefixedId = getId(id);
     return _dictionaryFunction(prefixedId, options);
   }
+
+  function obj(
+    id: string,
+    options: Record<string, any> = {}
+  ): Dictionary | DictionaryEntry | string | undefined {
+    const prefixedId = getId(id);
+    return _dictionaryObjFunction(id, prefixedId, options);
+  }
+
+  t.obj = obj;
 
   return t;
 }
