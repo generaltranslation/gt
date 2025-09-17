@@ -106,8 +106,14 @@ specific language governing permissions and limitations under the License.
 
 ## Additional Code
 
-Some portions of the Software are adapted from https://github.com/sanity-io/sanity-translations-tab.
+The following files of the Software are adapted from https://github.com/sanity-io/sanity-translations-tab.
 These portions are licensed under the license of the original software, listed below.
+
+- src/components/\*\*
+- src/configuration/\*\*
+- src/hooks/\*\*
+- src/types.ts
+- src/utils/\*\*
 
 MIT License
 

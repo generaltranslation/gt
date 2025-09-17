@@ -44,6 +44,11 @@ export const TranslationView = () => {
           errorMsg = err ? String(err) : null;
         }
 
+        // Hacky bypass for when a document is not yet translated and has never been uploaded
+        if (errorMsg?.toLowerCase().includes('no source file found')) {
+          return;
+        }
+
         toast.push({
           title: `Error creating translation job`,
           description: errorMsg,
