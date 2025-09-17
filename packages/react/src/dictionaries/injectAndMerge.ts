@@ -22,7 +22,6 @@ export function injectAndMerge(
     throw new Error('Dictionary subtree is undefined');
   }
   if (isDictionaryEntry(dictionarySubtree)) {
-    // TODO: circle back
     throw new Error('Cannot inject and merge a dictionary entry');
   }
   const mergedSubtree = mergeDictionaries(
