@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { isValidDictionaryEntry, getDictionaryEntry } from '../getDictionaryEntry';
+import {
+  isValidDictionaryEntry,
+  getDictionaryEntry,
+} from '../getDictionaryEntry';
 import { Dictionary, DictionaryEntry } from '../../types/types';
 
 describe('isValidDictionaryEntry', () => {
@@ -7,7 +10,9 @@ describe('isValidDictionaryEntry', () => {
     it('should return true for string values', () => {
       expect(isValidDictionaryEntry('Hello World')).toBe(true);
       expect(isValidDictionaryEntry('')).toBe(true);
-      expect(isValidDictionaryEntry('Complex string with {variables}')).toBe(true);
+      expect(isValidDictionaryEntry('Complex string with {variables}')).toBe(
+        true
+      );
     });
 
     it('should return true for valid single-element arrays', () => {
@@ -16,9 +21,13 @@ describe('isValidDictionaryEntry', () => {
     });
 
     it('should return true for valid two-element arrays with metadata', () => {
-      expect(isValidDictionaryEntry(['Hello', { $context: 'greeting' }])).toBe(true);
+      expect(isValidDictionaryEntry(['Hello', { $context: 'greeting' }])).toBe(
+        true
+      );
       expect(isValidDictionaryEntry(['Text', {}])).toBe(true);
-      expect(isValidDictionaryEntry(['Text', { $context: 'test', $id: 'test_id' }])).toBe(true);
+      expect(
+        isValidDictionaryEntry(['Text', { $context: 'test', $id: 'test_id' }])
+      ).toBe(true);
     });
   });
 
@@ -46,7 +55,9 @@ describe('isValidDictionaryEntry', () => {
       // It only checks if first element is string and second is object/undefined
       // Arrays with 3+ elements will pass if conditions are met
       expect(isValidDictionaryEntry(['text', {}, 'extra'])).toBe(true); // This passes because conditions are met
-      expect(isValidDictionaryEntry(['text', { $context: 'test' }, 'extra', 'more'])).toBe(true); // This passes too
+      expect(
+        isValidDictionaryEntry(['text', { $context: 'test' }, 'extra', 'more'])
+      ).toBe(true); // This passes too
     });
 
     it('should return false for arrays with non-object second element', () => {
@@ -133,7 +144,10 @@ describe('getDictionaryEntry', () => {
     });
 
     it('should return very deeply nested entry', () => {
-      const result = getDictionaryEntry(mockDictionary, 'user.profile.details.age');
+      const result = getDictionaryEntry(
+        mockDictionary,
+        'user.profile.details.age'
+      );
       expect(result).toBe('Twenty-five');
     });
 
@@ -143,7 +157,10 @@ describe('getDictionaryEntry', () => {
     });
 
     it('should return deeply nested array entry', () => {
-      const result = getDictionaryEntry(mockDictionary, 'user.profile.details.hobby');
+      const result = getDictionaryEntry(
+        mockDictionary,
+        'user.profile.details.hobby'
+      );
       expect(result).toEqual(['Gaming', { $context: 'hobby' }]);
     });
   });
@@ -160,7 +177,10 @@ describe('getDictionaryEntry', () => {
     });
 
     it('should return undefined for deeply non-existent nested key', () => {
-      const result = getDictionaryEntry(mockDictionary, 'user.profile.nonexistent');
+      const result = getDictionaryEntry(
+        mockDictionary,
+        'user.profile.nonexistent'
+      );
       expect(result).toBeUndefined();
     });
 
@@ -183,7 +203,7 @@ describe('getDictionaryEntry', () => {
   describe('should handle edge cases', () => {
     it('should handle empty string id', () => {
       const result = getDictionaryEntry(mockDictionary, '');
-      // Note: The implementation splits empty string and iterates over [''], 
+      // Note: The implementation splits empty string and iterates over [''],
       // so it looks for dictionary[''] which doesn't exist
       expect(result).toBeUndefined();
     });
@@ -201,7 +221,7 @@ describe('getDictionaryEntry', () => {
           c: 'value c',
         },
       };
-      
+
       expect(getDictionaryEntry(dictWithSingleChar, 'a')).toBe('value a');
       expect(getDictionaryEntry(dictWithSingleChar, 'b.c')).toBe('value c');
     });
@@ -209,15 +229,21 @@ describe('getDictionaryEntry', () => {
     it('should handle keys with special characters', () => {
       const specialKeysDict: Dictionary = {
         'key-with-dashes': 'dash value',
-        'key_with_underscores': 'underscore value',
+        key_with_underscores: 'underscore value',
         'key with spaces': {
           'nested-key': 'nested value',
         },
       };
 
-      expect(getDictionaryEntry(specialKeysDict, 'key-with-dashes')).toBe('dash value');
-      expect(getDictionaryEntry(specialKeysDict, 'key_with_underscores')).toBe('underscore value');
-      expect(getDictionaryEntry(specialKeysDict, 'key with spaces.nested-key')).toBe('nested value');
+      expect(getDictionaryEntry(specialKeysDict, 'key-with-dashes')).toBe(
+        'dash value'
+      );
+      expect(getDictionaryEntry(specialKeysDict, 'key_with_underscores')).toBe(
+        'underscore value'
+      );
+      expect(
+        getDictionaryEntry(specialKeysDict, 'key with spaces.nested-key')
+      ).toBe('nested value');
     });
 
     it('should handle numeric string keys', () => {
@@ -229,11 +255,16 @@ describe('getDictionaryEntry', () => {
       };
 
       expect(getDictionaryEntry(numericKeysDict, '0')).toBe('zero');
-      expect(getDictionaryEntry(numericKeysDict, '123.456')).toBe('nested numeric');
+      expect(getDictionaryEntry(numericKeysDict, '123.456')).toBe(
+        'nested numeric'
+      );
     });
 
     it('should handle paths with multiple dots correctly', () => {
-      const result = getDictionaryEntry(mockDictionary, 'user.profile.details.age');
+      const result = getDictionaryEntry(
+        mockDictionary,
+        'user.profile.details.age'
+      );
       expect(result).toBe('Twenty-five');
     });
   });
@@ -241,10 +272,10 @@ describe('getDictionaryEntry', () => {
   describe('should not mutate original dictionary', () => {
     it('should not modify the original dictionary', () => {
       const originalDict = JSON.parse(JSON.stringify(mockDictionary));
-      
+
       getDictionaryEntry(mockDictionary, 'user.profile.bio');
       getDictionaryEntry(mockDictionary, 'nonexistent.path');
-      
+
       expect(mockDictionary).toEqual(originalDict);
     });
   });

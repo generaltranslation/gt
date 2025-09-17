@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { TranslateIcuCallback } from '../../../types/runtime';
 import {
   Dictionary,
@@ -14,11 +14,14 @@ import {
   getSubtreeWithCreation,
 } from '../../../dictionaries/getSubtree';
 import { isDictionaryEntry } from '../../../dictionaries/isDictionaryEntry';
-import { GT } from 'generaltranslation';
 import { stripMetadataFromEntries } from '../../../dictionaries/stripMetadataFromEntries';
 import mergeDictionaries from '../../../dictionaries/mergeDictionaries';
-import { constructTranslationSubtree } from '../../../dictionaries/constructTranslationSubtree';
 import { mergeResultsIntoDictionary } from '../../../dictionaries/injectEntry';
+import { injectHashes } from '../../../dictionaries/injectHashes';
+import { collectUntranslatedEntries } from '../../../dictionaries/collectUntranslatedEntries';
+import { injectTranslations } from '../../../dictionaries/injectTranslations';
+import { injectFallbacks } from '../../../dictionaries/injectFallbacks';
+import { injectAndMerge } from '../../../dictionaries/injectAndMerge';
 
 export function useCreateInternalUseTranslationsObjFunction(
   dictionary: Dictionary,
@@ -34,6 +37,17 @@ export function useCreateInternalUseTranslationsObjFunction(
   registerIcuForTranslation: TranslateIcuCallback,
   tFunction: (id: string, options: DictionaryTranslationOptions) => string
 ) {
+  [
+    dictionary,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation,
+    dictionaryTranslations,
+  ];
   return useCallback(
     (
       id: string,
@@ -59,18 +73,44 @@ export function useCreateInternalUseTranslationsObjFunction(
         // remove metadata from entries
         return stripMetadataFromEntries(subtree);
       }
-      const subTreeTranslation = getSubtreeWithCreation({
+      const translatedSubtree = getSubtreeWithCreation({
         dictionary: dictionaryTranslations,
         id: idWithParent,
         sourceDictionary: dictionaryTranslations,
       });
 
-      // (2) Inject hashes into subtree and inject translation into translation subtree and get untransalted entries
-      const { untranslatedEntries } = constructTranslationSubtree(
-        subtree as Dictionary,
-        subTreeTranslation as Dictionary,
-        translations || {},
+      // (2) Calculate subtreeWithHashes, dictionaryTranslationsWithTranslations, translatedSubtreeWithFallbacks, and untranslatedEntries
+      // Note: the following four operations can technically be combined into one traversal, but this
+      // strategy is much more readable and much easier to test/debug
+      // Inject hashes into subtree
+      const { dictionary: subtreeWithHashes, updateDictionary } = injectHashes(
+        // eslint-disable-next-line no-undef
+        structuredClone(subtree) as Dictionary,
         idWithParent
+      );
+      // Collect untranslated entries
+      const untranslatedEntries = collectUntranslatedEntries(
+        subtreeWithHashes as Dictionary,
+        translatedSubtree as Dictionary,
+        idWithParent
+      );
+      // Inject translations into translation subtree
+      const {
+        dictionary: dictionaryTranslationsWithTranslations,
+        updateDictionary: updateDictionaryTranslations,
+      } = injectTranslations(
+        dictionary as Dictionary,
+        // eslint-disable-next-line no-undef
+        structuredClone(dictionaryTranslations) as Dictionary,
+        translations || {},
+        untranslatedEntries
+      );
+      // Inject fallbacks into translation subtree
+      const translatedSubtreeWithFallbacks = injectFallbacks(
+        dictionary as Dictionary,
+        // eslint-disable-next-line no-undef
+        structuredClone(dictionaryTranslationsWithTranslations) as Dictionary,
+        untranslatedEntries
       );
 
       // (3) For each untranslated entry, translate it
@@ -118,9 +158,22 @@ export function useCreateInternalUseTranslationsObjFunction(
         });
       }
 
+      // (4) Update the dictionaryTranslations object and dictionary
+      // inject translatedSubtreeWithFallbacks and new subtree objects
+      if (updateDictionary) {
+        setDictionary((prev: Dictionary) =>
+          injectAndMerge(prev, subtreeWithHashes, idWithParent)
+        );
+      }
+      if (updateDictionaryTranslations) {
+        setDictionaryTranslations((prev: Dictionary) =>
+          mergeDictionaries(prev, dictionaryTranslationsWithTranslations)
+        );
+      }
+
       // (5) Copy the dictionaryTranslations object
       // eslint-disable-next-line no-undef
-      return structuredClone(subTreeTranslation);
+      return structuredClone(translatedSubtreeWithFallbacks);
     },
     [
       dictionary,

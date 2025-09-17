@@ -8,11 +8,11 @@ import resolveDictionaryLoader from '../resolvers/resolveDictionaryLoader';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';
 
-let dictionary: Dictionary | undefined = undefined;
+export let internalDictionary: Dictionary | undefined = undefined;
 
 export default async function getDictionary(): Promise<Dictionary | undefined> {
   // Singleton pattern
-  if (dictionary !== undefined) return dictionary;
+  if (internalDictionary !== undefined) return internalDictionary;
 
   // Get dictionary file type
   const dictionaryFileType =
@@ -21,12 +21,12 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
   // First, check for a dictionary file (takes precedence)
   try {
     if (dictionaryFileType === '.json') {
-      dictionary = require('gt-next/_dictionary');
+      internalDictionary = require('gt-next/_dictionary');
     } else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
-      dictionary = require('gt-next/_dictionary').default;
+      internalDictionary = require('gt-next/_dictionary').default;
     }
   } catch {}
-  if (dictionary) return dictionary;
+  if (internalDictionary) return internalDictionary;
 
   // Second, check for custom dictionary loader
   const customLoadDictionary = resolveDictionaryLoader(); // must be user defined bc compiler reasons
@@ -37,14 +37,14 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
 
     // Check for [defaultLocale.json] file
     try {
-      dictionary = await customLoadDictionary(defaultLocale);
+      internalDictionary = await customLoadDictionary(defaultLocale);
     } catch {}
 
     // Check the simplified locale name ('en' instead of 'en-US')
     const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
-    if (!dictionary && languageCode && languageCode !== defaultLocale) {
+    if (!internalDictionary && languageCode && languageCode !== defaultLocale) {
       try {
-        dictionary = await customLoadDictionary(languageCode);
+        internalDictionary = await customLoadDictionary(languageCode);
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
           console.warn(customLoadDictionaryWarning(languageCode), error);
@@ -53,16 +53,20 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
     }
   }
 
-  if (!dictionary) {
-    dictionary = {};
+  if (!internalDictionary) {
+    internalDictionary = {};
   }
 
-  return dictionary;
+  return internalDictionary;
 }
 
 export function getDictionaryEntry(
   id: string
 ): Dictionary | DictionaryEntry | undefined {
-  if (!dictionary) return undefined;
-  return getEntry(dictionary, id);
+  if (!internalDictionary) return undefined;
+  return getEntry(internalDictionary, id);
+}
+
+export function _setDictionary(dictionary: Dictionary) {
+  internalDictionary = dictionary;
 }

@@ -41,7 +41,7 @@ export function getSubtreeWithCreation<T extends Dictionary>({
   }
 
   let current: Dictionary | DictionaryEntry = dictionary;
-  let sourceCurrent: Dictionary | DictionaryEntry = sourceDictionary;
+  const sourceCurrent: Dictionary | DictionaryEntry = sourceDictionary;
   const dictionaryPath = id.split('.');
   for (const key of dictionaryPath) {
     if (get(current as Dictionary, key) === undefined) {

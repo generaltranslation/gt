@@ -4,7 +4,9 @@ import { Dictionary, Translations } from '../../types/types';
 
 // Mock the hashSource function from generaltranslation/id
 vi.mock('generaltranslation/id', () => ({
-  hashSource: vi.fn(({ source, context, id }) => `hash_${source}_${context || 'default'}_${id}`),
+  hashSource: vi.fn(
+    ({ source, context, id }) => `hash_${source}_${context || 'default'}_${id}`
+  ),
 }));
 
 describe('constructTranslationSubtree', () => {
@@ -16,10 +18,17 @@ describe('constructTranslationSubtree', () => {
       const translationSubtree: Dictionary = {};
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(subtree).toEqual({
-        greeting: ['Hello World', { $_hash: 'hash_Hello World_default_greeting' }],
+        greeting: [
+          'Hello World',
+          { $_hash: 'hash_Hello World_default_greeting' },
+        ],
       });
       expect(translationSubtree).toEqual({
         greeting: 'Hello World',
@@ -43,10 +52,20 @@ describe('constructTranslationSubtree', () => {
       const translationSubtree: Dictionary = {};
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(subtree).toEqual({
-        welcome: ['Welcome back', { $context: 'greeting', $_hash: 'hash_Welcome back_greeting_welcome' }],
+        welcome: [
+          'Welcome back',
+          {
+            $context: 'greeting',
+            $_hash: 'hash_Welcome back_greeting_welcome',
+          },
+        ],
       });
       expect(translationSubtree).toEqual({
         welcome: 'Welcome back',
@@ -72,7 +91,11 @@ describe('constructTranslationSubtree', () => {
         existing_hash: 'Hola Mundo',
       };
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(translationSubtree).toEqual({
         greeting: 'Hola Mundo',
@@ -100,7 +123,11 @@ describe('constructTranslationSubtree', () => {
       };
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(translationSubtree).toEqual({
         greeting: 'Bonjour Monde',
@@ -125,11 +152,21 @@ describe('constructTranslationSubtree', () => {
       const translationSubtree: Dictionary = {};
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(subtree.user.profile).toEqual({
-        name: ['John Doe', { $_hash: 'hash_John Doe_default_user.profile.name' }],
-        bio: ['Software developer', { $_hash: 'hash_Software developer_default_user.profile.bio' }],
+        name: [
+          'John Doe',
+          { $_hash: 'hash_John Doe_default_user.profile.name' },
+        ],
+        bio: [
+          'Software developer',
+          { $_hash: 'hash_Software developer_default_user.profile.bio' },
+        ],
       });
       expect(translationSubtree).toEqual({
         user: {
@@ -171,7 +208,11 @@ describe('constructTranslationSubtree', () => {
       };
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(translationSubtree).toEqual({
         user: {
@@ -203,11 +244,21 @@ describe('constructTranslationSubtree', () => {
       const translations: Translations = {};
       const id = 'app.messages';
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations, id);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations,
+        id
+      );
 
-      expect(result.untranslatedEntries[0].metadata.$id).toBe('app.messages.greeting');
+      expect(result.untranslatedEntries[0].metadata.$id).toBe(
+        'app.messages.greeting'
+      );
       expect(subtree).toEqual({
-        greeting: ['Hello', { $_hash: 'hash_Hello_default_app.messages.greeting' }],
+        greeting: [
+          'Hello',
+          { $_hash: 'hash_Hello_default_app.messages.greeting' },
+        ],
       });
     });
   });
@@ -218,7 +269,11 @@ describe('constructTranslationSubtree', () => {
       const translationSubtree: Dictionary = {};
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(result.untranslatedEntries).toEqual([]);
       expect(translationSubtree).toEqual({});
@@ -245,7 +300,11 @@ describe('constructTranslationSubtree', () => {
       const translationSubtree: Dictionary = {};
       const translations: Translations = {};
 
-      const result = constructTranslationSubtree(subtree, translationSubtree, translations);
+      const result = constructTranslationSubtree(
+        subtree,
+        translationSubtree,
+        translations
+      );
 
       expect(subtree).toEqual({
         simple: ['Simple text', { $_hash: 'hash_Simple text_default_simple' }],

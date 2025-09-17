@@ -252,7 +252,7 @@ describe('mergeDictionaries', () => {
           newValue: 'Nuevo',
         },
       };
-      
+
       const originalDefault = JSON.parse(JSON.stringify(defaultDict));
       const originalLocale = JSON.parse(JSON.stringify(localeDict));
 

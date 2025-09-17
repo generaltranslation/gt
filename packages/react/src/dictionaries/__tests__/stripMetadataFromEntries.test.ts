@@ -21,7 +21,10 @@ describe('stripMetadataFromEntries', () => {
     it('should strip metadata from array entries with metadata', () => {
       const dictionary: Dictionary = {
         welcome: ['Welcome back', { $context: 'greeting', $id: 'welcome_id' }],
-        error: ['Something went wrong', { $context: 'error', customField: 'value' }],
+        error: [
+          'Something went wrong',
+          { $context: 'error', customField: 'value' },
+        ],
       };
 
       const result = stripMetadataFromEntries(dictionary);

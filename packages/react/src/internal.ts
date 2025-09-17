@@ -50,8 +50,12 @@ import { reactHasUse } from './promises/reactHasUse';
 import { getSubtree, getSubtreeWithCreation } from './dictionaries/getSubtree';
 import { injectEntry } from './dictionaries/injectEntry';
 import { isDictionaryEntry } from './dictionaries/isDictionaryEntry';
-import { constructTranslationSubtree } from './dictionaries/constructTranslationSubtree';
 import { stripMetadataFromEntries } from './dictionaries/stripMetadataFromEntries';
+import { injectHashes } from './dictionaries/injectHashes';
+import { injectTranslations } from './dictionaries/injectTranslations';
+import { injectFallbacks } from './dictionaries/injectFallbacks';
+import { injectAndMerge } from './dictionaries/injectAndMerge';
+import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 
 export {
   addGTIdentifier,
@@ -103,6 +107,10 @@ export {
   getSubtreeWithCreation,
   injectEntry,
   isDictionaryEntry,
-  constructTranslationSubtree,
   stripMetadataFromEntries,
+  injectHashes,
+  injectTranslations,
+  injectFallbacks,
+  injectAndMerge,
+  collectUntranslatedEntries,
 };

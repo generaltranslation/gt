@@ -31,7 +31,9 @@ describe('loadDictionaryHelper', () => {
         farewell: 'Goodbye',
       };
 
-      const mockLoader: CustomLoader = vi.fn().mockResolvedValue(mockDictionary);
+      const mockLoader: CustomLoader = vi
+        .fn()
+        .mockResolvedValue(mockDictionary);
 
       const result = await loadDictionaryHelper('en-US', mockLoader);
 
@@ -46,7 +48,8 @@ describe('loadDictionaryHelper', () => {
         farewell: 'Goodbye',
       };
 
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockRejectedValueOnce(new Error('Locale not found'))
         .mockResolvedValueOnce(mockDictionary);
 
@@ -65,7 +68,9 @@ describe('loadDictionaryHelper', () => {
         farewell: 'Au revoir',
       };
 
-      const mockLoader: CustomLoader = vi.fn().mockResolvedValue(mockDictionary);
+      const mockLoader: CustomLoader = vi
+        .fn()
+        .mockResolvedValue(mockDictionary);
 
       const result = await loadDictionaryHelper('fr', mockLoader);
 
@@ -82,7 +87,8 @@ describe('loadDictionaryHelper', () => {
         greeting: 'Hello',
       };
 
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(mockDictionary);
 
@@ -100,7 +106,8 @@ describe('loadDictionaryHelper', () => {
         greeting: 'Hello',
       };
 
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockResolvedValueOnce(undefined)
         .mockResolvedValueOnce(mockDictionary);
 
@@ -112,8 +119,7 @@ describe('loadDictionaryHelper', () => {
     });
 
     it('should return undefined and warn when all attempts fail with falsy values', async () => {
-      const mockLoader: CustomLoader = vi.fn()
-        .mockResolvedValue(null);
+      const mockLoader: CustomLoader = vi.fn().mockResolvedValue(null);
 
       const result = await loadDictionaryHelper('en-US', mockLoader);
 
@@ -127,7 +133,8 @@ describe('loadDictionaryHelper', () => {
 
   describe('should handle loader errors', () => {
     it('should return undefined and warn when all attempts throw errors', async () => {
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockRejectedValue(new Error('Dictionary not found'));
 
       const result = await loadDictionaryHelper('en-US', mockLoader);
@@ -144,7 +151,8 @@ describe('loadDictionaryHelper', () => {
         greeting: 'Hello',
       };
 
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce(mockDictionary);
 
@@ -164,7 +172,9 @@ describe('loadDictionaryHelper', () => {
         greeting: 'Hello',
       };
 
-      const mockLoader: CustomLoader = vi.fn().mockResolvedValue(mockDictionary);
+      const mockLoader: CustomLoader = vi
+        .fn()
+        .mockResolvedValue(mockDictionary);
 
       const result = await loadDictionaryHelper('en', mockLoader);
 
@@ -175,7 +185,8 @@ describe('loadDictionaryHelper', () => {
     });
 
     it('should handle complex locale fallback', async () => {
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockRejectedValueOnce(new Error('pt-BR not found'))
         .mockRejectedValueOnce(new Error('pt not found'));
 
@@ -191,7 +202,9 @@ describe('loadDictionaryHelper', () => {
 
   describe('should handle edge cases', () => {
     it('should handle empty string locale', async () => {
-      const mockLoader: CustomLoader = vi.fn().mockRejectedValue(new Error('Invalid locale'));
+      const mockLoader: CustomLoader = vi
+        .fn()
+        .mockRejectedValue(new Error('Invalid locale'));
 
       const result = await loadDictionaryHelper('', mockLoader);
 
@@ -203,7 +216,9 @@ describe('loadDictionaryHelper', () => {
     it('should handle very long locale string', async () => {
       const longLocale = 'en-US-POSIX-custom-variant-extra';
       const mockDictionary: Dictionary = { test: 'value' };
-      const mockLoader: CustomLoader = vi.fn().mockResolvedValue(mockDictionary);
+      const mockLoader: CustomLoader = vi
+        .fn()
+        .mockResolvedValue(mockDictionary);
 
       const result = await loadDictionaryHelper(longLocale, mockLoader);
 
@@ -223,7 +238,8 @@ describe('loadDictionaryHelper', () => {
 
     it('should handle Promise rejection with non-Error objects', async () => {
       const mockDictionary: Dictionary = { greeting: 'Hello' };
-      const mockLoader: CustomLoader = vi.fn()
+      const mockLoader: CustomLoader = vi
+        .fn()
         .mockRejectedValueOnce('String error')
         .mockRejectedValueOnce({ error: 'Object error' })
         .mockResolvedValueOnce(mockDictionary);
