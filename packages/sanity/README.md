@@ -49,12 +49,42 @@ Add it as a plugin in `sanity.config.ts` (or .js):
 
 ```ts
 import { defineConfig } from 'sanity';
-import { myPlugin } from '@generaltranslation/sanity';
+import { gtPlugin } from '@generaltranslation/sanity';
 
 export default defineConfig({
   //...
-  plugins: [myPlugin({})],
+  plugins: [
+    gtPlugin({
+      sourceLocale: 'en',
+      // Specify your locales here
+      locales: ['es', 'fr'],
+    }),
+  ],
 });
+```
+
+Add the Translation View to your document structure:
+
+```ts
+// ./structure.ts
+import type { DefaultDocumentNodeResolver } from 'sanity/structure';
+import { TranslationsTab } from '@generaltranslation/sanity';
+import { defaultDocumentLevelConfig } from '@generaltranslation/sanity';
+export const defaultDocumentNode: DefaultDocumentNodeResolver = (
+  S,
+  { schemaType }
+) => {
+  // Replace 'translatable' with your schema type(s)
+  if (schemaType === 'translatable') {
+    return S.document().views([
+      S.view.form(),
+      S.view
+        .component(TranslationsTab)
+        .title('General Translation')
+        .options(defaultDocumentLevelConfig),
+    ]);
+  }
+};
 ```
 
 ## License
