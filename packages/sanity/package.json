@@ -1,6 +1,6 @@
 {
-  "name": "@generaltranslation/sanity",
-  "version": "0.0.4",
+  "name": "gt-sanity",
+  "version": "0.0.5",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -82,7 +82,8 @@
   },
   "sanityPlugin": {
     "verifyPackage": {
-      "eslintImports": false
+      "eslintImports": false,
+      "packageName": false
     }
   },
   "engines": {
