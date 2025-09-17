@@ -54,6 +54,11 @@ export function useCreateInternalUseTranslationsObjFunction(
       idWithParent: string,
       options: DictionaryTranslationOptions = {}
     ): any => {
+      if (idWithParent === '') {
+        throw new Error(
+          `gt-react: Error: You cannot provide an empty id to t.obj()`
+        );
+      }
       // (1) Get subtree
       const subtree = getSubtree({
         dictionary,

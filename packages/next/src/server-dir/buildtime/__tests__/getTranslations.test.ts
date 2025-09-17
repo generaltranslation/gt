@@ -31,6 +31,14 @@ const mockGetUntranslatedEntries = vi.fn();
 const mockIsDictionaryEntry = vi.fn();
 const mockStripMetadataFromEntries = vi.fn();
 const mockConstructTranslationSubtree = vi.fn();
+const mockGetSubtreeWithCreation = vi.fn();
+const mockCollectUntranslatedEntries = vi.fn();
+const mockInjectHashes = vi.fn();
+const mockInjectTranslations = vi.fn();
+const mockInjectFallbacks = vi.fn();
+const mockInjectAndMerge = vi.fn();
+const mockMergeDictionaries = vi.fn();
+const mockSetDictionary = vi.fn();
 
 vi.mock('../../dictionary/getDictionary', () => ({
   default: mockGetDictionary,
@@ -54,6 +62,13 @@ vi.mock('gt-react/internal', () => ({
   isDictionaryEntry: mockIsDictionaryEntry,
   stripMetadataFromEntries: mockStripMetadataFromEntries,
   constructTranslationSubtree: mockConstructTranslationSubtree,
+  getSubtreeWithCreation: mockGetSubtreeWithCreation,
+  collectUntranslatedEntries: mockCollectUntranslatedEntries,
+  injectHashes: mockInjectHashes,
+  injectTranslations: mockInjectTranslations,
+  injectFallbacks: mockInjectFallbacks,
+  injectAndMerge: mockInjectAndMerge,
+  mergeDictionaries: mockMergeDictionaries,
   // Add other commonly needed exports to prevent missing export errors
   defaultRenderSettings: { method: 'replace' },
   defaultLocaleCookieName: 'gt-locale',
@@ -90,7 +105,14 @@ vi.mock('../../errors/createErrors', () => ({
     () => 'Invalid dictionary entry warning'
   ),
   createNoEntryFoundWarning: vi.fn(() => 'No entry found warning'),
+  createTranslationLoadingWarning: vi.fn(() => 'Translation loading warning'),
+  createInvalidDictionaryTranslationEntryWarning: vi.fn(
+    () => 'Invalid dictionary translation entry warning'
+  ),
   translationLoadingWarning: 'Translation loading warning',
+}));
+vi.mock('../../dictionary/setDictionary', () => ({
+  default: mockSetDictionary,
 }));
 
 // Import the functions under test
@@ -450,6 +472,78 @@ describe('getTranslations', () => {
       const result = t('test');
 
       expect(result).toBe('');
+    });
+  });
+
+  describe('t.obj() function', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Reset common mocks for default locale tests
+      mockGetI18NConfig.mockReturnValue(mockI18NConfig);
+      mockGetLocale.mockResolvedValue('en');
+      mockGetDictionary.mockResolvedValue({});
+      mockFormatMessage.mockImplementation((msg) => msg);
+      mockStripMetadataFromEntries.mockImplementation((dict) => dict);
+    });
+
+    it('should have obj method attached to t function', async () => {
+      const t = await getTranslations();
+      expect(typeof t.obj).toBe('function');
+    });
+
+    it('should return empty object and warn when no subtree found', async () => {
+      mockGetSubtree.mockReturnValue(undefined);
+
+      const t = await getTranslations();
+      const result = t.obj('missing.path');
+
+      expect(result).toEqual({});
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(mockGetSubtree).toHaveBeenCalledWith({
+        dictionary: {},
+        id: 'missing.path',
+      });
+    });
+
+    it('should return stripped subtree for default locale (no translation required)', async () => {
+      const mockSubtree = {
+        greeting: 'Hello',
+        farewell: 'Goodbye',
+      };
+      const strippedSubtree = {
+        greeting: 'Hello',
+        farewell: 'Goodbye',
+      };
+
+      mockI18NConfig.requiresTranslation.mockReturnValue([false]);
+      mockGetSubtree.mockReturnValue(mockSubtree);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockStripMetadataFromEntries.mockReturnValue(strippedSubtree);
+
+      const t = await getTranslations();
+      const result = t.obj('messages');
+
+      expect(mockStripMetadataFromEntries).toHaveBeenCalledWith(mockSubtree);
+      expect(result).toEqual(strippedSubtree);
+    });
+
+    it('should work with id prefix from getTranslations', async () => {
+      const mockSubtree = { name: 'Username' };
+      mockGetSubtree.mockReturnValue(mockSubtree);
+      mockIsDictionaryEntry.mockReturnValue(false);
+      mockI18NConfig.requiresTranslation.mockReturnValue([false]);
+      mockStripMetadataFromEntries.mockReturnValue(mockSubtree);
+
+      const t = await getTranslations('user');
+      const result = t.obj('fields');
+
+      expect(mockGetSubtree).toHaveBeenCalledWith({
+        dictionary: {},
+        id: 'user.fields',
+      });
+      expect(result).toEqual(mockSubtree);
     });
   });
 });

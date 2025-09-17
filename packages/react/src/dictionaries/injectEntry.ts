@@ -46,7 +46,9 @@ export function injectEntry(
       set(
         dictionary,
         key,
-        Array.isArray(sourceDictionary) ? [] : ({} as Dictionary)
+        Array.isArray(get(sourceDictionary as Dictionary, key))
+          ? []
+          : ({} as Dictionary)
       );
     }
     // Iterate

@@ -180,13 +180,57 @@ describe('injectEntry', () => {
   });
 
   describe('should handle edge cases and overwrites', () => {
+    it('should preserve array structure when injecting into nested array elements', () => {
+      const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = {
+        hello: {
+          fruits: ['lemon', 'lime', 'pear'],
+        },
+      };
+      const entry: DictionaryEntry = 'citron';
+
+      injectEntry(entry, dictionary, 'hello.fruits.0', sourceDictionary);
+
+      expect(dictionary).toEqual({
+        hello: {
+          fruits: ['citron'],
+        },
+      });
+      expect(Array.isArray((dictionary as any).hello.fruits)).toBe(true);
+    });
+
+    it('should create array structure for multiple array element injections', () => {
+      const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = {
+        hello: {
+          fruits: ['lemon', 'lime', 'pear'],
+        },
+      };
+
+      injectEntry('citron', dictionary, 'hello.fruits.0', sourceDictionary);
+      injectEntry(
+        'citron vert',
+        dictionary,
+        'hello.fruits.1',
+        sourceDictionary
+      );
+      injectEntry('poire', dictionary, 'hello.fruits.2', sourceDictionary);
+
+      expect(dictionary).toEqual({
+        hello: {
+          fruits: ['citron', 'citron vert', 'poire'],
+        },
+      });
+      expect(Array.isArray((dictionary as any).hello.fruits)).toBe(true);
+    });
+
     it('should overwrite existing entry', () => {
       const dictionary: Dictionary = {
         greeting: 'Old greeting',
       };
       const entry: DictionaryEntry = 'New greeting';
 
-      injectEntry(entry, dictionary, 'greeting');
+      injectEntry(entry, dictionary, 'greeting', {});
 
       expect(dictionary).toEqual({
         greeting: 'New greeting',
@@ -200,7 +244,7 @@ describe('injectEntry', () => {
       const entry: DictionaryEntry = 'John';
 
       expect(() => {
-        injectEntry(entry, dictionary, 'user.name');
+        injectEntry(entry, dictionary, 'user.name', {});
       }).toThrow();
     });
 
