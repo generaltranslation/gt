@@ -12,16 +12,16 @@ describe('indexDict', () => {
       });
 
       it('should get nested object from dictionary', () => {
-        const dictionary: Dictionary = { 
-          user: { name: 'John', age: 30 } 
+        const dictionary: Dictionary = {
+          user: { name: 'John', age: 30 },
         };
         const result = get(dictionary, 'user');
         expect(result).toEqual({ name: 'John', age: 30 });
       });
 
       it('should get array value from object dictionary', () => {
-        const dictionary: Dictionary = { 
-          messages: ['Hello', 'Goodbye'] 
+        const dictionary: Dictionary = {
+          messages: ['Hello', 'Goodbye'],
         };
         const result = get(dictionary, 'messages');
         expect(result).toEqual(['Hello', 'Goodbye']);
@@ -72,10 +72,7 @@ describe('indexDict', () => {
       });
 
       it('should get nested objects from array', () => {
-        const dictionary: Dictionary = [
-          { name: 'John' },
-          { name: 'Jane' }
-        ];
+        const dictionary: Dictionary = [{ name: 'John' }, { name: 'Jane' }];
         const result = get(dictionary, 0);
         expect(result).toEqual({ name: 'John' });
       });
@@ -83,11 +80,15 @@ describe('indexDict', () => {
 
     describe('should handle edge cases and errors', () => {
       it('should throw error for null dictionary', () => {
-        expect(() => get(null as any, 'key')).toThrow('Cannot index into an undefined dictionary');
+        expect(() => get(null as any, 'key')).toThrow(
+          'Cannot index into an undefined dictionary'
+        );
       });
 
       it('should throw error for undefined dictionary', () => {
-        expect(() => get(undefined as any, 'key')).toThrow('Cannot index into an undefined dictionary');
+        expect(() => get(undefined as any, 'key')).toThrow(
+          'Cannot index into an undefined dictionary'
+        );
       });
 
       it('should handle empty object dictionary', () => {
@@ -142,7 +143,9 @@ describe('indexDict', () => {
         const dictionary: Dictionary = {};
         const entry = ['Hello {name}', { $context: 'greeting' }];
         set(dictionary, 'greeting', entry);
-        expect(dictionary).toEqual({ greeting: ['Hello {name}', { $context: 'greeting' }] });
+        expect(dictionary).toEqual({
+          greeting: ['Hello {name}', { $context: 'greeting' }],
+        });
       });
     });
 
@@ -196,24 +199,22 @@ describe('indexDict', () => {
       it('should preserve other properties when setting', () => {
         const dictionary: Dictionary = { a: 'value a', b: 'value b' };
         set(dictionary, 'c', 'value c');
-        expect(dictionary).toEqual({ a: 'value a', b: 'value b', c: 'value c' });
+        expect(dictionary).toEqual({
+          a: 'value a',
+          b: 'value b',
+          c: 'value c',
+        });
       });
 
       it('should handle complex nested structures', () => {
-        const dictionary: Dictionary = { 
-          users: [
-            { name: 'John' },
-            { name: 'Jane' }
-          ]
+        const dictionary: Dictionary = {
+          users: [{ name: 'John' }, { name: 'Jane' }],
         };
         const newUser = { name: 'Bob', role: 'admin' };
         set(dictionary, 'admin', newUser);
         expect(dictionary).toEqual({
-          users: [
-            { name: 'John' },
-            { name: 'Jane' }
-          ],
-          admin: { name: 'Bob', role: 'admin' }
+          users: [{ name: 'John' }, { name: 'Jane' }],
+          admin: { name: 'Bob', role: 'admin' },
         });
       });
     });
@@ -240,12 +241,15 @@ describe('indexDict', () => {
       const dataArray = get(dictionary, 'data') as Dictionary;
       set(dataArray, 0, { id: 1, name: 'Item 1' });
       set(dataArray, 1, { id: 2, name: 'Item 2' });
-      
+
       expect(get(dictionary, 'data')).toEqual([
         { id: 1, name: 'Item 1' },
-        { id: 2, name: 'Item 2' }
+        { id: 2, name: 'Item 2' },
       ]);
-      expect(get(get(dictionary, 'data') as Dictionary, 0)).toEqual({ id: 1, name: 'Item 1' });
+      expect(get(get(dictionary, 'data') as Dictionary, 0)).toEqual({
+        id: 1,
+        name: 'Item 1',
+      });
     });
   });
 });

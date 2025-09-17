@@ -16,7 +16,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         greeting: 'Hello world',
@@ -37,7 +41,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         greeting: 'Hola mundo',
@@ -58,7 +66,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         greeting: 'Hola {name}',
@@ -85,7 +97,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         greeting: 'Hola',
@@ -119,7 +135,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         user: {
@@ -147,7 +167,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         messages: {
@@ -189,7 +213,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         app: {
@@ -219,7 +247,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         submit: 'Submit',
@@ -240,7 +272,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         cancel: 'Cancelar',
@@ -264,7 +300,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         save: 'Save {item}',
@@ -283,7 +323,11 @@ describe('injectFallbacks', () => {
       };
       const missingTranslations: any[] = [];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         greeting: 'Hola',
@@ -307,7 +351,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         message1: 'Message 1',
@@ -329,7 +377,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toBe(translationsDictionary);
       expect(result).toEqual({
@@ -369,15 +421,27 @@ describe('injectFallbacks', () => {
         },
         {
           source: 'Email',
-          metadata: { $id: 'forms.email', $context: 'form-label', $_hash: 'email2' },
+          metadata: {
+            $id: 'forms.email',
+            $context: 'form-label',
+            $_hash: 'email2',
+          },
         },
         {
           source: 'Submit Form',
-          metadata: { $id: 'forms.submit', $context: 'button', $_hash: 'submit3' },
+          metadata: {
+            $id: 'forms.submit',
+            $context: 'button',
+            $_hash: 'submit3',
+          },
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         nav: {
@@ -413,7 +477,11 @@ describe('injectFallbacks', () => {
         },
       ];
 
-      const result = injectFallbacks(dictionary, translationsDictionary, missingTranslations);
+      const result = injectFallbacks(
+        dictionary,
+        translationsDictionary,
+        missingTranslations
+      );
 
       expect(result).toEqual({
         title: 'Fallback Title',

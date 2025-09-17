@@ -41,9 +41,10 @@ describe('injectEntry', () => {
   describe('should inject entries into nested dictionary structure', () => {
     it('should inject entry into single-level nested path', () => {
       const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = { user: { name: '' } };
       const entry: DictionaryEntry = 'John Doe';
 
-      injectEntry(entry, dictionary, 'user.name');
+      injectEntry(entry, dictionary, 'user.name', sourceDictionary);
 
       expect(dictionary).toEqual({
         user: {
@@ -54,9 +55,10 @@ describe('injectEntry', () => {
 
     it('should inject entry into multi-level nested path', () => {
       const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = { user: { profile: { occupation: '' } } };
       const entry: DictionaryEntry = 'Software Engineer';
 
-      injectEntry(entry, dictionary, 'user.profile.occupation');
+      injectEntry(entry, dictionary, 'user.profile.occupation', sourceDictionary);
 
       expect(dictionary).toEqual({
         user: {
@@ -73,9 +75,10 @@ describe('injectEntry', () => {
           name: 'John',
         },
       };
+      const sourceDictionary: Dictionary = { user: { email: '' } };
       const entry: DictionaryEntry = 'john@example.com';
 
-      injectEntry(entry, dictionary, 'user.email');
+      injectEntry(entry, dictionary, 'user.email', sourceDictionary);
 
       expect(dictionary).toEqual({
         user: {
@@ -87,9 +90,10 @@ describe('injectEntry', () => {
 
     it('should inject deeply nested entry with metadata', () => {
       const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = { app: { messages: { system: { error: '' } } } };
       const entry: DictionaryEntry = ['Deep message', { $context: 'system' }];
 
-      injectEntry(entry, dictionary, 'app.messages.system.error');
+      injectEntry(entry, dictionary, 'app.messages.system.error', sourceDictionary);
 
       expect(dictionary).toEqual({
         app: {
@@ -140,9 +144,10 @@ describe('injectEntry', () => {
 
     it('should inject complex entry into nested paths in Dictionary', () => {
       const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = { user: { profile: { bio: '' } } };
       const entry: DictionaryEntry = ['Complex entry', { $context: 'test' }];
 
-      const result = injectEntry(entry, dictionary, 'user.profile.bio');
+      const result = injectEntry(entry, dictionary, 'user.profile.bio', sourceDictionary);
 
       expect(result).toBeUndefined();
       expect(dictionary).toEqual({
@@ -184,9 +189,10 @@ describe('injectEntry', () => {
       const dictionary: Dictionary = {
         user: null as any,
       };
+      const sourceDictionary: Dictionary = { user: { name: '' } };
       const entry: DictionaryEntry = 'John';
 
-      injectEntry(entry, dictionary, 'user.name');
+      injectEntry(entry, dictionary, 'user.name', sourceDictionary);
 
       expect(dictionary).toEqual({
         user: {
@@ -197,9 +203,10 @@ describe('injectEntry', () => {
 
     it('should handle empty string entry', () => {
       const dictionary: Dictionary = {};
+      const sourceDictionary: Dictionary = { empty: { message: '' } };
       const entry: DictionaryEntry = '';
 
-      injectEntry(entry, dictionary, 'empty.message');
+      injectEntry(entry, dictionary, 'empty.message', sourceDictionary);
 
       expect(dictionary).toEqual({
         empty: {

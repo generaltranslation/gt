@@ -10,7 +10,7 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'hash123': 'Hola mundo',
+        hash123: 'Hola mundo',
       };
       const missingTranslations = [
         {
@@ -19,7 +19,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hola mundo',
@@ -34,8 +39,8 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'hello_hash': 'Hola',
-        'goodbye_hash': 'Adiós',
+        hello_hash: 'Hola',
+        goodbye_hash: 'Adiós',
       };
       const missingTranslations = [
         {
@@ -48,7 +53,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hola',
@@ -65,7 +75,7 @@ describe('injectTranslations', () => {
         greeting: 'Existing translation',
       };
       const translations: Translations = {
-        'hash123': 'Hash translation',
+        hash123: 'Hash translation',
       };
       const missingTranslations = [
         {
@@ -74,7 +84,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hash translation',
@@ -90,16 +105,25 @@ describe('injectTranslations', () => {
         greeting: ['Hola {name}', { $context: 'personal' }],
       };
       const translations: Translations = {
-        'hash456': 'Hash-based translation',
+        hash456: 'Hash-based translation',
       };
       const missingTranslations = [
         {
           source: 'Hello {name}',
-          metadata: { $id: 'greeting', $context: 'personal', $_hash: 'hash456' },
+          metadata: {
+            $id: 'greeting',
+            $context: 'personal',
+            $_hash: 'hash456',
+          },
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hash-based translation',
@@ -119,7 +143,7 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'name_hash': 'Nombre',
+        name_hash: 'Nombre',
       };
       const missingTranslations = [
         {
@@ -128,7 +152,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         user: {
@@ -155,8 +184,8 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'home_hash': 'Accueil',
-        'about_hash': 'À propos',
+        home_hash: 'Accueil',
+        about_hash: 'À propos',
       };
       const missingTranslations = [
         {
@@ -169,7 +198,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         app: {
@@ -203,7 +237,7 @@ describe('injectTranslations', () => {
         },
       };
       const translations: Translations = {
-        'network_hash': 'Error de red',
+        network_hash: 'Error de red',
       };
       const missingTranslations = [
         {
@@ -212,7 +246,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         messages: {
@@ -240,7 +279,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({});
       expect(result.updateDictionary).toBe(false);
@@ -253,7 +297,7 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'hello_hash': 'Hola',
+        hello_hash: 'Hola',
       };
       const missingTranslations = [
         {
@@ -266,7 +310,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hola',
@@ -288,7 +337,7 @@ describe('injectTranslations', () => {
         },
       };
       const translations: Translations = {
-        'about_hash': 'À propos',
+        about_hash: 'À propos',
       };
       const missingTranslations = [
         {
@@ -301,7 +350,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         nav: {
@@ -320,16 +374,25 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'submit_hash': 'Enviar',
+        submit_hash: 'Enviar',
       };
       const missingTranslations = [
         {
           source: 'Submit',
-          metadata: { $id: 'submit', $context: 'button', $_hash: 'submit_hash' },
+          metadata: {
+            $id: 'submit',
+            $context: 'button',
+            $_hash: 'submit_hash',
+          },
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         submit: 'Enviar',
@@ -341,12 +404,15 @@ describe('injectTranslations', () => {
       const dictionary: Dictionary = {
         save: ['Save {item}', { $context: 'action' }],
         delete: 'Delete',
-        confirm: ['Are you sure?', { $context: 'confirmation', $_hash: 'existing' }],
+        confirm: [
+          'Are you sure?',
+          { $context: 'confirmation', $_hash: 'existing' },
+        ],
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'save_hash': 'Guardar {item}',
-        'delete_hash': 'Eliminar',
+        save_hash: 'Guardar {item}',
+        delete_hash: 'Eliminar',
       };
       const missingTranslations = [
         {
@@ -359,7 +425,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         save: 'Guardar {item}',
@@ -385,7 +456,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         existing: 'Existing value',
@@ -400,7 +476,7 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'hello_hash': 'Hola',
+        hello_hash: 'Hola',
       };
       const missingTranslations = [
         {
@@ -413,7 +489,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hola',
@@ -428,8 +509,8 @@ describe('injectTranslations', () => {
       };
       const translationsDictionary: Dictionary = {};
       const translations: Translations = {
-        'hello_hash': 'Hola',
-        'goodbye_hash': 'Adiós',
+        hello_hash: 'Hola',
+        goodbye_hash: 'Adiós',
       };
       const missingTranslations = [
         {
@@ -442,7 +523,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         greeting: 'Hola',
@@ -461,11 +547,16 @@ describe('injectTranslations', () => {
         existing: 'Existing',
       };
       const translations: Translations = {
-        'hash': 'Translation',
+        hash: 'Translation',
       };
       const missingTranslations: any[] = [];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         existing: 'Existing',
@@ -486,7 +577,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({});
       expect(result.updateDictionary).toBe(false);
@@ -500,7 +596,7 @@ describe('injectTranslations', () => {
         existing: 'Existing',
       };
       const translations: Translations = {
-        'hash123': 'Hola',
+        hash123: 'Hola',
       };
       const missingTranslations = [
         {
@@ -509,7 +605,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toBe(translationsDictionary);
       expect(result.dictionary).toEqual({
@@ -542,8 +643,8 @@ describe('injectTranslations', () => {
         },
       };
       const translations: Translations = {
-        'save_hash': 'Guardar',
-        'success_hash': 'Operación exitosa',
+        save_hash: 'Guardar',
+        success_hash: 'Operación exitosa',
       };
       const missingTranslations = [
         {
@@ -556,7 +657,11 @@ describe('injectTranslations', () => {
         },
         {
           source: 'Operation successful',
-          metadata: { $id: 'ui.messages.success', $context: 'notification', $_hash: 'success_hash' },
+          metadata: {
+            $id: 'ui.messages.success',
+            $context: 'notification',
+            $_hash: 'success_hash',
+          },
         },
         {
           source: 'An error occurred',
@@ -564,7 +669,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       expect(result.dictionary).toEqual({
         ui: {
@@ -588,7 +698,7 @@ describe('injectTranslations', () => {
         message: ['Hola mundo', { $context: 'greeting' }], // existing translation
       };
       const translations: Translations = {
-        'hash123': 'Translation from hash', // hash-based translation
+        hash123: 'Translation from hash', // hash-based translation
       };
       const missingTranslations = [
         {
@@ -597,7 +707,12 @@ describe('injectTranslations', () => {
         },
       ];
 
-      const result = injectTranslations(dictionary, translationsDictionary, translations, missingTranslations);
+      const result = injectTranslations(
+        dictionary,
+        translationsDictionary,
+        translations,
+        missingTranslations
+      );
 
       // Should prefer hash-based translation over existing
       expect(result.dictionary).toEqual({

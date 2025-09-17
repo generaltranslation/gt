@@ -75,7 +75,10 @@ describe('collectUntranslatedEntries', () => {
   describe('should handle array-based dictionary entries', () => {
     it('should collect untranslated entry with metadata', () => {
       const dictionary: Dictionary = {
-        greeting: ['Hello {name}', { $context: 'personal-greeting', $_hash: 'abc123' }],
+        greeting: [
+          'Hello {name}',
+          { $context: 'personal-greeting', $_hash: 'abc123' },
+        ],
       };
       const translations: Dictionary = {};
 
@@ -305,7 +308,11 @@ describe('collectUntranslatedEntries', () => {
       };
       const translations: Dictionary = {};
 
-      const result = collectUntranslatedEntries(dictionary, translations, 'custom');
+      const result = collectUntranslatedEntries(
+        dictionary,
+        translations,
+        'custom'
+      );
 
       expect(result).toEqual([
         {
@@ -335,7 +342,11 @@ describe('collectUntranslatedEntries', () => {
       };
       const translations: Dictionary = {};
 
-      const result = collectUntranslatedEntries(dictionary, translations, 'app');
+      const result = collectUntranslatedEntries(
+        dictionary,
+        translations,
+        'app'
+      );
 
       expect(result).toEqual([
         {

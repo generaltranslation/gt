@@ -106,7 +106,11 @@ describe('injectAndMerge', () => {
         },
       };
 
-      const result = injectAndMerge(dictionary, subtree, 'level1.level2.level3.level4');
+      const result = injectAndMerge(
+        dictionary,
+        subtree,
+        'level1.level2.level3.level4'
+      );
 
       expect(result).toEqual({
         level1: {
@@ -194,7 +198,10 @@ describe('injectAndMerge', () => {
       const subtree: Dictionary = {
         cancel: ['Cancel', { $context: 'button' }],
         delete: 'Delete',
-        confirm: ['Are you sure?', { $context: 'confirmation', $_hash: 'abc123' }],
+        confirm: [
+          'Are you sure?',
+          { $context: 'confirmation', $_hash: 'abc123' },
+        ],
       };
 
       const result = injectAndMerge(dictionary, subtree, 'ui.buttons');
@@ -205,7 +212,10 @@ describe('injectAndMerge', () => {
             save: 'Save',
             cancel: ['Cancel', { $context: 'button' }],
             delete: 'Delete',
-            confirm: ['Are you sure?', { $context: 'confirmation', $_hash: 'abc123' }],
+            confirm: [
+              'Are you sure?',
+              { $context: 'confirmation', $_hash: 'abc123' },
+            ],
           },
         },
       });
@@ -221,7 +231,9 @@ describe('injectAndMerge', () => {
         new: 'new value',
       };
 
-      expect(() => injectAndMerge(dictionary, subtree, 'nonexistent')).toThrow('Dictionary subtree is undefined');
+      expect(() => injectAndMerge(dictionary, subtree, 'nonexistent')).toThrow(
+        'Dictionary subtree is undefined'
+      );
     });
 
     it('should throw error when trying to inject into a dictionary entry', () => {
@@ -232,7 +244,9 @@ describe('injectAndMerge', () => {
         new: 'new value',
       };
 
-      expect(() => injectAndMerge(dictionary, subtree, 'greeting')).toThrow('Cannot inject and merge a dictionary entry');
+      expect(() => injectAndMerge(dictionary, subtree, 'greeting')).toThrow(
+        'Cannot inject and merge a dictionary entry'
+      );
     });
 
     it('should throw error when trying to inject into array-format dictionary entry', () => {
@@ -243,7 +257,9 @@ describe('injectAndMerge', () => {
         new: 'new value',
       };
 
-      expect(() => injectAndMerge(dictionary, subtree, 'greeting')).toThrow('Cannot inject and merge a dictionary entry');
+      expect(() => injectAndMerge(dictionary, subtree, 'greeting')).toThrow(
+        'Cannot inject and merge a dictionary entry'
+      );
     });
 
     it('should throw error for non-existent nested path', () => {
@@ -256,7 +272,9 @@ describe('injectAndMerge', () => {
         new: 'new value',
       };
 
-      expect(() => injectAndMerge(dictionary, subtree, 'level1.level2.level3')).toThrow('Dictionary subtree is undefined');
+      expect(() =>
+        injectAndMerge(dictionary, subtree, 'level1.level2.level3')
+      ).toThrow('Dictionary subtree is undefined');
     });
 
     it('should throw error when path traverses through dictionary entry', () => {
@@ -269,7 +287,9 @@ describe('injectAndMerge', () => {
         new: 'new value',
       };
 
-      expect(() => injectAndMerge(dictionary, subtree, 'messages.greeting.invalid')).toThrow('Dictionary subtree is undefined');
+      expect(() =>
+        injectAndMerge(dictionary, subtree, 'messages.greeting.invalid')
+      ).toThrow('Dictionary subtree is undefined');
     });
   });
 
@@ -404,7 +424,7 @@ describe('injectAndMerge', () => {
         config: {
           api: {
             timeout: '60s', // overridden
-            retries: '3',   // preserved
+            retries: '3', // preserved
             baseUrl: 'https://api.example.com', // added
             version: 'v2', // added
           },

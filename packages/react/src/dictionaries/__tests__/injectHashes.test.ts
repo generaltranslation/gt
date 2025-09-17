@@ -4,7 +4,9 @@ import { Dictionary } from '../../types/types';
 
 // Mock the hashSource function
 vi.mock('generaltranslation/id', () => ({
-  hashSource: vi.fn(({ source, context, id }) => `hash_${source}_${context || 'none'}_${id}`),
+  hashSource: vi.fn(
+    ({ source, context, id }) => `hash_${source}_${context || 'none'}_${id}`
+  ),
 }));
 
 describe('injectHashes', () => {
@@ -30,7 +32,10 @@ describe('injectHashes', () => {
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        welcome: ['Welcome to our app', { $_hash: 'hash_Welcome to our app_none_welcome' }],
+        welcome: [
+          'Welcome to our app',
+          { $_hash: 'hash_Welcome to our app_none_welcome' },
+        ],
       });
       expect(result.updateDictionary).toBe(true);
     });
@@ -43,7 +48,13 @@ describe('injectHashes', () => {
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        greeting: ['Hello {name}', { $context: 'personal', $_hash: 'hash_Hello {name}_personal_greeting' }],
+        greeting: [
+          'Hello {name}',
+          {
+            $context: 'personal',
+            $_hash: 'hash_Hello {name}_personal_greeting',
+          },
+        ],
       });
       expect(result.updateDictionary).toBe(true);
     });
@@ -126,8 +137,14 @@ describe('injectHashes', () => {
           nav: {
             menu: {
               items: {
-                home: ['Home', { $_hash: 'hash_Home_none_app.nav.menu.items.home' }],
-                about: ['About', { $_hash: 'hash_About_none_app.nav.menu.items.about' }],
+                home: [
+                  'Home',
+                  { $_hash: 'hash_Home_none_app.nav.menu.items.home' },
+                ],
+                about: [
+                  'About',
+                  { $_hash: 'hash_About_none_app.nav.menu.items.about' },
+                ],
               },
             },
           },
@@ -172,7 +189,10 @@ describe('injectHashes', () => {
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        submit: ['Submit', { $context: 'button', $_hash: 'hash_Submit_button_submit' }],
+        submit: [
+          'Submit',
+          { $context: 'button', $_hash: 'hash_Submit_button_submit' },
+        ],
         save: ['Save', { $context: 'action', $_hash: 'hash_Save_action_save' }],
       });
       expect(result.updateDictionary).toBe(true);
@@ -180,13 +200,24 @@ describe('injectHashes', () => {
 
     it('should handle entries with complex metadata', () => {
       const dictionary: Dictionary = {
-        greeting: ['Hello {name}', { $context: 'personal', $id: 'greeting_id', customField: 'custom' }],
+        greeting: [
+          'Hello {name}',
+          { $context: 'personal', $id: 'greeting_id', customField: 'custom' },
+        ],
       };
 
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        greeting: ['Hello {name}', { $context: 'personal', $id: 'greeting_id', customField: 'custom', $_hash: 'hash_Hello {name}_personal_greeting' }],
+        greeting: [
+          'Hello {name}',
+          {
+            $context: 'personal',
+            $id: 'greeting_id',
+            customField: 'custom',
+            $_hash: 'hash_Hello {name}_personal_greeting',
+          },
+        ],
       });
       expect(result.updateDictionary).toBe(true);
     });
@@ -201,7 +232,10 @@ describe('injectHashes', () => {
 
       expect(result.dictionary).toEqual({
         title: ['Page Title', { $_hash: 'hash_Page Title_none_title' }],
-        button: ['Click me', { $context: 'action', $_hash: 'hash_Click me_action_button' }],
+        button: [
+          'Click me',
+          { $context: 'action', $_hash: 'hash_Click me_action_button' },
+        ],
       });
       expect(result.updateDictionary).toBe(true);
     });
@@ -217,8 +251,14 @@ describe('injectHashes', () => {
       const result = injectHashes(dictionary, 'custom.prefix');
 
       expect(result.dictionary).toEqual({
-        greeting: ['Hello', { $_hash: 'hash_Hello_none_custom.prefix.greeting' }],
-        farewell: ['Goodbye', { $_hash: 'hash_Goodbye_none_custom.prefix.farewell' }],
+        greeting: [
+          'Hello',
+          { $_hash: 'hash_Hello_none_custom.prefix.greeting' },
+        ],
+        farewell: [
+          'Goodbye',
+          { $_hash: 'hash_Goodbye_none_custom.prefix.farewell' },
+        ],
       });
       expect(result.updateDictionary).toBe(true);
     });
@@ -236,7 +276,10 @@ describe('injectHashes', () => {
       expect(result.dictionary).toEqual({
         user: {
           name: ['Name', { $_hash: 'hash_Name_none_app.section.user.name' }],
-          email: ['Email', { $_hash: 'hash_Email_none_app.section.user.email' }],
+          email: [
+            'Email',
+            { $_hash: 'hash_Email_none_app.section.user.email' },
+          ],
         },
       });
       expect(result.updateDictionary).toBe(true);
@@ -269,7 +312,10 @@ describe('injectHashes', () => {
 
       expect(result.dictionary).toEqual({
         existing: ['Already has hash', { $_hash: 'existing' }],
-        needsHash: ['Needs a hash', { $_hash: 'hash_Needs a hash_none_needsHash' }],
+        needsHash: [
+          'Needs a hash',
+          { $_hash: 'hash_Needs a hash_none_needsHash' },
+        ],
       });
       expect(result.updateDictionary).toBe(true);
     });
@@ -290,7 +336,10 @@ describe('injectHashes', () => {
         section: {
           withHash: ['Has hash', { $_hash: 'existing' }],
           nested: {
-            needsHash: ['Needs hash', { $_hash: 'hash_Needs hash_none_section.nested.needsHash' }],
+            needsHash: [
+              'Needs hash',
+              { $_hash: 'hash_Needs hash_none_section.nested.needsHash' },
+            ],
           },
         },
       });
@@ -345,7 +394,10 @@ describe('injectHashes', () => {
       expect(result.dictionary).toEqual({
         empty: {},
         withEntry: {
-          message: ['Hello world', { $_hash: 'hash_Hello world_none_withEntry.message' }],
+          message: [
+            'Hello world',
+            { $_hash: 'hash_Hello world_none_withEntry.message' },
+          ],
         },
         alsoEmpty: {
           nested: {},
