@@ -6,6 +6,7 @@ import {
   ImportTranslation,
   TranslationFunctionContext,
   TranslationsTabConfigOptions,
+  GTFile,
 } from './types';
 import {
   baseDocumentLevelConfig,
@@ -51,16 +52,17 @@ export {
 import { GTAdapter } from './adapter';
 import { definePlugin } from 'sanity';
 import { gt, gtConfig } from './adapter/core';
+import { GTSerializedDocument } from './types';
 
 interface ConfigOptions {
   adapter: Adapter;
   secretsNamespace: string | null;
   exportForTranslation: (
-    id: string,
+    docInfo: GTFile,
     context: TranslationFunctionContext
-  ) => Promise<Record<string, any>>;
+  ) => Promise<GTSerializedDocument>;
   importTranslation: (
-    id: string,
+    docInfo: GTFile,
     localeId: string,
     doc: string,
     context: TranslationFunctionContext

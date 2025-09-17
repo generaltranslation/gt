@@ -115,10 +115,10 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
     setIsBusy(true);
 
     context
-      .exportForTranslation(context.documentId)
+      .exportForTranslation(context.documentInfo)
       .then((serialized) =>
         context.adapter.createTask(
-          context.documentId,
+          context.documentInfo,
           serialized,
           selectedLocales as string[],
           context.secrets,

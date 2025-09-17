@@ -3,13 +3,16 @@ import {
   BaseDocumentSerializer,
   BaseDocumentDeserializer,
   BaseDocumentMerger,
-  SerializedDocument,
   defaultStopTypes,
   customSerializers,
   customBlockDeserializers,
 } from 'sanity-naive-html-serializer';
 
-import { ExportForTranslation, ImportTranslation } from '../types';
+import {
+  ExportForTranslation,
+  GTSerializedDocument,
+  ImportTranslation,
+} from '../types';
 import { findLatestDraft, findDocumentAtRevision } from './utils';
 
 export const fieldLevelPatch = async (
@@ -44,8 +47,8 @@ export const fieldLevelPatch = async (
 export const baseFieldLevelConfig = {
   exportForTranslation: async (
     ...params: Parameters<ExportForTranslation>
-  ): Promise<SerializedDocument> => {
-    const [id, context, baseLanguage = 'en', serializationOptions = {}] =
+  ): Promise<GTSerializedDocument> => {
+    const [docInfo, context, baseLanguage = 'en', serializationOptions = {}] =
       params;
     const { client, schema } = context;
     const stopTypes = [
@@ -59,7 +62,7 @@ export const baseFieldLevelConfig = {
         ...(serializationOptions.additionalSerializers ?? {}),
       },
     };
-    const doc = await findLatestDraft(id, client);
+    const doc = await findLatestDraft(docInfo.documentId, client);
     const serialized = BaseDocumentSerializer(schema).serializeDocument(
       doc,
       'field',
@@ -67,14 +70,17 @@ export const baseFieldLevelConfig = {
       stopTypes,
       serializers
     );
-    serialized.name = id;
-    return serialized;
+    return {
+      content: serialized.content,
+      documentId: docInfo.documentId,
+      versionId: docInfo.versionId,
+    };
   },
   importTranslation: (
     ...params: Parameters<ImportTranslation>
   ): Promise<void> => {
     const [
-      id,
+      docInfo,
       localeId,
       document,
       context,
@@ -100,7 +106,7 @@ export const baseFieldLevelConfig = {
       blockDeserializers
     ) as SanityDocument;
     return fieldLevelPatch(
-      id,
+      docInfo.documentId,
       deserialized,
       localeId,
       client,

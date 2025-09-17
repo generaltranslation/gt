@@ -1,12 +1,12 @@
 import React from 'react';
-import { SerializedDocument } from 'sanity-naive-html-serializer';
-import { Adapter, Secrets, WorkflowIdentifiers } from '../types';
+import { GTSerializedDocument } from '../types';
+import { Adapter, GTFile, Secrets, WorkflowIdentifiers } from '../types';
 
 export type ContextProps = {
-  documentId: string;
+  documentInfo: GTFile;
   adapter: Adapter;
   importTranslation: (languageId: string, document: string) => Promise<void>;
-  exportForTranslation: (documentId: string) => Promise<SerializedDocument>;
+  exportForTranslation: (documentInfo: GTFile) => Promise<GTSerializedDocument>;
   baseLanguage: string;
   secrets: Secrets;
   workflowOptions?: WorkflowIdentifiers[];

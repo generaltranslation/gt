@@ -18,7 +18,7 @@ export const TranslationView = () => {
   const toast = useToast();
 
   useEffect(() => {
-    function fetchData() {
+    async function fetchData() {
       if (!context) {
         toast.push({
           title: 'Unable to load translation data: missing context',
@@ -28,31 +28,29 @@ export const TranslationView = () => {
         return;
       }
 
-      context.adapter
-        .getLocales(context.secrets)
-        .then(setLocales)
-        .then(() =>
-          context?.adapter.getTranslationTask(
-            context.documentId,
-            context.secrets
-          )
-        )
-        .then(setTask)
-        .catch((err) => {
-          let errorMsg;
-          if (err instanceof Error) {
-            errorMsg = err.message;
-          } else {
-            errorMsg = err ? String(err) : null;
-          }
+      const locales = await context.adapter.getLocales(context.secrets);
+      setLocales(locales);
+      try {
+        const task = await context?.adapter.getTranslationTask(
+          context.documentInfo,
+          context.secrets
+        );
+        setTask(task);
+      } catch (err) {
+        let errorMsg;
+        if (err instanceof Error) {
+          errorMsg = err.message;
+        } else {
+          errorMsg = err ? String(err) : null;
+        }
 
-          toast.push({
-            title: `Error creating translation job`,
-            description: errorMsg,
-            status: 'error',
-            closable: true,
-          });
+        toast.push({
+          title: `Error creating translation job`,
+          description: errorMsg,
+          status: 'error',
+          closable: true,
         });
+      }
     }
 
     fetchData();
@@ -60,7 +58,7 @@ export const TranslationView = () => {
 
   const refreshTask = useCallback(async () => {
     await context?.adapter
-      .getTranslationTask(context.documentId, context.secrets)
+      .getTranslationTask(context.documentInfo, context.secrets)
       .then(setTask);
   }, [context, setTask]);
 

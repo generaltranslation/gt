@@ -17,7 +17,7 @@ import { TranslationContext } from './TranslationContext';
 import { TranslationView } from './TranslationView';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
-import { Secrets, TranslationsTabConfigOptions } from '../types';
+import { GTFile, Secrets, TranslationsTabConfigOptions } from '../types';
 
 type TranslationTabProps = {
   document: {
@@ -35,6 +35,8 @@ const TranslationTab = (props: TranslationTabProps) => {
     displayed && displayed._id
       ? (displayed._id.split('drafts.').pop() as string)
       : '';
+
+  const revisionId = displayed && displayed._rev ? displayed._rev : undefined;
 
   const { errors, importTranslation, exportForTranslation } = useMemo(() => {
     const {
@@ -65,7 +67,7 @@ const TranslationTab = (props: TranslationTabProps) => {
 
     const contextImportTranslation = (localeId: string, doc: string) => {
       return importTranslationFunc(
-        documentId,
+        { documentId, versionId: revisionId },
         localeId,
         doc,
         ctx,
@@ -89,9 +91,9 @@ const TranslationTab = (props: TranslationTabProps) => {
       });
     }
 
-    const contextExportForTranslation = (id: string) => {
+    const contextExportForTranslation = (docInfo: GTFile) => {
       return exportTranslationFunc(
-        id,
+        docInfo,
         ctx,
         baseLanguage,
         serializationOptions,
@@ -104,7 +106,7 @@ const TranslationTab = (props: TranslationTabProps) => {
       importTranslation: contextImportTranslation,
       exportForTranslation: contextExportForTranslation,
     };
-  }, [props.options, documentId, client, schema]);
+  }, [props.options, documentId, revisionId, client, schema]);
 
   const { loading, secrets } = useSecrets<Secrets>(
     `${props.options.secretsNamespace || 'translationService'}.secrets`
@@ -157,7 +159,7 @@ const TranslationTab = (props: TranslationTabProps) => {
             {!hasErrors && (
               <TranslationContext.Provider
                 value={{
-                  documentId,
+                  documentInfo: { documentId, versionId: revisionId },
                   secrets,
                   importTranslation,
                   exportForTranslation,

@@ -1,5 +1,14 @@
 import { useCallback, useContext, useState, useEffect } from 'react';
-import { Box, Button, Flex, Text, Stack, useToast } from '@sanity/ui';
+import {
+  Box,
+  Button,
+  Flex,
+  Text,
+  Stack,
+  useToast,
+  Spinner,
+  Switch,
+} from '@sanity/ui';
 import { ArrowTopRightIcon } from '@sanity/icons';
 
 import { TranslationContext } from './TranslationContext';
@@ -23,6 +32,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
   const toast = useToast();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const importFile = useCallback(
     async (localeId: string) => {
@@ -41,7 +51,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
 
       try {
         const translation = await context.adapter.getTranslation(
-          task.taskId,
+          task.document,
           localeId,
           context.secrets
         );
@@ -73,7 +83,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
         });
       }
     },
-    [locales, context, task.taskId, toast]
+    [locales, context, task.document, toast]
   );
 
   const handleRefreshClick = useCallback(async () => {
@@ -84,12 +94,14 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
   }, [refreshTask, setIsRefreshing]);
 
   useEffect(() => {
+    if (!autoRefresh) return;
+
     const interval = setInterval(() => {
       handleRefreshClick();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [handleRefreshClick]);
+  }, [handleRefreshClick, autoRefresh]);
 
   return (
     <Stack space={4}>
@@ -98,7 +110,14 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
           Current Job Progress
         </Text>
 
-        <Flex gap={3}>
+        <Flex gap={3} align='center'>
+          <Flex gap={2} align='center'>
+            <Text size={1}>Auto-refresh</Text>
+            <Switch
+              checked={autoRefresh}
+              onChange={() => setAutoRefresh(!autoRefresh)}
+            />
+          </Flex>
           {task.linkToVendorTask && (
             <Button
               as='a'
@@ -112,13 +131,17 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
               mode='bleed'
             />
           )}
-          <Button
-            fontSize={1}
-            padding={2}
-            text={isRefreshing ? 'Refreshing' : 'Refresh Status'}
-            onClick={handleRefreshClick}
-            disabled={isRefreshing}
-          />
+          {isRefreshing ? (
+            <Spinner />
+          ) : (
+            <Button
+              fontSize={1}
+              padding={2}
+              text='Refresh Status'
+              onClick={handleRefreshClick}
+              disabled={isRefreshing}
+            />
+          )}
         </Flex>
       </Flex>
 
@@ -128,7 +151,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
           const locale = getLocale(localeTask.localeId, locales);
           return (
             <LanguageStatus
-              key={[task.taskId, localeTask.localeId].join('.')}
+              key={[task.document.documentId, localeTask.localeId].join('.')}
               importFile={async () => {
                 await importFile(localeTask.localeId);
               }}

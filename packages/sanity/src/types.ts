@@ -9,8 +9,7 @@ export type TranslationTaskLocaleStatus = {
 };
 
 export type TranslationTask = {
-  taskId: string;
-  documentId: string;
+  document: GTFile;
   locales: TranslationTaskLocaleStatus[];
   linkToVendorTask?: string;
 };
@@ -38,22 +37,27 @@ export type WorkflowIdentifiers = {
   workflowName: string;
 };
 
+export type GTFile = {
+  documentId: string;
+  versionId?: string;
+};
+
 export interface Adapter {
   getLocales: (secrets: Secrets | null) => Promise<TranslationLocale[]>;
   getTranslationTask: (
-    documentId: string,
+    document: GTFile,
     secrets: Secrets | null
   ) => Promise<TranslationTask>;
   createTask: (
-    taskName: string,
-    serializedDocument: SerializedDocument,
+    documentInfo: GTFile,
+    serializedDocument: GTSerializedDocument,
     localeIds: string[],
     secrets: Secrets | null,
     workflowUid?: string,
     callbackUrl?: string
   ) => Promise<TranslationTask>;
   getTranslation: (
-    taskid: string,
+    document: GTFile,
     localeId: string,
     secrets: Secrets | null
   ) => Promise<any | null>;
@@ -64,8 +68,10 @@ export interface TranslationFunctionContext {
   schema: Schema;
 }
 
+export type GTSerializedDocument = Omit<SerializedDocument, 'name'> & GTFile;
+
 export type ExportForTranslation = (
-  id: string,
+  documentInfo: GTFile,
   context: TranslationFunctionContext,
   baseLanguage?: string,
   serializationOptions?: {
@@ -76,10 +82,10 @@ export type ExportForTranslation = (
     >;
   },
   languageField?: string
-) => Promise<SerializedDocument>;
+) => Promise<GTSerializedDocument>;
 
 export type ImportTranslation = (
-  id: string,
+  documentInfo: GTFile,
   localeId: string,
   document: string,
   context: TranslationFunctionContext,

@@ -1,10 +1,13 @@
-import { ExportForTranslation, ImportTranslation } from '../../types';
+import {
+  ExportForTranslation,
+  GTSerializedDocument,
+  ImportTranslation,
+} from '../../types';
 import { SanityDocument } from 'sanity';
 import { findLatestDraft } from '../utils';
 import { documentLevelPatch } from './documentLevelPatch';
 import { legacyDocumentLevelPatch } from './legacyDocumentLevelPatch';
 import {
-  SerializedDocument,
   BaseDocumentDeserializer,
   BaseDocumentSerializer,
   defaultStopTypes,
@@ -15,9 +18,9 @@ import {
 export const baseDocumentLevelConfig = {
   exportForTranslation: async (
     ...params: Parameters<ExportForTranslation>
-  ): Promise<SerializedDocument> => {
+  ): Promise<GTSerializedDocument> => {
     const [
-      id,
+      docInfo,
       context,
       baseLanguage = 'en',
       serializationOptions = {},
@@ -35,7 +38,7 @@ export const baseDocumentLevelConfig = {
         ...(serializationOptions.additionalSerializers ?? {}),
       },
     };
-    const doc = await findLatestDraft(id, client);
+    const doc = await findLatestDraft(docInfo.documentId, client);
     delete doc[languageField];
     const serialized = BaseDocumentSerializer(schema).serializeDocument(
       doc,
@@ -44,14 +47,17 @@ export const baseDocumentLevelConfig = {
       stopTypes,
       serializers
     );
-    serialized.name = id;
-    return serialized;
+    return {
+      content: serialized.content,
+      documentId: docInfo.documentId,
+      versionId: docInfo.versionId,
+    };
   },
   importTranslation: (
     ...params: Parameters<ImportTranslation>
   ): Promise<void> => {
     const [
-      id,
+      docInfo,
       localeId,
       document,
       context,
@@ -77,7 +83,7 @@ export const baseDocumentLevelConfig = {
       blockDeserializers
     ) as SanityDocument;
     return documentLevelPatch(
-      id,
+      docInfo.documentId, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
       deserialized,
       localeId,
       client,
@@ -95,7 +101,7 @@ export const legacyDocumentLevelConfig = {
   importTranslation: (
     ...params: Parameters<ImportTranslation>
   ): Promise<void> => {
-    const [id, localeId, document, context, , serializationOptions = {}] =
+    const [docInfo, localeId, document, context, , serializationOptions = {}] =
       params;
     const { client } = context;
     const deserializers = {
@@ -113,7 +119,12 @@ export const legacyDocumentLevelConfig = {
       deserializers,
       blockDeserializers
     ) as SanityDocument;
-    return legacyDocumentLevelPatch(id, deserialized, localeId, client);
+    return legacyDocumentLevelPatch(
+      docInfo.documentId, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
+      deserialized,
+      localeId,
+      client
+    );
   },
 };
 
