@@ -55,10 +55,17 @@ describe('injectEntry', () => {
 
     it('should inject entry into multi-level nested path', () => {
       const dictionary: Dictionary = {};
-      const sourceDictionary: Dictionary = { user: { profile: { occupation: '' } } };
+      const sourceDictionary: Dictionary = {
+        user: { profile: { occupation: '' } },
+      };
       const entry: DictionaryEntry = 'Software Engineer';
 
-      injectEntry(entry, dictionary, 'user.profile.occupation', sourceDictionary);
+      injectEntry(
+        entry,
+        dictionary,
+        'user.profile.occupation',
+        sourceDictionary
+      );
 
       expect(dictionary).toEqual({
         user: {
@@ -90,10 +97,17 @@ describe('injectEntry', () => {
 
     it('should inject deeply nested entry with metadata', () => {
       const dictionary: Dictionary = {};
-      const sourceDictionary: Dictionary = { app: { messages: { system: { error: '' } } } };
+      const sourceDictionary: Dictionary = {
+        app: { messages: { system: { error: '' } } },
+      };
       const entry: DictionaryEntry = ['Deep message', { $context: 'system' }];
 
-      injectEntry(entry, dictionary, 'app.messages.system.error', sourceDictionary);
+      injectEntry(
+        entry,
+        dictionary,
+        'app.messages.system.error',
+        sourceDictionary
+      );
 
       expect(dictionary).toEqual({
         app: {
@@ -147,7 +161,12 @@ describe('injectEntry', () => {
       const sourceDictionary: Dictionary = { user: { profile: { bio: '' } } };
       const entry: DictionaryEntry = ['Complex entry', { $context: 'test' }];
 
-      const result = injectEntry(entry, dictionary, 'user.profile.bio', sourceDictionary);
+      const result = injectEntry(
+        entry,
+        dictionary,
+        'user.profile.bio',
+        sourceDictionary
+      );
 
       expect(result).toBeUndefined();
       expect(dictionary).toEqual({
