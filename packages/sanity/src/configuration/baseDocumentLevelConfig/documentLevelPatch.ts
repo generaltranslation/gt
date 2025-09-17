@@ -4,8 +4,7 @@ import { BaseDocumentMerger } from 'sanity-naive-html-serializer';
 import { findLatestDraft, findDocumentAtRevision } from '../utils';
 import {
   createI18nDocAndPatchMetadata,
-  getTranslationMetadata,
-  createTranslationMetadata,
+  getOrCreateTranslationMetadata,
   patchI18nDoc,
 } from './helpers';
 import type { GTFile } from '../../types';
@@ -42,20 +41,14 @@ export const documentLevelPatch = async (
   }
 
   /* first, check our metadata to see if a translated document exists
-   * if no metadata exists, we create it
+   * if no metadata exists, we create it atomically
    */
-  let translationMetadata = await getTranslationMetadata(
+  const translationMetadata = await getOrCreateTranslationMetadata(
     docInfo.documentId,
+    baseDoc,
     client,
     baseLanguage
   );
-  if (!translationMetadata) {
-    translationMetadata = await createTranslationMetadata(
-      baseDoc,
-      client,
-      baseLanguage
-    );
-  }
 
   //the id of the translated document should be on the metadata if it exists
   const i18nDocId = (

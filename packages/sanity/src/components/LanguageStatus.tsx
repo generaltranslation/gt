@@ -1,18 +1,20 @@
 import { useCallback, useState } from 'react';
 import { Flex, Card, Text, Grid, Box, Button } from '@sanity/ui';
-import { DownloadIcon } from '@sanity/icons';
+import { DownloadIcon, CheckmarkCircleIcon } from '@sanity/icons';
 import ProgressBar from './ProgressBar';
 
 type LanguageStatusProps = {
   title: string;
   progress: number;
   importFile: () => Promise<void>;
+  isImported?: boolean;
 };
 
 export const LanguageStatus = ({
   title,
   progress,
   importFile,
+  isImported = false,
 }: LanguageStatusProps) => {
   const [isBusy, setIsBusy] = useState(false);
 
@@ -36,14 +38,21 @@ export const LanguageStatus = ({
           </Flex>
         ) : null}
         <Box columnStart={5} columnEnd={6}>
-          <Button
-            style={{ width: `100%` }}
-            mode='ghost'
-            onClick={handleImport}
-            text={isBusy ? 'Importing...' : 'Import'}
-            icon={isBusy ? null : DownloadIcon}
-            disabled={isBusy || !progress || progress < 100}
-          />
+          {isImported ? (
+            <Flex align='center' justify='center' style={{ color: 'green' }}>
+              <CheckmarkCircleIcon />
+              <Text size={1} style={{ marginLeft: '4px' }}>Imported</Text>
+            </Flex>
+          ) : (
+            <Button
+              style={{ width: `100%` }}
+              mode='ghost'
+              onClick={handleImport}
+              text={isBusy ? 'Importing...' : 'Import'}
+              icon={isBusy ? null : DownloadIcon}
+              disabled={isBusy || !progress || progress < 100}
+            />
+          )}
         </Box>
       </Grid>
     </Card>

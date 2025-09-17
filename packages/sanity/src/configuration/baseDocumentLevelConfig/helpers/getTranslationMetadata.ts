@@ -10,6 +10,6 @@ export const getTranslationMetadata = (
         _type == 'translation.metadata' &&
         translations[_key == $baseLanguage][0].value._ref == $id
       ][0]`,
-    { baseLanguage, id }
+    { baseLanguage, id: id.replace('drafts.', '') }
   );
 };

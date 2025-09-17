@@ -9,7 +9,11 @@ import {
   Spinner,
   Switch,
 } from '@sanity/ui';
-import { ArrowTopRightIcon, DownloadIcon } from '@sanity/icons';
+import {
+  ArrowTopRightIcon,
+  DownloadIcon,
+  CheckmarkCircleIcon,
+} from '@sanity/icons';
 
 import { TranslationContext } from './TranslationContext';
 import { TranslationLocale, TranslationTask } from '../types';
@@ -35,7 +39,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
   const [autoImport, setAutoImport] = useState(true);
-  const [hasImportedOnComplete, setHasImportedOnComplete] = useState(false);
+  const [importedFiles, setImportedFiles] = useState<Set<string>>(new Set());
 
   const importFile = useCallback(
     async (localeId: string) => {
@@ -65,6 +69,8 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
 
         await context.importTranslation(sanityId, translation);
 
+        setImportedFiles((prev) => new Set([...prev, localeId]));
+
         toast.push({
           title: `Imported ${localeTitle} translation`,
           status: 'success',
@@ -89,53 +95,80 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
     [locales, context, task.document, toast]
   );
 
+  const checkAndImportCompletedFiles = useCallback(async () => {
+    if (!autoImport || isBusy) return;
+
+    const completedFiles = task.locales.filter(
+      (locale) =>
+        (locale.progress || 0) >= 100 && !importedFiles.has(locale.localeId)
+    );
+
+    if (completedFiles.length === 0) return;
+
+    setIsBusy(true);
+    try {
+      for (const locale of completedFiles) {
+        await importFile(locale.localeId);
+      }
+    } finally {
+      setIsBusy(false);
+    }
+  }, [autoImport, isBusy, task.locales, importedFiles, importFile]);
+
   const handleRefreshClick = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     await refreshTask();
+    await checkAndImportCompletedFiles();
     setIsRefreshing(false);
-  }, [refreshTask, setIsRefreshing]);
-
-  const allProgress =
-    task.locales.reduce((acc, locale) => acc + (locale.progress || 0), 0) /
-    task.locales.length;
+  }, [refreshTask, setIsRefreshing, checkAndImportCompletedFiles]);
 
   const handleImportAll = useCallback(async () => {
-    if (isBusy || allProgress < 100) return;
+    if (isBusy) return;
     setIsBusy(true);
 
     try {
-      await Promise.all(
-        task.locales.map((locale) => importFile(locale.localeId))
+      const filesToImport = task.locales.filter(
+        (locale) => !importedFiles.has(locale.localeId)
       );
-      setHasImportedOnComplete(true);
+      for (const locale of filesToImport) {
+        await importFile(locale.localeId);
+      }
     } finally {
       setIsBusy(false);
     }
-  }, [task.locales, importFile, isBusy, allProgress]);
+  }, [task.locales, importFile, isBusy, importedFiles]);
 
   useEffect(() => {
-    if (!autoRefresh || hasImportedOnComplete) return;
+    if (!autoRefresh || importedFiles.size === task.locales.length) return;
 
-    const interval = setInterval(() => {
-      handleRefreshClick();
+    const interval = setInterval(async () => {
+      await handleRefreshClick();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [handleRefreshClick, autoRefresh]);
+  }, [
+    handleRefreshClick,
+    autoRefresh,
+    importedFiles.size,
+    task.locales.length,
+  ]);
 
   useEffect(() => {
-    if (!autoImport || isBusy || allProgress < 100 || hasImportedOnComplete)
-      return;
-
-    handleImportAll();
-  }, [autoImport, allProgress, handleImportAll, isBusy, hasImportedOnComplete]);
+    checkAndImportCompletedFiles();
+  }, [checkAndImportCompletedFiles, task.locales]);
 
   useEffect(() => {
-    if (allProgress < 100) {
-      setHasImportedOnComplete(false);
-    }
-  }, [allProgress]);
+    setImportedFiles((prev) => {
+      const newSet = new Set<string>();
+      for (const localeId of prev) {
+        if (task.locales.some((locale) => locale.localeId === localeId)) {
+          newSet.add(localeId);
+        }
+      }
+      return newSet;
+    });
+  }, [task.locales]);
 
   return (
     <Stack space={4}>
@@ -187,19 +220,35 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
               }}
               title={locale?.description || localeTask.localeId}
               progress={reportPercent}
+              isImported={importedFiles.has(localeTask.localeId)}
             />
           );
         })}
       </Box>
       <Stack space={3}>
         <Flex gap={3} align='center' justify='space-between'>
-          <Button
-            mode='ghost'
-            onClick={handleImportAll}
-            text={isBusy ? 'Importing...' : 'Import All'}
-            icon={isBusy ? null : DownloadIcon}
-            disabled={isBusy || !allProgress || allProgress < 100}
-          />
+          <Flex gap={2} align='center'>
+            <Button
+              mode='ghost'
+              onClick={handleImportAll}
+              text={isBusy ? 'Importing...' : 'Import All'}
+              icon={isBusy ? null : DownloadIcon}
+              disabled={isBusy || importedFiles.size === task.locales.length}
+            />
+            {importedFiles.size === task.locales.length &&
+              task.locales.length > 0 && (
+                <Flex gap={2} align='center' style={{ color: 'green' }}>
+                  <CheckmarkCircleIcon />
+                  <Text size={1}>All translations imported</Text>
+                </Flex>
+              )}
+            {importedFiles.size > 0 &&
+              importedFiles.size < task.locales.length && (
+                <Text size={1} style={{ color: '#666' }}>
+                  {importedFiles.size}/{task.locales.length} imported
+                </Text>
+              )}
+          </Flex>
           <Flex gap={2} align='center' style={{ whiteSpace: 'nowrap' }}>
             <Text size={1}>Auto-import when complete</Text>
             <Switch
