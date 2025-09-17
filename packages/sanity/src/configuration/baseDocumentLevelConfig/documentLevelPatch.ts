@@ -8,9 +8,10 @@ import {
   createTranslationMetadata,
   patchI18nDoc,
 } from './helpers';
+import type { GTFile } from '../../types';
 
 export const documentLevelPatch = async (
-  documentId: string,
+  docInfo: GTFile,
   translatedFields: SanityDocument,
   localeId: string,
   client: SanityClient,
@@ -29,22 +30,22 @@ export const documentLevelPatch = async (
    * accurately coalesce the translations in case something has
    * changed in the base document since translating
    */
-  if (translatedFields._id && translatedFields._rev) {
+  if (docInfo.documentId && docInfo.versionId) {
     baseDoc = await findDocumentAtRevision(
-      translatedFields._id,
-      translatedFields._rev,
+      docInfo.documentId,
+      docInfo.versionId,
       client
     );
   }
   if (!baseDoc) {
-    baseDoc = await findLatestDraft(documentId, client);
+    baseDoc = await findLatestDraft(docInfo.documentId, client);
   }
 
   /* first, check our metadata to see if a translated document exists
    * if no metadata exists, we create it
    */
   let translationMetadata = await getTranslationMetadata(
-    documentId,
+    docInfo.documentId,
     client,
     baseLanguage
   );
@@ -70,21 +71,21 @@ export const documentLevelPatch = async (
   //any existing target document will serve as our base document
   if (mergeWithTargetLocale && i18nDoc) {
     baseDoc = i18nDoc;
-  } else if (translatedFields._id && translatedFields._rev) {
+  } else if (docInfo.documentId && docInfo.versionId) {
     /*
      * we send over the _rev with our translation file so we can
      * accurately coalesce the translations in case something has
      * changed in the base document since translating
      */
     baseDoc = await findDocumentAtRevision(
-      translatedFields._id,
-      translatedFields._rev,
+      docInfo.documentId,
+      docInfo.versionId,
       client
     );
   }
 
   if (!baseDoc) {
-    baseDoc = await findLatestDraft(documentId, client);
+    baseDoc = await findLatestDraft(docInfo.documentId, client);
   }
   /*
    * we then merge the translation with the base document
@@ -97,7 +98,7 @@ export const documentLevelPatch = async (
   ) as SanityDocumentLike;
 
   if (i18nDoc) {
-    patchI18nDoc(i18nDoc._id, merged, translatedFields, client);
+    patchI18nDoc(docInfo.documentId, merged, translatedFields, client);
   }
   //otherwise, create a new document
   //and add the document reference to the metadata document

@@ -189,7 +189,7 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
   return (
     <Stack paddingTop={4} space={4}>
       <Text as='h2' weight='semibold' size={2}>
-        Create New Translation Job
+        Generate New Translations
       </Text>
       <Stack space={3}>
         <Flex align='center' justify='space-between'>
@@ -242,7 +242,7 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
         onClick={createTask}
         disabled={isBusy || !selectedLocales.length}
         tone='positive'
-        text={isBusy ? 'Creating Job...' : 'Create Job'}
+        text={isBusy ? 'Queueing translations...' : 'Generate Translations'}
       />
     </Stack>
   );

@@ -83,7 +83,7 @@ export const baseDocumentLevelConfig = {
       blockDeserializers
     ) as SanityDocument;
     return documentLevelPatch(
-      docInfo.documentId, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
+      docInfo, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
       deserialized,
       localeId,
       client,
@@ -120,7 +120,7 @@ export const legacyDocumentLevelConfig = {
       blockDeserializers
     ) as SanityDocument;
     return legacyDocumentLevelPatch(
-      docInfo.documentId, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
+      docInfo, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
       deserialized,
       localeId,
       client

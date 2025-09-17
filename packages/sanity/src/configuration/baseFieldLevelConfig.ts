@@ -8,15 +8,16 @@ import {
   customBlockDeserializers,
 } from 'sanity-naive-html-serializer';
 
-import {
+import type {
   ExportForTranslation,
+  GTFile,
   GTSerializedDocument,
   ImportTranslation,
 } from '../types';
 import { findLatestDraft, findDocumentAtRevision } from './utils';
 
 export const fieldLevelPatch = async (
-  documentId: string,
+  docInfo: GTFile,
   translatedFields: SanityDocument,
   localeId: string,
   client: SanityClient,
@@ -24,14 +25,14 @@ export const fieldLevelPatch = async (
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
   let baseDoc: SanityDocument;
-  if (translatedFields._rev && translatedFields._id) {
+  if (docInfo.documentId && docInfo.versionId) {
     baseDoc = await findDocumentAtRevision(
-      translatedFields._id,
-      translatedFields._rev,
+      docInfo.documentId,
+      docInfo.versionId,
       client
     );
   } else {
-    baseDoc = await findLatestDraft(documentId, client);
+    baseDoc = await findLatestDraft(docInfo.documentId, client);
   }
 
   const merged = BaseDocumentMerger.fieldLevelMerge(
@@ -106,7 +107,7 @@ export const baseFieldLevelConfig = {
       blockDeserializers
     ) as SanityDocument;
     return fieldLevelPatch(
-      docInfo.documentId,
+      docInfo,
       deserialized,
       localeId,
       client,

@@ -2,9 +2,10 @@ import { SanityClient, SanityDocument, SanityDocumentLike } from 'sanity';
 import { BaseDocumentMerger } from 'sanity-naive-html-serializer';
 
 import { findLatestDraft, findDocumentAtRevision } from '../utils';
+import type { GTFile } from '../../types';
 
 export const legacyDocumentLevelPatch = async (
-  documentId: string,
+  docInfo: GTFile,
   translatedFields: SanityDocument,
   localeId: string,
   client: SanityClient
@@ -16,15 +17,15 @@ export const legacyDocumentLevelPatch = async (
    * accurately coalesce the translations in case something has
    * changed in the base document since translating
    */
-  if (translatedFields._id && translatedFields._rev) {
+  if (docInfo.documentId && docInfo.versionId) {
     baseDoc = await findDocumentAtRevision(
-      translatedFields._id,
-      translatedFields._rev,
+      docInfo.documentId,
+      docInfo.versionId,
       client
     );
   }
   if (!baseDoc) {
-    baseDoc = await findLatestDraft(documentId, client);
+    baseDoc = await findLatestDraft(docInfo.documentId, client);
   }
 
   /*
@@ -40,7 +41,7 @@ export const legacyDocumentLevelPatch = async (
   /* we now need to check if we have a translated document
    * if not, we create it
    */
-  const targetId = `drafts.${documentId}__i18n_${localeId}`;
+  const targetId = `drafts.${docInfo.documentId}__i18n_${localeId}`;
   const i18nDoc = await findLatestDraft(targetId, client);
   if (i18nDoc) {
     const cleanedMerge: Record<string, any> = {};

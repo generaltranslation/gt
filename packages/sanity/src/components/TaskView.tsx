@@ -9,7 +9,7 @@ import {
   Spinner,
   Switch,
 } from '@sanity/ui';
-import { ArrowTopRightIcon } from '@sanity/icons';
+import { ArrowTopRightIcon, DownloadIcon } from '@sanity/icons';
 
 import { TranslationContext } from './TranslationContext';
 import { TranslationLocale, TranslationTask } from '../types';
@@ -33,6 +33,9 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [isBusy, setIsBusy] = useState(false);
+  const [autoImport, setAutoImport] = useState(true);
+  const [hasImportedOnComplete, setHasImportedOnComplete] = useState(false);
 
   const importFile = useCallback(
     async (localeId: string) => {
@@ -93,8 +96,26 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
     setIsRefreshing(false);
   }, [refreshTask, setIsRefreshing]);
 
+  const allProgress =
+    task.locales.reduce((acc, locale) => acc + (locale.progress || 0), 0) /
+    task.locales.length;
+
+  const handleImportAll = useCallback(async () => {
+    if (isBusy || allProgress < 100) return;
+    setIsBusy(true);
+
+    try {
+      await Promise.all(
+        task.locales.map((locale) => importFile(locale.localeId))
+      );
+      setHasImportedOnComplete(true);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [task.locales, importFile, isBusy, allProgress]);
+
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh || hasImportedOnComplete) return;
 
     const interval = setInterval(() => {
       handleRefreshClick();
@@ -103,11 +124,24 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
     return () => clearInterval(interval);
   }, [handleRefreshClick, autoRefresh]);
 
+  useEffect(() => {
+    if (!autoImport || isBusy || allProgress < 100 || hasImportedOnComplete)
+      return;
+
+    handleImportAll();
+  }, [autoImport, allProgress, handleImportAll, isBusy, hasImportedOnComplete]);
+
+  useEffect(() => {
+    if (allProgress < 100) {
+      setHasImportedOnComplete(false);
+    }
+  }, [allProgress]);
+
   return (
     <Stack space={4}>
       <Flex align='center' justify='space-between'>
         <Text as='h2' weight='semibold' size={2}>
-          Current Job Progress
+          Translation Progress
         </Text>
 
         <Flex gap={3} align='center'>
@@ -131,17 +165,13 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
               mode='bleed'
             />
           )}
-          {isRefreshing ? (
-            <Spinner />
-          ) : (
-            <Button
-              fontSize={1}
-              padding={2}
-              text='Refresh Status'
-              onClick={handleRefreshClick}
-              disabled={isRefreshing}
-            />
-          )}
+          <Button
+            fontSize={1}
+            padding={2}
+            text='Refresh Status'
+            onClick={handleRefreshClick}
+            disabled={isRefreshing}
+          />
         </Flex>
       </Flex>
 
@@ -161,6 +191,25 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
           );
         })}
       </Box>
+      <Stack space={3}>
+        <Flex gap={3} align='center' justify='space-between'>
+          <Button
+            mode='ghost'
+            onClick={handleImportAll}
+            text={isBusy ? 'Importing...' : 'Import All'}
+            icon={isBusy ? null : DownloadIcon}
+            disabled={isBusy || !allProgress || allProgress < 100}
+          />
+          <Flex gap={2} align='center' style={{ whiteSpace: 'nowrap' }}>
+            <Text size={1}>Auto-import when complete</Text>
+            <Switch
+              checked={autoImport}
+              onChange={() => setAutoImport(!autoImport)}
+              disabled={isBusy}
+            />
+          </Flex>
+        </Flex>
+      </Stack>
     </Stack>
   );
 };
