@@ -104,18 +104,20 @@ export function useCreateInternalUseTranslationsObjFunction(
         dictionary: dictionaryTranslationsWithTranslations,
         updateDictionary: updateDictionaryTranslations,
       } = injectTranslations(
-        dictionary as Dictionary,
+        subtreeWithHashes as Dictionary,
         // eslint-disable-next-line no-undef
-        structuredClone(dictionaryTranslations) as Dictionary,
+        structuredClone(translatedSubtree) as Dictionary,
         translations || {},
-        untranslatedEntries
+        untranslatedEntries,
+        idWithParent
       );
       // Inject fallbacks into translation subtree
       const translatedSubtreeWithFallbacks = injectFallbacks(
-        dictionary as Dictionary,
+        subtreeWithHashes as Dictionary,
         // eslint-disable-next-line no-undef
         structuredClone(dictionaryTranslationsWithTranslations) as Dictionary,
-        untranslatedEntries
+        untranslatedEntries,
+        idWithParent
       );
 
       // (3) For each untranslated entry, translate it
@@ -166,14 +168,18 @@ export function useCreateInternalUseTranslationsObjFunction(
       // (4) Update the dictionaryTranslations object and dictionary
       // inject translatedSubtreeWithFallbacks and new subtree objects
       if (updateDictionary) {
-        setDictionary((prev: Dictionary) =>
-          injectAndMerge(prev, subtreeWithHashes, idWithParent)
-        );
+        setTimeout(() => {
+          setDictionary((prev: Dictionary) =>
+            injectAndMerge(prev, subtreeWithHashes, idWithParent)
+          );
+        }, 0);
       }
       if (updateDictionaryTranslations) {
-        setDictionaryTranslations((prev: Dictionary) =>
-          mergeDictionaries(prev, dictionaryTranslationsWithTranslations)
-        );
+        setTimeout(() => {
+          setDictionaryTranslations((prev: Dictionary) =>
+            mergeDictionaries(prev, dictionaryTranslationsWithTranslations)
+          );
+        }, 0);
       }
 
       // (5) Copy the dictionaryTranslations object

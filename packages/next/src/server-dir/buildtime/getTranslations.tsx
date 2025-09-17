@@ -297,18 +297,20 @@ export async function getTranslations(id?: string): Promise<
       dictionary: dictionaryTranslationsWithTranslations,
       updateDictionary: updateDictionaryTranslations,
     } = injectTranslations(
-      dictionary as Dictionary,
+      subtreeWithHashes as Dictionary,
       // eslint-disable-next-line no-undef
-      structuredClone(dictionaryTranslations) as Dictionary,
+      structuredClone(translatedSubtree) as Dictionary,
       translations || {},
-      untranslatedEntries
+      untranslatedEntries,
+      idWithParent
     );
     // Inject fallbacks into translation subtree
     const translatedSubtreeWithFallbacks = injectFallbacks(
-      dictionary as Dictionary,
+      subtreeWithHashes as Dictionary,
       // eslint-disable-next-line no-undef
       structuredClone(dictionaryTranslationsWithTranslations) as Dictionary,
-      untranslatedEntries
+      untranslatedEntries,
+      idWithParent
     );
 
     // (3) For each untranslated entry, translate it

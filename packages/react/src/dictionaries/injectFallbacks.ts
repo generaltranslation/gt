@@ -1,6 +1,7 @@
 import { Dictionary } from '../types/types';
 import { getDictionaryEntry } from './getDictionaryEntry';
 import getEntryAndMetadata from './getEntryAndMetadata';
+import { getSubtree } from './getSubtree';
 import { injectEntry } from './injectEntry';
 import { isDictionaryEntry } from './isDictionaryEntry';
 
@@ -17,13 +18,20 @@ export function injectFallbacks(
   missingTranslations: {
     source: string;
     metadata: { $id: string; $context?: string; $_hash: string };
-  }[]
+  }[],
+  prefixToRemove: string = ''
 ) {
+  const prefixToRemoveArray = prefixToRemove.split('.');
   missingTranslations.forEach(({ source, metadata }) => {
     const { $id } = metadata;
 
+    const id =
+      prefixToRemoveArray.length > 0
+        ? $id.split('.').slice(prefixToRemoveArray.length).join('.')
+        : $id;
+
     // Look up in translations object
-    const translationEntry = getDictionaryEntry(translationsDictionary, $id);
+    const translationEntry = getDictionaryEntry(translationsDictionary, id);
     // Look up in translations dictionary
     let dictTransEntry = undefined;
     if (isDictionaryEntry(translationEntry))
@@ -31,7 +39,7 @@ export function injectFallbacks(
     // Fall back to source
     const value = dictTransEntry || source;
 
-    injectEntry(value as string, translationsDictionary, $id, dictionary);
+    injectEntry(value as string, translationsDictionary, id, dictionary);
   });
   return translationsDictionary;
 }

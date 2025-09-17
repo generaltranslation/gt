@@ -1,6 +1,7 @@
 import { Dictionary, Translations } from '../types/types';
 import { getDictionaryEntry } from './getDictionaryEntry';
 import getEntryAndMetadata from './getEntryAndMetadata';
+import { getSubtree } from './getSubtree';
 import { injectEntry } from './injectEntry';
 import { isDictionaryEntry } from './isDictionaryEntry';
 
@@ -18,14 +19,21 @@ export function injectTranslations(
   missingTranslations: {
     source: string;
     metadata: { $id: string; $context?: string; $_hash: string };
-  }[]
+  }[],
+  prefixToRemove: string = ''
 ): { dictionary: Dictionary; updateDictionary: boolean } {
   let updateDictionary = false;
+  const prefixToRemoveArray = prefixToRemove.split('.');
   missingTranslations.forEach(({ metadata }) => {
     const { $_hash, $id } = metadata;
 
+    const id =
+      prefixToRemoveArray.length > 0
+        ? $id.split('.').slice(prefixToRemoveArray.length).join('.')
+        : $id;
+
     // Look up in translations object
-    const translationEntry = getDictionaryEntry(translationsDictionary, $id);
+    const translationEntry = getDictionaryEntry(translationsDictionary, id);
     // Look up in translations dictionary
     let dictTransEntry = undefined;
     if (isDictionaryEntry(translationEntry))
@@ -36,8 +44,11 @@ export function injectTranslations(
       return;
     }
 
-    injectEntry(value as string, translationsDictionary, $id, dictionary);
+    injectEntry(value as string, translationsDictionary, id, dictionary);
     updateDictionary = true;
   });
-  return { dictionary: translationsDictionary, updateDictionary };
+  return {
+    dictionary: translationsDictionary as Dictionary,
+    updateDictionary,
+  };
 }
