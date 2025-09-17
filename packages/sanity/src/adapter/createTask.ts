@@ -1,6 +1,8 @@
-import { Adapter, Secrets, SerializedDocument } from 'sanity-translations-tab';
+import type { Adapter, Secrets } from '../types';
+import type { SerializedDocument } from 'sanity-naive-html-serializer';
 import { getTranslationTask } from './getTranslationTask';
-import { gt } from './core';
+import { gt, overrideConfig } from './core';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 // note: this function is used to create a new translation task
 // uploads files & calls the getTranslationTask function
@@ -13,10 +15,7 @@ export const createTask: Adapter['createTask'] = async (
   callbackUrl?: string
 ) => {
   const fileName = `sanity-${serializedDocument.name}`;
-  gt.setConfig({
-    projectId: secrets?.project,
-    apiKey: secrets?.secret,
-  });
+  overrideConfig(secrets);
   const uploadResult = await gt.uploadSourceFiles(
     [
       {
@@ -25,16 +24,16 @@ export const createTask: Adapter['createTask'] = async (
           fileName,
           fileId: serializedDocument.name,
           fileFormat: 'HTML',
-          locale: 'en',
+          locale: gt.sourceLocale || libraryDefaultLocale,
         },
       },
     ],
     {
-      sourceLocale: 'en',
+      sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     }
   );
   const enqueueResult = await gt.enqueueFiles(uploadResult.uploadedFiles, {
-    sourceLocale: 'en',
+    sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     targetLocales: localeIds,
   });
   const task = await getTranslationTask(serializedDocument.name, secrets);

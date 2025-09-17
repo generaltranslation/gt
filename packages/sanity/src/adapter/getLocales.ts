@@ -1,19 +1,11 @@
-import { Adapter, Secrets } from 'sanity-translations-tab';
-import { gt } from './core';
+import type { Adapter, Secrets } from '../types';
+import { gt, gtConfig, overrideConfig } from './core';
 
 // note: this function is used to get the available locales for a project
 export const getLocales: Adapter['getLocales'] = async (
   secrets: Secrets | null
 ) => {
-  if (!secrets?.project) {
-    return [];
-  }
-  gt.setConfig({
-    projectId: secrets?.project,
-    apiKey: secrets?.secret,
-  });
-  const data = await gt.getProjectData(secrets?.project);
-  return data.currentLocales.map((locale: string) => ({
+  return gtConfig.getLocales().map((locale: string) => ({
     localeId: locale,
     description: gt.getLocaleProperties(locale).languageName,
     enabled: true,

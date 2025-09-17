@@ -1,5 +1,5 @@
-import { Adapter, Secrets } from 'sanity-translations-tab';
-import { gt } from './core';
+import type { Adapter, Secrets } from '../types';
+import { gt, overrideConfig } from './core';
 
 // note: this function is used to get the status of a current translation task
 export const getTranslationTask: Adapter['getTranslationTask'] = async (
@@ -13,10 +13,7 @@ export const getTranslationTask: Adapter['getTranslationTask'] = async (
       locales: [],
     };
   }
-  gt.setConfig({
-    projectId: secrets?.project,
-    apiKey: secrets?.secret,
-  });
+  overrideConfig(secrets);
   const task = await gt.querySourceFile({
     fileId: documentId,
   });

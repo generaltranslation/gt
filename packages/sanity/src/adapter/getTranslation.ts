@@ -1,5 +1,5 @@
-import { Adapter, Secrets } from 'sanity-translations-tab';
-import { gt } from './core';
+import type { Adapter, Secrets } from '../types';
+import { gt, overrideConfig } from './core';
 
 // note: downloads the translation for a given task and locale
 export const getTranslation: Adapter['getTranslation'] = async (
@@ -10,10 +10,7 @@ export const getTranslation: Adapter['getTranslation'] = async (
   if (!secrets) {
     return '';
   }
-  gt.setConfig({
-    projectId: secrets?.project,
-    apiKey: secrets?.secret,
-  });
+  overrideConfig(secrets);
   const text = await gt.downloadTranslatedFile({
     fileId: taskId,
     locale: localeId,
