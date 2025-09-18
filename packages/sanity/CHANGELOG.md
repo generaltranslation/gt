@@ -1,4 +1,4 @@
-# @generaltranslation/sanity
+# gt-sanity
 
 ## 0.0.4
 

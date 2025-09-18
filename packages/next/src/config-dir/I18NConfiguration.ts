@@ -393,6 +393,15 @@ export default class I18NConfiguration {
     return await this._dictionaryManager?.getDictionary(locale);
   }
 
+  /**
+   * Set the dictionary for a given locale
+   * @param {string} locale - The locale code.
+   * @param {Dictionary} dictionary - The dictionary data.
+   */
+  setDictionaryTranslations(locale: string, dictionary: Dictionary) {
+    this._dictionaryManager?.setDictionary(locale, dictionary);
+  }
+
   // ----- CACHED TRANSLATIONS ----- //
 
   /**

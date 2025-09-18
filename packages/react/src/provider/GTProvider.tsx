@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -22,6 +22,7 @@ import { GT, resolveAliasLocale } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useRegionState } from './hooks/useRegionState';
+import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -129,8 +130,14 @@ export default function GTProvider({
 
   // ---------- LOAD DICTIONARY ---------- //
 
-  const dictionary = useLoadDictionary({
+  const {
+    dictionary,
+    setDictionary,
+    dictionaryTranslations,
+    setDictionaryTranslations,
+  } = useLoadDictionary({
     _dictionary,
+    _dictionaryTranslations: {},
     loadDictionary,
     locale,
     defaultLocale,
@@ -199,6 +206,21 @@ export default function GTProvider({
 
   const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
     dictionary,
+    dictionaryTranslations,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation
+  );
+
+  const _dictionaryObjFunction = useCreateInternalUseTranslationsObjFunction(
+    dictionary || {},
+    dictionaryTranslations || {},
+    setDictionary,
+    setDictionaryTranslations,
     translations,
     locale,
     defaultLocale,
@@ -206,7 +228,7 @@ export default function GTProvider({
     dialectTranslationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
-    renderSettings
+    _dictionaryFunction
   );
 
   // ----- RETURN ----- //
@@ -225,6 +247,7 @@ export default function GTProvider({
         _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,
+        _dictionaryObjFunction,
         developmentApiEnabled,
         locale,
         locales: approvedLocales,

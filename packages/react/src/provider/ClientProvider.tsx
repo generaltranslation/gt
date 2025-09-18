@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
-import { Translations } from '../types/types';
+import { Dictionary, Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
@@ -13,11 +13,13 @@ import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from '../utils/cookies';
+import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
   children,
-  dictionary,
+  dictionary: _dictionary,
+  dictionaryTranslations: _dictionaryTranslations,
   translations: _translations,
   locale: _locale,
   region: _region,
@@ -63,6 +65,12 @@ export default function ClientProvider({
       document.cookie = `${localeCookieName}=;path=/`;
     }
   }, [locale, localeCookieName]);
+
+  // ----- DICTIONARY TRANSLATIONS STATE ----- //
+
+  const [dictionaryTranslations, setDictionaryTranslations] =
+    useState<Dictionary>(_dictionaryTranslations || {});
+  const [dictionary, setDictionary] = useState<Dictionary>(_dictionary || {});
 
   // ----- REGION STATE ----- //
 
@@ -153,10 +161,25 @@ export default function ClientProvider({
     registerIcuForTranslation,
   });
 
-  // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
+  // ---------- DICTIONARY FUNCTIONS ---------- //
 
   const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
     dictionary,
+    dictionaryTranslations,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation
+  );
+
+  const _dictionaryObjFunction = useCreateInternalUseTranslationsObjFunction(
+    dictionary,
+    dictionaryTranslations,
+    setDictionary,
+    setDictionaryTranslations,
     translations,
     locale,
     defaultLocale,
@@ -164,7 +187,7 @@ export default function ClientProvider({
     dialectTranslationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
-    renderSettings
+    _dictionaryFunction
   );
 
   // ---------- RENDER LOGIC ---------- //
@@ -184,6 +207,7 @@ export default function ClientProvider({
         _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,
+        _dictionaryObjFunction,
         locale,
         locales,
         defaultLocale,

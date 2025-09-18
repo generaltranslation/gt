@@ -49,6 +49,15 @@ export class DictionaryManager {
 
     return result;
   }
+
+  /**
+   * @description Sets the dictionary for a given locale
+   * @param {string} locale - The locale code.
+   * @param {Dictionary} dictionary - The dictionary data.
+   */
+  setDictionary(locale: string, dictionary: Dictionary) {
+    this.dictionaryMap.set(locale, dictionary);
+  }
 }
 
 const dictionaryManager = new DictionaryManager();

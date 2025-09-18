@@ -39,7 +39,7 @@ jobs:
         run: npm run lint
 
       - name: Build packages
-        run: npm run build -- --filter="!@generaltranslation/sanity"
+        run: npm run build -- --filter="!gt-sanity"
 
       - name: Run tests
         run: npm run test
@@ -70,7 +70,7 @@ jobs:
         run: npm install && npm install lightningcss
 
       - name: Build packages
-        run: npm run build -- --filter="!@generaltranslation/sanity"
+        run: npm run build -- --filter="!gt-sanity"
 
       - name: Link packages (Unix)
         if: runner.os != 'Windows'

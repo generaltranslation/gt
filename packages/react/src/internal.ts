@@ -47,6 +47,15 @@ import {
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { GTProp } from 'generaltranslation/types';
 import { reactHasUse } from './promises/reactHasUse';
+import { getSubtree, getSubtreeWithCreation } from './dictionaries/getSubtree';
+import { injectEntry } from './dictionaries/injectEntry';
+import { isDictionaryEntry } from './dictionaries/isDictionaryEntry';
+import { stripMetadataFromEntries } from './dictionaries/stripMetadataFromEntries';
+import { injectHashes } from './dictionaries/injectHashes';
+import { injectTranslations } from './dictionaries/injectTranslations';
+import { injectFallbacks } from './dictionaries/injectFallbacks';
+import { injectAndMerge } from './dictionaries/injectAndMerge';
+import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 
 export {
   addGTIdentifier,
@@ -94,4 +103,14 @@ export {
   decodeOptions,
   MFunctionType,
   TFunctionType,
+  getSubtree,
+  getSubtreeWithCreation,
+  injectEntry,
+  isDictionaryEntry,
+  stripMetadataFromEntries,
+  injectHashes,
+  injectTranslations,
+  injectFallbacks,
+  injectAndMerge,
+  collectUntranslatedEntries,
 };

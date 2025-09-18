@@ -1,11 +1,11 @@
-# @generaltranslation/sanity
+# gt-sanity
 
 > This is a **Sanity Studio v3** plugin.
 
 ## Installation
 
 ```sh
-npm install @generaltranslation/sanity
+npm install gt-sanity
 ```
 
 Then, create a [GT project](https://generaltranslation.com/dashboard) and get a production API key and project ID.
@@ -49,7 +49,7 @@ Add it as a plugin in `sanity.config.ts` (or .js):
 
 ```ts
 import { defineConfig } from 'sanity';
-import { gtPlugin } from '@generaltranslation/sanity';
+import { gtPlugin } from 'gt-sanity';
 
 export default defineConfig({
   //...
@@ -68,8 +68,8 @@ Add the Translation View to your document structure:
 ```ts
 // ./structure.ts
 import type { DefaultDocumentNodeResolver } from 'sanity/structure';
-import { TranslationsTab } from '@generaltranslation/sanity';
-import { defaultDocumentLevelConfig } from '@generaltranslation/sanity';
+import { TranslationsTab } from 'gt-sanity';
+import { defaultDocumentLevelConfig } from 'gt-sanity';
 export const defaultDocumentNode: DefaultDocumentNodeResolver = (
   S,
   { schemaType }

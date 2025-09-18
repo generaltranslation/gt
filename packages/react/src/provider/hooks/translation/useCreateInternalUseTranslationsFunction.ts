@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import {
   Dictionary,
   DictionaryTranslationOptions,
-  RenderMethod,
   Translations,
 } from '../../../types/types';
 import {
@@ -20,14 +19,14 @@ import { TranslateIcuCallback } from '../../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
+  dictionaryTranslations: Dictionary | undefined,
   translations: Translations | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
   developmentApiEnabled: boolean,
-  registerIcuForTranslation: TranslateIcuCallback,
-  renderSettings: { method: RenderMethod }
+  registerIcuForTranslation: TranslateIcuCallback
 ) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
@@ -69,6 +68,19 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check: translation not required
       if (!translationRequired) return renderMessage(entry, [defaultLocale]);
+
+      // ----- CHECK DICTIONARY TRANSLATIONS ----- //
+      const dictionaryTranslation = getDictionaryEntry(
+        dictionaryTranslations || {},
+        id
+      );
+      if (
+        dictionaryTranslation &&
+        isValidDictionaryEntry(dictionaryTranslation)
+      ) {
+        const { entry } = getEntryAndMetadata(dictionaryTranslation);
+        return renderMessage(entry, [locale, defaultLocale]);
+      }
 
       // ----- CHECK TRANSLATIONS ----- //
 
@@ -123,6 +135,7 @@ export default function useCreateInternalUseTranslationsFunction(
     },
     [
       dictionary,
+      dictionaryTranslations,
       translations,
       locale,
       defaultLocale,

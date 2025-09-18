@@ -73,6 +73,18 @@ export const invalidLocalesError = (locales: string[]) =>
 export const invalidCanonicalLocalesError = (locales: string[]) =>
   `gt-react Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
 
+export const createEmptyIdError = () =>
+  `gt-react Error: You cannot provide an empty id to t.obj()`;
+
+export const createSubtreeNotFoundError = (id: string) =>
+  `gt-react Error: Dictionary subtree not found for id: "${id}"`;
+
+export const createDictionaryEntryError = () =>
+  `gt-react Error: Cannot inject and merge a dictionary entry`;
+
+export const createCannotInjectDictionaryEntryError = () =>
+  `gt-react Error: Cannot inject and merge a dictionary entry`;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
