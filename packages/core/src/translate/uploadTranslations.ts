@@ -11,6 +11,7 @@ import {
   UploadFilesResponse,
   RequiredUploadFilesOptions,
 } from '../types-dir/uploadFiles';
+import { encode } from '../utils/base64';
 
 /**
  * @internal
@@ -34,18 +35,22 @@ export default async function _uploadTranslations(
   const body = {
     data: files.map(({ source, translations }) => ({
       source: {
-        content: Buffer.from(source.content).toString('base64'),
+        content: encode(source.content),
         fileName: source.fileName,
         fileFormat: source.fileFormat,
         locale: source.locale,
         ...(source.dataFormat && { dataFormat: source.dataFormat }),
+        ...(source.fileId && { fileId: source.fileId }),
+        ...(source.versionId && { versionId: source.versionId }),
       },
       translations: translations.map((t) => ({
-        content: Buffer.from(t.content).toString('base64'),
+        content: encode(t.content),
         fileName: t.fileName,
         fileFormat: t.fileFormat,
-        ...(t.dataFormat && { dataFormat: t.dataFormat }),
         locale: t.locale,
+        ...(t.dataFormat && { dataFormat: t.dataFormat }),
+        ...(t.fileId && { fileId: t.fileId }),
+        ...(t.versionId && { versionId: t.versionId }),
       })),
     })),
     sourceLocale: options.sourceLocale,

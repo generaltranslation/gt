@@ -470,7 +470,7 @@ More content.
       expect(result.addedIds).toHaveLength(4);
 
       expect(result.content).toContain(
-        '## Code & Design Workflow! \\{#code-design-workflow\\}'
+        '## Code &amp; Design Workflow! \\{#code-design-workflow\\}'
       );
       expect(result.content).toContain(
         '## API Reference (v2.0) \\{#api-reference-v20\\}'
@@ -478,7 +478,7 @@ More content.
       expect(result.content).toContain(
         '## Getting Started: Step 1 \\{#getting-started-step-1\\}'
       );
-      expect(result.content).toContain("## What's New? \\{#whats-new\\}");
+      expect(result.content).toContain('## What&#39;s New? \\{#whats-new\\}');
     });
 
     it('should handle special characters in Mintlify mode', () => {

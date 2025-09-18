@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { unified } from 'unified';
 import remarkStringify from 'remark-stringify';
-import { escapeHtmlInTextNodes } from '../escapeHtml.js';
+import escapeHtmlInTextNodes from '../index';
 import type { Root, Text, Paragraph, Code, InlineCode } from 'mdast';
 
 describe('escapeHtmlInTextNodes', () => {
@@ -306,7 +306,7 @@ describe('escapeHtmlInTextNodes', () => {
       expect(result).toContain('`code <variable> & "value"`'); // Code span not escaped
     });
 
-    it('should not escape in headings', () => {
+    it('should escape in headings', () => {
       const tree: Root = {
         type: 'root',
         children: [
@@ -323,12 +323,10 @@ describe('escapeHtmlInTextNodes', () => {
         ],
       };
       const result = processAst(tree);
-      expect(result).toContain('# Heading with <variable> & "quotes"');
-      expect(result).toContain('## Subheading <test> & more');
-      expect(result).not.toContain('&lt;variable&gt;');
-      expect(result).not.toContain('&lt;test&gt;');
-      expect(result).not.toContain('&amp;');
-      expect(result).not.toContain('&quot;');
+      expect(result).toContain(
+        '# Heading with &lt;variable&gt; &amp; &quot;quotes&quot;'
+      );
+      expect(result).toContain('Subheading &lt;test&gt; &amp; more');
     });
   });
 
@@ -368,37 +366,6 @@ describe('escapeHtmlInTextNodes', () => {
   });
 
   describe('markdown context preservation', () => {
-    it('should preserve markdown formatting while escaping HTML characters', () => {
-      const tree: Root = {
-        type: 'root',
-        children: [
-          {
-            type: 'heading',
-            depth: 1,
-            children: [createTextNode('Heading with <placeholder> & "quotes"')],
-          },
-          createParagraph([
-            {
-              type: 'strong',
-              children: [createTextNode('Bold <text> & more')],
-            },
-            createTextNode(' and '),
-            {
-              type: 'emphasis',
-              children: [createTextNode('italic <content> & "test"')],
-            },
-            createTextNode('.'),
-          ]),
-        ],
-      };
-      const result = processAst(tree);
-      // Headings are now in IGNORE_PARENTS, so HTML characters are not escaped in headings
-      expect(result).toContain('# Heading with <placeholder> & "quotes"');
-      // But they should be escaped in other text nodes
-      expect(result).toContain('&lt;text&gt; &amp; more');
-      expect(result).toContain('&lt;content&gt; &amp; &quot;test&quot;');
-    });
-
     it('should handle HTML characters in lists', () => {
       const tree: Root = {
         type: 'root',

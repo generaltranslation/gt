@@ -9,6 +9,7 @@ import {
   DownloadFileBatchResult,
 } from '../types-dir/downloadFileBatch';
 import generateRequestHeaders from './utils/generateRequestHeaders';
+import { decode } from '../utils/base64';
 
 /**
  * @internal
@@ -50,7 +51,7 @@ export default async function _downloadFileBatch(
   // convert from base64 to string
   const files = result.files.map((file) => ({
     ...file,
-    data: Buffer.from(file.data, 'base64').toString('utf-8'),
+    data: decode(file.data),
   }));
   return { ...result, files } as DownloadFileBatchResult;
 }
