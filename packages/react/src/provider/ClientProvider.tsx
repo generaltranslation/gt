@@ -195,8 +195,6 @@ export default function ClientProvider({
   // Block rendering until all translations are resolved (IF YOU REMOVE THIS YOU WILL BE FIRED)
   const display = !!(!translationRequired || translations) && locale;
 
-  console.log(JSON.stringify(dictionaryTranslations, null, 2));
-
   return (
     <GTContext.Provider
       value={{

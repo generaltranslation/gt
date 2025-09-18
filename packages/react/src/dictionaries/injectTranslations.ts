@@ -23,7 +23,7 @@ export function injectTranslations(
   prefixToRemove: string = ''
 ): { dictionary: Dictionary; updateDictionary: boolean } {
   let updateDictionary = false;
-  const prefixToRemoveArray = prefixToRemove.split('.');
+  const prefixToRemoveArray = prefixToRemove ? prefixToRemove.split('.') : [];
   missingTranslations.forEach(({ metadata }) => {
     const { $_hash, $id } = metadata;
 

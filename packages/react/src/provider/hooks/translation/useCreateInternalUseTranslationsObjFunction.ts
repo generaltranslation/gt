@@ -1,10 +1,8 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { TranslateIcuCallback } from '../../../types/runtime';
 import {
   Dictionary,
-  DictionaryEntry,
   DictionaryTranslationOptions,
-  TranslatedChild,
   TranslatedChildren,
   Translations,
 } from '../../../types/types';

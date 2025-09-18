@@ -19,7 +19,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -44,7 +45,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -69,7 +71,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -100,7 +103,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -138,7 +142,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -170,7 +175,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -216,7 +222,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -250,7 +257,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -275,7 +283,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -303,7 +312,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -326,7 +336,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -354,7 +365,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -380,7 +392,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toBe(translationsDictionary);
@@ -440,7 +453,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({
@@ -480,7 +494,8 @@ describe('injectFallbacks', () => {
       const result = injectFallbacks(
         dictionary,
         translationsDictionary,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result).toEqual({

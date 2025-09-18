@@ -21,7 +21,7 @@ export function injectFallbacks(
   }[],
   prefixToRemove: string = ''
 ) {
-  const prefixToRemoveArray = prefixToRemove.split('.');
+  const prefixToRemoveArray = prefixToRemove ? prefixToRemove.split('.') : [];
   missingTranslations.forEach(({ source, metadata }) => {
     const { $id } = metadata;
 

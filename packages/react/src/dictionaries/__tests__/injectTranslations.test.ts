@@ -23,7 +23,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -57,7 +58,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -88,7 +90,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -122,7 +125,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -156,7 +160,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -202,7 +207,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -250,7 +256,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -283,7 +290,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({});
@@ -314,7 +322,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -354,7 +363,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -391,7 +401,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -429,7 +440,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -460,7 +472,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -493,7 +506,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -527,7 +541,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -555,7 +570,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -581,7 +597,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({});
@@ -609,7 +626,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toBe(translationsDictionary);
@@ -673,7 +691,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       expect(result.dictionary).toEqual({
@@ -711,7 +730,8 @@ describe('injectTranslations', () => {
         dictionary,
         translationsDictionary,
         translations,
-        missingTranslations
+        missingTranslations,
+        ''
       );
 
       // Should prefer hash-based translation over existing
