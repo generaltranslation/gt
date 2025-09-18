@@ -269,14 +269,6 @@ export async function getTranslations(id?: string): Promise<
       sourceDictionary: dictionaryTranslations,
     });
 
-    // // (2) Inject hashes into subtree and inject translation into translation subtree and get untransalted entries
-    // const { untranslatedEntries } = constructTranslationSubtree(
-    //   subtree as Dictionary,
-    //   subTreeTranslation as Dictionary,
-    //   translations || {},
-    //   idWithParent
-    // );
-
     // (2) Calculate subtreeWithHashes, dictionaryTranslationsWithTranslations, translatedSubtreeWithFallbacks, and untranslatedEntries
     // Note: the following four operations can technically be combined into one traversal, but this
     // strategy is much more readable and much easier to test/debug
