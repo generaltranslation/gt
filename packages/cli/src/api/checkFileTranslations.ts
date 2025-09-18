@@ -33,12 +33,16 @@ export async function checkFileTranslations(
   locales: string[],
   timeoutDuration: number,
   resolveOutputPath: (sourcePath: string, locale: string) => string | null,
-  options: Settings
+  options: Settings,
+  forceRetranslation?: boolean
 ) {
   const startTime = Date.now();
   console.log();
   const spinner = await createOraSpinner();
-  spinner.start('Waiting for translation...');
+  const spinnerMessage = forceRetranslation
+    ? 'Waiting for retranslation...'
+    : 'Waiting for translation...';
+  spinner.start(spinnerMessage);
 
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
@@ -48,18 +52,20 @@ export async function checkFileTranslations(
     failed: new Set<string>(),
     skipped: new Set<string>(),
   };
-  // Do first check immediately
-  const initialCheck = await checkTranslationDeployment(
-    fileQueryData,
-    downloadStatus,
-    spinner,
-    resolveOutputPath,
-    options
-  );
+  // Do first check immediately, but skip if force retranslation is enabled
+  if (!forceRetranslation) {
+    const initialCheck = await checkTranslationDeployment(
+      fileQueryData,
+      downloadStatus,
+      spinner,
+      resolveOutputPath,
+      options
+    );
 
-  if (initialCheck) {
-    spinner.succeed(chalk.green('Files translated!'));
-    return true;
+    if (initialCheck) {
+      spinner.succeed(chalk.green('Files translated!'));
+      return true;
+    }
   }
 
   // Calculate time until next 5-second interval since startTime

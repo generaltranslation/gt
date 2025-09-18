@@ -35,7 +35,8 @@ export async function handleTranslate(
       settings.locales,
       options.timeout,
       (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-      settings
+      settings,
+      options.force
     );
   }
 }
@@ -69,7 +70,8 @@ export async function handleDownload(
     settings.locales,
     options.timeout,
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-    settings
+    settings,
+    false // force is not applicable for downloading staged translations
   );
 }
 
