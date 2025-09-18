@@ -1,4 +1,10 @@
-# @generaltranslation/sanity
+# gt-sanity
+
+## 0.0.4
+
+### Patch Changes
+
+- [#667](https://github.com/generaltranslation/gt/pull/667) [`13bbcd0`](https://github.com/generaltranslation/gt/commit/13bbcd01dda6a2fe2ff686da242196c63955aff7) Thanks [@brian-lou](https://github.com/brian-lou)! - Improve QOL sanity plugin experience
 
 ## 0.0.3
 

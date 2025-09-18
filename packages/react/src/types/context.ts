@@ -6,6 +6,8 @@ import {
   _Messages,
   TFunctionType,
   MFunctionType,
+  Dictionary,
+  DictionaryEntry,
 } from './types';
 import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
 import { GT } from 'generaltranslation';
@@ -30,6 +32,11 @@ export type GTContextType = {
     id: string,
     options?: DictionaryTranslationOptions
   ) => string;
+  _dictionaryObjFunction: (
+    id: string,
+    idWithParent: string,
+    options?: DictionaryTranslationOptions
+  ) => Dictionary | DictionaryEntry | string | undefined;
   developmentApiEnabled: boolean;
   locale: string;
   locales: string[];

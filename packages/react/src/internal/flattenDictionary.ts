@@ -1,4 +1,9 @@
-import { Dictionary, FlattenedDictionary } from '../types/types';
+import { get } from '../dictionaries/indexDict';
+import {
+  Dictionary,
+  DictionaryEntry,
+  FlattenedDictionary,
+} from '../types/types';
 
 const createDuplicateKeyError = (key: string) =>
   `Duplicate key found in dictionary: "${key}"`;
@@ -20,11 +25,14 @@ export default function flattenDictionary(
     if (dictionary.hasOwnProperty(key)) {
       const newKey = prefix ? `${prefix}.${key}` : key;
       if (
-        typeof dictionary[key] === 'object' &&
-        dictionary[key] !== null &&
-        !Array.isArray(dictionary[key])
+        typeof get(dictionary, key) === 'object' &&
+        get(dictionary, key) !== null &&
+        !Array.isArray(get(dictionary, key))
       ) {
-        const nestedFlattened = flattenDictionary(dictionary[key], newKey);
+        const nestedFlattened = flattenDictionary(
+          get(dictionary, key) as Dictionary,
+          newKey
+        );
         for (const flatKey in nestedFlattened) {
           if (flattened.hasOwnProperty(flatKey)) {
             throw new Error(createDuplicateKeyError(flatKey));
@@ -35,7 +43,7 @@ export default function flattenDictionary(
         if (flattened.hasOwnProperty(newKey)) {
           throw new Error(createDuplicateKeyError(newKey));
         }
-        flattened[newKey] = dictionary[key];
+        flattened[newKey] = get(dictionary, key) as DictionaryEntry;
       }
     }
   }

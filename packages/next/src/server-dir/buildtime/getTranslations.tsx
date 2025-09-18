@@ -1,8 +1,20 @@
 import {
+  collectUntranslatedEntries,
+  Dictionary,
+  DictionaryEntry,
   DictionaryTranslationOptions,
   getDictionaryEntry,
   getEntryAndMetadata,
+  getSubtreeWithCreation,
+  injectAndMerge,
+  injectEntry,
+  injectFallbacks,
+  injectHashes,
+  injectTranslations,
+  isDictionaryEntry,
   isValidDictionaryEntry,
+  mergeDictionaries,
+  stripMetadataFromEntries,
 } from 'gt-react/internal';
 
 import getDictionary from '../../dictionary/getDictionary';
@@ -18,6 +30,8 @@ import { getLocale } from '../../request/getLocale';
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
+import { getSubtree } from 'gt-react/internal';
+import setDictionary from '../../dictionary/setDictionary';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -32,9 +46,14 @@ import use from '../../utils/use';
  * const t = await getTranslations();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export async function getTranslations(
-  id?: string
-): Promise<(id: string, options?: DictionaryTranslationOptions) => string> {
+export async function getTranslations(id?: string): Promise<
+  ((id: string, options?: DictionaryTranslationOptions) => string) & {
+    obj: (
+      id: string,
+      options?: Record<string, any>
+    ) => Dictionary | DictionaryEntry | string | undefined;
+  }
+> {
   // ---------- SET UP ---------- //
 
   const getId = (suffix: string) => {
@@ -48,13 +67,12 @@ export async function getTranslations(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
-  const dictionaryTranslations = translationRequired
+  let dictionaryTranslations = translationRequired
     ? await I18NConfig.getDictionaryTranslations(locale)
     : undefined;
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
-  const renderSettings = I18NConfig.getRenderSettings();
 
   // ---------- THE t() METHOD ---------- //
 
@@ -96,7 +114,8 @@ export async function getTranslations(
     }
 
     // Get entry and metadata
-    const { entry, metadata } = getEntryAndMetadata(value);
+    // eslint-disable-next-line prefer-const
+    let { entry, metadata } = getEntryAndMetadata(value);
 
     // Validate entry
     if (!entry || typeof entry !== 'string') return '';
@@ -141,13 +160,19 @@ export async function getTranslations(
 
     let translationEntry = translations?.[id];
     let hash = '';
-    const getHash = () =>
-      hashSource({
+    const getHash = () => {
+      if (metadata?.$_hash) return metadata.$_hash;
+      const hash = hashSource({
         source: entry,
         ...(metadata?.$context && { context: metadata.$context }),
         id,
         dataFormat: 'ICU',
       });
+      // Inject hash if not there yet
+      metadata = { ...metadata, $_hash: hash };
+      injectEntry([entry, metadata], dictionary, id, dictionary);
+      return hash;
+    };
     if (!translationEntry) {
       hash = getHash();
       translationEntry = translations?.[hash];
@@ -178,7 +203,7 @@ export async function getTranslations(
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
           id,
-          hash: hash || getHash(),
+          hash: getHash(),
         },
       }).then((result) => {
         // Log the translation result for debugging purposes
@@ -193,6 +218,9 @@ export async function getTranslations(
             ]),
           })
         );
+
+        // inject
+        injectEntry(result as string, dictionaryTranslations!, id, dictionary);
       });
     } catch (error) {
       console.warn(error);
@@ -200,6 +228,130 @@ export async function getTranslations(
 
     // Default is returning source, rather than returning a loading state
     return renderContent(entry, [defaultLocale]);
+  };
+
+  /**
+   * @description A function that translates a dictionary object and returns it
+   * @param id The identifier of the dictionary entry to translate.
+   * @param options The options for the dictionary entry (if applicable)
+   */
+  t.obj = (
+    id: string,
+    options: Record<string, any> = {}
+  ): Dictionary | DictionaryEntry | string | undefined => {
+    // (1) Get subtree
+    const idWithParent = getId(id);
+    const subtree = getSubtree({ dictionary, id: idWithParent });
+    // Check: no subtree found
+    if (!subtree) {
+      console.warn(createNoEntryFoundWarning(idWithParent));
+      return {};
+    }
+    // Check: if subTreeTranslation is a dictionaryEntry
+    if (isDictionaryEntry(subtree)) {
+      return t(id, options);
+    }
+    // Check: if is default locale
+    if (!translationRequired) {
+      // remove metadata from entries
+      const strippedSubtree = stripMetadataFromEntries(subtree);
+      return strippedSubtree;
+    }
+
+    // Set up the dictionaryTranslations object if it doesn't exist
+    if (!dictionaryTranslations) {
+      dictionaryTranslations = {};
+      I18NConfig.setDictionaryTranslations(locale, dictionaryTranslations);
+    }
+    const translatedSubtree = getSubtreeWithCreation({
+      dictionary: dictionaryTranslations,
+      id: idWithParent,
+      sourceDictionary: dictionaryTranslations,
+    });
+
+    // (2) Calculate subtreeWithHashes, dictionaryTranslationsWithTranslations, translatedSubtreeWithFallbacks, and untranslatedEntries
+    // Note: the following four operations can technically be combined into one traversal, but this
+    // strategy is much more readable and much easier to test/debug
+    // Inject hashes into subtree
+    const { dictionary: subtreeWithHashes, updateDictionary } = injectHashes(
+      // eslint-disable-next-line no-undef
+      structuredClone(subtree) as Dictionary,
+      idWithParent
+    );
+    // Collect untranslated entries
+    const untranslatedEntries = collectUntranslatedEntries(
+      subtreeWithHashes as Dictionary,
+      translatedSubtree as Dictionary,
+      idWithParent
+    );
+    // Inject translations into translation subtree
+    const {
+      dictionary: dictionaryTranslationsWithTranslations,
+      updateDictionary: updateDictionaryTranslations,
+    } = injectTranslations(
+      subtreeWithHashes as Dictionary,
+      // eslint-disable-next-line no-undef
+      structuredClone(translatedSubtree) as Dictionary,
+      translations || {},
+      untranslatedEntries,
+      idWithParent
+    );
+    // Inject fallbacks into translation subtree
+    const translatedSubtreeWithFallbacks = injectFallbacks(
+      subtreeWithHashes as Dictionary,
+      // eslint-disable-next-line no-undef
+      structuredClone(dictionaryTranslationsWithTranslations) as Dictionary,
+      untranslatedEntries,
+      idWithParent
+    );
+
+    // (3) For each untranslated entry, translate it
+    for (const untranslatedEntry of untranslatedEntries) {
+      const { source, metadata } = untranslatedEntry;
+      const id = metadata?.$id;
+
+      // (3.a) Translate
+      I18NConfig.translateIcu({
+        source,
+        targetLocale: locale,
+        options: {
+          ...(metadata?.$context && { context: metadata.$context }),
+          id,
+          hash: metadata?.$_hash,
+        },
+      })
+        // (3.b) Inject the translation into the translations object
+        .then((result) => {
+          injectEntry(
+            result as string,
+            dictionaryTranslations!,
+            id,
+            dictionary
+          );
+        });
+    }
+
+    // (5) Update the dictionaryTranslations object and dictionary
+    // inject translatedSubtreeWithFallbacks and new subtree objects
+    if (updateDictionary) {
+      const newDictionary = injectAndMerge(
+        dictionary,
+        subtreeWithHashes,
+        idWithParent
+      );
+      setDictionary(newDictionary);
+    }
+    if (updateDictionaryTranslations) {
+      const newDictionaryTranslations = mergeDictionaries(
+        dictionaryTranslations,
+        dictionaryTranslationsWithTranslations
+      );
+      I18NConfig.setDictionaryTranslations(locale, newDictionaryTranslations);
+    }
+
+    // (4) Copy the dictionaryTranslations object
+    // eslint-disable-next-line no-undef
+    return structuredClone(translatedSubtreeWithFallbacks);
   };
 
   return t;

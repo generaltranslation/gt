@@ -1,5 +1,16 @@
 # gt-next
 
+## 6.6.0
+
+### Minor Changes
+
+- [#659](https://github.com/generaltranslation/gt/pull/659) [`59e922a`](https://github.com/generaltranslation/gt/commit/59e922a97719f35c6ac9c783c48d50111fec3836) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: access dictinoary subtrees via t.obj()
+
+### Patch Changes
+
+- Updated dependencies [[`59e922a`](https://github.com/generaltranslation/gt/commit/59e922a97719f35c6ac9c783c48d50111fec3836)]:
+  - gt-react@10.6.0
+
 ## 6.4.1
 
 ### Patch Changes

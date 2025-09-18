@@ -10,7 +10,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
-import { escapeHtmlInTextNodes } from './escapeHtml.js';
+import escapeHtmlInTextNodes from 'gt-remark';
 
 const { isMatch } = micromatch;
 

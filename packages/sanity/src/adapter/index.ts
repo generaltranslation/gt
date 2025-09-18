@@ -1,4 +1,4 @@
-import { Adapter } from 'sanity-translations-tab';
+import type { Adapter } from '../types';
 
 import { getLocales } from './getLocales';
 import { getTranslationTask } from './getTranslationTask';
