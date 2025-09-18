@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.4
+
+### Patch Changes
+
+- [#671](https://github.com/generaltranslation/gt/pull/671) [`b8c19d1`](https://github.com/generaltranslation/gt/commit/b8c19d13c0ab18a3f9376ebb940d9985cee6d961) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fixing --force command in gtx-cli
+
 ## 2.3.3
 
 ### Patch Changes
