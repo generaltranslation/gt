@@ -6,7 +6,10 @@ import {
   TranslatedChildren,
   Translations,
 } from '../../../types/types';
-import { createNoEntryFoundWarning } from '../../../errors/createErrors';
+import {
+  createEmptyIdError,
+  createNoEntryFoundWarning,
+} from '../../../errors/createErrors';
 import {
   getSubtree,
   getSubtreeWithCreation,
@@ -53,9 +56,7 @@ export function useCreateInternalUseTranslationsObjFunction(
       options: DictionaryTranslationOptions = {}
     ): any => {
       if (idWithParent === '') {
-        throw new Error(
-          `gt-react: Error: You cannot provide an empty id to t.obj()`
-        );
+        throw new Error(createEmptyIdError());
       }
       // (1) Get subtree
       const subtree = getSubtree({
@@ -165,6 +166,7 @@ export function useCreateInternalUseTranslationsObjFunction(
 
       // (4) Update the dictionaryTranslations object and dictionary
       // inject translatedSubtreeWithFallbacks and new subtree objects
+      // Need the setTimeout to avoid render-phase updates
       if (updateDictionary) {
         setTimeout(() => {
           setDictionary((prev: Dictionary) =>

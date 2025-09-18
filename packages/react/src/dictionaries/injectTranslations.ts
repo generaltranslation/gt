@@ -1,7 +1,6 @@
 import { Dictionary, Translations } from '../types/types';
 import { getDictionaryEntry } from './getDictionaryEntry';
 import getEntryAndMetadata from './getEntryAndMetadata';
-import { getSubtree } from './getSubtree';
 import { injectEntry } from './injectEntry';
 import { isDictionaryEntry } from './isDictionaryEntry';
 

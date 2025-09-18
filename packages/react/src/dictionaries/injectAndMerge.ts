@@ -4,6 +4,11 @@ import { getSubtree } from './getSubtree';
 import { get, set } from './indexDict';
 import { isDictionaryEntry } from './isDictionaryEntry';
 import mergeDictionaries from './mergeDictionaries';
+import {
+  createDictionaryEntryError,
+  createCannotInjectDictionaryEntryError,
+  createSubtreeNotFoundError,
+} from '../errors/createErrors';
 
 /**
  * @description Given a subtree and a dictionary, injects the subtree into the dictionary at the given id
@@ -18,11 +23,10 @@ export function injectAndMerge(
 ) {
   const dictionarySubtree = getSubtree({ dictionary, id });
   if (!dictionarySubtree) {
-    // TODO: circle back
-    throw new Error('Dictionary subtree is undefined');
+    throw new Error(createSubtreeNotFoundError(id));
   }
   if (isDictionaryEntry(dictionarySubtree)) {
-    throw new Error('Cannot inject and merge a dictionary entry');
+    throw new Error(createDictionaryEntryError());
   }
   const mergedSubtree = mergeDictionaries(
     dictionarySubtree as Dictionary,
@@ -39,10 +43,10 @@ function injectSubtree(
 ) {
   const dictionarySubtree = getDictionaryEntry(dictionary, id);
   if (!dictionarySubtree) {
-    throw new Error('Dictionary subtree is undefined');
+    throw new Error(createSubtreeNotFoundError(id));
   }
   if (isDictionaryEntry(dictionarySubtree)) {
-    throw new Error('Cannot inject and merge a dictionary entry');
+    throw new Error(createCannotInjectDictionaryEntryError());
   }
   const ids = id.split('.');
   const shortenedId = ids.slice(0, -1);
