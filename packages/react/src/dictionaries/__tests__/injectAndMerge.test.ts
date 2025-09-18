@@ -232,7 +232,7 @@ describe('injectAndMerge', () => {
       };
 
       expect(() => injectAndMerge(dictionary, subtree, 'nonexistent')).toThrow(
-        'Dictionary subtree is undefined'
+        'gt-react Error: Dictionary subtree not found for id: "nonexistent"'
       );
     });
 
@@ -274,7 +274,9 @@ describe('injectAndMerge', () => {
 
       expect(() =>
         injectAndMerge(dictionary, subtree, 'level1.level2.level3')
-      ).toThrow('Dictionary subtree is undefined');
+      ).toThrow(
+        'gt-react Error: Dictionary subtree not found for id: "level1.level2.level3"'
+      );
     });
 
     it('should throw error when path traverses through dictionary entry', () => {
@@ -289,7 +291,9 @@ describe('injectAndMerge', () => {
 
       expect(() =>
         injectAndMerge(dictionary, subtree, 'messages.greeting.invalid')
-      ).toThrow('Dictionary subtree is undefined');
+      ).toThrow(
+        'gt-react Error: Dictionary subtree not found for id: "messages.greeting.invalid"'
+      );
     });
   });
 
