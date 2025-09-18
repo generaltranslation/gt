@@ -95,7 +95,7 @@ export { GTAdapter };
  *
  * ```ts
  * import {defineConfig} from 'sanity'
- * import {gtPlugin} from '@generaltranslation/sanity'
+ * import {gtPlugin} from 'gt-sanity'
  *
  * export default defineConfig({
  *   // ...
@@ -115,6 +115,6 @@ export const gtPlugin = definePlugin<
     projectId: projectId,
   });
   return {
-    name: '@generaltranslation/sanity',
+    name: 'gt-sanity',
   };
 });
