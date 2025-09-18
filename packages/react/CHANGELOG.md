@@ -1,5 +1,11 @@
 # gt-react
 
+## 10.6.1
+
+### Patch Changes
+
+- [#673](https://github.com/generaltranslation/gt/pull/673) [`250d8d2`](https://github.com/generaltranslation/gt/commit/250d8d275871cf2915fe51d633691b8ae546d9b2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: return type for t.obj
+
 ## 10.6.0
 
 ### Minor Changes
