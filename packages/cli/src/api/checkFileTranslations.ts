@@ -39,8 +39,8 @@ export async function checkFileTranslations(
   const startTime = Date.now();
   console.log();
   const spinner = await createOraSpinner();
-  const spinnerMessage = forceRetranslation 
-    ? 'Waiting for retranslation...' 
+  const spinnerMessage = forceRetranslation
+    ? 'Waiting for retranslation...'
     : 'Waiting for translation...';
   spinner.start(spinnerMessage);
 
