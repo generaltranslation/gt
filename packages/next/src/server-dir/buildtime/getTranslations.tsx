@@ -48,10 +48,7 @@ import setDictionary from '../../dictionary/setDictionary';
  */
 export async function getTranslations(id?: string): Promise<
   ((id: string, options?: DictionaryTranslationOptions) => string) & {
-    obj: (
-      id: string,
-      options?: Record<string, any>
-    ) => Dictionary | DictionaryEntry | string | undefined;
+    obj: (id: string, options?: Record<string, any>) => any | undefined;
   }
 > {
   // ---------- SET UP ---------- //

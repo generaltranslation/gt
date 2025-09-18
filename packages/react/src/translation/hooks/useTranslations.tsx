@@ -18,10 +18,7 @@ export default function useTranslations(id?: string): ((
   id: string,
   options?: Record<string, any>
 ) => string) & {
-  obj: (
-    id: string,
-    options?: Record<string, any>
-  ) => Dictionary | DictionaryEntry | string | undefined;
+  obj: (id: string, options?: Record<string, any>) => any | undefined;
 } {
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
@@ -62,10 +59,7 @@ export default function useTranslations(id?: string): ((
     return _dictionaryFunction(prefixedId, options);
   }
 
-  function obj(
-    id: string,
-    options: Record<string, any> = {}
-  ): Dictionary | DictionaryEntry | string | undefined {
+  function obj(id: string, options: Record<string, any> = {}): any | undefined {
     const prefixedId = getId(id);
     return _dictionaryObjFunction(id, prefixedId, options);
   }
