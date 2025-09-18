@@ -8,15 +8,11 @@ import {
   TranslationsTabConfigOptions,
   GTFile,
 } from './types';
-import {
-  baseDocumentLevelConfig,
-  legacyDocumentLevelConfig as baseLegacyDocumentLevelConfig,
-  legacyDocumentLevelPatch,
-  baseFieldLevelConfig,
-  findLatestDraft,
-  documentLevelPatch,
-  fieldLevelPatch,
-} from './configuration';
+import { baseDocumentLevelConfig } from './configuration/baseDocumentLevelConfig';
+import { baseFieldLevelConfig } from './configuration/baseFieldLevelConfig';
+import { findLatestDraft } from './configuration/utils/findLatestDraft';
+import { documentLevelPatch } from './configuration/baseDocumentLevelConfig/documentLevelPatch';
+import { fieldLevelPatch } from './configuration/baseFieldLevelConfig';
 import {
   BaseDocumentSerializer,
   BaseDocumentDeserializer,
@@ -39,7 +35,6 @@ export {
   TranslationsTab,
   //helpers for end developers who may need to customize serialization
   findLatestDraft,
-  legacyDocumentLevelPatch,
   documentLevelPatch,
   fieldLevelPatch,
   BaseDocumentSerializer,
@@ -76,12 +71,6 @@ export const defaultDocumentLevelConfig: ConfigOptions = {
   secretsNamespace: 'generaltranslation',
 };
 
-export const legacyDocumentLevelConfig: ConfigOptions = {
-  ...baseLegacyDocumentLevelConfig,
-  adapter: GTAdapter,
-  secretsNamespace: 'generaltranslation',
-};
-
 export const defaultFieldLevelConfig: ConfigOptions = {
   ...baseFieldLevelConfig,
   adapter: GTAdapter,
@@ -89,6 +78,17 @@ export const defaultFieldLevelConfig: ConfigOptions = {
 };
 
 export { GTAdapter };
+
+export type GTPluginConfig = Omit<
+  Parameters<typeof gt.setConfig>[0],
+  'locales'
+> & {
+  locales: string[];
+  singletons?: string[];
+  // Optional mapping function to map source document ids to translated singleton document ids
+  // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
+  singletonMapping?: (sourceDocumentId: string, locale: string) => string;
+};
 
 /**
  * Usage in `sanity.config.ts` (or .js)
@@ -103,18 +103,32 @@ export { GTAdapter };
  * })
  * ```
  */
-export const gtPlugin = definePlugin<
-  Omit<Parameters<typeof gt.setConfig>[0], 'locales'> & { locales: string[] }
->(({ sourceLocale, locales, customMapping, apiKey, projectId }) => {
-  gtConfig.setLocales(locales);
-  gtConfig.setSourceLocale(sourceLocale || libraryDefaultLocale);
-  gt.setConfig({
-    sourceLocale: sourceLocale,
-    customMapping: customMapping,
-    apiKey: apiKey,
-    projectId: projectId,
-  });
-  return {
-    name: 'gt-sanity',
-  };
-});
+export const gtPlugin = definePlugin<GTPluginConfig>(
+  ({
+    sourceLocale,
+    locales,
+    customMapping,
+    apiKey,
+    projectId,
+    singletons,
+    singletonMapping,
+  }) => {
+    gtConfig.setLocales(locales);
+    gtConfig.setSourceLocale(sourceLocale || libraryDefaultLocale);
+    gtConfig.setSingletonMapping(
+      singletonMapping ||
+        ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`)
+    );
+    // singletons is a string array of singleton document ids
+    gtConfig.setSingletons(singletons || []);
+    gt.setConfig({
+      sourceLocale: sourceLocale,
+      customMapping: customMapping,
+      apiKey: apiKey,
+      projectId: projectId,
+    });
+    return {
+      name: 'gt-sanity',
+    };
+  }
+);

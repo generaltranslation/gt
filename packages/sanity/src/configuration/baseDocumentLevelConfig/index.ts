@@ -4,9 +4,8 @@ import {
   ImportTranslation,
 } from '../../types';
 import { SanityDocument } from 'sanity';
-import { findLatestDraft } from '../utils';
+import { findLatestDraft } from '../utils/findLatestDraft';
 import { documentLevelPatch } from './documentLevelPatch';
-import { legacyDocumentLevelPatch } from './legacyDocumentLevelPatch';
 import {
   BaseDocumentDeserializer,
   BaseDocumentSerializer,
@@ -93,37 +92,3 @@ export const baseDocumentLevelConfig = {
   },
   secretsNamespace: 'translationService',
 };
-
-export const legacyDocumentLevelConfig = {
-  ...baseDocumentLevelConfig,
-  importTranslation: (
-    ...params: Parameters<ImportTranslation>
-  ): Promise<void> => {
-    const [docInfo, localeId, document, context, serializationOptions = {}] =
-      params;
-    const { client } = context;
-    const deserializers = {
-      types: {
-        ...(serializationOptions.additionalDeserializers ?? {}),
-      },
-    };
-    const blockDeserializers = [
-      ...(serializationOptions.additionalBlockDeserializers ?? []),
-      ...customBlockDeserializers,
-    ];
-
-    const deserialized = BaseDocumentDeserializer.deserializeDocument(
-      document,
-      deserializers,
-      blockDeserializers
-    ) as SanityDocument;
-    return legacyDocumentLevelPatch(
-      docInfo, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
-      deserialized,
-      localeId,
-      client
-    );
-  },
-};
-
-export { documentLevelPatch, legacyDocumentLevelPatch };

@@ -14,15 +14,29 @@ export function overrideConfig(secrets: Secrets | null) {
 export class GTConfig {
   sourceLocale: string;
   locales: string[];
+  singletons: string[];
+  singletonMapping: (sourceDocumentId: string, locale: string) => string;
   private static instance: GTConfig;
-  constructor(sourceLocale: string, locales: string[]) {
+  constructor(
+    sourceLocale: string,
+    locales: string[],
+    singletons: string[],
+    singletonMapping: (sourceDocumentId: string, locale: string) => string
+  ) {
     this.sourceLocale = sourceLocale;
     this.locales = locales;
+    this.singletons = singletons;
+    this.singletonMapping = singletonMapping;
   }
 
   static getInstance() {
     if (!this.instance) {
-      this.instance = new GTConfig(gt.sourceLocale || libraryDefaultLocale, []);
+      this.instance = new GTConfig(
+        gt.sourceLocale || libraryDefaultLocale,
+        [],
+        [],
+        () => ''
+      );
     }
     return this.instance;
   }
@@ -39,6 +53,20 @@ export class GTConfig {
   }
   getLocales() {
     return this.locales;
+  }
+  setSingletons(singletons: string[]) {
+    this.singletons = singletons;
+  }
+  getSingletons() {
+    return this.singletons;
+  }
+  setSingletonMapping(
+    singletonMapping: (sourceDocumentId: string, locale: string) => string
+  ) {
+    this.singletonMapping = singletonMapping;
+  }
+  getSingletonMapping() {
+    return this.singletonMapping;
   }
 }
 export const gtConfig = GTConfig.getInstance();

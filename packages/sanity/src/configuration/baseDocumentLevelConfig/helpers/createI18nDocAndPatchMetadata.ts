@@ -1,10 +1,12 @@
 import { SanityClient, SanityDocumentLike } from 'sanity';
+import { gtConfig } from '../../../adapter/core';
 
 export const createI18nDocAndPatchMetadata = (
   translatedDoc: SanityDocumentLike,
   localeId: string,
   client: SanityClient,
   translationMetadata: SanityDocumentLike,
+  sourceDocumentId: string,
   languageField: string = 'language'
 ): void => {
   translatedDoc[languageField] = localeId;
@@ -22,7 +24,24 @@ export const createI18nDocAndPatchMetadata = (
 
   //remove system fields
   const { _updatedAt, _createdAt, ...rest } = translatedDoc;
-  client.create({ ...rest, _id: 'drafts.' }).then((doc) => {
+
+  // Check if this is a singleton document and apply singleton mapping
+  const singletons = gtConfig.getSingletons();
+  const isSingleton = singletons.includes(sourceDocumentId);
+
+  let createDocumentPromise;
+  if (isSingleton) {
+    const singletonMapping = gtConfig.getSingletonMapping();
+    const translatedDocId = singletonMapping(sourceDocumentId, localeId);
+    createDocumentPromise = client.create({
+      ...rest,
+      _id: `drafts.${translatedDocId}`,
+    });
+  } else {
+    createDocumentPromise = client.create({ ...rest, _id: 'drafts.' });
+  }
+
+  createDocumentPromise.then((doc) => {
     const _ref = doc._id.replace('drafts.', '');
     client
       .transaction()
