@@ -59,7 +59,7 @@
     "@sanity/incompatible-plugin": "^1.0.5",
     "@sanity/ui": "^2.16.4",
     "@sanity/util": "^3.98.1",
-    "generaltranslation": "^7.6.2",
+    "generaltranslation": "^7.6.3-alpha.1",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
     "lightningcss": "^1.30.1",
@@ -90,5 +90,10 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "overrides": {
+      "generaltranslation": "link:../../../../Library/pnpm/global/5/node_modules/generaltranslation"
+    }
   }
 }

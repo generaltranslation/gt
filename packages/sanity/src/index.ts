@@ -46,10 +46,13 @@ export {
 
 import { GTAdapter } from './adapter';
 import { definePlugin } from 'sanity';
+import { route } from 'sanity/router';
 import { gt, gtConfig } from './adapter/core';
 import { GTSerializedDocument } from './types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { IgnoreFields } from './adapter/types';
+import type { IgnoreFields, TranslateDocumentFilter } from './adapter/types';
+import TranslationsTool from './components/page/TranslationsTool';
+import { SECRETS_NAMESPACE } from './utils/shared';
 
 interface ConfigOptions {
   adapter: Adapter;
@@ -90,6 +93,9 @@ export type GTPluginConfig = Omit<
   // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
   singletonMapping?: (sourceDocumentId: string, locale: string) => string;
   ignoreFields?: IgnoreFields[];
+  languageField?: string;
+  translateDocuments?: TranslateDocumentFilter[];
+  secretsNamespace?: string;
 };
 
 /**
@@ -107,7 +113,8 @@ export type GTPluginConfig = Omit<
  */
 export const gtPlugin = definePlugin<GTPluginConfig>(
   ({
-    sourceLocale,
+    languageField = 'language',
+    sourceLocale = libraryDefaultLocale,
     locales,
     customMapping,
     apiKey,
@@ -115,15 +122,28 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     singletons,
     singletonMapping,
     ignoreFields,
+    translateDocuments,
+    secretsNamespace = SECRETS_NAMESPACE,
   }) => {
+    // Validate the translateDocuments
+    translateDocuments = translateDocuments?.filter((filter) => {
+      if (filter.documentId || filter.type) {
+        return true;
+      }
+      return false;
+    });
+
     gtConfig.init(
-      sourceLocale || libraryDefaultLocale,
+      secretsNamespace,
+      languageField,
+      sourceLocale,
       locales,
       singletons || [],
       // singletons is a string array of singleton document ids
       singletonMapping ||
         ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`),
-      ignoreFields || []
+      ignoreFields || [],
+      translateDocuments || []
     );
     gt.setConfig({
       sourceLocale: sourceLocale,
@@ -133,6 +153,14 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     });
     return {
       name: 'gt-sanity',
+      tools: [
+        {
+          name: 'translations',
+          title: 'Translations',
+          component: TranslationsTool,
+          router: route.create('/*'),
+        },
+      ],
     };
   }
 );
