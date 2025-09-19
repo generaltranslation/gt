@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.6.3
+
+### Patch Changes
+
+- [#677](https://github.com/generaltranslation/gt/pull/677) [`73fb32f`](https://github.com/generaltranslation/gt/commit/73fb32fecc936530691c0f8ad3624a4c63852575) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix locale aliasing on some API functions
+
 ## 7.6.2
 
 ### Patch Changes
