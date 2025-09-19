@@ -27,6 +27,12 @@ export default async function _checkFileTranslations(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/files/retrieve`;
 
+  // Validate data
+  data.forEach((item) => {
+    if (!item.fileName && !item.fileId) {
+      throw new Error('fileName or fileId is required');
+    }
+  });
   // Request the file status
   let response;
   try {

@@ -511,11 +511,18 @@ export class GT {
     }));
 
     // Request the file translation status
-    return await _checkFileTranslations(
+    const result = await _checkFileTranslations(
       data,
       options,
       this._getTranslationConfig()
     );
+
+    // Resolve canonical locales
+    result.translations = result.translations.map((item) => ({
+      ...item,
+      locale: this.resolveAliasLocale(item.locale),
+    }));
+    return result;
   }
 
   /**

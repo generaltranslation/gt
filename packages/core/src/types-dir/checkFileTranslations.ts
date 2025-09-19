@@ -3,7 +3,8 @@ import { CompletedFileTranslationData } from './file';
 // Types for the checkFileTranslations function
 export type FileTranslationQuery = {
   versionId: string;
-  fileName: string;
+  fileName?: string; // Between fileName and fileId, one is required
+  fileId?: string;
   locale: string;
 };
 
