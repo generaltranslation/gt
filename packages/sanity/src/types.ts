@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { SanityClient, Schema, TypedObject } from 'sanity';
 import { SerializedDocument } from 'sanity-naive-html-serializer';
 import { PortableTextTypeComponent } from '@portabletext/to-html';

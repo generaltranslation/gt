@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { Card, Flex, Label } from '@sanity/ui';
 
 export default function ProgressBar({ progress }: { progress: number }) {

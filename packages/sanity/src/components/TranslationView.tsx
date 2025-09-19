@@ -1,10 +1,13 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 /**
  * Add cleanup function to cancel async tasks
  */
 
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { Stack, useToast } from '@sanity/ui';
+import { useCallback, useContext, useEffect, useState, useMemo } from 'react';
+import { Stack, useToast, Text, Card } from '@sanity/ui';
 import { TranslationContext } from './TranslationContext';
+import { gtConfig } from '../adapter/core';
 
 import { NewTask } from './NewTask';
 import { TaskView } from './TaskView';
@@ -16,6 +19,23 @@ export const TranslationView = () => {
 
   const context = useContext(TranslationContext);
   const toast = useToast();
+
+  // Extract the current document's language from the language field
+  const currentDocumentLanguage = useMemo(() => {
+    if (!context?.document || !context?.languageField) return null;
+
+    // Get the language from the document's language field
+    const documentLanguage = context.document[context.languageField];
+
+    // If no language field is set, assume it's the source language
+    return documentLanguage || gtConfig.getSourceLocale();
+  }, [context?.document, context?.languageField]);
+
+  // Only show translation components if we're on a source language document
+  const shouldShowTranslationComponents = useMemo(() => {
+    if (!currentDocumentLanguage) return false;
+    return currentDocumentLanguage === gtConfig.getSourceLocale();
+  }, [currentDocumentLanguage]);
 
   useEffect(() => {
     async function fetchData() {
@@ -70,6 +90,18 @@ export const TranslationView = () => {
       setTask(task);
     }
   }, [context, setTask]);
+
+  // Show message if we're not on a source language document
+  if (!shouldShowTranslationComponents) {
+    return (
+      <Card padding={4} tone='neutral' border>
+        <Text size={1} muted>
+          Translation tools are only available for{' '}
+          <code>{gtConfig.getSourceLocale()}</code> documents.
+        </Text>
+      </Card>
+    );
+  }
 
   return (
     <Stack space={6}>

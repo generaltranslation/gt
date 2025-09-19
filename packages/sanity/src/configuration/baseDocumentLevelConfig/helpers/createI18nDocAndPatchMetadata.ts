@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { SanityClient, SanityDocumentLike } from 'sanity';
 import { gtConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
