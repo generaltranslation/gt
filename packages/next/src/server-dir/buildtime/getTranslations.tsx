@@ -329,6 +329,11 @@ export async function getTranslations(id?: string): Promise<
       })
         // (3.b) Inject the translation into the translations object
         .then((result) => {
+          console.log('inject entry');
+          console.log('result', result);
+          console.log('dictionaryTranslations', dictionaryTranslations);
+          console.log('id', id);
+          console.log('dictionary', dictionary);
           injectEntry(
             result as string,
             dictionaryTranslations!,
