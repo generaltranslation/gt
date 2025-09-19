@@ -12,8 +12,8 @@ export function isDictionaryEntry(
     return false;
   }
 
-  // Check if it's a string (Entry)
-  if (typeof value === 'string') {
+  // Check if it's an entry
+  if (value === null || typeof value !== 'object') {
     return true;
   }
 
@@ -25,7 +25,7 @@ export function isDictionaryEntry(
     }
 
     // First element must be a string (Entry)
-    if (typeof value[0] !== 'string') {
+    if (typeof value[0] === 'object' && value[0] !== null) {
       return false;
     }
 

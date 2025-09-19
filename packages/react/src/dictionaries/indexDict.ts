@@ -5,7 +5,7 @@ import { Dictionary, DictionaryEntry } from '../types/types';
  * @param id - id of the value to get
  */
 export function get(dictionary: Dictionary, id: string | number) {
-  if (dictionary == null) {
+  if (dictionary === undefined) {
     throw new Error('Cannot index into an undefined dictionary');
   }
   if (Array.isArray(dictionary)) {

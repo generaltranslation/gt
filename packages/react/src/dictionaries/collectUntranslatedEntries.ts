@@ -1,4 +1,4 @@
-import { Dictionary } from '../types/types';
+import { Dictionary, DictionaryEntry } from '../types/types';
 import getEntryAndMetadata from './getEntryAndMetadata';
 import { get } from './indexDict';
 import { isDictionaryEntry } from './isDictionaryEntry';
@@ -15,11 +15,11 @@ export function collectUntranslatedEntries(
   translationsDictionary: Dictionary,
   id: string = ''
 ): {
-  source: string;
+  source: string | null;
   metadata: { $id: string; $context?: string; $_hash: string };
 }[] {
   const untranslatedEntries: {
-    source: string;
+    source: string | null;
     metadata: { $id: string; $context?: string; $_hash: string };
   }[] = [];
   Object.entries(dictionary).forEach(([key, value]) => {
@@ -27,7 +27,7 @@ export function collectUntranslatedEntries(
     if (isDictionaryEntry(value)) {
       const { entry, metadata } = getEntryAndMetadata(value);
 
-      if (!get(translationsDictionary, key)) {
+      if (get(translationsDictionary, key) === undefined) {
         untranslatedEntries.push({
           source: entry,
           metadata: {
@@ -38,11 +38,14 @@ export function collectUntranslatedEntries(
         });
       }
     } else {
+      let translationsValue = get(translationsDictionary, key);
+      if (translationsValue === undefined) {
+        translationsValue = Array.isArray(value) ? [] : {};
+      }
       untranslatedEntries.push(
         ...collectUntranslatedEntries(
           value,
-          (get(translationsDictionary, key) ||
-            (Array.isArray(value) ? [] : {})) as Dictionary,
+          translationsValue as Dictionary,
           wholeId
         )
       );

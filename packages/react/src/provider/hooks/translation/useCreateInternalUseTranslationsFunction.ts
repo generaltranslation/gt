@@ -79,9 +79,8 @@ export default function useCreateInternalUseTranslationsFunction(
         isValidDictionaryEntry(dictionaryTranslation)
       ) {
         const { entry } = getEntryAndMetadata(dictionaryTranslation);
-        return renderMessage(entry, [locale, defaultLocale]);
+        return renderMessage(entry || '', [locale, defaultLocale]);
       }
-
       // ----- CHECK TRANSLATIONS ----- //
 
       let translationEntry = translations?.[id];
@@ -117,6 +116,11 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // ----- TRANSLATE ON DEMAND ----- //
       // development only
+
+      // Don't translate non-string entries
+      if (typeof entry !== 'string') {
+        return renderMessage(entry, [defaultLocale]);
+      }
 
       // Translate Content
       registerIcuForTranslation({

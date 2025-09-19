@@ -1,7 +1,7 @@
 import { DictionaryEntry, MetaEntry } from '../types/types';
 
 export default function getEntryAndMetadata(value: DictionaryEntry): {
-  entry: string;
+  entry: string | null;
   metadata?: MetaEntry;
 } {
   if (Array.isArray(value)) {

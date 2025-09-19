@@ -22,7 +22,7 @@ function isDangerousKey(key: string): boolean {
  * @param sourceDictionary - The source dictionary to model the new dictionary after
  */
 export function injectEntry(
-  dictionaryEntry: DictionaryEntry,
+  dictionaryEntry: DictionaryEntry | null,
   dictionary: Dictionary | DictionaryEntry,
   id: string,
   sourceDictionary: Dictionary | DictionaryEntry
@@ -42,7 +42,7 @@ export function injectEntry(
   dictionary ||= {};
   for (const key of keys.slice(0, -1)) {
     // Create new value if it doesn't exist
-    if (get(dictionary, key) == null) {
+    if (get(dictionary, key) === undefined) {
       set(
         dictionary,
         key,

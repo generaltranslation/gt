@@ -16,7 +16,7 @@ export function injectTranslations(
   translationsDictionary: Dictionary,
   translations: Translations,
   missingTranslations: {
-    source: string;
+    source: string | null;
     metadata: { $id: string; $context?: string; $_hash: string };
   }[],
   prefixToRemove: string = ''

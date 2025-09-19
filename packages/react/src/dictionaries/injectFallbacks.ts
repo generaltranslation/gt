@@ -15,7 +15,7 @@ export function injectFallbacks(
   dictionary: Dictionary,
   translationsDictionary: Dictionary,
   missingTranslations: {
-    source: string;
+    source: string | null;
     metadata: { $id: string; $context?: string; $_hash: string };
   }[],
   prefixToRemove: string = ''

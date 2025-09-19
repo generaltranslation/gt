@@ -28,7 +28,7 @@ export type TaggedChildren = TaggedChild[] | TaggedChild;
 /**
  * For dictionaries, we have Entry and MetaEntry
  */
-export type Entry = string;
+export type Entry = string | null;
 export type MetaEntry = {
   $context?: string;
   $_hash?: string;

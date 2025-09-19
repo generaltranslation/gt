@@ -4,12 +4,12 @@ import { get } from './indexDict';
 export function isValidDictionaryEntry(
   value: unknown
 ): value is DictionaryEntry {
-  if (typeof value === 'string') {
+  if (typeof value !== 'object' || value === null) {
     return true;
   }
 
   if (Array.isArray(value)) {
-    if (typeof value?.[0] !== 'string') {
+    if (typeof value?.[0] === 'object' && value?.[0] !== null) {
       return false;
     }
     const provisionalMetadata = value?.[1];
