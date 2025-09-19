@@ -1,6 +1,7 @@
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { Secrets } from '../types';
+import type { IgnoreFields } from './types';
 
 export const gt = new GT();
 
@@ -16,17 +17,21 @@ export class GTConfig {
   locales: string[];
   singletons: string[];
   singletonMapping: (sourceDocumentId: string, locale: string) => string;
+  ignoreFields: IgnoreFields[];
+
   private static instance: GTConfig;
   constructor(
     sourceLocale: string,
     locales: string[],
     singletons: string[],
-    singletonMapping: (sourceDocumentId: string, locale: string) => string
+    singletonMapping: (sourceDocumentId: string, locale: string) => string,
+    ignoreFields: IgnoreFields[]
   ) {
     this.sourceLocale = sourceLocale;
     this.locales = locales;
     this.singletons = singletons;
     this.singletonMapping = singletonMapping;
+    this.ignoreFields = ignoreFields;
   }
 
   static getInstance() {
@@ -35,38 +40,41 @@ export class GTConfig {
         gt.sourceLocale || libraryDefaultLocale,
         [],
         [],
-        () => ''
+        () => '',
+        []
       );
     }
     return this.instance;
   }
 
-  setSourceLocale(sourceLocale: string) {
+  init(
+    sourceLocale: string,
+    locales: string[],
+    singletons: string[],
+    singletonMapping: (sourceDocumentId: string, locale: string) => string,
+    ignoreFields: IgnoreFields[]
+  ) {
     this.sourceLocale = sourceLocale;
-  }
-  getSourceLocale() {
-    return this.sourceLocale;
+    this.locales = locales;
+    this.singletons = singletons;
+    this.singletonMapping = singletonMapping;
+    this.ignoreFields = ignoreFields;
   }
 
-  setLocales(locales: string[]) {
-    this.locales = locales;
+  getSourceLocale() {
+    return this.sourceLocale;
   }
   getLocales() {
     return this.locales;
   }
-  setSingletons(singletons: string[]) {
-    this.singletons = singletons;
-  }
   getSingletons() {
     return this.singletons;
   }
-  setSingletonMapping(
-    singletonMapping: (sourceDocumentId: string, locale: string) => string
-  ) {
-    this.singletonMapping = singletonMapping;
-  }
   getSingletonMapping() {
     return this.singletonMapping;
+  }
+  getIgnoreFields() {
+    return this.ignoreFields;
   }
 }
 export const gtConfig = GTConfig.getInstance();

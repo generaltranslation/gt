@@ -49,6 +49,7 @@ import { definePlugin } from 'sanity';
 import { gt, gtConfig } from './adapter/core';
 import { GTSerializedDocument } from './types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type { IgnoreFields } from './adapter/types';
 
 interface ConfigOptions {
   adapter: Adapter;
@@ -88,6 +89,7 @@ export type GTPluginConfig = Omit<
   // Optional mapping function to map source document ids to translated singleton document ids
   // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
   singletonMapping?: (sourceDocumentId: string, locale: string) => string;
+  ignoreFields?: IgnoreFields[];
 };
 
 /**
@@ -112,15 +114,17 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     projectId,
     singletons,
     singletonMapping,
+    ignoreFields,
   }) => {
-    gtConfig.setLocales(locales);
-    gtConfig.setSourceLocale(sourceLocale || libraryDefaultLocale);
-    gtConfig.setSingletonMapping(
+    gtConfig.init(
+      sourceLocale || libraryDefaultLocale,
+      locales,
+      singletons || [],
+      // singletons is a string array of singleton document ids
       singletonMapping ||
-        ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`)
+        ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`),
+      ignoreFields || []
     );
-    // singletons is a string array of singleton document ids
-    gtConfig.setSingletons(singletons || []);
     gt.setConfig({
       sourceLocale: sourceLocale,
       customMapping: customMapping,

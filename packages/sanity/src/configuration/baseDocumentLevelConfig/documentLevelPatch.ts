@@ -91,12 +91,20 @@ export const documentLevelPatch = async (
   ) as SanityDocumentLike;
 
   if (i18nDoc) {
-    patchI18nDoc(docInfo.documentId, merged, translatedFields, client);
+    patchI18nDoc(
+      docInfo.documentId,
+      i18nDoc._id,
+      baseDoc,
+      merged,
+      translatedFields,
+      client
+    );
   }
   //otherwise, create a new document
   //and add the document reference to the metadata document
   else {
     createI18nDocAndPatchMetadata(
+      baseDoc,
       merged,
       localeId,
       client,

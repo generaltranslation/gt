@@ -1,7 +1,9 @@
 import { SanityClient, SanityDocumentLike } from 'sanity';
 import { gtConfig } from '../../../adapter/core';
+import { applyDocuments } from '../../../utils/applyDocuments';
 
 export const createI18nDocAndPatchMetadata = (
+  sourceDocument: SanityDocumentLike,
   translatedDoc: SanityDocumentLike,
   localeId: string,
   client: SanityClient,
@@ -25,6 +27,15 @@ export const createI18nDocAndPatchMetadata = (
   //remove system fields
   const { _updatedAt, _createdAt, ...rest } = translatedDoc;
 
+  console.log('translatedDoc', rest);
+  const appliedDocument = applyDocuments(
+    sourceDocumentId,
+    sourceDocument,
+    rest,
+    gtConfig.getIgnoreFields()
+  );
+
+  console.log('appliedDocument', appliedDocument);
   // Check if this is a singleton document and apply singleton mapping
   const singletons = gtConfig.getSingletons();
   const isSingleton = singletons.includes(sourceDocumentId);
@@ -34,11 +45,16 @@ export const createI18nDocAndPatchMetadata = (
     const singletonMapping = gtConfig.getSingletonMapping();
     const translatedDocId = singletonMapping(sourceDocumentId, localeId);
     createDocumentPromise = client.create({
-      ...rest,
+      ...appliedDocument,
+      _type: rest._type,
       _id: `drafts.${translatedDocId}`,
     });
   } else {
-    createDocumentPromise = client.create({ ...rest, _id: 'drafts.' });
+    createDocumentPromise = client.create({
+      ...appliedDocument,
+      _type: rest._type,
+      _id: 'drafts.',
+    });
   }
 
   createDocumentPromise.then((doc) => {
