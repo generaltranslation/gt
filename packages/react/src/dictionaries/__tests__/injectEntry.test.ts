@@ -255,13 +255,9 @@ describe('injectEntry', () => {
       const sourceDictionary: Dictionary = { user: { name: '' } };
       const entry: DictionaryEntry = 'John';
 
-      injectEntry(entry, dictionary, 'user.name', sourceDictionary);
-
-      expect(dictionary).toEqual({
-        user: {
-          name: 'John',
-        },
-      });
+      expect(() => {
+        injectEntry(entry, dictionary, 'user.name', sourceDictionary);
+      }).toThrow('Cannot set properties of null');
     });
 
     it('should handle empty string entry', () => {

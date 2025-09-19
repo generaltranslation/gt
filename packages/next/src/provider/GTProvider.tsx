@@ -68,7 +68,7 @@ export default async function GTProvider({
   }
 
   // Merge dictionary with dictionary translations
-  dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
+  // dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
 
   // Block until cache check resolves
   const translations = await cachedTranslationsPromise;

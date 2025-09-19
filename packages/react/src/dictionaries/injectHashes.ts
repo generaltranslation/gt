@@ -22,7 +22,7 @@ export function injectHashes(
       if (!metadata?.$_hash) {
         metadata ||= {};
         metadata.$_hash = hashSource({
-          source: entry,
+          source: entry || '',
           ...(metadata?.$context && { context: metadata.$context }),
           id: wholeId,
           dataFormat: 'ICU',

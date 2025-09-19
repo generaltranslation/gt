@@ -1,6 +1,12 @@
 import { Dictionary, DictionaryEntry } from '../types/types';
 import { get, set } from './indexDict';
 
+/**
+ * @description A function that gets a subtree from a dictionary
+ * @param dictionary - dictionary to get the subtree from
+ * @param id - id of the subtree to get
+ * @returns
+ */
 export function getSubtree<T extends Dictionary>({
   dictionary,
   id,

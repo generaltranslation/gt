@@ -118,16 +118,18 @@ export function useCreateInternalUseTranslationsObjFunction(
         untranslatedEntries,
         idWithParent
       );
-
       // (3) For each untranslated entry, translate it
       if (developmentApiEnabled) {
         Promise.allSettled(
           untranslatedEntries.map(
             async (
               untranslatedEntry
-            ): Promise<[string, TranslatedChildren]> => {
+            ): Promise<[string, TranslatedChildren | null]> => {
               const { source, metadata } = untranslatedEntry;
               const id = metadata?.$id;
+              if (typeof source !== 'string') {
+                return [id, source];
+              }
               return [
                 id,
                 await registerIcuForTranslation({

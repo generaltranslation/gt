@@ -22,7 +22,7 @@ function isDangerousKey(key: string): boolean {
  * @param sourceDictionary - The source dictionary to model the new dictionary after
  */
 export function injectEntry(
-  dictionaryEntry: DictionaryEntry,
+  dictionaryEntry: DictionaryEntry | null,
   dictionary: Dictionary | DictionaryEntry,
   id: string,
   sourceDictionary: Dictionary | DictionaryEntry
@@ -32,6 +32,8 @@ export function injectEntry(
     return dictionaryEntry;
   }
 
+  // TODO: issue is that when injecting on demand translated entry, is ignoring array vs object
+
   // Iterate over all but last key
   const keys = id.split('.');
   keys.forEach((key) => {
@@ -39,10 +41,10 @@ export function injectEntry(
       throw new Error(`Invalid key: ${key}`);
     }
   });
-  dictionary ||= {};
+  dictionary ||= Array.isArray(sourceDictionary) ? [] : ({} as Dictionary);
   for (const key of keys.slice(0, -1)) {
     // Create new value if it doesn't exist
-    if (get(dictionary, key) == null) {
+    if (get(dictionary, key) === undefined) {
       set(
         dictionary,
         key,

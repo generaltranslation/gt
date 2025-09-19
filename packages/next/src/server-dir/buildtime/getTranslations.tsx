@@ -192,6 +192,12 @@ export async function getTranslations(id?: string): Promise<
       return renderContent(entry, [defaultLocale]);
     }
 
+    // Don't translate non-string entries
+    if (typeof entry !== 'string') {
+      injectEntry(entry, dictionaryTranslations!, id, dictionary);
+      return renderContent(entry, [defaultLocale]);
+    }
+
     try {
       // Translate on demand
       I18NConfig.translateIcu({
@@ -306,6 +312,10 @@ export async function getTranslations(id?: string): Promise<
     for (const untranslatedEntry of untranslatedEntries) {
       const { source, metadata } = untranslatedEntry;
       const id = metadata?.$id;
+      if (typeof source !== 'string') {
+        injectEntry(source, dictionaryTranslations!, id, dictionary);
+        continue;
+      }
 
       // (3.a) Translate
       I18NConfig.translateIcu({
@@ -319,6 +329,11 @@ export async function getTranslations(id?: string): Promise<
       })
         // (3.b) Inject the translation into the translations object
         .then((result) => {
+          console.log('inject entry');
+          console.log('result', result);
+          console.log('dictionaryTranslations', dictionaryTranslations);
+          console.log('id', id);
+          console.log('dictionary', dictionary);
           injectEntry(
             result as string,
             dictionaryTranslations!,
