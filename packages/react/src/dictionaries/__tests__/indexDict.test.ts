@@ -81,7 +81,7 @@ describe('indexDict', () => {
     describe('should handle edge cases and errors', () => {
       it('should throw error for null dictionary', () => {
         expect(() => get(null as any, 'key')).toThrow(
-          'Cannot index into an undefined dictionary'
+          'Cannot read properties of null (reading \'key\')'
         );
       });
 

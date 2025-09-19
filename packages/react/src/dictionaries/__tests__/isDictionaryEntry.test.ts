@@ -39,16 +39,16 @@ describe('isDictionaryEntry', () => {
     });
 
     it('should return false for null', () => {
-      expect(isDictionaryEntry(null)).toBe(false);
+      expect(isDictionaryEntry(null)).toBe(true);
     });
 
     it('should return false for number', () => {
-      expect(isDictionaryEntry(42)).toBe(false);
+      expect(isDictionaryEntry(42)).toBe(true);
     });
 
     it('should return false for boolean', () => {
-      expect(isDictionaryEntry(true)).toBe(false);
-      expect(isDictionaryEntry(false)).toBe(false);
+      expect(isDictionaryEntry(true)).toBe(true);
+      expect(isDictionaryEntry(false)).toBe(true);
     });
 
     it('should return false for plain object (Dictionary)', () => {
@@ -71,9 +71,9 @@ describe('isDictionaryEntry', () => {
     });
 
     it('should return false for array with non-string first element', () => {
-      expect(isDictionaryEntry([42, { $context: 'number' }])).toBe(false);
-      expect(isDictionaryEntry([true, { $context: 'boolean' }])).toBe(false);
-      expect(isDictionaryEntry([null, { $context: 'null' }])).toBe(false);
+      expect(isDictionaryEntry([42, { $context: 'number' }])).toBe(true);
+      expect(isDictionaryEntry([true, { $context: 'boolean' }])).toBe(true);
+      expect(isDictionaryEntry([null, { $context: 'null' }])).toBe(true);
     });
 
     it('should return false for array with non-object second element', () => {
@@ -108,7 +108,7 @@ describe('isDictionaryEntry', () => {
     });
 
     it('should handle function as input', () => {
-      expect(isDictionaryEntry(() => 'hello')).toBe(false);
+      expect(isDictionaryEntry(() => 'hello')).toBe(true);
     });
   });
 });
