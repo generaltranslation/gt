@@ -9,12 +9,13 @@ import {
   Heading,
   Spinner,
   Stack,
+  Switch,
   Text,
   ThemeProvider,
   ToastProvider,
   useToast,
 } from '@sanity/ui';
-import { DownloadIcon, RefreshIcon } from '@sanity/icons';
+import { DownloadIcon, CheckmarkCircleIcon } from '@sanity/icons';
 import { buildTheme } from '@sanity/ui/theme';
 import { Link } from 'sanity/router';
 import { SanityDocument, useSchema } from 'sanity';
@@ -49,7 +50,17 @@ const TranslationsTool = () => {
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   const [locales, setLocales] = useState<TranslationLocale[]>([]);
+  const [autoPublish, setAutoPublish] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [importProgress, setImportProgress] = useState({
+    current: 0,
+    total: 0,
+    isImporting: false,
+  });
+  const [importedTranslations, setImportedTranslations] = useState<Set<string>>(
+    new Set()
+  );
   const [downloadStatus, setDownloadStatus] = useState({
     downloaded: new Set<string>(),
     failed: new Set<string>(),
@@ -235,45 +246,76 @@ const TranslationsTool = () => {
       // Download all ready translations
       const downloadedFiles = await downloadTranslations(readyFiles, secrets);
 
-      // Import each downloaded translation
+      // Set up progress tracking
+      setImportProgress({
+        current: 0,
+        total: downloadedFiles.length,
+        isImporting: true,
+      });
+
+      // Batch import in groups of 10
+      const batchSize = 10;
       let successCount = 0;
       let failureCount = 0;
+      const successfulImports: string[] = [];
 
-      for (const file of downloadedFiles) {
-        try {
-          const docInfo: GTFile = {
-            documentId: file.docData.documentId,
-            versionId: file.docData.versionId,
-          };
+      for (let i = 0; i < downloadedFiles.length; i += batchSize) {
+        const batch = downloadedFiles.slice(i, i + batchSize);
 
-          await importDocument(
-            docInfo,
-            file.docData.locale,
-            file.data,
-            translationContext
-          );
+        // Process batch in parallel
+        const batchPromises = batch.map(async (file) => {
+          try {
+            const docInfo: GTFile = {
+              documentId: file.docData.documentId,
+              versionId: file.docData.versionId,
+            };
 
-          successCount++;
-        } catch (error) {
-          console.error(
-            `Failed to import ${file.docData.documentId} (${file.docData.locale}):`,
-            error
-          );
-          failureCount++;
-        }
+            await importDocument(
+              docInfo,
+              file.docData.locale,
+              file.data,
+              translationContext,
+              autoPublish
+            );
+
+            const key = `${file.docData.documentId}:${file.docData.locale}`;
+            successfulImports.push(key);
+            setImportedTranslations((prev) => new Set([...prev, key]));
+            return { success: true, file };
+          } catch (error) {
+            console.error(
+              `Failed to import ${file.docData.documentId} (${file.docData.locale}):`,
+              error
+            );
+            return { success: false, file, error };
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+
+        batchResults.forEach((result) => {
+          if (result.success) {
+            successCount++;
+          } else {
+            failureCount++;
+          }
+        });
+
+        // Update progress
+        setImportProgress({
+          current: i + batch.length,
+          total: downloadedFiles.length,
+          isImporting: true,
+        });
       }
 
       // Update download status for successful imports
-      if (successCount > 0) {
+      if (successfulImports.length > 0) {
         const newDownloadStatus = {
           ...downloadStatus,
           downloaded: new Set([
             ...downloadStatus.downloaded,
-            ...downloadedFiles
-              .slice(0, successCount)
-              .map(
-                (file) => `${file.docData.documentId}:${file.docData.locale}`
-              ),
+            ...successfulImports,
           ]),
         };
         setDownloadStatus(newDownloadStatus);
@@ -293,8 +335,17 @@ const TranslationsTool = () => {
       });
     } finally {
       setIsBusy(false);
+      setImportProgress({ current: 0, total: 0, isImporting: false });
     }
-  }, [secrets, documents, translationStatuses, downloadStatus, toast]);
+  }, [
+    secrets,
+    documents,
+    translationStatuses,
+    downloadStatus,
+    toast,
+    autoPublish,
+    translationContext,
+  ]);
 
   const handleRefreshAll = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
@@ -368,6 +419,34 @@ const TranslationsTool = () => {
     }
   }, [secrets, documents, locales, downloadStatus, translationStatuses, toast]);
 
+  // Auto-refresh on page load after documents and locales are loaded
+  useEffect(() => {
+    if (
+      documents.length > 0 &&
+      locales.length > 0 &&
+      secrets &&
+      !loadingDocuments
+    ) {
+      handleRefreshAll();
+    }
+  }, [documents]);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!autoRefresh || documents.length === 0 || !secrets) return;
+
+    const interval = setInterval(async () => {
+      await handleRefreshAll();
+    }, 10000); // Refresh every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, documents.length, secrets, handleRefreshAll]);
+
+  // Initialize imported translations from download status
+  useEffect(() => {
+    setImportedTranslations(new Set(downloadStatus.downloaded));
+  }, [downloadStatus.downloaded]);
+
   const handleImportDocument = useCallback(
     async (documentId: string, localeId: string) => {
       if (!secrets) return;
@@ -422,15 +501,17 @@ const TranslationsTool = () => {
               docInfo,
               localeId,
               downloadedFiles[0].data,
-              translationContext
+              translationContext,
+              autoPublish
             );
 
-            // Update download status
+            // Update download status and imported translations
             const newDownloadStatus = {
               ...downloadStatus,
               downloaded: new Set([...downloadStatus.downloaded, key]),
             };
             setDownloadStatus(newDownloadStatus);
+            setImportedTranslations((prev) => new Set([...prev, key]));
 
             toast.push({
               title: `Successfully imported translation for ${documentId} (${localeId})`,
@@ -461,7 +542,15 @@ const TranslationsTool = () => {
         });
       }
     },
-    [secrets, translationStatuses, documents, downloadStatus, toast]
+    [
+      secrets,
+      translationStatuses,
+      documents,
+      downloadStatus,
+      toast,
+      autoPublish,
+      translationContext,
+    ]
   );
 
   if (loadingSecrets) {
@@ -499,13 +588,39 @@ const TranslationsTool = () => {
         <Container width={2}>
           <Box padding={4} marginTop={5}>
             <Stack space={4}>
-              <Heading as='h2' size={3}>
-                Translations
-              </Heading>
-              <Text size={2}>
-                Manage your document translations from this centralized
-                location.
-              </Text>
+              <Flex align='center' justify='space-between'>
+                <Stack space={2}>
+                  <Heading as='h2' size={3}>
+                    Translations
+                  </Heading>
+                  <Text size={2}>
+                    Manage your document translations from this centralized
+                    location.
+                  </Text>
+                </Stack>
+
+                <Flex gap={3} align='center'>
+                  <Flex gap={2} align='center'>
+                    <Text size={1}>Auto-refresh</Text>
+                    <Switch
+                      checked={autoRefresh}
+                      onChange={() => setAutoRefresh(!autoRefresh)}
+                    />
+                  </Flex>
+                  <Button
+                    fontSize={1}
+                    padding={2}
+                    text={isRefreshing ? 'Refreshing...' : 'Refresh Status'}
+                    onClick={handleRefreshAll}
+                    disabled={
+                      isRefreshing ||
+                      isBusy ||
+                      loadingDocuments ||
+                      documents.length === 0
+                    }
+                  />
+                </Flex>
+              </Flex>
 
               <Stack space={4}>
                 <Box>
@@ -516,7 +631,7 @@ const TranslationsTool = () => {
                   </Text>
                 </Box>
 
-                <Flex justify='center' gap={3}>
+                <Flex justify='center'>
                   <Button
                     style={{ width: '200px' }}
                     tone='critical'
@@ -524,19 +639,6 @@ const TranslationsTool = () => {
                     onClick={() => setIsTranslateAllDialogOpen(true)}
                     disabled={
                       isBusy || loadingDocuments || documents.length === 0
-                    }
-                  />
-                  <Button
-                    style={{ width: '200px' }}
-                    tone='default'
-                    text={isRefreshing ? 'Refreshing...' : 'Refresh All'}
-                    icon={RefreshIcon}
-                    onClick={handleRefreshAll}
-                    disabled={
-                      isBusy ||
-                      isRefreshing ||
-                      loadingDocuments ||
-                      documents.length === 0
                     }
                   />
                 </Flex>
@@ -579,6 +681,8 @@ const TranslationsTool = () => {
                                     const status = translationStatuses.get(key);
                                     const isDownloaded =
                                       downloadStatus.downloaded.has(key);
+                                    const isImported =
+                                      importedTranslations.has(key);
 
                                     return (
                                       <LanguageStatus
@@ -587,7 +691,7 @@ const TranslationsTool = () => {
                                           locale.description || locale.localeId
                                         }
                                         progress={status?.progress || 0}
-                                        isImported={isDownloaded}
+                                        isImported={isImported || isDownloaded}
                                         importFile={async () => {
                                           await handleImportDocument(
                                             documentId,
@@ -610,18 +714,71 @@ const TranslationsTool = () => {
                   </Box>
                 )}
 
-                <Flex justify='center'>
-                  <Button
-                    tone='primary'
-                    text={isBusy ? 'Processing...' : 'Import All'}
-                    icon={DownloadIcon}
-                    onClick={() => setIsImportAllDialogOpen(true)}
-                    disabled={
-                      isBusy || loadingDocuments || documents.length === 0
-                    }
-                    style={{ width: '200px' }}
-                  />
-                </Flex>
+                <Stack space={3}>
+                  <Flex gap={3} align='center' justify='space-between'>
+                    <Flex gap={2} align='center'>
+                      <Button
+                        mode='ghost'
+                        onClick={() => setIsImportAllDialogOpen(true)}
+                        text={isBusy ? 'Importing...' : 'Import All'}
+                        icon={isBusy ? null : DownloadIcon}
+                        disabled={
+                          isBusy || loadingDocuments || documents.length === 0
+                        }
+                      />
+                      {importedTranslations.size ===
+                        documents.length *
+                          locales.filter((l) => l.enabled !== false).length &&
+                        documents.length > 0 &&
+                        locales.length > 0 && (
+                          <Flex
+                            gap={2}
+                            align='center'
+                            style={{ color: 'green' }}
+                          >
+                            <CheckmarkCircleIcon />
+                            <Text size={1}>All translations imported</Text>
+                          </Flex>
+                        )}
+                      {importedTranslations.size > 0 &&
+                        importedTranslations.size <
+                          documents.length *
+                            locales.filter((l) => l.enabled !== false)
+                              .length && (
+                          <Text size={1} style={{ color: '#666' }}>
+                            {importedTranslations.size}/
+                            {documents.length *
+                              locales.filter((l) => l.enabled !== false)
+                                .length}{' '}
+                            imported
+                          </Text>
+                        )}
+                    </Flex>
+                    <Flex
+                      gap={2}
+                      align='center'
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      <Text size={1}>Auto-Publish</Text>
+                      <Switch
+                        checked={autoPublish}
+                        onChange={() => setAutoPublish(!autoPublish)}
+                        disabled={isBusy}
+                      />
+                    </Flex>
+                  </Flex>
+
+                  {/* Import Progress UI */}
+                  {importProgress.isImporting && (
+                    <Flex justify='center' align='center' gap={3}>
+                      <Spinner size={1} />
+                      <Text size={1}>
+                        Importing {importProgress.current} of{' '}
+                        {importProgress.total} translations...
+                      </Text>
+                    </Flex>
+                  )}
+                </Stack>
               </Stack>
 
               <Text size={2}>

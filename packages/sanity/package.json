@@ -90,10 +90,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "pnpm": {
-    "overrides": {
-      "generaltranslation": "link:../../../../Library/pnpm/global/5/node_modules/generaltranslation"
-    }
   }
 }

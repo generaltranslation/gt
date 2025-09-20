@@ -17,7 +17,8 @@ export const documentLevelPatch = async (
   localeId: string,
   client: SanityClient,
   languageField: string = 'language',
-  mergeWithTargetLocale: boolean = false
+  mergeWithTargetLocale: boolean = false,
+  publish: boolean = false
 ): Promise<void> => {
   const baseLanguage = gtConfig.getSourceLocale();
   //this is the document we use to merge with the translated fields
@@ -93,26 +94,28 @@ export const documentLevelPatch = async (
   ) as SanityDocumentLike;
 
   if (i18nDoc) {
-    patchI18nDoc(
+    await patchI18nDoc(
       docInfo.documentId,
       i18nDoc._id,
       baseDoc,
       merged,
       translatedFields,
-      client
+      client,
+      publish
     );
   }
   //otherwise, create a new document
   //and add the document reference to the metadata document
   else {
-    createI18nDocAndPatchMetadata(
+    await createI18nDocAndPatchMetadata(
       baseDoc,
       merged,
       localeId,
       client,
       translationMetadata,
       docInfo.documentId,
-      languageField
+      languageField,
+      publish
     );
   }
 };

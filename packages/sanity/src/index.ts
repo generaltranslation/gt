@@ -153,14 +153,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     });
     return {
       name: 'gt-sanity',
-      tools: [
-        {
-          name: 'translations',
-          title: 'Translations',
-          component: TranslationsTool,
-          router: route.create('/*'),
-        },
-      ],
     };
   }
 );

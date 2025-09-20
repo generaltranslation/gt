@@ -66,6 +66,7 @@ export const baseDocumentLevelConfig = {
       serializationOptions = {},
       languageField = 'language',
       mergeWithTargetLocale = false,
+      publish = false,
     ] = params;
     const { client } = context;
     const deserializers = {
@@ -89,7 +90,8 @@ export const baseDocumentLevelConfig = {
       localeId,
       client,
       languageField,
-      mergeWithTargetLocale
+      mergeWithTargetLocale,
+      publish
     );
   },
   secretsNamespace: 'translationService',

@@ -7,7 +7,8 @@ export async function importDocument(
   docInfo: GTFile,
   localeId: string,
   document: string,
-  context: TranslationFunctionContext
+  context: TranslationFunctionContext,
+  publish: boolean = false
 ) {
   const { client } = context;
   const deserialized = deserializeDocument(document);
@@ -17,6 +18,7 @@ export async function importDocument(
     localeId,
     client,
     gtConfig.getLanguageField(),
-    false
+    false,
+    publish
   );
 }

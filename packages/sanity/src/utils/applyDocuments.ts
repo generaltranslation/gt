@@ -45,8 +45,6 @@ export function applyDocuments(
           sourceResults.forEach((result: { pointer: string; value: any }) => {
             const sourceValue = result.value;
 
-            console.log('sourceValue', sourceValue);
-
             // If type is specified, check if it matches the object's _type property
             if (type !== undefined) {
               if (

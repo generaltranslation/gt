@@ -28,7 +28,6 @@ export async function checkTranslationStatus(
     const responseData = await gt.checkFileTranslations(currentQueryData);
 
     const translations = responseData.translations || [];
-    console.log('translations', translations);
 
     // Filter for ready translations
     const readyTranslations = translations.filter(

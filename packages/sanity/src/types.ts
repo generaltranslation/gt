@@ -98,7 +98,8 @@ export type ImportTranslation = (
     additionalBlockDeserializers?: DeserializerRule[];
   },
   languageField?: string,
-  mergeWithTargetLocale?: boolean
+  mergeWithTargetLocale?: boolean,
+  publish?: boolean
 ) => Promise<void>;
 
 export type TranslationsTabConfigOptions = {

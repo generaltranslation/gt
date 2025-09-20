@@ -10,7 +10,7 @@ import {
 export function deserializeDocument(document: string) {
   const deserialized = BaseDocumentDeserializer.deserializeDocument(
     document,
-    {},
+    { types: {} },
     customBlockDeserializers
   ) as SanityDocument;
   return deserialized;
