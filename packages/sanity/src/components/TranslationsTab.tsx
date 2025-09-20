@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { useMemo } from 'react';
 import { SanityDocument, useSchema } from 'sanity';
 import { randomKey } from '@sanity/util/content';
@@ -154,6 +156,8 @@ const TranslationTab = (props: TranslationTabProps) => {
               <TranslationContext.Provider
                 value={{
                   documentInfo: { documentId, versionId: revisionId },
+                  document: displayed,
+                  languageField: props.options.languageField || 'language',
                   secrets,
                   importTranslation,
                   exportForTranslation,

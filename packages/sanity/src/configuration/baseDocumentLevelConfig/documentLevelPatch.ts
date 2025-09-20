@@ -1,12 +1,13 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { SanityClient, SanityDocument, SanityDocumentLike } from 'sanity';
 import { BaseDocumentMerger } from 'sanity-naive-html-serializer';
 
-import { findLatestDraft, findDocumentAtRevision } from '../utils';
-import {
-  createI18nDocAndPatchMetadata,
-  getOrCreateTranslationMetadata,
-  patchI18nDoc,
-} from './helpers';
+import { findLatestDraft } from '../utils/findLatestDraft';
+import { findDocumentAtRevision } from '../utils/findDocumentAtRevision';
+import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMetadata';
+import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
+import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
 import { gtConfig } from '../../adapter/core';
 
@@ -16,7 +17,8 @@ export const documentLevelPatch = async (
   localeId: string,
   client: SanityClient,
   languageField: string = 'language',
-  mergeWithTargetLocale: boolean = false
+  mergeWithTargetLocale: boolean = false,
+  publish: boolean = false
 ): Promise<void> => {
   const baseLanguage = gtConfig.getSourceLocale();
   //this is the document we use to merge with the translated fields
@@ -92,17 +94,28 @@ export const documentLevelPatch = async (
   ) as SanityDocumentLike;
 
   if (i18nDoc) {
-    patchI18nDoc(docInfo.documentId, merged, translatedFields, client);
+    await patchI18nDoc(
+      docInfo.documentId,
+      i18nDoc._id,
+      baseDoc,
+      merged,
+      translatedFields,
+      client,
+      publish
+    );
   }
   //otherwise, create a new document
   //and add the document reference to the metadata document
   else {
-    createI18nDocAndPatchMetadata(
+    await createI18nDocAndPatchMetadata(
+      baseDoc,
       merged,
       localeId,
       client,
       translationMetadata,
-      languageField
+      docInfo.documentId,
+      languageField,
+      publish
     );
   }
 };

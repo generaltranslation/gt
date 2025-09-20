@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { useCallback, useContext, useState, useEffect } from 'react';
 import { Box, Button, Flex, Text, Stack, useToast, Switch } from '@sanity/ui';
 import {

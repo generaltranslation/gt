@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { SanityClient, SanityDocument } from 'sanity';
 import {
   BaseDocumentSerializer,
@@ -14,7 +16,8 @@ import type {
   GTSerializedDocument,
   ImportTranslation,
 } from '../types';
-import { findLatestDraft, findDocumentAtRevision } from './utils';
+import { findLatestDraft } from './utils/findLatestDraft';
+import { findDocumentAtRevision } from './utils/findDocumentAtRevision';
 import { gtConfig } from '../adapter/core';
 
 export const fieldLevelPatch = async (

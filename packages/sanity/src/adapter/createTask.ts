@@ -13,7 +13,7 @@ export const createTask: Adapter['createTask'] = async (
   workflowUid?: string,
   callbackUrl?: string
 ) => {
-  const fileName = `sanity-${documentInfo.documentId}`;
+  const fileName = `sanity/${documentInfo.documentId}`;
   overrideConfig(secrets);
   const uploadResult = await gt.uploadSourceFiles(
     [

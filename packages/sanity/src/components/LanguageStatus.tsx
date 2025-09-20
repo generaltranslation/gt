@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { useCallback, useState } from 'react';
 import { Flex, Card, Text, Grid, Box, Button } from '@sanity/ui';
 import { DownloadIcon, CheckmarkCircleIcon } from '@sanity/icons';

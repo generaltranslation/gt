@@ -1,3 +1,5 @@
+// adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
+
 import { useState, useEffect } from 'react';
 import { SanityDocumentLike } from 'sanity';
 import { useClient } from './useClient';
