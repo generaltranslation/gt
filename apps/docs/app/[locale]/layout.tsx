@@ -91,7 +91,7 @@ export default async function Layout({
                     transform(option, node) {
                       const meta = source.getNodeMeta(node);
                       if (!meta) return option;
-                      const color = `var(--${meta.file.dirname}-color, var(--purple-500, #8b5cf6))`;
+                      const color = `var(--${meta.file.dirname}-color, var(--blue-500, #3b82f6))`;
                       return {
                         ...option,
                         icon: (
@@ -118,7 +118,7 @@ export default async function Layout({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-100/20">
+                        <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-100/20">
                           <h3 className="font-semibold text-sm flex items-center gap-2">
                             <SiGithub />
                             Star on GitHub
