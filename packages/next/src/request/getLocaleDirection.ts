@@ -17,6 +17,8 @@ import { getLocale } from './getLocale';
  */
 export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
+// bridge overload so callers with `string | undefined` type compile
+export function getLocaleDirection(locale: string | undefined): Promise<'ltr' | 'rtl'>;
 export function getLocaleDirection(
   locale?: string
 ): Promise<'ltr' | 'rtl'> | 'ltr' | 'rtl' {
