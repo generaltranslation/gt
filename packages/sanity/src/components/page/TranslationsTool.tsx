@@ -28,7 +28,7 @@ import {
   TranslationLocale,
   TranslationFunctionContext,
 } from '../../types';
-import { gtConfig } from '../../adapter/core';
+import { pluginConfig } from '../../adapter/core';
 import { LanguageStatus } from '../LanguageStatus';
 import { serializeDocument } from '../../utils/serialize';
 import { uploadFiles } from '../../translation/uploadFiles';
@@ -76,13 +76,13 @@ const TranslationsTool = () => {
   const translationContext: TranslationFunctionContext = { client, schema };
   const toast = useToast();
   const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
-    `${gtConfig.getSecretsNamespace()}.secrets`
+    `${pluginConfig.getSecretsNamespace()}.secrets`
   );
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
     try {
-      const translateDocuments = gtConfig.getTranslateDocuments();
+      const translateDocuments = pluginConfig.getTranslateDocuments();
 
       // Build filter conditions based on translateDocuments configuration
       const filterConditions = translateDocuments
@@ -102,8 +102,8 @@ const TranslationsTool = () => {
         .filter(Boolean);
 
       // If no filters are configured, fall back to the original query
-      const languageField = gtConfig.getLanguageField();
-      const sourceLocale = gtConfig.getSourceLocale();
+      const languageField = pluginConfig.getLanguageField();
+      const sourceLocale = pluginConfig.getSourceLocale();
       const languageFilter = `(!defined(${languageField}) || ${languageField} == "${sourceLocale}")`;
 
       let query;
@@ -166,8 +166,8 @@ const TranslationsTool = () => {
       // Transform documents to the required format
       const transformedDocuments = documents
         .map((doc) => {
-          delete doc[gtConfig.getLanguageField()];
-          const baseLanguage = gtConfig.getSourceLocale();
+          delete doc[pluginConfig.getLanguageField()];
+          const baseLanguage = pluginConfig.getSourceLocale();
           try {
             const serialized = serializeDocument(doc, schema, baseLanguage);
             return {

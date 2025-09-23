@@ -2,7 +2,7 @@
 
 import { SanityClient, SanityDocumentLike } from 'sanity';
 import { applyDocuments } from '../../../utils/applyDocuments';
-import { gtConfig } from '../../../adapter/core';
+import { pluginConfig } from '../../../adapter/core';
 
 const SYSTEM_FIELDS = ['_id', '_rev', '_updatedAt', 'language'];
 
@@ -37,12 +37,16 @@ export async function patchI18nDoc(
       cleanedSourceDocument[key] = value;
     }
   });
-
+  console.log(
+    'cleanedSourceDocument',
+    JSON.stringify(cleanedSourceDocument, null, 2)
+  );
+  console.log('translatedFields', JSON.stringify(translatedFields, null, 2));
   const appliedDocument = applyDocuments(
     sourceDocumentId,
     cleanedSourceDocument,
     cleanedMerge,
-    gtConfig.getIgnoreFields()
+    pluginConfig.getIgnoreFields()
   );
   const newDocument = await client
     .patch(i18nDocId, { set: appliedDocument })

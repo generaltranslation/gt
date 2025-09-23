@@ -3,7 +3,7 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { Secrets } from '../types';
 import type { TranslateDocumentFilter, IgnoreFields } from './types';
 import { SECRETS_NAMESPACE } from '../utils/shared';
-
+import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 export const gt = new GT();
 
 export function overrideConfig(secrets: Secrets | null) {
@@ -22,6 +22,11 @@ export class GTConfig {
   singletonMapping: (sourceDocumentId: string, locale: string) => string;
   ignoreFields: IgnoreFields[];
   translateDocuments: TranslateDocumentFilter[];
+  additionalStopTypes: string[];
+  additionalSerializers: Partial<PortableTextHtmlComponents>;
+  additionalDeserializers: Record<string, any>;
+  additionalBlockDeserializers: any[];
+
   private static instance: GTConfig;
   constructor(
     secretsNamespace: string,
@@ -31,7 +36,11 @@ export class GTConfig {
     singletons: string[],
     singletonMapping: (sourceDocumentId: string, locale: string) => string,
     ignoreFields: IgnoreFields[],
-    translateDocuments: TranslateDocumentFilter[]
+    translateDocuments: TranslateDocumentFilter[],
+    additionalStopTypes: string[] = [],
+    additionalSerializers: Partial<PortableTextHtmlComponents> = {},
+    additionalDeserializers: Partial<PortableTextHtmlComponents> = {},
+    additionalBlockDeserializers: any[] = []
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -41,6 +50,10 @@ export class GTConfig {
     this.singletonMapping = singletonMapping;
     this.ignoreFields = ignoreFields;
     this.translateDocuments = translateDocuments;
+    this.additionalStopTypes = additionalStopTypes;
+    this.additionalSerializers = additionalSerializers;
+    this.additionalDeserializers = additionalDeserializers;
+    this.additionalBlockDeserializers = additionalBlockDeserializers;
   }
 
   static getInstance() {
@@ -53,6 +66,10 @@ export class GTConfig {
         [],
         () => '',
         [],
+        [],
+        [],
+        {},
+        {},
         []
       );
     }
@@ -67,7 +84,11 @@ export class GTConfig {
     singletons: string[],
     singletonMapping: (sourceDocumentId: string, locale: string) => string,
     ignoreFields: IgnoreFields[],
-    translateDocuments: TranslateDocumentFilter[]
+    translateDocuments: TranslateDocumentFilter[],
+    additionalStopTypes: string[] = [],
+    additionalSerializers: Partial<PortableTextHtmlComponents> = {},
+    additionalDeserializers: Partial<PortableTextHtmlComponents> = {},
+    additionalBlockDeserializers: any[] = []
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -77,6 +98,10 @@ export class GTConfig {
     this.singletonMapping = singletonMapping;
     this.ignoreFields = ignoreFields;
     this.translateDocuments = translateDocuments;
+    this.additionalStopTypes = additionalStopTypes;
+    this.additionalSerializers = additionalSerializers;
+    this.additionalDeserializers = additionalDeserializers;
+    this.additionalBlockDeserializers = additionalBlockDeserializers;
   }
 
   getSecretsNamespace() {
@@ -105,5 +130,17 @@ export class GTConfig {
   getTranslateDocuments() {
     return this.translateDocuments;
   }
+  getAdditionalStopTypes() {
+    return this.additionalStopTypes;
+  }
+  getAdditionalSerializers() {
+    return this.additionalSerializers;
+  }
+  getAdditionalDeserializers() {
+    return this.additionalDeserializers;
+  }
+  getAdditionalBlockDeserializers() {
+    return this.additionalBlockDeserializers;
+  }
 }
-export const gtConfig = GTConfig.getInstance();
+export const pluginConfig = GTConfig.getInstance();

@@ -9,7 +9,7 @@ import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMe
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
-import { gtConfig } from '../../adapter/core';
+import { pluginConfig } from '../../adapter/core';
 
 export const documentLevelPatch = async (
   docInfo: GTFile,
@@ -20,7 +20,7 @@ export const documentLevelPatch = async (
   mergeWithTargetLocale: boolean = false,
   publish: boolean = false
 ): Promise<void> => {
-  const baseLanguage = gtConfig.getSourceLocale();
+  const baseLanguage = pluginConfig.getSourceLocale();
   //this is the document we use to merge with the translated fields
   let baseDoc: SanityDocument | null = null;
 

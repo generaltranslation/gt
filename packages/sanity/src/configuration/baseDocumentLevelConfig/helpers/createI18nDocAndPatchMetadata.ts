@@ -1,7 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocumentLike } from 'sanity';
-import { gtConfig } from '../../../adapter/core';
+import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
 
 export async function createI18nDocAndPatchMetadata(
@@ -34,16 +34,16 @@ export async function createI18nDocAndPatchMetadata(
     sourceDocumentId,
     sourceDocument,
     rest,
-    gtConfig.getIgnoreFields()
+    pluginConfig.getIgnoreFields()
   );
 
   // Check if this is a singleton document and apply singleton mapping
-  const singletons = gtConfig.getSingletons();
+  const singletons = pluginConfig.getSingletons();
   const isSingleton = singletons.includes(sourceDocumentId);
 
   let createDocumentPromise;
   if (isSingleton) {
-    const singletonMapping = gtConfig.getSingletonMapping();
+    const singletonMapping = pluginConfig.getSingletonMapping();
     const translatedDocId = singletonMapping(sourceDocumentId, localeId);
     createDocumentPromise = client.create({
       ...appliedDocument,

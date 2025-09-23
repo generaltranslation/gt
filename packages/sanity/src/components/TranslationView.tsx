@@ -7,7 +7,7 @@
 import { useCallback, useContext, useEffect, useState, useMemo } from 'react';
 import { Stack, useToast, Text, Card } from '@sanity/ui';
 import { TranslationContext } from './TranslationContext';
-import { gtConfig } from '../adapter/core';
+import { pluginConfig } from '../adapter/core';
 
 import { NewTask } from './NewTask';
 import { TaskView } from './TaskView';
@@ -28,13 +28,13 @@ export const TranslationView = () => {
     const documentLanguage = context.document[context.languageField];
 
     // If no language field is set, assume it's the source language
-    return documentLanguage || gtConfig.getSourceLocale();
+    return documentLanguage || pluginConfig.getSourceLocale();
   }, [context?.document, context?.languageField]);
 
   // Only show translation components if we're on a source language document
   const shouldShowTranslationComponents = useMemo(() => {
     if (!currentDocumentLanguage) return false;
-    return currentDocumentLanguage === gtConfig.getSourceLocale();
+    return currentDocumentLanguage === pluginConfig.getSourceLocale();
   }, [currentDocumentLanguage]);
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export const TranslationView = () => {
       <Card padding={4} tone='neutral' border>
         <Text size={1} muted>
           Translation tools are only available for{' '}
-          <code>{gtConfig.getSourceLocale()}</code> documents.
+          <code>{pluginConfig.getSourceLocale()}</code> documents.
         </Text>
       </Card>
     );

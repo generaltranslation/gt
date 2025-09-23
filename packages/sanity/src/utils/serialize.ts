@@ -5,7 +5,7 @@ import {
   defaultStopTypes,
   customSerializers,
   customBlockDeserializers,
-} from 'sanity-naive-html-serializer';
+} from '../serialization/';
 
 export function deserializeDocument(document: string) {
   const deserialized = BaseDocumentDeserializer.deserializeDocument(

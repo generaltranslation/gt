@@ -20,6 +20,7 @@ import { TranslationView } from './TranslationView';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
 import { GTFile, Secrets, TranslationsTabConfigOptions } from '../types';
+import { pluginConfig } from '../adapter/core';
 
 type TranslationTabProps = {
   document: {
@@ -41,8 +42,7 @@ const TranslationTab = (props: TranslationTabProps) => {
   const revisionId = displayed && displayed._rev ? displayed._rev : undefined;
 
   const { errors, importTranslation, exportForTranslation } = useMemo(() => {
-    const { serializationOptions, languageField, mergeWithTargetLocale } =
-      props.options;
+    const { mergeWithTargetLocale } = props.options;
     const ctx = {
       client,
       schema,
@@ -69,8 +69,6 @@ const TranslationTab = (props: TranslationTabProps) => {
         localeId,
         doc,
         ctx,
-        serializationOptions,
-        languageField,
         mergeWithTargetLocale
       );
     };
@@ -89,12 +87,7 @@ const TranslationTab = (props: TranslationTabProps) => {
     }
 
     const contextExportForTranslation = (docInfo: GTFile) => {
-      return exportTranslationFunc(
-        docInfo,
-        ctx,
-        serializationOptions,
-        languageField
-      );
+      return exportTranslationFunc(docInfo, ctx);
     };
 
     return {
@@ -157,7 +150,7 @@ const TranslationTab = (props: TranslationTabProps) => {
                 value={{
                   documentInfo: { documentId, versionId: revisionId },
                   document: displayed,
-                  languageField: props.options.languageField || 'language',
+                  languageField: pluginConfig.getLanguageField(),
                   secrets,
                   importTranslation,
                   exportForTranslation,

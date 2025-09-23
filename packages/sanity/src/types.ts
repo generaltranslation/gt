@@ -74,15 +74,7 @@ export type GTSerializedDocument = Omit<SerializedDocument, 'name'> & GTFile;
 
 export type ExportForTranslation = (
   documentInfo: GTFile,
-  context: TranslationFunctionContext,
-  serializationOptions?: {
-    additionalStopTypes?: string[];
-    additionalSerializers?: Record<
-      string,
-      PortableTextTypeComponent | undefined
-    >;
-  },
-  languageField?: string
+  context: TranslationFunctionContext
 ) => Promise<GTSerializedDocument>;
 
 export type ImportTranslation = (
@@ -90,14 +82,6 @@ export type ImportTranslation = (
   localeId: string,
   document: string,
   context: TranslationFunctionContext,
-  serializationOptions?: {
-    additionalDeserializers?: Record<
-      string,
-      (value: HTMLElement) => TypedObject
-    >;
-    additionalBlockDeserializers?: DeserializerRule[];
-  },
-  languageField?: string,
   mergeWithTargetLocale?: boolean,
   publish?: boolean
 ) => Promise<void>;

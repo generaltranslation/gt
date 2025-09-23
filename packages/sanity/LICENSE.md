@@ -106,7 +106,7 @@ specific language governing permissions and limitations under the License.
 
 ## Additional Code
 
-The some portions of the Software are adapted from https://github.com/sanity-io/sanity-translations-tab. These portions are licensed under the license of the original software, listed below.
+The some portions of the Software are adapted from https://github.com/sanity-io/sanity-translations-tab and https://github.com/sanity-io/sanity-naive-html-serializer. These portions are licensed under the license of the original software, listed below.
 
 MIT License
 

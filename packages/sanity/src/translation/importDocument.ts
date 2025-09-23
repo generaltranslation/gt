@@ -1,4 +1,4 @@
-import { gtConfig } from '../adapter/core';
+import { pluginConfig } from '../adapter/core';
 import { documentLevelPatch } from '../configuration/baseDocumentLevelConfig/documentLevelPatch';
 import type { GTFile, TranslationFunctionContext } from '../types';
 import { deserializeDocument } from '../utils/serialize';
@@ -17,7 +17,7 @@ export async function importDocument(
     deserialized,
     localeId,
     client,
-    gtConfig.getLanguageField(),
+    pluginConfig.getLanguageField(),
     false,
     publish
   );
