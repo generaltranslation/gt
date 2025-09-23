@@ -19,7 +19,7 @@ import {
   defaultStopTypes,
   customSerializers,
   SerializedDocument,
-} from 'sanity-naive-html-serializer';
+} from './serialization';
 
 export type {
   Secrets,

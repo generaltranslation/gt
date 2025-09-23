@@ -7,10 +7,4 @@ export {
   customBlockDeserializers,
 } from './BaseSerializationConfig';
 
-export type {
-  SerializedDocument,
-  Serializer,
-  SerializerClosure,
-  Deserializer,
-  Merger,
-} from './types';
+export type { SerializedDocument, Deserializer, Merger } from './types';

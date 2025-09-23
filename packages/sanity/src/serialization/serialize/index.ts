@@ -5,13 +5,13 @@ import {
   customSerializers,
 } from '../BaseSerializationConfig';
 import { SanityDocument, TypedObject, Schema } from 'sanity';
-import { TranslationLevel, SerializerClosure } from '../types';
+import { TranslationLevel } from '../types';
 import { fieldFilter, languageObjectFieldFilter } from './fieldFilters';
 import { PortableTextTypeComponent, toHTML } from '@portabletext/to-html';
 
 const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 
-export const BaseDocumentSerializer: SerializerClosure = (schemas: Schema) => {
+export const BaseDocumentSerializer = (schemas: Schema) => {
   /*
    * Helper function that allows us to get metadata (like `localize: false`) from schema fields.
    */

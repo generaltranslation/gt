@@ -1,0 +1,70 @@
+{
+  "_id": "drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a",
+  "_rev": "fxcnqj-uew-gr7-v6r-z965tfm69",
+  "_type": "documentLevelArticle",
+  "_createdAt": "2021-09-01T23:00:13Z",
+  "_updatedAt": "2021-09-01T23:02:05Z",
+  "content": [
+    {
+      "_key": "a4d177e92666",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "a896ea6fcd59",
+          "_type": "span",
+          "marks": [],
+          "text": "This is block text with "
+        },
+        {
+          "_key": "b997fb7gce60",
+          "_type": "span",
+          "marks": ["topLink1"],
+          "text": "a website link"
+        },
+        {
+          "_key": "c008gc8hdf71",
+          "_type": "span",
+          "marks": [],
+          "text": " and "
+        },
+        {
+          "_key": "d119hd9ieg82",
+          "_type": "span",
+          "marks": ["topLink2"],
+          "text": "a post reference"
+        },
+        {
+          "_key": "e220ie0jfh93",
+          "_type": "span",
+          "marks": [],
+          "text": " at the top level."
+        }
+      ],
+      "markDefs": [
+        {
+          "_key": "topLink1",
+          "_type": "linkField",
+          "linkType": "href",
+          "href": "https://example.com",
+          "openInNewTab": true
+        },
+        {
+          "_key": "topLink2",
+          "_type": "linkField",
+          "linkType": "post",
+          "post": {
+            "_ref": "post-123-abc",
+            "_type": "reference"
+          },
+          "openInNewTab": false
+        }
+      ],
+      "style": "normal"
+    }
+  ],
+  "hidden": true,
+  "meta": "Do not translate this",
+  "snippet": "This is text in my text field.",
+  "tags": ["tag 1", "tag 2", "tag 3"],
+  "title": "My Document-Level Article"
+}

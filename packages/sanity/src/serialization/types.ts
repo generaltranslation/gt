@@ -8,37 +8,6 @@ export type SerializedDocument = {
 };
 
 export type TranslationLevel = 'document' | 'field';
-export interface Serializer {
-  serializeDocument: (
-    doc: SanityDocument,
-    translationLevel: TranslationLevel,
-    baseLang?: string,
-    stopTypes?: string[],
-    serializers?: Record<string, any>
-  ) => SerializedDocument;
-  fieldFilter: (
-    obj: Record<string, any>,
-    objFields: ObjectField[],
-    stopTypes: string[]
-  ) => TypedObject;
-  languageObjectFieldFilter: (
-    obj: Record<string, any>,
-    baseLang: string
-  ) => Record<string, any>;
-  serializeArray: (
-    fieldContent: Record<string, any>[],
-    fieldName: string,
-    stopTypes: string[],
-    serializers: Record<string, any>
-  ) => string;
-  serializeObject: (
-    obj: TypedObject,
-    stopTypes: string[],
-    serializers: Record<string, any>
-  ) => string;
-}
-
-export type SerializerClosure = (schemas: Schema) => Serializer;
 
 export interface Deserializer {
   deserializeDocument: (

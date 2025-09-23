@@ -69,6 +69,26 @@ export const customSerializers: Record<string, any> = {
   list: defaultLists,
   listItem: defaultListItem,
   unknownBlockStyle: unknownBlockFunc,
+  marks: {
+    linkField: ({ value, children }: { value: any; children: string }) => {
+      if (value.linkType === 'href' && value.href) {
+        return `<a href="${value.href}"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
+      }
+      if (value.linkType === 'post' && value.post?._ref) {
+        return `<a href="#${value.post._ref}" data-link-type="post"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
+      }
+      if (value.linkType === 'page' && value.page?._ref) {
+        return `<a href="#${value.page._ref}" data-link-type="page"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
+      }
+      if (value.linkType === 'simplePage' && value.simplePage?._ref) {
+        return `<a href="#${value.simplePage._ref}" data-link-type="simplePage"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
+      }
+      if (value.linkType === 'file' && value.file) {
+        return `<a href="${value.file.asset?._ref || '#'}" data-link-type="file"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
+      }
+      return `<span class="linkField" data-link-type="${value.linkType || 'none'}">${children}</span>`;
+    },
+  },
 };
 
 export const customDeserializers: Record<string, any> = { types: {} };

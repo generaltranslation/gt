@@ -7,6 +7,7 @@ const require = createRequire(import.meta.url);
 export { default as inlineSchema } from '../__fixtures__/inlineSchema';
 export { default as schema } from '../__fixtures__/schema';
 export const documentLevelArticle = require('../__fixtures__/documentLevelArticle.json');
+export const docWithInlineMarks = require('../__fixtures__/documentInlineMarks.json');
 export const inlineDocumentLevelArticle = require('../__fixtures__/inlineDocumentLevelArticle.json');
 export const fieldLevelArticle = require('../__fixtures__/fieldLevelArticle.json');
 export const annotationAndInlineBlocks = require('../__fixtures__/annotationAndInlineBlocks.json');

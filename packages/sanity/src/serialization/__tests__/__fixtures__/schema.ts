@@ -4,7 +4,85 @@ const arrayField = {
   name: 'arrayField',
   title: 'Array Field',
   type: 'array',
-  of: [{ type: 'block' }, { type: 'objectField' }],
+  of: [
+    {
+      type: 'block',
+      marks: {
+        annotations: [{ type: 'linkField' }],
+      },
+    },
+    { type: 'objectField' },
+    { type: 'linkField' },
+  ],
+};
+const linkField = {
+  name: 'linkField',
+  title: 'Link Field',
+  type: 'object',
+  fields: [
+    {
+      name: 'label',
+      title: 'Label',
+      type: 'string',
+    },
+    {
+      name: 'linkType',
+      title: 'Link Type',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'None', value: 'none' },
+          { title: 'URL', value: 'href' },
+          { title: 'Page', value: 'page' },
+          { title: 'Simple Page', value: 'simplePage' },
+          { title: 'Post', value: 'post' },
+          { title: 'File', value: 'file' },
+        ],
+      },
+    },
+    {
+      name: 'href',
+      title: 'URL',
+      type: 'url',
+      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'href',
+    },
+    {
+      name: 'page',
+      title: 'Page',
+      type: 'reference',
+      to: [{ type: 'page' }],
+      weak: true,
+      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'page',
+    },
+    {
+      name: 'simplePage',
+      title: 'Simple Page',
+      type: 'reference',
+      to: [{ type: 'simplePage' }],
+      weak: true,
+      hidden: ({ parent }: { parent: any }) =>
+        parent?.linkType !== 'simplePage',
+    },
+    {
+      name: 'post',
+      title: 'Post',
+      type: 'reference',
+      to: [{ type: 'post' }],
+      weak: true,
+      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'post',
+    },
+    {
+      name: 'file',
+      title: 'File',
+      type: 'file',
+      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'file',
+    },
+    {
+      name: 'openInNewTab',
+      title: 'Open in New Tab',
+      type: 'boolean',
+    },
+  ],
 };
 
 const childObjectField = {
@@ -21,7 +99,15 @@ const childObjectField = {
       name: 'content',
       title: 'Content',
       type: 'array',
-      of: [{ type: 'block' }],
+      of: [
+        {
+          type: 'block',
+          marks: {
+            annotations: [{ type: 'linkField' }],
+          },
+        },
+        { type: 'linkField' },
+      ],
     },
   ],
 };
@@ -45,7 +131,15 @@ const objectField = {
       name: 'nestedArrayField',
       title: 'Nested Array Field',
       type: 'array',
-      of: [{ type: 'block' }, { type: 'childObjectField' }],
+      of: [
+        {
+          type: 'block',
+          marks: {
+            annotations: [{ type: 'linkField' }],
+          },
+        },
+        { type: 'childObjectField' },
+      ],
     },
   ],
 };
@@ -200,6 +294,7 @@ const pageFields = {
 
 const types = [
   arrayField,
+  linkField,
   childObjectField,
   objectField,
   documentLevelArticle,
