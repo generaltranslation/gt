@@ -89,7 +89,6 @@ export const BaseDocumentSerializer: SerializerClosure = (schemas: Schema) => {
 
         //array fields get filtered and its children serialized
         else if (Array.isArray(value)) {
-          //eslint-disable-next-line no-use-before-define -- this is a recursive function
           htmlField = serializeArray(value, fieldName, stopTypes, {
             ...serializers,
             types: { ...serializers.types },

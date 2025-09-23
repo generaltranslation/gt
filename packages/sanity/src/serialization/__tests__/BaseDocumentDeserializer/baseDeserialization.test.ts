@@ -117,7 +117,6 @@ test('Custom deserialization should manifest at all levels', () => {
 });
 
 test('Content with custom styles deserializes correctly and maintains style', () => {
-  //eslint-disable-next-line no-empty-function -- unhandled style throws a warn -- ignore it in this case
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 
   const customStyledDocument = {
@@ -328,7 +327,6 @@ test('Deserialized list items should preserve level, style and tag', () => {
  * MESSY INPUT
  */
 test('&nbsp; whitespace should not be escaped', () => {
-  //eslint-disable-next-line no-empty-function -- unhandled style throws a warn -- ignore it in this case
   vi.spyOn(console, 'debug').mockImplementation(() => {});
 
   const content = readFileSync(
@@ -348,7 +346,6 @@ test('&nbsp; whitespace should not be escaped', () => {
  * V2 functionality -- be able to operate without a strict schema
  */
 test('Content with anonymous inline objects deserializes all fields, at any depth', () => {
-  //eslint-disable-next-line no-empty-function -- unhandled style throws a warn -- ignore it in this case
   vi.spyOn(console, 'debug').mockImplementation(() => {});
 
   const serialized = BaseDocumentSerializer(inlineSchema).serializeDocument(

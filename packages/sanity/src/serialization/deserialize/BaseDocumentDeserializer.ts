@@ -25,7 +25,6 @@ export const deserializeArray = (
         child.className ||
         child.getAttribute('data-type') === 'object'
       ) {
-        //eslint-disable-next-line no-use-before-define -- this is a recursive function
         deserializedObject = deserializeObject(
           child,
           deserializers,
@@ -73,7 +72,6 @@ export const deserializeObject = (
     }
     //richer field, either object or array
     else if (child.getAttribute('data-level') === 'field') {
-      //eslint-disable-next-line no-use-before-define -- this is a recursive function
       const deserialized = deserializeHTML(
         child.outerHTML,
         deserializers,

@@ -35,7 +35,6 @@ const reconcileArray = (origArray: any[], translatedArray: any[]): any[] => {
     } else if (Array.isArray(origArray[foundBlockIdx])) {
       combined[foundBlockIdx] = reconcileArray(origArray[foundBlockIdx], block);
     } else {
-      //eslint-disable-next-line no-use-before-define -- this is a recursive function
       combined[foundBlockIdx] = reconcileObject(
         origArray[foundBlockIdx],
         block
@@ -64,7 +63,6 @@ const reconcileObject = (
     if (typeof value === 'string') {
       updatedObj[key] = value;
     } else if (Array.isArray(value)) {
-      //eslint-disable-next-line @typescript-eslint/no-use-before-define -- this is a recursive function
       updatedObj[key] = reconcileArray(origObject[key] ?? [], value);
     } else {
       updatedObj[key] = reconcileObject(origObject[key] ?? {}, value);

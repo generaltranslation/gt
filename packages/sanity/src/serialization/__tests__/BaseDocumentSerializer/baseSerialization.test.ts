@@ -139,7 +139,6 @@ test('Expect custom stop types to be absent at all levels', () => {
  */
 
 test('Unhandled inline objects and annotations should not hinder translation flows', () => {
-  //eslint-disable-next-line no-empty-function -- we're just silencing the console.warn
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 
   const inlineDocument = {
