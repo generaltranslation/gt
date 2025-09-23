@@ -17,7 +17,9 @@ import { getLocale } from './getLocale';
  */
 export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
-export function getLocaleDirection(locale?: string): Promise<'ltr' | 'rtl'> | 'ltr' | 'rtl' {
+export function getLocaleDirection(
+  locale?: string
+): Promise<'ltr' | 'rtl'> | 'ltr' | 'rtl' {
   if (locale) {
     const gt = getI18NConfig().getGTClass();
     return gt.getLocaleDirection(locale);
