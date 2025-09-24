@@ -5,24 +5,24 @@ import {
   Container,
   Flex,
   Heading,
-  Spinner,
   Stack,
   Switch,
   Text,
-  ThemeProvider,
-  ToastProvider,
-  Card,
+  Spinner,
 } from '@sanity/ui';
-import { DownloadIcon, CheckmarkCircleIcon, LinkIcon, PublishIcon } from '@sanity/icons';
-import { buildTheme } from '@sanity/ui/theme';
+import {
+  DownloadIcon,
+  CheckmarkCircleIcon,
+  LinkIcon,
+  PublishIcon,
+} from '@sanity/icons';
 import { Link } from 'sanity/router';
-import { TranslationsProvider, useTranslations } from './TranslationsProvider';
+import { BaseTranslationWrapper } from '../shared/BaseTranslationWrapper';
+import { TranslationsProvider, useTranslations } from '../TranslationsProvider';
 import { TranslationsTable } from './TranslationsTable';
 import { TranslateAllDialog } from './TranslateAllDialog';
 import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
-
-const theme = buildTheme();
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -40,38 +40,11 @@ const TranslationsToolContent: React.FC = () => {
     importProgress,
     importedTranslations,
     isRefreshing,
-    loadingSecrets,
-    secrets,
     setAutoRefresh,
     handleRefreshAll,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
   } = useTranslations();
-
-  if (loadingSecrets) {
-    return (
-      <Container width={2}>
-        <Flex padding={5} align='center' justify='center'>
-          <Spinner />
-        </Flex>
-      </Container>
-    );
-  }
-
-  if (!secrets) {
-    return (
-      <Container width={2}>
-        <Box padding={4} marginTop={5}>
-          <Card tone='caution' padding={[2, 3, 4, 4]} shadow={1} radius={2}>
-            <Text>
-              Can't find secrets for your translation service. Did you load them
-              into this dataset?
-            </Text>
-          </Card>
-        </Box>
-      </Container>
-    );
-  }
 
   return (
     <Container width={2}>
@@ -240,13 +213,11 @@ const TranslationsToolContent: React.FC = () => {
 
 const TranslationsTool: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <ToastProvider paddingY={7}>
-        <TranslationsProvider>
-          <TranslationsToolContent />
-        </TranslationsProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <BaseTranslationWrapper showContainer={false}>
+      <TranslationsProvider>
+        <TranslationsToolContent />
+      </TranslationsProvider>
+    </BaseTranslationWrapper>
   );
 };
 

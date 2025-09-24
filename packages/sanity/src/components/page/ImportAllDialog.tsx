@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
-import { useTranslations } from './TranslationsProvider';
+import { useTranslations } from '../TranslationsProvider';
 
 interface ImportAllDialogProps {
   isOpen: boolean;
@@ -22,14 +22,14 @@ export const ImportAllDialog: React.FC<ImportAllDialogProps> = ({
 
   return (
     <Dialog
-      header="Confirm Import"
-      id="import-all-dialog"
+      header='Confirm Import'
+      id='import-all-dialog'
       onClose={onClose}
       footer={
         <Box padding={3}>
           <Flex gap={2}>
-            <Button text="Cancel" mode="ghost" onClick={onClose} />
-            <Button text="Import All" tone="primary" onClick={handleConfirm} />
+            <Button text='Cancel' mode='ghost' onClick={onClose} />
+            <Button text='Import All' tone='primary' onClick={handleConfirm} />
           </Flex>
         </Box>
       }

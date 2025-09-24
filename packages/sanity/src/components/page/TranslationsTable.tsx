@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Card, Stack, Text, Flex, Spinner } from '@sanity/ui';
-import { LanguageStatus } from '../LanguageStatus';
-import { useTranslations } from './TranslationsProvider';
+import { LanguageStatus } from '../shared/LanguageStatus';
+import { useTranslations } from '../TranslationsProvider';
 
 export const TranslationsTable: React.FC = () => {
   const {
@@ -16,7 +16,7 @@ export const TranslationsTable: React.FC = () => {
 
   if (loadingDocuments) {
     return (
-      <Flex align="center" justify="center" padding={4}>
+      <Flex align='center' justify='center' padding={4}>
         <Spinner />
       </Flex>
     );
@@ -28,9 +28,9 @@ export const TranslationsTable: React.FC = () => {
         {documents.map((document) => (
           <Card key={document._id} shadow={1} padding={3}>
             <Stack space={3}>
-              <Flex justify="space-between" align="flex-start">
+              <Flex justify='space-between' align='flex-start'>
                 <Box flex={1}>
-                  <Text weight="semibold" size={1}>
+                  <Text weight='semibold' size={1}>
                     {document._id?.replace('drafts.', '') || document._id}
                   </Text>
                   <Text size={0} muted style={{ marginTop: '2px' }}>
@@ -58,7 +58,10 @@ export const TranslationsTable: React.FC = () => {
                           progress={status?.progress || 0}
                           isImported={isImported || isDownloaded}
                           importFile={async () => {
-                            await handleImportDocument(documentId, locale.localeId);
+                            await handleImportDocument(
+                              documentId,
+                              locale.localeId
+                            );
                           }}
                         />
                       );

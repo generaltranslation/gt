@@ -1,4 +1,4 @@
-import TranslationsTab from './components/TranslationsTab';
+import TranslationsTab from './components/tab/TranslationsTab';
 import {
   Secrets,
   Adapter,
@@ -59,8 +59,6 @@ import { attachGTData, detachGTData } from './serialization/data';
 interface ConfigOptions {
   adapter: Adapter;
   secretsNamespace: string | null;
-  exportForTranslation: ExportForTranslation;
-  importTranslation: ImportTranslation;
 }
 
 export const defaultDocumentLevelConfig: ConfigOptions = {

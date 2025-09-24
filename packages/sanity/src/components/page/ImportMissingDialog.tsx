@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
-import { useTranslations } from './TranslationsProvider';
+import { useTranslations } from '../TranslationsProvider';
 
 interface ImportMissingDialogProps {
   isOpen: boolean;
@@ -22,14 +22,18 @@ export const ImportMissingDialog: React.FC<ImportMissingDialogProps> = ({
 
   return (
     <Dialog
-      header="Confirm Import Missing"
-      id="import-missing-dialog"
+      header='Confirm Import Missing'
+      id='import-missing-dialog'
       onClose={onClose}
       footer={
         <Box padding={3}>
           <Flex gap={2}>
-            <Button text="Cancel" mode="ghost" onClick={onClose} />
-            <Button text="Import Missing" tone="primary" onClick={handleConfirm} />
+            <Button text='Cancel' mode='ghost' onClick={onClose} />
+            <Button
+              text='Import Missing'
+              tone='primary'
+              onClick={handleConfirm}
+            />
           </Flex>
         </Box>
       }
@@ -37,8 +41,8 @@ export const ImportMissingDialog: React.FC<ImportMissingDialogProps> = ({
       <Box padding={4}>
         <Stack space={3}>
           <Text>
-            Import only the missing translations (translations that are ready but
-            haven't been imported to Sanity yet)?
+            Import only the missing translations (translations that are ready
+            but haven't been imported to Sanity yet)?
           </Text>
           <Text size={1} muted>
             This will check existing translation metadata and only import

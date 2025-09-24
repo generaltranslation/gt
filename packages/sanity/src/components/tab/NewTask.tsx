@@ -2,8 +2,6 @@
 
 import React, {
   useState,
-  useContext,
-  ChangeEvent,
   useCallback,
   useEffect,
 } from 'react';
@@ -13,19 +11,17 @@ import {
   Box,
   Flex,
   Grid,
-  Select,
   Stack,
   Switch,
   Text,
   useToast,
 } from '@sanity/ui';
 
-import { TranslationContext } from './TranslationContext';
-import { TranslationLocale } from '../types';
+import { TranslationLocale } from '../../types';
+import { useTranslations } from '../TranslationsProvider';
 
 type Props = {
   locales: TranslationLocale[];
-  refreshTask: () => Promise<void>;
 };
 
 type LocaleCheckboxProps = {
@@ -69,15 +65,16 @@ const LocaleCheckbox = ({ locale, toggle, checked }: LocaleCheckboxProps) => {
   );
 };
 
-export const NewTask = ({ locales, refreshTask }: Props) => {
+export const NewTask = ({ locales }: Props) => {
   const possibleLocales = locales.filter((locale) => locale.enabled !== false);
-  // Lets just stick to the canonical document id for keeping track of
-  // translations
-  const [selectedLocales, setSelectedLocales] = useState<React.ReactNode[]>(
+  const [selectedLocales, setSelectedLocales] = useState<string[]>(
     locales
       .filter((locale) => locale.enabled !== false)
       .map((locale) => locale.localeId)
   );
+
+  const { isBusy, handleCreateTask, handleRefreshTask } = useTranslations();
+  const toast = useToast();
 
   useEffect(() => {
     setSelectedLocales(
@@ -86,12 +83,6 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
         .map((locale) => locale.localeId)
     );
   }, [locales]);
-
-  const [selectedWorkflowUid, setSelectedWorkflowUid] = useState<string>();
-  const [isBusy, setIsBusy] = useState(false);
-
-  const context = useContext(TranslationContext);
-  const toast = useToast();
 
   const toggleLocale = useCallback(
     (locale: string, selected: boolean) => {
@@ -104,63 +95,48 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
     [selectedLocales, setSelectedLocales]
   );
 
-  const createTask = useCallback(() => {
-    if (!context) {
+  const createTask = useCallback(async () => {
+    if (!handleCreateTask) {
       toast.push({
-        title: 'Unable to create task: missing context',
+        title: 'Unable to create task: missing functionality',
         status: 'error',
         closable: true,
       });
       return;
     }
 
-    setIsBusy(true);
+    try {
+      await handleCreateTask(selectedLocales);
 
-    context
-      .exportForTranslation(context.documentInfo)
-      .then((serialized) =>
-        context.adapter.createTask(
-          context.documentInfo,
-          serialized,
-          selectedLocales as string[],
-          context.secrets,
-          selectedWorkflowUid,
-          context.callbackUrl
-        )
-      )
-      .then(() => {
-        toast.push({
-          title: 'Job successfully created',
-          status: 'success',
-          closable: true,
-        });
-
-        /** Reset form fields */
-        setSelectedLocales([]);
-        setSelectedWorkflowUid('');
-
-        /** Update task data in TranslationView */
-        refreshTask();
-      })
-      .catch((err) => {
-        let errorMsg;
-        if (err instanceof Error) {
-          errorMsg = err.message;
-        } else {
-          errorMsg = err ? String(err) : null;
-        }
-
-        toast.push({
-          title: `Error creating translation job`,
-          description: errorMsg,
-          status: 'error',
-          closable: true,
-        });
-      })
-      .finally(() => {
-        setIsBusy(false);
+      toast.push({
+        title: 'Job successfully created',
+        status: 'success',
+        closable: true,
       });
-  }, [context, selectedLocales, selectedWorkflowUid, toast, refreshTask]);
+
+      // Reset form fields
+      setSelectedLocales([]);
+
+      // Refresh task data
+      if (handleRefreshTask) {
+        await handleRefreshTask();
+      }
+    } catch (err) {
+      let errorMsg;
+      if (err instanceof Error) {
+        errorMsg = err.message;
+      } else {
+        errorMsg = err ? String(err) : null;
+      }
+
+      toast.push({
+        title: `Error creating translation job`,
+        description: errorMsg,
+        status: 'error',
+        closable: true,
+      });
+    }
+  }, [handleCreateTask, selectedLocales, toast, handleRefreshTask]);
 
   const onClick = useCallback(() => {
     setSelectedLocales(
@@ -179,13 +155,6 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
       toggleLocale(locale, checked);
     },
     [toggleLocale]
-  );
-
-  const onWorkflowChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      setSelectedWorkflowUid(e.target.value);
-    },
-    [setSelectedWorkflowUid]
   );
 
   return (
@@ -218,27 +187,6 @@ export const NewTask = ({ locales, refreshTask }: Props) => {
           ))}
         </Grid>
       </Stack>
-
-      {context?.workflowOptions && context.workflowOptions.length > 0 && (
-        <Stack space={3}>
-          <Text weight='semibold' size={1} as='label' htmlFor='workflow-select'>
-            Select translation workflow
-          </Text>
-          <Grid columns={[1, 1, 2]}>
-            <Select id='workflowSelect' onChange={onWorkflowChange}>
-              <option>Default locale workflows</option>
-              {context.workflowOptions.map((w) => (
-                <option
-                  key={`workflow-opt-${w.workflowUid}`}
-                  value={w.workflowUid}
-                >
-                  {w.workflowName}
-                </option>
-              ))}
-            </Select>
-          </Grid>
-        </Stack>
-      )}
 
       <Button
         onClick={createTask}

@@ -1,6 +1,6 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
-import { useCallback, useContext, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Box, Button, Flex, Text, Stack, useToast, Switch } from '@sanity/ui';
 import {
   ArrowTopRightIcon,
@@ -8,14 +8,13 @@ import {
   CheckmarkCircleIcon,
 } from '@sanity/icons';
 
-import { TranslationContext } from './TranslationContext';
-import { TranslationLocale, TranslationTask } from '../types';
-import { LanguageStatus } from './LanguageStatus';
+import { TranslationLocale, TranslationTask } from '../../types';
+import { LanguageStatus } from '../shared/LanguageStatus';
+import { useTranslations } from '../TranslationsProvider';
 
 type JobProps = {
   task: TranslationTask;
   locales: TranslationLocale[];
-  refreshTask: () => Promise<void>;
 };
 
 const getLocale = (
@@ -24,8 +23,8 @@ const getLocale = (
 ): TranslationLocale | undefined =>
   locales.find((l) => l.localeId === localeId);
 
-export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
-  const context = useContext(TranslationContext);
+export const TaskView = ({ task, locales }: JobProps) => {
+  const { handleRefreshTask, handleImportTaskTranslation } = useTranslations();
   const toast = useToast();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -36,10 +35,9 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
 
   const importFile = useCallback(
     async (localeId: string) => {
-      if (!context) {
+      if (!handleImportTaskTranslation) {
         toast.push({
-          title:
-            'Missing context, unable to import translation. Try refreshing or clicking away from this tab and back.',
+          title: 'Missing functionality, unable to import translation.',
           status: 'error',
           closable: true,
         });
@@ -50,17 +48,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
       const localeTitle = locale?.description || localeId;
 
       try {
-        const translation = await context.adapter.getTranslation(
-          task.document,
-          localeId,
-          context.secrets
-        );
-
-        const sanityId = context.localeIdAdapter
-          ? await context.localeIdAdapter(localeId)
-          : localeId;
-
-        await context.importTranslation(sanityId, translation);
+        await handleImportTaskTranslation(localeId);
 
         setImportedFiles((prev) => new Set([...prev, localeId]));
 
@@ -85,7 +73,7 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
         });
       }
     },
-    [locales, context, task.document, toast]
+    [locales, handleImportTaskTranslation, toast]
   );
 
   const checkAndImportCompletedFiles = useCallback(async () => {
@@ -109,12 +97,12 @@ export const TaskView = ({ task, locales, refreshTask }: JobProps) => {
   }, [autoImport, isBusy, task.locales, importedFiles, importFile]);
 
   const handleRefreshClick = useCallback(async () => {
-    if (isRefreshing) return;
+    if (isRefreshing || !handleRefreshTask) return;
     setIsRefreshing(true);
-    await refreshTask();
+    await handleRefreshTask();
     await checkAndImportCompletedFiles();
     setIsRefreshing(false);
-  }, [refreshTask, setIsRefreshing, checkAndImportCompletedFiles]);
+  }, [handleRefreshTask, checkAndImportCompletedFiles, isRefreshing]);
 
   const handleImportAll = useCallback(async () => {
     if (isBusy) return;

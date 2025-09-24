@@ -8,32 +8,37 @@ import React, {
 } from 'react';
 import { SanityDocument, useSchema } from 'sanity';
 import { useToast } from '@sanity/ui';
-import { useClient } from '../../hooks/useClient';
-import { useSecrets } from '../../hooks/useSecrets';
-import { GTAdapter } from '../../adapter';
+import { useClient } from '../hooks/useClient';
+import { useSecrets } from '../hooks/useSecrets';
+import { GTAdapter } from '../adapter';
 import {
   GTFile,
   Secrets,
   TranslationLocale,
   TranslationFunctionContext,
-} from '../../types';
-import { pluginConfig } from '../../adapter/core';
-import { serializeDocument } from '../../utils/serialize';
-import { uploadFiles } from '../../translation/uploadFiles';
-import { initProject } from '../../translation/initProject';
-import { createJobs } from '../../translation/createJobs';
-import { downloadTranslations } from '../../translation/downloadTranslations';
-import { checkTranslationStatus } from '../../translation/checkTranslationStatus';
-import { importDocument } from '../../translation/importDocument';
-import { resolveRefs } from '../../sanity-api/resolveRefs';
-import { findTranslatedDocumentForLocale } from '../../sanity-api/findDocuments';
+  TranslationTask,
+} from '../types';
+import { pluginConfig } from '../adapter/core';
+import { serializeDocument } from '../utils/serialize';
+import { uploadFiles } from '../translation/uploadFiles';
+import { initProject } from '../translation/initProject';
+import { createJobs } from '../translation/createJobs';
+import { downloadTranslations } from '../translation/downloadTranslations';
+import { checkTranslationStatus } from '../translation/checkTranslationStatus';
+import { importDocument } from '../translation/importDocument';
+import { resolveRefs } from '../sanity-api/resolveRefs';
+import { findTranslatedDocumentForLocale } from '../sanity-api/findDocuments';
 import {
   getReadyFilesForImport,
   importTranslations,
   ImportOptions,
-} from '../../utils/importUtils';
-import { processBatch } from '../../utils/batchProcessor';
-import { publishTranslations } from '../../sanity-api/publishDocuments';
+} from '../utils/importUtils';
+import { processBatch } from '../utils/batchProcessor';
+import { publishTranslations } from '../sanity-api/publishDocuments';
+import { createTask } from '../adapter/createTask';
+import { getTranslationTask } from '../adapter/getTranslationTask';
+import { getTranslation } from '../adapter/getTranslation';
+import { baseDocumentLevelConfig } from '../configuration/baseDocumentLevelConfig';
 
 interface ImportProgress {
   current: number;
@@ -69,6 +74,10 @@ interface TranslationsContextType {
   loadingSecrets: boolean;
   secrets: Secrets | null;
 
+  // Single document task-based functionality (for tab components)
+  documentInfo?: GTFile;
+  currentTask?: TranslationTask | null;
+
   // Actions
   setAutoRefresh: (value: boolean) => void;
   handleTranslateAll: () => Promise<void>;
@@ -78,6 +87,11 @@ interface TranslationsContextType {
   handleImportDocument: (documentId: string, localeId: string) => Promise<void>;
   handlePatchDocumentReferences: () => Promise<void>;
   handlePublishAllTranslations: () => Promise<void>;
+
+  // Task-based actions (for single document mode)
+  handleCreateTask?: (selectedLocales: string[]) => Promise<void>;
+  handleRefreshTask?: () => Promise<void>;
+  handleImportTaskTranslation?: (localeId: string) => Promise<void>;
 }
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
@@ -92,10 +106,12 @@ export const useTranslations = () => {
 
 interface TranslationsProviderProps {
   children: ReactNode;
+  singleDocument?: SanityDocument | null;
 }
 
 export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   children,
+  singleDocument,
 }) => {
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
@@ -122,6 +138,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     Map<string, TranslationStatus>
   >(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentTask, setCurrentTask] = useState<TranslationTask | null>(null);
 
   const client = useClient();
   const schema = useSchema();
@@ -134,6 +151,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
     try {
+      if (singleDocument) {
+        setDocuments([singleDocument]);
+        return;
+      }
+
       const translateDocuments = pluginConfig.getTranslateDocuments();
 
       const filterConditions = translateDocuments
@@ -172,7 +194,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setLoadingDocuments(false);
     }
-  }, [client, toast]);
+  }, [client, toast, singleDocument]);
 
   const fetchLocales = useCallback(async () => {
     if (!secrets) return;
@@ -905,6 +927,87 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setImportedTranslations(new Set(downloadStatus.downloaded));
   }, [downloadStatus.downloaded]);
 
+  // Create documentInfo for single document mode
+  const documentInfo = singleDocument
+    ? {
+        documentId: singleDocument._id.replace('drafts.', ''),
+        versionId: singleDocument._rev,
+      }
+    : undefined;
+
+  // Task-based functionality for single document mode
+  const handleCreateTask = useCallback(
+    async (selectedLocales: string[]) => {
+      if (!documentInfo || !secrets) return;
+
+      setIsBusy(true);
+      try {
+        const serializedDocument =
+          await baseDocumentLevelConfig.exportForTranslation(
+            documentInfo,
+            translationContext
+          );
+
+        const task = await createTask(
+          documentInfo,
+          serializedDocument,
+          selectedLocales,
+          secrets
+        );
+
+        setCurrentTask(task);
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [documentInfo, secrets, translationContext]
+  );
+
+  const handleRefreshTask = useCallback(async () => {
+    if (!documentInfo || !secrets) return;
+
+    try {
+      const task = await getTranslationTask(documentInfo, secrets);
+      setCurrentTask(task);
+    } catch (error) {
+      console.error('Error refreshing task:', error);
+      // If no task found, that's okay - just set to null
+      setCurrentTask(null);
+    }
+  }, [documentInfo, secrets]);
+
+  const handleImportTaskTranslation = useCallback(
+    async (localeId: string) => {
+      if (!documentInfo || !secrets) return;
+
+      try {
+        const translation = await getTranslation(
+          documentInfo,
+          localeId,
+          secrets
+        );
+        await baseDocumentLevelConfig.importTranslation(
+          documentInfo,
+          localeId,
+          translation,
+          translationContext,
+          false
+        );
+      } catch (error) {
+        console.error('Error importing task translation:', error);
+        throw error;
+      }
+    },
+    [documentInfo, secrets, translationContext]
+  );
+
+  // Load task for single document mode
+  useEffect(() => {
+    if (documentInfo && secrets && !loadingSecrets) {
+      handleRefreshTask();
+    }
+  }, [documentInfo, secrets, loadingSecrets, handleRefreshTask]);
+
   const contextValue: TranslationsContextType = {
     // State
     isBusy,
@@ -921,6 +1024,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     loadingSecrets,
     secrets,
 
+    // Single document task-based functionality
+    documentInfo,
+    currentTask,
+
     // Actions
     setAutoRefresh,
     handleTranslateAll,
@@ -930,6 +1037,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     handleImportDocument,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
+
+    // Task-based actions (for single document mode)
+    handleCreateTask,
+    handleRefreshTask,
+    handleImportTaskTranslation,
   };
 
   return (

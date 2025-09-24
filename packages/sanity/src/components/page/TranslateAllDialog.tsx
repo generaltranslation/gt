@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
-import { useTranslations } from './TranslationsProvider';
+import { useTranslations } from '../TranslationsProvider';
 
 interface TranslateAllDialogProps {
   isOpen: boolean;
