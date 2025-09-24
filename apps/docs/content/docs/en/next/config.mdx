@@ -1,0 +1,59 @@
+---
+title: Configuration
+description: A guide on the `gt.config.json` file
+---
+
+## Overview
+
+The `gt.config.json` file is used to configure your project's GT settings. It should be placed in the root of your project.
+
+The CLI setup wizard [`npx gtx-cli init`](/docs/cli/init) will create a `gt.config.json` file for you in your project.
+
+## Configuration
+
+The three most important properties are:
+
+- `defaultLocale`: The default locale for your project. This is the locale that your source content is written in. This is also the fallback locale for your project.
+
+- `locales`: An array of locales for your project. These are the locales that you want to translate your project into. See the [supported locales](/docs/platform/locale-strings#supported-locales) for more information. 
+If you are using `gt-next` or `gt-react`, these are also the locales that your app supports.
+
+- `files`: This is an object that contains information about the content you want to translate. See the [files](/docs/cli/reference/config#files) section for more information.
+
+## Examples
+
+Here is an example of a `gt.config.json` file:
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "json": {
+      "include": ["public/locales/[locale].json"]
+    }
+  }
+}
+```
+
+This will translate the `public/locales/en.json` file to `public/locales/fr.json` and `public/locales/es.json`.
+
+<Files>
+  <Folder name="app">
+    <File name="layout.js" />
+    <File name="page.js" />
+  </Folder>
+  <Folder name="public" defaultOpen={true}>
+    <Folder name="locales" defaultOpen={true}>
+      <File name="en.json" />
+      <File name="fr.json" />
+      <File name="es.json" />
+    </Folder>
+  </Folder>
+  <File name="gt.config.json" />
+  <File name="package.json" />
+</Files>
+
+## Next Steps
+
+Learn how to use the [init command](/docs/cli/init) to generate this configuration file.

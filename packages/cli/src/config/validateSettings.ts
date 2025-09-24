@@ -3,7 +3,6 @@ import { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { gt } from '../utils/gt.js';
 
 export function validateSettings(settings: Settings) {
   // Validate locales
