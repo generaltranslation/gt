@@ -3,7 +3,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 export const runtime = 'nodejs';
-export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export async function GET(request: Request) {
@@ -134,6 +133,6 @@ export async function GET(request: Request) {
         </div>
       </div>
     ),
-    { ...size }
+    { width: 1200, height: 630 }
   );
 }
