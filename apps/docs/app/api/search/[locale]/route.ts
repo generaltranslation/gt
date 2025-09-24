@@ -8,7 +8,18 @@ import { createTokenizer as createJapaneseTokenizer } from '@orama/tokenizers/ja
 
 export const revalidate = false;
 
-async function buildIndex(page: any): Promise<AdvancedIndex | null> {
+type PageLike = {
+  data: {
+    title?: string;
+    description?: string;
+    structuredData?: StructuredData;
+    load?: () => Promise<{ structuredData: StructuredData }>;
+  };
+  path?: string;
+  url?: string;
+};
+
+async function buildIndex(page: PageLike): Promise<AdvancedIndex | null> {
   let structuredData: StructuredData | undefined;
 
   if ('structuredData' in page.data) {
@@ -21,12 +32,13 @@ async function buildIndex(page: any): Promise<AdvancedIndex | null> {
 
   // Shrink structured data to keep static index small
   const data = shrinkStructuredData(structuredData);
+  const url = page.url ?? page.path ?? '/';
 
   return {
     title: page.data.title ?? basename(page.path ?? page.url ?? ''),
     description: page.data.description,
-    url: page.url,
-    id: page.url,
+    url,
+    id: url,
     structuredData: data,
   };
 }

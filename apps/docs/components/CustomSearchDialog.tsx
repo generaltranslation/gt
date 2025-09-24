@@ -14,21 +14,27 @@ import { FileText, Hash, AlignLeft, Code2 } from 'lucide-react';
 export default function CustomSearchDialog(props: SharedProps) {
   const { locale, text } = useI18n();
 
+  type AnyOramaInstance = Awaited<
+    ReturnType<NonNullable<StaticOptions['initOrama']>>
+  >;
+
   const initOrama = useCallback<NonNullable<StaticOptions['initOrama']>>(
     async (loc?: string) => {
       if (loc === 'zh') {
         return (await create({
           schema: { _: 'string' },
           components: { tokenizer: createMandarinTokenizer() },
-        })) as any;
+        })) as unknown as AnyOramaInstance;
       }
       if (loc === 'ja') {
         return (await create({
           schema: { _: 'string' },
           components: { tokenizer: createJapaneseTokenizer() },
-        })) as any;
+        })) as unknown as AnyOramaInstance;
       }
-      return (await create({ schema: { _: 'string' } })) as any;
+      return (await create({
+        schema: { _: 'string' },
+      })) as unknown as AnyOramaInstance;
     },
     []
   );
@@ -46,7 +52,10 @@ export default function CustomSearchDialog(props: SharedProps) {
 
   const router = useRouter();
 
-  const items = Array.isArray(query.data) ? query.data : [];
+  const items = useMemo(
+    () => (Array.isArray(query.data) ? query.data : []),
+    [query.data]
+  );
 
   // Group flat results (page, heading, text) into page groups with nested children
   const groups = useMemo(() => {
@@ -126,7 +135,7 @@ export default function CustomSearchDialog(props: SharedProps) {
                 {text.searchNoResult}
               </div>
             ) : (
-              groups.map(({ page, children }, idx) => (
+              groups.map(({ page, children }) => (
                 <div
                   key={page.id}
                   className="relative rounded-md bg-fd-popover"

@@ -15,11 +15,6 @@ export async function GET(request: Request) {
     searchParams.get('d') ||
     searchParams.get('desc') ||
     'General Translation Docs';
-  const locale = (
-    searchParams.get('l') ||
-    searchParams.get('locale') ||
-    'en'
-  ).toUpperCase();
   const section = (
     searchParams.get('s') ||
     searchParams.get('section') ||

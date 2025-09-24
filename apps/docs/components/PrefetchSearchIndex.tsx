@@ -7,30 +7,44 @@ export default function PrefetchSearchIndex() {
   const { locale } = useI18n();
 
   useEffect(() => {
-    const run = async () => {
-      // Respect data saver / slow network
-      const c = (navigator as any).connection;
-      const slow = c?.saveData || !['4g', '5g'].includes(c?.effectiveType);
-      if (slow) return;
+    type NetworkInfo = {
+      effectiveType?: string;
+      saveData?: boolean;
+    };
+    type NavigatorWithConnection = Navigator & {
+      connection?: NetworkInfo;
+    };
+    type WindowWithIdle = Window & {
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number }
+      ) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
 
+    const run = async () => {
       try {
         // Prefetch the search API endpoint to warm the cache
         await fetch(`/api/search/${locale}`);
       } catch {
-        // ignore
+        // Ignore
       }
     };
 
+    const w = window as WindowWithIdle;
     const id =
-      'requestIdleCallback' in window
-        ? (window as any).requestIdleCallback(run, { timeout: 3000 })
-        : setTimeout(run, 2500);
+      'requestIdleCallback' in w && typeof w.requestIdleCallback === 'function'
+        ? w.requestIdleCallback(run, { timeout: 3000 })
+        : (setTimeout(run, 2500) as unknown as number);
 
     return () => {
-      if ('cancelIdleCallback' in window) {
-        (window as any).cancelIdleCallback(id);
+      if (
+        'cancelIdleCallback' in w &&
+        typeof w.cancelIdleCallback === 'function'
+      ) {
+        w.cancelIdleCallback(id);
       } else {
-        clearTimeout(id as number);
+        clearTimeout(id);
       }
     };
   }, [locale]);
