@@ -5,7 +5,7 @@ import {
   DocsDescription,
   DocsTitle,
 } from 'fumadocs-ui/page';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -32,6 +32,7 @@ import SupportedLocales from '@/components/SupportedLocales';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 import { Rate } from '@/components/rate';
 import { Metadata } from 'next';
+import { getLocale } from 'gt-next/server';
 
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
@@ -50,7 +51,9 @@ const customMdxComponents = {
 export default async function Page(props: {
   params: Promise<{ slug?: string[]; locale: string }>;
 }) {
-  const { slug, locale } = await props.params;
+  const { slug } = await props.params;
+  const locale = await getLocale();
+
   const page = source.getPage(slug, locale);
   if (!page) notFound();
 

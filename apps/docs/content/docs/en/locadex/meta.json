@@ -3,5 +3,13 @@
   "description": "AI i18n engineer",
   "icon": "Brain",
   "root": true,
-  "pages": ["---Getting Started---", "mintlify", "next", "monorepos"]
+  "pages": [
+    "---Getting Started---",
+    "monorepos",
+    "---Guides---",
+    "guides/mintlify",
+    "guides/next",
+    "---Deployment---",
+    "deployment/editing-locales"
+  ]
 }

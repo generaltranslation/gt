@@ -5,6 +5,7 @@
     "---Getting Started---",
     "index",
     "introduction",
+    "config",
     "---Guides---",
     "guides/jsx",
     "guides/strings",

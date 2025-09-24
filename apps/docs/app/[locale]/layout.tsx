@@ -6,23 +6,26 @@ import { DocsLayout } from 'fumadocs-ui/layouts/notebook';
 import type { ReactNode } from 'react';
 import { baseOptions } from '@/app/[locale]/layout.config';
 import { source } from '@/lib/source';
-import { GTProvider } from 'gt-next';
+import { GTProvider, T } from 'gt-next';
 import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import AnalyticsBanner from '@/components/analytics/AnalyticsBanner';
 import SearchDialog from '@/components/SearchDialog';
 import PrefetchSearchIndex from '@/components/PrefetchSearchIndex';
+import { getGT, getLocale, getLocales } from 'gt-next/server';
 
 const inter = Inter({
   subsets: ['latin'],
 });
 
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
+  const gt = await getGT();
   return {
-    title: 'Docs — General Translation',
-    description:
-      'Documentation for the General Translation internationalization platform',
+    title: gt('Docs — General Translation'),
+    description: gt(
+      'Documentation for the General Translation internationalization platform'
+    ),
     icons: {
       icon: [
         {
@@ -38,15 +41,15 @@ export function generateMetadata(): Metadata {
       ],
     },
     keywords: [
-      'translation',
-      'localization',
-      'l10n',
-      'i18n',
-      'internationalization',
-      'automate',
-      'next.js',
-      'nextjs',
-      'react',
+      gt('translation'),
+      gt('localization'),
+      gt('internationalization'),
+      gt('l10n', { context: 'localization' }),
+      gt('i18n', { context: 'internationalization' }),
+      gt('automate'),
+      gt('next.js'),
+      gt('nextjs'),
+      gt('react'),
     ],
   };
 }
@@ -55,16 +58,10 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export default async function Layout({
-  children,
-  params,
-}: {
-  children: ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
+export default async function Layout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
   const options = await baseOptions(locale);
-  const locales = ['en', 'zh', 'de', 'fr', 'es', 'ja'].map((locale) => ({
+  const locales = getLocales().map((locale) => ({
     name: capitalize(getLocaleProperties(locale, locale).languageName),
     locale: locale,
   }));
@@ -118,7 +115,7 @@ export default async function Layout({
                     },
                   },
                   banner: (
-                    <>
+                    <T>
                       <a
                         href="https://github.com/generaltranslation/gt"
                         target="_blank"
@@ -131,7 +128,7 @@ export default async function Layout({
                           </h3>
                         </div>
                       </a>
-                    </>
+                    </T>
                   ),
                 }}
                 tree={source.pageTree[locale]}
