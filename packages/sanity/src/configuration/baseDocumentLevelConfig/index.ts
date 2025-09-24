@@ -75,7 +75,6 @@ export const baseDocumentLevelConfig = {
       blockDeserializers
     ) as SanityDocument;
 
-    console.log('deserialized', JSON.stringify(deserialized, null, 2));
     return documentLevelPatch(
       docInfo, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
       deserialized,

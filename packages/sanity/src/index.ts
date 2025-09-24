@@ -41,6 +41,8 @@ export {
   BaseDocumentMerger,
   defaultStopTypes,
   customSerializers,
+  attachGTData,
+  detachGTData,
 };
 
 import { GTAdapter } from './adapter';
@@ -52,6 +54,7 @@ import type { IgnoreFields, TranslateDocumentFilter } from './adapter/types';
 import TranslationsTool from './components/page/TranslationsTool';
 import { SECRETS_NAMESPACE } from './utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
+import { attachGTData, detachGTData } from './serialization/data';
 
 interface ConfigOptions {
   adapter: Adapter;

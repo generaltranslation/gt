@@ -37,11 +37,6 @@ export async function patchI18nDoc(
       cleanedSourceDocument[key] = value;
     }
   });
-  console.log(
-    'cleanedSourceDocument',
-    JSON.stringify(cleanedSourceDocument, null, 2)
-  );
-  console.log('translatedFields', JSON.stringify(translatedFields, null, 2));
   const appliedDocument = applyDocuments(
     sourceDocumentId,
     cleanedSourceDocument,

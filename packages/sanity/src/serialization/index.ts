@@ -8,3 +8,4 @@ export {
 } from './BaseSerializationConfig';
 
 export type { SerializedDocument, Deserializer, Merger } from './types';
+export { attachGTData, detachGTData } from './data';

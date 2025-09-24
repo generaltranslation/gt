@@ -31,10 +31,7 @@ export const defaultStopTypes = [
   'code',
 ];
 
-export const defaultMarks: Record<string, PortableTextMarkComponent> = {
-  link: ({ value, children }) =>
-    attachGTData(`<a>${children}</a>`, value, 'markDef'),
-};
+export const defaultMarks: Record<string, PortableTextMarkComponent> = {};
 
 export const defaultPortableTextBlockStyles: Record<
   PortableTextBlockStyle,
@@ -83,7 +80,7 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
 export const customDeserializers: Record<string, any> = { types: {} };
 
 export const customBlockDeserializers: Array<any> = [
-  // handle spans with data-gt-internal
+  // handle marks with data-gt-internal
   {
     deserialize(
       el: HTMLParagraphElement,
@@ -124,8 +121,6 @@ export const customBlockDeserializers: Array<any> = [
         markDefs,
         children,
       };
-      console.log('input', el.outerHTML);
-      console.log('output', output);
       return output;
     },
   },
