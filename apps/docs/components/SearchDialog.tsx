@@ -187,7 +187,7 @@ export default function SearchDialog(props: SharedProps) {
           >
             {groups.length === 0 && search.trim() ? (
               <div className="py-12 text-center text-sm text-neutral-400">
-{text.searchNoResult}
+                {text.searchNoResult}
               </div>
             ) : (
               groups.map(({ page, children }, groupIndex) => {
