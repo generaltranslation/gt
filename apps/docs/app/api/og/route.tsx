@@ -3,7 +3,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 export const runtime = 'nodejs';
-export const contentType = 'image/png';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
