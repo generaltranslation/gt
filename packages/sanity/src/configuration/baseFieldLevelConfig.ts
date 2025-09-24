@@ -19,6 +19,7 @@ import type {
 import { findLatestDraft } from './utils/findLatestDraft';
 import { findDocumentAtRevision } from './utils/findDocumentAtRevision';
 import { pluginConfig } from '../adapter/core';
+import { deserializeDocument, serializeDocument } from '../utils/serialize';
 
 export const fieldLevelPatch = async (
   docInfo: GTFile,
@@ -56,26 +57,8 @@ export const baseFieldLevelConfig = {
   ): Promise<GTSerializedDocument> => {
     const baseLanguage = pluginConfig.getSourceLocale();
     const { client, schema } = context;
-    const stopTypes = [
-      ...pluginConfig.getAdditionalStopTypes(),
-      ...defaultStopTypes,
-    ];
-    const serializers = {
-      ...customSerializers,
-      types: {
-        ...customSerializers.types,
-        ...pluginConfig.getAdditionalSerializers(),
-      },
-    };
     const doc = await findLatestDraft(docInfo.documentId, client);
-    const serialized = BaseDocumentSerializer(schema).serializeDocument(
-      doc,
-      'field',
-      baseLanguage,
-      stopTypes,
-      // @ts-ignore
-      serializers
-    );
+    const serialized = serializeDocument(doc, schema, baseLanguage);
     return {
       content: serialized.content,
       documentId: docInfo.documentId,
@@ -90,21 +73,7 @@ export const baseFieldLevelConfig = {
     mergeWithTargetLocale: boolean = false
   ): Promise<void> => {
     const { client } = context;
-    const deserializers = {
-      types: {
-        ...pluginConfig.getAdditionalDeserializers(),
-      },
-    };
-    const blockDeserializers = [
-      ...pluginConfig.getAdditionalBlockDeserializers(),
-      ...customBlockDeserializers,
-    ];
-
-    const deserialized = BaseDocumentDeserializer.deserializeDocument(
-      document,
-      deserializers,
-      blockDeserializers
-    ) as SanityDocument;
+    const deserialized = deserializeDocument(document);
     return fieldLevelPatch(
       docInfo,
       deserialized,

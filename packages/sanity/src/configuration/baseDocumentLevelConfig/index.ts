@@ -5,19 +5,10 @@ import {
   GTSerializedDocument,
   ImportTranslation,
 } from '../../types';
-import { SanityDocument } from 'sanity';
 import { findLatestDraft } from '../utils/findLatestDraft';
-import { documentLevelPatch } from './documentLevelPatch';
-import {
-  BaseDocumentDeserializer,
-  BaseDocumentSerializer,
-  defaultStopTypes,
-  customSerializers,
-  customBlockDeserializers,
-} from '../../serialization/';
 import { pluginConfig } from '../../adapter/core';
-import { PortableTextHtmlComponents } from '@portabletext/to-html';
-import merge from 'lodash.merge';
+import { importDocument } from '../../translation/importDocument';
+import { serializeDocument } from '../../utils/serialize';
 
 export const baseDocumentLevelConfig = {
   exportForTranslation: async (
@@ -26,25 +17,10 @@ export const baseDocumentLevelConfig = {
   ): Promise<GTSerializedDocument> => {
     const { client, schema } = context;
     const languageField = pluginConfig.getLanguageField();
-    const stopTypes = [
-      ...defaultStopTypes,
-      ...pluginConfig.getAdditionalStopTypes(),
-    ];
-    const serializers = merge(
-      customSerializers,
-      pluginConfig.getAdditionalSerializers()
-    ) satisfies Partial<PortableTextHtmlComponents>;
-
     const doc = await findLatestDraft(docInfo.documentId, client);
     delete doc[languageField];
     const baseLanguage = pluginConfig.getSourceLocale();
-    const serialized = BaseDocumentSerializer(schema).serializeDocument(
-      doc,
-      'document',
-      baseLanguage,
-      stopTypes,
-      serializers
-    );
+    const serialized = serializeDocument(doc, schema, baseLanguage);
     return {
       content: serialized.content,
       documentId: docInfo.documentId,
@@ -59,28 +35,11 @@ export const baseDocumentLevelConfig = {
     mergeWithTargetLocale: boolean = false,
     publish: boolean = false
   ): Promise<void> => {
-    const { client } = context;
-    const languageField = pluginConfig.getLanguageField();
-    const deserializers = merge(
-      { types: {} },
-      pluginConfig.getAdditionalDeserializers()
-    ) satisfies Partial<PortableTextHtmlComponents>;
-    const blockDeserializers = [
-      ...customBlockDeserializers,
-      ...pluginConfig.getAdditionalBlockDeserializers(),
-    ];
-    const deserialized = BaseDocumentDeserializer.deserializeDocument(
-      document,
-      deserializers,
-      blockDeserializers
-    ) as SanityDocument;
-
-    return documentLevelPatch(
-      docInfo, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
-      deserialized,
+    return importDocument(
+      docInfo,
       localeId,
-      client,
-      languageField,
+      document,
+      context,
       mergeWithTargetLocale,
       publish
     );
