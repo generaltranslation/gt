@@ -7,13 +7,6 @@ export default function PrefetchSearchIndex() {
   const { locale } = useI18n();
 
   useEffect(() => {
-    type NetworkInfo = {
-      effectiveType?: string;
-      saveData?: boolean;
-    };
-    type NavigatorWithConnection = Navigator & {
-      connection?: NetworkInfo;
-    };
     type WindowWithIdle = Window & {
       requestIdleCallback?: (
         cb: () => void,
