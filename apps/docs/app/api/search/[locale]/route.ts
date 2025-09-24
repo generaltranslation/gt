@@ -91,9 +91,9 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
 
 export async function GET(
   _request: Request,
-  ctx: { params: { locale: string } }
+  ctx: { params: Promise<{ locale: string }> }
 ) {
-  const locale = ctx.params.locale;
+  const { locale } = await ctx.params;
 
   const langEntry = source.getLanguages().find((l) => l.language === locale);
   const pages = langEntry?.pages ?? [];
