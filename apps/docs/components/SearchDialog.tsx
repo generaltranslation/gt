@@ -54,20 +54,11 @@ export default function SearchDialog(props: SharedProps) {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const lastMouseMoveTime = useRef<number>(0);
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const items = useMemo(() => {
-    const result = Array.isArray(query.data) ? query.data : [];
-    // Stop searching state when results come in
-    if (result.length > 0 && isSearching) {
-      setIsSearching(false);
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    }
-    return result;
-  }, [query.data, isSearching]);
+  const items = useMemo(
+    () => (Array.isArray(query.data) ? query.data : []),
+    [query.data]
+  );
 
   // Group flat results (page, heading, text) into page groups with nested children
   const groups = useMemo(() => {
@@ -145,26 +136,8 @@ export default function SearchDialog(props: SharedProps) {
           <input
             value={search}
             onChange={(e) => {
-              const newValue = e.target.value;
-              setSearch(newValue);
+              setSearch(e.target.value);
               setSelectedIndex(-1);
-
-              if (newValue.trim()) {
-                setIsSearching(true);
-                // Clear any existing timeout
-                if (searchTimeoutRef.current) {
-                  clearTimeout(searchTimeoutRef.current);
-                }
-                // Stop showing "searching" after results come in or after 1 second
-                searchTimeoutRef.current = setTimeout(() => {
-                  setIsSearching(false);
-                }, 1000);
-              } else {
-                setIsSearching(false);
-                if (searchTimeoutRef.current) {
-                  clearTimeout(searchTimeoutRef.current);
-                }
-              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
@@ -214,14 +187,7 @@ export default function SearchDialog(props: SharedProps) {
           >
             {groups.length === 0 && search.trim() ? (
               <div className="py-12 text-center text-sm text-neutral-400">
-                {isSearching ? (
-                  <>
-                    Searching for "
-                    <span className="text-fd-foreground">{search}</span>"...
-                  </>
-                ) : (
-                  text.searchNoResult
-                )}
+{text.searchNoResult}
               </div>
             ) : (
               groups.map(({ page, children }, groupIndex) => {
