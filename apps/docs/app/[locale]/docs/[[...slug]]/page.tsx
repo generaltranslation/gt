@@ -5,7 +5,7 @@ import {
   DocsDescription,
   DocsTitle,
 } from 'fumadocs-ui/page';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -53,6 +53,7 @@ export default async function Page(props: {
 }) {
   const { slug } = await props.params;
   const locale = await getLocale();
+
   const page = source.getPage(slug, locale);
   if (!page) notFound();
 

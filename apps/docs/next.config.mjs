@@ -20,6 +20,11 @@ const config = {
         destination: '/docs/platform',
         permanent: false,
       },
+      {
+        source: '/:locale/docs/changelog/:path*',
+        destination: 'https://github.com/generaltranslation/gt/releases',
+        permanent: false,
+      },
     ];
   },
   async rewrites() {
