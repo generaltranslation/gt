@@ -24,7 +24,7 @@ export function getLocaleDirection(
 export function getLocaleDirection(
   locale?: string
 ): Promise<'ltr' | 'rtl'> | 'ltr' | 'rtl' {
-  if (typeof locale === "string") {
+  if (typeof locale === 'string') {
     const gt = getI18NConfig().getGTClass();
     return gt.getLocaleDirection(locale);
   }
