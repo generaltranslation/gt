@@ -93,7 +93,12 @@ export default function SearchDialog(props: SharedProps) {
 
   // Flat list of all navigable items for keyboard navigation
   const flatItems = useMemo(() => {
-    const flat: Array<{ type: 'page' | 'child'; item: (typeof items)[number]; groupIndex: number; childIndex?: number }> = [];
+    const flat: Array<{
+      type: 'page' | 'child';
+      item: (typeof items)[number];
+      groupIndex: number;
+      childIndex?: number;
+    }> = [];
     groups.forEach((group, groupIndex) => {
       flat.push({ type: 'page', item: group.page, groupIndex });
       group.children.forEach((child, childIndex) => {
@@ -143,7 +148,7 @@ export default function SearchDialog(props: SharedProps) {
               const newValue = e.target.value;
               setSearch(newValue);
               setSelectedIndex(-1);
-              
+
               if (newValue.trim()) {
                 setIsSearching(true);
                 // Clear any existing timeout
@@ -168,12 +173,17 @@ export default function SearchDialog(props: SharedProps) {
                 e.preventDefault();
                 const newIndex = (selectedIndex + 1) % flatItems.length;
                 setSelectedIndex(newIndex);
-                itemRefs.current[newIndex]?.scrollIntoView({ block: 'nearest' });
+                itemRefs.current[newIndex]?.scrollIntoView({
+                  block: 'nearest',
+                });
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                const newIndex = selectedIndex <= 0 ? flatItems.length - 1 : selectedIndex - 1;
+                const newIndex =
+                  selectedIndex <= 0 ? flatItems.length - 1 : selectedIndex - 1;
                 setSelectedIndex(newIndex);
-                itemRefs.current[newIndex]?.scrollIntoView({ block: 'nearest' });
+                itemRefs.current[newIndex]?.scrollIntoView({
+                  block: 'nearest',
+                });
               } else if (e.key === 'Enter' && selectedIndex >= 0) {
                 e.preventDefault();
                 const selectedItem = flatItems[selectedIndex];
@@ -196,25 +206,31 @@ export default function SearchDialog(props: SharedProps) {
           </button>
         </div>
         {(groups.length > 0 || (groups.length === 0 && search.trim())) && (
-          <div 
+          <div
             className="p-1 bg-fd-popover overflow-y-auto overflow-x-hidden max-h-[70vh]"
-            onMouseMove={() => { lastMouseMoveTime.current = Date.now(); }}
+            onMouseMove={() => {
+              lastMouseMoveTime.current = Date.now();
+            }}
           >
             {groups.length === 0 && search.trim() ? (
               <div className="py-12 text-center text-sm text-neutral-400">
                 {isSearching ? (
-                  <>Searching for "<span className="text-fd-foreground">{search}</span>"...</>
+                  <>
+                    Searching for "
+                    <span className="text-fd-foreground">{search}</span>"...
+                  </>
                 ) : (
                   text.searchNoResult
                 )}
               </div>
             ) : (
               groups.map(({ page, children }, groupIndex) => {
-                const pageItemIndex = flatItems.findIndex(item => 
-                  item.type === 'page' && item.groupIndex === groupIndex
+                const pageItemIndex = flatItems.findIndex(
+                  (item) =>
+                    item.type === 'page' && item.groupIndex === groupIndex
                 );
                 const isPageSelected = selectedIndex === pageItemIndex;
-                
+
                 return (
                   <div
                     key={page.id}
@@ -222,12 +238,14 @@ export default function SearchDialog(props: SharedProps) {
                   >
                     <div className="p-3 pb-0">
                       <button
-                        ref={(el) => { itemRefs.current[pageItemIndex] = el; }}
+                        ref={(el) => {
+                          itemRefs.current[pageItemIndex] = el;
+                        }}
                         type="button"
                         className={`block w-full text-left text-sm rounded-md py-2 px-3 min-w-0 transition-colors cursor-pointer ${
-                          isPageSelected 
-                            ? 'text-fd-accent-foreground bg-fd-accent' 
-                            : selectedIndex >= 0 
+                          isPageSelected
+                            ? 'text-fd-accent-foreground bg-fd-accent'
+                            : selectedIndex >= 0
                               ? 'text-fd-foreground'
                               : 'text-fd-foreground hover:text-fd-accent-foreground hover:bg-fd-accent'
                         }`}
@@ -241,65 +259,74 @@ export default function SearchDialog(props: SharedProps) {
                           props.onOpenChange(false);
                         }}
                       >
-                      <div className="flex items-center gap-2">
-                        <FileText className="size-4 shrink-0" />
-                        <span className="truncate">{page.content}</span>
-                      </div>
-                    </button>
+                        <div className="flex items-center gap-2">
+                          <FileText className="size-4 shrink-0" />
+                          <span className="truncate">{page.content}</span>
+                        </div>
+                      </button>
 
-                    {children.length > 0 && (
-                      <div>
-                        {children.map((child, childIndex) => {
-                          const childItemIndex = flatItems.findIndex(item => 
-                            item.type === 'child' && item.groupIndex === groupIndex && item.childIndex === childIndex
-                          );
-                          const isChildSelected = selectedIndex === childItemIndex;
-                          
-                          const code =
-                            child.type !== 'heading' &&
-                            isCodeLike(child.content);
-                          const Icon =
-                            child.type === 'heading'
-                              ? Hash
-                              : code
-                                ? Code2
-                                : AlignLeft;
+                      {children.length > 0 && (
+                        <div>
+                          {children.map((child, childIndex) => {
+                            const childItemIndex = flatItems.findIndex(
+                              (item) =>
+                                item.type === 'child' &&
+                                item.groupIndex === groupIndex &&
+                                item.childIndex === childIndex
+                            );
+                            const isChildSelected =
+                              selectedIndex === childItemIndex;
 
-                          return (
-                            <button
-                              ref={(el) => { itemRefs.current[childItemIndex] = el; }}
-                              key={child.id}
-                              type="button"
-                              className={`group block w-full text-start text-sm rounded-md py-2 px-3 transition-colors cursor-pointer ${
-                                isChildSelected 
-                                  ? 'text-fd-accent-foreground bg-fd-accent' 
-                                  : selectedIndex >= 0 
-                                    ? 'text-fd-foreground'
-                                    : 'text-fd-foreground hover:text-fd-accent-foreground hover:bg-fd-accent'
-                              }`}
-                              onMouseEnter={() => {
-                                if (Date.now() - lastMouseMoveTime.current < 100) {
-                                  setSelectedIndex(childItemIndex);
-                                }
-                              }}
-                              onClick={() => {
-                                router.push(child.url);
-                                props.onOpenChange(false);
-                              }}
-                            >
-                              <div className="flex items-center gap-2 min-w-0 ml-4">
-                                <Icon className="size-3.5 shrink-0" />
-                                <span className="truncate">
-                                  {child.content}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                            const code =
+                              child.type !== 'heading' &&
+                              isCodeLike(child.content);
+                            const Icon =
+                              child.type === 'heading'
+                                ? Hash
+                                : code
+                                  ? Code2
+                                  : AlignLeft;
+
+                            return (
+                              <button
+                                ref={(el) => {
+                                  itemRefs.current[childItemIndex] = el;
+                                }}
+                                key={child.id}
+                                type="button"
+                                className={`group block w-full text-start text-sm rounded-md py-2 px-3 transition-colors cursor-pointer ${
+                                  isChildSelected
+                                    ? 'text-fd-accent-foreground bg-fd-accent'
+                                    : selectedIndex >= 0
+                                      ? 'text-fd-foreground'
+                                      : 'text-fd-foreground hover:text-fd-accent-foreground hover:bg-fd-accent'
+                                }`}
+                                onMouseEnter={() => {
+                                  if (
+                                    Date.now() - lastMouseMoveTime.current <
+                                    100
+                                  ) {
+                                    setSelectedIndex(childItemIndex);
+                                  }
+                                }}
+                                onClick={() => {
+                                  router.push(child.url);
+                                  props.onOpenChange(false);
+                                }}
+                              >
+                                <div className="flex items-center gap-2 min-w-0 ml-4">
+                                  <Icon className="size-3.5 shrink-0" />
+                                  <span className="truncate">
+                                    {child.content}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
                 );
               })
             )}
