@@ -27,21 +27,20 @@ export const BaseTranslationWrapper: React.FC<BaseTranslationWrapperProps> = ({
   padding = 4,
   showContainer = true,
 }) => {
-  const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
-    secretsNamespace
-  );
+  const { loading: loadingSecrets, secrets } =
+    useSecrets<Secrets>(secretsNamespace);
 
   const content = (
     <>
       {loadingSecrets && (
-        <Flex padding={5} align="center" justify="center">
+        <Flex padding={5} align='center' justify='center'>
           <Spinner />
         </Flex>
       )}
 
       {!loadingSecrets && !secrets && (
         <Box padding={padding}>
-          <Card tone="caution" padding={[2, 3, 4, 4]} shadow={1} radius={2}>
+          <Card tone='caution' padding={[2, 3, 4, 4]} shadow={1} radius={2}>
             <Text>
               Can't find secrets for your translation service. Did you load them
               into this dataset?

@@ -1,10 +1,6 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import {
   Button,

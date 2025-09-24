@@ -29,7 +29,7 @@ export const ImportAllDialog: React.FC<ImportAllDialogProps> = ({
         <Box padding={3}>
           <Flex gap={2}>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
-            <Button text='Import All' tone='primary' onClick={handleConfirm} />
+            <Button text='Import All' tone='critical' onClick={handleConfirm} />
           </Flex>
         </Box>
       }

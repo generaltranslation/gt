@@ -838,10 +838,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         translations[_key == $sourceLocale][0].value._ref in $publishedDocumentIds
       ] {
         'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-        'translationDocs': translations[_key != $sourceLocale]{
+        'translationDocs': translations[_key != $sourceLocale && defined(value._ref)]{
           _key,
           'docId': value._ref
-        }[defined(value._ref)]
+        }
       }`;
 
       const translationMetadata = await client.fetch(query, {
@@ -867,10 +867,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         return;
       }
 
-      await publishTranslations(translationDocIds, client);
+      const translatedDocumentIds = await publishTranslations(
+        translationDocIds,
+        client
+      );
 
       toast.push({
-        title: `Published ${translationDocIds.length} translation documents`,
+        title: `Published ${translatedDocumentIds.length} translation documents`,
         status: 'success',
         closable: true,
       });

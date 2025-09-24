@@ -1,5 +1,6 @@
 import { SanityClient } from 'sanity';
 import { processBatch } from '../utils/batchProcessor';
+import { findDocument } from './findDocuments';
 
 export async function publishDocument(
   documentId: string,
@@ -26,10 +27,16 @@ export async function publishTranslations(
   documentIds: string[],
   client: SanityClient
 ) {
+  let publishedDocumentIds: string[] = [];
   await processBatch(
     documentIds,
     async (documentId) => {
-      await publishDocument(documentId, client);
+      const document = await findDocument(`drafts.${documentId}`, client);
+      if (!document) {
+        return { documentId, published: false };
+      }
+      await publishDocument(document._id, client);
+      publishedDocumentIds.push(documentId);
       return { documentId, published: true };
     },
     {
@@ -38,4 +45,5 @@ export async function publishTranslations(
       },
     }
   );
+  return publishedDocumentIds;
 }

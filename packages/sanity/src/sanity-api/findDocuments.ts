@@ -35,3 +35,10 @@ export async function findTranslatedDocumentForLocale(
 
   return translatedDoc || null;
 }
+
+export async function findDocument(documentId: string, client: SanityClient) {
+  const query = `*[_id == $id]`;
+  const params = { id: documentId };
+  const document = await client.fetch(query, params);
+  return document[0] || null;
+}

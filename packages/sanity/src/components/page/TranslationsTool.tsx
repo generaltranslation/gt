@@ -9,6 +9,7 @@ import {
   Switch,
   Text,
   Spinner,
+  Tooltip,
 } from '@sanity/ui';
 import {
   DownloadIcon,
@@ -108,45 +109,67 @@ const TranslationsToolContent: React.FC = () => {
             <Stack space={3}>
               <Flex gap={3} align='center' justify='space-between'>
                 <Flex gap={2} align='center'>
-                  <Button
-                    mode='ghost'
-                    onClick={() => setIsImportAllDialogOpen(true)}
-                    text={isBusy ? 'Importing...' : 'Import All'}
-                    icon={isBusy ? null : DownloadIcon}
-                    disabled={
-                      isBusy || loadingDocuments || documents.length === 0
-                    }
-                  />
-                  <Button
-                    mode='ghost'
-                    tone='primary'
-                    onClick={() => setIsImportMissingDialogOpen(true)}
-                    text={isBusy ? 'Importing...' : 'Import Missing'}
-                    icon={isBusy ? null : DownloadIcon}
-                    disabled={
-                      isBusy || loadingDocuments || documents.length === 0
-                    }
-                  />
-                  <Button
-                    mode='ghost'
-                    tone='caution'
-                    onClick={handlePatchDocumentReferences}
-                    text={isBusy ? 'Patching...' : 'Patch Document References'}
-                    icon={isBusy ? null : LinkIcon}
-                    disabled={
-                      isBusy || loadingDocuments || documents.length === 0
-                    }
-                  />
-                  <Button
-                    mode='ghost'
-                    tone='positive'
-                    onClick={handlePublishAllTranslations}
-                    text={isBusy ? 'Publishing...' : 'Publish Translations'}
-                    icon={isBusy ? null : PublishIcon}
-                    disabled={
-                      isBusy || loadingDocuments || documents.length === 0
-                    }
-                  />
+                  <Tooltip
+                    placement='top'
+                    content='Imports and overrides all translations'
+                  >
+                    <Button
+                      mode='ghost'
+                      onClick={() => setIsImportAllDialogOpen(true)}
+                      text={isBusy ? 'Importing...' : 'Import All'}
+                      icon={isBusy ? null : DownloadIcon}
+                      disabled={
+                        isBusy || loadingDocuments || documents.length === 0
+                      }
+                    />
+                  </Tooltip>
+                  <Tooltip
+                    placement='top'
+                    content="Imports all translations that are not yet imported (according to the source document's translation.metadata document)"
+                  >
+                    <Button
+                      mode='ghost'
+                      tone='primary'
+                      onClick={() => setIsImportMissingDialogOpen(true)}
+                      text={isBusy ? 'Importing...' : 'Import Missing'}
+                      icon={isBusy ? null : DownloadIcon}
+                      disabled={
+                        isBusy || loadingDocuments || documents.length === 0
+                      }
+                    />
+                  </Tooltip>
+                  <Tooltip
+                    placement='top'
+                    content='Replaces references in documents with the corresponding translated document reference'
+                  >
+                    <Button
+                      mode='ghost'
+                      tone='caution'
+                      onClick={handlePatchDocumentReferences}
+                      text={
+                        isBusy ? 'Patching...' : 'Patch Document References'
+                      }
+                      icon={isBusy ? null : LinkIcon}
+                      disabled={
+                        isBusy || loadingDocuments || documents.length === 0
+                      }
+                    />
+                  </Tooltip>
+                  <Tooltip
+                    placement='top'
+                    content='Publishes all translations whose source document is published'
+                  >
+                    <Button
+                      mode='ghost'
+                      tone='positive'
+                      onClick={handlePublishAllTranslations}
+                      text={isBusy ? 'Publishing...' : 'Publish Translations'}
+                      icon={isBusy ? null : PublishIcon}
+                      disabled={
+                        isBusy || loadingDocuments || documents.length === 0
+                      }
+                    />
+                  </Tooltip>
                   {importedTranslations.size ===
                     documents.length *
                       locales.filter((l) => l.enabled !== false).length &&
