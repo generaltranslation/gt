@@ -14,7 +14,6 @@ import { FileText, Hash, AlignLeft, Code2 } from 'lucide-react';
 export default function CustomSearchDialog(props: SharedProps) {
   const { locale, text } = useI18n();
 
-  // Match fumadocs' expected initOrama signature and avoid cross-package symbol issues
   const initOrama = useCallback<NonNullable<StaticOptions['initOrama']>>(
     async (loc?: string) => {
       if (loc === 'zh') {

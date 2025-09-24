@@ -52,7 +52,7 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
   }
 
   const contents: StructuredData['contents'] = [];
-  // add first content for each heading
+  // Add first content for each heading
   for (const h of headings) {
     const arr = byHeading.get(h.id);
     if (arr && arr[0]) {
@@ -62,7 +62,7 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
     }
     if (contents.length >= MAX_CONTENTS_PER_PAGE) break;
   }
-  // if not enough, backfill with unheaded content (e.g., lead paragraphs)
+  // If not enough, backfill with unheaded content (e.g., lead paragraphs)
   if (contents.length < MAX_CONTENTS_PER_PAGE) {
     const root = byHeading.get(undefined) ?? [];
     for (const text of root) {
