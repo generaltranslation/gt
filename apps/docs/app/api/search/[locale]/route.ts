@@ -38,7 +38,8 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
   // Always keep headings but trim very long ones
   const headings = data.headings.map((h) => ({
     id: h.id,
-    content: h.content.length > MAX_CHARS ? h.content.slice(0, MAX_CHARS) : h.content,
+    content:
+      h.content.length > MAX_CHARS ? h.content.slice(0, MAX_CHARS) : h.content,
   }));
 
   // Prefer the first paragraph after each heading, then fill up to cap
@@ -55,7 +56,8 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
   for (const h of headings) {
     const arr = byHeading.get(h.id);
     if (arr && arr[0]) {
-      const text = arr[0].length > MAX_CHARS ? arr[0].slice(0, MAX_CHARS) : arr[0];
+      const text =
+        arr[0].length > MAX_CHARS ? arr[0].slice(0, MAX_CHARS) : arr[0];
       contents.push({ heading: h.id, content: text });
     }
     if (contents.length >= MAX_CONTENTS_PER_PAGE) break;
@@ -64,7 +66,10 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
   if (contents.length < MAX_CONTENTS_PER_PAGE) {
     const root = byHeading.get(undefined) ?? [];
     for (const text of root) {
-      contents.push({ heading: undefined, content: text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text });
+      contents.push({
+        heading: undefined,
+        content: text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text,
+      });
       if (contents.length >= MAX_CONTENTS_PER_PAGE) break;
     }
   }
@@ -74,7 +79,7 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
 
 export async function GET(
   _request: Request,
-  ctx: { params: { locale: string } },
+  ctx: { params: { locale: string } }
 ) {
   const locale = ctx.params.locale;
 
@@ -82,9 +87,9 @@ export async function GET(
   const pages = langEntry?.pages ?? [];
 
   // Build per-locale indexes
-  const indexes = (
-    await Promise.all(pages.map((p) => buildIndex(p)))
-  ).filter((x): x is AdvancedIndex => x !== null);
+  const indexes = (await Promise.all(pages.map((p) => buildIndex(p)))).filter(
+    (x): x is AdvancedIndex => x !== null
+  );
 
   // Configure tokenizers for specific locales
   const components =

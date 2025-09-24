@@ -15,21 +15,24 @@ export default function CustomSearchDialog(props: SharedProps) {
   const { locale, text } = useI18n();
 
   // Match fumadocs' expected initOrama signature and avoid cross-package symbol issues
-  const initOrama = useCallback<NonNullable<StaticOptions['initOrama']>>(async (loc?: string) => {
-    if (loc === 'zh') {
-      return (await create({
-        schema: { _: 'string' },
-        components: { tokenizer: createMandarinTokenizer() },
-      })) as any;
-    }
-    if (loc === 'ja') {
-      return (await create({
-        schema: { _: 'string' },
-        components: { tokenizer: createJapaneseTokenizer() },
-      })) as any;
-    }
-    return (await create({ schema: { _: 'string' } })) as any;
-  }, []);
+  const initOrama = useCallback<NonNullable<StaticOptions['initOrama']>>(
+    async (loc?: string) => {
+      if (loc === 'zh') {
+        return (await create({
+          schema: { _: 'string' },
+          components: { tokenizer: createMandarinTokenizer() },
+        })) as any;
+      }
+      if (loc === 'ja') {
+        return (await create({
+          schema: { _: 'string' },
+          components: { tokenizer: createJapaneseTokenizer() },
+        })) as any;
+      }
+      return (await create({ schema: { _: 'string' } })) as any;
+    },
+    []
+  );
 
   const clientOptions = useMemo(
     () => ({
@@ -88,7 +91,9 @@ export default function CustomSearchDialog(props: SharedProps) {
         onClick={() => props.onOpenChange(false)}
       />
       <div className="fixed left-1/2 top-8 z-[51] w-[calc(100%-1rem)] max-w-screen-sm -translate-x-1/2 rounded-xl border bg-fd-popover text-fd-popover-foreground shadow-2xl shadow-black/60 overflow-hidden overflow-x-hidden">
-        <div className={`flex items-center gap-2 p-3 ${(groups.length > 0 || (groups.length === 0 && search.trim())) ? 'border-b' : ''}`}>
+        <div
+          className={`flex items-center gap-2 p-3 ${groups.length > 0 || (groups.length === 0 && search.trim()) ? 'border-b' : ''}`}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -123,58 +128,61 @@ export default function CustomSearchDialog(props: SharedProps) {
               </div>
             ) : (
               groups.map(({ page, children }, idx) => (
-              <div
-                key={page.id}
-                className="relative rounded-md bg-fd-popover"
-              >
-                <div className="p-3 pb-0">
-                  <button
-                    type="button"
-                    className="block w-full text-left text-sm text-white hover:text-fd-accent-foreground hover:bg-fd-accent rounded-md py-2 px-3 min-w-0 transition-colors cursor-pointer"
-                    onClick={() => {
-                      router.push(page.url);
-                      props.onOpenChange(false);
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="size-4 shrink-0" />
-                      <span className="truncate">{page.content}</span>
-                    </div>
-                  </button>
+                <div
+                  key={page.id}
+                  className="relative rounded-md bg-fd-popover"
+                >
+                  <div className="p-3 pb-0">
+                    <button
+                      type="button"
+                      className="block w-full text-left text-sm text-white hover:text-fd-accent-foreground hover:bg-fd-accent rounded-md py-2 px-3 min-w-0 transition-colors cursor-pointer"
+                      onClick={() => {
+                        router.push(page.url);
+                        props.onOpenChange(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="size-4 shrink-0" />
+                        <span className="truncate">{page.content}</span>
+                      </div>
+                    </button>
 
-                  {children.length > 0 && (
-                    <div>
-                      {children.map((child) => {
-                        const code =
-                          child.type !== 'heading' && isCodeLike(child.content);
-                        const Icon =
-                          child.type === 'heading'
-                            ? Hash
-                            : code
-                              ? Code2
-                              : AlignLeft;
+                    {children.length > 0 && (
+                      <div>
+                        {children.map((child) => {
+                          const code =
+                            child.type !== 'heading' &&
+                            isCodeLike(child.content);
+                          const Icon =
+                            child.type === 'heading'
+                              ? Hash
+                              : code
+                                ? Code2
+                                : AlignLeft;
 
-                        return (
-                          <button
-                            key={child.id}
-                            type="button"
-                            className="group block w-full text-start text-sm text-white hover:text-fd-accent-foreground hover:bg-fd-accent rounded-md py-2 px-3 transition-colors cursor-pointer"
-                            onClick={() => {
-                              router.push(child.url);
-                              props.onOpenChange(false);
-                            }}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 ml-4">
-                              <Icon className="size-3.5 shrink-0" />
-                              <span className="truncate">{child.content}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                          return (
+                            <button
+                              key={child.id}
+                              type="button"
+                              className="group block w-full text-start text-sm text-white hover:text-fd-accent-foreground hover:bg-fd-accent rounded-md py-2 px-3 transition-colors cursor-pointer"
+                              onClick={() => {
+                                router.push(child.url);
+                                props.onOpenChange(false);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 ml-4">
+                                <Icon className="size-3.5 shrink-0" />
+                                <span className="truncate">
+                                  {child.content}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
               ))
             )}
           </div>
