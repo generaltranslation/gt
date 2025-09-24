@@ -1,11 +1,12 @@
 // Adapted from https://github.com/sanity-io/sanity-naive-html-serializer
-import { htmlToBlocks } from '@sanity/block-tools';
+import { htmlToBlocks } from '@portabletext/block-tools';
 import {
   customDeserializers,
   customBlockDeserializers,
 } from '../BaseSerializationConfig';
 import { Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
+import { mergeBlocks } from '../helpers';
 
 export const deserializeArray = (
   arrayHTML: Element,
@@ -13,6 +14,7 @@ export const deserializeArray = (
   blockDeserializers = customBlockDeserializers
 ) => {
   const output: any[] = [];
+  console.log('Attempting to deserialize array', arrayHTML);
   const children = Array.from(arrayHTML.children);
   children.forEach((child) => {
     let deserializedObject: any;
@@ -32,9 +34,16 @@ export const deserializeArray = (
         );
         deserializedObject._key = child.id;
       } else {
+        console.log('child', child);
         deserializedObject = htmlToBlocks(child.outerHTML, blockContentType, {
           rules: blockDeserializers,
-        })[0];
+        });
+        console.log(
+          'deserializedObject',
+          JSON.stringify(deserializedObject, null, 2)
+        );
+        deserializedObject = mergeBlocks(deserializedObject);
+        console.log('mergedBlock', JSON.stringify(deserializedObject, null, 2));
         deserializedObject._key = child.id;
       }
     } catch (e) {
@@ -58,6 +67,7 @@ export const deserializeObject = (
     return deserialize(objectHTML);
   }
 
+  console.log('Attempting to deserialize object', objectHTML);
   const output: Record<string, any> = {};
   //account for anonymous inline objects
   if (objectHTML.className) {

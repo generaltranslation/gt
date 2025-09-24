@@ -1,5 +1,5 @@
 // Adapted from https://github.com/sanity-io/sanity-naive-html-serializer
-import { htmlToBlocks } from '@sanity/block-tools';
+import { htmlToBlocks } from '@portabletext/block-tools';
 import { Schema } from '@sanity/schema';
 import { ObjectField, PortableTextSpan, PortableTextTextBlock } from 'sanity';
 

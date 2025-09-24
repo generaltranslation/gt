@@ -6,11 +6,14 @@ import {
   PortableTextBlockComponent,
   PortableTextListComponent,
   PortableTextListItemComponent,
+  PortableTextMarkComponent,
+  PortableTextHtmlComponents,
 } from '@portabletext/to-html';
 
-import { htmlToBlocks } from '@sanity/block-tools';
+import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
-import { PortableTextTextBlock, TypedObject } from 'sanity';
+import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
+import { attachGTData, detachGTData } from './data';
 
 export const defaultStopTypes = [
   'reference',
@@ -27,6 +30,11 @@ export const defaultStopTypes = [
   'color',
   'code',
 ];
+
+export const defaultMarks: Record<string, PortableTextMarkComponent> = {
+  link: ({ value, children }) =>
+    attachGTData(`<a>${children}</a>`, value, 'markDef'),
+};
 
 export const defaultPortableTextBlockStyles: Record<
   PortableTextBlockStyle,
@@ -61,39 +69,66 @@ const defaultListItem: PortableTextListItemComponent = ({
 const unknownBlockFunc: PortableTextBlockComponent = ({ value, children }) =>
   `<p id="${value._key}" data-type="unknown-block-style" data-style="${value.style}">${children}</p>`;
 
-export const customSerializers: Record<string, any> = {
+export const customSerializers: Partial<PortableTextHtmlComponents> = {
   unknownType: ({ value }: { value: Record<string, any> }) =>
     `<div class="${value._type}"></div>`,
   types: {},
+  marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
   list: defaultLists,
   listItem: defaultListItem,
   unknownBlockStyle: unknownBlockFunc,
-  marks: {
-    linkField: ({ value, children }: { value: any; children: string }) => {
-      if (value.linkType === 'href' && value.href) {
-        return `<a href="${value.href}"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
-      }
-      if (value.linkType === 'post' && value.post?._ref) {
-        return `<a href="#${value.post._ref}" data-link-type="post"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
-      }
-      if (value.linkType === 'page' && value.page?._ref) {
-        return `<a href="#${value.page._ref}" data-link-type="page"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
-      }
-      if (value.linkType === 'simplePage' && value.simplePage?._ref) {
-        return `<a href="#${value.simplePage._ref}" data-link-type="simplePage"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
-      }
-      if (value.linkType === 'file' && value.file) {
-        return `<a href="${value.file.asset?._ref || '#'}" data-link-type="file"${value.openInNewTab ? ' target="_blank"' : ''}>${children}</a>`;
-      }
-      return `<span class="linkField" data-link-type="${value.linkType || 'none'}">${children}</span>`;
-    },
-  },
 };
 
 export const customDeserializers: Record<string, any> = { types: {} };
 
 export const customBlockDeserializers: Array<any> = [
+  // handle spans with data-gt-internal
+  {
+    deserialize(
+      el: HTMLParagraphElement,
+      next: (
+        elements: Node | Node[] | NodeList
+      ) => TypedObject | TypedObject[] | undefined
+    ): PortableTextTextBlock | TypedObject | undefined {
+      if (!el.hasChildNodes()) {
+        return undefined;
+      }
+
+      if (!el.getAttribute('data-gt-internal')) {
+        return undefined;
+      }
+
+      const { html, data } = detachGTData(el.outerHTML);
+      const block = htmlToBlocks(html, blockContentType)[0];
+
+      const children = next(el.childNodes);
+
+      let markDefs: PortableTextObject[] = [];
+      if ('markDefs' in block) {
+        markDefs = (block.markDefs as PortableTextObject[]) ?? [];
+      }
+      if (data?.markDef) {
+        markDefs.push(data.markDef as PortableTextObject);
+      }
+      if (children) {
+        (children as any).forEach((child: any) => {
+          child.marks = data?.markDef?._key
+            ? [...(child.marks || []), data.markDef._key]
+            : [...(child.marks || [])];
+        });
+      }
+      // Resolve marks in the child nodes
+      const output = {
+        ...block,
+        markDefs,
+        children,
+      };
+      console.log('input', el.outerHTML);
+      console.log('output', output);
+      return output;
+    },
+  },
   //handle undeclared styles
   {
     deserialize(
@@ -167,6 +202,7 @@ export const customBlockDeserializers: Array<any> = [
           block = {
             ...block,
             ...newBlock,
+            // @ts-ignore
             style: customStyle ?? (newBlock as PortableTextTextBlock).style,
           };
 

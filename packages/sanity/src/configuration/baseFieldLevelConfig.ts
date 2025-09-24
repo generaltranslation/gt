@@ -73,6 +73,7 @@ export const baseFieldLevelConfig = {
       'field',
       baseLanguage,
       stopTypes,
+      // @ts-ignore
       serializers
     );
     return {

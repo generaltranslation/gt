@@ -68,15 +68,7 @@ tempSerializers.types = {
   ...additionalSerializerTypes,
 };
 tempSerializers.marks = {
-  annotation: ({
-    value,
-    markType,
-    children,
-  }: {
-    value: TypedObject;
-    markType: string;
-    children: any[];
-  }) => {
+  annotation: ({ value, markType, children }) => {
     return `<span class="${markType}" id="${value._key}">${children}</span>`;
   },
 };

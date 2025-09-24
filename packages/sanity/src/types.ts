@@ -3,7 +3,7 @@
 import { SanityClient, Schema, TypedObject } from 'sanity';
 import type { SerializedDocument } from './serialization';
 import { PortableTextTypeComponent } from '@portabletext/to-html';
-import { DeserializerRule } from '@sanity/block-tools';
+import type { DeserializerRule } from '@portabletext/block-tools';
 
 export type TranslationTaskLocaleStatus = {
   localeId: string;

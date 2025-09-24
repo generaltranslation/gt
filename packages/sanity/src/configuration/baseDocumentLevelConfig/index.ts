@@ -45,7 +45,6 @@ export const baseDocumentLevelConfig = {
       stopTypes,
       serializers
     );
-    console.log('source doc:', JSON.stringify(doc, null, 2));
     return {
       content: serialized.content,
       documentId: docInfo.documentId,
