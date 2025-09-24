@@ -17,8 +17,7 @@ export const documentLevelPatch = async (
   localeId: string,
   client: SanityClient,
   languageField: string = 'language',
-  mergeWithTargetLocale: boolean = false,
-  publish: boolean = false
+  mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
   const baseLanguage = pluginConfig.getSourceLocale();
   //this is the document we use to merge with the translated fields
@@ -100,8 +99,7 @@ export const documentLevelPatch = async (
       baseDoc,
       merged,
       translatedFields,
-      client,
-      publish
+      client
     );
   }
   //otherwise, create a new document
@@ -114,8 +112,7 @@ export const documentLevelPatch = async (
       client,
       translationMetadata,
       docInfo.documentId,
-      languageField,
-      publish
+      languageField
     );
   }
 };

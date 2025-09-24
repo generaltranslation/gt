@@ -14,8 +14,7 @@ export async function patchI18nDoc(
   sourceDocument: SanityDocumentLike,
   mergedDocument: SanityDocumentLike,
   translatedFields: Record<string, any>,
-  client: SanityClient,
-  publish: boolean = false
+  client: SanityClient
 ): Promise<void> {
   const cleanedMerge: Record<string, any> = {};
   Object.entries(mergedDocument).forEach(([key, value]) => {
@@ -46,22 +45,4 @@ export async function patchI18nDoc(
   const newDocument = await client
     .patch(i18nDocId, { set: appliedDocument })
     .commit();
-
-  if (publish) {
-    try {
-      // only publish if the document is a draft
-      if (newDocument._id.startsWith('drafts.')) {
-        await client.action(
-          {
-            actionType: 'sanity.action.document.publish',
-            draftId: newDocument._id,
-            publishedId: newDocument._id.replace('drafts.', ''),
-          },
-          {}
-        );
-      }
-    } catch (error) {
-      console.error('Error publishing document', error);
-    }
-  }
 }

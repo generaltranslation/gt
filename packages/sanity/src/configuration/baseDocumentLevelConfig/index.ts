@@ -32,16 +32,14 @@ export const baseDocumentLevelConfig = {
     localeId: Parameters<ImportTranslation>[1],
     document: Parameters<ImportTranslation>[2],
     context: Parameters<ImportTranslation>[3],
-    mergeWithTargetLocale: boolean = false,
-    publish: boolean = false
+    mergeWithTargetLocale: boolean = false
   ): Promise<void> => {
     return importDocument(
       docInfo,
       localeId,
       document,
       context,
-      mergeWithTargetLocale,
-      publish
+      mergeWithTargetLocale
     );
   },
   secretsNamespace: 'generaltranslation',

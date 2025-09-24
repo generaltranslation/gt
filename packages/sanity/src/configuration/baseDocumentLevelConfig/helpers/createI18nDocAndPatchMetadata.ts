@@ -11,8 +11,7 @@ export async function createI18nDocAndPatchMetadata(
   client: SanityClient,
   translationMetadata: SanityDocumentLike,
   sourceDocumentId: string,
-  languageField: string = 'language',
-  publish: boolean = false
+  languageField: string = 'language'
 ): Promise<void> {
   translatedDoc[languageField] = localeId;
   const translations = translationMetadata.translations as Record<
@@ -79,22 +78,4 @@ export async function createI18nDocAndPatchMetadata(
       ])
     )
     .commit();
-
-  if (publish) {
-    try {
-      // only publish if the document is a draft
-      if (doc._id.startsWith('drafts.')) {
-        await client.action(
-          {
-            actionType: 'sanity.action.document.publish',
-            draftId: doc._id,
-            publishedId: doc._id.replace('drafts.', ''),
-          },
-          {}
-        );
-      }
-    } catch (error) {
-      console.error('Error publishing document', error);
-    }
-  }
 }

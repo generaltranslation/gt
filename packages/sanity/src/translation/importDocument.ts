@@ -8,8 +8,7 @@ export async function importDocument(
   localeId: string,
   document: string,
   context: TranslationFunctionContext,
-  mergeWithTargetLocale: boolean = false,
-  publish: boolean = false
+  mergeWithTargetLocale: boolean = false
 ) {
   const { client } = context;
   const deserialized = deserializeDocument(document);
@@ -19,7 +18,6 @@ export async function importDocument(
     localeId,
     client,
     pluginConfig.getLanguageField(),
-    mergeWithTargetLocale,
-    publish
+    mergeWithTargetLocale
   );
 }
