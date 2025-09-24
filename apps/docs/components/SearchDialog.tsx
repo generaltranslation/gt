@@ -21,20 +21,20 @@ export default function SearchDialog(props: SharedProps) {
   const initOrama = useCallback<NonNullable<StaticOptions['initOrama']>>(
     async (loc?: string) => {
       if (loc === 'zh') {
-        return (await create({
+        return create({
           schema: { _: 'string' },
           components: { tokenizer: createMandarinTokenizer() },
-        })) as unknown as AnyOramaInstance;
+        }) as unknown as AnyOramaInstance;
       }
       if (loc === 'ja') {
-        return (await create({
+        return create({
           schema: { _: 'string' },
           components: { tokenizer: createJapaneseTokenizer() },
-        })) as unknown as AnyOramaInstance;
+        }) as unknown as AnyOramaInstance;
       }
-      return (await create({
+      return create({
         schema: { _: 'string' },
-      })) as unknown as AnyOramaInstance;
+      }) as unknown as AnyOramaInstance;
     },
     []
   );
@@ -118,7 +118,7 @@ export default function SearchDialog(props: SharedProps) {
         className="fixed inset-0 z-50 backdrop-blur-xs bg-black/30"
         onClick={() => props.onOpenChange(false)}
       />
-      <div className="fixed left-1/2 top-8 z-[51] w-[calc(100%-1rem)] max-w-screen-sm -translate-x-1/2 rounded-xl border bg-fd-popover text-fd-popover-foreground shadow-2xl shadow-black/60 overflow-hidden overflow-x-hidden">
+      <div className="fixed left-1/2 top-8 z-[51] w-[calc(100%-1rem)] max-w-screen-sm -translate-x-1/2 rounded-xl border bg-fd-popover text-fd-popover-foreground shadow-2xl shadow-black/60 overflow-hidden">
         <div
           className={`flex items-center gap-2 p-3 ${groups.length > 0 || (groups.length === 0 && search.trim()) ? 'border-b' : ''}`}
         >
