@@ -11,6 +11,8 @@ import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import AnalyticsBanner from '@/components/analytics/AnalyticsBanner';
+import CustomSearchDialog from '@/components/CustomSearchDialog';
+import PrefetchSearchIndex from '@/components/PrefetchSearchIndex';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -72,6 +74,10 @@ export default async function Layout({
         <PostHogProvider>
           <GTProvider locale={locale}>
             <RootProvider
+              search={{
+                // Use static client via a custom dialog with lazy tokenizers
+                SearchDialog: CustomSearchDialog,
+              }}
               i18n={{
                 locale: locale,
                 locales: locales,
@@ -131,6 +137,7 @@ export default async function Layout({
                 tree={source.pageTree[locale]}
                 {...options}
               >
+                <PrefetchSearchIndex />
                 {children}
               </DocsLayout>
               <AnalyticsBanner />
