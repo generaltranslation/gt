@@ -7,11 +7,7 @@ import {
   TranslationFunctionContext,
   TranslationsTabConfigOptions,
 } from './types';
-import { baseDocumentLevelConfig } from './configuration/baseDocumentLevelConfig';
-import { baseFieldLevelConfig } from './configuration/baseFieldLevelConfig';
 import { findLatestDraft } from './configuration/utils/findLatestDraft';
-import { documentLevelPatch } from './configuration/baseDocumentLevelConfig/documentLevelPatch';
-import { fieldLevelPatch } from './configuration/baseFieldLevelConfig';
 import {
   BaseDocumentSerializer,
   BaseDocumentDeserializer,
@@ -34,8 +30,6 @@ export {
   TranslationsTab,
   //helpers for end developers who may need to customize serialization
   findLatestDraft,
-  documentLevelPatch,
-  fieldLevelPatch,
   BaseDocumentSerializer,
   BaseDocumentDeserializer,
   BaseDocumentMerger,
@@ -45,7 +39,6 @@ export {
   detachGTData,
 };
 
-import { GTAdapter } from './adapter';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { gt, pluginConfig } from './adapter/core';
@@ -55,25 +48,6 @@ import TranslationsTool from './components/page/TranslationsTool';
 import { SECRETS_NAMESPACE } from './utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { attachGTData, detachGTData } from './serialization/data';
-
-interface ConfigOptions {
-  adapter: Adapter;
-  secretsNamespace: string | null;
-}
-
-export const defaultDocumentLevelConfig: ConfigOptions = {
-  ...baseDocumentLevelConfig,
-  adapter: GTAdapter,
-  secretsNamespace: 'generaltranslation',
-};
-
-export const defaultFieldLevelConfig: ConfigOptions = {
-  ...baseFieldLevelConfig,
-  adapter: GTAdapter,
-  secretsNamespace: 'generaltranslation',
-};
-
-export { GTAdapter };
 
 export type GTPluginConfig = Omit<
   Parameters<typeof gt.setConfig>[0],

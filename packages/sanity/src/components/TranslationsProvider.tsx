@@ -10,13 +10,11 @@ import { SanityDocument, useSchema } from 'sanity';
 import { useToast } from '@sanity/ui';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
-import { GTAdapter } from '../adapter';
 import {
   GTFile,
   Secrets,
   TranslationLocale,
   TranslationFunctionContext,
-  TranslationTask,
 } from '../types';
 import { pluginConfig } from '../adapter/core';
 import { serializeDocument } from '../utils/serialize';
@@ -35,10 +33,7 @@ import {
 } from '../utils/importUtils';
 import { processBatch } from '../utils/batchProcessor';
 import { publishTranslations } from '../sanity-api/publishDocuments';
-import { createTask } from '../adapter/createTask';
-import { getTranslationTask } from '../adapter/getTranslationTask';
-import { getTranslation } from '../adapter/getTranslation';
-import { baseDocumentLevelConfig } from '../configuration/baseDocumentLevelConfig';
+import { getLocales } from '../adapter/getLocales';
 
 interface ImportProgress {
   current: number;
@@ -74,11 +69,8 @@ interface TranslationsContextType {
   loadingSecrets: boolean;
   secrets: Secrets | null;
 
-  // Single document task-based functionality (for tab components)
-  documentInfo?: GTFile;
-  currentTask?: TranslationTask | null;
-
   // Actions
+  setLocales: (locales: TranslationLocale[]) => void;
   setAutoRefresh: (value: boolean) => void;
   handleTranslateAll: () => Promise<void>;
   handleImportAll: () => Promise<void>;
@@ -87,11 +79,6 @@ interface TranslationsContextType {
   handleImportDocument: (documentId: string, localeId: string) => Promise<void>;
   handlePatchDocumentReferences: () => Promise<void>;
   handlePublishAllTranslations: () => Promise<void>;
-
-  // Task-based actions (for single document mode)
-  handleCreateTask?: (selectedLocales: string[]) => Promise<void>;
-  handleRefreshTask?: () => Promise<void>;
-  handleImportTaskTranslation?: (localeId: string) => Promise<void>;
 }
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
@@ -138,14 +125,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     Map<string, TranslationStatus>
   >(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentTask, setCurrentTask] = useState<TranslationTask | null>(null);
 
   const client = useClient();
   const schema = useSchema();
   const translationContext: TranslationFunctionContext = { client, schema };
   const toast = useToast();
   const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
-    `${pluginConfig.getSecretsNamespace()}.secrets`
+    pluginConfig.getSecretsNamespace()
   );
 
   const fetchDocuments = useCallback(async () => {
@@ -199,7 +185,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const fetchLocales = useCallback(async () => {
     if (!secrets) return;
     try {
-      const availableLocales = await GTAdapter.getLocales(secrets);
+      const availableLocales = await getLocales(secrets);
       setLocales(availableLocales);
     } catch {
       toast.push({
@@ -354,14 +340,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       );
 
       if (result.successfulImports.length > 0) {
-        const newDownloadStatus = {
-          ...downloadStatus,
+        setDownloadStatus((prev) => ({
+          ...prev,
           downloaded: new Set([
-            ...downloadStatus.downloaded,
+            ...prev.downloaded,
             ...result.successfulImports,
           ]),
-        };
-        setDownloadStatus(newDownloadStatus);
+        }));
       }
 
       toast.push({
@@ -501,14 +486,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       );
 
       if (result.successfulImports.length > 0) {
-        const newDownloadStatus = {
-          ...downloadStatus,
+        setDownloadStatus((prev) => ({
+          ...prev,
           downloaded: new Set([
-            ...downloadStatus.downloaded,
+            ...prev.downloaded,
             ...result.successfulImports,
           ]),
-        };
-        setDownloadStatus(newDownloadStatus);
+        }));
       }
 
       toast.push({
@@ -566,28 +550,30 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         secrets
       );
 
-      const newStatuses = new Map(translationStatuses);
+      setTranslationStatuses((prevStatuses) => {
+        const newStatuses = new Map();
 
-      for (const doc of documents) {
-        for (const localeId of availableLocaleIds) {
-          const documentId = doc._id?.replace('drafts.', '') || doc._id;
-          const key = `${documentId}:${localeId}`;
-          newStatuses.set(key, { progress: 0, isReady: false });
+        for (const doc of documents) {
+          for (const localeId of availableLocaleIds) {
+            const documentId = doc._id?.replace('drafts.', '') || doc._id;
+            const key = `${documentId}:${localeId}`;
+            newStatuses.set(key, { progress: 0, isReady: false });
+          }
         }
-      }
 
-      if (Array.isArray(readyTranslations)) {
-        for (const translation of readyTranslations) {
-          const key = `${translation.fileId}:${translation.locale}`;
-          newStatuses.set(key, {
-            progress: 100,
-            isReady: true,
-            translationId: translation.id,
-          });
+        if (Array.isArray(readyTranslations)) {
+          for (const translation of readyTranslations) {
+            const key = `${translation.fileId}:${translation.locale}`;
+            newStatuses.set(key, {
+              progress: 100,
+              isReady: true,
+              translationId: translation.id,
+            });
+          }
         }
-      }
 
-      setTranslationStatuses(newStatuses);
+        return newStatuses;
+      });
 
       toast.push({
         title: `Refreshed status for ${documents.length} documents`,
@@ -604,7 +590,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales, downloadStatus, translationStatuses, toast]);
+  }, [secrets, documents, locales, toast]);
 
   const handleImportDocument = useCallback(
     async (documentId: string, localeId: string) => {
@@ -663,11 +649,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
               false
             );
 
-            const newDownloadStatus = {
-              ...downloadStatus,
-              downloaded: new Set([...downloadStatus.downloaded, key]),
-            };
-            setDownloadStatus(newDownloadStatus);
+            setDownloadStatus((prev) => ({
+              ...prev,
+              downloaded: new Set([...prev.downloaded, key]),
+            }));
             setImportedTranslations((prev) => new Set([...prev, key]));
 
             toast.push({
@@ -699,14 +684,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       }
     },
-    [
-      secrets,
-      translationStatuses,
-      documents,
-      downloadStatus,
-      toast,
-      translationContext,
-    ]
+    [secrets, documents, toast, translationContext]
   );
 
   const handlePatchDocumentReferences = useCallback(async () => {
@@ -930,87 +908,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setImportedTranslations(new Set(downloadStatus.downloaded));
   }, [downloadStatus.downloaded]);
 
-  // Create documentInfo for single document mode
-  const documentInfo = singleDocument
-    ? {
-        documentId: singleDocument._id.replace('drafts.', ''),
-        versionId: singleDocument._rev,
-      }
-    : undefined;
-
-  // Task-based functionality for single document mode
-  const handleCreateTask = useCallback(
-    async (selectedLocales: string[]) => {
-      if (!documentInfo || !secrets) return;
-
-      setIsBusy(true);
-      try {
-        const serializedDocument =
-          await baseDocumentLevelConfig.exportForTranslation(
-            documentInfo,
-            translationContext
-          );
-
-        const task = await createTask(
-          documentInfo,
-          serializedDocument,
-          selectedLocales,
-          secrets
-        );
-
-        setCurrentTask(task);
-      } finally {
-        setIsBusy(false);
-      }
-    },
-    [documentInfo, secrets, translationContext]
-  );
-
-  const handleRefreshTask = useCallback(async () => {
-    if (!documentInfo || !secrets) return;
-
-    try {
-      const task = await getTranslationTask(documentInfo, secrets);
-      setCurrentTask(task);
-    } catch (error) {
-      console.error('Error refreshing task:', error);
-      // If no task found, that's okay - just set to null
-      setCurrentTask(null);
-    }
-  }, [documentInfo, secrets]);
-
-  const handleImportTaskTranslation = useCallback(
-    async (localeId: string) => {
-      if (!documentInfo || !secrets) return;
-
-      try {
-        const translation = await getTranslation(
-          documentInfo,
-          localeId,
-          secrets
-        );
-        await baseDocumentLevelConfig.importTranslation(
-          documentInfo,
-          localeId,
-          translation,
-          translationContext,
-          false
-        );
-      } catch (error) {
-        console.error('Error importing task translation:', error);
-        throw error;
-      }
-    },
-    [documentInfo, secrets, translationContext]
-  );
-
-  // Load task for single document mode
-  useEffect(() => {
-    if (documentInfo && secrets && !loadingSecrets) {
-      handleRefreshTask();
-    }
-  }, [documentInfo, secrets, loadingSecrets, handleRefreshTask]);
-
   const contextValue: TranslationsContextType = {
     // State
     isBusy,
@@ -1027,11 +924,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     loadingSecrets,
     secrets,
 
-    // Single document task-based functionality
-    documentInfo,
-    currentTask,
-
     // Actions
+    setLocales,
     setAutoRefresh,
     handleTranslateAll,
     handleImportAll,
@@ -1040,11 +934,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     handleImportDocument,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
-
-    // Task-based actions (for single document mode)
-    handleCreateTask,
-    handleRefreshTask,
-    handleImportTaskTranslation,
   };
 
   return (

@@ -82,5 +82,5 @@ export const baseFieldLevelConfig = {
       mergeWithTargetLocale
     );
   },
-  secretsNamespace: 'translationService',
+  secretsNamespace: 'generaltranslation',
 };

@@ -11,6 +11,7 @@ import {
 import { buildTheme } from '@sanity/ui/theme';
 import { useSecrets } from '../../hooks/useSecrets';
 import { Secrets } from '../../types';
+import { pluginConfig } from '../../adapter/core';
 
 const theme = buildTheme();
 
@@ -23,7 +24,7 @@ interface BaseTranslationWrapperProps {
 
 export const BaseTranslationWrapper: React.FC<BaseTranslationWrapperProps> = ({
   children,
-  secretsNamespace = 'translationService.secrets',
+  secretsNamespace = pluginConfig.getSecretsNamespace(),
   padding = 4,
   showContainer = true,
 }) => {

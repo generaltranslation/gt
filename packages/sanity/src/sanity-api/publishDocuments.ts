@@ -27,7 +27,7 @@ export async function publishTranslations(
   documentIds: string[],
   client: SanityClient
 ) {
-  let publishedDocumentIds: string[] = [];
+  const publishedDocumentIds: string[] = [];
   await processBatch(
     documentIds,
     async (documentId) => {
