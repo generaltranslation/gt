@@ -1,0 +1,242 @@
+---
+title: getLocaleName()
+description: API Reference for the GT getLocaleName method
+---
+
+## Overview
+
+The `getLocaleName()` method retrieves the display name of a locale code using the `Intl.DisplayNames` API. It returns a human-readable name for any valid BCP-47 locale code, localized according to the instance's source locale.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+const name = gt.getLocaleName('fr-CA');
+console.log(name); // "French (Canada)"
+```
+
+This method is essential for building locale selectors, displaying language options to users, and creating internationalized user interfaces.
+
+<Callout>
+**Localized Display:**
+The returned name is localized according to the GT instance's `sourceLocale`. For example, a French user would see locale names in French, while an English user sees them in English.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale',
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get the display name for. If not provided, uses the instance's `targetLocale` |
+
+### Returns
+
+`string` - The localized display name of the locale.
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Behavior
+
+### Display Language
+
+The display name is localized according to:
+1. Instance's `sourceLocale` (if configured)
+2. Library default locale ('en')
+
+### Custom Mapping Integration
+
+- Custom locale mappings are checked first
+- If a custom name is defined, it takes precedence
+- Falls back to `Intl.DisplayNames` for standard BCP-47 codes
+
+### Name Resolution Priority
+
+1. **Custom mapping name** (if defined in `customMapping`)
+2. **Intl.DisplayNames** result in source locale
+3. **Intl.DisplayNames** result in library default locale
+4. **Locale code itself** (as fallback)
+
+---
+
+## Examples
+
+### Basic Usage
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'fr'
+});
+
+// Get name for target locale
+console.log(gt.getLocaleName()); // "French (France)"
+
+// Get names for other locales
+console.log(gt.getLocaleName('es')); // "Spanish (Spain)"
+console.log(gt.getLocaleName('de')); // "German (Germany)"
+console.log(gt.getLocaleName('ja')); // "Japanese (Japan)"
+```
+
+### Localized in Different Languages
+
+```typescript
+// English display
+const enGT = new GT({ sourceLocale: 'en' });
+console.log(enGT.getLocaleName('zh')); // "Chinese (China)"
+
+// French display
+const frGT = new GT({ sourceLocale: 'fr' });
+console.log(frGT.getLocaleName('zh')); // "chinois (Chine)"
+
+// Spanish display  
+const esGT = new GT({ sourceLocale: 'es' });
+console.log(esGT.getLocaleName('zh')); // "chino (China)"
+```
+
+### Building Locale Selector
+
+```typescript
+function buildLocaleSelector(gt: GT, supportedLocales: string[]) {
+  return supportedLocales.map(locale => ({
+    code: locale,
+    name: gt.getLocaleName(locale),
+    emoji: gt.getLocaleEmoji(locale)
+  }));
+}
+
+const gt = new GT({ sourceLocale: 'en' });
+const options = buildLocaleSelector(gt, ['en', 'es', 'fr', 'de', 'ja']);
+
+console.log(options);
+// [
+//   { code: 'en', name: 'English (United States)', emoji: '🇺🇸' },
+//   { code: 'es', name: 'Spanish (Spain)', emoji: '🇪🇸' },
+//   { code: 'fr', name: 'French (France)', emoji: '🇫🇷' },
+//   ...
+// ]
+```
+
+### Custom Locale Names
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  customMapping: {
+    'zh-simplified': {
+      code: 'zh',
+      name: 'Simplified Chinese',
+      nativeName: '简体中文'
+    },
+    'zh-traditional': {
+      code: 'zh-TW', 
+      name: 'Traditional Chinese',
+      nativeName: '繁體中文'
+    }
+  }
+});
+
+console.log(gt.getLocaleName('zh-simplified')); // "Simplified Chinese"
+console.log(gt.getLocaleName('zh-traditional')); // "Traditional Chinese"
+```
+
+---
+
+## Error Handling
+
+### Missing Target Locale
+
+```typescript
+const gt = new GT(); // No target locale configured
+
+try {
+  const name = gt.getLocaleName(); // No parameter provided
+} catch (error) {
+  console.error('No target locale available:', error.message);
+  // Error: No target locale provided for getLocaleName
+}
+```
+
+### Invalid Locale Codes
+
+```typescript
+// Invalid locale codes return the code itself as fallback
+console.log(gt.getLocaleName('invalid-locale')); // "invalid-locale"
+console.log(gt.getLocaleName('xyz')); // "xyz"
+
+// Check validity before getting names
+function safeGetLocaleName(gt: GT, locale: string): string {
+  if (!gt.isValidLocale(locale)) {
+    console.warn(`Invalid locale code: ${locale}`);
+    return locale; // Return code as fallback
+  }
+  
+  return gt.getLocaleName(locale);
+}
+```
+
+### Fallback Strategies
+
+```typescript
+function getLocaleNameWithFallback(gt: GT, locale: string): string {
+  try {
+    const name = gt.getLocaleName(locale);
+    
+    // Check if we got a meaningful name (not just the code back)
+    if (name === locale) {
+      console.warn(`No display name available for locale: ${locale}`);
+    }
+    
+    return name;
+  } catch (error) {
+    console.error(`Failed to get locale name for ${locale}:`, error.message);
+    return locale; // Ultimate fallback
+  }
+}
+```
+
+---
+
+## Performance Considerations
+
+- **Intl.DisplayNames**: First call for a locale may be slower due to initialization
+- **Custom Mappings**: Custom names are faster as they skip Intl API calls
+- **Caching**: Consider caching results for frequently accessed locale names
+- **Batch Operations**: For many locales, consider batch processing
+
+---
+
+## Notes
+
+- The method uses the instance's `sourceLocale` to determine display language
+- Custom mapping names take precedence over standard Intl.DisplayNames
+- Returns the locale code itself if no display name can be determined
+- The method is synchronous and returns results immediately
+- Empty string parameter is treated as undefined
+
+## Next Steps
+
+- **[Get locale emoji with getLocaleEmoji()](/docs/core/class/methods/locales/getLocaleEmoji)**
+- **[Get comprehensive locale info with getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
+- **[Learn about CustomMapping type](/docs/core/types/CustomMapping)**
+- **[Explore standalone getLocaleName()](/docs/core/functions/locales/getLocaleName)**

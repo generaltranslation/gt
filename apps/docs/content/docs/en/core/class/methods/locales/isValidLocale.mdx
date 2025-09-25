@@ -1,0 +1,1028 @@
+---
+title: isValidLocale()
+description: API Reference for the GT isValidLocale method
+---
+
+## Overview
+
+The `isValidLocale()` method validates whether a locale code is properly formatted and recognized as a valid BCP-47 locale. It checks locale structure, language recognition, and regional/script validity using the `Intl` APIs with support for custom locale mappings.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+const isValid = gt.isValidLocale('en-US');
+console.log(isValid); // true
+
+const isInvalid = gt.isValidLocale('invalid-locale');
+console.log(isInvalid); // false
+```
+
+This method is essential for validating user input, ensuring locale configurations are correct, and preventing errors in internationalization workflows.
+
+<Callout>
+**Comprehensive Validation:**
+Goes beyond format checking to verify that languages, regions, and scripts are actually recognized by the browser's internationalization APIs, ensuring your locale codes will work reliably across different environments.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale',
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+      default: 'this.customMapping',
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to validate. If not provided, uses the instance's `targetLocale` |
+| `customMapping` | Optional custom mapping to check for additional valid locales. If not provided, uses the instance's `customMapping` |
+
+### Returns
+
+`boolean` - `true` if the locale is valid, `false` otherwise
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Behavior
+
+### Validation Process
+
+The method performs comprehensive validation in this order:
+
+1. **Custom mapping check** - If locale exists in custom mapping, it's considered valid
+2. **BCP-47 format validation** - Uses `Intl.Locale` to verify proper structure
+3. **Language validation** - Ensures the language code is recognized by `Intl.DisplayNames`
+4. **Region validation** - If present, verifies region code is valid
+5. **Script validation** - If present, verifies script code is valid
+
+### Special Exceptions
+
+- **Private-use language codes** (`qaa-qtz`) are accepted despite not being in `Intl.DisplayNames`
+- **Certain script codes** may be accepted even if `DisplayNames` doesn't recognize them
+- **Custom mappings** always take precedence over standard validation
+
+### Language Code Validation
+
+- Must be recognized by `Intl.DisplayNames` for the 'language' type
+- Supports both ISO 639-1 (2-letter) and ISO 639-2/3 (3-letter) codes
+- Includes exception handling for edge cases
+
+---
+
+## Examples
+
+### Basic Validation
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+// Valid standard locales
+console.log(gt.isValidLocale('en')); // true
+console.log(gt.isValidLocale('en-US')); // true
+console.log(gt.isValidLocale('fr-FR')); // true
+console.log(gt.isValidLocale('zh-Hans-CN')); // true
+console.log(gt.isValidLocale('ja-JP')); // true
+
+// Invalid locales
+console.log(gt.isValidLocale('invalid')); // false
+console.log(gt.isValidLocale('en-XX')); // false (invalid region)
+console.log(gt.isValidLocale('xyz-US')); // false (invalid language)
+console.log(gt.isValidLocale('')); // false
+```
+
+### Input Validation in Forms
+
+```typescript
+function validateLocaleInput(value: string): { isValid: boolean; error?: string } {
+  const gt = new GT();
+  
+  if (!value) {
+    return { isValid: false, error: 'Locale is required' };
+  }
+  
+  try {
+    const valid = gt.isValidLocale(value);
+    return {
+      isValid: valid,
+      error: valid ? undefined : 'Invalid locale code'
+    };
+  } catch (err) {
+    return { isValid: false, error: 'Validation error' };
+  }
+}
+
+// Usage in form validation
+const sourceLocale = 'en-US';
+const validation = validateLocaleInput(sourceLocale);
+
+if (validation.isValid) {
+  console.log('✓ Valid locale code');
+} else {
+  console.error('✗ Invalid:', validation.error);
+}
+```
+
+### Batch Locale Validation
+
+```typescript
+interface ValidationResult {
+  locale: string;
+  isValid: boolean;
+  error?: string;
+}
+
+function validateLocales(gt: GT, locales: string[]): ValidationResult[] {
+  return locales.map(locale => {
+    try {
+      if (!locale || typeof locale !== 'string') {
+        return {
+          locale,
+          isValid: false,
+          error: 'Invalid input format'
+        };
+      }
+      
+      const isValid = gt.isValidLocale(locale);
+      return {
+        locale,
+        isValid,
+        error: isValid ? undefined : 'Invalid BCP-47 locale code'
+      };
+    } catch (error) {
+      return {
+        locale,
+        isValid: false,
+        error: error.message
+      };
+    }
+  });
+}
+
+// Configuration validation utility
+function validateLocaleConfiguration(
+  sourceLocale: string,
+  targetLocales: string[],
+  fallbackLocales?: string[]
+): {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+} {
+  const gt = new GT();
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Validate source locale
+  if (!gt.isValidLocale(sourceLocale)) {
+    errors.push(`Invalid source locale: ${sourceLocale}`);
+  }
+  
+  // Validate target locales
+  const targetResults = validateLocales(gt, targetLocales);
+  targetResults.forEach(result => {
+    if (!result.isValid) {
+      errors.push(`Invalid target locale: ${result.locale} - ${result.error}`);
+    }
+  });
+  
+  // Validate fallback locales
+  if (fallbackLocales?.length) {
+    const fallbackResults = validateLocales(gt, fallbackLocales);
+    fallbackResults.forEach(result => {
+      if (!result.isValid) {
+        warnings.push(`Invalid fallback locale: ${result.locale} - ${result.error}`);
+      }
+    });
+  }
+  
+  // Check for duplicates
+  const allLocales = [sourceLocale, ...targetLocales, ...(fallbackLocales || [])];
+  const duplicates = allLocales.filter((locale, index) => 
+    allLocales.indexOf(locale) !== index
+  );
+  
+  if (duplicates.length > 0) {
+    warnings.push(`Duplicate locales found: ${[...new Set(duplicates)].join(', ')}`);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// Usage example
+const config = validateLocaleConfiguration(
+  'en-US',
+  ['fr-FR', 'de-DE', 'es-ES', 'invalid-locale'],
+  ['en-GB', 'en-CA', 'another-invalid']
+);
+
+console.log('Configuration valid:', config.isValid);
+console.log('Errors:', config.errors);
+console.log('Warnings:', config.warnings);
+```
+
+### Custom Mapping Validation
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  customMapping: {
+    'business-english': {
+      code: 'en-US',
+      name: 'Business English'
+    },
+    'simplified-chinese': {
+      code: 'zh-CN',
+      name: 'Simplified Chinese'
+    },
+    'custom-locale': {
+      code: 'custom',
+      name: 'Custom Locale'
+    }
+  }
+});
+
+// Custom locales are considered valid
+console.log(gt.isValidLocale('business-english')); // true
+console.log(gt.isValidLocale('simplified-chinese')); // true
+console.log(gt.isValidLocale('custom-locale')); // true
+
+// Standard validation still applies to non-custom locales
+console.log(gt.isValidLocale('fr-FR')); // true
+console.log(gt.isValidLocale('invalid-standard')); // false
+
+// Custom mapping takes precedence
+console.log(gt.isValidLocale('custom-locale')); // true (custom mapping)
+console.log(gt.isValidLocale('xy-ZZ')); // false (not in custom mapping, invalid standard)
+
+// Validation with different custom mappings
+const differentMapping = {
+  'gaming-locale': { code: 'en-GAMING', name: 'Gaming Locale' },
+  'corporate': { code: 'en-CORP', name: 'Corporate English' }
+};
+
+console.log(gt.isValidLocale('gaming-locale', differentMapping)); // true
+console.log(gt.isValidLocale('business-english', differentMapping)); // false (not in this mapping)
+```
+
+---
+
+## Advanced Usage
+
+### Locale Validation Service
+
+```typescript
+interface LocaleValidationOptions {
+  allowPrivateUse?: boolean;
+  allowGrandfathered?: boolean;
+  strictMode?: boolean;
+  customValidators?: Array<(locale: string) => boolean>;
+}
+
+class LocaleValidationService {
+  private gt: GT;
+  private options: LocaleValidationOptions;
+  
+  constructor(
+    customMapping?: any,
+    options: LocaleValidationOptions = {}
+  ) {
+    this.gt = new GT({ customMapping });
+    this.options = {
+      allowPrivateUse: true,
+      allowGrandfathered: false,
+      strictMode: false,
+      ...options
+    };
+  }
+  
+  validate(locale: string): {
+    isValid: boolean;
+    details: {
+      format: boolean;
+      language: boolean;
+      region?: boolean;
+      script?: boolean;
+      custom: boolean;
+    };
+    warnings: string[];
+    errors: string[];
+  } {
+    const warnings: string[] = [];
+    const errors: string[] = [];
+    const details = {
+      format: false,
+      language: false,
+      region: undefined as boolean | undefined,
+      script: undefined as boolean | undefined,
+      custom: false
+    };
+    
+    // Check if it's a custom locale
+    try {
+      if (this.gt.customMapping && locale in this.gt.customMapping) {
+        details.custom = true;
+        return {
+          isValid: true,
+          details,
+          warnings,
+          errors
+        };
+      }
+    } catch (e) {
+      // Continue with standard validation
+    }
+    
+    // Format validation
+    try {
+      new Intl.Locale(locale);
+      details.format = true;
+    } catch (e) {
+      errors.push('Invalid BCP-47 format');
+      return { isValid: false, details, warnings, errors };
+    }
+    
+    // Detailed component validation
+    const parts = locale.split('-');
+    const language = parts[0];
+    const region = parts.length > 1 && /^[A-Z]{2}$/.test(parts[1]) ? parts[1] : undefined;
+    const script = parts.find(part => /^[A-Z][a-z]{3}$/.test(part));
+    
+    // Language validation
+    try {
+      const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
+      const langName = displayNames.of(language);
+      details.language = langName !== language;
+      
+      if (!details.language) {
+        // Check for private-use codes
+        const isPrivateUse = /^q[a-t][a-z]$/.test(language);
+        if (isPrivateUse && this.options.allowPrivateUse) {
+          details.language = true;
+          warnings.push('Private-use language code');
+        } else {
+          errors.push(`Unrecognized language code: ${language}`);
+        }
+      }
+    } catch (e) {
+      errors.push(`Language validation error: ${e.message}`);
+    }
+    
+    // Region validation
+    if (region) {
+      try {
+        const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+        const regionName = displayNames.of(region);
+        details.region = regionName !== region;
+        
+        if (!details.region) {
+          errors.push(`Unrecognized region code: ${region}`);
+        }
+      } catch (e) {
+        details.region = false;
+        errors.push(`Region validation error: ${e.message}`);
+      }
+    }
+    
+    // Script validation
+    if (script) {
+      try {
+        const displayNames = new Intl.DisplayNames(['en'], { type: 'script' });
+        const scriptName = displayNames.of(script);
+        details.script = scriptName !== script;
+        
+        if (!details.script) {
+          warnings.push(`Script code may not be fully supported: ${script}`);
+          details.script = true; // Don't fail for script issues
+        }
+      } catch (e) {
+        details.script = false;
+        warnings.push(`Script validation warning: ${e.message}`);
+      }
+    }
+    
+    // Custom validators
+    if (this.options.customValidators?.length) {
+      const customResults = this.options.customValidators.map(validator => {
+        try {
+          return validator(locale);
+        } catch (e) {
+          warnings.push(`Custom validator error: ${e.message}`);
+          return false;
+        }
+      });
+      
+      if (customResults.some(result => !result)) {
+        warnings.push('One or more custom validators failed');
+      }
+    }
+    
+    const isValid = this.options.strictMode 
+      ? errors.length === 0 && warnings.length === 0
+      : errors.length === 0;
+    
+    return {
+      isValid,
+      details,
+      warnings,
+      errors
+    };
+  }
+  
+  validateBatch(locales: string[]): Record<string, ReturnType<typeof this.validate>> {
+    const results: Record<string, ReturnType<typeof this.validate>> = {};
+    
+    locales.forEach(locale => {
+      results[locale] = this.validate(locale);
+    });
+    
+    return results;
+  }
+  
+  getValidLocales(locales: string[]): string[] {
+    return locales.filter(locale => this.validate(locale).isValid);
+  }
+  
+  getInvalidLocales(locales: string[]): Array<{
+    locale: string;
+    errors: string[];
+    warnings: string[];
+  }> {
+    return locales
+      .map(locale => ({ locale, ...this.validate(locale) }))
+      .filter(result => !result.isValid)
+      .map(result => ({
+        locale: result.locale,
+        errors: result.errors,
+        warnings: result.warnings
+      }));
+  }
+}
+
+// Usage
+const validator = new LocaleValidationService(
+  {
+    'business-english': { code: 'en-US', name: 'Business English' }
+  },
+  {
+    strictMode: false,
+    allowPrivateUse: true,
+    customValidators: [
+      (locale) => !locale.includes('forbidden'),
+      (locale) => locale.length < 20
+    ]
+  }
+);
+
+const testLocales = [
+  'en-US',
+  'fr-FR',
+  'business-english',
+  'qaa-QA',  // Private use
+  'invalid-locale',
+  'xy-ZZ'
+];
+
+const results = validator.validateBatch(testLocales);
+
+Object.entries(results).forEach(([locale, result]) => {
+  console.log(`${locale}: ${result.isValid ? '✓' : '✗'}`);
+  if (result.errors.length > 0) {
+    console.log(`  Errors: ${result.errors.join(', ')}`);
+  }
+  if (result.warnings.length > 0) {
+    console.log(`  Warnings: ${result.warnings.join(', ')}`);
+  }
+});
+```
+
+### Configuration Validator with Recommendations
+
+```typescript
+interface LocaleRecommendation {
+  locale: string;
+  reason: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+class LocaleConfigurationValidator {
+  private gt: GT;
+  
+  constructor() {
+    this.gt = new GT();
+  }
+  
+  validateAndRecommend(
+    locales: string[],
+    context: 'web' | 'mobile' | 'desktop' | 'global' = 'web'
+  ): {
+    valid: string[];
+    invalid: Array<{ locale: string; error: string }>;
+    recommendations: LocaleRecommendation[];
+  } {
+    const valid: string[] = [];
+    const invalid: Array<{ locale: string; error: string }> = [];
+    const recommendations: LocaleRecommendation[] = [];
+    
+    // Validate each locale
+    locales.forEach(locale => {
+      try {
+        if (this.gt.isValidLocale(locale)) {
+          valid.push(locale);
+        } else {
+          invalid.push({
+            locale,
+            error: 'Invalid BCP-47 locale code'
+          });
+          
+          // Try to suggest alternatives
+          const suggestion = this.suggestAlternative(locale);
+          if (suggestion) {
+            recommendations.push({
+              locale: suggestion,
+              reason: `Alternative to invalid locale '${locale}'`,
+              confidence: 'medium'
+            });
+          }
+        }
+      } catch (error) {
+        invalid.push({
+          locale,
+          error: error.message
+        });
+      }
+    });
+    
+    // Add context-specific recommendations
+    const contextRecommendations = this.getContextualRecommendations(valid, context);
+    recommendations.push(...contextRecommendations);
+    
+    // Check for important missing locales
+    const missingImportant = this.checkForMissingImportantLocales(valid, context);
+    recommendations.push(...missingImportant);
+    
+    return { valid, invalid, recommendations };
+  }
+  
+  private suggestAlternative(invalidLocale: string): string | null {
+    const common = {
+      'en': 'en-US',
+      'es': 'es-ES',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'it': 'it-IT',
+      'pt': 'pt-PT',
+      'zh': 'zh-CN',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR',
+      'ar': 'ar-SA',
+      'ru': 'ru-RU'
+    };
+    
+    // Try exact match first
+    if (common[invalidLocale]) {
+      return common[invalidLocale];
+    }
+    
+    // Try language part
+    const lang = invalidLocale.split('-')[0];
+    if (common[lang]) {
+      return common[lang];
+    }
+    
+    return null;
+  }
+  
+  private getContextualRecommendations(
+    validLocales: string[],
+    context: 'web' | 'mobile' | 'desktop' | 'global'
+  ): LocaleRecommendation[] {
+    const recommendations: LocaleRecommendation[] = [];
+    
+    const contextualSuggestions = {
+      web: ['en-US', 'es-ES', 'fr-FR', 'de-DE', 'pt-BR', 'ja-JP', 'zh-CN'],
+      mobile: ['en-US', 'zh-CN', 'ja-JP', 'ko-KR', 'es-ES', 'pt-BR', 'ar-SA'],
+      desktop: ['en-US', 'de-DE', 'fr-FR', 'ja-JP', 'zh-CN', 'ru-RU'],
+      global: ['en-US', 'zh-CN', 'es-ES', 'hi-IN', 'ar-SA', 'pt-BR', 'ru-RU', 'ja-JP']
+    };
+    
+    const suggested = contextualSuggestions[context];
+    const missing = suggested.filter(locale => !validLocales.includes(locale));
+    
+    missing.forEach(locale => {
+      recommendations.push({
+        locale,
+        reason: `Commonly used locale for ${context} applications`,
+        confidence: 'high'
+      });
+    });
+    
+    return recommendations;
+  }
+  
+  private checkForMissingImportantLocales(
+    validLocales: string[],
+    context: string
+  ): LocaleRecommendation[] {
+    const recommendations: LocaleRecommendation[] = [];
+    
+    // Check for missing English variant
+    const hasEnglish = validLocales.some(locale => locale.startsWith('en'));
+    if (!hasEnglish) {
+      recommendations.push({
+        locale: 'en-US',
+        reason: 'English is essential for international applications',
+        confidence: 'high'
+      });
+    }
+    
+    // Check for major language families
+    const languageFamilies = {
+      romance: ['es', 'fr', 'it', 'pt'],
+      germanic: ['en', 'de', 'nl'],
+      sinitic: ['zh'],
+      japonic: ['ja'],
+      koreanic: ['ko'],
+      indo_aryan: ['hi', 'ur'],
+      semitic: ['ar', 'he']
+    };
+    
+    const presentLanguages = new Set(
+      validLocales.map(locale => locale.split('-')[0])
+    );
+    
+    Object.entries(languageFamilies).forEach(([family, languages]) => {
+      const hasFamily = languages.some(lang => presentLanguages.has(lang));
+      if (!hasFamily && family === 'sinitic') {
+        recommendations.push({
+          locale: 'zh-CN',
+          reason: 'Chinese is the most spoken language worldwide',
+          confidence: 'high'
+        });
+      }
+    });
+    
+    return recommendations;
+  }
+}
+
+// Usage
+const validator = new LocaleConfigurationValidator();
+
+const testConfig = [
+  'en-US', 'fr-FR', 'de-DE', 'invalid-locale', 'es', 'zh'
+];
+
+const result = validator.validateAndRecommend(testConfig, 'web');
+
+console.log('Valid locales:', result.valid);
+console.log('Invalid locales:', result.invalid);
+console.log('Recommendations:');
+result.recommendations.forEach(rec => {
+  console.log(`  ${rec.locale}: ${rec.reason} (${rec.confidence} confidence)`);
+});
+```
+
+---
+
+## Error Handling
+
+### Missing Target Locale
+
+```typescript
+const gt = new GT(); // No target locale configured
+
+try {
+  const isValid = gt.isValidLocale(); // No parameter provided
+} catch (error) {
+  console.error('No target locale available:', error.message);
+  // Error: No target locale provided for isValidLocale
+}
+```
+
+### Safe Validation with Error Handling
+
+```typescript
+function safeValidateLocale(
+  gt: GT, 
+  locale: string,
+  customMapping?: any
+): {
+  isValid: boolean;
+  error?: string;
+  warning?: string;
+} {
+  if (!locale || typeof locale !== 'string') {
+    return {
+      isValid: false,
+      error: 'Invalid locale format: must be a non-empty string'
+    };
+  }
+  
+  try {
+    const isValid = gt.isValidLocale(locale, customMapping);
+    
+    if (!isValid) {
+      // Try to provide helpful feedback
+      if (locale.includes('_')) {
+        return {
+          isValid: false,
+          error: 'Invalid format: use hyphens (-) instead of underscores (_)',
+          warning: `Did you mean '${locale.replace(/_/g, '-')}'?`
+        };
+      }
+      
+      if (locale.length < 2) {
+        return {
+          isValid: false,
+          error: 'Locale too short: minimum 2 characters for language code'
+        };
+      }
+      
+      return {
+        isValid: false,
+        error: 'Invalid BCP-47 locale code'
+      };
+    }
+    
+    return { isValid: true };
+    
+  } catch (error) {
+    return {
+      isValid: false,
+      error: `Validation error: ${error.message}`
+    };
+  }
+}
+
+// Usage with error handling
+const gt = new GT({ sourceLocale: 'en' });
+
+const testCases = [
+  'en-US',           // Valid
+  'fr_FR',           // Invalid format (underscore)
+  'invalid-locale',  // Invalid
+  '',                // Empty
+  'x',               // Too short
+  'en-INVALID'       // Invalid region
+];
+
+testCases.forEach(locale => {
+  const result = safeValidateLocale(gt, locale);
+  
+  console.log(`${locale || '(empty)'}: ${result.isValid ? '✓ Valid' : '✗ Invalid'}`);
+  
+  if (result.error) {
+    console.log(`  Error: ${result.error}`);
+  }
+  
+  if (result.warning) {
+    console.log(`  Suggestion: ${result.warning}`);
+  }
+});
+```
+
+### Validation with Recovery Strategies
+
+```typescript
+interface ValidationWithRecovery {
+  original: string;
+  isValid: boolean;
+  corrected?: string;
+  strategy?: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+function validateWithRecovery(
+  gt: GT,
+  locale: string
+): ValidationWithRecovery {
+  // First, try direct validation
+  try {
+    if (gt.isValidLocale(locale)) {
+      return {
+        original: locale,
+        isValid: true,
+        confidence: 'high'
+      };
+    }
+  } catch (error) {
+    // Continue with recovery attempts
+  }
+  
+  // Try common corrections
+  const corrections = [
+    // Replace underscores with hyphens
+    {
+      corrected: locale.replace(/_/g, '-'),
+      strategy: 'Replace underscores with hyphens'
+    },
+    // Convert to lowercase-uppercase format
+    {
+      corrected: locale.toLowerCase().replace(/-(.)/g, (match, char) => `-${char.toUpperCase()}`),
+      strategy: 'Normalize case format'
+    },
+    // Add common region to language-only codes
+    {
+      corrected: locale.length === 2 ? `${locale}-${getDefaultRegion(locale)}` : locale,
+      strategy: 'Add default region to language code'
+    }
+  ];
+  
+  // Test each correction
+  for (const correction of corrections) {
+    if (correction.corrected !== locale) {
+      try {
+        if (gt.isValidLocale(correction.corrected)) {
+          return {
+            original: locale,
+            isValid: false,
+            corrected: correction.corrected,
+            strategy: correction.strategy,
+            confidence: 'medium'
+          };
+        }
+      } catch (error) {
+        // Continue trying other corrections
+      }
+    }
+  }
+  
+  return {
+    original: locale,
+    isValid: false,
+    confidence: 'low'
+  };
+}
+
+function getDefaultRegion(language: string): string {
+  const defaults: Record<string, string> = {
+    'en': 'US',
+    'es': 'ES', 
+    'fr': 'FR',
+    'de': 'DE',
+    'it': 'IT',
+    'pt': 'PT',
+    'zh': 'CN',
+    'ja': 'JP',
+    'ko': 'KR',
+    'ar': 'SA',
+    'ru': 'RU',
+    'hi': 'IN'
+  };
+  
+  return defaults[language] || 'US';
+}
+
+// Usage
+const gt = new GT({ sourceLocale: 'en' });
+
+const problematicLocales = [
+  'en_US',        // Underscore instead of hyphen
+  'fr_fr',        // Wrong case + underscore
+  'de',           // Missing region
+  'SPANISH',      // Wrong format entirely
+  'zh-cn',        // Wrong case
+  'invalid-xyz'   // Actually invalid
+];
+
+problematicLocales.forEach(locale => {
+  const result = validateWithRecovery(gt, locale);
+  
+  console.log(`Original: ${result.original}`);
+  console.log(`Valid: ${result.isValid}`);
+  
+  if (result.corrected) {
+    console.log(`Suggested: ${result.corrected} (${result.strategy})`);
+    console.log(`Confidence: ${result.confidence}`);
+  }
+  
+  console.log('---');
+});
+```
+
+---
+
+## Performance Considerations
+
+- **Custom Mapping Speed**: Custom locale validation is fastest (simple object lookup)
+- **Intl API Overhead**: First validation for each locale may be slower due to API initialization
+- **Caching Benefits**: Results are deterministic and suitable for caching
+- **Batch Validation**: Consider batching multiple validations for better performance
+
+```typescript
+// Performance-optimized validation cache
+class ValidationCache {
+  private cache = new Map<string, boolean>();
+  private customCache = new Map<string, boolean>();
+  
+  constructor(private gt: GT) {}
+  
+  isValidLocale(locale: string, customMapping?: any): boolean {
+    const cacheKey = customMapping 
+      ? `${locale}:${JSON.stringify(customMapping)}`
+      : locale;
+      
+    const targetCache = customMapping ? this.customCache : this.cache;
+    
+    if (!targetCache.has(cacheKey)) {
+      const isValid = this.gt.isValidLocale(locale, customMapping);
+      targetCache.set(cacheKey, isValid);
+    }
+    
+    return targetCache.get(cacheKey)!;
+  }
+  
+  validateBatch(locales: string[], customMapping?: any): Record<string, boolean> {
+    const results: Record<string, boolean> = {};
+    
+    locales.forEach(locale => {
+      results[locale] = this.isValidLocale(locale, customMapping);
+    });
+    
+    return results;
+  }
+  
+  prevalidate(locales: string[], customMapping?: any): void {
+    locales.forEach(locale => this.isValidLocale(locale, customMapping));
+  }
+  
+  clear(): void {
+    this.cache.clear();
+    this.customCache.clear();
+  }
+  
+  size(): { standard: number; custom: number } {
+    return {
+      standard: this.cache.size,
+      custom: this.customCache.size
+    };
+  }
+}
+
+// Usage
+const gt = new GT({ sourceLocale: 'en' });
+const cache = new ValidationCache(gt);
+
+// Prevalidate common locales
+const commonLocales = ['en-US', 'fr-FR', 'de-DE', 'es-ES', 'ja-JP', 'zh-CN'];
+cache.prevalidate(commonLocales);
+
+// Fast subsequent validation
+console.log(cache.isValidLocale('en-US')); // Cached - very fast
+console.log(cache.isValidLocale('fr-FR')); // Cached - very fast
+
+// Batch validation
+const batchResults = cache.validateBatch(['it-IT', 'pt-BR', 'ru-RU']);
+console.log(batchResults); // { 'it-IT': true, 'pt-BR': true, 'ru-RU': true }
+
+console.log('Cache size:', cache.size()); // { standard: 9, custom: 0 }
+```
+
+---
+
+## Notes
+
+- Performs comprehensive BCP-47 locale validation using browser Intl APIs
+- Custom mapping locales always validate as true (bypass standard validation)
+- Supports private-use language codes (qaa-qtz) with special exception handling
+- Returns `false` for malformed or unrecognized locale codes
+- Essential for user input validation and configuration verification
+- More reliable than simple format checking as it verifies actual language/region recognition
+- Performance optimized through internal Intl API caching
+
+## Next Steps
+
+- **[Get locale properties with getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
+- **[Determine best locale with determineLocale()](/docs/core/class/methods/locales/determineLocale)**
+- **[Get locale names with getLocaleName()](/docs/core/class/methods/locales/getLocaleName)**
+- **[Learn about CustomMapping type](/docs/core/types/CustomMapping)**
+- **[Explore standalone isValidLocale()](/docs/core/functions/locales/isValidLocale)**

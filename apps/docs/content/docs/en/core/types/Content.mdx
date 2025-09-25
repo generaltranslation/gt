@@ -1,0 +1,458 @@
+---
+title: Content
+description: Union type representing all supported content formats for translation
+---
+
+## Overview
+
+`Content` is a union type that represents all supported content formats that can be translated using General Translation. It provides a unified interface for different content types while preserving their specific formatting and structure.
+
+```typescript
+type Content = JsxChildren | IcuMessage | I18nextMessage;
+```
+
+This type enables flexible content handling across JSX components, ICU message formats, and i18next message formats within a single translation system.
+
+## Type Definition
+
+### Union Members
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `JsxChildren` | Rich JSX content with elements and variables | React components, structured HTML content |
+| `IcuMessage` | ICU MessageFormat strings | Complex pluralization, date/number formatting |
+| `I18nextMessage` | i18next compatible message strings | Simple interpolation, existing i18next projects |
+
+### Content Format Mapping
+
+```typescript
+type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+
+// Content type corresponds to DataFormat values:
+// 'JSX' → JsxChildren
+// 'ICU' → IcuMessage (string)
+// 'I18NEXT' → I18nextMessage (string)
+```
+
+---
+
+## Example
+
+### JSX Content
+
+```typescript copy
+import { Content, JsxChildren, Variable } from 'generaltranslation';
+
+// Simple JSX content
+const simpleJsx: Content = "Welcome to our application!";
+
+// Complex JSX with elements
+const complexJsx: Content = {
+  t: 'div',
+  c: [
+    {
+      t: 'h1',
+      c: ['Product Details']
+    },
+    {
+      t: 'p',
+      c: [
+        'Price: ',
+        {
+          t: 'strong',
+          c: [{ k: 'price', v: 'c' } as Variable]
+        }
+      ]
+    }
+  ]
+};
+
+// JSX with mixed content
+const mixedJsx: Content = [
+  'Hello, ',
+  { k: 'userName' } as Variable,
+  '! You have ',
+  { k: 'messageCount', v: 'n' } as Variable,
+  ' new messages.'
+];
+```
+
+### ICU Message Content
+
+```typescript copy
+import { Content, IcuMessage } from 'generaltranslation';
+
+// Simple ICU message
+const simpleIcu: Content = 'Hello {name}!' as IcuMessage;
+
+// ICU with pluralization
+const pluralIcu: Content = '{itemCount, plural, =0 {no items} =1 {one item} other {{itemCount} items}}' as IcuMessage;
+
+// ICU with number formatting
+const numberIcu: Content = 'Total: {amount, number, currency}' as IcuMessage;
+
+// ICU with date formatting
+const dateIcu: Content = 'Event on {eventDate, date, long}' as IcuMessage;
+
+// Complex ICU message
+const complexIcu: Content = `{gender, select, 
+  male {He has {itemCount, plural, =0 {no items} =1 {one item} other {{itemCount} items}}}
+  female {She has {itemCount, plural, =0 {no items} =1 {one item} other {{itemCount} items}}}
+  other {They have {itemCount, plural, =0 {no items} =1 {one item} other {{itemCount} items}}}
+}` as IcuMessage;
+```
+
+### i18next Message Content
+
+```typescript copy
+import { Content, I18nextMessage } from 'generaltranslation';
+
+// Simple i18next message
+const simpleI18next: Content = 'Welcome back, {{name}}!' as I18nextMessage;
+
+// i18next with count
+const countI18next: Content = '{{count}} item' as I18nextMessage;
+
+// i18next with nesting
+const nestedI18next: Content = 'Click $t(buttons.submit) to continue' as I18nextMessage;
+
+// i18next with formatting
+const formattedI18next: Content = 'Price: {{price, currency}}' as I18nextMessage;
+```
+
+### Content Type Detection
+
+```typescript copy
+function getContentType(content: Content): 'jsx' | 'icu' | 'i18next' {
+  // Check for JSX (object or array)
+  if (typeof content === 'object') {
+    return 'jsx';
+  }
+  
+  // Check for ICU format patterns
+  if (typeof content === 'string' && content.includes('{') && content.includes('}')) {
+    // Simple heuristic: ICU uses {var, type, format} while i18next uses {{var}}
+    if (content.includes(', ')) {
+      return 'icu';
+    }
+    if (content.includes('{{') && content.includes('}}')) {
+      return 'i18next';
+    }
+    return 'icu'; // Default to ICU for single-bracket format
+  }
+  
+  // Plain string defaults to i18next
+  return 'i18next';
+}
+
+// Usage
+const contents: Content[] = [
+  'Hello {{name}}',
+  'Hello {name}',
+  { t: 'span', c: ['Hello'] },
+  '{count, plural, one {item} other {items}}'
+];
+
+contents.forEach(content => {
+  console.log(`Content type: ${getContentType(content)}`);
+});
+```
+
+### Content Validation
+
+```typescript copy
+function validateJsxContent(content: any): content is JsxChildren {
+  if (typeof content === 'string') return true;
+  if (Array.isArray(content)) return true;
+  if (typeof content === 'object' && content !== null) {
+    // Basic JSX element validation
+    return 't' in content || 'k' in content;
+  }
+  return false;
+}
+
+function validateIcuContent(content: any): content is IcuMessage {
+  return typeof content === 'string';
+}
+
+function validateI18nextContent(content: any): content is I18nextMessage {
+  return typeof content === 'string';
+}
+
+function validateContent(content: any): content is Content {
+  return (
+    validateJsxContent(content) ||
+    validateIcuContent(content) ||
+    validateI18nextContent(content)
+  );
+}
+```
+
+### Content Conversion Utilities
+
+```typescript copy
+// Convert between content formats
+function convertToJsx(content: Content): JsxChildren {
+  if (typeof content === 'string') {
+    // Simple string to JSX conversion
+    return [content];
+  }
+  
+  // Already JSX
+  return content as JsxChildren;
+}
+
+function convertToIcu(content: Content): IcuMessage {
+  if (typeof content === 'string') {
+    return content as IcuMessage;
+  }
+  
+  // JSX to ICU conversion (simplified)
+  throw new Error('JSX to ICU conversion not implemented');
+}
+
+function convertToI18next(content: Content): I18nextMessage {
+  if (typeof content === 'string') {
+    return content as I18nextMessage;
+  }
+  
+  // JSX to i18next conversion (simplified)
+  throw new Error('JSX to i18next conversion not implemented');
+}
+```
+
+### E-commerce Product Templates
+
+```typescript copy
+interface ProductTemplates {
+  jsxProduct: Content;
+  icuProduct: Content;  
+  i18nextProduct: Content;
+}
+
+const productTemplates: ProductTemplates = {
+  // JSX version with rich formatting
+  jsxProduct: {
+    t: 'div',
+    c: [
+      {
+        t: 'h2',
+        c: [{ k: 'productName' } as Variable]
+      },
+      {
+        t: 'p',
+        c: [
+          'Price: ',
+          {
+            t: 'span',
+            d: { ti: 'Current price' },
+            c: [{ k: 'price', v: 'c' } as Variable]
+          },
+          ' - ',
+          {
+            t: 'span',
+            d: { ti: 'Discount percentage' },
+            c: [
+              { k: 'discountPercent', v: 'n' } as Variable,
+              '% off!'
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  
+  // ICU version with formatting
+  icuProduct: '{productName} - Price: {price, number, currency} - {discountPercent, number}% off!',
+  
+  // i18next version with simple interpolation
+  i18nextProduct: '{{productName}} - Price: {{price}} - {{discountPercent}}% off!'
+};
+```
+
+### Content Processing Pipeline
+
+```typescript copy
+interface ContentProcessor {
+  process(content: Content, format: DataFormat): Promise<string>;
+}
+
+class TranslationContentProcessor implements ContentProcessor {
+  async process(content: Content, format: DataFormat): Promise<string> {
+    switch (format) {
+      case 'JSX':
+        return this.processJsxContent(content as JsxChildren);
+      case 'ICU':
+        return this.processIcuContent(content as IcuMessage);
+      case 'I18NEXT':
+        return this.processI18nextContent(content as I18nextMessage);
+      default:
+        throw new Error(`Unsupported format: ${format}`);
+    }
+  }
+  
+  private async processJsxContent(content: JsxChildren): Promise<string> {
+    // Process JSX content for translation
+    return 'processed-jsx-content';
+  }
+  
+  private async processIcuContent(content: IcuMessage): Promise<string> {
+    // Process ICU message for translation
+    return 'processed-icu-content';
+  }
+  
+  private async processI18nextContent(content: I18nextMessage): Promise<string> {
+    // Process i18next message for translation
+    return 'processed-i18next-content';
+  }
+}
+
+// Usage
+const processor = new TranslationContentProcessor();
+const contents: Array<{ content: Content; format: DataFormat }> = [
+  { content: { t: 'div', c: ['Hello'] }, format: 'JSX' },
+  { content: 'Hello {name}', format: 'ICU' },
+  { content: 'Hello {{name}}', format: 'I18NEXT' }
+];
+
+// Process all content types
+for (const { content, format } of contents) {
+  const result = await processor.process(content, format);
+  console.log(`${format}: ${result}`);
+}
+```
+
+### Content Builder Pattern
+
+```typescript copy
+class ContentBuilder {
+  private content: Content = '';
+  
+  static jsx(): JsxContentBuilder {
+    return new JsxContentBuilder();
+  }
+  
+  static icu(): IcuContentBuilder {
+    return new IcuContentBuilder();
+  }
+  
+  static i18next(): I18nextContentBuilder {
+    return new I18nextContentBuilder();
+  }
+}
+
+class JsxContentBuilder {
+  private elements: JsxChild[] = [];
+  
+  text(text: string): this {
+    this.elements.push(text);
+    return this;
+  }
+  
+  variable(key: string, type?: VariableType): this {
+    this.elements.push({ k: key, ...(type && { v: type }) });
+    return this;
+  }
+  
+  element(tag: string, children: JsxChildren): this {
+    this.elements.push({ t: tag, c: children });
+    return this;
+  }
+  
+  build(): Content {
+    return this.elements.length === 1 ? this.elements[0] : this.elements;
+  }
+}
+
+class IcuContentBuilder {
+  private message = '';
+  
+  text(text: string): this {
+    this.message += text;
+    return this;
+  }
+  
+  variable(key: string, type?: string, format?: string): this {
+    if (type && format) {
+      this.message += `{${key}, ${type}, ${format}}`;
+    } else if (type) {
+      this.message += `{${key}, ${type}}`;
+    } else {
+      this.message += `{${key}}`;
+    }
+    return this;
+  }
+  
+  build(): Content {
+    return this.message as IcuMessage;
+  }
+}
+
+class I18nextContentBuilder {
+  private message = '';
+  
+  text(text: string): this {
+    this.message += text;
+    return this;
+  }
+  
+  variable(key: string): this {
+    this.message += `{{${key}}}`;
+    return this;
+  }
+  
+  build(): Content {
+    return this.message as I18nextMessage;
+  }
+}
+
+// Usage examples
+const jsxContent = ContentBuilder.jsx()
+  .text('Hello, ')
+  .variable('userName')
+  .text('! You have ')
+  .variable('count', 'n')
+  .text(' messages.')
+  .build();
+
+const icuContent = ContentBuilder.icu()
+  .text('Hello, ')
+  .variable('userName')
+  .text('! You have ')
+  .variable('count', 'number')
+  .text(' messages.')
+  .build();
+
+const i18nextContent = ContentBuilder.i18next()
+  .text('Hello, ')
+  .variable('userName')
+  .text('! You have ')
+  .variable('count')
+  .text(' messages.')
+  .build();
+```
+
+---
+
+## Notes
+
+* `Content` unifies different message formats under a single type for flexible handling
+* JSX content supports rich formatting, nested elements, and complex structures
+* ICU messages provide powerful formatting for numbers, dates, plurals, and selections
+* i18next messages offer simple interpolation compatible with existing i18next projects
+* Content type can often be inferred from structure, but explicit DataFormat specification is recommended
+* All content types support variables for dynamic value substitution
+
+## Related Types
+
+* See [`JsxChildren`](/docs/core/types/JsxChildren) for rich JSX content structure
+* See [`IcuMessage`](/docs/core/types/IcuMessage) for ICU MessageFormat strings
+* See [`I18nextMessage`](/docs/core/types/I18nextMessage) for i18next message format
+* See [`DataFormat`](/docs/core/types/DataFormat) for format specification
+* See [`Variable`](/docs/core/types/Variable) for dynamic content placeholders
+
+## Next Steps
+
+* See [Content Format Guide](/docs/core/guides/content-formats) for choosing the right format
+* See [JSX Translation Guide](/docs/core/guides/jsx-translation) for rich content translation
+* See [ICU Message Guide](/docs/core/guides/icu-messages) for advanced message formatting

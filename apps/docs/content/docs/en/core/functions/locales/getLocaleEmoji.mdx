@@ -1,0 +1,922 @@
+---
+title: getLocaleEmoji()
+description: API Reference for the standalone getLocaleEmoji function
+---
+
+## Overview
+
+The standalone `getLocaleEmoji()` function retrieves an emoji flag or symbol for a locale code without requiring a GT class instance. It returns appropriate flag emojis for countries and territories based on the locale's region, with support for custom emoji mappings.
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+const emoji = getLocaleEmoji('fr-CA');
+console.log(emoji); // "🇨🇦" (Canadian flag)
+
+const usEmoji = getLocaleEmoji('en-US');
+console.log(usEmoji); // "🇺🇸" (US flag)
+```
+
+This function is perfect for building locale selectors, language menus, and any utility that needs visual representation of countries and languages without GT class overhead.
+
+<Callout>
+**Lightweight Visual Utility:**
+This standalone function provides flag emoji resolution without state management, making it ideal for utility libraries, components, and situations where you need visual locale representation efficiently.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get emoji for |
+| `customMapping` | Optional custom mapping for locale codes and emoji overrides |
+
+### Returns
+
+`string` - Emoji flag or symbol representing the locale:
+- Country/territory flag emoji for locales with regions (e.g., `🇺🇸`, `🇫🇷`, `🇯🇵`)
+- Custom emoji if defined in mapping
+- Default flag emoji (`🏳️`) for unrecognized locales
+
+---
+
+## Behavior
+
+### Emoji Selection Algorithm
+
+1. **Custom mapping lookup** (highest priority)
+2. **Canonical locale resolution** for aliased locales
+3. **Region code extraction** from locale
+4. **Flag emoji generation** using Unicode regional indicators
+5. **Default flag fallback** (`🏳️`) for invalid/unrecognized locales
+
+### Region-to-Flag Mapping
+
+- Extracts region code from full locale (e.g., `'CA'` from `'fr-CA'`)
+- Converts region codes to flag emojis using Unicode Regional Indicator Symbols
+- Supports all ISO 3166-1 alpha-2 country codes
+- Handles maximized locale forms when region is implicit
+
+### Custom Mapping Support
+
+- Allows complete emoji override for any locale
+- Supports canonical locale aliasing
+- Takes precedence over region-based emoji selection
+- Enables custom themes and branding
+
+---
+
+## Examples
+
+### Basic Emoji Retrieval
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+// Common country flags
+console.log(getLocaleEmoji('en-US')); // "🇺🇸"
+console.log(getLocaleEmoji('fr-FR')); // "🇫🇷"
+console.log(getLocaleEmoji('de-DE')); // "🇩🇪"
+console.log(getLocaleEmoji('ja-JP')); // "🇯🇵"
+console.log(getLocaleEmoji('zh-CN')); // "🇨🇳"
+console.log(getLocaleEmoji('ar-SA')); // "🇸🇦"
+console.log(getLocaleEmoji('pt-BR')); // "🇧🇷"
+console.log(getLocaleEmoji('es-MX')); // "🇲🇽"
+
+// Regions with multiple languages
+console.log(getLocaleEmoji('en-CA')); // "🇨🇦"
+console.log(getLocaleEmoji('fr-CA')); // "🇨🇦"
+console.log(getLocaleEmoji('de-CH')); // "🇨🇭"
+console.log(getLocaleEmoji('fr-CH')); // "🇨🇭"
+console.log(getLocaleEmoji('it-CH')); // "🇨🇭"
+```
+
+### Building Utility Functions
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+// Create locale option with emoji
+function createLocaleOption(locale: string, displayName: string) {
+  return {
+    code: locale,
+    name: displayName,
+    emoji: getLocaleEmoji(locale),
+    flag: getLocaleEmoji(locale)
+  };
+}
+
+// Batch emoji retrieval
+function getEmojisForLocales(locales: string[]): Record<string, string> {
+  const result: Record<string, string> = {};
+  locales.forEach(locale => {
+    result[locale] = getLocaleEmoji(locale);
+  });
+  return result;
+}
+
+// Usage
+const locales = ['en-US', 'fr-FR', 'de-DE', 'ja-JP', 'zh-CN'];
+const emojis = getEmojisForLocales(locales);
+
+console.log(emojis);
+// {
+//   'en-US': '🇺🇸',
+//   'fr-FR': '🇫🇷', 
+//   'de-DE': '🇩🇪',
+//   'ja-JP': '🇯🇵',
+//   'zh-CN': '🇨🇳'
+// }
+
+const options = locales.map(locale => 
+  createLocaleOption(locale, `Language: ${locale}`)
+);
+```
+
+### React Components with Emojis
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+import { useMemo } from 'react';
+
+// Simple flag component
+function LocaleFlag({ locale, size = '1.5em' }: { locale: string; size?: string }) {
+  const emoji = useMemo(() => getLocaleEmoji(locale), [locale]);
+  
+  return (
+    <span 
+      style={{ fontSize: size, display: 'inline-block' }}
+      role="img"
+      aria-label={`Flag for ${locale}`}
+    >
+      {emoji}
+    </span>
+  );
+}
+
+// Locale selector option
+interface LocaleSelectorOptionProps {
+  locale: string;
+  name: string;
+  selected?: boolean;
+  onClick?: () => void;
+}
+
+function LocaleSelectorOption({ locale, name, selected, onClick }: LocaleSelectorOptionProps) {
+  const emoji = useMemo(() => getLocaleEmoji(locale), [locale]);
+  
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 12px',
+        border: selected ? '2px solid #007bff' : '1px solid #ddd',
+        borderRadius: '4px',
+        backgroundColor: selected ? '#f0f8ff' : 'white',
+        cursor: 'pointer'
+      }}
+    >
+      <span style={{ fontSize: '1.2em' }}>{emoji}</span>
+      <span>{name}</span>
+    </button>
+  );
+}
+
+// Complete locale selector
+function LocaleSelector({ 
+  locales, 
+  selected, 
+  onSelect 
+}: {
+  locales: Array<{ code: string; name: string }>;
+  selected?: string;
+  onSelect: (locale: string) => void;
+}) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+      {locales.map(locale => (
+        <LocaleSelectorOption
+          key={locale.code}
+          locale={locale.code}
+          name={locale.name}
+          selected={selected === locale.code}
+          onClick={() => onSelect(locale.code)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Usage
+function App() {
+  const [selectedLocale, setSelectedLocale] = useState('en-US');
+  
+  const supportedLocales = [
+    { code: 'en-US', name: 'English (US)' },
+    { code: 'fr-FR', name: 'Français (France)' },
+    { code: 'de-DE', name: 'Deutsch (Deutschland)' },
+    { code: 'ja-JP', name: '日本語 (日本)' },
+    { code: 'zh-CN', name: '中文 (中国)' }
+  ];
+  
+  return (
+    <LocaleSelector
+      locales={supportedLocales}
+      selected={selectedLocale}
+      onSelect={setSelectedLocale}
+    />
+  );
+}
+```
+
+### Custom Emoji Mappings
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+const customMapping = {
+  // Theme-based custom emojis
+  'dark-mode': {
+    code: 'en-US',
+    emoji: '🌙'
+  },
+  'light-mode': {
+    code: 'en-US', 
+    emoji: '☀️'
+  },
+  
+  // Context-specific locales
+  'business': {
+    code: 'en-US',
+    emoji: '💼'
+  },
+  'gaming': {
+    code: 'en-US',
+    emoji: '🎮'
+  },
+  'academic': {
+    code: 'en-US',
+    emoji: '🎓'
+  },
+  
+  // Custom regional representations
+  'pirate-caribbean': {
+    code: 'en-PIRATE',
+    emoji: '🏴‍☠️'
+  },
+  'space-colony': {
+    code: 'en-SPACE',
+    emoji: '🚀'
+  }
+};
+
+// Use custom emojis
+console.log(getLocaleEmoji('dark-mode', customMapping)); // "🌙"
+console.log(getLocaleEmoji('business', customMapping)); // "💼"
+console.log(getLocaleEmoji('pirate-caribbean', customMapping)); // "🏴‍☠️"
+
+// Standard locales still work
+console.log(getLocaleEmoji('fr-FR', customMapping)); // "🇫🇷"
+console.log(getLocaleEmoji('de-DE', customMapping)); // "🇩🇪"
+
+// Theme selector using custom emojis
+function ThemeSelector({ onThemeSelect }: { onThemeSelect: (theme: string) => void }) {
+  const themes = [
+    { id: 'light-mode', name: 'Light Mode' },
+    { id: 'dark-mode', name: 'Dark Mode' },
+    { id: 'business', name: 'Business Theme' },
+    { id: 'gaming', name: 'Gaming Theme' },
+    { id: 'academic', name: 'Academic Theme' }
+  ];
+  
+  return (
+    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      {themes.map(theme => (
+        <button
+          key={theme.id}
+          onClick={() => onThemeSelect(theme.id)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '12px',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            cursor: 'pointer'
+          }}
+        >
+          <span style={{ fontSize: '2em', marginBottom: '4px' }}>
+            {getLocaleEmoji(theme.id, customMapping)}
+          </span>
+          <span style={{ fontSize: '0.9em' }}>
+            {theme.name}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### Emoji-Enhanced Data Processing
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+interface LocaleData {
+  code: string;
+  emoji: string;
+  region?: string;
+}
+
+// Process locale list with emojis
+function enrichLocalesWithEmojis(locales: string[], customMapping?: any): LocaleData[] {
+  return locales.map(locale => ({
+    code: locale,
+    emoji: getLocaleEmoji(locale, customMapping),
+    region: extractRegionCode(locale)
+  }));
+}
+
+// Extract region code from locale
+function extractRegionCode(locale: string): string | undefined {
+  const parts = locale.split('-');
+  return parts.length > 1 ? parts[1] : undefined;
+}
+
+// Group locales by emoji (same flag = same country)
+function groupLocalesByFlag(locales: string[]): Record<string, LocaleData[]> {
+  const enriched = enrichLocalesWithEmojis(locales);
+  const groups: Record<string, LocaleData[]> = {};
+  
+  enriched.forEach(data => {
+    if (!groups[data.emoji]) {
+      groups[data.emoji] = [];
+    }
+    groups[data.emoji].push(data);
+  });
+  
+  return groups;
+}
+
+// Count unique flags
+function countUniqueFlags(locales: string[]): number {
+  const emojis = new Set(locales.map(locale => getLocaleEmoji(locale)));
+  return emojis.size;
+}
+
+// Usage examples
+const testLocales = [
+  'en-US', 'es-US', 'zh-US', // All US
+  'en-CA', 'fr-CA',          // All Canada
+  'en-GB', 'gd-GB',          // All UK
+  'de-DE',                   // Germany
+  'fr-FR',                   // France
+  'ja-JP'                    // Japan
+];
+
+const enriched = enrichLocalesWithEmojis(testLocales);
+console.log(enriched);
+
+const grouped = groupLocalesByFlag(testLocales);
+console.log(grouped);
+// {
+//   '🇺🇸': [
+//     { code: 'en-US', emoji: '🇺🇸', region: 'US' },
+//     { code: 'es-US', emoji: '🇺🇸', region: 'US' },
+//     { code: 'zh-US', emoji: '🇺🇸', region: 'US' }
+//   ],
+//   '🇨🇦': [
+//     { code: 'en-CA', emoji: '🇨🇦', region: 'CA' },
+//     { code: 'fr-CA', emoji: '🇨🇦', region: 'CA' }
+//   ],
+//   // ...
+// }
+
+console.log(`Total unique flags: ${countUniqueFlags(testLocales)}`); // 5
+```
+
+---
+
+## Advanced Usage
+
+### Emoji Validation and Fallback System
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+interface EmojiResult {
+  emoji: string;
+  isDefault: boolean;
+  hasCustomMapping: boolean;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+function getEmojiWithValidation(
+  locale: string, 
+  customMapping?: any,
+  fallbacks: Record<string, string> = {}
+): EmojiResult {
+  const hasCustom = customMapping && locale in customMapping;
+  const emoji = getLocaleEmoji(locale, customMapping);
+  const isDefault = emoji === '🏳️';
+  
+  // If we got the default emoji, try fallbacks
+  if (isDefault && !hasCustom) {
+    const fallbackEmoji = fallbacks[locale] || fallbacks[locale.split('-')[0]];
+    if (fallbackEmoji) {
+      return {
+        emoji: fallbackEmoji,
+        isDefault: false,
+        hasCustomMapping: false,
+        confidence: 'medium'
+      };
+    }
+  }
+  
+  return {
+    emoji,
+    isDefault,
+    hasCustomMapping: hasCustom,
+    confidence: hasCustom ? 'high' : isDefault ? 'low' : 'high'
+  };
+}
+
+// Smart emoji selection with fallbacks
+const fallbackEmojis = {
+  'esperanto': '🌍',
+  'latin': '🏛️',
+  'klingon': '🖖',
+  'dothraki': '🐎'
+};
+
+const customMapping = {
+  'business-english': { code: 'en-US', emoji: '💼' }
+};
+
+const testLocales = [
+  'en-US',           // Standard - should be 🇺🇸
+  'business-english', // Custom - should be 💼
+  'esperanto',       // Fallback - should be 🌍
+  'invalid-locale'   // Default - should be 🏳️
+];
+
+testLocales.forEach(locale => {
+  const result = getEmojiWithValidation(locale, customMapping, fallbackEmojis);
+  console.log(`${locale}: ${result.emoji} (confidence: ${result.confidence})`);
+});
+```
+
+### Emoji-Based Filtering and Search
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+class EmojiLocaleFilter {
+  private locales: string[];
+  private emojiMap: Map<string, string[]>;
+  
+  constructor(locales: string[], customMapping?: any) {
+    this.locales = locales;
+    this.emojiMap = new Map();
+    
+    // Build emoji to locales mapping
+    locales.forEach(locale => {
+      const emoji = getLocaleEmoji(locale, customMapping);
+      if (!this.emojiMap.has(emoji)) {
+        this.emojiMap.set(emoji, []);
+      }
+      this.emojiMap.get(emoji)!.push(locale);
+    });
+  }
+  
+  getLocalesByEmoji(emoji: string): string[] {
+    return this.emojiMap.get(emoji) || [];
+  }
+  
+  getAllEmojis(): string[] {
+    return Array.from(this.emojiMap.keys());
+  }
+  
+  getEmojiCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    this.emojiMap.forEach((locales, emoji) => {
+      counts[emoji] = locales.length;
+    });
+    return counts;
+  }
+  
+  filterByFlags(targetEmojis: string[]): string[] {
+    const result: string[] = [];
+    targetEmojis.forEach(emoji => {
+      result.push(...this.getLocalesByEmoji(emoji));
+    });
+    return result;
+  }
+  
+  findMostCommonFlags(limit = 5): Array<{ emoji: string; count: number; locales: string[] }> {
+    return Array.from(this.emojiMap.entries())
+      .map(([emoji, locales]) => ({ emoji, count: locales.length, locales }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+  
+  searchByEmojiPattern(pattern: RegExp): string[] {
+    const matchingEmojis = this.getAllEmojis().filter(emoji => pattern.test(emoji));
+    return this.filterByFlags(matchingEmojis);
+  }
+}
+
+// Usage
+const allLocales = [
+  'en-US', 'es-US', 'zh-US', 'fr-US', // US variations
+  'en-CA', 'fr-CA',                   // Canada variations  
+  'en-GB', 'gd-GB', 'cy-GB',         // UK variations
+  'de-DE', 'fr-FR', 'ja-JP', 'ko-KR', 'zh-CN'
+];
+
+const filter = new EmojiLocaleFilter(allLocales);
+
+// Find all US locales
+console.log('US locales:', filter.getLocalesByEmoji('🇺🇸'));
+// ['en-US', 'es-US', 'zh-US', 'fr-US']
+
+// Get most common flags
+console.log('Most common flags:', filter.findMostCommonFlags(3));
+// [
+//   { emoji: '🇺🇸', count: 4, locales: ['en-US', 'es-US', 'zh-US', 'fr-US'] },
+//   { emoji: '🇬🇧', count: 3, locales: ['en-GB', 'gd-GB', 'cy-GB'] },
+//   { emoji: '🇨🇦', count: 2, locales: ['en-CA', 'fr-CA'] }
+// ]
+
+// Get emoji statistics
+console.log('Emoji counts:', filter.getEmojiCounts());
+```
+
+### Dynamic Emoji Loading for Performance
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+class LazyEmojiLoader {
+  private cache = new Map<string, string>();
+  private loading = new Set<string>();
+  private customMapping?: any;
+  
+  constructor(customMapping?: any) {
+    this.customMapping = customMapping;
+  }
+  
+  async getEmoji(locale: string): Promise<string> {
+    // Return cached result immediately
+    if (this.cache.has(locale)) {
+      return this.cache.get(locale)!;
+    }
+    
+    // Prevent duplicate loading
+    if (this.loading.has(locale)) {
+      // Wait for ongoing load
+      while (this.loading.has(locale)) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      return this.cache.get(locale) || '🏳️';
+    }
+    
+    this.loading.add(locale);
+    
+    try {
+      // Simulate async operation (useful for remote emoji sources)
+      await new Promise(resolve => setTimeout(resolve, 1));
+      
+      const emoji = getLocaleEmoji(locale, this.customMapping);
+      this.cache.set(locale, emoji);
+      
+      return emoji;
+    } finally {
+      this.loading.delete(locale);
+    }
+  }
+  
+  async preloadEmojis(locales: string[]): Promise<Record<string, string>> {
+    const promises = locales.map(locale => 
+      this.getEmoji(locale).then(emoji => [locale, emoji] as [string, string])
+    );
+    
+    const results = await Promise.all(promises);
+    return Object.fromEntries(results);
+  }
+  
+  getCachedEmoji(locale: string): string | null {
+    return this.cache.get(locale) || null;
+  }
+  
+  clearCache(): void {
+    this.cache.clear();
+  }
+  
+  getCacheSize(): number {
+    return this.cache.size;
+  }
+}
+
+// Usage in React component
+function AsyncEmojiFlag({ locale }: { locale: string }) {
+  const [emoji, setEmoji] = useState<string>('⏳'); // Loading emoji
+  const [loader] = useState(() => new LazyEmojiLoader());
+  
+  useEffect(() => {
+    loader.getEmoji(locale).then(setEmoji);
+  }, [locale, loader]);
+  
+  return <span style={{ fontSize: '1.5em' }}>{emoji}</span>;
+}
+
+// Batch preloading example
+async function preloadCommonFlags() {
+  const loader = new LazyEmojiLoader();
+  const commonLocales = [
+    'en-US', 'fr-FR', 'de-DE', 'ja-JP', 'zh-CN',
+    'es-ES', 'it-IT', 'pt-BR', 'ru-RU', 'ko-KR'
+  ];
+  
+  console.log('Preloading emojis...');
+  const emojis = await loader.preloadEmojis(commonLocales);
+  console.log('Preloaded emojis:', emojis);
+  
+  return loader;
+}
+```
+
+---
+
+## Error Handling
+
+### Invalid Locale Handling
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+// Invalid locales return default emoji
+console.log(getLocaleEmoji('invalid-locale')); // "🏳️"
+console.log(getLocaleEmoji('')); // "🏳️"
+console.log(getLocaleEmoji('xyz')); // "🏳️"
+
+// Safe emoji retrieval with validation
+function safeGetEmoji(locale: string, customMapping?: any): {
+  emoji: string;
+  isValid: boolean;
+  warning?: string;
+} {
+  if (!locale || typeof locale !== 'string') {
+    return {
+      emoji: '🏳️',
+      isValid: false,
+      warning: 'Invalid locale format'
+    };
+  }
+  
+  try {
+    const emoji = getLocaleEmoji(locale, customMapping);
+    
+    // Check if we got the default emoji (might indicate invalid locale)
+    const isDefault = emoji === '🏳️';
+    const hasValidFormat = /^[a-z]{2,3}(-[A-Z]{2,4})?(-[A-Z]{2})?$/.test(locale);
+    
+    return {
+      emoji,
+      isValid: hasValidFormat && !isDefault,
+      warning: isDefault ? 'Locale not recognized, using default flag' : undefined
+    };
+    
+  } catch (error) {
+    return {
+      emoji: '🏳️',
+      isValid: false,
+      warning: `Error getting emoji: ${error.message}`
+    };
+  }
+}
+
+// Usage with validation
+const testLocales = ['en-US', 'invalid-locale', 'fr-FR', ''];
+
+testLocales.forEach(locale => {
+  const result = safeGetEmoji(locale);
+  console.log(`${locale || '(empty)'}: ${result.emoji} - Valid: ${result.isValid}`);
+  if (result.warning) {
+    console.warn(result.warning);
+  }
+});
+```
+
+### Batch Processing with Error Handling
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+interface EmojiProcessingResult {
+  locale: string;
+  emoji: string;
+  success: boolean;
+  error?: string;
+}
+
+function batchProcessEmojis(
+  locales: string[], 
+  customMapping?: any
+): {
+  results: EmojiProcessingResult[];
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+    defaultFlags: number;
+  };
+} {
+  const results: EmojiProcessingResult[] = [];
+  
+  locales.forEach(locale => {
+    try {
+      if (!locale || typeof locale !== 'string') {
+        results.push({
+          locale: locale || '(empty)',
+          emoji: '🏳️',
+          success: false,
+          error: 'Invalid locale format'
+        });
+        return;
+      }
+      
+      const emoji = getLocaleEmoji(locale, customMapping);
+      results.push({
+        locale,
+        emoji,
+        success: true
+      });
+      
+    } catch (error) {
+      results.push({
+        locale,
+        emoji: '🏳️',
+        success: false,
+        error: error.message
+      });
+    }
+  });
+  
+  const summary = results.reduce(
+    (acc, result) => ({
+      total: acc.total + 1,
+      successful: acc.successful + (result.success ? 1 : 0),
+      failed: acc.failed + (result.success ? 0 : 1),
+      defaultFlags: acc.defaultFlags + (result.emoji === '🏳️' ? 1 : 0)
+    }),
+    { total: 0, successful: 0, failed: 0, defaultFlags: 0 }
+  );
+  
+  return { results, summary };
+}
+
+// Usage
+const testLocales = [
+  'en-US', 'fr-FR', 'de-DE',     // Valid
+  'invalid-locale', '',           // Invalid
+  'xyz', 'esperanto'             // Unrecognized
+];
+
+const { results, summary } = batchProcessEmojis(testLocales);
+
+console.log('Processing Summary:', summary);
+// { total: 7, successful: 6, failed: 2, defaultFlags: 4 }
+
+results.forEach(result => {
+  const status = result.success ? '✓' : '✗';
+  console.log(`${status} ${result.locale}: ${result.emoji}${result.error ? ` (${result.error})` : ''}`);
+});
+```
+
+---
+
+## Performance Considerations
+
+- **No State Management**: Function is stateless, ideal for utility usage
+- **Unicode Performance**: Flag emojis are standard Unicode with good rendering performance
+- **Custom Mapping Speed**: Custom emojis resolve faster than region extraction
+- **Memory Efficient**: No internal caching, minimal memory footprint
+
+```typescript
+import { getLocaleEmoji } from 'generaltranslation';
+
+// Performance monitoring utility
+function measureEmojiPerformance(locales: string[], iterations = 100): {
+  averageTime: number;
+  totalTime: number;
+  operationsPerSecond: number;
+} {
+  const start = performance.now();
+  
+  for (let i = 0; i < iterations; i++) {
+    locales.forEach(locale => {
+      getLocaleEmoji(locale);
+    });
+  }
+  
+  const end = performance.now();
+  const totalTime = end - start;
+  const totalOperations = locales.length * iterations;
+  
+  return {
+    averageTime: totalTime / totalOperations,
+    totalTime,
+    operationsPerSecond: Math.round((totalOperations / totalTime) * 1000)
+  };
+}
+
+// Example performance test
+const testLocales = ['en-US', 'fr-FR', 'de-DE', 'ja-JP', 'zh-CN'];
+const performance = measureEmojiPerformance(testLocales, 1000);
+
+console.log(`Average time per operation: ${performance.averageTime.toFixed(3)}ms`);
+console.log(`Operations per second: ${performance.operationsPerSecond}`);
+
+// External caching for high-frequency usage
+class EmojiCache {
+  private cache = new Map<string, string>();
+  
+  getEmoji(locale: string, customMapping?: any): string {
+    const cacheKey = customMapping 
+      ? `${locale}:${JSON.stringify(customMapping)}` 
+      : locale;
+      
+    if (!this.cache.has(cacheKey)) {
+      this.cache.set(cacheKey, getLocaleEmoji(locale, customMapping));
+    }
+    
+    return this.cache.get(cacheKey)!;
+  }
+  
+  preload(locales: string[], customMapping?: any): void {
+    locales.forEach(locale => this.getEmoji(locale, customMapping));
+  }
+  
+  size(): number {
+    return this.cache.size;
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Usage
+const cache = new EmojiCache();
+cache.preload(['en-US', 'fr-FR', 'de-DE', 'ja-JP', 'zh-CN']);
+
+// Fast subsequent access
+console.log(cache.getEmoji('en-US')); // Cached
+console.log(cache.getEmoji('fr-FR')); // Cached
+```
+
+---
+
+## Notes
+
+- Returns flag emojis using Unicode Regional Indicator Symbols
+- Custom mapping emojis take priority over region-based selection
+- Gracefully handles invalid locales by returning default flag (`🏳️`)
+- Supports all ISO 3166-1 alpha-2 region codes for comprehensive coverage
+- No exceptions thrown - always returns a valid emoji string
+- Compatible with all modern platforms that support Unicode emojis
+- Essential for building visually appealing international user interfaces
+- Stateless function suitable for utility libraries and components
+
+## Next Steps
+
+- **[Use GT class method getLocaleEmoji()](/docs/core/class/methods/locales/getLocaleEmoji)**
+- **[Get locale properties with getLocaleProperties()](/docs/core/functions/locales/getLocaleProperties)**
+- **[Get locale names with getLocaleName()](/docs/core/functions/locales/getLocaleName)**
+- **[Validate locales with isValidLocale()](/docs/core/functions/locales/isValidLocale)**
+- **[Learn about CustomMapping type](/docs/core/types/CustomMapping)**

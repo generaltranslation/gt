@@ -1,0 +1,780 @@
+---
+title: getLocaleDirection()
+description: API Reference for the standalone getLocaleDirection function
+---
+
+## Overview
+
+The standalone `getLocaleDirection()` function determines the text direction (left-to-right or right-to-left) for a locale without requiring a GT class instance. It uses the `Intl.Locale` API to provide accurate direction detection for any valid BCP-47 locale code.
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+const direction = getLocaleDirection('ar-SA');
+console.log(direction); // "rtl"
+
+const englishDirection = getLocaleDirection('en-US');
+console.log(englishDirection); // "ltr"
+```
+
+This function is perfect for building direction-aware layouts, internationalized components, or any situation where you need text direction detection without the full GT class overhead.
+
+<Callout>
+**Essential for RTL Support:**
+This lightweight function provides accurate direction detection without state management, making it ideal for utility libraries, components, and applications that need to support both LTR and RTL languages efficiently.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to check text direction for |
+
+### Returns
+
+`'ltr' | 'rtl'` - Text direction for the locale:
+- `'ltr'`: Left-to-right (most languages including English, Spanish, French, German, Chinese, Japanese, etc.)
+- `'rtl'`: Right-to-left (Arabic, Hebrew, Persian, Urdu, and other Semitic/Middle Eastern languages)
+
+---
+
+## Behavior
+
+### Direction Detection Algorithm
+
+The function uses the `Intl.Locale` API's `textInfo.direction` property:
+1. Creates an `Intl.Locale` object for the provided locale
+2. Accesses the `textInfo.direction` property for language-specific direction
+3. Returns `'rtl'` for right-to-left languages, `'ltr'` for all others
+4. Defaults to `'ltr'` if the locale is invalid or causes an error
+
+### RTL Language Recognition
+
+Automatically detects RTL languages including:
+- **Arabic** (`ar`, `ar-SA`, `ar-EG`, `ar-AE`, etc.)
+- **Hebrew** (`he`, `he-IL`)
+- **Persian/Farsi** (`fa`, `fa-IR`)
+- **Urdu** (`ur`, `ur-PK`, `ur-IN`)
+- **Pashto** (`ps`)
+- **Sindhi** (`sd`)
+- **Kurdish Sorani** (`ckb`)
+- And other RTL scripts
+
+### Error Handling
+
+- Invalid or malformed locale codes default to `'ltr'`
+- No exceptions thrown for invalid input
+- Robust fallback behavior for edge cases
+
+---
+
+## Examples
+
+### Basic Direction Detection
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Left-to-right languages
+console.log(getLocaleDirection('en-US')); // "ltr"
+console.log(getLocaleDirection('es-ES')); // "ltr"
+console.log(getLocaleDirection('fr-FR')); // "ltr"
+console.log(getLocaleDirection('de-DE')); // "ltr"
+console.log(getLocaleDirection('ja-JP')); // "ltr"
+console.log(getLocaleDirection('zh-CN')); // "ltr"
+console.log(getLocaleDirection('ru-RU')); // "ltr"
+
+// Right-to-left languages
+console.log(getLocaleDirection('ar-SA')); // "rtl"
+console.log(getLocaleDirection('he-IL')); // "rtl"
+console.log(getLocaleDirection('fa-IR')); // "rtl"
+console.log(getLocaleDirection('ur-PK')); // "rtl"
+```
+
+### React Hook for Direction Detection
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+import { useMemo } from 'react';
+
+function useLocaleDirection(locale: string): 'ltr' | 'rtl' {
+  return useMemo(() => getLocaleDirection(locale), [locale]);
+}
+
+// Usage in components
+function DirectionalText({ locale, children }: { locale: string; children: React.ReactNode }) {
+  const direction = useLocaleDirection(locale);
+  
+  return (
+    <div 
+      dir={direction}
+      style={{
+        textAlign: direction === 'rtl' ? 'right' : 'left',
+        direction
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Example usage
+function App() {
+  return (
+    <div>
+      <DirectionalText locale="en-US">Hello World!</DirectionalText>
+      <DirectionalText locale="ar-SA">مرحبا بالعالم!</DirectionalText>
+      <DirectionalText locale="he-IL">שלום עולם!</DirectionalText>
+    </div>
+  );
+}
+```
+
+### CSS-in-JS Direction Utilities
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface DirectionalStyles {
+  ltr: React.CSSProperties;
+  rtl: React.CSSProperties;
+  common?: React.CSSProperties;
+}
+
+function createDirectionalStyles(locale: string, styles: DirectionalStyles): React.CSSProperties {
+  const direction = getLocaleDirection(locale);
+  
+  return {
+    direction,
+    ...styles.common,
+    ...styles[direction]
+  };
+}
+
+// Usage examples
+const buttonStyles = (locale: string) => createDirectionalStyles(locale, {
+  common: {
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '4px'
+  },
+  ltr: {
+    marginRight: '8px',
+    textAlign: 'left'
+  },
+  rtl: {
+    marginLeft: '8px', 
+    textAlign: 'right'
+  }
+});
+
+const headerStyles = (locale: string) => createDirectionalStyles(locale, {
+  common: {
+    fontSize: '24px',
+    fontWeight: 'bold'
+  },
+  ltr: {
+    paddingLeft: '20px',
+    borderLeft: '4px solid blue'
+  },
+  rtl: {
+    paddingRight: '20px',
+    borderRight: '4px solid blue'
+  }
+});
+
+// Component usage
+function LocalizedButton({ locale, children, ...props }) {
+  return (
+    <button style={buttonStyles(locale)} {...props}>
+      {children}
+    </button>
+  );
+}
+```
+
+### Multi-Locale Layout Generator
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface LayoutConfig {
+  locale: string;
+  direction: 'ltr' | 'rtl';
+  textAlign: 'left' | 'right';
+  flexDirection: 'row' | 'row-reverse';
+  paddingStart: string;
+  paddingEnd: string;
+}
+
+function generateLayoutConfigs(locales: string[]): LayoutConfig[] {
+  return locales.map(locale => {
+    const direction = getLocaleDirection(locale);
+    const isRTL = direction === 'rtl';
+    
+    return {
+      locale,
+      direction,
+      textAlign: isRTL ? 'right' : 'left',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
+      paddingStart: isRTL ? '0' : '16px',
+      paddingEnd: isRTL ? '16px' : '0'
+    };
+  });
+}
+
+// Generate configs for multiple locales
+const supportedLocales = [
+  'en-US', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'zh-CN', // LTR
+  'ar-SA', 'ar-EG', 'he-IL', 'fa-IR', 'ur-PK'          // RTL
+];
+
+const layoutConfigs = generateLayoutConfigs(supportedLocales);
+
+// Use in CSS-in-JS or styled-components
+const createLayoutStyles = (locale: string) => {
+  const config = layoutConfigs.find(c => c.locale === locale);
+  if (!config) return {};
+  
+  return {
+    direction: config.direction,
+    textAlign: config.textAlign,
+    flexDirection: config.flexDirection,
+    paddingInlineStart: config.paddingStart,
+    paddingInlineEnd: config.paddingEnd
+  };
+};
+```
+
+### Form Field Direction Handling
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface FormFieldProps {
+  locale: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function DirectionalFormField({ locale, label, placeholder, value, onChange }: FormFieldProps) {
+  const direction = getLocaleDirection(locale);
+  const isRTL = direction === 'rtl';
+  
+  const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    direction
+  };
+  
+  const labelStyle: React.CSSProperties = {
+    fontSize: '14px',
+    fontWeight: '500',
+    textAlign: isRTL ? 'right' : 'left'
+  };
+  
+  const inputStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    textAlign: isRTL ? 'right' : 'left',
+    direction
+  };
+  
+  return (
+    <div style={containerStyle}>
+      <label style={labelStyle}>{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={inputStyle}
+        dir={direction}
+      />
+    </div>
+  );
+}
+
+// Multi-locale form example
+function MultiLocaleForm() {
+  const [values, setValues] = useState<Record<string, string>>({});
+  
+  const fields = [
+    { locale: 'en-US', label: 'Name', placeholder: 'Enter your name' },
+    { locale: 'ar-SA', label: 'الاسم', placeholder: 'أدخل اسمك' },
+    { locale: 'he-IL', label: 'שם', placeholder: 'הכנס את שמך' },
+    { locale: 'fa-IR', label: 'نام', placeholder: 'نام خود را وارد کنید' }
+  ];
+  
+  return (
+    <form>
+      {fields.map(field => (
+        <DirectionalFormField
+          key={field.locale}
+          locale={field.locale}
+          label={field.label}
+          placeholder={field.placeholder}
+          value={values[field.locale] || ''}
+          onChange={(value) => setValues(prev => ({
+            ...prev,
+            [field.locale]: value
+          }))}
+        />
+      ))}
+    </form>
+  );
+}
+```
+
+---
+
+## Advanced Usage
+
+### Direction-Aware Navigation Menu
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface NavItem {
+  label: string;
+  href: string;
+}
+
+interface DirectionalNavProps {
+  locale: string;
+  items: NavItem[];
+}
+
+function DirectionalNav({ locale, items }: DirectionalNavProps) {
+  const direction = getLocaleDirection(locale);
+  const isRTL = direction === 'rtl';
+  
+  const navStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    gap: '1rem',
+    padding: '1rem',
+    direction
+  };
+  
+  const itemStyle: React.CSSProperties = {
+    textDecoration: 'none',
+    padding: '0.5rem 1rem',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    textAlign: 'center'
+  };
+  
+  return (
+    <nav style={navStyle}>
+      {items.map((item, index) => (
+        <a key={index} href={item.href} style={itemStyle}>
+          {item.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+// Usage with different locales
+function App() {
+  const englishItems = [
+    { label: 'Home', href: '/home' },
+    { label: 'About', href: '/about' },
+    { label: 'Contact', href: '/contact' }
+  ];
+  
+  const arabicItems = [
+    { label: 'الرئيسية', href: '/home' },
+    { label: 'حول', href: '/about' },
+    { label: 'اتصل', href: '/contact' }
+  ];
+  
+  return (
+    <div>
+      <DirectionalNav locale="en-US" items={englishItems} />
+      <DirectionalNav locale="ar-SA" items={arabicItems} />
+    </div>
+  );
+}
+```
+
+### Responsive Bidirectional Grid
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface GridItem {
+  id: string;
+  content: string;
+}
+
+interface DirectionalGridProps {
+  locale: string;
+  items: GridItem[];
+  columns?: number;
+}
+
+function DirectionalGrid({ locale, items, columns = 3 }: DirectionalGridProps) {
+  const direction = getLocaleDirection(locale);
+  const isRTL = direction === 'rtl';
+  
+  const gridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+    gap: '1rem',
+    direction,
+    // For RTL, we might want to reverse the order
+    transform: isRTL ? 'scaleX(-1)' : 'none'
+  };
+  
+  const itemStyle: React.CSSProperties = {
+    padding: '1rem',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    textAlign: isRTL ? 'right' : 'left',
+    // Reverse the transform for content
+    transform: isRTL ? 'scaleX(-1)' : 'none'
+  };
+  
+  return (
+    <div style={gridStyle}>
+      {items.map(item => (
+        <div key={item.id} style={itemStyle}>
+          {item.content}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Text Direction Detection Service
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+class DirectionService {
+  private cache = new Map<string, 'ltr' | 'rtl'>();
+  
+  getDirection(locale: string): 'ltr' | 'rtl' {
+    if (!this.cache.has(locale)) {
+      this.cache.set(locale, getLocaleDirection(locale));
+    }
+    return this.cache.get(locale)!;
+  }
+  
+  isRTL(locale: string): boolean {
+    return this.getDirection(locale) === 'rtl';
+  }
+  
+  isLTR(locale: string): boolean {
+    return this.getDirection(locale) === 'ltr';
+  }
+  
+  getOppositeDirection(locale: string): 'ltr' | 'rtl' {
+    return this.isRTL(locale) ? 'ltr' : 'rtl';
+  }
+  
+  compareDirections(locale1: string, locale2: string): {
+    same: boolean;
+    directions: ['ltr' | 'rtl', 'ltr' | 'rtl'];
+  } {
+    const dir1 = this.getDirection(locale1);
+    const dir2 = this.getDirection(locale2);
+    
+    return {
+      same: dir1 === dir2,
+      directions: [dir1, dir2]
+    };
+  }
+  
+  groupByDirection(locales: string[]): {
+    ltr: string[];
+    rtl: string[];
+  } {
+    const groups = { ltr: [], rtl: [] };
+    
+    locales.forEach(locale => {
+      const direction = this.getDirection(locale);
+      groups[direction].push(locale);
+    });
+    
+    return groups;
+  }
+  
+  preloadDirections(locales: string[]): void {
+    locales.forEach(locale => this.getDirection(locale));
+  }
+  
+  clearCache(): void {
+    this.cache.clear();
+  }
+}
+
+// Usage
+const directionService = new DirectionService();
+
+// Preload common locales
+directionService.preloadDirections(['en-US', 'ar-SA', 'he-IL', 'fa-IR']);
+
+// Use service methods
+console.log(directionService.isRTL('ar-SA')); // true
+console.log(directionService.getOppositeDirection('en-US')); // "rtl"
+
+const comparison = directionService.compareDirections('ar-SA', 'he-IL');
+console.log(comparison); // { same: true, directions: ['rtl', 'rtl'] }
+
+const grouped = directionService.groupByDirection([
+  'en-US', 'ar-SA', 'he-IL', 'fr-FR', 'fa-IR'
+]);
+console.log(grouped); 
+// { 
+//   ltr: ['en-US', 'fr-FR'], 
+//   rtl: ['ar-SA', 'he-IL', 'fa-IR'] 
+// }
+```
+
+---
+
+## Error Handling
+
+### Invalid Locale Handling
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Invalid locales default to 'ltr'
+console.log(getLocaleDirection('invalid-locale')); // "ltr"
+console.log(getLocaleDirection('xyz')); // "ltr"
+console.log(getLocaleDirection('')); // "ltr"
+
+// Safe direction detection function
+function safeGetDirection(locale: string): {
+  direction: 'ltr' | 'rtl';
+  isValid: boolean;
+  warning?: string;
+} {
+  try {
+    // Basic format validation
+    if (!locale || typeof locale !== 'string') {
+      return {
+        direction: 'ltr',
+        isValid: false,
+        warning: 'Invalid locale format'
+      };
+    }
+    
+    const direction = getLocaleDirection(locale);
+    
+    // Additional validation could be added here
+    const hasValidFormat = /^[a-z]{2,3}(-[A-Z]{2,4})?(-[A-Z]{2})?$/.test(locale);
+    
+    return {
+      direction,
+      isValid: hasValidFormat,
+      warning: hasValidFormat ? undefined : 'Potentially invalid locale format'
+    };
+    
+  } catch (error) {
+    return {
+      direction: 'ltr',
+      isValid: false,
+      warning: `Error detecting direction: ${error.message}`
+    };
+  }
+}
+
+// Usage with validation
+const results = [
+  safeGetDirection('ar-SA'),     // Valid RTL
+  safeGetDirection('en-US'),     // Valid LTR
+  safeGetDirection('invalid'),   // Invalid
+  safeGetDirection('')           // Empty
+];
+
+results.forEach(result => {
+  console.log(`Direction: ${result.direction}, Valid: ${result.isValid}`);
+  if (result.warning) {
+    console.warn(result.warning);
+  }
+});
+```
+
+### Batch Direction Detection with Error Handling
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface DirectionResult {
+  locale: string;
+  direction: 'ltr' | 'rtl';
+  success: boolean;
+  error?: string;
+}
+
+function batchGetDirections(locales: string[]): {
+  results: DirectionResult[];
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+    ltr: number;
+    rtl: number;
+  };
+} {
+  const results: DirectionResult[] = locales.map(locale => {
+    try {
+      if (!locale || typeof locale !== 'string') {
+        return {
+          locale,
+          direction: 'ltr',
+          success: false,
+          error: 'Invalid locale format'
+        };
+      }
+      
+      const direction = getLocaleDirection(locale);
+      return {
+        locale,
+        direction,
+        success: true
+      };
+      
+    } catch (error) {
+      return {
+        locale,
+        direction: 'ltr',
+        success: false,
+        error: error.message
+      };
+    }
+  });
+  
+  const summary = results.reduce(
+    (acc, result) => ({
+      total: acc.total + 1,
+      successful: acc.successful + (result.success ? 1 : 0),
+      failed: acc.failed + (result.success ? 0 : 1),
+      ltr: acc.ltr + (result.direction === 'ltr' ? 1 : 0),
+      rtl: acc.rtl + (result.direction === 'rtl' ? 1 : 0)
+    }),
+    { total: 0, successful: 0, failed: 0, ltr: 0, rtl: 0 }
+  );
+  
+  return { results, summary };
+}
+
+// Usage
+const testLocales = [
+  'en-US', 'ar-SA', 'he-IL', 'fr-FR', 'fa-IR',
+  'invalid-locale', '', 'de-DE', 'ur-PK'
+];
+
+const { results, summary } = batchGetDirections(testLocales);
+
+console.log('Summary:', summary);
+// Summary: { total: 9, successful: 7, failed: 2, ltr: 5, rtl: 4 }
+
+results.forEach(result => {
+  if (result.success) {
+    console.log(`✓ ${result.locale}: ${result.direction}`);
+  } else {
+    console.error(`✗ ${result.locale}: ${result.error}`);
+  }
+});
+```
+
+---
+
+## Performance Considerations
+
+- **No State Overhead**: Function calls don't maintain internal state, ideal for utility usage
+- **Intl.Locale Performance**: First calls may be slower due to `Intl.Locale` object creation
+- **Memory Efficient**: No internal caching, minimal memory footprint
+- **Suitable for Caching**: Results are deterministic and cache-friendly
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Example caching implementation for high-frequency usage
+class DirectionCache {
+  private static instance: DirectionCache;
+  private cache = new Map<string, 'ltr' | 'rtl'>();
+  
+  static getInstance(): DirectionCache {
+    if (!DirectionCache.instance) {
+      DirectionCache.instance = new DirectionCache();
+    }
+    return DirectionCache.instance;
+  }
+  
+  get(locale: string): 'ltr' | 'rtl' {
+    if (!this.cache.has(locale)) {
+      this.cache.set(locale, getLocaleDirection(locale));
+    }
+    return this.cache.get(locale)!;
+  }
+  
+  preload(locales: string[]): void {
+    locales.forEach(locale => this.get(locale));
+  }
+  
+  size(): number {
+    return this.cache.size;
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Usage
+const cache = DirectionCache.getInstance();
+
+// Preload common directions
+cache.preload(['en-US', 'ar-SA', 'he-IL', 'fa-IR', 'de-DE', 'fr-FR']);
+
+// Fast repeated access
+console.log(cache.get('ar-SA')); // "rtl" - cached
+console.log(cache.get('en-US')); // "ltr" - cached
+```
+
+---
+
+## Notes
+
+- Returns `'ltr'` for all left-to-right languages (most languages worldwide)
+- Returns `'rtl'` for right-to-left languages (Arabic, Hebrew, Persian, etc.)
+- Uses the modern `Intl.Locale` API for accurate detection
+- Gracefully handles invalid locales by defaulting to `'ltr'`
+- No exceptions thrown - always returns a valid direction
+- Essential for building international applications with proper RTL support
+- Works with all BCP-47 locale codes
+- Stateless function suitable for utility libraries
+
+## Next Steps
+
+- **[Use GT class method getLocaleDirection()](/docs/core/class/methods/locales/getLocaleDirection)**
+- **[Get locale properties with getLocaleProperties()](/docs/core/functions/locales/getLocaleProperties)**
+- **[Validate locales with isValidLocale()](/docs/core/functions/locales/isValidLocale)**
+- **[Get locale emoji with getLocaleEmoji()](/docs/core/functions/locales/getLocaleEmoji)**

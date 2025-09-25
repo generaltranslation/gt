@@ -1,0 +1,193 @@
+---
+title: formatMessage()
+description: API Reference for the standalone formatMessage function
+---
+
+## Overview
+
+The standalone `formatMessage()` function formats messages with variable substitution and locale-aware formatting without requiring a GT class instance. It's a lightweight utility for basic message formatting needs.
+
+```typescript
+import { formatMessage } from 'generaltranslation';
+
+const formatted = formatMessage('Hello {name}, you have {count} messages', {
+  locales: ['en'],
+  variables: { name: 'Alice', count: 5 }
+});
+// Returns: "Hello Alice, you have 5 messages"
+```
+
+This function is ideal when you need message formatting capabilities without the full GT class overhead, such as in utility libraries or lightweight components.
+
+<Callout>
+**Lightweight Alternative:**
+Unlike the GT class method, this standalone function requires explicit locale configuration and doesn't maintain any state, making it perfect for stateless formatting operations.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "message": {
+      type: 'string',
+      optional: false,
+    },
+    "options?": {
+      type: 'object',
+      optional: true,
+    }
+  }}
+/>
+
+### Options Object
+
+| Property | Type | Optional | Default | Description |
+|----------|------|----------|---------|-------------|
+| `locales` | `string \| string[]` | ✓ | `['en']` | Locale(s) to use for formatting |
+| `variables` | `FormatVariables` | ✓ | `{}` | Object containing variables for interpolation |
+
+### Returns
+
+`string` - The formatted message with variables substituted and locale-specific formatting applied.
+
+---
+
+## Behavior
+
+### Locale Handling
+
+- Uses provided `locales` parameter for formatting
+- Falls back to `['en']` if no locales specified
+- Supports locale fallback chains with arrays
+
+### Variable Processing
+
+- Simple substitution: `{variable}` → replaced with value
+- ICU message format: Full support for plurals, selects, and formatting
+- Missing variables: Left unchanged in output
+
+### Message Format Support
+
+Same ICU message format features as the GT class method:
+- Number formatting: `{price, number, currency}`
+- Date formatting: `{date, date, short}`
+- Pluralization: `{count, plural, ...}`
+- Selection: `{gender, select, ...}`
+
+---
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { formatMessage } from 'generaltranslation';
+
+const greeting = formatMessage('Hello {name}!', {
+  locales: ['en'],
+  variables: { name: 'World' }
+});
+console.log(greeting); // "Hello World!"
+```
+
+### Without GT Instance
+
+```typescript
+// Utility function for formatting without class instantiation
+function quickFormat(template: string, variables: any, locale = 'en') {
+  return formatMessage(template, {
+    locales: [locale],
+    variables
+  });
+}
+
+const notification = quickFormat(
+  'You have {count, plural, =0 {no messages} =1 {one message} other {# messages}}',
+  { count: 3 },
+  'en'
+);
+console.log(notification); // "You have 3 messages"
+```
+
+### Currency and Number Formatting
+
+```typescript
+// German locale formatting
+const germanPrice = formatMessage('Preis: {price, number, currency}', {
+  locales: ['de'],
+  variables: { price: 1234.56 }
+});
+console.log(germanPrice); // "Preis: 1.234,56 €"
+
+// Percentage formatting
+const progress = formatMessage('Progress: {percent, number, percent}', {
+  locales: ['en'],
+  variables: { percent: 0.85 }
+});
+console.log(progress); // "Progress: 85%"
+```
+
+### Template Library
+
+```typescript
+import { formatMessage } from 'generaltranslation';
+
+class MessageTemplates {
+  private locale: string;
+  
+  constructor(locale: string = 'en') {
+    this.locale = locale;
+  }
+  
+  welcome(name: string) {
+    return formatMessage('Welcome back, {name}!', {
+      locales: [this.locale],
+      variables: { name }
+    });
+  }
+  
+  itemCount(count: number) {
+    return formatMessage(
+      '{count, plural, =0 {No items} =1 {One item} other {# items}}',
+      {
+        locales: [this.locale],
+        variables: { count }
+      }
+    );
+  }
+}
+
+const templates = new MessageTemplates('fr');
+console.log(templates.welcome('Marie')); // "Welcome back, Marie!" (in French)
+console.log(templates.itemCount(5)); // "5 éléments"
+```
+
+---
+
+## Performance Considerations
+
+- **No State**: Function creates no persistent state, making it memory-efficient
+- **ICU Parsing**: Message parsing happens on each call; cache results for repeated use
+- **Locale Loading**: First use of a locale may be slower due to Intl API initialization
+- **Variable Objects**: Reuse variable objects when possible
+
+---
+
+## Notes
+
+- This is a stateless function - no configuration is retained between calls
+- Requires explicit locale specification in options
+- Supports same ICU message format features as GT class method
+- Returns empty string for empty input templates
+- Variables are processed before ICU formatting rules
+
+## Next Steps
+
+- **[Use GT class formatMessage() for stateful formatting](/docs/core/class/methods/formatting/formatMessage)**
+- **[Format numbers with standalone formatNum()](/docs/core/functions/formatting/formatNum)**
+- **[Learn about FormatVariables type](/docs/core/types/FormatVariables)**
+- **[Explore other standalone functions](/docs/core/functions/locales/getLocaleName)**

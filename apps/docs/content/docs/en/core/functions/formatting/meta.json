@@ -1,0 +1,8 @@
+{
+  "title": "Formatting",
+  "pages": [
+    "./formatMessage",
+    "./formatNum",
+    "./formatDateTime"
+  ]
+}

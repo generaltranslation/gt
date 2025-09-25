@@ -1,0 +1,219 @@
+---
+title: formatNum()
+description: API Reference for the formatNum() method to format numbers according to locale conventions
+---
+
+## Overview
+
+The `formatNum()` method formats numbers according to locale-specific conventions using the Internationalization API. It handles decimal separators, thousands separators, and numbering systems automatically based on the target locale.
+
+```typescript
+const gt = new GT({ targetLocale: 'de' });
+
+const formatted = gt.formatNum(1234.56, {
+  style: 'decimal',
+  minimumFractionDigits: 2
+});
+// Returns: "1.234,56" (German number formatting)
+```
+
+<Callout>
+**Locale-Aware Formatting:**
+This method automatically uses the GT instance's rendering locales but allows override through the `locales` option. Different locales have different conventions for decimal separators, thousands separators, and digit grouping.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `number` | `number` | The number to format |
+| `options?` | `NumberFormatOptions` | Optional formatting configuration |
+
+### NumberFormatOptions
+
+Extends `Intl.NumberFormatOptions` with additional locale specification:
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locales?` | `string \| string[]` | Override locales for formatting (defaults to instance locales) |
+| `style?` | `'decimal' \| 'currency' \| 'percent' \| 'unit'` | Number formatting style |
+| `currency?` | `string` | Currency code (required when style is 'currency') |
+| `currencyDisplay?` | `'symbol' \| 'narrowSymbol' \| 'code' \| 'name'` | How to display the currency |
+| `currencySign?` | `'standard' \| 'accounting'` | Currency sign to use |
+| `unit?` | `string` | Unit identifier (required when style is 'unit') |
+| `unitDisplay?` | `'short' \| 'narrow' \| 'long'` | How to display the unit |
+| `minimumIntegerDigits?` | `number` | Minimum number of integer digits (1-21) |
+| `minimumFractionDigits?` | `number` | Minimum number of fraction digits (0-20) |
+| `maximumFractionDigits?` | `number` | Maximum number of fraction digits (0-20) |
+| `minimumSignificantDigits?` | `number` | Minimum significant digits (1-21) |
+| `maximumSignificantDigits?` | `number` | Maximum significant digits (1-21) |
+| `useGrouping?` | `boolean \| 'always' \| 'auto' \| 'min2'` | Whether to use grouping separators |
+| `notation?` | `'standard' \| 'scientific' \| 'engineering' \| 'compact'` | Number notation format |
+| `compactDisplay?` | `'short' \| 'long'` | Compact notation display style |
+| `signDisplay?` | `'auto' \| 'never' \| 'always' \| 'exceptZero'` | When to display the sign |
+| `roundingMode?` | `'ceil' \| 'floor' \| 'expand' \| 'trunc' \| 'halfCeil' \| 'halfFloor' \| 'halfExpand' \| 'halfTrunc' \| 'halfEven'` | Rounding mode |
+| `roundingIncrement?` | `1 \| 2 \| 5 \| 10 \| 20 \| 25 \| 50 \| 100` | Rounding increment |
+| `trailingZeroDisplay?` | `'auto' \| 'stripIfInteger'` | Whether to display trailing zeros |
+
+### Returns
+
+`string` - The formatted number according to locale conventions.
+
+---
+
+## Examples
+
+### Basic Number Formatting
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({ targetLocale: 'en-US' });
+
+// Basic decimal formatting
+console.log(gt.formatNum(1234.567));
+// Output: "1,234.567"
+
+// German locale formatting
+console.log(gt.formatNum(1234.567, { locales: 'de-DE' }));
+// Output: "1.234,567"
+
+// French locale formatting  
+console.log(gt.formatNum(1234.567, { locales: 'fr-FR' }));
+// Output: "1 234,567"
+```
+
+### Currency Formatting
+
+```typescript copy
+// US Dollar formatting
+console.log(gt.formatNum(1234.56, {
+  style: 'currency',
+  currency: 'USD'
+}));
+// Output: "$1,234.56"
+
+// Euro formatting with German locale
+console.log(gt.formatNum(1234.56, {
+  style: 'currency',
+  currency: 'EUR',
+  locales: 'de-DE'
+}));
+// Output: "1.234,56 €"
+
+// Currency display options
+console.log(gt.formatNum(1234.56, {
+  style: 'currency',
+  currency: 'USD',
+  currencyDisplay: 'code'
+}));
+// Output: "USD 1,234.56"
+
+// Accounting format (parentheses for negative)
+console.log(gt.formatNum(-1234.56, {
+  style: 'currency',
+  currency: 'USD',
+  currencySign: 'accounting'
+}));
+// Output: "($1,234.56)"
+```
+
+### Percentage and Scientific Notation
+
+```typescript copy
+// Basic percentage
+console.log(gt.formatNum(0.1234, { style: 'percent' }));
+// Output: "12%"
+
+// Percentage with decimal places
+console.log(gt.formatNum(0.1234, {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2
+}));
+// Output: "12.34%"
+
+// Compact notation
+console.log(gt.formatNum(1234567, { notation: 'compact' }));
+// Output: "1.2M"
+
+// Scientific notation
+console.log(gt.formatNum(1234567, { notation: 'scientific' }));
+// Output: "1.235E6"
+```
+
+### Utility Functions
+
+```typescript copy
+// Helper for currency formatting
+function formatCurrency(amount: number, currency: string, locale?: string) {
+  return gt.formatNum(amount, {
+    style: 'currency',
+    currency,
+    ...(locale && { locales: locale })
+  });
+}
+
+// Helper for percentage with consistent precision
+function formatPercentage(value: number, decimals: number = 1) {
+  return gt.formatNum(value, {
+    style: 'percent',
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+// Helper for file sizes
+function formatFileSize(bytes: number) {
+  const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'];
+  let size = bytes;
+  let unitIndex = 0;
+  
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  
+  return gt.formatNum(size, {
+    style: 'unit',
+    unit: units[unitIndex],
+    maximumFractionDigits: unitIndex === 0 ? 0 : 1
+  });
+}
+
+console.log(formatCurrency(1234.56, 'EUR', 'de-DE'));
+// Output: "1.234,56 €"
+
+console.log(formatPercentage(0.1547, 2));
+// Output: "15.47%"
+
+console.log(formatFileSize(1536000));
+// Output: "1.5 MB"
+```
+
+---
+
+## Notes
+
+* Number formatting follows locale-specific conventions automatically
+* The method uses browser-native `Intl.NumberFormat` for optimal performance and accuracy
+* Currency formatting requires both `style: 'currency'` and a valid `currency` code
+* Unit formatting requires both `style: 'unit'` and a valid `unit` identifier
+* Some locales use different numbering systems (e.g., Arabic numerals vs. Arabic-Indic numerals)
+* Grouping separators vary by locale (comma, period, space, or none)
+* The method is cached internally for performance with repeated use of the same locale/options combination
+
+## Related Methods
+
+* See [`formatCurrency()`](/docs/core/class/methods/formatting/formatCurrency) for specialized currency formatting
+* See [`formatMessage()`](/docs/core/class/methods/formatting/formatMessage) for message formatting with number interpolation
+* See standalone [`formatNum()`](/docs/core/functions/formatting/formatNum) for use without GT instance
+* See [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties) for locale-specific formatting information
+
+## Next Steps
+
+* See [Formatting Guide](/docs/core/guides/formatting) for comprehensive formatting strategies
+* See [Internationalization Guide](/docs/core/guides/i18n) for locale-aware application development
+* See [Performance Guide](/docs/core/guides/performance) for optimization with cached formatters

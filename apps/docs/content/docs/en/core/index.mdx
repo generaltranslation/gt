@@ -1,40 +1,258 @@
 ---
-title: Core
-description: Docs for General Translation's core libraries
+title: Introduction
+description: Introduction to the generaltranslation library
+---
+
+## Overview
+
+The `generaltranslation` library is a TypeScript package for internationalization. It handles translation APIs, locale management, text formatting, and file processing.
+
+Use it standalone or with framework packages like `gt-next` and `gt-react`.
+
+```typescript
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  apiKey: 'your-api-key',
+  projectId: 'your-project-id',
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+// Translate content
+const result = await gt.translate('Hello, world!', 'es');
+// "¡Hola, mundo!"
+
+// Format numbers, dates, currencies
+const formattedPrice = gt.formatCurrency(29.99, 'USD');
+const formattedDate = gt.formatDateTime(new Date());
+// "$29.99"
+// "12/25/2023, 3:45:30 PM" (format depends on locale)
+
+// Work with locales
+const localeProps = gt.getLocaleProperties('fr-CA');
+const isValid = gt.isValidLocale('de');
+// { language: "fr", region: "CA", ... }
+// true
+```
+
+<Callout>
+**Related packages:**
+- **gt-next**: Next.js integration
+- **gt-react**: React integration  
+- **gtx-cli**: Command-line tools
+- **supported-locales**: Locale helpers
+</Callout>
+
+---
+
+## Features
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+  <Card>
+
+  **Translation**
+  - String translation
+  - File translation
+
+  </Card>
+
+  <Card>
+
+  **Locale Management**
+  - Locale validation and properties
+  - Custom locale mapping
+  - Region and script handling
+  - Language similarity detection
+
+  </Card>
+
+  <Card>
+
+  **Formatting**
+  - Numbers and currencies
+  - Dates and relative time
+  - List formatting
+  - ICU message format
+
+  </Card>
+
+  <Card>
+
+  **File Management**
+  - Source file uploads
+  - Translation status tracking
+  - Batch downloads
+  - Version control
+
+  </Card>
+
+</div>
+
+---
+
+## Core Components
+
+### GT Class
+Main class for translation and locale functionality:
+
+- **[Constructor](/docs/core/class/constructor)** - Initialize GT instance with configuration
+- **[Translation Methods](/docs/core/class/methods/translation/translate)** - Core translation functionality
+- **[Formatting Methods](/docs/core/class/methods/formatting/formatMessage)** - Internationalized text formatting
+- **[Locale Methods](/docs/core/class/methods/locales/getLocaleName)** - Locale utilities and properties
+
+### Utility Functions
+Utility functions that work without a GT instance:
+
+- **[Formatting Functions](/docs/core/functions/formatting/formatMessage)** - Standalone formatting utilities
+- **[Locale Functions](/docs/core/functions/locales/getLocaleName)** - Standalone locale utilities
+
+### Types and Interfaces
+TypeScript definitions:
+
+- **[GTConstructorParams](/docs/core/types/GTConstructorParams)** - Configuration options
+- **[LocaleProperties](/docs/core/types/LocaleProperties)** - Comprehensive locale information
+- **[TranslationResult](/docs/core/types/TranslationResult)** - Translation response types
+
 ---
 
 ## Installation
 
-`gt-next`, `gt-react`, and `gtx-cli` all depend on the `generaltranslation` package.
-
-You can also install `generaltranslation` separately.
-
 <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
   <Tab value="npm">
   ```bash 
-  npm i generaltranslation
+  npm install generaltranslation
   ``` 
   </Tab>
   <Tab value="yarn">
   ```bash 
-  yarn generaltranslation
+  yarn add generaltranslation
   ```
   </Tab>
 
   <Tab value="bun">
   ```bash 
-  bun generaltranslation
+  bun add generaltranslation
   ```
   </Tab>
   <Tab value="pnpm">
   ```bash 
-  pnpm generaltranslation
+  pnpm add generaltranslation
   ```
   </Tab>
 </Tabs>
 
-## Usage
+---
 
-import Construction from "@/components/mdx/construction";
+## Configuration
 
-<Construction />
+Configuration options via [GTConstructorParams](/docs/core/types/GTConstructorParams):
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `apiKey` | `string` | Production API key |
+| `devApiKey` | `string` | Development API key |
+| `projectId` | `string` | Project identifier |
+| `sourceLocale` | `string` | Default source language |
+| `targetLocale` | `string` | Default target language |
+| `locales` | `string[]` | Supported locales list |
+| `baseUrl` | `string` | Custom API endpoint |
+| `customMapping` | `CustomMapping` | Custom locale definitions |
+
+---
+
+## Framework Integration
+
+Use with framework-specific packages:
+
+### Next.js
+```typescript
+// Use gt-next for Next.js projects
+import { useGTClass } from 'gt-next/client';
+import { getGTClass } from 'gt-next/server';
+```
+
+### React
+```typescript  
+// Use gt-react for React projects
+import { useGTClass } from 'gt-react';
+```
+
+### Node.js/Express
+```typescript
+// Use core library directly
+import { GT } from 'generaltranslation';
+```
+
+---
+
+## Advanced Usage
+
+### Custom Locale Mapping
+
+```typescript
+const gt = new GT({
+  customMapping: {
+    'cn': {
+      code: 'zh',
+      name: 'Simplified Chinese',
+      emoji: '🇨🇳'
+    }
+  }
+});
+```
+
+### File Processing Workflows
+
+```typescript
+// Upload source files
+const uploadResult = await gt.uploadSourceFiles([
+  { source: { path: 'src/components/Button.tsx', content: '...' }}
+], { sourceLocale: 'en' });
+
+// Enqueue for translation
+await gt.enqueueFiles(uploadResult.files, {
+  sourceLocale: 'en',
+  targetLocales: ['es', 'fr', 'de']
+});
+
+// Check translation status
+const status = await gt.checkFileTranslations([
+  { sourcePath: 'src/components/Button.tsx', locale: 'es' }
+]);
+```
+
+---
+
+## Error Handling
+
+Handles errors with descriptive messages:
+
+```typescript
+try {
+  const result = await gt.translate('Hello', 'invalid-locale');
+} catch (error) {
+  console.error('Translation failed:', error.message);
+}
+```
+
+---
+
+## Performance
+
+- Translations are cached
+- Use `translateMany()` for multiple items
+- All translation methods are async
+- API calls respect rate limits
+
+---
+
+## Next Steps
+
+- **[Get started with the GT class](/docs/core/class/constructor)**
+- **[Explore translation methods](/docs/core/class/methods/translation/translate)**
+- **[Learn about locale utilities](/docs/core/class/methods/locales/getLocaleName)**
+- **[Check out formatting options](/docs/core/class/methods/formatting/formatMessage)**
+- **[Browse standalone functions](/docs/core/functions/formatting/formatMessage)**
+
+For framework-specific usage, see the [Next.js](/docs/next) or [React](/docs/react) documentation.

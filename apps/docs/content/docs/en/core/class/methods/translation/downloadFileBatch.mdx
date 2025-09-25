@@ -1,0 +1,257 @@
+---
+title: downloadFileBatch()
+description: API Reference for the downloadFileBatch() method to download multiple translation files in a single request
+---
+
+## Overview
+
+The `downloadFileBatch()` method downloads multiple translation files in a single batch request, providing better performance and efficiency when retrieving many files compared to individual download calls. The files are returned with their content decoded from Base64.
+
+```typescript
+const gt = new GT({ apiKey: 'your-api-key' });
+
+const result = await gt.downloadFileBatch([
+  'translation-id-1', 
+  'translation-id-2', 
+  'translation-id-3'
+]);
+
+console.log(`Downloaded ${result.count} files`);
+result.files.forEach(file => {
+  console.log(`${file.fileName}: ${file.data.length} bytes`);
+});
+```
+
+<Callout>
+**Batch Efficiency:**
+This method is optimized for downloading multiple files in a single API call, reducing network overhead and improving performance compared to multiple individual `downloadTranslatedFile()` calls.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `fileIds` | `string[]` | Array of translation file IDs to download |
+| `options?` | `DownloadFileBatchOptions` | Optional configuration for the download request |
+
+#### DownloadFileBatchOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<DownloadFileBatchResult>` - Contains the downloaded files and metadata.
+
+```typescript
+type DownloadFileBatchResult = {
+  files: File[];
+  count: number;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `files` | `File[]` | Array of downloaded file objects |
+| `count` | `number` | Number of files successfully downloaded |
+
+#### File Structure
+
+```typescript
+type File = {
+  id: string;
+  fileName: string;
+  data: string;
+  metadata: any;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Translation file ID |
+| `fileName` | `string` | Original file name |
+| `data` | `string` | File content as UTF-8 string (decoded from Base64) |
+| `metadata` | `any` | Additional file metadata |
+
+---
+
+## Examples
+
+### Basic Batch Download
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  apiKey: 'your-api-key'
+});
+
+async function downloadMultipleFiles(translationIds: string[]) {
+  try {
+    const result = await gt.downloadFileBatch(translationIds);
+    
+    console.log(`Successfully downloaded ${result.count} files`);
+    
+    const downloads = result.files.map(file => ({
+      id: file.id,
+      fileName: file.fileName,
+      size: file.data.length,
+      content: file.data,
+      metadata: file.metadata
+    }));
+    
+    return downloads;
+  } catch (error) {
+    console.error('Batch download failed:', error);
+    throw error;
+  }
+}
+
+const translationIds = [
+  'translation-123-es',
+  'translation-123-fr', 
+  'translation-123-de'
+];
+
+const downloads = await downloadMultipleFiles(translationIds);
+downloads.forEach(file => {
+  console.log(`${file.fileName}: ${file.size} characters`);
+});
+```
+
+### Save Files to Disk
+
+```typescript copy
+import fs from 'fs/promises';
+import path from 'path';
+
+async function downloadAndSaveFiles(
+  translationIds: string[], 
+  outputDir: string
+) {
+  const result = await gt.downloadFileBatch(translationIds, {
+    timeout: 30000 // 30 seconds for large batches
+  });
+  
+  const savedFiles = [];
+  
+  for (const file of result.files) {
+    try {
+      // Create output directory if it doesn't exist
+      await fs.mkdir(outputDir, { recursive: true });
+      
+      // Generate output path
+      const outputPath = path.join(outputDir, file.fileName);
+      
+      // Write file content
+      await fs.writeFile(outputPath, file.data, 'utf8');
+      
+      savedFiles.push({
+        translationId: file.id,
+        fileName: file.fileName,
+        outputPath,
+        size: file.data.length
+      });
+      
+      console.log(`Saved ${file.fileName} to ${outputPath}`);
+    } catch (error) {
+      console.error(`Failed to save ${file.fileName}:`, error);
+    }
+  }
+  
+  return {
+    total: result.count,
+    saved: savedFiles.length,
+    failed: result.count - savedFiles.length,
+    files: savedFiles
+  };
+}
+
+// Usage
+const translationIds = ['trans-1', 'trans-2', 'trans-3'];
+const saveResults = await downloadAndSaveFiles(translationIds, './translations');
+
+console.log(`Saved ${saveResults.saved}/${saveResults.total} files`);
+```
+
+### Parallel Processing with Chunking
+
+```typescript copy
+async function downloadLargeFileSet(
+  allTranslationIds: string[], 
+  chunkSize: number = 10
+) {
+  // Split into chunks to avoid overwhelming the API
+  const chunks = [];
+  for (let i = 0; i < allTranslationIds.length; i += chunkSize) {
+    chunks.push(allTranslationIds.slice(i, i + chunkSize));
+  }
+  
+  console.log(`Processing ${allTranslationIds.length} files in ${chunks.length} chunks`);
+  
+  const allResults = [];
+  let totalFiles = 0;
+  
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} files)...`);
+    
+    try {
+      const chunkResult = await gt.downloadFileBatch(chunk, {
+        timeout: 45000 // Longer timeout for chunks
+      });
+      
+      allResults.push(...chunkResult.files);
+      totalFiles += chunkResult.count;
+      
+      console.log(`Chunk ${i + 1} completed: ${chunkResult.count} files`);
+      
+      // Add delay between chunks to be respectful to the API
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+    } catch (error) {
+      console.error(`Chunk ${i + 1} failed:`, error);
+      // Continue with next chunk instead of failing entirely
+    }
+  }
+  
+  return {
+    requestedFiles: allTranslationIds.length,
+    downloadedFiles: totalFiles,
+    files: allResults,
+    successRate: (totalFiles / allTranslationIds.length) * 100
+  };
+}
+
+// Usage
+const manyTranslationIds = Array.from({ length: 50 }, (_, i) => `trans-${i + 1}`);
+const batchResults = await downloadLargeFileSet(manyTranslationIds, 10);
+
+console.log(`Downloaded ${batchResults.downloadedFiles}/${batchResults.requestedFiles} files`);
+console.log(`Success rate: ${batchResults.successRate.toFixed(1)}%`);
+```
+
+---
+
+## Notes
+
+* File content is automatically decoded from Base64 and returned as UTF-8 strings
+* This method is more efficient than multiple individual download calls for bulk operations
+* File IDs must be valid translation IDs - use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to verify completion first
+* Large batches may require increased timeout values
+* Consider chunking very large file sets to avoid API limits and improve reliability
+* Files are returned in the same order as the requested IDs when possible
+* Failed individual file downloads within the batch don't cause the entire batch to fail
+
+## Next Steps
+
+* See [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) for single file downloads
+* See [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to verify files are ready for download
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translation jobs
+* See [`fetchTranslations()`](/docs/core/class/methods/translation/fetchTranslations) to get translation metadata
+* See [`DownloadFileBatchResult`](/docs/core/types/DownloadFileBatchResult) for detailed result structure

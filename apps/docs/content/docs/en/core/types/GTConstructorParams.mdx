@@ -1,0 +1,351 @@
+---
+title: GTConstructorParams
+description: TypeScript interface for GT class constructor parameters
+---
+
+## Overview
+
+`GTConstructorParams` defines the configuration options for initializing a GT class instance. All properties are optional, allowing for flexible configuration based on your application's needs.
+
+```typescript
+interface GTConstructorParams {
+  apiKey?: string;
+  devApiKey?: string;
+  sourceLocale?: string;
+  targetLocale?: string;
+  locales?: string[];
+  projectId?: string;
+  baseUrl?: string;
+  customMapping?: CustomMapping;
+}
+```
+
+This interface provides comprehensive control over translation API credentials, locale settings, and custom locale definitions.
+
+<Callout>
+**Environment Variables:**
+The GT constructor automatically reads `GT_API_KEY`, `GT_DEV_API_KEY`, and `GT_PROJECT_ID` from environment variables if the corresponding parameters are not provided.
+</Callout>
+
+---
+
+## Properties
+
+### API Configuration
+
+#### `apiKey?: string`
+Production API key for accessing the General Translation service.
+
+```typescript
+const gt = new GT({
+  apiKey: 'gt_prod_abc123...'
+});
+```
+
+**Notes:**
+- Takes precedence over `GT_API_KEY` environment variable
+- Required for production translation operations
+- Should be kept secure and not exposed in client-side code
+
+#### `devApiKey?: string`  
+Development API key for testing and development environments.
+
+```typescript
+const gt = new GT({
+  devApiKey: 'gt_dev_xyz789...'
+});
+```
+
+**Notes:**
+- Takes precedence over `GT_DEV_API_KEY` environment variable
+- Used when `apiKey` is not provided
+- Typically has different rate limits than production keys
+
+#### `projectId?: string`
+Unique identifier for your translation project.
+
+```typescript
+const gt = new GT({
+  projectId: 'my-app-project-id'
+});
+```
+
+**Notes:**
+- Takes precedence over `GT_PROJECT_ID` environment variable
+- Required for all translation operations
+- Associates translations with your specific project
+
+#### `baseUrl?: string`
+Custom base URL for the translation API endpoint.
+
+```typescript
+const gt = new GT({
+  baseUrl: 'https://api.example.com'
+});
+```
+
+**Notes:**
+- Primarily for enterprise customers with custom deployments
+- Defaults to General Translation's standard API endpoint
+- Must be a valid HTTPS URL
+
+---
+
+### Locale Configuration
+
+#### `sourceLocale?: string`
+Default source locale for translation operations.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en'
+});
+```
+
+**Notes:**
+- Must be a valid BCP-47 locale code
+- Used as default for translation requests when not specified
+- Validated against custom mappings if provided
+
+#### `targetLocale?: string`
+Default target locale for translation operations.
+
+```typescript
+const gt = new GT({
+  targetLocale: 'es'  
+});
+```
+
+**Notes:**
+- Must be a valid BCP-47 locale code
+- Used as default target for translation methods
+- Can be overridden per translation request
+
+#### `locales?: string[]`
+Array of supported locale codes for the application.
+
+```typescript
+const gt = new GT({
+  locales: ['en', 'es', 'fr', 'de', 'ja']
+});
+```
+
+**Notes:**
+- All codes must be valid BCP-47 locale codes
+- Used for locale validation and filtering operations
+- Invalid locales cause constructor to throw an error
+
+---
+
+### Advanced Configuration
+
+#### `customMapping?: CustomMapping`
+Custom locale code mappings and definitions.
+
+```typescript
+const gt = new GT({
+  customMapping: {
+    'simplified-chinese': {
+      code: 'zh',
+      name: 'Simplified Chinese',
+      nativeName: '简体中文',
+      regionCode: 'CN',
+      scriptCode: 'Hans',
+      emoji: '🇨🇳'
+    },
+    'brazilian-portuguese': {
+      code: 'pt',
+      name: 'Brazilian Portuguese',
+      regionName: 'Brazil',
+      emoji: '🇧🇷'
+    }
+  }
+});
+```
+
+**Notes:**
+- Allows custom locale aliases and enhanced metadata
+- Takes precedence over standard BCP-47 validation
+- Enables region and script information for better translation context
+
+---
+
+## Usage Examples
+
+### Minimal Configuration
+
+```typescript
+// Uses environment variables for API credentials
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+```
+
+### Development Setup
+
+```typescript
+const gt = new GT({
+  devApiKey: process.env.GT_DEV_API_KEY,
+  projectId: 'dev-project-123',
+  sourceLocale: 'en',
+  targetLocale: 'es',
+  locales: ['en', 'es']
+});
+```
+
+### Production Configuration
+
+```typescript
+const gt = new GT({
+  apiKey: process.env.GT_API_KEY,
+  projectId: process.env.GT_PROJECT_ID,
+  sourceLocale: 'en',
+  targetLocale: 'fr',
+  locales: [
+    'en', 'en-GB', 'en-CA',
+    'fr', 'fr-CA',
+    'es', 'es-MX', 'es-AR',
+    'de', 'de-AT',
+    'ja', 'zh', 'ko-KR'
+  ]
+});
+```
+
+### Enterprise Setup with Custom Mapping
+
+```typescript
+const gt = new GT({
+  apiKey: 'enterprise-api-key',
+  projectId: 'enterprise-project',
+  baseUrl: 'https://custom-api.company.com',
+  sourceLocale: 'en',
+  customMapping: {
+    'company-english': {
+      code: 'en',
+      name: 'Company English',
+      regionName: 'Global'
+    },
+    'company-spanish': {
+      code: 'es-419',
+      name: 'Company Spanish',
+      regionName: 'Latin America'
+    }
+  }
+});
+```
+
+---
+
+## Configuration Patterns
+
+### Environment-Based Configuration
+
+```typescript
+function createGTInstance(environment: 'dev' | 'staging' | 'prod'): GT {
+  const baseConfig: GTConstructorParams = {
+    sourceLocale: 'en',
+    locales: ['en', 'es', 'fr']
+  };
+  
+  switch (environment) {
+    case 'dev':
+      return new GT({
+        ...baseConfig,
+        devApiKey: process.env.GT_DEV_API_KEY,
+        projectId: 'dev-project',
+        baseUrl: 'https://dev-api.generaltranslation.com'
+      });
+      
+    case 'staging':
+      return new GT({
+        ...baseConfig,
+        apiKey: process.env.GT_STAGING_API_KEY,
+        projectId: 'staging-project'
+      });
+      
+    case 'prod':
+      return new GT({
+        ...baseConfig,
+        apiKey: process.env.GT_PROD_API_KEY,
+        projectId: process.env.GT_PROD_PROJECT_ID
+      });
+  }
+}
+```
+
+### Dynamic Configuration
+
+```typescript
+interface AppConfig {
+  supportedLocales: string[];
+  defaultLocale: string;
+  userLocale: string;
+}
+
+function configureGT(appConfig: AppConfig): GT {
+  return new GT({
+    sourceLocale: appConfig.defaultLocale,
+    targetLocale: appConfig.userLocale,
+    locales: appConfig.supportedLocales,
+    customMapping: generateCustomMapping(appConfig.supportedLocales)
+  });
+}
+
+function generateCustomMapping(locales: string[]): CustomMapping {
+  // Generate custom mappings based on app requirements
+  return locales.reduce((mapping, locale) => {
+    if (locale.startsWith('zh-')) {
+      mapping[locale] = {
+        code: locale,
+        scriptCode: locale.includes('Hans') ? 'Hans' : 'Hant'
+      };
+    }
+    return mapping;
+  }, {} as CustomMapping);
+}
+```
+
+---
+
+## Validation Rules
+
+### Locale Code Validation
+- All locale codes must be valid BCP-47 format
+- Custom mappings can override standard validation
+- Invalid codes cause immediate constructor errors
+
+### Required Combinations
+While all properties are optional, certain operations require specific configurations:
+
+| Operation | Required Properties |
+|-----------|-------------------|
+| `translate()` | `apiKey` (or `devApiKey`) + `projectId` |
+| `formatMessage()` | None (uses defaults) |
+| `getLocaleName()` | None (uses defaults) |
+| File operations | `apiKey` + `projectId` |
+
+---
+
+## Related Types
+
+- **[CustomMapping](/docs/core/types/CustomMapping)** - Interface for custom locale definitions
+- **[LocaleProperties](/docs/core/types/LocaleProperties)** - Comprehensive locale information
+- **[TranslationRequestConfig](/docs/core/types/TranslationRequestConfig)** - Internal API configuration
+
+---
+
+## Notes
+
+- All properties are optional to allow flexible initialization
+- Environment variables are read only during constructor execution
+- Locale validation happens immediately when locales are provided
+- Custom mappings affect all locale-related operations
+- Configuration can be updated later using `setConfig()` method
+
+## Next Steps
+
+- **[Initialize GT instance with constructor](/docs/core/class/constructor)**
+- **[Update configuration with setConfig()](/docs/core/class/setConfig)**
+- **[Learn about CustomMapping](/docs/core/types/CustomMapping)**
+- **[Explore locale utilities](/docs/core/class/methods/locales/getLocaleName)**

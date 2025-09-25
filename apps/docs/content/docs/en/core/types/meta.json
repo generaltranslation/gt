@@ -1,0 +1,10 @@
+{
+  "title": "Types",
+  "pages": [
+    "./GTConstructorParams",
+    "./LocaleProperties",
+    "./TranslationResult",
+    "./Entry",
+    "./EntryMetadata"
+  ]
+}

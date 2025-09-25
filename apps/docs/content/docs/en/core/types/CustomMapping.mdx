@@ -1,0 +1,483 @@
+---
+title: CustomMapping
+description: Type definition for custom locale code mappings and enhanced locale metadata
+---
+
+## Overview
+
+`CustomMapping` allows you to define custom locale code mappings and enhanced metadata that extends or overrides the standard BCP-47 locale information. This enables support for custom locale aliases, regional variants, and specialized locale configurations.
+
+```typescript
+type CustomMapping = Record<string, string | Partial<LocaleProperties>>;
+```
+
+Custom mappings are used during GT instance initialization to provide application-specific locale handling, custom naming conventions, and enhanced locale metadata.
+
+## Type Definition
+
+### Structure
+
+`CustomMapping` is a record where:
+- **Keys**: Custom locale codes or aliases (e.g., `'simplified-chinese'`, `'company-english'`)
+- **Values**: Either a simple string name or partial `LocaleProperties` object
+
+### Value Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `string` | Simple display name | `'Simplified Chinese'` |
+| `Partial<LocaleProperties>` | Enhanced locale metadata | `{ code: 'zh-CN', name: 'Chinese', emoji: '🇨🇳' }` |
+
+### LocaleProperties Reference
+
+When using `Partial<LocaleProperties>`, any of these properties can be customized:
+
+```typescript
+interface LocaleProperties {
+  code: string;                    // Canonical BCP-47 code
+  name: string;                    // Display name
+  nativeName: string;              // Native display name
+  languageCode: string;            // Language portion
+  languageName: string;            // Language display name
+  nativeLanguageName: string;      // Native language name
+  regionCode: string;              // Region code
+  regionName: string;              // Region display name
+  nativeRegionName: string;        // Native region name
+  scriptCode: string;              // Script code
+  scriptName: string;              // Script display name
+  nativeScriptName: string;        // Native script name
+  maximizedCode: string;           // Fully specified code
+  minimizedCode: string;           // Shortest valid code
+  emoji: string;                   // Flag or regional emoji
+  // ... and other LocaleProperties fields
+}
+```
+
+---
+
+## Example
+
+### Simple String Mappings
+
+```typescript copy
+import { CustomMapping, GT } from 'generaltranslation';
+
+// Simple alias mappings
+const simpleMapping: CustomMapping = {
+  // Friendly aliases
+  'english': 'English',
+  'spanish': 'Spanish',
+  'french': 'French',
+  
+  // Regional variants
+  'mexican-spanish': 'Mexican Spanish',
+  'canadian-french': 'Canadian French',
+  
+  // Business-specific terms
+  'company-english': 'Company Standard English',
+  'technical-english': 'Technical Documentation English'
+};
+
+const gt = new GT({
+  sourceLocale: 'english',
+  targetLocale: 'spanish',
+  customMapping: simpleMapping
+});
+```
+
+### Enhanced Locale Metadata
+
+```typescript copy
+// Comprehensive custom locale definitions
+const enhancedMapping: CustomMapping = {
+  // Chinese variants with full metadata
+  'simplified-chinese': {
+    code: 'zh-CN',
+    name: 'Simplified Chinese',
+    nativeName: '简体中文',
+    languageCode: 'zh',
+    languageName: 'Chinese',
+    nativeLanguageName: '中文',
+    regionCode: 'CN',
+    regionName: 'China',
+    nativeRegionName: '中国',
+    scriptCode: 'Hans',
+    scriptName: 'Simplified',
+    nativeScriptName: '简体',
+    emoji: '🇨🇳'
+  },
+  
+  'traditional-chinese': {
+    code: 'zh-TW',
+    name: 'Traditional Chinese',
+    nativeName: '繁體中文',
+    languageCode: 'zh',
+    languageName: 'Chinese',
+    nativeLanguageName: '中文',
+    regionCode: 'TW',
+    regionName: 'Taiwan',
+    nativeRegionName: '台灣',
+    scriptCode: 'Hant',
+    scriptName: 'Traditional',
+    nativeScriptName: '繁體',
+    emoji: '🇹🇼'
+  }
+};
+```
+
+### E-commerce Regional Customization
+
+```typescript copy
+const ecommerceMapping: CustomMapping = {
+  // North American English variants
+  'us-english': {
+    code: 'en-US',
+    name: 'US English',
+    regionName: 'United States',
+    emoji: '🇺🇸'
+  },
+  
+  'canadian-english': {
+    code: 'en-CA', 
+    name: 'Canadian English',
+    regionName: 'Canada',
+    emoji: '🇨🇦'
+  },
+  
+  // Spanish variants with currency context
+  'spain-spanish': {
+    code: 'es-ES',
+    name: 'Spanish (Spain)',
+    regionName: 'Spain',
+    regionCode: 'ES',
+    emoji: '🇪🇸'
+  },
+  
+  'mexico-spanish': {
+    code: 'es-MX',
+    name: 'Spanish (Mexico)',
+    regionName: 'Mexico', 
+    regionCode: 'MX',
+    emoji: '🇲🇽'
+  },
+  
+  'argentina-spanish': {
+    code: 'es-AR',
+    name: 'Spanish (Argentina)',
+    regionName: 'Argentina',
+    regionCode: 'AR',
+    emoji: '🇦🇷'
+  }
+};
+
+// Usage in e-commerce context
+const ecommerceGT = new GT({
+  sourceLocale: 'us-english',
+  customMapping: ecommerceMapping,
+  locales: [
+    'us-english',
+    'canadian-english', 
+    'spain-spanish',
+    'mexico-spanish',
+    'argentina-spanish'
+  ]
+});
+```
+
+### Business Domain Mappings
+
+```typescript copy
+const businessMapping: CustomMapping = {
+  // Financial services terminology
+  'financial-english': {
+    code: 'en-US',
+    name: 'Financial Services English',
+    regionName: 'United States (Financial)'
+  },
+  
+  'financial-german': {
+    code: 'de-DE',
+    name: 'Financial Services German',
+    nativeName: 'Finanzdienstleistungen Deutsch',
+    regionName: 'Germany (Financial)'
+  },
+  
+  // Legal terminology
+  'legal-english': {
+    code: 'en-US',
+    name: 'Legal English',
+    regionName: 'United States (Legal)'
+  },
+  
+  'legal-french': {
+    code: 'fr-FR',
+    name: 'Legal French',
+    nativeName: 'Français juridique',
+    regionName: 'France (Legal)'
+  },
+  
+  // Technical documentation
+  'tech-english': {
+    code: 'en-US',
+    name: 'Technical English',
+    regionName: 'Global Technical'
+  }
+};
+```
+
+### Gaming/Entertainment Mappings
+
+```typescript copy
+const gamingMapping: CustomMapping = {
+  // Gaming-specific locale variants
+  'gaming-japanese': {
+    code: 'ja-JP',
+    name: 'Gaming Japanese',
+    nativeName: 'ゲーミング日本語',
+    emoji: '🎮🇯🇵'
+  },
+  
+  'gaming-korean': {
+    code: 'ko-KR',
+    name: 'Gaming Korean',  
+    nativeName: '게이밍 한국어',
+    emoji: '🎮🇰🇷'
+  },
+  
+  // Streaming locales
+  'streaming-english': {
+    code: 'en-US',
+    name: 'Streaming English',
+    regionName: 'Global Streaming'
+  },
+  
+  // Community-specific
+  'community-spanish': {
+    code: 'es-419',
+    name: 'Community Spanish',
+    nativeName: 'Español de la Comunidad',
+    regionName: 'Latin America'
+  }
+};
+```
+
+### Canonical Locale Redirection
+
+```typescript copy
+// Redirect custom codes to canonical BCP-47 codes
+const canonicalMapping: CustomMapping = {
+  // Redirect aliases to standard codes
+  'chinese': {
+    code: 'zh-CN'  // Redirects 'chinese' to use 'zh-CN' internally
+  },
+  
+  'portuguese': {
+    code: 'pt-BR'  // Redirects 'portuguese' to Brazilian Portuguese
+  },
+  
+  'arabic': {
+    code: 'ar-SA'  // Redirects 'arabic' to Saudi Arabian Arabic
+  },
+  
+  // Business locale redirections
+  'company-standard': {
+    code: 'en-US',
+    name: 'Company Standard',
+    regionName: 'Global Corporate'
+  }
+};
+
+// The GT instance will use zh-CN internally when 'chinese' is specified
+const gtWithRedirection = new GT({
+  sourceLocale: 'chinese',  // Will use zh-CN
+  customMapping: canonicalMapping
+});
+```
+
+### Multi-Brand Application Mapping
+
+```typescript copy
+interface BrandMapping {
+  [brandId: string]: CustomMapping;
+}
+
+const multiBrandMappings: BrandMapping = {
+  'brand-a': {
+    'english': {
+      code: 'en-US',
+      name: 'Brand A English',
+      regionName: 'Brand A Global'
+    },
+    'spanish': {
+      code: 'es-MX',
+      name: 'Brand A Spanish',
+      regionName: 'Brand A Mexico'
+    }
+  },
+  
+  'brand-b': {
+    'english': {
+      code: 'en-GB',
+      name: 'Brand B English',
+      regionName: 'Brand B UK'
+    },
+    'spanish': {
+      code: 'es-ES', 
+      name: 'Brand B Spanish',
+      regionName: 'Brand B Spain'
+    }
+  }
+};
+
+// Function to create brand-specific GT instance
+function createBrandGT(brandId: string): GT {
+  const mapping = multiBrandMappings[brandId];
+  if (!mapping) {
+    throw new Error(`No mapping found for brand: ${brandId}`);
+  }
+  
+  return new GT({
+    sourceLocale: 'english',
+    customMapping: mapping
+  });
+}
+
+const brandAGT = createBrandGT('brand-a');
+const brandBGT = createBrandGT('brand-b');
+```
+
+### Dynamic Mapping Builder
+
+```typescript copy
+class CustomMappingBuilder {
+  private mapping: CustomMapping = {};
+  
+  // Add simple string mapping
+  addAlias(alias: string, name: string): this {
+    this.mapping[alias] = name;
+    return this;
+  }
+  
+  // Add full locale properties
+  addLocale(
+    key: string, 
+    properties: Partial<LocaleProperties>
+  ): this {
+    this.mapping[key] = properties;
+    return this;
+  }
+  
+  // Add canonical redirection
+  addRedirection(alias: string, canonicalCode: string, name?: string): this {
+    this.mapping[alias] = {
+      code: canonicalCode,
+      ...(name && { name })
+    };
+    return this;
+  }
+  
+  // Add regional variant
+  addRegionalVariant(
+    key: string,
+    baseCode: string, 
+    regionCode: string,
+    regionName: string,
+    emoji?: string
+  ): this {
+    this.mapping[key] = {
+      code: `${baseCode}-${regionCode}`,
+      regionCode,
+      regionName,
+      ...(emoji && { emoji })
+    };
+    return this;
+  }
+  
+  build(): CustomMapping {
+    return { ...this.mapping };
+  }
+}
+
+// Usage
+const dynamicMapping = new CustomMappingBuilder()
+  .addAlias('english', 'English')
+  .addRedirection('chinese', 'zh-CN', 'Chinese')
+  .addRegionalVariant('mexican-spanish', 'es', 'MX', 'Mexico', '🇲🇽')
+  .addLocale('business-english', {
+    code: 'en-US',
+    name: 'Business English',
+    regionName: 'Global Business'
+  })
+  .build();
+```
+
+### Mapping Validation
+
+```typescript copy
+function validateCustomMapping(mapping: CustomMapping): boolean {
+  for (const [key, value] of Object.entries(mapping)) {
+    // Validate key is non-empty string
+    if (typeof key !== 'string' || key.length === 0) {
+      console.error(`Invalid mapping key: ${key}`);
+      return false;
+    }
+    
+    // Validate value is string or object
+    if (typeof value === 'string') {
+      if (value.length === 0) {
+        console.error(`Empty name for key: ${key}`);
+        return false;
+      }
+    } else if (typeof value === 'object' && value !== null) {
+      // Validate LocaleProperties structure
+      if (value.code && typeof value.code !== 'string') {
+        console.error(`Invalid code for key: ${key}`);
+        return false;
+      }
+      if (value.name && typeof value.name !== 'string') {
+        console.error(`Invalid name for key: ${key}`);
+        return false;
+      }
+    } else {
+      console.error(`Invalid value type for key: ${key}`);
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+// Usage
+const testMapping: CustomMapping = {
+  'english': 'English',
+  'spanish': { code: 'es-ES', name: 'Spanish' },
+  '': 'Invalid key',  // This will fail validation
+};
+
+const isValid = validateCustomMapping(testMapping);
+console.log('Mapping is valid:', isValid);
+```
+
+---
+
+## Notes
+
+* Custom mappings take precedence over standard BCP-47 locale resolution
+* String values provide simple display name overrides
+* Partial LocaleProperties allow comprehensive locale customization
+* Canonical code redirection enables alias support while maintaining standard locale handling
+* Custom mappings are resolved during GT instance initialization
+* Regional and script codes in custom mappings enable precise locale-specific formatting
+* Emoji customization allows for brand-specific or contextual visual representations
+
+## Related Types
+
+* See [`LocaleProperties`](/docs/core/types/LocaleProperties) for the complete locale metadata structure  
+* See [`GTConstructorParams`](/docs/core/types/GTConstructorParams) for GT initialization options
+* See [`FullCustomMapping`](/docs/core/types/FullCustomMapping) for complete locale property mappings
+
+## Next Steps
+
+* See [Custom Locale Configuration Guide](/docs/core/guides/custom-locales) for implementation patterns
+* See [Multi-Brand Localization Guide](/docs/core/guides/multi-brand) for enterprise scenarios
+* See [Locale Resolution Guide](/docs/core/guides/locale-resolution) for understanding mapping precedence

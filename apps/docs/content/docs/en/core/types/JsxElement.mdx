@@ -1,0 +1,501 @@
+---
+title: JsxElement
+description: Type definition for structured HTML-like elements in translatable JSX content
+---
+
+## Overview
+
+`JsxElement` represents structured HTML-like elements within translatable JSX content. It defines the shape of elements that can contain children, attributes, and metadata while maintaining translatability across languages.
+
+```typescript
+type JsxElement = {
+  t?: string;      // tag name
+  i?: number;      // id
+  d?: GTProp;      // GT data/properties
+  c?: JsxChildren; // children
+};
+```
+
+This type enables creation of complex, nested content structures that preserve HTML semantics and accessibility features during translation.
+
+## Type Definition
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `t?` | `string` | HTML tag name (e.g., 'div', 'span', 'a', 'button') |
+| `i?` | `number` | Optional internal identifier for the element |
+| `d?` | `GTProp` | GT properties containing HTML attributes and metadata |
+| `c?` | `JsxChildren` | Child content (text, variables, or nested elements) |
+
+### GTProp Structure
+
+```typescript
+type GTProp = {
+  b?: Record<string, JsxChildren>; // Branches for conditional content
+  t?: 'p' | 'b';                   // Branch transformation type
+} & HtmlContentPropKeysRecord;     // HTML attributes
+```
+
+### Supported HTML Attributes (via GTProp)
+
+| GT Key | HTML Attribute | Description |
+|--------|----------------|-------------|
+| `pl` | `placeholder` | Input placeholder text |
+| `ti` | `title` | Tooltip/title attribute |
+| `alt` | `alt` | Alternative text for images |
+| `arl` | `aria-label` | Accessibility label |
+| `arb` | `aria-labelledby` | References to labelling elements |
+| `ard` | `aria-describedby` | References to describing elements |
+
+---
+
+## Example
+
+### Basic Elements
+
+```typescript copy
+import { JsxElement, JsxChildren } from 'generaltranslation';
+
+// Simple div element
+const simpleDiv: JsxElement = {
+  t: 'div',
+  c: ['Hello World']
+};
+
+// Paragraph with ID
+const paragraph: JsxElement = {
+  t: 'p',
+  i: 1,
+  c: ['This is a paragraph with an internal ID']
+};
+
+// Span with attributes
+const spanWithTitle: JsxElement = {
+  t: 'span',
+  d: {
+    ti: 'Additional information'  // title attribute
+  },
+  c: ['Hover for tooltip']
+};
+```
+
+### Elements with Variables
+
+```typescript copy
+import { Variable } from 'generaltranslation';
+
+// Heading with variable content
+const dynamicHeading: JsxElement = {
+  t: 'h1',
+  c: [
+    'Welcome, ',
+    { k: 'userName' } as Variable
+  ]
+};
+
+// Link with variable text and title
+const dynamicLink: JsxElement = {
+  t: 'a',
+  d: {
+    ti: { k: 'linkTooltip' } as Variable
+  },
+  c: [{ k: 'linkText' } as Variable]
+};
+
+// Price display
+const priceDisplay: JsxElement = {
+  t: 'span',
+  d: {
+    ti: 'Current price'
+  },
+  c: [
+    '$',
+    { k: 'price', v: 'n' } as Variable
+  ]
+};
+```
+
+### Form Elements
+
+```typescript copy
+// Input field with placeholder
+const emailInput: JsxElement = {
+  t: 'input',
+  d: {
+    pl: 'Enter your email address',
+    ti: 'Email field for contact form'
+  }
+};
+
+// Label for form field
+const fieldLabel: JsxElement = {
+  t: 'label',
+  c: ['Email Address *']
+};
+
+// Button with dynamic text
+const submitButton: JsxElement = {
+  t: 'button',
+  d: {
+    ti: 'Submit the form'
+  },
+  c: [
+    'Submit (',
+    { k: 'itemCount', v: 'n' } as Variable,
+    ' items)'
+  ]
+};
+```
+
+### Accessibility-Rich Elements
+
+```typescript copy
+// Button with comprehensive accessibility
+const accessibleButton: JsxElement = {
+  t: 'button',
+  d: {
+    arl: 'Close dialog window',
+    ard: 'confirmation-dialog',
+    ti: 'Click to close this dialog'
+  },
+  c: ['×']
+};
+
+// Image with alt text
+const productImage: JsxElement = {
+  t: 'img',
+  d: {
+    alt: { k: 'productName' } as Variable,
+    ti: 'Product photograph'
+  }
+};
+
+// Section with labeling
+const contentSection: JsxElement = {
+  t: 'section',
+  d: {
+    arl: 'User profile information',
+    arb: 'profile-heading'
+  },
+  c: [
+    {
+      t: 'h2',
+      i: 100,
+      c: ['Profile Details']
+    },
+    {
+      t: 'p',
+      c: [
+        'Name: ',
+        { k: 'fullName' } as Variable
+      ]
+    }
+  ]
+};
+```
+
+### Nested Element Structures
+
+```typescript copy
+// Complex card component
+const productCard: JsxElement = {
+  t: 'article',
+  d: {
+    arl: 'Product information card'
+  },
+  c: [
+    // Header section
+    {
+      t: 'header',
+      c: [
+        {
+          t: 'h3',
+          c: [{ k: 'productName' } as Variable]
+        },
+        {
+          t: 'div',
+          c: [
+            'By ',
+            {
+              t: 'a',
+              d: { ti: 'View brand page' },
+              c: [{ k: 'brandName' } as Variable]
+            }
+          ]
+        }
+      ]
+    },
+    
+    // Content section
+    {
+      t: 'div',
+      c: [
+        {
+          t: 'img',
+          d: {
+            alt: { k: 'productName' } as Variable,
+            ti: 'Product image'
+          }
+        },
+        {
+          t: 'p',
+          c: [{ k: 'description' } as Variable]
+        }
+      ]
+    },
+    
+    // Footer section
+    {
+      t: 'footer',
+      c: [
+        {
+          t: 'div',
+          c: [
+            'Price: ',
+            {
+              t: 'strong',
+              c: [{ k: 'price', v: 'c' } as Variable]
+            }
+          ]
+        },
+        {
+          t: 'button',
+          d: {
+            ti: 'Add to shopping cart'
+          },
+          c: ['Add to Cart']
+        }
+      ]
+    }
+  ]
+};
+```
+
+### List Structures
+
+```typescript copy
+// Unordered list with dynamic items
+const featuresList: JsxElement = {
+  t: 'ul',
+  d: {
+    arl: 'Product features list'
+  },
+  c: [
+    {
+      t: 'li',
+      c: [
+        { k: 'feature1' } as Variable
+      ]
+    },
+    {
+      t: 'li',
+      c: [
+        'Available in ',
+        { k: 'colorCount', v: 'n' } as Variable,
+        ' colors'
+      ]
+    },
+    {
+      t: 'li',
+      c: [
+        'Free shipping on orders over ',
+        { k: 'freeShippingThreshold', v: 'c' } as Variable
+      ]
+    }
+  ]
+};
+
+// Definition list
+const specificationsList: JsxElement = {
+  t: 'dl',
+  d: {
+    ti: 'Product specifications'
+  },
+  c: [
+    { t: 'dt', c: ['Weight'] },
+    {
+      t: 'dd',
+      c: [
+        { k: 'weight', v: 'n' } as Variable,
+        ' lbs'
+      ]
+    },
+    { t: 'dt', c: ['Dimensions'] },
+    {
+      t: 'dd', 
+      c: [{ k: 'dimensions' } as Variable]
+    }
+  ]
+};
+```
+
+### Table Elements
+
+```typescript copy
+// Data table with headers and dynamic content
+const dataTable: JsxElement = {
+  t: 'table',
+  d: {
+    ti: 'Sales performance data'
+  },
+  c: [
+    {
+      t: 'thead',
+      c: [
+        {
+          t: 'tr',
+          c: [
+            { t: 'th', c: ['Month'] },
+            { t: 'th', c: ['Revenue'] },
+            { t: 'th', c: ['Growth'] }
+          ]
+        }
+      ]
+    },
+    {
+      t: 'tbody',
+      c: [
+        {
+          t: 'tr',
+          c: [
+            {
+              t: 'td',
+              c: [{ k: 'monthName' } as Variable]
+            },
+            {
+              t: 'td',
+              c: [{ k: 'monthlyRevenue', v: 'c' } as Variable]
+            },
+            {
+              t: 'td',
+              c: [
+                { k: 'growthRate', v: 'n' } as Variable,
+                '%'
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+```
+
+### Helper Functions
+
+```typescript copy
+// Helper to create basic elements
+function createElement(
+  tag: string,
+  children?: JsxChildren,
+  props?: GTProp,
+  id?: number
+): JsxElement {
+  const element: JsxElement = { t: tag };
+  
+  if (children !== undefined) {
+    element.c = children;
+  }
+  
+  if (props) {
+    element.d = props;
+  }
+  
+  if (id !== undefined) {
+    element.i = id;
+  }
+  
+  return element;
+}
+
+// Helper for elements with just text
+function textElement(tag: string, text: string, props?: GTProp): JsxElement {
+  return createElement(tag, [text], props);
+}
+
+// Helper for elements with variables
+function variableElement(
+  tag: string,
+  variableKey: string,
+  variableType?: VariableType,
+  props?: GTProp
+): JsxElement {
+  const variable: Variable = { k: variableKey };
+  if (variableType) variable.v = variableType;
+  
+  return createElement(tag, [variable], props);
+}
+
+// Usage examples
+const helpers = {
+  title: textElement('h1', 'Page Title'),
+  price: variableElement('span', 'productPrice', 'c', { ti: 'Current price' }),
+  description: createElement('p', [
+    'Product by ',
+    { k: 'brandName' } as Variable
+  ])
+};
+```
+
+### Element Validation
+
+```typescript copy
+function isValidJsxElement(obj: any): obj is JsxElement {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+  
+  // Must have at least one property
+  const hasProperties = Object.keys(obj).length > 0;
+  if (!hasProperties) return false;
+  
+  // Check optional properties
+  if (obj.t !== undefined && typeof obj.t !== 'string') return false;
+  if (obj.i !== undefined && typeof obj.i !== 'number') return false;
+  if (obj.d !== undefined && typeof obj.d !== 'object') return false;
+  // Note: c validation would require recursive JsxChildren validation
+  
+  return true;
+}
+
+function createSafeElement(
+  tag: string,
+  children?: JsxChildren,
+  props?: GTProp
+): JsxElement {
+  const element = { t: tag, c: children, d: props };
+  
+  if (!isValidJsxElement(element)) {
+    throw new Error('Invalid JsxElement structure');
+  }
+  
+  return element;
+}
+```
+
+---
+
+## Notes
+
+* All properties are optional, allowing for flexible element creation
+* The `t` property should contain valid HTML tag names
+* GT properties (`d`) use shortened keys to reduce payload size
+* Accessibility attributes are fully supported through GT properties  
+* Elements can be nested to arbitrary depth while maintaining translatability
+* The `i` property is used internally for optimization and should be unique within a content tree
+* Children can mix text, variables, and other elements freely
+
+## Related Types
+
+* See [`JsxChildren`](/docs/core/types/JsxChildren) for the children content type
+* See [`JsxChild`](/docs/core/types/JsxChild) for individual child element types
+* See [`GTProp`](/docs/core/types/GTProp) for element properties and attributes
+* See [`Variable`](/docs/core/types/Variable) for dynamic content within elements
+
+## Next Steps
+
+* See [JSX Element Guide](/docs/core/guides/jsx-elements) for advanced element patterns
+* See [Accessibility Guide](/docs/core/guides/accessibility) for inclusive design practices
+* See [HTML Attributes Guide](/docs/core/guides/html-attributes) for supported attribute mappings
