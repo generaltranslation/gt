@@ -1,25 +1,33 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import use from '../utils/use';
-import { getLocale } from './getLocale';
+import { getLocale, useLocale } from './getLocale';
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale.
  *
- * If no locale is provided, the direction for the current user's locale is returned.
+ * If no locale is provided, the direction for the current user's locale is returned asynchronously.
  *
- * @param {string} [locale] - Optional locale code (e.g., 'ar', 'en-US'). If omitted, uses the current locale.
- * @returns {Promise<'ltr' | 'rtl'>} A promise that resolves to the text direction for the locale: 'rtl' for right-to-left languages, otherwise 'ltr'.
+ * @param locale Optional locale code (e.g., 'ar', 'en-US'). If omitted, uses the current locale.
+ * @returns If locale is omitted: Promise<'ltr' | 'rtl'>.
+ *          If locale is provided: 'ltr' | 'rtl' directly.
  *
  * @example
- * const dir = await getLocaleDirection(); // e.g., 'ltr'
- * const arabicDir = await getLocaleDirection('ar'); // 'rtl'
+ * const dir = await getLocaleDirection(); // Promise<'ltr' | 'rtl'>
+ * const arabicDir = getLocaleDirection('ar'); // 'rtl'
  */
-export async function getLocaleDirection(
-  locale?: string
-): Promise<'ltr' | 'rtl'> {
-  locale ||= await getLocale();
+export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
+export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
+// Implementation
+export function getLocaleDirection(locale?: string) {
   const gt = getI18NConfig().getGTClass();
-  return gt.getLocaleDirection(locale);
+  if (typeof locale === 'string') {
+    // Synchronous result when locale is given
+    return gt.getLocaleDirection(locale) as 'ltr' | 'rtl';
+  }
+  // Asynchronous result when locale is not given
+  return getLocale().then((resolvedLocale) =>
+    gt.getLocaleDirection(resolvedLocale)
+  ) as Promise<'ltr' | 'rtl'>;
 }
 
 /**
@@ -35,5 +43,7 @@ export async function getLocaleDirection(
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
 export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
-  return use(getLocaleDirection(locale));
+  locale = locale || useLocale();
+  const gt = getI18NConfig().getGTClass();
+  return gt.getLocaleDirection(locale);
 }
