@@ -1,6 +1,6 @@
 {
   "name": "gt-sanity",
-  "version": "0.0.6",
+  "version": "1.0.0",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
