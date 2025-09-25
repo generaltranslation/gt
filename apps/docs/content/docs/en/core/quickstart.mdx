@@ -6,108 +6,227 @@ description: Quick Start guide for the generaltranslation library
 ## Overview
 
 This guide will walk you through the basics of using the generaltranslation library.
-
+We will cover string translation and file translation.
 
 ---
 
-## Quick Start
 
-### Basic Setup
+## Translate your first string
 
-```typescript
-import { GT } from 'generaltranslation';
+<Steps>
+  <Step>
 
-// Initialize with API credentials
-const gt = new GT({
-  apiKey: process.env.GT_API_KEY,    // Your API key from the dashboard
-  projectId: process.env.GT_PROJECT_ID,  // Your project ID
-  sourceLocale: 'en',               // Source language (English)
-  targetLocale: 'es'               // Default target language (Spanish)
-});
+    ### 1. Get your environment variables
+
+    The very first step is to create a `GT_PROJECT_ID` and `GT_API_KEY`.
+    This is completely free, and will give you access to the translation services.
+
+
+    Navigate to the [`API Keys` page](https://dash.generaltranslation.com/api-keys) click `Create API Key`.
+    Choose a name for your API key, and click `Create`.
+
+    ![API key page](/core/quickstart/core-quickstart-1.png)
+
+    <Callout type='info'>
+      General Translation offers very high free rate limits to support personal projects, solo developers, and the community.
+    </Callout>
+  </Step>
+  <Step>
+    ### 2. Initialize the GT class
+
+    Initialize the `GT` class and securely pass your `GT_PROJECT_ID` and `GT_API_KEY`.
+
+    ```typescript title="src/index.ts"
+    import { GT } from 'generaltranslation';
+
+    const gt = new GT({
+      projectId: 'your-project-id',
+      apiKey: 'your-api-key',
+    });
+    ```
+  </Step>
+  <Step>
+    ### 3. Translate your first string
+
+    Call the `translate` method to translate your string.
+    Pass the string you want to translate, and the target locale.
+
+    ```typescript title="src/index.ts"
+    const { translation } = await gt.translate('Hello, world!', 'es'); // Spanish
+
+    console.log(translation); // "¡Hola, mundo!"
+    ```
+
+    <Callout type='info'>
+      If you want to look up a locale code, check out the [supported locales](/docs/platform/locale-strings) page.
+    </Callout>
+  </Step>
+</Steps>
+
+---
+
+## Translate your first file
+<Callout type='warn'>
+  This guide assumes you already have followed steps 1 and 2 of the [Translate your first string](/docs/core/quickstart#translate-your-first-string) guide
+  and have a `GT_PROJECT_ID`, `GT_API_KEY`, and a `GT` class instance.
+</Callout>
+
+Let's say you wanted to translate a file called `en.json` to Spanish.
+```json title="en.json"
+{
+  "hello": "Hello",
+  "world": "World"
+}
 ```
 
-### Environment Variables
+In order to translate a file, you need to follow these four steps:
+1. Upload the file
+2. Enqueue the file for translation
+3. Check on the file status (optional)
+3. Download the translated file.
 
-Optional environment variables:
+<Callout type='info'>
+  #### Why not just one call?
+  Typically, people will want to translate many files at once.
+  By breaking these into four clear steps, it gives users much more flexibility in how they can use the API.
+</Callout>
 
-```bash
-GT_API_KEY=your-api-key      # Get this from your GT dashboard
-GT_PROJECT_ID=your-project-id # Your project identifier
-```
 
-### Translation Examples
+<Steps>
+  <Step>
+    ### 1. Upload the file
 
-For translations, you will have needed to specify a `GT_PROJECT_ID` and `GT_API_KEY`.
+    Uploading files returns a list of file references.
+    This allows you to later check the enqueue the file for translation, check the status of the file, and download the translated file.
 
-```typescript
-// Simple text translation
-const translated = await gt.translate('Welcome to our app', 'fr');
-// Returns: "Bienvenue dans notre application"
+    ```typescript title="src/index.ts"
+    import fs from 'fs';
+    import path from 'path';
+    import { FileUpload } from 'generaltranslation';
 
-// Translate with context for better accuracy
-const greeting = await gt.translate('Good morning', 'ja', {
-  context: 'Formal business greeting'
-});
-// Returns: "おはようございます" (formal version)
+    // (i) Read the content of a file
+    const filePath = path.join(process.cwd(), 'en.json');
+    const fileContents = fs.readFileSync(filePath, 'utf8');
 
-// Batch translation - more efficient for multiple strings
-const results = await gt.translateMany([
-  { source: 'Home' },
-  { source: 'About' },
-  { source: 'Contact' }
-], { targetLocale: 'de' });
-// Returns: [{ translation: 'Startseite' }, { translation: 'Über uns' }, { translation: 'Kontakt' }]
-```
+    // (ii) Format the file contents
+    const fileUpload: FileUpload = {
+      content: fileContents,
+      fileName: filePath,
+      fileFormat: 'JSON',
+      locale: 'en',
+    };
+    const files = [ { source: fileUpload } ];
 
-### Formatting Examples
+    // (iii) Upload the file
+    const { uploadedFiles } = await gt.uploadSourceFiles(
+      files,
+      {
+        sourceLocale: 'en'
+      }
+    );
+    ```
 
-```typescript
-// Numbers formatted according to locale
-gt.formatNum(1234.56); 
-// English: "1,234.56"
-// German: "1.234,56"
-// French: "1 234,56"
+    This will return a list of file references:
 
-// Currency formatting with proper symbols
-gt.formatCurrency(29.99, 'EUR'); 
-// English: "€29.99"
-// German: "29,99 €"
+    ```ts title="Output"
+    [
+      {
+        fileId: '41726368696562616c64204d6342616c64792074686973206973206a6f6b652e',
+        versionId: '427269616e204c6f75206d6f7265206c696b65204c696f6e2042726f20686121',
+        fileName: '/Users/demo/en.json',
+        fileFormat: 'JSON'
+      }
+    ]
+    ```
 
-// Dates formatted for the locale
-gt.formatDateTime(new Date()); 
-// English: "12/25/2023, 3:45:30 PM"
-// German: "25.12.2023, 15:45:30"
+  </Step>
+  <Step>
 
-// Relative time in natural language
-gt.formatRelativeTime(-1, 'day'); // "yesterday"
-gt.formatRelativeTime(2, 'hour'); // "in 2 hours"
+    ### 2. Enqueue the file for translation
 
-// Lists with proper conjunctions
-gt.formatList(['apple', 'banana', 'orange']); 
-// English: "apple, banana, and orange"
-// Spanish: "manzana, plátano y naranja"
-```
+    The next step is to select the target locales for the translation.
+    In this case, we will translate to Spanish.
 
-### Locale Utilities
+    ```typescript title="src/index.ts"
+    const fileUploadRef = {
+      fileId: uploadedFiles[0].fileId,
+      versionId: uploadedFiles[0].versionId,
+      fileName: uploadedFiles[0].fileName,
+      fileFormat: uploadedFiles[0].fileFormat,
+    };
+    const enqueueResult = await gt.enqueueFiles(
+      [fileUploadRef],
+      {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+    });
+    ```
+    This will return a list of file references:
 
-```typescript
-// Get detailed locale information
-const props = gt.getLocaleProperties('ja-JP');
-// Returns: { 
-//   language: 'ja', 
-//   region: 'JP', 
-//   name: 'Japanese (Japan)',
-//   direction: 'ltr',
-//   emoji: '🇯🇵'
-// }
+    ```ts title="Output"
+    {
+      translations: [],
+      data: {
+        '41726368696562616c64204d6342616c64792074686973206973206a6f6b652e': {
+          fileName: '/Users/demo/en.json',
+          versionId: '427269616e204c6f75206d6f7265206c696b65204c696f6e2042726f20686121'
+        }
+      },
+      locales: [ 'es' ],
+      message: 'Creating 1 translation(s).'
+    }
+    ```
 
-// Validate locale codes
-gt.isValidLocale('en'); // true - valid language code
-gt.isValidLocale('en-US'); // true - valid language-region code
-gt.isValidLocale('invalid'); // false - not a real locale
+  </Step>
+  <Step>
+    ### 3. Check on the file status
 
-// Compare locale relationships
-gt.isSameLanguage('en', 'en-GB'); // true - same language (English)
-gt.isSameDialect('en', 'en-GB'); // false - different regions
-gt.isSameLanguage('en', 'es'); // false - different languages
-```
+    Okay, now that the file is uploaded, when do we know it's ready for download?
+    We can use the `checkFileTranslations()` method to check on the file status.
+
+    ```typescript title="src/index.ts"
+    const status = await gt.checkFileTranslations(uploadedFiles);
+    ```
+
+    If the file is still being translated, there will be no corresponding translations in the output.
+
+    ```ts title="Output"
+    {
+      translations: [
+        {
+          locale: 'es',
+          metadata: {},
+          fileId: '41726368696562616c64204d6342616c64792074686973206973206a6f6b652e',
+          fileName: '/Users/demo/en.json',
+          versionId: '427269616e204c6f75206d6f7265206c696b65204c696f6e2042726f20686121',
+          id: 'skl44z0ieuvdcomw38zb5chv',
+          isReady: true,
+          downloadUrl: '/v2/project/translations/files/skl44z0ieuvdcomw38zb5chv/download'
+        }
+      ]
+    }
+    ```
+
+
+
+  </Step>
+  <Step>
+    ### 4. Download the translated file
+
+    Finally, we can download the translated file.
+
+    ```typescript title="src/index.ts"
+    const { translation } = await gt.downloadTranslatedFile('skl44z0ieuvdcomw38zb5chv');
+
+    ```
+
+    This will return the translated file content:
+
+    ```ts title="Output"
+    {
+      "hello": "Hola",
+      "world": "Mundo"
+    }
+    ```
+  </Step>
+</Steps>
