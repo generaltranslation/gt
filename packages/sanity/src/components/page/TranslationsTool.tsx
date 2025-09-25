@@ -51,7 +51,10 @@ const TranslationsToolContent: React.FC = () => {
   // Track which specific operation is running
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
 
-  const getOperationText = (operationName: string | null, isProcessing: boolean) => {
+  const getOperationText = (
+    operationName: string | null,
+    isProcessing: boolean
+  ) => {
     if (!isProcessing || !operationName) return operationName;
 
     switch (operationName) {
@@ -143,7 +146,10 @@ const TranslationsToolContent: React.FC = () => {
               <Button
                 style={{ width: '200px' }}
                 tone='critical'
-                text={getOperationText('Translate All', isBusy && currentOperation === 'Translate All')}
+                text={getOperationText(
+                  'Translate All',
+                  isBusy && currentOperation === 'Translate All'
+                )}
                 onClick={() => {
                   setCurrentOperation('Translate All');
                   setIsTranslateAllDialogOpen(true);
@@ -167,8 +173,15 @@ const TranslationsToolContent: React.FC = () => {
                         setCurrentOperation('Import All');
                         setIsImportAllDialogOpen(true);
                       }}
-                      text={getOperationText('Import All', isBusy && currentOperation === 'Import All')}
-                      icon={isBusy && currentOperation === 'Import All' ? null : DownloadIcon}
+                      text={getOperationText(
+                        'Import All',
+                        isBusy && currentOperation === 'Import All'
+                      )}
+                      icon={
+                        isBusy && currentOperation === 'Import All'
+                          ? null
+                          : DownloadIcon
+                      }
                       disabled={
                         isBusy || loadingDocuments || documents.length === 0
                       }
@@ -185,8 +198,15 @@ const TranslationsToolContent: React.FC = () => {
                         setCurrentOperation('Import Missing');
                         setIsImportMissingDialogOpen(true);
                       }}
-                      text={getOperationText('Import Missing', isBusy && currentOperation === 'Import Missing')}
-                      icon={isBusy && currentOperation === 'Import Missing' ? null : DownloadIcon}
+                      text={getOperationText(
+                        'Import Missing',
+                        isBusy && currentOperation === 'Import Missing'
+                      )}
+                      icon={
+                        isBusy && currentOperation === 'Import Missing'
+                          ? null
+                          : DownloadIcon
+                      }
                       disabled={
                         isBusy || loadingDocuments || documents.length === 0
                       }
@@ -203,8 +223,17 @@ const TranslationsToolContent: React.FC = () => {
                         setCurrentOperation('Patch Document References');
                         handlePatchDocumentReferences();
                       }}
-                      text={getOperationText('Patch Document References', isBusy && currentOperation === 'Patch Document References')}
-                      icon={isBusy && currentOperation === 'Patch Document References' ? null : LinkIcon}
+                      text={getOperationText(
+                        'Patch Document References',
+                        isBusy &&
+                          currentOperation === 'Patch Document References'
+                      )}
+                      icon={
+                        isBusy &&
+                        currentOperation === 'Patch Document References'
+                          ? null
+                          : LinkIcon
+                      }
                       disabled={
                         isBusy || loadingDocuments || documents.length === 0
                       }
@@ -221,8 +250,15 @@ const TranslationsToolContent: React.FC = () => {
                         setCurrentOperation('Publish Translations');
                         handlePublishAllTranslations();
                       }}
-                      text={getOperationText('Publish Translations', isBusy && currentOperation === 'Publish Translations')}
-                      icon={isBusy && currentOperation === 'Publish Translations' ? null : PublishIcon}
+                      text={getOperationText(
+                        'Publish Translations',
+                        isBusy && currentOperation === 'Publish Translations'
+                      )}
+                      icon={
+                        isBusy && currentOperation === 'Publish Translations'
+                          ? null
+                          : PublishIcon
+                      }
                       disabled={
                         isBusy || loadingDocuments || documents.length === 0
                       }

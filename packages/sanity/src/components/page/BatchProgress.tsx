@@ -17,7 +17,7 @@ export const BatchProgress: React.FC<BatchProgressProps> = ({
   if (!isActive) return null;
 
   return (
-    <Flex justify="center" align="center" gap={3}>
+    <Flex justify='center' align='center' gap={3}>
       <Spinner size={1} />
       <Text size={1}>
         {operationName} {current} of {total}...
