@@ -1,6 +1,6 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import use from '../utils/use';
-import { getLocale } from './getLocale';
+import { getLocale, useLocale } from './getLocale';
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale.
@@ -15,24 +15,19 @@ import { getLocale } from './getLocale';
  * const dir = await getLocaleDirection(); // Promise<'ltr' | 'rtl'>
  * const arabicDir = getLocaleDirection('ar'); // 'rtl'
  */
-export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
-// bridge overload so callers with `string | undefined` type compile
-export function getLocaleDirection(
-  locale: string | undefined
-): Promise<'ltr' | 'rtl'>;
-export function getLocaleDirection(
-  locale?: string
-): Promise<'ltr' | 'rtl'> | 'ltr' | 'rtl' {
+export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
+// Implementation
+export function getLocaleDirection(locale?: string) {
+  const gt = getI18NConfig().getGTClass();
   if (typeof locale === 'string') {
-    const gt = getI18NConfig().getGTClass();
-    return gt.getLocaleDirection(locale);
+    // Synchronous result when locale is given
+    return gt.getLocaleDirection(locale) as 'ltr' | 'rtl';
   }
-  return (async () => {
-    const resolvedLocale = await getLocale();
-    const gt = getI18NConfig().getGTClass();
-    return gt.getLocaleDirection(resolvedLocale);
-  })();
+  // Asynchronous result when locale is not given
+  return getLocale().then((resolvedLocale) =>
+    gt.getLocaleDirection(resolvedLocale)
+  ) as Promise<'ltr' | 'rtl'>;
 }
 
 /**
@@ -48,5 +43,7 @@ export function getLocaleDirection(
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
 export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
-  return use(getLocaleDirection(locale));
+  locale = locale || useLocale();
+  const gt = getI18NConfig().getGTClass();
+  return gt.getLocaleDirection(locale);
 }
