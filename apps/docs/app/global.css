@@ -49,21 +49,21 @@
 
 #nd-sidebar {
   --color-fd-accent-foreground: hsl(
-    270,
+    215,
     70%,
     55%
-  ); /* Lighter purple background */
-  --color-fd-primary: hsl(270, 70%, 55%); /* Lighter purple background */
-  --color-fd-accent: hsl(270, 70%, 95%); /* Same as primary for consistency */
+  ); /* Lighter blue background */
+  --color-fd-primary: hsl(215, 70%, 55%); /* Lighter blue background */
+  --color-fd-accent: hsl(215, 70%, 95%); /* Same as primary for consistency */
 }
 
 .dark #nd-sidebar {
-  --color-fd-primary: hsl(270, 70%, 85%); /* Light purple text for dark mode */
+  --color-fd-primary: hsl(215, 70%, 85%); /* Light blue text for dark mode */
   --color-fd-muted: hsl(0, 0%, 20%); /* Lightened from 16% to 20% */
   --color-fd-secondary: hsl(0, 0%, 22%); /* Lightened from 18% to 22% */
   --color-fd-muted-foreground: hsl(0, 0%, 75%); /* Slightly lighter text */
   --color-fd-accent: hsl(
-    270,
+    215,
     50%,
     25%
   ); /* Darkened from 35% to 25% for better contrast */

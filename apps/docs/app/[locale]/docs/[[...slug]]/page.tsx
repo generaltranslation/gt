@@ -132,6 +132,13 @@ export async function generateMetadata(props: {
       .replace(/\/+/g, '/') || // Replace multiple slashes with single slash
     '/docs'; // Default to /docs if path is empty
 
+  const section = slug && slug.length > 0 ? slug[0] : '';
+  const ogBase = 'https://generaltranslation.com/api/og';
+  const theme = 'dark';
+  const ogUrl = `${ogBase}?l=${encodeURIComponent(locale)}&t=${encodeURIComponent(
+    page.data.title ?? ''
+  )}&d=${encodeURIComponent(page.data.description ?? '')}&s=${encodeURIComponent(section)}&theme=${theme}`;
+
   return {
     title: page.data.title,
     description: page.data.description,
@@ -144,9 +151,14 @@ export async function generateMetadata(props: {
       title: page.data.title,
       description: page.data.description,
       url: `https://generaltranslation.com${cleanCanonicalPath}`,
-      images: ['https://generaltranslation.com/globe.png'],
+      images: [ogUrl],
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.data.title,
+      description: page.data.description ?? undefined,
+      images: [ogUrl],
     },
   };
 }
-
-// export const dynamic = 'force-dynamic'; // Always render on server at request time
