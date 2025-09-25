@@ -13,7 +13,7 @@ vi.mock('@portabletext/block-tools', async () => {
   >('@portabletext/block-tools');
   return {
     ...originalModule,
-    //not ideal but vi.mock('@sanity/block-tools/src/util/randomKey.ts' is not working
+    //not ideal but vi.mock('@portabletext/block-tools/src/util/randomKey.ts' is not working
     htmlToBlocks: (html: string, blockContentType: any, options: any) => {
       const blocks = originalModule.htmlToBlocks(
         html,
