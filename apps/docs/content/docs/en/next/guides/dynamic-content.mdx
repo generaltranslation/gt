@@ -1,144 +1,155 @@
 ---
-title: Translating Dynamic Content
-description: How to translate dynamic content in Next.js server components
+title: Dynamic Content Translation
+description: How to translate runtime content using server-side translation APIs
 ---
 
-## Overview
-
-This guide will walk you through how to use the [`<Tx>` component](/docs/next/api/components/tx) and the [`tx()`](/docs/next/api/strings/tx) function to translate dynamic content in Next.js server components.
-
-By the end of this guide, you will learn the proper syntax for using these components and functions.
-
-We will cover the following:
-
-<Steps>
-  <Step>
-    What is dynamic content?
-  </Step>
-  <Step>
-    When should you translate dynamic content?
-  </Step>
-  <Step>
-    How to use the `<Tx>` component
-  </Step>
-  <Step>
-    How to use the `tx()` function
-  </Step>
-  <Step>
-    Examples
-  </Step>
-  <Step>
-    Production considerations
-  </Step>
-  <Step>
-    Common pitfalls
-  </Step>
-</Steps>
-
-## What is dynamic content?
-
-Dynamic content is content that is not known at build time.
-
-These could include things like variables, user names, input fields, etc.
-
-For example, the following is dynamic content:
-
-```jsx
-const username = 'John Doe';
-<p>Your username is {username}</p>
-```
-
-## When should you translate dynamic content?
-
-In most cases, you can use [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches) to handle dynamic content.
-
-These components are designed to handle dynamic content with the `<T>` component, and thus we recommend using them whenever possible.
-
-However, there are some cases where you need to translate dynamic content on-demand.
-
-For example, if you have a chat message that is created by a user, and want to display it in a different language, you can use `gt-next` to translate it on-demand.
-
-## How to use the `<Tx>` component
+Dynamic content translation handles text that isn't available at build time - user-generated content, API responses, or database records. Use [`<Tx>`](/docs/next/api/components/tx) for JSX content and [`tx()`](/docs/next/api/strings/tx) for plain strings, both server-side only for security.
 
 <Callout type="warn">
-  The `<Tx>` component is only available in Next.js server components. 
-  This is because it hits the General Translation API using an API key, which is only available on the server for security reasons.
+  **Use sparingly:** Dynamic translation consumes API quota and adds latency. Prefer [`<T>` components](/docs/next/guides/jsx) with [variable components](/docs/next/guides/variables) whenever possible.
 </Callout>
 
-```jsx copy
+## When to Use Dynamic Translation
+
+Dynamic translation is for content that truly cannot be known at build time:
+
+### Appropriate Use Cases
+- **User-generated content**: Chat messages, reviews, social posts
+- **External API responses**: Third-party data, RSS feeds, external services  
+- **Database records**: Dynamic CMS content, user profiles from APIs
+- **Real-time data**: Live notifications, status messages
+
+### Avoid for These Cases
+- User names, account numbers → Use [`<Var>`](/docs/next/api/components/var)
+- Conditional messages → Use [branch components](/docs/next/guides/branches)
+- Form validation → Use [string translation](/docs/next/guides/strings)
+- Static configuration → Use [shared strings](/docs/next/guides/shared-strings)
+
+## Quick Start
+
+### JSX Content with `<Tx>`
+```jsx
 import { Tx } from 'gt-next';
 
-const message = 'Hello, world!';
-<Tx>{message}</Tx>
+async function UserPost({ postContent }) {
+  return (
+    <article>
+      <Tx>{postContent}</Tx>
+    </article>
+  );
+}
 ```
 
-Simply wrap whatever JSX content you want to translate with the `<Tx>` component.
-
-The `<Tx>` component will then translate the content on-demand, and render the translated content asynchronously.
-
-See the [API reference](/docs/next/api/components/tx) for more information.
-
-## How to use the `tx()` function
-
-<Callout type="warn">
-  The `tx()` function is only available in Next.js server components.
-  This is because it hits the General Translation API using an API key, which is only available on the server for security reasons.
-</Callout>
-
-The `tx()` function is a server-side function that can be used to translate strings dynamically.
-
-```jsx copy
+### Plain Strings with `tx()`
+```jsx
 import { tx } from 'gt-next/server';
 
-const message = 'Hello, world!';
-const translatedMessage = await tx(message);
+async function NotificationBanner({ message }) {
+  const translatedMessage = await tx(message);
+  
+  return (
+    <div className="banner">
+      {translatedMessage}
+    </div>
+  );
+}
 ```
 
-The `tx()` function returns a promise that resolves to the translated string.
+## Server-Side Only
 
-See the [API reference](/docs/next/api/strings/tx) for more information.
+Both [`<Tx>`](/docs/next/api/components/tx) and [`tx()`](/docs/next/api/strings/tx) are server-side only for security:
+
+```jsx
+// ✅ Server component
+async function ServerComponent() {
+  const translated = await tx(dynamicContent);
+  return <div>{translated}</div>;
+}
+
+// ❌ Client component - won't work
+'use client';
+function ClientComponent() {
+  const translated = await tx(dynamicContent); // Error!
+  return <div>{translated}</div>;
+}
+```
 
 ## Examples
 
-### Rendering dynamic content
-
-```jsx copy
+### User-Generated Content
+```jsx
 import { Tx } from 'gt-next';
 
-export default function ChatMessage({ message }: { message: ReactNode }) {
+async function ChatMessage({ message }) {
   return (
-    <Tx>{message}</Tx>
+    <div className="chat-message">
+      <div className="author">{message.author}</div>
+      <Tx>{message.content}</Tx>
+    </div>
   );
 }
 ```
 
-### Translating a string
-
-```jsx copy
+### External API Data
+```jsx
 import { tx } from 'gt-next/server';
 
-export default async function ChatMessage({ message }: { message: string }) {
-  const translatedMessage = await tx(message);
+async function NewsArticle({ article }) {
+  const translatedTitle = await tx(article.title);
+  
   return (
-    <div>{translatedMessage}</div>
+    <article>
+      <h1>{translatedTitle}</h1>
+      <p>{article.publishedAt}</p>
+    </article>
   );
 }
 ```
 
-## Production considerations
+### Mixed Content
+```jsx
+import { T, Tx, Var } from 'gt-next';
 
-The behavior of the `<Tx>` component and the `tx()` function is the same in development as it is in production.
+async function ProductReview({ review }) {
+  return (
+    <div>
+      {/* Static content with variables */}
+      <T>
+        <p><Var>{review.author}</Var> rated this <Var>{review.rating}</Var> stars</p>
+      </T>
+      
+      {/* Dynamic user content */}
+      <Tx>{review.content}</Tx>
+    </div>
+  );
+}
+```
 
-Regardless of the type of API key you use, the behavior is the same.
-In both cases, translations are completed live, on-demand.
+## Common Issues
 
-## Common pitfalls
+### Avoid Overuse
+Don't use dynamic translation for content that can use standard components:
 
-### Unnecessary use of `<Tx>` and `tx()`
+```jsx
+// ❌ Unnecessary
+const content = `Hello, ${userName}!`;
+return <Tx>{content}</Tx>;
 
-If you are using the `<Tx>` component or the `tx()` function, you should only do so if you are truly unable to use
-[Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches) with the `<T>` component.
+// ✅ Use variable components instead
+return (
+  <T>
+    <p>Hello, <Var>{userName}</Var>!</p>
+  </T>
+);
+```
 
-Using `<Tx>` and `tx()` when you don't need to is a waste of resources, and will quickly use up your API quota.
+### API Quota Impact
+Dynamic translation consumes API quota on every request. Use caching and error handling in production applications.
 
-Additionally, your content will be rendered slower, as the translations are completed on-demand.
+## Next Steps
+
+- [Local Translation Guide](/docs/next/guides/local-tx) - Handle translations without API calls
+- [Middleware Guide](/docs/next/guides/middleware) - Language detection and routing
+- API References:
+  - [`<Tx>` Component](/docs/next/api/components/tx)
+  - [`tx()` Function](/docs/next/api/strings/tx)
