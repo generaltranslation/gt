@@ -24,14 +24,14 @@ import {
   useMessages,
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
-
+import { LocaleProperties } from 'generaltranslation/types';
 export { LocaleSelector, RegionSelector } from './index.client';
 
 export function useGTClass() {
   return getI18NConfig().getGTClass();
 }
 
-export function useLocaleProperties(locale: string) {
+export function useLocaleProperties(locale: string): LocaleProperties {
   return (useGTClass() as GT).getLocaleProperties(locale);
 }
 
