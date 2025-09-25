@@ -1,7 +1,7 @@
 {
   "title": "General Translation",
-  "description": "Docs",
-  "icon": "House",
+  "description": "Platform",
+  "icon": "Brain",
   "root": true,
   "pages": [
     "---Getting Started---",
