@@ -6,7 +6,7 @@ import { DocsLayout } from 'fumadocs-ui/layouts/notebook';
 import type { ReactNode } from 'react';
 import { baseOptions } from '@/app/[locale]/layout.config';
 import { source } from '@/lib/source';
-import { GTProvider } from 'gt-next';
+import { GTProvider, T } from 'gt-next';
 import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
@@ -22,9 +22,10 @@ const inter = Inter({
 export async function generateMetadata(): Promise<Metadata> {
   const gt = await getGT();
   return {
-    title: 'Docs — General Translation',
-    description:
-      'Documentation for the General Translation internationalization platform',
+    title: gt('Docs — General Translation'),
+    description: gt(
+      'Documentation for the General Translation internationalization platform'
+    ),
     icons: {
       icon: [
         {
@@ -40,15 +41,15 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
     },
     keywords: [
-      'translation',
-      'localization',
-      'l10n',
-      'i18n',
-      'internationalization',
-      'automate',
-      'next.js',
-      'nextjs',
-      'react',
+      gt('translation'),
+      gt('localization'),
+      gt('internationalization'),
+      gt('l10n', { context: 'localization' }),
+      gt('i18n', { context: 'internationalization' }),
+      gt('automate'),
+      gt('next.js'),
+      gt('nextjs'),
+      gt('react'),
     ],
   };
 }
@@ -114,18 +115,20 @@ export default async function Layout({ children }: { children: ReactNode }) {
                     },
                   },
                   banner: (
-                    <a
-                      href="https://github.com/generaltranslation/gt"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-100/20">
-                        <h3 className="font-semibold text-sm flex items-center gap-2">
-                          <SiGithub />
-                          Star on GitHub
-                        </h3>
-                      </div>
-                    </a>
+                    <T>
+                      <a
+                        href="https://github.com/generaltranslation/gt"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-100/20">
+                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                            <SiGithub />
+                            Star on GitHub
+                          </h3>
+                        </div>
+                      </a>
+                    </T>
                   ),
                 }}
                 tree={source.pageTree[locale]}
