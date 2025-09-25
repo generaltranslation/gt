@@ -1,460 +1,406 @@
 ---
 title: Translating Shared Strings
-description: How to internationalize shared strings
+description: How to internationalize strings used across multiple components and files
 ---
 
-## Overview
+Shared strings are text values used in multiple places throughout your application - like navigation labels, form messages, or configuration data. Instead of duplicating translation logic everywhere, use [`msg()`](/docs/next/api/strings/msg) to mark strings for translation and [`useMessages()`](/docs/next/api/dictionary/useMessages) to decode them.
 
-Shared strings are strings or constants that are used in multiple places in your app.
+## The Problem with Shared Content
 
-For example, you may have a string that is used in multiple components, or a constant that is used in multiple files.
+Consider this navigation configuration used across your app:
 
-In traditional i18n libraries, you would need to create a dictionary for each shared string.
-
-This guide will walk you through how to easily internationalize shared strings in your Next.js app using the [`msg()`](/docs/next/api/strings/msg) function & [`useMessages()`](/docs/next/api/dictionary/useMessages) hook.
-
-We will cover the following:
-<Steps>
-  <Step>
-    When to use the `msg()` function
-  </Step>
-  <Step>
-    How to use the `msg()` function and `useMessages()` hook
-  </Step>
-  <Step>
-    Using variables
-  </Step>
-  <Step>
-    Examples
-  </Step>
-  <Step>
-    Common pitfalls
-  </Step>
-</Steps>
-
---- 
-
-## When to use the `msg()` function
-
-The `msg()` function is a simple function that is used to mark strings for translation.
-
-Let's look at an example of a shared object containing strings:
-
-```tsx title="src/navData.ts"
-export const navData = {
-  home: {
+```tsx
+// navData.ts
+export const navData = [
+  {
     label: 'Home',
     description: 'The home page',
-    icon: 'home',
-    href: '/',
+    href: '/'
   },
-  about: {
-    label: 'About',
+  {
+    label: 'About', 
     description: 'Information about the company',
-    icon: 'info',
-    href: '/about',
-  },
-}
+    href: '/about'
+  }
+];
 ```
 
-Normally, to internationalize this object, you would need to either create a dictionary entry for each string, or refactor your object into a function that returns the data with translations.
+To internationalize this, you'd typically need to:
+1. Convert it to a function that accepts a translation function
+2. Update every usage to call the function with `t`
+3. Manage the complexity across your codebase
 
-For example, you might have:
-```tsx title="src/navData.ts"
-export const getNavData = (t: (content: string) => string) => ({
-  home: {
-    label: t('Home'),
-    description: t('The home page'),
-    icon: 'home',
-    href: '/',
-  },
-  about: {
-    label: t('About'),
-    description: t('Information about the company'),
-    icon: 'info',
-    href: '/about',
-  },
-})
-```
-Everywhere else in your app where `navData` was imported, you would need to call `getNavData(t)` instead.
+This creates maintenance overhead and makes your code harder to read. The [`msg()`](/docs/next/api/strings/msg) function solves this by letting you mark strings for translation in-place, then decode them when needed.
 
-```tsx title="src/app/page.tsx"
-import { getNavData } from '@/navData';
+## Quick Start
 
-export default function Home() {
-  const t = useGT();
-  const navData = getNavData(t);
-  return <div>{navData.home.label}</div>;
-}
-```
+Use [`msg()`](/docs/next/api/strings/msg) to mark strings and [`useMessages()`](/docs/next/api/dictionary/useMessages) to decode them:
 
-This can lead to a lot of work. The solution is to use the `msg()` function.
-
----
-
-## How to use the `msg()` function
-
-To use the `msg()` function, pass the string directly to the function.
-The function returns a special, encoded string that can be used for translations.
-
-```tsx title="src/navData.ts"
+```tsx
+// navData.ts - Mark strings for translation
 import { msg } from 'gt-next';
 
 export const navData = [
   {
-    label: msg('Home'), // Output has type `string`
-    description: msg('The home page'),
-    icon: 'home',
-    href: '/',
+    label: msg('Home'),
+    description: msg('The home page'), 
+    href: '/'
   },
   {
     label: msg('About'),
     description: msg('Information about the company'),
-    icon: 'info',
-    href: '/about',
-  },
-]
+    href: '/about'
+  }
+];
 ```
 
-Then, simply pass the encoded string to the `useMessages()` hook.
-
-```tsx title="src/app/page.tsx"
+```tsx
+// Component usage - Decode marked strings
 import { useMessages } from 'gt-next';
-import { navData } from '@/navData';
+import { navData } from './navData';
 
-export default function Home() {
+function Navigation() {
   const m = useMessages();
+  
   return (
-    <div>
+    <nav>
       {navData.map((item) => (
-        <div key={item.label}>{m(item.label)}</div>
+        <a key={item.href} href={item.href} title={m(item.description)}>
+          {m(item.label)}
+        </a>
       ))}
-    </div>
+    </nav>
   );
 }
 ```
 
-If you are in an async component, use the `getMessages()` function instead of the `useMessages()` hook.
+## How Shared Strings Work
 
-```tsx title="src/app/page.tsx"
-import { getMessages } from 'gt-next/server';
+The shared string system works in two phases:
 
-export default async function Home() {
-  const m = await getMessages();
-  return (
-    <div>
-      {navData.map((item) => (
-        <div key={item.label}>{m(item.label)}</div>
-      ))}
-    </div>
-  );
-}
+1. **Mark Phase**: [`msg()`](/docs/next/api/strings/msg) encodes strings with translation metadata
+2. **Decode Phase**: [`useMessages()`](/docs/next/api/dictionary/useMessages) or [`getMessages()`](/docs/next/api/dictionary/getMessages) decode and translate the strings
+
+```tsx
+// msg() encodes the string with metadata
+const encoded = msg('Hello, world!');
+console.log(encoded); // "Hello, world!:eyIkX2hhc2giOiJkMjA3MDliZGExNjNlZmM2In0="
+
+// useMessages() decodes and translates
+const m = useMessages();
+const translated = m(encoded); // "Hello, world!" in user's language
 ```
 
-<Callout type='warn'>
-  Beware! The string returned by the `msg()` function is encoded and will be different from the original input string.
-  If want to get back the original string, you need to decode it with [`decodeMsg()`](/docs/next/api/strings/msg#decodemsg)
+<Callout type="warn">
+  Encoded strings from [`msg()`](/docs/next/api/strings/msg) cannot be used directly - they must be decoded with [`useMessages()`](/docs/next/api/dictionary/useMessages) or [`getMessages()`](/docs/next/api/dictionary/getMessages).
 </Callout>
 
----
-## Using variables
+## Client vs Server Usage
 
-If your string is a template string and contains variables, you can pass the variables to the `msg()` function.
+### Client Components
+Use [`useMessages()`](/docs/next/api/dictionary/useMessages) hook:
 
-Simply change the `${}` notation in the template string to `{variable}`, and pass an object as the second argument to `msg()` with the variable name as the key.
+```tsx
+import { useMessages } from 'gt-next';
 
-```tsx title="src/navData.ts"
-const items = 100;
-export const pricing = [
-  {
-    name: 'Basic',
-    price: 100,
-    description: `The basic plan includes ${items} items`
-  },
-]
+function MyComponent() {
+  const m = useMessages();
+  return <div>{m(sharedString)}</div>;
+}
 ```
 
-Should be turned into:
+### Server Components  
+Use [`getMessages()`](/docs/next/api/dictionary/getMessages) function:
 
-```tsx title="src/navData.ts"
-import { msg } from 'gt-next';
+```tsx
+import { getMessages } from 'gt-next/server';
 
+async function MyServerComponent() {
+  const m = await getMessages();
+  return <div>{m(sharedString)}</div>;
+}
+```
+
+## Using Variables
+
+For strings with dynamic content, use placeholders and pass variables:
+
+```tsx
+// Mark string with variables
 const items = 100;
 export const pricing = [
   {
     name: 'Basic',
     price: 100,
     description: msg('The basic plan includes {items} items', { items })
-  },
-]
-```
-
-The `{items}` placeholder will be replaced with the value of the `items` variable.
-
-This allows you to display dynamic values in your translations.
-
-For more information on the API, see the [API reference](/docs/next/api/strings/msg).
-
-`gt-next` supports ICU message format, which allows you to also format your variables.
-
-```jsx copy
-const price = 100;
-msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
-```
-
-<Callout>
-  ICU message format is a powerful way to format your variables.
-  For more information, see the [ICU message format documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
-</Callout>
-
-
----
-
-## Examples
-
-1. Translating a shared global object
-
-<Tabs items={['Result', 'Original']}>
-  <Tab value="Result">
-```jsx copy title="src/llms.ts"
-import { msg } from 'gt-next';
-
-export const llmData = [
-  {
-    name: 'GPT-4.1',
-    id: 'gpt-4.1',
-    description: msg('GPT-4.1 is a large language model developed by OpenAI'),
-  },
-  {
-    name: 'Claude 3.7 Sonnet',
-    id: 'claude-3-7-sonnet',
-    description: msg('Claude 3.7 Sonnet is a large language model developed by Anthropic'),
-  },
+  }
 ];
 ```
 
-```jsx copy title="src/app/page.tsx"
-import { llmData } from '@/llms';
-import { useMessages } from 'gt-next';
-
-export default function MyComponent() {
+```tsx
+// Use in component
+function PricingCard() {
   const m = useMessages();
+  
   return (
     <div>
-      {llmData.map((llm) => (
-        <div key={llm.id}>
-          <h1>{llm.name}</h1>
-          <p>{m(llm.description)}</p>
-        </div>
-      ))}
+      <h3>{pricing[0].name}</h3>
+      <p>{m(pricing[0].description)}</p>
     </div>
-  )
-}
-```
-  </Tab>
-
-<Tab value="Original">
-```jsx copy title="src/llms.ts"
-export const llms = [
-  {
-    name: 'GPT-4.1',
-    id: 'gpt-4.1',
-    description: 'GPT-4.1 is a large language model developed by OpenAI',
-  },
-  {
-    name: 'Claude 3.7 Sonnet',
-    id: 'claude-3-7-sonnet',
-    description: 'Claude 3.7 Sonnet is a large language model developed by Anthropic',
-  },
-]
-```
-
-```jsx copy title="src/app/page.tsx"
-import { llms } from '@/llms';
-
-export default function MyComponent() {
-  return (
-    <div>
-      {llms.map((llm) => (
-        <div key={llm.id}>
-          <h1>{llm.name}</h1>
-          <p>{llm.description}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-```
-</Tab>
-</Tabs>
-
-2. Translating a function's return value
-
-<Tabs items={['Result', 'Original']}>
-  <Tab value="Result">
-```jsx copy title="src/llms.ts"
-import { msg } from 'gt-next';
-
-function mockData() {
-  return [
-    {
-      name: 'GPT-4.1',
-      id: 'gpt-4.1',
-      company: 'OpenAI',
-    },
-    {
-      name: 'Claude 3.7 Sonnet',
-      id: 'claude-3-7-sonnet',
-      company: 'Anthropic',
-    },
-  ];
-}
-
-export function getData() {
-  const data = mockData();
-  const modifiedData = data.map((item) => ({
-    ...item,
-    description: msg('{name} is a large language model developed by {company}', {
-      name: item.name,
-      company: item.company,
-    }),
-  }));
-  return modifiedData;
+  );
 }
 ```
 
-```jsx copy title="src/app/page.tsx"
-import { getData } from '@/llms';
-import { useMessages } from 'gt-next';
+### ICU Message Format
+For advanced formatting, use ICU syntax:
 
-export default function MyComponent() {
-  const m = useMessages();
-  const data = getData();
-  return (
-    <div>
-      {data.map((item) => (
-        <div key={item.id}>
-          <h1>{item.name}</h1>
-          <p>{m(item.description)}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-```
-  </Tab>
-
-<Tab value="Original">
-```jsx copy title="src/llms.ts"
-import { msg } from 'gt-next';
-
-function mockData() {
-  return [
-    {
-      name: 'GPT-4.1',
-      id: 'gpt-4.1',
-      company: 'OpenAI',
-    },
-    {
-      name: 'Claude 3.7 Sonnet',
-      id: 'claude-3-7-sonnet',
-      company: 'Anthropic',
-    },
-  ];
-}
-
-export function getData() {
-  const data = mockData();
-  const modifiedData = data.map((item) => ({
-    ...item,
-    description: `${item.name} is a large language model developed by ${item.company}`,
-  }));
-  return modifiedData;
-}
+```tsx
+const count = 10;
+const message = msg('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count });
 ```
 
-```jsx copy title="src/app/page.tsx"
-import { getData } from '@/llms';
-
-export default function MyComponent() {
-  const data = getData();
-  return (
-    <div>
-      {data.map((item) => (
-        <div key={item.id}>
-          <h1>{item.name}</h1>
-          <p>{item.description}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-```
-</Tab>
-</Tabs>
-
----
-
-## Common Pitfalls
-
-### Forgetting to call `useMessages()`
-
-`msg()` encodes the input string, so you cannot use it directly in JSX or elsewhere. 
-
-If you attempt to use the encoded string directly, you will get a weird string that looks something like this:
-
-```jsx
-const encodedString = msg('Hello, world!');
-console.log(encodedString); // "Hello, world!:eyIkX2hhc2giOiJkMjA3MDliZGExNjNlZmM2In0="
-```
-
-To fix this, you need to use the `useMessages()` hook to get the translated string.
-
-```jsx
-import { useMessages } from 'gt-next';
-
-const encodedString = msg('Hello, world!');
-
-export default function MyComponent() {
-  const m = useMessages();
-  return <div>{m(encodedString)}</div>; // 'Hello, world!' in the current language
-}
-```
-
-Alternatively, if you want to recover the original string, you can use the `decodeMsg()` function.
-
-```jsx
-import { decodeMsg } from 'gt-next';
-
-const encodedString = msg('Hello, world!');
-const decodedString = decodeMsg(encodedString);
-console.log(decodedString); // "Hello, world!"
-```
-
-### Wrapping dynamic content in `msg()`
-
-All strings must be known at build time. This means that you cannot wrap dynamic content in `msg()`.
-
-For example, this is invalid:
-
-```jsx
-const dynamicContent = msg(`Hello, ${name}`);
-```
-
-To fix this, provide the dynamic content as a variable, and then pass it to `msg()`.
-
-```jsx
-const dynamicContent = msg('Hello, {name}', { name });
-```
-
-<Callout type="warn">
-  The CLI tool will warn you if you try to wrap dynamic content with `msg()`.
+<Callout>
+  Learn more about ICU Message Format in the [Unicode documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
 </Callout>
 
+## Examples
 
----
+### Navigation Configuration
+```tsx
+// config/navigation.ts
+import { msg } from 'gt-next';
+
+export const mainNav = [
+  {
+    label: msg('Home'),
+    href: '/',
+    icon: 'home'
+  },
+  {
+    label: msg('Products'),
+    href: '/products', 
+    icon: 'package'
+  },
+  {
+    label: msg('About Us'),
+    href: '/about',
+    icon: 'info'
+  }
+];
+
+export const footerLinks = [
+  {
+    title: msg('Company'),
+    links: [
+      { label: msg('About'), href: '/about' },
+      { label: msg('Careers'), href: '/careers' },
+      { label: msg('Contact'), href: '/contact' }
+    ]
+  },
+  {
+    title: msg('Support'), 
+    links: [
+      { label: msg('Help Center'), href: '/help' },
+      { label: msg('Documentation'), href: '/docs' },
+      { label: msg('API Reference'), href: '/api' }
+    ]
+  }
+];
+```
+
+```tsx
+// components/Navigation.tsx
+import { useMessages } from 'gt-next';
+import { mainNav } from '../config/navigation';
+
+function Navigation() {
+  const m = useMessages();
+  
+  return (
+    <nav>
+      {mainNav.map((item) => (
+        <a key={item.href} href={item.href}>
+          <Icon name={item.icon} />
+          {m(item.label)}
+        </a>
+      ))}
+    </nav>
+  );
+}
+```
+
+### Form Configuration
+```tsx
+// config/forms.ts
+import { msg } from 'gt-next';
+
+export const formMessages = {
+  placeholders: {
+    email: msg('Enter your email address'),
+    password: msg('Enter your password'),
+    message: msg('Type your message here...')
+  },
+  actions: {
+    send: msg('Send Message'),
+    save: msg('Save Changes'),
+    cancel: msg('Cancel')
+  },
+  validation: {
+    required: msg('This field is required'),
+    email: msg('Please enter a valid email address'),
+    minLength: msg('Must be at least {min} characters', { min: 8 }),
+    maxLength: msg('Cannot exceed {max} characters', { max: 100 })
+  },
+  success: {
+    saved: msg('Changes saved successfully'),
+    sent: msg('Message sent successfully'),
+    updated: msg('Profile updated')
+  },
+  errors: {
+    network: msg('Network error - please try again'),
+    server: msg('Server error - please contact support'),
+    timeout: msg('Request timed out - please try again')
+  }
+};
+```
+
+```tsx
+// components/ContactForm.tsx
+import { useMessages } from 'gt-next';
+import { formMessages } from '../config/forms';
+
+function ContactForm() {
+  const m = useMessages();
+  const [errors, setErrors] = useState({});
+  
+  return (
+    <form>
+      <input 
+        type="email"
+        placeholder={m(formMessages.placeholders.email)}
+        required
+      />
+      {errors.email && <span>{m(formMessages.validation.email)}</span>}
+      
+      <button type="submit">
+        {m(formMessages.actions.send)}
+      </button>
+    </form>
+  );
+}
+```
+
+### Dynamic Content Generation
+```tsx
+// utils/productData.ts
+import { msg } from 'gt-next';
+
+function mockProducts() {
+  return [
+    { name: 'iPhone 15', company: 'Apple', category: 'Electronics' },
+    { name: 'Galaxy S24', company: 'Samsung', category: 'Electronics' }
+  ];
+}
+
+export function getProductData() {
+  const products = mockProducts();
+  
+  return products.map(product => ({
+    ...product,
+    description: msg('{name} is a {category} product by {company}', {
+      name: product.name,
+      category: product.category,
+      company: product.company
+    })
+  }));
+}
+```
+
+```tsx
+// components/ProductList.tsx
+import { useMessages } from 'gt-next';
+import { getProductData } from '../utils/productData';
+
+function ProductList() {
+  const m = useMessages();
+  const products = getProductData();
+  
+  return (
+    <div>
+      {products.map(product => (
+        <div key={product.name}>
+          <h3>{product.name}</h3>
+          <p>{m(product.description)}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Common Issues
+
+### Using Encoded Strings Directly
+Never use the output of [`msg()`](/docs/next/api/strings/msg) directly:
+
+```tsx
+// ❌ Wrong - encoded string used directly
+const encoded = msg('Hello, world!');
+return <div>{encoded}</div>; // Shows encoded string, not translation
+
+// ✅ Correct - decode the string first  
+const encoded = msg('Hello, world!');
+const m = useMessages();
+return <div>{m(encoded)}</div>; // Shows proper translation
+```
+
+### Dynamic Content in msg()
+Strings must be known at build time:
+
+```tsx
+// ❌ Wrong - dynamic template literal
+const name = 'John';
+const message = msg(`Hello, ${name}`); // Build time error
+
+// ✅ Correct - use variables  
+const name = 'John';
+const message = msg('Hello, {name}', { name });
+```
+
+### Forgetting to Decode
+Every [`msg()`](/docs/next/api/strings/msg) string needs to be decoded:
+
+```tsx
+// ❌ Missing decoding
+const config = {
+  title: msg('Dashboard'),
+  subtitle: msg('Welcome back')
+};
+
+// Later in component - forgot to decode
+return <h1>{config.title}</h1>; // Shows encoded string
+
+// ✅ Correct - decode when using
+const m = useMessages();
+return <h1>{m(config.title)}</h1>; // Shows translated title
+```
+
+### Recovery with decodeMsg()
+To get the original string without translation, use [`decodeMsg()`](/docs/next/api/strings/msg#decodemsg):
+
+```tsx
+import { decodeMsg } from 'gt-next';
+
+const encoded = msg('Hello, world!');
+const original = decodeMsg(encoded); // "Hello, world!" (original)
+const translated = m(encoded); // "Hello, world!" (in user's language)
+```
 
 ## Next Steps
- * See the [API reference for `msg()`](/docs/next/api/strings/msg).
- * See the [API reference for `useMessages()`](/docs/next/api/dictionary/useMessages).
- * Learn more about the [`<T>` component](/docs/next/guides/jsx).
+
+- [Dictionaries Guide](/docs/next/guides/dictionaries) - Organize translations with structured data
+- [Languages Guide](/docs/next/guides/languages) - Configure supported languages
+- API References:
+  - [`msg()` Function](/docs/next/api/strings/msg)
+  - [`useMessages()` Hook](/docs/next/api/dictionary/useMessages)
+  - [`getMessages()` Function](/docs/next/api/dictionary/getMessages)
