@@ -226,13 +226,21 @@ export default async function loadDictionary(locale: string) {
 ```
 
 This loads JSON translation files from your `public/locales/` directory:
-```
-public/
-└── locales/
-    ├── es.json
-    ├── fr.json
-    └── de.json
-```
+
+<Files>
+  <Folder name="my-app" defaultOpen={true}>
+    <Folder name="public" defaultOpen={true}>
+      <Folder name="locales" defaultOpen={true}>
+        <File name="es.json" />
+        <File name="fr.json" />
+        <File name="de.json" />
+      </Folder>
+    </Folder>
+    <Folder name="src">
+      <File name="loadDictionary.ts" />
+    </Folder>
+  </Folder>
+</Files>
 
 <Callout>
   **Choose the right approach:** Use `loadTranslations` for new projects with automatic translation, or `loadDictionary` when migrating existing translation files.
