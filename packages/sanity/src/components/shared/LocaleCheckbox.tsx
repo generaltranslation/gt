@@ -13,7 +13,11 @@ type LocaleCheckboxProps = {
   checked: boolean;
 };
 
-export const LocaleCheckbox = ({ locale, toggle, checked }: LocaleCheckboxProps) => {
+export const LocaleCheckbox = ({
+  locale,
+  toggle,
+  checked,
+}: LocaleCheckboxProps) => {
   const onClick = useCallback(
     () => toggle(locale.localeId, !checked),
     [locale.localeId, toggle, checked]

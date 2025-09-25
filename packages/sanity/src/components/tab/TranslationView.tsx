@@ -5,12 +5,22 @@
  */
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
-import { Stack, Text, Card, Button, Grid, Box, Flex, Switch } from '@sanity/ui';
+import {
+  Stack,
+  Text,
+  Card,
+  Button,
+  Grid,
+  Box,
+  Flex,
+  Switch,
+  Tooltip,
+} from '@sanity/ui';
 import { pluginConfig } from '../../adapter/core';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
-import { DownloadIcon } from '@sanity/icons';
+import { DownloadIcon, LinkIcon } from '@sanity/icons';
 
 export const TranslationView = () => {
   const {
@@ -24,9 +34,10 @@ export const TranslationView = () => {
     isRefreshing,
     importedTranslations,
     setLocales,
+    handlePatchDocumentReferences,
   } = useTranslations();
 
-  const [autoImport, setAutoImport] = useState(true);
+  const [autoImport, setAutoImport] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
@@ -137,7 +148,7 @@ export const TranslationView = () => {
     const interval = setInterval(async () => {
       await handleRefreshAll();
       await checkAndImportCompletedTranslations();
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [
@@ -147,6 +158,14 @@ export const TranslationView = () => {
     handleRefreshAll,
     checkAndImportCompletedTranslations,
   ]);
+
+  useEffect(() => {
+    const initialRefresh = async () => {
+      await handleRefreshAll();
+      await checkAndImportCompletedTranslations();
+    };
+    initialRefresh();
+  }, []);
 
   // Locale toggle functionality
   const toggleLocale = useCallback(
@@ -233,7 +252,10 @@ export const TranslationView = () => {
         </Stack>
 
         <Button
-          onClick={handleTranslateAll}
+          onClick={() => {
+            setAutoImport(true);
+            handleTranslateAll();
+          }}
           disabled={isBusy || !availableLocales.length}
           tone='positive'
           text={isBusy ? 'Creating translations...' : 'Generate Translations'}
@@ -332,6 +354,22 @@ export const TranslationView = () => {
                   disabled={isImporting}
                 />
               </Flex>
+            </Flex>
+
+            <Flex justify='flex-start'>
+              <Tooltip
+                placement='top'
+                content={`Replaces references to ${pluginConfig.getSourceLocale()} documents in this document with the corresponding translated document reference`}
+              >
+                <Button
+                  mode='ghost'
+                  tone='caution'
+                  onClick={handlePatchDocumentReferences}
+                  text={isBusy ? 'Patching...' : 'Patch Document References'}
+                  icon={isBusy ? null : LinkIcon}
+                  disabled={isBusy}
+                />
+              </Tooltip>
             </Flex>
           </Stack>
         </Stack>

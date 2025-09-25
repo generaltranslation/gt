@@ -180,7 +180,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setLoadingDocuments(false);
     }
-  }, [client, toast, singleDocument]);
+  }, [client, singleDocument]);
 
   const fetchLocales = useCallback(async () => {
     if (!secrets) return;
@@ -194,7 +194,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         closable: true,
       });
     }
-  }, [secrets, toast]);
+  }, [secrets]);
 
   const fetchExistingTranslations = useCallback(async () => {
     if (!documents.length || !locales.length) return;
@@ -241,7 +241,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         closable: true,
       });
     }
-  }, [documents, locales, client, toast]);
+  }, [documents, locales, client]);
 
   const handleTranslateAll = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
@@ -291,7 +291,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, locales, toast, schema]);
+  }, [secrets, documents, locales, schema]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
@@ -370,7 +370,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     documents,
     translationStatuses,
     downloadStatus,
-    toast,
     translationContext,
   ]);
 
@@ -517,7 +516,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     locales,
     translationStatuses,
     downloadStatus,
-    toast,
     translationContext,
     getMissingTranslations,
   ]);
@@ -590,7 +588,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales, toast]);
+  }, [secrets, documents, locales]);
 
   const handleImportDocument = useCallback(
     async (documentId: string, localeId: string) => {
@@ -684,7 +682,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       }
     },
-    [secrets, documents, toast, translationContext]
+    [secrets, documents, translationContext]
   );
 
   const handlePatchDocumentReferences = useCallback(async () => {
@@ -788,7 +786,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
     }
-  }, [secrets, documents, locales, toast, client]);
+  }, [secrets, documents, locales, client]);
 
   const handlePublishAllTranslations = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
@@ -865,7 +863,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, client, toast]);
+  }, [secrets, documents, client]);
 
   useEffect(() => {
     fetchDocuments();
