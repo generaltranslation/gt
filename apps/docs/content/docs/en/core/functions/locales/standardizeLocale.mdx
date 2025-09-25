@@ -1,0 +1,83 @@
+---
+title: standardizeLocale()
+description: API Reference for the standardizeLocale function
+---
+
+## Overview
+
+The `standardizeLocale()` function standardizes a BCP-47 locale code to ensure correct formatting and casing without requiring a GT class instance.
+
+```typescript
+import { standardizeLocale } from 'generaltranslation';
+
+// Fix common formatting issues
+console.log(standardizeLocale('en_us')); // 'en-US'
+console.log(standardizeLocale('zh_cn')); // 'zh-CN'
+console.log(standardizeLocale('EN-gb')); // 'en-GB'
+console.log(standardizeLocale('fr-ca')); // 'fr-CA'
+
+// Already standardized locales pass through
+console.log(standardizeLocale('es-ES')); // 'es-ES'
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    }
+  }}
+/>
+
+### Returns
+
+`string` - Standardized BCP-47 locale code or empty string if invalid
+
+---
+
+## Examples
+
+### User Input Processing
+
+```typescript
+import { standardizeLocale, isValidLocale } from 'generaltranslation';
+
+function processUserInput(input: string) {
+  const standardized = standardizeLocale(input.trim());
+  const isValid = isValidLocale(standardized);
+  
+  return {
+    original: input,
+    standardized,
+    isValid
+  };
+}
+
+// Test various inputs
+const inputs = ['en_us', 'FR-ca', 'invalid', 'zh-CN'];
+inputs.forEach(input => {
+  console.log(processUserInput(input));
+});
+```
+
+---
+
+## Notes
+
+- Converts underscores to hyphens
+- Normalizes casing (language lowercase, region uppercase)
+- Returns empty string for invalid formats
+- Essential for normalizing locale input from various sources
+- No external dependencies - pure string manipulation
+
+## Next Steps
+
+- Use GT class method [`standardizeLocale()`](/docs/core/class/methods/locales/standardizeLocale)
+- Validate with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)
+- Get properties with [`getLocaleProperties()`](/docs/core/functions/locales/getLocaleProperties)

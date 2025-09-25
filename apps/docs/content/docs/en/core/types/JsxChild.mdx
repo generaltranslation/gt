@@ -25,63 +25,34 @@ This type is the building block for [`JsxChildren`](/docs/core/types/JsxChildren
 
 ---
 
-## Example
+## Examples
 
-### String Children
-
-```typescript copy
-import { JsxChild } from 'generaltranslation';
-
-// Plain text child
-const textChild: JsxChild = "Welcome to our application!";
-
-// Text that will be translated
-const greeting: JsxChild = "Hello and welcome!";
-
-// Label text
-const buttonLabel: JsxChild = "Submit Form";
-```
-
-### Variable Children
+### Basic Child Types
 
 ```typescript copy
 import { JsxChild, Variable } from 'generaltranslation';
 
-// Simple text variable
+// String child (plain text)
+const textChild: JsxChild = "Welcome to our application!";
+
+// Variable child (dynamic content)
 const nameVar: JsxChild = { k: 'userName' } as Variable;
 
-// Formatted number variable  
-const countVar: JsxChild = { k: 'itemCount', v: 'n' } as Variable;
-
-// Currency variable
+// Formatted variable child
 const priceVar: JsxChild = { k: 'totalPrice', v: 'c' } as Variable;
-
-// Date variable
-const dateVar: JsxChild = { k: 'lastLogin', v: 'd' } as Variable;
 ```
 
-### JsxElement Children
+### Element Children
 
 ```typescript copy
-import { JsxChild, JsxElement } from 'generaltranslation';
-
-// Simple element
+// Simple element child
 const linkElement: JsxChild = {
   t: 'a',
   d: { ti: 'Go to homepage' },
   c: ['Home']
 };
 
-// Element with variables
-const userProfile: JsxChild = {
-  t: 'div',
-  c: [
-    'User: ',
-    { k: 'userName' } as Variable
-  ]
-};
-
-// Complex nested element
+// Complex element with nested content
 const productCard: JsxChild = {
   t: 'article',
   d: { ti: 'Product information' },
@@ -92,158 +63,35 @@ const productCard: JsxChild = {
     },
     {
       t: 'p',
-      c: [
-        'Price: ',
-        { k: 'price', v: 'c' } as Variable
-      ]
+      c: ['Price: ', { k: 'price', v: 'c' } as Variable]
     }
   ]
 };
 ```
 
-### Mixing Different Child Types
+### Mixed Child Array
 
 ```typescript copy
-// Array of different JsxChild types
+// Array mixing different JsxChild types
 const mixedChildren: JsxChild[] = [
-  // String child
-  "Welcome back, ",
-  
-  // Variable child
-  { k: 'userName' } as Variable,
-  
-  // String child
-  "! You have ",
-  
-  // Variable child (number)
-  { k: 'messageCount', v: 'n' } as Variable,
-  
-  // String child
-  " new ",
-  
-  // Element child
-  {
+  "Welcome back, ",                    // String
+  { k: 'userName' } as Variable,       // Variable
+  "! You have ",                       // String
+  { k: 'messageCount', v: 'n' } as Variable,  // Number variable
+  " new ",                             // String
+  {                                    // Element
     t: 'a',
     d: { ti: 'View messages' },
     c: ['messages']
   },
-  
-  // String child
-  " waiting."
+  " waiting."                          // String
 ];
 ```
 
-### Form Elements as Children
+### Type Guards and Validation
 
 ```typescript copy
-const formElements: JsxChild[] = [
-  // Label element
-  {
-    t: 'label',
-    c: ['Email Address']
-  },
-  
-  // Input element with placeholder
-  {
-    t: 'input',
-    d: {
-      pl: 'Enter your email',  // placeholder
-      ti: 'Email input field'  // title
-    }
-  },
-  
-  // Validation message with variable
-  {
-    t: 'span',
-    c: [
-      'Please enter a valid email. Error: ',
-      { k: 'validationError' } as Variable
-    ]
-  }
-];
-```
-
-### Navigation Menu Children
-
-```typescript copy
-const navigationItems: JsxChild[] = [
-  // Home link
-  {
-    t: 'a',
-    d: { ti: 'Go to home page' },
-    c: ['Home']
-  },
-  
-  // Products with count
-  {
-    t: 'a',
-    d: { ti: 'Browse our products' },
-    c: [
-      'Products (',
-      { k: 'productCount', v: 'n' } as Variable,
-      ')'
-    ]
-  },
-  
-  // User account
-  {
-    t: 'a',
-    d: { ti: 'View your account' },
-    c: [
-      'Hello, ',
-      { k: 'userName' } as Variable
-    ]
-  }
-];
-```
-
-### Content Blocks as Children
-
-```typescript copy
-const contentBlocks: JsxChild[] = [
-  // Header block
-  {
-    t: 'header',
-    c: [
-      {
-        t: 'h1',
-        c: [{ k: 'pageTitle' } as Variable]
-      },
-      {
-        t: 'p',
-        c: [
-          'Last updated on ',
-          { k: 'lastUpdate', v: 'd' } as Variable
-        ]
-      }
-    ]
-  },
-  
-  // Main content block
-  {
-    t: 'main',
-    c: [
-      { k: 'mainContent' } as Variable
-    ]
-  },
-  
-  // Footer block
-  {
-    t: 'footer',
-    c: [
-      'Copyright © ',
-      { k: 'currentYear', v: 'n' } as Variable,
-      ' ',
-      { k: 'companyName' } as Variable
-    ]
-  }
-];
-```
-
-### Helper Functions for Child Creation
-
-```typescript copy
-// Type guards for JsxChild
+// Type guard functions
 function isStringChild(child: JsxChild): child is string {
   return typeof child === 'string';
 }
@@ -256,94 +104,12 @@ function isElementChild(child: JsxChild): child is JsxElement {
   return typeof child === 'object' && child !== null && 't' in child;
 }
 
-// Helper to create different child types
-function createChild(type: 'string', content: string): string;
-function createChild(type: 'variable', key: string, varType?: VariableType): Variable;
-function createChild(type: 'element', tag: string, children: JsxChild[]): JsxElement;
-function createChild(type: string, ...args: any[]): JsxChild {
-  switch (type) {
-    case 'string':
-      return args[0];
-    case 'variable':
-      return { k: args[0], ...(args[1] && { v: args[1] }) };
-    case 'element':
-      return { t: args[0], c: args[1] };
-    default:
-      throw new Error(`Unknown child type: ${type}`);
-  }
-}
-
-// Usage examples
-const children = [
-  createChild('string', 'Hello'),
-  createChild('variable', 'name'),
-  createChild('element', 'strong', ['Important!']),
-  createChild('variable', 'count', 'n')
-];
-```
-
-### Conditional Child Creation
-
-```typescript copy
-function createConditionalChild(
-  condition: boolean,
-  trueChild: JsxChild,
-  falseChild?: JsxChild
-): JsxChild | null {
-  if (condition) {
-    return trueChild;
-  }
-  return falseChild || null;
-}
-
-// Usage in content creation
-const dynamicContent = [
-  'Welcome',
-  createConditionalChild(
-    true,
-    { k: 'userName' } as Variable,
-    'Guest'
-  ),
-  '!'
-].filter(Boolean) as JsxChild[];
-```
-
-### Child Validation
-
-```typescript copy
-function validateJsxChild(child: any): child is JsxChild {
-  // String validation
-  if (typeof child === 'string') {
-    return true;
-  }
-  
-  // Variable validation
-  if (typeof child === 'object' && child !== null && 'k' in child) {
-    return typeof child.k === 'string';
-  }
-  
-  // Element validation
-  if (typeof child === 'object' && child !== null && 't' in child) {
-    return typeof child.t === 'string';
-  }
-  
-  return false;
-}
-
+// Validate an array of children
 function validateJsxChildArray(children: any[]): children is JsxChild[] {
-  return children.every(validateJsxChild);
-}
-
-// Usage
-const potentialChildren = [
-  'Hello',
-  { k: 'name' },
-  { t: 'span', c: ['world'] }
-];
-
-if (validateJsxChildArray(potentialChildren)) {
-  // TypeScript now knows these are valid JsxChild[]
-  console.log('All children are valid');
+  return children.every(child => 
+    typeof child === 'string' || 
+    (typeof child === 'object' && child !== null)
+  );
 }
 ```
 

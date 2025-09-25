@@ -45,52 +45,27 @@ type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
 ---
 
-## Example
+## Examples
 
-### JSON Translation Files
+### Basic File Types
 
 ```typescript copy
-import { FileToTranslate, FileFormat } from 'generaltranslation';
+import { FileToTranslate } from 'generaltranslation';
 
-// Simple JSON translation file
+// JSON translation file
 const jsonFile: FileToTranslate = {
   content: JSON.stringify({
     "welcome": "Welcome to our application",
     "buttons": {
       "save": "Save",
-      "cancel": "Cancel",
-      "submit": "Submit"
-    },
-    "messages": {
-      "success": "Operation completed successfully",
-      "error": "An error occurred"
+      "cancel": "Cancel"
     }
   }),
   fileName: 'src/locales/en/common.json',
-  fileFormat: 'JSON' as FileFormat,
+  fileFormat: 'JSON',
   dataFormat: 'I18NEXT'
 };
 
-// Nested JSON with ICU format
-const icuJsonFile: FileToTranslate = {
-  content: JSON.stringify({
-    "itemCount": "{count, plural, =0 {no items} =1 {one item} other {{count} items}}",
-    "price": "{amount, number, currency}",
-    "date": "Last updated: {timestamp, date, medium}"
-  }),
-  fileName: 'src/locales/en/icu-messages.json',
-  fileFormat: 'JSON',
-  dataFormat: 'ICU',
-  formatMetadata: {
-    namespace: 'icu-messages',
-    keyPrefix: 'icu.'
-  }
-};
-```
-
-### Markdown Content Files
-
-```typescript copy
 // Markdown documentation file
 const markdownFile: FileToTranslate = {
   content: `# Getting Started
@@ -101,42 +76,28 @@ Welcome to our platform! This guide will help you get started.
 
 1. **Sign up** for an account
 2. **Verify** your email address  
-3. **Start** using the platform
-
-> **Note:** Make sure to complete your profile for the best experience.
-
-## Next Steps
-
-Visit our [documentation](/docs) for more detailed information.`,
+3. **Start** using the platform`,
   fileName: 'docs/getting-started.md',
-  fileFormat: 'MD',
-  formatMetadata: {
-    frontMatter: true,
-    preserveCodeBlocks: true
-  }
+  fileFormat: 'MD'
 };
+```
 
-// MDX component file with React content
+### MDX with Components
+
+```typescript copy
+// MDX file with React components
 const mdxFile: FileToTranslate = {
   content: `---
 title: Product Features
-layout: ProductPage
 ---
 
 import { FeatureCard } from '../components/FeatureCard'
 
 # Product Features
 
-Our platform offers several key features:
-
 <FeatureCard 
   title="Real-time Collaboration"
-  description="Work together with your team in real-time"
-/>
-
-<FeatureCard
-  title="Advanced Analytics" 
-  description="Get insights into your data with powerful analytics"
+  description="Work together with your team"
 />
 
 ## Pricing
@@ -152,28 +113,18 @@ Starting at **$9.99/month** for individuals.`,
 };
 ```
 
-### HTML Template Files
+### HTML Templates
 
 ```typescript copy
-// Email template HTML
+// Email template with variables
 const emailTemplate: FileToTranslate = {
   content: `<!DOCTYPE html>
 <html>
-<head>
-  <title>Welcome Email</title>
-</head>
 <body>
   <div class="container">
-    <h1>Welcome to Our Service!</h1>
-    <p>Hello <strong>{{userName}}</strong>,</p>
-    <p>Thank you for joining our platform. We're excited to have you on board!</p>
-    
-    <div class="stats">
-      <p>You're our <em>{{userCount}}</em> member!</p>
-      <p>Join date: <time>{{joinDate}}</time></p>
-    </div>
-    
-    <a href="{{dashboardUrl}}" class="button">Get Started</a>
+    <h1>Welcome {{userName}}!</h1>
+    <p>Thank you for joining our platform.</p>
+    <a href="{{dashboardUrl}}">Get Started</a>
   </div>
 </body>
 </html>`,
@@ -181,217 +132,16 @@ const emailTemplate: FileToTranslate = {
   fileFormat: 'HTML',
   dataFormat: 'I18NEXT',
   formatMetadata: {
-    preserveAttributes: ['href', 'class', 'id'],
-    extractableText: true
-  }
-};
-
-// Component template with JSX-like structure
-const componentTemplate: FileToTranslate = {
-  content: `<div class="product-card">
-  <h3 data-translate="productName">Product Name</h3>
-  <img src="{{imageUrl}}" alt="{{productName}}" />
-  <p class="description" data-translate="description">Product description goes here.</p>
-  <div class="pricing">
-    <span class="price" data-translate="price">$19.99</span>
-    <span class="discount" data-translate="discount">Save {{discountPercent}}%!</span>
-  </div>
-  <button data-translate="addToCart">Add to Cart</button>
-</div>`,
-  fileName: 'components/ProductCard.template.html',
-  fileFormat: 'HTML',
-  dataFormat: 'JSX',
-  formatMetadata: {
-    extractByAttribute: 'data-translate',
-    preserveStructure: true
+    preserveAttributes: ['href', 'class']
   }
 };
 ```
 
-### Configuration and Data Files
+### File Validation Utility
 
 ```typescript copy
-// Application configuration file
-const configFile: FileToTranslate = {
-  content: `{
-  "app": {
-    "name": "My Application",
-    "description": "A powerful tool for productivity",
-    "version": "1.0.0"
-  },
-  "features": {
-    "collaboration": "Real-time collaboration tools",
-    "analytics": "Advanced analytics dashboard",
-    "integration": "Seamless third-party integrations"
-  },
-  "legal": {
-    "privacy": "We respect your privacy and protect your data",
-    "terms": "By using this app, you agree to our terms of service"
-  }
-}`,
-  fileName: 'config/app-config.json',
-  fileFormat: 'JSON',
-  formatMetadata: {
-    sections: ['app', 'features', 'legal'],
-    preserveVersion: true
-  }
-};
-
-// CSV data file (as string content)
-const csvFile: FileToTranslate = {
-  content: `key,context,source_text,notes
-welcome_message,homepage,"Welcome to our platform!","Main greeting on homepage"
-save_button,forms,"Save","Button to save form data"
-error_message,validation,"Please fill in all required fields","Form validation error"
-success_message,confirmation,"Your changes have been saved","Success confirmation"`,
-  fileName: 'translations/source-strings.csv',
-  fileFormat: 'CSV' as FileFormat,
-  formatMetadata: {
-    delimiter: ',',
-    hasHeaders: true,
-    textColumn: 'source_text',
-    keyColumn: 'key'
-  }
-};
-```
-
-### Multi-File Project Structure
-
-```typescript copy
-// Create files for a complete web application
-function createWebAppTranslationFiles(): FileToTranslate[] {
-  const files: FileToTranslate[] = [];
-  
-  // Navigation translations
-  files.push({
-    content: JSON.stringify({
-      "home": "Home",
-      "products": "Products", 
-      "about": "About Us",
-      "contact": "Contact",
-      "login": "Login",
-      "signup": "Sign Up"
-    }),
-    fileName: 'src/locales/en/navigation.json',
-    fileFormat: 'JSON',
-    dataFormat: 'I18NEXT'
-  });
-  
-  // Form translations with validation messages
-  files.push({
-    content: JSON.stringify({
-      "labels": {
-        "email": "Email Address",
-        "password": "Password",
-        "confirmPassword": "Confirm Password",
-        "firstName": "First Name",
-        "lastName": "Last Name"
-      },
-      "placeholders": {
-        "email": "Enter your email",
-        "password": "Enter your password"
-      },
-      "validation": {
-        "required": "This field is required",
-        "email": "Please enter a valid email address",
-        "passwordMatch": "Passwords do not match"
-      }
-    }),
-    fileName: 'src/locales/en/forms.json',
-    fileFormat: 'JSON',
-    dataFormat: 'I18NEXT'
-  });
-  
-  // Product page content
-  files.push({
-    content: `# Product Catalog
-
-Browse our extensive collection of products.
-
-## Featured Products
-
-Check out our most popular items:
-
-- **Premium Package** - Everything you need to get started
-- **Business Suite** - Advanced tools for growing businesses  
-- **Enterprise** - Full-featured solution for large organizations
-
-## Categories
-
-<ProductGrid category="electronics" />
-<ProductGrid category="books" />
-<ProductGrid category="home-garden" />`,
-    fileName: 'content/products/index.mdx',
-    fileFormat: 'MDX',
-    dataFormat: 'JSX'
-  });
-  
-  // Legal documents
-  files.push({
-    content: `<div class="legal-document">
-  <h1 data-translate="title">Privacy Policy</h1>
-  <section>
-    <h2 data-translate="dataCollection">Data Collection</h2>
-    <p data-translate="dataCollectionText">We collect information you provide directly to us.</p>
-  </section>
-  <section>
-    <h2 data-translate="dataUsage">How We Use Your Data</h2>
-    <p data-translate="dataUsageText">We use your information to provide and improve our services.</p>
-  </section>
-</div>`,
-    fileName: 'legal/privacy-policy.html',
-    fileFormat: 'HTML',
-    dataFormat: 'JSX',
-    formatMetadata: {
-      extractByAttribute: 'data-translate',
-      legalDocument: true
-    }
-  });
-  
-  return files;
-}
-
-const webAppFiles = createWebAppTranslationFiles();
-```
-
-### File Processing Utilities
-
-```typescript copy
-// Utility to create files from directory structure
-async function createFilesFromDirectory(
-  directoryPath: string,
-  supportedFormats: FileFormat[]
-): Promise<FileToTranslate[]> {
-  const files: FileToTranslate[] = [];
-  
-  // This would read actual files from filesystem
-  // Simplified example:
-  const mockFiles = [
-    { path: 'common.json', content: '{"hello": "Hello"}' },
-    { path: 'pages/home.md', content: '# Welcome Home' },
-    { path: 'components/Button.html', content: '<button>Click Me</button>' }
-  ];
-  
-  for (const file of mockFiles) {
-    const extension = file.path.split('.').pop()?.toUpperCase() as FileFormat;
-    
-    if (supportedFormats.includes(extension)) {
-      files.push({
-        content: file.content,
-        fileName: file.path,
-        fileFormat: extension,
-        ...(extension === 'JSON' && { dataFormat: 'I18NEXT' }),
-        ...(extension === 'HTML' && { dataFormat: 'JSX' })
-      });
-    }
-  }
-  
-  return files;
-}
-
-// File validation utility
+// Utility to validate file structure
 function validateFileToTranslate(file: FileToTranslate): boolean {
-  // Required field validation
   if (!file.content || typeof file.content !== 'string') return false;
   if (!file.fileName || typeof file.fileName !== 'string') return false;
   if (!file.fileFormat || typeof file.fileFormat !== 'string') return false;
@@ -401,46 +151,12 @@ function validateFileToTranslate(file: FileToTranslate): boolean {
     try {
       JSON.parse(file.content);
     } catch {
-      return false; // Invalid JSON
+      return false;
     }
   }
   
   return true;
 }
-
-// Batch file creation helper
-function createTranslationBatch(
-  files: Array<{
-    content: any;
-    fileName: string;
-    format: FileFormat;
-    dataFormat?: DataFormat;
-  }>
-): FileToTranslate[] {
-  return files.map(file => ({
-    content: typeof file.content === 'string' 
-      ? file.content 
-      : JSON.stringify(file.content, null, 2),
-    fileName: file.fileName,
-    fileFormat: file.format,
-    ...(file.dataFormat && { dataFormat: file.dataFormat })
-  }));
-}
-
-// Usage
-const batchFiles = createTranslationBatch([
-  {
-    content: { welcome: "Welcome", goodbye: "Goodbye" },
-    fileName: 'greetings.json',
-    format: 'JSON',
-    dataFormat: 'I18NEXT'
-  },
-  {
-    content: '# About Us\n\nWe are a great company.',
-    fileName: 'about.md',
-    format: 'MD'
-  }
-]);
 ```
 
 ---

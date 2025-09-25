@@ -44,31 +44,31 @@ type VariableType = 'v' | 'n' | 'd' | 'c';
 
 ---
 
-## Example
+## Examples
 
-### Basic Variable Usage
+### Basic Variable Types
 
 ```typescript copy
 import { Variable, VariableType } from 'generaltranslation';
 
 // Simple text variable
 const nameVariable: Variable = {
-  k: 'name'
+  k: 'userName'
 };
 
-// Number variable for count formatting
+// Number variable with formatting
 const countVariable: Variable = {
   k: 'itemCount',
   v: 'n'
 };
 
-// Currency variable for price formatting
+// Currency variable
 const priceVariable: Variable = {
   k: 'totalPrice', 
   v: 'c'
 };
 
-// Date variable for timestamp formatting
+// Date variable
 const dateVariable: Variable = {
   k: 'orderDate',
   v: 'd'
@@ -90,87 +90,26 @@ const welcomeContent: JsxChildren = [
 ];
 
 // JSX elements with variables
-const productInfo: JsxChildren = [
-  {
-    t: 'div',
-    c: [
-      'Product: ',
-      { k: 'productName' } as Variable,
-      {
-        t: 'span', 
-        c: [
-          'Price: ',
-          { k: 'price', v: 'c' } as Variable
-        ]
-      }
-    ]
-  }
-];
-```
-
-### ICU Message Format Variables
-
-```typescript copy
-import { IcuMessage } from 'generaltranslation';
-
-// ICU messages with different variable types
-const messages: Record<string, IcuMessage> = {
-  // Simple text variable
-  greeting: 'Hello {name}!',
-  
-  // Number variable with plural forms
-  itemCount: 'You have {count, number} {count, plural, =0 {no items} =1 {one item} other {{count} items}}',
-  
-  // Currency variable
-  totalCost: 'Total cost: {price, number, currency}',
-  
-  // Date variable
-  lastLogin: 'Last login: {loginDate, date, short}',
-  
-  // Mixed variable types
-  orderSummary: 'Order #{orderId} for {total, number, currency} placed on {date, date, medium}'
+const productInfo: JsxChildren = {
+  t: 'div',
+  c: [
+    'Product: ',
+    { k: 'productName' } as Variable,
+    {
+      t: 'span', 
+      c: ['Price: ', { k: 'price', v: 'c' } as Variable]
+    }
+  ]
 };
 ```
 
-### Variable Type Formatting Examples
+### Variable Creation and Validation
 
 ```typescript copy
-// Number formatting examples
-const numberVariables = [
-  { k: 'quantity', v: 'n' as VariableType },      // "1,234" 
-  { k: 'percentage', v: 'n' as VariableType },    // "45.6%"
-  { k: 'ratio', v: 'n' as VariableType }          // "3.14159"
-];
-
-// Currency formatting examples  
-const currencyVariables = [
-  { k: 'price', v: 'c' as VariableType },         // "$19.99"
-  { k: 'discount', v: 'c' as VariableType },      // "-$5.00"  
-  { k: 'tax', v: 'c' as VariableType }            // "$2.50"
-];
-
-// Date formatting examples
-const dateVariables = [
-  { k: 'createdAt', v: 'd' as VariableType },     // "March 15, 2024"
-  { k: 'updatedAt', v: 'd' as VariableType },     // "3/15/24, 2:30 PM"
-  { k: 'deadline', v: 'd' as VariableType }       // "Friday, March 15, 2024"
-];
-```
-
-### Variable Validation and Creation
-
-```typescript copy
-function createVariable(key: string, type?: VariableType, id?: number): Variable {
+// Helper function to create variables
+function createVariable(key: string, type?: VariableType): Variable {
   const variable: Variable = { k: key };
-  
-  if (type) {
-    variable.v = type;
-  }
-  
-  if (id !== undefined) {
-    variable.i = id;
-  }
-  
+  if (type) variable.v = type;
   return variable;
 }
 
@@ -189,119 +128,41 @@ function isValidVariable(obj: any): obj is Variable {
     obj !== null &&
     typeof obj.k === 'string' &&
     obj.k.length > 0 &&
-    (obj.i === undefined || typeof obj.i === 'number') &&
     (obj.v === undefined || ['v', 'n', 'd', 'c'].includes(obj.v))
   );
 }
 ```
 
-### E-commerce Product Template
+### E-commerce Product Example
 
 ```typescript copy
-interface ProductTemplate {
-  name: JsxChildren;
-  description: JsxChildren;
-  pricing: JsxChildren;
-  availability: JsxChildren;
-}
-
-const productTemplate: ProductTemplate = {
-  name: [
-    { k: 'productName' } as Variable
-  ],
-  
-  description: [
-    { k: 'description' } as Variable,
-    ' - Available in ',
-    { k: 'colorCount', v: 'n' } as Variable,
-    ' colors and ',
-    { k: 'sizeCount', v: 'n' } as Variable,
-    ' sizes.'
-  ],
-  
-  pricing: [
+// Product card with multiple variable types
+const productCard: JsxChildren = {
+  t: 'div',
+  c: [
     {
-      t: 'div',
+      t: 'h3',
+      c: [{ k: 'productName' } as Variable]
+    },
+    {
+      t: 'p',
       c: [
         'Price: ',
-        {
-          t: 'span',
-          d: { ti: 'Current price' },
-          c: [{ k: 'price', v: 'c' } as Variable]
-        },
-        ' (was ',
-        {
-          t: 'span', 
-          c: [{ k: 'originalPrice', v: 'c' } as Variable]
-        },
-        ')'
+        { k: 'price', v: 'c' } as Variable,
+        ' - Available in ',
+        { k: 'colorCount', v: 'n' } as Variable,
+        ' colors'
+      ]
+    },
+    {
+      t: 'small',
+      c: [
+        'Ships by ',
+        { k: 'shippingDate', v: 'd' } as Variable
       ]
     }
-  ],
-  
-  availability: [
-    'In stock: ',
-    { k: 'stockCount', v: 'n' } as Variable,
-    ' units available. Ships by ',
-    { k: 'shippingDate', v: 'd' } as Variable
   ]
 };
-```
-
-### Dynamic Variable Substitution
-
-```typescript copy
-interface VariableValues {
-  [key: string]: string | number | Date | boolean | null | undefined;
-}
-
-function substituteVariables(
-  content: JsxChildren, 
-  values: VariableValues
-): JsxChildren {
-  if (Array.isArray(content)) {
-    return content.map(child => substituteVariables(child, values)) as JsxChildren;
-  }
-  
-  if (typeof content === 'object' && content !== null) {
-    // Handle Variable objects
-    if ('k' in content && typeof content.k === 'string') {
-      const variable = content as Variable;
-      const value = values[variable.k];
-      
-      if (value !== undefined) {
-        return formatVariableValue(value, variable.v);
-      }
-      return `{${variable.k}}`;
-    }
-    
-    // Handle JSX elements
-    if ('t' in content) {
-      return {
-        ...content,
-        c: content.c ? substituteVariables(content.c, values) : content.c
-      };
-    }
-  }
-  
-  return content;
-}
-
-function formatVariableValue(value: any, type?: VariableType): string {
-  switch (type) {
-    case 'n':
-      return new Intl.NumberFormat().format(Number(value));
-    case 'c':
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(Number(value));
-    case 'd':
-      return new Intl.DateTimeFormat().format(new Date(value));
-    default:
-      return String(value);
-  }
-}
 ```
 
 ---

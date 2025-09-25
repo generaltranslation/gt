@@ -14,17 +14,12 @@ const gt = new GT({
   apiKey: 'your-api-key',
   projectId: 'your-project-id',
   sourceLocale: 'en',
-  targetLocale: 'es',
-  locales: ['en', 'es', 'fr']
+  targetLocale: 'es'
 });
 ```
 
-The constructor automatically reads environment variables for API credentials and validates all provided locale codes.
-
-<Callout>
-**Environment Variables:**
-The GT constructor automatically reads `GT_API_KEY`, `GT_DEV_API_KEY`, and `GT_PROJECT_ID` from environment variables if not provided in the constructor parameters.
-</Callout>
+The constructor will automatically check the environment for `GT_API_KEY` and `GT_PROJECT_ID` environment variables, so you can omit them from the constructor parameters.
+Additionally, it will validate all provided locale codes.
 
 ---
 
@@ -34,7 +29,7 @@ The GT constructor automatically reads `GT_API_KEY`, `GT_DEV_API_KEY`, and `GT_P
 
 <TypeTable
   type={{
-    "params?": {
+    "params": {
       type: 'GTConstructorParams',
       optional: true,
       default: '{}',
@@ -61,32 +56,6 @@ A new `GT` class instance with all translation and locale methods available.
 
 ---
 
-## Behavior
-
-### Environment Variable Loading
-
-The constructor automatically loads configuration from environment variables:
-
-1. **API Key**: Uses `GT_API_KEY` if no `apiKey` parameter provided
-2. **Dev API Key**: Uses `GT_DEV_API_KEY` if no `devApiKey` parameter provided  
-3. **Project ID**: Uses `GT_PROJECT_ID` if no `projectId` parameter provided
-
-### Locale Validation
-
-All provided locale codes are automatically validated:
-
-- **Source Locale**: Validated against BCP 47 standard and custom mappings
-- **Target Locale**: Validated against BCP 47 standard and custom mappings
-- **Locales Array**: Each locale is validated, invalid locales cause constructor to throw
-
-### Rendering Locales Setup
-
-The constructor automatically sets up internal rendering locales in this order:
-1. Source locale (if provided)
-2. Target locale (if provided)  
-3. Library default locale (`en`)
-
----
 
 ## Examples
 
@@ -103,49 +72,38 @@ const gt = new GT();
 
 ```typescript
 const gt = new GT({
-  apiKey: 'gt_prod_abc123...',
   projectId: 'my-project-id',
-  sourceLocale: 'en-US',
-  targetLocale: 'fr-FR'
+  apiKey: 'my-api-key',
+  targetLocale: 'fr'
 });
 ```
 
-### Full Configuration
+### With Custom Locale Mapping
+A custom mapping can be provided.
+This lets the user (1) use aliases for locale codes which, (2) can override the standard BCP 47 validation, and (3) override the standard BCP 47 locale information.
+
+For example, say you wanted to use `cn` as an alias for `zh`.
+Because the General Translation API does not support `cn`, you must specify a custom mapping.
 
 ```typescript
 const gt = new GT({
-  apiKey: 'gt_prod_abc123...',
-  devApiKey: 'gt_dev_xyz789...',
   projectId: 'my-project-id',
-  sourceLocale: 'en',
-  targetLocale: 'es',
-  locales: ['en', 'es', 'fr', 'de', 'ja'],
-  baseUrl: 'https://api.generaltranslation.com',
+  apiKey: 'my-api-key',
+  targetLocale: 'fr',
   customMapping: {
-    'zh-Hans': {
-      code: 'zh',
-      name: 'Simplified Chinese',
-      regionCode: 'CN',
-      emoji: '🇨🇳'
-    }
+    'cn': { code: 'zh' }
   }
 });
 ```
 
-### Environment Variables Setup
-
-```bash title=".env"
-GT_API_KEY=gt_prod_abc123...
-GT_DEV_API_KEY=gt_dev_xyz789...
-GT_PROJECT_ID=my-project-id
-```
+You can do other things with custom mappings, such as add custom names, emojis, etc.
 
 ```typescript
-// Uses environment variables automatically
 const gt = new GT({
-  sourceLocale: 'en',
-  targetLocale: 'es',
-  locales: ['en', 'es', 'fr', 'de']
+  projectId: 'my-project-id',
+  apiKey: 'my-api-key',
+  targetLocale: 'fr',
+  customMapping: { 'cn': { code: 'zh', name: 'Mandarin', emoji: '🇨🇳' } }
 });
 ```
 
@@ -154,14 +112,13 @@ const gt = new GT({
 ## Notes
 
 - The constructor validates all locale codes immediately, throwing errors for invalid codes
-- Environment variables are only read once during construction
 - Custom mappings take precedence over standard BCP 47 validation
 - The `baseUrl` parameter is primarily for enterprise customers with custom deployments
 - All parameters are optional, but API operations will require `apiKey` and `projectId`
 
 ## Next Steps
 
-- **[Configure your instance with setConfig()](/docs/core/class/setConfig)**
-- **[Start translating with translate()](/docs/core/class/methods/translation/translate)**
-- **[Learn about GTConstructorParams type](/docs/core/types/GTConstructorParams)**
-- **[Explore locale utilities](/docs/core/class/methods/locales/getLocaleName)**
+- Configure your instance with [`setConfig()`](/docs/core/class/setConfig)
+- Start translating with [`translate()`](/docs/core/class/methods/translation/translate)
+- Learn about [`GTConstructorParams` type](/docs/core/types/GTConstructorParams)
+- Explore locale utilities [`getLocaleName()`](/docs/core/class/methods/locales/getLocaleName)

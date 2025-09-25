@@ -1,0 +1,91 @@
+---
+title: getRegionProperties()
+description: API Reference for the getRegionProperties function
+---
+
+## Overview
+
+The `getRegionProperties()` function retrieves detailed information about a region code without requiring a GT class instance.
+
+```typescript
+import { getRegionProperties } from 'generaltranslation';
+
+// Get region properties with English names
+console.log(getRegionProperties('US', 'en-US'));
+// { code: 'US', name: 'United States', emoji: '🇺🇸' }
+
+console.log(getRegionProperties('JP', 'en-US'));
+// { code: 'JP', name: 'Japan', emoji: '🇯🇵' }
+
+// Get region properties with localized names
+console.log(getRegionProperties('US', 'de-DE'));
+// { code: 'US', name: 'Vereinigte Staaten', emoji: '🇺🇸' }
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "region": {
+      type: 'string',
+      optional: false,
+    },
+    "defaultLocale?": {
+      type: 'string',
+      optional: true,
+    },
+    "customMapping?": {
+      type: 'CustomRegionMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Returns
+
+`{ code: string; name: string; emoji: string }` - Region information object
+
+---
+
+## Examples
+
+### Multi-language Region Display
+
+```typescript
+import { getRegionProperties } from 'generaltranslation';
+
+function getRegionInLanguages(regionCode: string, languages: string[]) {
+  return languages.map(lang => ({
+    language: lang,
+    region: getRegionProperties(regionCode, lang)
+  }));
+}
+
+const regions = getRegionInLanguages('FR', ['en-US', 'de-DE', 'es-ES']);
+console.log(regions);
+// [
+//   { language: 'en-US', region: { code: 'FR', name: 'France', emoji: '🇫🇷' }},
+//   { language: 'de-DE', region: { code: 'FR', name: 'Frankreich', emoji: '🇫🇷' }},
+//   { language: 'es-ES', region: { code: 'FR', name: 'Francia', emoji: '🇫🇷' }}
+// ]
+```
+
+---
+
+## Notes
+
+- Uses `Intl.DisplayNames` API for localized region names
+- Supports ISO 3166-1 alpha-2 and UN M.49 region codes
+- Custom mappings can override default names and emojis
+- Falls back to region code if display name resolution fails
+- No external dependencies beyond browser APIs
+
+## Next Steps
+
+- Use GT class method [`getRegionProperties()`](/docs/core/class/methods/locales/getRegionProperties)
+- Get full locale info with [`getLocaleProperties()`](/docs/core/functions/locales/getLocaleProperties)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)

@@ -1,11 +1,14 @@
 ---
 title: getLocaleDirection()
-description: API Reference for the standalone getLocaleDirection function
+description: API Reference for the getLocaleDirection function
 ---
 
 ## Overview
 
-The standalone `getLocaleDirection()` function determines the text direction (left-to-right or right-to-left) for a locale without requiring a GT class instance. It uses the `Intl.Locale` API to provide accurate direction detection for any valid BCP-47 locale code.
+The `getLocaleDirection()` function determines the text direction (left-to-right or right-to-left) for a locale without requiring a GT class instance.
+It uses the `Intl.Locale` API to provide accurate direction detection for any valid BCP-47 locale code.
+
+This function is most often used to set the `dir` attribute of a HTML element based on the locale.
 
 ```typescript
 import { getLocaleDirection } from 'generaltranslation';
@@ -16,13 +19,6 @@ console.log(direction); // "rtl"
 const englishDirection = getLocaleDirection('en-US');
 console.log(englishDirection); // "ltr"
 ```
-
-This function is perfect for building direction-aware layouts, internationalized components, or any situation where you need text direction detection without the full GT class overhead.
-
-<Callout>
-**Essential for RTL Support:**
-This lightweight function provides accurate direction detection without state management, making it ideal for utility libraries, components, and applications that need to support both LTR and RTL languages efficiently.
-</Callout>
 
 ---
 
@@ -323,7 +319,8 @@ console.log(cache.get('en-US')); // "ltr" - cached
 
 ## Next Steps
 
-- **[Use GT class method getLocaleDirection()](/docs/core/class/methods/locales/getLocaleDirection)**
-- **[Get locale properties with getLocaleProperties()](/docs/core/functions/locales/getLocaleProperties)**
-- **[Validate locales with isValidLocale()](/docs/core/functions/locales/isValidLocale)**
-- **[Get locale emoji with getLocaleEmoji()](/docs/core/functions/locales/getLocaleEmoji)**
+- Use GT class method [`getLocaleDirection()`](/docs/core/class/methods/locales/getLocaleDirection)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/functions/locales/getLocaleProperties)
+- Validate locales with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
+- Check out the supported locales [here](/docs/platform/locale-strings)

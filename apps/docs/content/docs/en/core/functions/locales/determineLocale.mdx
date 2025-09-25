@@ -1,0 +1,93 @@
+---
+title: determineLocale()
+description: API Reference for the determineLocale function
+---
+
+## Overview
+
+The `determineLocale()` function determines the best matching locale from approved locales based on user preferences without requiring a GT class instance.
+
+```typescript
+import { determineLocale } from 'generaltranslation';
+
+const approvedLocales = ['en-US', 'es-ES', 'fr-FR', 'de-DE'];
+
+// Exact match
+console.log(determineLocale('en-US', approvedLocales)); // 'en-US'
+
+// Language fallback
+console.log(determineLocale('en-GB', approvedLocales)); // 'en-US'
+
+// Multiple preferences
+console.log(determineLocale(['fr-CA', 'es-MX'], approvedLocales)); // 'es-ES'
+
+// No match
+console.log(determineLocale('it-IT', approvedLocales)); // undefined
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locales": {
+      type: 'string | string[]',
+      optional: false,
+    },
+    "approvedLocales?": {
+      type: 'string[]',
+      optional: true,
+      default: '[]'
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Returns
+
+`string | undefined` - Best matching locale or undefined if no match
+
+---
+
+## Examples
+
+### Content Negotiation
+
+```typescript
+import { determineLocale } from 'generaltranslation';
+
+function negotiateContentLocale(acceptLanguage: string, supportedLocales: string[]) {
+  // Parse Accept-Language header (simplified)
+  const preferences = acceptLanguage.split(',').map(lang => lang.trim().split(';')[0]);
+  
+  const bestMatch = determineLocale(preferences, supportedLocales);
+  return bestMatch || supportedLocales[0]; // Fallback to first supported
+}
+
+const supported = ['en-US', 'es-ES', 'fr-FR'];
+const userLang = 'fr-CA,en-GB,en';
+const chosen = negotiateContentLocale(userLang, supported);
+console.log(chosen); // 'fr-FR' or 'en-US' based on preference matching
+```
+
+---
+
+## Notes
+
+- Implements intelligent locale negotiation
+- Returns first exact or language match from approved list
+- Respects preference order in input array
+- Returns undefined when no match found
+- Essential for web application locale negotiation
+
+## Next Steps
+
+- Use GT class method [`determineLocale()`](/docs/core/class/methods/locales/determineLocale)
+- Check translation needs with [`requiresTranslation()`](/docs/core/functions/locales/requiresTranslation)
+- Validate locales with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)

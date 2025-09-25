@@ -1,0 +1,95 @@
+---
+title: determineLocale()
+description: API Reference for the GT determineLocale method
+---
+
+## Overview
+
+The `determineLocale()` method determines the best matching locale from a list of approved locales based on user preferences. It implements intelligent locale negotiation to find the most suitable locale when exact matches aren't available.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  locales: ['en-US', 'es-ES', 'fr-FR', 'de-DE']
+});
+
+// Exact match
+console.log(gt.determineLocale('en-US')); // 'en-US'
+
+// Language fallback
+console.log(gt.determineLocale('en-GB')); // 'en-US' (closest English variant)
+
+// Multiple preferences
+console.log(gt.determineLocale(['fr-CA', 'es-MX', 'en-US'])); // 'es-ES' (closest Spanish)
+
+// No match
+console.log(gt.determineLocale('it-IT')); // undefined
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locales": {
+      type: 'string | string[]',
+      optional: false,
+    },
+    "approvedLocales?": {
+      type: 'string[]',
+      optional: true,
+      default: 'this.locales'
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+      default: 'this.customMapping'
+    }
+  }}
+/>
+
+### Returns
+
+`string | undefined` - Best matching locale or undefined if no match found
+
+---
+
+## Examples
+
+### User Locale Negotiation
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  locales: ['en-US', 'en-GB', 'es-ES', 'fr-FR']
+});
+
+// Simulate browser Accept-Language header
+const userPreferences = ['fr-CA', 'en-GB', 'en'];
+const bestMatch = gt.determineLocale(userPreferences);
+console.log(bestMatch); // 'fr-FR' or 'en-GB' based on preference order
+
+function selectUserLocale(preferences: string[]): string {
+  const determined = gt.determineLocale(preferences);
+  return determined || gt.sourceLocale || 'en-US';
+}
+```
+
+---
+
+## Notes
+
+- Returns the first exact match from approved locales
+- Falls back to language matches when exact region isn't available  
+- Respects preference order in input array
+- Returns undefined when no suitable match is found
+- Essential for implementing locale negotiation in web applications
+
+## Next Steps
+
+- **[Check translation needs with requiresTranslation()](/docs/core/class/methods/locales/requiresTranslation)**
+- **[Compare languages with isSameLanguage()](/docs/core/class/methods/locales/isSameLanguage)**
+- **[Explore standalone determineLocale()](/docs/core/functions/locales/determineLocale)**

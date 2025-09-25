@@ -1,15 +1,19 @@
 ---
-title: Introduction
-description: Introduction to the generaltranslation library
+title: Overview
+description: Overview of the generaltranslation library
 ---
 
-## Overview
+## Introduction
 
-The `generaltranslation` library is a TypeScript package for internationalization. It handles translation APIs, locale management, text formatting, and file processing.
+The `generaltranslation` library serves as GT's core i18n library housing utility functions and classes for translation and formatting.
+It is most oftenly used with framework packages like `gt-next` and `gt-react`, but can be used as a standalone library.
 
-Use it standalone or with framework packages like `gt-next` and `gt-react`.
 
-```typescript
+import Video from '@/components/Video';
+
+<Video src="/core_demo.mp4" />
+
+```typescript title="index.ts"
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
@@ -27,7 +31,7 @@ const result = await gt.translate('Hello, world!', 'es');
 const formattedPrice = gt.formatCurrency(29.99, 'USD');
 const formattedDate = gt.formatDateTime(new Date());
 // "$29.99"
-// "12/25/2023, 3:45:30 PM" (format depends on locale)
+// "9/25/2025"
 
 // Work with locales
 const localeProps = gt.getLocaleProperties('fr-CA');
@@ -35,84 +39,6 @@ const isValid = gt.isValidLocale('de');
 // { language: "fr", region: "CA", ... }
 // true
 ```
-
-<Callout>
-**Related packages:**
-- **gt-next**: Next.js integration
-- **gt-react**: React integration  
-- **gtx-cli**: Command-line tools
-- **supported-locales**: Locale helpers
-</Callout>
-
----
-
-## Features
-
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
-  <Card>
-
-  **Translation**
-  - String translation
-  - File translation
-
-  </Card>
-
-  <Card>
-
-  **Locale Management**
-  - Locale validation and properties
-  - Custom locale mapping
-  - Region and script handling
-  - Language similarity detection
-
-  </Card>
-
-  <Card>
-
-  **Formatting**
-  - Numbers and currencies
-  - Dates and relative time
-  - List formatting
-  - ICU message format
-
-  </Card>
-
-  <Card>
-
-  **File Management**
-  - Source file uploads
-  - Translation status tracking
-  - Batch downloads
-  - Version control
-
-  </Card>
-
-</div>
-
----
-
-## Core Components
-
-### GT Class
-Main class for translation and locale functionality:
-
-- **[Constructor](/docs/core/class/constructor)** - Initialize GT instance with configuration
-- **[Translation Methods](/docs/core/class/methods/translation/translate)** - Core translation functionality
-- **[Formatting Methods](/docs/core/class/methods/formatting/formatMessage)** - Internationalized text formatting
-- **[Locale Methods](/docs/core/class/methods/locales/getLocaleName)** - Locale utilities and properties
-
-### Utility Functions
-Utility functions that work without a GT instance:
-
-- **[Formatting Functions](/docs/core/functions/formatting/formatMessage)** - Standalone formatting utilities
-- **[Locale Functions](/docs/core/functions/locales/getLocaleName)** - Standalone locale utilities
-
-### Types and Interfaces
-TypeScript definitions:
-
-- **[GTConstructorParams](/docs/core/types/GTConstructorParams)** - Configuration options
-- **[LocaleProperties](/docs/core/types/LocaleProperties)** - Comprehensive locale information
-- **[TranslationResult](/docs/core/types/TranslationResult)** - Translation response types
 
 ---
 
@@ -168,8 +94,8 @@ Use with framework-specific packages:
 ### Next.js
 ```typescript
 // Use gt-next for Next.js projects
-import { useGTClass } from 'gt-next/client';
-import { getGTClass } from 'gt-next/server';
+import { useGTClass } from 'gt-next/client'; // React hook
+import { getGTClass } from 'gt-next/server'; // Node.js/Express
 ```
 
 ### React
@@ -178,7 +104,7 @@ import { getGTClass } from 'gt-next/server';
 import { useGTClass } from 'gt-react';
 ```
 
-### Node.js/Express
+### Node.js/Express/Browser
 ```typescript
 // Use core library directly
 import { GT } from 'generaltranslation';
@@ -186,64 +112,149 @@ import { GT } from 'generaltranslation';
 
 ---
 
-## Advanced Usage
+## Examples
 
-### Custom Locale Mapping
+There are two major types of translation: string translation and file translation.
+
+### Setup
+
+To enable translation, you need to provide a project ID and API key.
+Check out the [`constructor`](/docs/core/class/constructor) method for more information.
 
 ```typescript
 const gt = new GT({
-  customMapping: {
-    'cn': {
-      code: 'zh',
-      name: 'Simplified Chinese',
-      emoji: '🇨🇳'
-    }
-  }
+  apiKey: 'your-api-key',
+  projectId: 'your-project-id',
+  targetLocale: 'es'
 });
 ```
 
-### File Processing Workflows
-
-```typescript
-// Upload source files
-const uploadResult = await gt.uploadSourceFiles([
-  { source: { path: 'src/components/Button.tsx', content: '...' }}
-], { sourceLocale: 'en' });
-
-// Enqueue for translation
-await gt.enqueueFiles(uploadResult.files, {
-  sourceLocale: 'en',
-  targetLocales: ['es', 'fr', 'de']
-});
-
-// Check translation status
-const status = await gt.checkFileTranslations([
-  { sourcePath: 'src/components/Button.tsx', locale: 'es' }
-]);
-```
-
----
-
-## Error Handling
-
-Handles errors with descriptive messages:
+### String Translation
+Check out the [`translate()`](/docs/core/class/methods/translation/translate) method for more information.
 
 ```typescript
 try {
-  const result = await gt.translate('Hello', 'invalid-locale');
+  const result = await gt.translate('Hello, world!');
+  console.log(result); // "¡Hola, mundo!"
 } catch (error) {
   console.error('Translation failed:', error.message);
 }
 ```
 
+
+### File Translation
+
+Files are translated as jobs.
+You launch a job by uploading a file.
+Uploading many files will launch many jobs.
+
+Check out the [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles)
+and [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) methods for more information.
+
+```typescript
+// Files to upload
+const files = [
+  {
+    source: {
+      fileName: 'src/components/Button.tsx',
+      fileFormat: 'TSX',
+      locale: 'en',
+      content: '...',
+    }
+  }
+];
+
+// Upload source files
+await gt.uploadSourceFiles(files);
+```
+
+
 ---
 
-## Performance
+## Table of Contents
 
-- Translations are cached
-- Use `translateMany()` for multiple items
-- All translation methods are async
-- API calls respect rate limits
+### GT Class
+Main class for translation and locale functionality:
+
+- **[Constructor](/docs/core/class/constructor)** - Initialize GT instance with configuration
+- **[setConfig](/docs/core/class/setConfig)** - Update GT instance configuration
+
+#### Translation Methods
+- **[translate](/docs/core/class/methods/translation/translate)** - Core translation functionality
+- **[translateMany](/docs/core/class/methods/translation/translateMany)** - Batch translation
+- **[setupProject](/docs/core/class/methods/translation/setupProject)** - Project initialization
+- **[shouldSetupProject](/docs/core/class/methods/translation/shouldSetupProject)** - Check if project setup is needed
+- **[checkSetupStatus](/docs/core/class/methods/translation/checkSetupStatus)** - Verify project setup
+- **[getProjectData](/docs/core/class/methods/translation/getProjectData)** - Retrieve project information
+- **[uploadSourceFiles](/docs/core/class/methods/translation/uploadSourceFiles)** - Upload files for translation
+- **[enqueueFiles](/docs/core/class/methods/translation/enqueueFiles)** - Queue files for processing
+- **[checkFileTranslations](/docs/core/class/methods/translation/checkFileTranslations)** - Check translation status
+- **[downloadTranslatedFile](/docs/core/class/methods/translation/downloadTranslatedFile)** - Download single translated file
+- **[downloadFileBatch](/docs/core/class/methods/translation/downloadFileBatch)** - Download multiple translated files
+- **[querySourceFile](/docs/core/class/methods/translation/querySourceFile)** - Query source file information
+
+#### Formatting Methods
+- **[formatMessage](/docs/core/class/methods/formatting/formatMessage)** - Internationalized text formatting
+- **[formatNum](/docs/core/class/methods/formatting/formatNum)** - Number formatting
+- **[formatDateTime](/docs/core/class/methods/formatting/formatDateTime)** - Date and time formatting
+
+#### Locale Methods
+- **[getLocaleName](/docs/core/class/methods/locales/getLocaleName)** - Get locale display name
+- **[getLocaleProperties](/docs/core/class/methods/locales/getLocaleProperties)** - Get comprehensive locale information
+- **[getLocaleDirection](/docs/core/class/methods/locales/getLocaleDirection)** - Get text direction for locale
+- **[getLocaleEmoji](/docs/core/class/methods/locales/getLocaleEmoji)** - Get flag emoji for locale
+- **[getRegionProperties](/docs/core/class/methods/locales/getRegionProperties)** - Get region information and properties
+- **[isValidLocale](/docs/core/class/methods/locales/isValidLocale)** - Validate locale code
+- **[resolveAliasLocale](/docs/core/class/methods/locales/resolveAliasLocale)** - Convert canonical locales to aliases
+- **[resolveCanonicalLocale](/docs/core/class/methods/locales/resolveCanonicalLocale)** - Convert alias locales to canonical form
+- **[standardizeLocale](/docs/core/class/methods/locales/standardizeLocale)** - Standardize locale code formatting
+- **[isSameDialect](/docs/core/class/methods/locales/isSameDialect)** - Check if locales represent same dialect
+- **[isSameLanguage](/docs/core/class/methods/locales/isSameLanguage)** - Check if locales represent same language
+- **[isSupersetLocale](/docs/core/class/methods/locales/isSupersetLocale)** - Check locale hierarchy relationships
+- **[determineLocale](/docs/core/class/methods/locales/determineLocale)** - Find best matching locale from preferences
+- **[requiresTranslation](/docs/core/class/methods/locales/requiresTranslation)** - Determine if translation is needed
+
+### Utility Functions
+
+#### Formatting Functions
+- **[formatMessage](/docs/core/functions/formatting/formatMessage)** - Standalone text formatting
+- **[formatNum](/docs/core/functions/formatting/formatNum)** - Standalone number formatting
+- **[formatDateTime](/docs/core/functions/formatting/formatDateTime)** - Standalone date/time formatting
+
+#### Locale Functions
+- **[getLocaleName](/docs/core/functions/locales/getLocaleName)** - Standalone locale name utility
+- **[getLocaleProperties](/docs/core/functions/locales/getLocaleProperties)** - Standalone locale properties
+- **[getLocaleDirection](/docs/core/functions/locales/getLocaleDirection)** - Standalone text direction utility
+- **[getLocaleEmoji](/docs/core/functions/locales/getLocaleEmoji)** - Standalone emoji utility
+- **[getRegionProperties](/docs/core/functions/locales/getRegionProperties)** - Standalone region properties utility
+- **[isValidLocale](/docs/core/functions/locales/isValidLocale)** - Standalone locale validation
+- **[resolveAliasLocale](/docs/core/functions/locales/resolveAliasLocale)** - Standalone alias locale resolution
+- **[standardizeLocale](/docs/core/functions/locales/standardizeLocale)** - Standalone locale standardization
+- **[isSameDialect](/docs/core/functions/locales/isSameDialect)** - Standalone dialect comparison
+- **[isSameLanguage](/docs/core/functions/locales/isSameLanguage)** - Standalone language comparison
+- **[isSupersetLocale](/docs/core/functions/locales/isSupersetLocale)** - Standalone locale hierarchy checking
+- **[determineLocale](/docs/core/functions/locales/determineLocale)** - Standalone locale negotiation
+- **[requiresTranslation](/docs/core/functions/locales/requiresTranslation)** - Standalone translation requirement checking
+
+### Types and Interfaces
+TypeScript definitions:
+
+- **[GTConstructorParams](/docs/core/types/GTConstructorParams)** - Configuration options
+- **[LocaleProperties](/docs/core/types/LocaleProperties)** - Comprehensive locale information
+- **[TranslationResult](/docs/core/types/TranslationResult)** - Translation response types
+- **[TranslateManyResult](/docs/core/types/TranslateManyResult)** - Batch translation response
+- **[FileToTranslate](/docs/core/types/FileToTranslate)** - File translation configuration
+- **[EnqueueFilesOptions](/docs/core/types/EnqueueFilesOptions)** - File queuing options
+- **[Entry](/docs/core/types/Entry)** - Translation entry structure
+- **[EntryMetadata](/docs/core/types/EntryMetadata)** - Entry metadata information
+- **[Content](/docs/core/types/Content)** - Content type definitions
+- **[Variable](/docs/core/types/Variable)** - Variable structure
+- **[VariableType](/docs/core/types/VariableType)** - Variable type definitions
+- **[JsxElement](/docs/core/types/JsxElement)** - JSX element type
+- **[JsxChild](/docs/core/types/JsxChild)** - JSX child type
+- **[JsxChildren](/docs/core/types/JsxChildren)** - JSX children type
+- **[DataFormat](/docs/core/types/DataFormat)** - Data format specifications
+- **[CustomMapping](/docs/core/types/CustomMapping)** - Custom mapping configuration
 
 ---
 

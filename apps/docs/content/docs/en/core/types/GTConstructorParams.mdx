@@ -170,33 +170,29 @@ const gt = new GT({
 
 ---
 
-## Usage Examples
+## Examples
 
-### Minimal Configuration
+### Basic Configuration
 
-```typescript
-// Uses environment variables for API credentials
+```typescript copy
+// Minimal setup using environment variables
 const gt = new GT({
   sourceLocale: 'en',
   targetLocale: 'es'
 });
-```
 
-### Development Setup
-
-```typescript
-const gt = new GT({
+// Development configuration
+const devGT = new GT({
   devApiKey: process.env.GT_DEV_API_KEY,
   projectId: 'dev-project-123',
   sourceLocale: 'en',
-  targetLocale: 'es',
-  locales: ['en', 'es']
+  locales: ['en', 'es', 'fr']
 });
 ```
 
-### Production Configuration
+### Production Setup
 
-```typescript
+```typescript copy
 const gt = new GT({
   apiKey: process.env.GT_API_KEY,
   projectId: process.env.GT_PROJECT_ID,
@@ -205,104 +201,51 @@ const gt = new GT({
   locales: [
     'en', 'en-GB', 'en-CA',
     'fr', 'fr-CA',
-    'es', 'es-MX', 'es-AR',
-    'de', 'de-AT',
-    'ja', 'zh', 'ko-KR'
+    'es', 'es-MX',
+    'de', 'ja', 'zh'
   ]
 });
 ```
 
-### Enterprise Setup with Custom Mapping
+### Custom Locale Mapping
 
-```typescript
+```typescript copy
 const gt = new GT({
-  apiKey: 'enterprise-api-key',
-  projectId: 'enterprise-project',
-  baseUrl: 'https://custom-api.company.com',
-  sourceLocale: 'en',
+  sourceLocale: 'company-english',
   customMapping: {
     'company-english': {
-      code: 'en',
-      name: 'Company English',
+      code: 'en-US',
+      name: 'Company Standard English',
       regionName: 'Global'
     },
-    'company-spanish': {
-      code: 'es-419',
-      name: 'Company Spanish',
-      regionName: 'Latin America'
+    'simplified-chinese': {
+      code: 'zh-CN',
+      name: 'Simplified Chinese',
+      nativeName: '简体中文',
+      scriptCode: 'Hans',
+      emoji: '🇨🇳'
     }
   }
 });
 ```
 
----
-
-## Configuration Patterns
-
 ### Environment-Based Configuration
 
-```typescript
-function createGTInstance(environment: 'dev' | 'staging' | 'prod'): GT {
+```typescript copy
+function createGTInstance(env: 'dev' | 'prod'): GT {
   const baseConfig: GTConstructorParams = {
     sourceLocale: 'en',
     locales: ['en', 'es', 'fr']
   };
   
-  switch (environment) {
-    case 'dev':
-      return new GT({
-        ...baseConfig,
-        devApiKey: process.env.GT_DEV_API_KEY,
-        projectId: 'dev-project',
-        baseUrl: 'https://dev-api.generaltranslation.com'
-      });
-      
-    case 'staging':
-      return new GT({
-        ...baseConfig,
-        apiKey: process.env.GT_STAGING_API_KEY,
-        projectId: 'staging-project'
-      });
-      
-    case 'prod':
-      return new GT({
-        ...baseConfig,
-        apiKey: process.env.GT_PROD_API_KEY,
-        projectId: process.env.GT_PROD_PROJECT_ID
-      });
-  }
-}
-```
-
-### Dynamic Configuration
-
-```typescript
-interface AppConfig {
-  supportedLocales: string[];
-  defaultLocale: string;
-  userLocale: string;
-}
-
-function configureGT(appConfig: AppConfig): GT {
   return new GT({
-    sourceLocale: appConfig.defaultLocale,
-    targetLocale: appConfig.userLocale,
-    locales: appConfig.supportedLocales,
-    customMapping: generateCustomMapping(appConfig.supportedLocales)
+    ...baseConfig,
+    ...(env === 'dev' 
+      ? { devApiKey: process.env.GT_DEV_API_KEY }
+      : { apiKey: process.env.GT_API_KEY }
+    ),
+    projectId: process.env.GT_PROJECT_ID
   });
-}
-
-function generateCustomMapping(locales: string[]): CustomMapping {
-  // Generate custom mappings based on app requirements
-  return locales.reduce((mapping, locale) => {
-    if (locale.startsWith('zh-')) {
-      mapping[locale] = {
-        code: locale,
-        scriptCode: locale.includes('Hans') ? 'Hans' : 'Hant'
-      };
-    }
-    return mapping;
-  }, {} as CustomMapping);
 }
 ```
 

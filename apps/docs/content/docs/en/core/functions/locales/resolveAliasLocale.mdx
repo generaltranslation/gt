@@ -1,0 +1,90 @@
+---
+title: resolveAliasLocale()
+description: API Reference for the resolveAliasLocale function
+---
+
+## Overview
+
+The `resolveAliasLocale()` function converts canonical locale codes back to their alias locale codes when custom mapping is configured. This standalone function provides the same functionality as the GT class method without requiring an instance.
+
+```typescript
+import { resolveAliasLocale } from 'generaltranslation';
+
+const customMapping = {
+  'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
+  'traditional-chinese': { code: 'zh-TW', name: 'Traditional Chinese' }
+};
+
+// Resolve canonical to alias
+console.log(resolveAliasLocale('zh-CN', customMapping)); // 'simplified-chinese'
+console.log(resolveAliasLocale('zh-TW', customMapping)); // 'traditional-chinese'
+
+// Non-mapped locale returns original
+console.log(resolveAliasLocale('es-ES', customMapping)); // 'es-ES'
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Returns
+
+`string` - The alias locale code if mapping exists, otherwise the original locale
+
+---
+
+## Examples
+
+### API Response Processing
+
+```typescript
+import { resolveAliasLocale } from 'generaltranslation';
+
+const mapping = {
+  'chinese': { code: 'zh-CN', name: 'Chinese' },
+  'spanish': { code: 'es-ES', name: 'Spanish' }
+};
+
+// Process API response with canonical locales
+function processApiResponse(response: { locale: string; content: string }) {
+  return {
+    ...response,
+    displayLocale: resolveAliasLocale(response.locale, mapping)
+  };
+}
+
+const response = { locale: 'zh-CN', content: 'Hello' };
+console.log(processApiResponse(response));
+// { locale: 'zh-CN', content: 'Hello', displayLocale: 'chinese' }
+```
+
+---
+
+## Notes
+
+- Converts canonical locale codes back to user-friendly aliases
+- Returns original locale if no mapping exists
+- Essential for displaying user-facing locale names
+- Works with custom locale mappings
+- Stateless function - no side effects
+
+## Next Steps
+
+- Use GT class method [`resolveAliasLocale()`](/docs/core/class/methods/locales/resolveAliasLocale)
+- Convert to canonical with [`resolveCanonicalLocale()`](/docs/core/functions/locales/resolveCanonicalLocale)
+- Validate with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)

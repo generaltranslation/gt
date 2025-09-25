@@ -1,0 +1,103 @@
+---
+title: requiresTranslation()
+description: API Reference for the requiresTranslation function
+---
+
+## Overview
+
+The `requiresTranslation()` function determines whether translation is needed between source and target locales without requiring a GT class instance.
+
+```typescript
+import { requiresTranslation } from 'generaltranslation';
+
+// Different languages require translation
+console.log(requiresTranslation('en-US', 'es-ES')); // true
+console.log(requiresTranslation('en-US', 'fr-FR')); // true
+
+// Same languages don't require translation
+console.log(requiresTranslation('en-US', 'en-US')); // false
+console.log(requiresTranslation('en-US', 'en-GB')); // false
+
+// With approved locales filter
+const approved = ['en-US', 'es-ES', 'fr-FR'];
+console.log(requiresTranslation('en-US', 'it-IT', approved)); // false (not approved)
+console.log(requiresTranslation('en-US', 'es-ES', approved)); // true (approved and different)
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "sourceLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "targetLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "approvedLocales?": {
+      type: 'string[]',
+      optional: true,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if translation is required, `false` otherwise
+
+---
+
+## Examples
+
+### Translation Service Optimization
+
+```typescript
+import { requiresTranslation } from 'generaltranslation';
+
+async function smartTranslate(content: string, sourceLocale: string, targetLocale: string) {
+  if (!requiresTranslation(sourceLocale, targetLocale)) {
+    return {
+      content,
+      translated: false,
+      reason: 'Translation not needed'
+    };
+  }
+  
+  // Perform actual translation
+  const translated = await translateContent(content, sourceLocale, targetLocale);
+  return {
+    content: translated,
+    translated: true,
+    reason: 'Translation completed'
+  };
+}
+
+const result = await smartTranslate('Hello', 'en-US', 'en-GB');
+console.log(result); // { content: 'Hello', translated: false, reason: 'Translation not needed' }
+```
+
+---
+
+## Notes
+
+- Avoids unnecessary translation for same languages
+- Respects approved locale constraints
+- Essential for optimizing translation workflows
+- Returns false when target not in approved list
+- Considers custom locale mappings
+
+## Next Steps
+
+- Use GT class method [`requiresTranslation()`](/docs/core/class/methods/locales/requiresTranslation)
+- Compare languages with [`isSameLanguage()`](/docs/core/functions/locales/isSameLanguage)
+- Determine best locale with [`determineLocale()`](/docs/core/functions/locales/determineLocale)

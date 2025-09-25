@@ -44,9 +44,9 @@ The results maintain the same order as the input entries:
 
 ---
 
-## Example
+## Examples
 
-### Basic Batch Translation Processing
+### Basic Batch Processing
 
 ```typescript copy
 import { GT, Entry, TranslateManyResult } from 'generaltranslation';
@@ -66,16 +66,11 @@ async function processBatchTranslation() {
   
   const results: TranslateManyResult = await gt.translateMany(entries);
   
-  // Process each result
   results.forEach((result, index) => {
-    console.log(`Entry ${index}:`);
-    
     if ('error' in result) {
-      console.error(`  Error: ${result.error} (Code: ${result.code})`);
+      console.error(`Entry ${index} failed: ${result.error}`);
     } else {
-      console.log(`  Success: ${result.translation}`);
-      console.log(`  Locale: ${result.locale}`);
-      console.log(`  Hash: ${result.reference.hash}`);
+      console.log(`Entry ${index}: ${result.translation}`);
     }
   });
 }
@@ -90,43 +85,26 @@ function separateResults(results: TranslateManyResult) {
   
   results.forEach((result, index) => {
     if ('error' in result) {
-      errors.push({
-        ...result,
-        originalIndex: index  // Track which entry failed
-      });
+      errors.push(result);
     } else {
-      successes.push({
-        ...result,
-        originalIndex: index  // Track which entry succeeded
-      });
+      successes.push(result);
     }
   });
   
   return { successes, errors };
 }
 
-// Usage
 async function robustBatchTranslation(entries: Entry[]) {
   const results = await gt.translateMany(entries);
   const { successes, errors } = separateResults(results);
   
-  console.log(`${successes.length} translations succeeded`);
-  console.log(`${errors.length} translations failed`);
+  console.log(`${successes.length} succeeded, ${errors.length} failed`);
   
-  // Process successful translations
-  const translatedContent = successes.map(result => ({
+  return successes.map(result => ({
     content: result.translation,
     locale: result.locale,
     format: result.dataFormat
   }));
-  
-  // Handle errors (retry, fallback, logging, etc.)
-  if (errors.length > 0) {
-    console.error('Failed translations:', errors);
-    // Could implement retry logic here
-  }
-  
-  return translatedContent;
 }
 ```
 
@@ -140,83 +118,35 @@ interface Product {
   category: string;
 }
 
-interface TranslatedProduct extends Product {
-  translations: {
-    name: string;
-    description: string;
-    category: string;
-    locale: string;
-  };
-}
-
 async function translateProductCatalog(
   products: Product[], 
   targetLocale: string
-): Promise<TranslatedProduct[]> {
+): Promise<Product[]> {
   // Create entries for each product field
   const entries: Entry[] = [];
   const productMap: Array<{ productId: string; field: keyof Product }> = [];
   
   products.forEach(product => {
-    // Add name translation entry
-    entries.push({
-      source: product.name,
-      targetLocale,
-      metadata: {
-        id: `${product.id}-name`,
-        context: 'Product name'
-      }
+    ['name', 'description', 'category'].forEach(field => {
+      entries.push({
+        source: product[field as keyof Product],
+        targetLocale,
+        metadata: { context: `Product ${field}` }
+      });
+      productMap.push({ productId: product.id, field: field as keyof Product });
     });
-    productMap.push({ productId: product.id, field: 'name' });
-    
-    // Add description translation entry
-    entries.push({
-      source: product.description,
-      targetLocale,
-      metadata: {
-        id: `${product.id}-description`,
-        context: 'Product description'
-      }
-    });
-    productMap.push({ productId: product.id, field: 'description' });
-    
-    // Add category translation entry
-    entries.push({
-      source: product.category,
-      targetLocale,
-      metadata: {
-        id: `${product.id}-category`,
-        context: 'Product category'
-      }
-    });
-    productMap.push({ productId: product.id, field: 'category' });
   });
   
-  // Execute batch translation
   const results: TranslateManyResult = await gt.translateMany(entries);
   
-  // Reconstruct translated products
-  const translatedProducts: TranslatedProduct[] = products.map(product => ({
-    ...product,
-    translations: {
-      name: '',
-      description: '',
-      category: '',
-      locale: targetLocale
-    }
-  }));
-  
   // Map results back to products
+  const translatedProducts = [...products];
   results.forEach((result, index) => {
     const { productId, field } = productMap[index];
     const product = translatedProducts.find(p => p.id === productId);
     
     if (product && 'translation' in result) {
-      product.translations[field] = result.translation as string;
-    } else if (product && 'error' in result) {
-      console.error(`Translation failed for ${productId}.${field}:`, result.error);
-      // Keep original value as fallback
-      product.translations[field] = product[field];
+      product[field] = result.translation as string;
     }
   });
   
@@ -224,225 +154,41 @@ async function translateProductCatalog(
 }
 ```
 
-### UI Component Translation
-
-```typescript copy
-interface UIComponents {
-  buttons: Record<string, string>;
-  labels: Record<string, string>;
-  messages: Record<string, string>;
-}
-
-interface TranslatedUIComponents extends UIComponents {
-  locale: string;
-  translationStatus: {
-    total: number;
-    success: number;
-    failed: number;
-    errors: Array<{ key: string; error: string }>;
-  };
-}
-
-async function translateUIComponents(
-  components: UIComponents,
-  targetLocale: string
-): Promise<TranslatedUIComponents> {
-  const entries: Entry[] = [];
-  const keyMap: Array<{ category: keyof UIComponents; key: string }> = [];
-  
-  // Flatten all components into entries
-  (Object.keys(components) as Array<keyof UIComponents>).forEach(category => {
-    Object.entries(components[category]).forEach(([key, value]) => {
-      entries.push({
-        source: value,
-        targetLocale,
-        metadata: {
-          id: `${category}-${key}`,
-          context: `UI ${category} - ${key}`
-        }
-      });
-      keyMap.push({ category, key });
-    });
-  });
-  
-  // Execute batch translation
-  const results: TranslateManyResult = await gt.translateMany(entries);
-  
-  // Initialize translated components
-  const translated: TranslatedUIComponents = {
-    buttons: {},
-    labels: {},
-    messages: {},
-    locale: targetLocale,
-    translationStatus: {
-      total: results.length,
-      success: 0,
-      failed: 0,
-      errors: []
-    }
-  };
-  
-  // Process results
-  results.forEach((result, index) => {
-    const { category, key } = keyMap[index];
-    
-    if ('translation' in result) {
-      translated[category][key] = result.translation as string;
-      translated.translationStatus.success++;
-    } else {
-      // Use original value as fallback
-      translated[category][key] = components[category][key];
-      translated.translationStatus.failed++;
-      translated.translationStatus.errors.push({
-        key: `${category}.${key}`,
-        error: result.error
-      });
-    }
-  });
-  
-  return translated;
-}
-
-// Usage
-const uiComponents: UIComponents = {
-  buttons: {
-    save: 'Save',
-    cancel: 'Cancel',
-    submit: 'Submit'
-  },
-  labels: {
-    email: 'Email Address',
-    password: 'Password',
-    username: 'Username'
-  },
-  messages: {
-    success: 'Operation completed successfully',
-    error: 'An error occurred',
-    loading: 'Please wait...'
-  }
-};
-
-const spanishUI = await translateUIComponents(uiComponents, 'es');
-console.log('Translation status:', spanishUI.translationStatus);
-```
-
 ### Performance Monitoring
 
 ```typescript copy
-interface BatchTranslationMetrics {
-  totalEntries: number;
-  successCount: number;
-  errorCount: number;
-  averageTranslationLength: number;
+interface BatchMetrics {
+  total: number;
+  success: number;
+  errors: number;
   executionTime: number;
-  errorsByCode: Record<number, number>;
-  localeDistribution: Record<string, number>;
 }
 
-function analyzeTranslateManyResult(
+function analyzeResults(
   results: TranslateManyResult,
   executionTime: number
-): BatchTranslationMetrics {
-  const metrics: BatchTranslationMetrics = {
-    totalEntries: results.length,
-    successCount: 0,
-    errorCount: 0,
-    averageTranslationLength: 0,
-    executionTime,
-    errorsByCode: {},
-    localeDistribution: {}
+): BatchMetrics {
+  const successCount = results.filter(r => 'translation' in r).length;
+  
+  return {
+    total: results.length,
+    success: successCount,
+    errors: results.length - successCount,
+    executionTime
   };
-  
-  let totalTranslationLength = 0;
-  
-  results.forEach(result => {
-    if ('error' in result) {
-      metrics.errorCount++;
-      metrics.errorsByCode[result.code] = 
-        (metrics.errorsByCode[result.code] || 0) + 1;
-    } else {
-      metrics.successCount++;
-      
-      // Track locale distribution
-      metrics.localeDistribution[result.locale] = 
-        (metrics.localeDistribution[result.locale] || 0) + 1;
-      
-      // Calculate translation length
-      const translationText = typeof result.translation === 'string' 
-        ? result.translation 
-        : JSON.stringify(result.translation);
-      totalTranslationLength += translationText.length;
-    }
-  });
-  
-  if (metrics.successCount > 0) {
-    metrics.averageTranslationLength = totalTranslationLength / metrics.successCount;
-  }
-  
-  return metrics;
 }
 
-// Usage with timing
 async function monitoredBatchTranslation(entries: Entry[]) {
   const startTime = performance.now();
   const results = await gt.translateMany(entries);
   const endTime = performance.now();
   
-  const metrics = analyzeTranslateManyResult(results, endTime - startTime);
+  const metrics = analyzeResults(results, endTime - startTime);
   
-  console.log('Batch Translation Metrics:', {
-    'Success Rate': `${(metrics.successCount / metrics.totalEntries * 100).toFixed(2)}%`,
-    'Average Length': `${metrics.averageTranslationLength.toFixed(2)} chars`,
-    'Execution Time': `${metrics.executionTime.toFixed(2)}ms`,
-    'Errors by Code': metrics.errorsByCode,
-    'Locales': Object.keys(metrics.localeDistribution)
+  console.log('Metrics:', {
+    'Success Rate': `${(metrics.success / metrics.total * 100).toFixed(2)}%`,
+    'Execution Time': `${metrics.executionTime.toFixed(2)}ms`
   });
-  
-  return results;
-}
-```
-
-### Retry Logic for Failed Translations
-
-```typescript copy
-async function translateManyWithRetry(
-  entries: Entry[],
-  maxRetries: number = 3
-): Promise<TranslateManyResult> {
-  let results = await gt.translateMany(entries);
-  let retryCount = 0;
-  
-  while (retryCount < maxRetries) {
-    // Find failed entries
-    const failedIndices: number[] = [];
-    const retryEntries: Entry[] = [];
-    
-    results.forEach((result, index) => {
-      if ('error' in result && result.code >= 500) { // Retry server errors
-        failedIndices.push(index);
-        retryEntries.push(entries[index]);
-      }
-    });
-    
-    if (retryEntries.length === 0) break;
-    
-    console.log(`Retry ${retryCount + 1}: ${retryEntries.length} failed entries`);
-    
-    // Wait before retry (exponential backoff)
-    const delay = Math.pow(2, retryCount) * 1000;
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    // Retry failed entries
-    const retryResults = await gt.translateMany(retryEntries);
-    
-    // Update results with retry outcomes
-    retryResults.forEach((retryResult, retryIndex) => {
-      const originalIndex = failedIndices[retryIndex];
-      results[originalIndex] = retryResult;
-    });
-    
-    retryCount++;
-  }
   
   return results;
 }

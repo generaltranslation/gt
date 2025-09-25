@@ -85,9 +85,9 @@ type TranslationError = {
 
 ---
 
-## Example
+## Examples
 
-### Handling Translation Results
+### Basic Error Handling
 
 ```typescript copy
 import { GT, TranslationResult } from 'generaltranslation';
@@ -101,30 +101,19 @@ const gt = new GT({
 async function translateWithErrorHandling(content: string) {
   const result: TranslationResult = await gt.translate(content);
   
-  // Check if the result is an error
   if ('error' in result) {
     console.error(`Translation failed: ${result.error} (Code: ${result.code})`);
     return null;
   }
   
-  // Handle successful translation
   console.log(`Translated to ${result.locale}`);
   console.log(`Content hash: ${result.reference.hash}`);
   
-  // Access the translated content based on format
-  if (result.dataFormat === 'JSX') {
-    return result.translation; // JsxChildren
-  } else {
-    return result.translation as string; // I18nextMessage | IcuMessage
-  }
+  return result.translation;
 }
-
-const translatedText = await translateWithErrorHandling('Hello, world!');
 ```
 
 ### Type Guards
-
-Create helper functions to handle different result types:
 
 ```typescript copy
 function isTranslationError(result: TranslationResult): result is TranslationError {
@@ -142,7 +131,6 @@ async function safeTranslate(content: string) {
     throw new Error(`Translation failed: ${result.error}`);
   }
   
-  // TypeScript now knows this is RequestSuccess
   return {
     content: result.translation,
     locale: result.locale,
@@ -152,9 +140,7 @@ async function safeTranslate(content: string) {
 }
 ```
 
-### Batch Translation Results
-
-Handle arrays of translation results:
+### Batch Results Processing
 
 ```typescript copy
 import { TranslateManyResult } from 'generaltranslation';
@@ -175,10 +161,8 @@ async function processBatchResults(sources: string[]) {
     }
   });
   
-  console.log(`${successes.length} translations succeeded`);
-  console.log(`${errors.length} translations failed`);
+  console.log(`${successes.length} succeeded, ${errors.length} failed`);
   
-  // Process successful translations
   return successes.map(success => ({
     text: success.translation,
     locale: success.locale,
@@ -187,36 +171,26 @@ async function processBatchResults(sources: string[]) {
 }
 ```
 
-### Working with Different Data Formats
-
-Handle different translation formats appropriately:
+### Format-Specific Handling
 
 ```typescript copy
 function extractTranslationContent(result: RequestSuccess): string | JsxChildren {
   switch (result.dataFormat) {
     case 'JSX':
-      // Return JSX content as-is for React components
       return result.translation as JsxChildren;
-      
     case 'ICU':
     case 'I18NEXT':
-      // Return string content for text-based formats
       return result.translation as string;
-      
     default:
-      throw new Error(`Unsupported data format: ${result.dataFormat}`);
+      throw new Error(`Unsupported format: ${result.dataFormat}`);
   }
 }
 
-async function translateAndFormat(content: string, targetFormat: 'JSX' | 'ICU') {
+async function translateAndExtract(content: string) {
   const result = await gt.translate(content);
   
   if (isTranslationError(result)) {
     throw new Error(result.error);
-  }
-  
-  if (result.dataFormat !== targetFormat) {
-    console.warn(`Expected ${targetFormat} but got ${result.dataFormat}`);
   }
   
   return extractTranslationContent(result);

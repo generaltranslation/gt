@@ -55,14 +55,14 @@ type ActionType = 'standard' | 'fast' | string;
 
 ---
 
-## Example
+## Examples
 
-### Basic Context and ID
+### Basic Metadata Usage
 
 ```typescript copy
 import { Entry, EntryMetadata } from 'generaltranslation';
 
-const metadataExample: EntryMetadata = {
+const basicMetadata: EntryMetadata = {
   context: 'Button text in the main navigation menu',
   id: 'nav-home-button'
 };
@@ -70,17 +70,23 @@ const metadataExample: EntryMetadata = {
 const entry: Entry = {
   source: 'Home',
   targetLocale: 'es',
-  metadata: metadataExample
+  metadata: basicMetadata
 };
 ```
 
-### Performance Optimization
+### Performance and Format Specification
 
 ```typescript copy
 const performanceMetadata: EntryMetadata = {
-  actionType: 'fast', // Use faster model
-  timeout: 5000,      // 5 second timeout
-  context: 'Simple UI text that needs quick translation'
+  actionType: 'fast',
+  timeout: 5000,
+  context: 'Simple UI text needing quick translation'
+};
+
+const icuMetadata: EntryMetadata = {
+  dataFormat: 'ICU',
+  actionType: 'standard',
+  context: 'Plural form for item count'
 };
 
 const quickEntry: Entry = {
@@ -88,19 +94,9 @@ const quickEntry: Entry = {
   targetLocale: 'fr',
   metadata: performanceMetadata
 };
-```
-
-### Content Format Specification
-
-```typescript copy
-const icuMetadata: EntryMetadata = {
-  dataFormat: 'ICU',
-  context: 'Plural form for item count in shopping cart',
-  actionType: 'standard' // Use standard model for complex plurals
-};
 
 const pluralEntry: Entry = {
-  source: 'You have {itemCount, plural, =0 {no items} =1 {one item} other {{itemCount} items}} in your cart',
+  source: '{count, plural, =0 {no items} =1 {one item} other {{count} items}}',
   targetLocale: 'de',
   metadata: icuMetadata
 };
@@ -112,7 +108,7 @@ const pluralEntry: Entry = {
 const regionalMetadata: EntryMetadata = {
   regionCode: 'MX',
   scriptCode: 'Latn',
-  context: 'Mexican Spanish variant for currency display'
+  context: 'Mexican Spanish variant for currency'
 };
 
 const regionalEntry: Entry = {
@@ -122,28 +118,10 @@ const regionalEntry: Entry = {
 };
 ```
 
-### JSX Content with Metadata
-
-```typescript copy
-const jsxMetadata: EntryMetadata = {
-  dataFormat: 'JSX',
-  context: 'Error message with embedded link',
-  actionType: 'standard',
-  id: 'error-404-message'
-};
-
-const jsxEntry: Entry = {
-  source: <p>Page not found. <a href="/">Go home</a></p>,
-  targetLocale: 'es',
-  metadata: jsxMetadata
-};
-```
-
-### Batch Entries with Mixed Metadata
+### Mixed Batch Translation
 
 ```typescript copy
 const batchEntries: Entry[] = [
-  // Fast translation for simple UI text
   {
     source: 'Save',
     targetLocale: 'es',
@@ -153,121 +131,23 @@ const batchEntries: Entry[] = [
       id: 'btn-save'
     }
   },
-  
-  // Standard translation for complex content
   {
-    source: 'Your data will be securely processed according to our privacy policy.',
+    source: 'Your data will be processed according to our privacy policy.',
     targetLocale: 'es',
     metadata: {
       actionType: 'standard',
       context: 'Legal disclaimer text',
-      timeout: 15000,
-      id: 'legal-disclaimer'
+      timeout: 15000
     }
   },
-  
-  // Regional customization
   {
     source: 'Color',
-    targetLocale: 'en',
+    targetLocale: 'en-GB',
     metadata: {
       regionCode: 'GB',
-      context: 'British English spelling preference',
-      id: 'color-label-uk'
+      context: 'British English spelling'
     }
   }
-];
-```
-
-### Source Locale Override
-
-```typescript copy
-const multilingualMetadata: EntryMetadata = {
-  sourceLocale: 'fr', // Override instance sourceLocale
-  context: 'French content being translated to Spanish',
-  actionType: 'standard'
-};
-
-const crossLanguageEntry: Entry = {
-  source: 'Bonjour le monde',
-  targetLocale: 'es',
-  metadata: multilingualMetadata
-};
-```
-
-### Complex E-commerce Example
-
-```typescript copy
-const productEntries: Entry[] = [
-  {
-    source: 'Add to cart',
-    targetLocale: 'es',
-    metadata: {
-      actionType: 'fast',
-      context: 'Product page button',
-      regionCode: 'ES',
-      id: 'add-to-cart-es'
-    }
-  },
-  {
-    source: 'You saved {discount, number, currency} on this item!',
-    targetLocale: 'es',
-    metadata: {
-      dataFormat: 'ICU',
-      actionType: 'standard',
-      context: 'Savings notification with currency formatting',
-      regionCode: 'MX',
-      id: 'savings-notification-mx'
-    }
-  },
-  {
-    source: <div>Only <strong>{quantity}</strong> left in stock!</div>,
-    targetLocale: 'es',
-    metadata: {
-      dataFormat: 'JSX',
-      actionType: 'fast',
-      context: 'Urgency message with stock count',
-      id: 'stock-urgency'
-    }
-  }
-];
-```
-
-### Timeout Strategy
-
-```typescript copy
-function createEntryWithTimeout(
-  source: string, 
-  targetLocale: string, 
-  complexity: 'simple' | 'medium' | 'complex'
-): Entry {
-  const timeouts = {
-    simple: 3000,   // 3 seconds
-    medium: 10000,  // 10 seconds  
-    complex: 30000  // 30 seconds
-  };
-  
-  const actionTypes = {
-    simple: 'fast' as const,
-    medium: 'standard' as const,
-    complex: 'standard' as const
-  };
-  
-  return {
-    source,
-    targetLocale,
-    metadata: {
-      timeout: timeouts[complexity],
-      actionType: actionTypes[complexity],
-      context: `${complexity} content requiring ${timeouts[complexity]}ms timeout`
-    }
-  };
-}
-
-const timedEntries = [
-  createEntryWithTimeout('OK', 'ja', 'simple'),
-  createEntryWithTimeout('Please confirm your email address', 'ja', 'medium'),
-  createEntryWithTimeout('This legal agreement governs...', 'ja', 'complex')
 ];
 ```
 

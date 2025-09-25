@@ -1,0 +1,101 @@
+---
+title: isSupersetLocale()
+description: API Reference for the GT isSupersetLocale method
+---
+
+## Overview
+
+The `isSupersetLocale()` method checks if one locale is a superset of another locale in the BCP-47 hierarchy. A superset locale is more general and can serve as a fallback for more specific locales.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es-ES'
+});
+
+// Base language is superset of regional variant
+console.log(gt.isSupersetLocale('en', 'en-US')); // true
+console.log(gt.isSupersetLocale('es', 'es-ES')); // true
+console.log(gt.isSupersetLocale('zh', 'zh-CN')); // true
+
+// Regional variant is NOT superset of base language
+console.log(gt.isSupersetLocale('en-US', 'en')); // false
+console.log(gt.isSupersetLocale('es-ES', 'es')); // false
+
+// Same locales
+console.log(gt.isSupersetLocale('en-US', 'en-US')); // true
+
+// Different languages
+console.log(gt.isSupersetLocale('en', 'es-ES')); // false
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "superLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "subLocale": {
+      type: 'string',
+      optional: false,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if superLocale is a superset of subLocale
+
+---
+
+## Examples
+
+### Fallback Chain Building
+
+```typescript
+const gt = new GT({ sourceLocale: 'en-US' });
+
+function buildFallbackChain(locale: string, availableLocales: string[]): string[] {
+  const fallbacks = [];
+  
+  // Add exact match first
+  if (availableLocales.includes(locale)) {
+    fallbacks.push(locale);
+  }
+  
+  // Add supersets as fallbacks
+  for (const available of availableLocales) {
+    if (available !== locale && gt.isSupersetLocale(available, locale)) {
+      fallbacks.push(available);
+    }
+  }
+  
+  return fallbacks;
+}
+
+const available = ['en', 'en-US', 'es', 'fr'];
+const fallbacks = buildFallbackChain('en-GB', available);
+console.log(fallbacks); // ['en'] - 'en' is superset of 'en-GB'
+```
+
+---
+
+## Notes
+
+- Uses BCP-47 locale hierarchy for comparison
+- A locale is always a superset of itself
+- Base languages are supersets of their regional variants
+- Essential for building locale fallback systems
+- Returns false for completely different languages
+
+## Next Steps
+
+- **[Compare same languages with isSameLanguage()](/docs/core/class/methods/locales/isSameLanguage)**
+- **[Compare dialects with isSameDialect()](/docs/core/class/methods/locales/isSameDialect)**
+- **[Explore standalone isSupersetLocale()](/docs/core/functions/locales/isSupersetLocale)**
