@@ -1,4 +1,4 @@
-import TranslationsTab from './components/TranslationsTab';
+import TranslationsTab from './components/tab/TranslationsTab';
 import {
   Secrets,
   Adapter,
@@ -6,13 +6,8 @@ import {
   ImportTranslation,
   TranslationFunctionContext,
   TranslationsTabConfigOptions,
-  GTFile,
 } from './types';
-import { baseDocumentLevelConfig } from './configuration/baseDocumentLevelConfig';
-import { baseFieldLevelConfig } from './configuration/baseFieldLevelConfig';
 import { findLatestDraft } from './configuration/utils/findLatestDraft';
-import { documentLevelPatch } from './configuration/baseDocumentLevelConfig/documentLevelPatch';
-import { fieldLevelPatch } from './configuration/baseFieldLevelConfig';
 import {
   BaseDocumentSerializer,
   BaseDocumentDeserializer,
@@ -20,7 +15,7 @@ import {
   defaultStopTypes,
   customSerializers,
   SerializedDocument,
-} from 'sanity-naive-html-serializer';
+} from './serialization';
 
 export type {
   Secrets,
@@ -35,53 +30,24 @@ export {
   TranslationsTab,
   //helpers for end developers who may need to customize serialization
   findLatestDraft,
-  documentLevelPatch,
-  fieldLevelPatch,
   BaseDocumentSerializer,
   BaseDocumentDeserializer,
   BaseDocumentMerger,
   defaultStopTypes,
   customSerializers,
+  attachGTData,
+  detachGTData,
 };
 
-import { GTAdapter } from './adapter';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
-import { gt, gtConfig } from './adapter/core';
-import { GTSerializedDocument } from './types';
+import { gt, pluginConfig } from './adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { IgnoreFields, TranslateDocumentFilter } from './adapter/types';
 import TranslationsTool from './components/page/TranslationsTool';
 import { SECRETS_NAMESPACE } from './utils/shared';
-
-interface ConfigOptions {
-  adapter: Adapter;
-  secretsNamespace: string | null;
-  exportForTranslation: (
-    docInfo: GTFile,
-    context: TranslationFunctionContext
-  ) => Promise<GTSerializedDocument>;
-  importTranslation: (
-    docInfo: GTFile,
-    localeId: string,
-    doc: string,
-    context: TranslationFunctionContext
-  ) => Promise<void>;
-}
-
-export const defaultDocumentLevelConfig: ConfigOptions = {
-  ...baseDocumentLevelConfig,
-  adapter: GTAdapter,
-  secretsNamespace: 'generaltranslation',
-};
-
-export const defaultFieldLevelConfig: ConfigOptions = {
-  ...baseFieldLevelConfig,
-  adapter: GTAdapter,
-  secretsNamespace: 'generaltranslation',
-};
-
-export { GTAdapter };
+import type { PortableTextHtmlComponents } from '@portabletext/to-html';
+import { attachGTData, detachGTData } from './serialization/data';
 
 export type GTPluginConfig = Omit<
   Parameters<typeof gt.setConfig>[0],
@@ -96,6 +62,10 @@ export type GTPluginConfig = Omit<
   languageField?: string;
   translateDocuments?: TranslateDocumentFilter[];
   secretsNamespace?: string;
+  additionalStopTypes?: string[];
+  additionalSerializers?: Partial<PortableTextHtmlComponents>;
+  additionalDeserializers?: Record<string, any>;
+  additionalBlockDeserializers?: any[];
 };
 
 /**
@@ -124,6 +94,10 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     ignoreFields,
     translateDocuments,
     secretsNamespace = SECRETS_NAMESPACE,
+    additionalStopTypes = [],
+    additionalSerializers = {},
+    additionalDeserializers = {},
+    additionalBlockDeserializers = [],
   }) => {
     // Validate the translateDocuments
     translateDocuments = translateDocuments?.filter((filter) => {
@@ -133,7 +107,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       return false;
     });
 
-    gtConfig.init(
+    pluginConfig.init(
       secretsNamespace,
       languageField,
       sourceLocale,
@@ -143,7 +117,11 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       singletonMapping ||
         ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`),
       ignoreFields || [],
-      translateDocuments || []
+      translateDocuments || [],
+      additionalStopTypes,
+      additionalSerializers,
+      additionalDeserializers,
+      additionalBlockDeserializers
     );
     gt.setConfig({
       sourceLocale: sourceLocale,
@@ -153,6 +131,14 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     });
     return {
       name: 'gt-sanity',
+      tools: [
+        {
+          name: 'translations',
+          title: 'Translations',
+          component: TranslationsTool,
+          router: route.create('/*'),
+        },
+      ],
     };
   }
 );

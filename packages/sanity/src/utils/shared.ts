@@ -1,1 +1,1 @@
-export const SECRETS_NAMESPACE = 'generaltranslation';
+export const SECRETS_NAMESPACE = 'generaltranslation.secrets';
