@@ -20,7 +20,6 @@ import {
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
-import { LocaleProperties } from 'generaltranslation/types';
 import {
   useMessages,
   useGT,
