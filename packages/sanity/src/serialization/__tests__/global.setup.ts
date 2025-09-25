@@ -7,10 +7,10 @@ import { vi } from 'vitest';
 
 let mockTestKey = 0;
 
-vi.mock('@sanity/block-tools', async () => {
+vi.mock('@portabletext/block-tools', async () => {
   const originalModule = await vi.importActual<
-    typeof import('@sanity/block-tools')
-  >('@sanity/block-tools');
+    typeof import('@portabletext/block-tools')
+  >('@portabletext/block-tools');
   return {
     ...originalModule,
     //not ideal but vi.mock('@sanity/block-tools/src/util/randomKey.ts' is not working

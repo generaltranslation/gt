@@ -36,7 +36,7 @@
         {
           "_key": "e220ie0jfh93",
           "_type": "span",
-          "marks": [],
+          "marks": ["topLink1"],
           "text": " at the top level."
         }
       ],

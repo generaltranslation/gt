@@ -1,4 +1,4 @@
-import { PortableTextBlock } from 'sanity';
+import { PortableTextBlock, SanityDocument } from 'sanity';
 import { describe, expect, test } from 'vitest';
 import {
   getSerialized,
@@ -6,9 +6,32 @@ import {
   toPlainText,
   getDeserialized,
 } from '../helpers';
-import { docWithInlineMarks, findByClass, getHTMLNode } from './utils';
+import { docWithInlineMarks, findByClass, getHTMLNode, schema } from './utils';
+import { attachGTData, BaseDocumentSerializer, customSerializers } from '../..';
+import { TranslationLevel } from '../../types';
+import { defaultStopTypes } from '../..';
+import merge from 'lodash.merge';
+import { PortableTextHtmlComponents } from '@portabletext/to-html';
 
-const serialized = getSerialized(docWithInlineMarks, 'document');
+function serialize(document: SanityDocument, level: TranslationLevel) {
+  const serializer = BaseDocumentSerializer(schema);
+  return serializer.serializeDocument(
+    document,
+    level,
+    'en',
+    defaultStopTypes,
+    merge(customSerializers, {
+      marks: {
+        link: ({ value, children }) =>
+          attachGTData(`<a>${children}</a>`, value, 'markDef'),
+        inlineMath: ({ value, children }) =>
+          attachGTData(`<span>${children}</span>`, value, 'markDef'),
+      },
+    } satisfies Partial<PortableTextHtmlComponents>)
+  );
+}
+
+const serialized = serialize(docWithInlineMarks, 'document');
 const deserialized = getDeserialized(docWithInlineMarks, 'document');
 const docTree = getHTMLNode(serialized).body.children[0];
 
