@@ -1,0 +1,212 @@
+---
+title: uploadSourceFiles()
+description: API Reference for the uploadSourceFiles() method to upload source files for translation
+---
+
+## Overview
+
+The `uploadSourceFiles()` method uploads source files to the General Translation platform for translation processing. This is typically the first step in a translation workflow before setting up projects or enqueueing translation jobs.
+
+```typescript
+const gt = new GT({ apiKey: 'your-api-key' });
+
+const result = await gt.uploadSourceFiles(files, {
+  sourceLocale: 'en'
+});
+```
+
+<Callout>
+**Base64 Encoding:**
+File content is automatically Base64 encoded during upload to ensure safe transmission of all file types and character encodings.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `files` | `FileUpload[]` | Array of source files to upload |
+| `options` | `UploadFilesOptions` | Configuration options for the upload |
+
+#### FileUpload Structure
+
+| Name | Type | Description |
+|------|------|-------------|
+| `content` | `string` | Raw file content as a string |
+| `fileName` | `string` | Unique file identifier (typically file path + name) |
+| `fileFormat` | `FileFormat` | Format of the file (JSON, MDX, MD, XML, etc.) |
+| `dataFormat?` | `DataFormat` | Optional format of data within the file (ICU, I18NEXT, JSX) |
+| `locale` | `string` | Locale of the source file content |
+| `versionId?` | `string` | Optional version ID for advanced use cases |
+| `fileId?` | `string` | Optional file ID for advanced use cases |
+
+#### UploadFilesOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `sourceLocale` | `string` | The source locale for all uploaded files |
+| `modelProvider?` | `string` | Optional AI model provider preference |
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<UploadFilesResponse>` - Contains upload results and file references.
+
+```typescript
+type UploadFilesResponse = {
+  uploadedFiles: FileUploadRef[];
+  count: number;
+  message: string;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `uploadedFiles` | `FileUploadRef[]` | Array of uploaded file references for subsequent operations |
+| `count` | `number` | Number of files successfully uploaded |
+| `message` | `string` | Status message from the API |
+
+#### FileUploadRef Structure
+
+```typescript
+type FileUploadRef = {
+  fileId: string;
+  versionId: string;
+  fileName: string;
+  fileFormat: FileFormat;
+  dataFormat?: DataFormat;
+  locale?: string;
+}
+```
+
+---
+
+## Examples
+
+### Basic Usage
+
+Upload JSON translation files:
+
+```typescript copy
+import { GT } from 'generaltranslation';
+import fs from 'fs';
+
+const gt = new GT({
+  apiKey: 'your-api-key'
+});
+
+const files = [
+  {
+    content: fs.readFileSync('./locales/en/common.json', 'utf8'),
+    fileName: 'common.json',
+    fileFormat: 'JSON' as const,
+    locale: 'en'
+  },
+  {
+    content: fs.readFileSync('./locales/en/navigation.json', 'utf8'),
+    fileName: 'navigation.json', 
+    fileFormat: 'JSON' as const,
+    locale: 'en'
+  }
+];
+
+const result = await gt.uploadSourceFiles(files, {
+  sourceLocale: 'en'
+});
+
+console.log(`Uploaded ${result.count} files`);
+result.uploadedFiles.forEach(file => {
+  console.log(`  ${file.fileName}: ${file.fileId}`);
+});
+```
+
+### With Data Format Specification
+
+Upload files with explicit data format specification:
+
+```typescript copy
+const files = [
+  {
+    content: '{"welcome": "Welcome, {name}!"}',
+    fileName: 'messages.json',
+    fileFormat: 'JSON' as const,
+    dataFormat: 'ICU' as const, // ICU message format
+    locale: 'en'
+  },
+  {
+    content: '{"greeting": "Hello {{name}}"}',
+    fileName: 'i18next.json',
+    fileFormat: 'JSON' as const,
+    dataFormat: 'I18NEXT' as const,
+    locale: 'en'
+  }
+];
+
+const result = await gt.uploadSourceFiles(files, {
+  sourceLocale: 'en',
+  modelProvider: 'gpt-4',
+  timeout: 30000
+});
+```
+
+### Batch Upload with Error Handling
+
+Upload multiple files with comprehensive error handling:
+
+```typescript copy
+import { glob } from 'glob';
+import path from 'path';
+
+async function uploadAllJsonFiles() {
+  try {
+    // Find all JSON files
+    const jsonPaths = await glob('./locales/en/**/*.json');
+    
+    const files = jsonPaths.map(filePath => ({
+      content: fs.readFileSync(filePath, 'utf8'),
+      fileName: path.relative('./locales/en', filePath),
+      fileFormat: 'JSON' as const,
+      locale: 'en'
+    }));
+
+    console.log(`Uploading ${files.length} files...`);
+    
+    const result = await gt.uploadSourceFiles(files, {
+      sourceLocale: 'en',
+      timeout: 60000 // 60 second timeout for large uploads
+    });
+
+    if (result.count !== files.length) {
+      console.warn(`Expected ${files.length} files, but only ${result.count} uploaded`);
+    }
+
+    return result.uploadedFiles;
+    
+  } catch (error) {
+    console.error('Upload failed:', error);
+    throw error;
+  }
+}
+
+const uploadedFiles = await uploadAllJsonFiles();
+```
+
+---
+
+## Notes
+
+* File content is automatically Base64 encoded for safe transmission
+* File names should be unique identifiers, typically including the file path
+* The `locale` field in each file should match the `sourceLocale` option
+* Large files or many files may require increased timeout values
+* File references returned from this method are needed for subsequent operations
+* Supported file formats include JSON, MD, MDX, XML, and others - see `FileFormat` type for complete list
+
+## Next Steps
+
+* See [`setupProject()`](/docs/core/class/methods/translation/setupProject) to prepare uploaded files for translation
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translation jobs
+* See [`uploadTranslations()`](/docs/core/class/methods/translation/uploadTranslations) to upload pre-existing translations
+* See [`FileUpload`](/docs/core/types/FileUpload) for detailed file structure
+* See [`FileFormat`](/docs/core/types/FileFormat) for supported file formats

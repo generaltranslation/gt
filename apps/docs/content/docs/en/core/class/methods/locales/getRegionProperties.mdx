@@ -1,0 +1,133 @@
+---
+title: getRegionProperties()
+description: API Reference for the GT getRegionProperties method
+---
+
+## Overview
+
+The `getRegionProperties()` method retrieves detailed information about a region code, including its localized name and associated emoji flag. It provides a convenient way to get region-specific display information for building internationalized user interfaces.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'fr-FR'
+});
+
+// Get region properties
+const usProps = gt.getRegionProperties('US');
+console.log(usProps);
+// { code: 'US', name: 'United States', emoji: '🇺🇸' }
+
+const frProps = gt.getRegionProperties('FR');
+console.log(frProps);
+// { code: 'FR', name: 'France', emoji: '🇫🇷' }
+
+// Auto-detect from current locale
+const currentRegion = gt.getRegionProperties(); // Uses targetLocale's region
+console.log(currentRegion);
+// { code: 'FR', name: 'France', emoji: '🇫🇷' }
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "region?": {
+      type: 'string',
+      optional: true,
+      default: 'this.getLocaleProperties().regionCode'
+    },
+    "customMapping?": {
+      type: 'CustomRegionMapping',
+      optional: true,
+      default: 'this.customRegionMapping'
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|--------------|
+| `region` | ISO 3166-1 alpha-2 or UN M.49 region code. If not provided, uses the region from the instance's target locale |
+| `customMapping` | Optional custom region mapping to override default region names and emojis |
+
+### Returns
+
+`{ code: string; name: string; emoji: string }` - Object containing:
+- `code`: The input region code
+- `name`: Localized region name in the target locale language
+- `emoji`: Associated emoji flag or symbol
+
+---
+
+## Examples
+
+### Basic Region Information
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'en-US'
+});
+
+// Common region codes
+console.log(gt.getRegionProperties('US')); // { code: 'US', name: 'United States', emoji: '🇺🇸' }
+console.log(gt.getRegionProperties('GB')); // { code: 'GB', name: 'United Kingdom', emoji: '🇬🇧' }
+console.log(gt.getRegionProperties('DE')); // { code: 'DE', name: 'Germany', emoji: '🇩🇪' }
+console.log(gt.getRegionProperties('JP')); // { code: 'JP', name: 'Japan', emoji: '🇯🇵' }
+```
+
+### Localized Region Names
+
+```typescript
+// German localization
+const gtDe = new GT({ targetLocale: 'de-DE' });
+console.log(gtDe.getRegionProperties('US')); // { code: 'US', name: 'Vereinigte Staaten', emoji: '🇺🇸' }
+console.log(gtDe.getRegionProperties('FR')); // { code: 'FR', name: 'Frankreich', emoji: '🇫🇷' }
+
+// French localization
+const gtFr = new GT({ targetLocale: 'fr-FR' });
+console.log(gtFr.getRegionProperties('US')); // { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
+console.log(gtFr.getRegionProperties('DE')); // { code: 'DE', name: 'Allemagne', emoji: '🇩🇪' }
+```
+
+### Custom Region Mapping
+
+```typescript
+const gt = new GT({
+  targetLocale: 'en-US',
+  customMapping: {
+    'custom-us': {
+      code: 'en-US',
+      regionCode: 'US',
+      regionName: 'USA',
+      emoji: '🗽'
+    }
+  }
+});
+
+// Custom mapping overrides default
+const customProps = gt.getRegionProperties('US');
+console.log(customProps); // { code: 'US', name: 'USA', emoji: '🗽' }
+```
+
+---
+
+## Notes
+
+- Uses `Intl.DisplayNames` API for localized region names
+- Supports both ISO 3166-1 alpha-2 and UN M.49 region codes
+- Custom mappings override default names and emojis
+- Automatically detects region from target locale if no parameter provided
+- Falls back to region code as name if display name resolution fails
+
+## Next Steps
+
+- **[Get full locale properties with getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
+- **[Get locale emoji with getLocaleEmoji()](/docs/core/class/methods/locales/getLocaleEmoji)**
+- **[Explore standalone getRegionProperties()](/docs/core/functions/locales/getRegionProperties)**

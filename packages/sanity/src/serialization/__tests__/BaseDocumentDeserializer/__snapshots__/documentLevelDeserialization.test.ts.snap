@@ -1,0 +1,189 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Global test of working doc-level functionality and snapshot match 1`] = `
+{
+  "_id": "drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a",
+  "_rev": "fxcnqj-uew-gr7-v6r-z965tfm69",
+  "_type": "documentLevelArticle",
+  "config": {
+    "_type": "objectField",
+    "nestedArrayField": [
+      {
+        "_key": "4a58adc7c507",
+        "_type": "block",
+        "children": [
+          {
+            "_key": "randomKey-16",
+            "_type": "span",
+            "marks": [],
+            "text": "This is block text 1 level deep",
+          },
+        ],
+        "markDefs": [],
+        "style": "normal",
+      },
+    ],
+    "objectAsField": {
+      "_type": "childObjectField",
+      "content": [
+        {
+          "_key": "1aa228ac848b",
+          "_type": "block",
+          "children": [
+            {
+              "_key": "randomKey-14",
+              "_type": "span",
+              "marks": [],
+              "text": "This is a block text 2 levels deep",
+            },
+          ],
+          "markDefs": [],
+          "style": "normal",
+        },
+      ],
+      "title": "This is one level deeper",
+    },
+    "title": "This is an object nested in a document",
+  },
+  "content": [
+    {
+      "_key": "a4d177e92666",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-18",
+          "_type": "span",
+          "marks": [],
+          "text": "This is block text at the top level.",
+        },
+      ],
+      "markDefs": [],
+      "style": "normal",
+    },
+    {
+      "_key": "c0313627775e",
+      "_type": "objectField",
+      "objectAsField": {
+        "_type": "childObjectField",
+        "content": [
+          {
+            "_key": "4f24f6fbfae7",
+            "_type": "block",
+            "children": [
+              {
+                "_key": "randomKey-24",
+                "_type": "span",
+                "marks": [],
+                "text": "This is block text in a nested object in an object in top-level block text.",
+              },
+            ],
+            "markDefs": [],
+            "style": "normal",
+          },
+        ],
+        "title": "This is a nested object in an object in top-level block text.",
+      },
+      "title": "This is an object in top-level block text.",
+    },
+    {
+      "_key": "9e2ab13c6d63",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-26",
+          "_type": "span",
+          "marks": [],
+          "text": "This is h1 text",
+        },
+      ],
+      "markDefs": [],
+      "style": "h1",
+    },
+    {
+      "_key": "297142fbaf21",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-28",
+          "_type": "span",
+          "marks": [],
+          "text": "This is h2 text",
+        },
+      ],
+      "markDefs": [],
+      "style": "h2",
+    },
+    {
+      "_key": "76e648fc3845",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-32",
+          "_type": "span",
+          "marks": [],
+          "text": "Bullet 1",
+        },
+      ],
+      "level": 1,
+      "listItem": "bullet",
+      "markDefs": [],
+      "style": "normal",
+    },
+    {
+      "_key": "d090cd8b27d2",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-36",
+          "_type": "span",
+          "marks": [],
+          "text": "nested bullet a",
+        },
+      ],
+      "level": 2,
+      "listItem": "bullet",
+      "markDefs": [],
+      "style": "normal",
+    },
+    {
+      "_key": "1cdffa5d50f5",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-42",
+          "_type": "span",
+          "marks": [],
+          "text": "Styled bullet 2",
+        },
+      ],
+      "level": 1,
+      "listItem": "bullet",
+      "markDefs": [],
+      "style": "h2",
+    },
+    {
+      "_key": "da29f5063059",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-48",
+          "_type": "span",
+          "marks": [],
+          "text": "Number 1",
+        },
+      ],
+      "level": 1,
+      "listItem": "number",
+      "markDefs": [],
+      "style": "h3",
+    },
+  ],
+  "snippet": "This is text in my text field.",
+  "tags": [
+    "tag 1",
+    "tag 2",
+    "tag 3",
+  ],
+  "title": "My Document-Level Article",
+}
+`;

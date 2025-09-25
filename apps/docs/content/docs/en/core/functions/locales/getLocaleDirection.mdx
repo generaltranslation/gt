@@ -1,0 +1,326 @@
+---
+title: getLocaleDirection()
+description: API Reference for the getLocaleDirection function
+---
+
+## Overview
+
+The `getLocaleDirection()` function determines the text direction (left-to-right or right-to-left) for a locale without requiring a GT class instance.
+It uses the `Intl.Locale` API to provide accurate direction detection for any valid BCP-47 locale code.
+
+This function is most often used to set the `dir` attribute of a HTML element based on the locale.
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+const direction = getLocaleDirection('ar-SA');
+console.log(direction); // "rtl"
+
+const englishDirection = getLocaleDirection('en-US');
+console.log(englishDirection); // "ltr"
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to check text direction for |
+
+### Returns
+
+`'ltr' | 'rtl'` - Text direction for the locale:
+- `'ltr'`: Left-to-right (most languages including English, Spanish, French, German, Chinese, Japanese, etc.)
+- `'rtl'`: Right-to-left (Arabic, Hebrew, Persian, Urdu, and other Semitic/Middle Eastern languages)
+
+---
+
+## Behavior
+
+### Direction Detection Algorithm
+
+The function uses the `Intl.Locale` API's `textInfo.direction` property:
+1. Creates an `Intl.Locale` object for the provided locale
+2. Accesses the `textInfo.direction` property for language-specific direction
+3. Returns `'rtl'` for right-to-left languages, `'ltr'` for all others
+4. Defaults to `'ltr'` if the locale is invalid or causes an error
+
+### RTL Language Recognition
+
+Automatically detects RTL languages including:
+- **Arabic** (`ar`, `ar-SA`, `ar-EG`, `ar-AE`, etc.)
+- **Hebrew** (`he`, `he-IL`)
+- **Persian/Farsi** (`fa`, `fa-IR`)
+- **Urdu** (`ur`, `ur-PK`, `ur-IN`)
+- **Pashto** (`ps`)
+- **Sindhi** (`sd`)
+- **Kurdish Sorani** (`ckb`)
+- And other RTL scripts
+
+### Error Handling
+
+- Invalid or malformed locale codes default to `'ltr'`
+- No exceptions thrown for invalid input
+- Robust fallback behavior for edge cases
+
+---
+
+## Examples
+
+### Basic Direction Detection
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Left-to-right languages
+console.log(getLocaleDirection('en-US')); // "ltr"
+console.log(getLocaleDirection('es-ES')); // "ltr"
+console.log(getLocaleDirection('fr-FR')); // "ltr"
+console.log(getLocaleDirection('ja-JP')); // "ltr"
+console.log(getLocaleDirection('zh-CN')); // "ltr"
+
+// Right-to-left languages
+console.log(getLocaleDirection('ar-SA')); // "rtl"
+console.log(getLocaleDirection('he-IL')); // "rtl"
+console.log(getLocaleDirection('fa-IR')); // "rtl"
+console.log(getLocaleDirection('ur-PK')); // "rtl"
+```
+
+### React Direction-Aware Components
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+import { useMemo } from 'react';
+
+function useLocaleDirection(locale: string): 'ltr' | 'rtl' {
+  return useMemo(() => getLocaleDirection(locale), [locale]);
+}
+
+// Usage in components
+function DirectionalText({ locale, children }: { locale: string; children: React.ReactNode }) {
+  const direction = useLocaleDirection(locale);
+  
+  return (
+    <div 
+      dir={direction}
+      style={{
+        textAlign: direction === 'rtl' ? 'right' : 'left',
+        direction
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Example usage
+function App() {
+  return (
+    <div>
+      <DirectionalText locale="en-US">Hello World!</DirectionalText>
+      <DirectionalText locale="ar-SA">مرحبا بالعالم!</DirectionalText>
+      <DirectionalText locale="he-IL">שלום עולם!</DirectionalText>
+    </div>
+  );
+}
+```
+
+### Direction-Aware Styling
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+interface DirectionalStyles {
+  ltr: React.CSSProperties;
+  rtl: React.CSSProperties;
+  common?: React.CSSProperties;
+}
+
+function createDirectionalStyles(locale: string, styles: DirectionalStyles): React.CSSProperties {
+  const direction = getLocaleDirection(locale);
+  
+  return {
+    direction,
+    ...styles.common,
+    ...styles[direction]
+  };
+}
+
+// Usage examples
+const buttonStyles = (locale: string) => createDirectionalStyles(locale, {
+  common: {
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '4px'
+  },
+  ltr: {
+    marginRight: '8px',
+    textAlign: 'left'
+  },
+  rtl: {
+    marginLeft: '8px', 
+    textAlign: 'right'
+  }
+});
+
+// Component usage
+function LocalizedButton({ locale, children, ...props }) {
+  return (
+    <button style={buttonStyles(locale)} {...props}>
+      {children}
+    </button>
+  );
+}
+```
+
+### Error Handling
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Invalid locales default to 'ltr'
+console.log(getLocaleDirection('invalid-locale')); // "ltr"
+console.log(getLocaleDirection('xyz')); // "ltr"
+console.log(getLocaleDirection('')); // "ltr"
+
+// Safe direction detection function
+function safeGetDirection(locale: string): {
+  direction: 'ltr' | 'rtl';
+  isValid: boolean;
+  warning?: string;
+} {
+  try {
+    // Basic format validation
+    if (!locale || typeof locale !== 'string') {
+      return {
+        direction: 'ltr',
+        isValid: false,
+        warning: 'Invalid locale format'
+      };
+    }
+    
+    const direction = getLocaleDirection(locale);
+    
+    // Additional validation could be added here
+    const hasValidFormat = /^[a-z]{2,3}(-[A-Z]{2,4})?(-[A-Z]{2})?$/.test(locale);
+    
+    return {
+      direction,
+      isValid: hasValidFormat,
+      warning: hasValidFormat ? undefined : 'Potentially invalid locale format'
+    };
+    
+  } catch (error) {
+    return {
+      direction: 'ltr',
+      isValid: false,
+      warning: `Error detecting direction: ${error.message}`
+    };
+  }
+}
+
+// Usage with validation
+const results = [
+  safeGetDirection('ar-SA'),     // Valid RTL
+  safeGetDirection('en-US'),     // Valid LTR
+  safeGetDirection('invalid'),   // Invalid
+  safeGetDirection('')           // Empty
+];
+
+results.forEach(result => {
+  console.log(`Direction: ${result.direction}, Valid: ${result.isValid}`);
+  if (result.warning) {
+    console.warn(result.warning);
+  }
+});
+```
+
+---
+
+## Performance Considerations
+
+- **No State Overhead**: Function calls don't maintain internal state, ideal for utility usage
+- **Intl.Locale Performance**: First calls may be slower due to `Intl.Locale` object creation
+- **Memory Efficient**: No internal caching, minimal memory footprint
+- **Suitable for Caching**: Results are deterministic and cache-friendly
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Example caching implementation for high-frequency usage
+class DirectionCache {
+  private static instance: DirectionCache;
+  private cache = new Map<string, 'ltr' | 'rtl'>();
+  
+  static getInstance(): DirectionCache {
+    if (!DirectionCache.instance) {
+      DirectionCache.instance = new DirectionCache();
+    }
+    return DirectionCache.instance;
+  }
+  
+  get(locale: string): 'ltr' | 'rtl' {
+    if (!this.cache.has(locale)) {
+      this.cache.set(locale, getLocaleDirection(locale));
+    }
+    return this.cache.get(locale)!;
+  }
+  
+  preload(locales: string[]): void {
+    locales.forEach(locale => this.get(locale));
+  }
+  
+  size(): number {
+    return this.cache.size;
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Usage
+const cache = DirectionCache.getInstance();
+
+// Preload common directions
+cache.preload(['en-US', 'ar-SA', 'he-IL', 'fa-IR', 'de-DE', 'fr-FR']);
+
+// Fast repeated access
+console.log(cache.get('ar-SA')); // "rtl" - cached
+console.log(cache.get('en-US')); // "ltr" - cached
+```
+
+---
+
+## Notes
+
+- Returns `'ltr'` for all left-to-right languages (most languages worldwide)
+- Returns `'rtl'` for right-to-left languages (Arabic, Hebrew, Persian, etc.)
+- Uses the modern `Intl.Locale` API for accurate detection
+- Gracefully handles invalid locales by defaulting to `'ltr'`
+- No exceptions thrown - always returns a valid direction
+- Essential for building international applications with proper RTL support
+- Works with all BCP-47 locale codes
+- Stateless function suitable for utility libraries
+
+## Next Steps
+
+- Use GT class method [`getLocaleDirection()`](/docs/core/class/methods/locales/getLocaleDirection)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/functions/locales/getLocaleProperties)
+- Validate locales with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
+- Check out the supported locales [here](/docs/platform/locale-strings)

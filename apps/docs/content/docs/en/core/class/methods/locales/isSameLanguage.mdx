@@ -1,0 +1,88 @@
+---
+title: isSameLanguage()
+description: API Reference for the GT isSameLanguage method
+---
+
+## Overview
+
+The `isSameLanguage()` method checks if multiple BCP-47 locale codes represent the same base language, ignoring regional and script differences. This is useful for determining language compatibility and grouping content by language family.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES'
+});
+
+// Same language, different regions
+console.log(gt.isSameLanguage('en-US', 'en-GB')); // true
+console.log(gt.isSameLanguage('es-ES', 'es-MX')); // true
+console.log(gt.isSameLanguage('zh-CN', 'zh-TW')); // true
+
+// Different languages
+console.log(gt.isSameLanguage('en-US', 'es-ES')); // false
+console.log(gt.isSameLanguage('fr-FR', 'de-DE')); // false
+
+// Base language with variants
+console.log(gt.isSameLanguage('en', 'en-US', 'en-GB')); // true
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "...locales": {
+      type: '(string | string[])[]',
+      optional: false,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if all locale codes represent the same base language
+
+---
+
+## Examples
+
+### Language Family Grouping
+
+```typescript
+const gt = new GT({ sourceLocale: 'en-US' });
+
+// Group locales by language
+const locales = ['en-US', 'en-GB', 'es-ES', 'es-MX', 'fr-FR', 'fr-CA'];
+const languageGroups = new Map();
+
+for (const locale of locales) {
+  const language = locale.split('-')[0];
+  if (!languageGroups.has(language)) {
+    languageGroups.set(language, []);
+  }
+  languageGroups.get(language).push(locale);
+}
+
+// Verify grouping
+for (const [language, group] of languageGroups) {
+  console.log(`${language}: ${gt.isSameLanguage(...group)}`); // true for each group
+}
+```
+
+---
+
+## Notes
+
+- Compares only the base language code (before first hyphen)
+- Ignores regional, script, and variant differences
+- Essential for language-based content organization
+- Works with variable number of locale parameters
+
+## Next Steps
+
+- **[Compare dialects with isSameDialect()](/docs/core/class/methods/locales/isSameDialect)**
+- **[Check locale hierarchy with isSupersetLocale()](/docs/core/class/methods/locales/isSupersetLocale)**
+- **[Explore standalone isSameLanguage()](/docs/core/functions/locales/isSameLanguage)**

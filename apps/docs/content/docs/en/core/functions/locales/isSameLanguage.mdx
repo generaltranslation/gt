@@ -1,0 +1,89 @@
+---
+title: isSameLanguage()
+description: API Reference for the isSameLanguage function
+---
+
+## Overview
+
+The `isSameLanguage()` function checks if multiple BCP-47 locale codes represent the same base language, ignoring regional differences.
+
+```typescript
+import { isSameLanguage } from 'generaltranslation';
+
+// Same language, different regions
+console.log(isSameLanguage('en-US', 'en-GB')); // true
+console.log(isSameLanguage('es-ES', 'es-MX')); // true
+console.log(isSameLanguage('zh-CN', 'zh-TW')); // true
+
+// Different languages
+console.log(isSameLanguage('en-US', 'es-ES')); // false
+console.log(isSameLanguage('fr-FR', 'de-DE')); // false
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "...locales": {
+      type: '(string | string[])[]',
+      optional: false,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if all locale codes represent the same base language
+
+---
+
+## Examples
+
+### Language Grouping
+
+```typescript
+import { isSameLanguage } from 'generaltranslation';
+
+function groupByLanguage(locales: string[]) {
+  const groups: string[][] = [];
+  
+  for (const locale of locales) {
+    let added = false;
+    for (const group of groups) {
+      if (isSameLanguage(group[0], locale)) {
+        group.push(locale);
+        added = true;
+        break;
+      }
+    }
+    if (!added) {
+      groups.push([locale]);
+    }
+  }
+  
+  return groups;
+}
+
+const locales = ['en-US', 'en-GB', 'es-ES', 'es-MX', 'fr-FR'];
+console.log(groupByLanguage(locales));
+// [['en-US', 'en-GB'], ['es-ES', 'es-MX'], ['fr-FR']]
+```
+
+---
+
+## Notes
+
+- Compares only base language codes (before first hyphen)
+- Ignores regional, script, and variant differences
+- Essential for language-based content organization
+- Works with variable number of parameters
+
+## Next Steps
+
+- Use GT class method [`isSameLanguage()`](/docs/core/class/methods/locales/isSameLanguage)
+- Compare dialects with [`isSameDialect()`](/docs/core/functions/locales/isSameDialect)
+- Check requirements with [`requiresTranslation()`](/docs/core/functions/locales/requiresTranslation)

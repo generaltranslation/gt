@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.6.2
+
+### Patch Changes
+
+- [#680](https://github.com/generaltranslation/gt/pull/680) [`a73a532`](https://github.com/generaltranslation/gt/commit/a73a5323bbcaace8955a2261dae1bba20955c67b) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Improved types for getLocaleDirection
+
 ## 6.6.1
 
 ### Patch Changes

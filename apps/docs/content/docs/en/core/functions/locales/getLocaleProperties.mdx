@@ -1,0 +1,302 @@
+---
+title: getLocaleProperties()
+description: API Reference for the standalone getLocaleProperties function
+---
+
+## Overview
+
+The standalone `getLocaleProperties()` function retrieves comprehensive properties for a locale code without requiring a GT class instance. It provides detailed information including display names, region codes, script information, and emoji flags in a complete `LocaleProperties` object.
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+const props = getLocaleProperties('fr-CA', 'en');
+console.log(props.name); // "French (Canada)"
+console.log(props.nativeName); // "français (Canada)"
+console.log(props.emoji); // "🇨🇦"
+console.log(props.regionCode); // "CA"
+```
+
+This function is perfect for building locale selectors, internationalized components, or any situation where you need comprehensive locale metadata without maintaining GT class state.
+
+<Callout>
+**Lightweight Comprehensive Utility:**
+This standalone function provides the complete `LocaleProperties` interface without class overhead, making it ideal for utility libraries, components, and situations where you need rich locale data without state management.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "defaultLocale?": {
+      type: 'string',
+      optional: true,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get properties for |
+| `defaultLocale` | Locale to use for localizing display names (defaults to 'en') |
+| `customMapping` | Optional custom mapping for locale codes and properties |
+
+### Returns
+
+`LocaleProperties` - A comprehensive object containing all locale information:
+
+- `code`: Standardized locale code
+- `name`: Display name in default locale
+- `nativeName`: Display name in the locale itself
+- `languageCode`, `languageName`, `nativeLanguageName`: Language information
+- `regionCode`, `regionName`, `nativeRegionName`: Region information  
+- `scriptCode`, `scriptName`, `nativeScriptName`: Script information
+- `maximizedCode`, `minimizedCode`: Canonical forms
+- `nameWithRegionCode`, `nativeNameWithRegionCode`: Combined display formats
+- `emoji`: Flag or representative emoji
+
+---
+
+## Behavior
+
+### Display Language Resolution
+
+The function localizes names using this priority:
+1. `defaultLocale` parameter (for `name`, `languageName`, `regionName`, `scriptName`)
+2. Native locale itself (for `nativeName`, `nativeLanguageName`, etc.)
+3. Library default locale ('en') as fallback
+
+### Custom Mapping Integration
+
+- Custom mappings are checked first for all properties
+- Supports alias resolution and property overrides
+- Falls back to standard Intl APIs for unmapped codes
+- Canonical locale resolution for aliased locales
+
+### Code Processing Strategy
+
+1. **Custom mapping lookup** (highest priority)
+2. **Intl.Locale standardization** and property extraction
+3. **Intl.DisplayNames** resolution in specified locales
+4. **Fallback data generation** for invalid codes
+
+---
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+// English display names
+const enProps = getLocaleProperties('es-MX', 'en');
+console.log(enProps.name); // "Spanish (Mexico)"
+console.log(enProps.languageName); // "Spanish"
+console.log(enProps.regionName); // "Mexico"
+console.log(enProps.emoji); // "🇲🇽"
+
+// French display names
+const frProps = getLocaleProperties('es-MX', 'fr');
+console.log(frProps.name); // "espagnol (Mexique)"
+console.log(frProps.languageName); // "espagnol"
+console.log(frProps.regionName); // "Mexique"
+
+// Native names are always in the target locale
+console.log(enProps.nativeName); // "español (México)"
+console.log(frProps.nativeName); // "español (México)"
+```
+
+### Building Locale Selector Components
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+interface LocaleOption {
+  code: string;
+  displayName: string;
+  nativeName: string;
+  flag: string;
+  isRTL: boolean;
+}
+
+function createLocaleOptions(locales: string[], displayLocale = 'en'): LocaleOption[] {
+  return locales.map(locale => {
+    const props = getLocaleProperties(locale, displayLocale);
+    
+    return {
+      code: props.code,
+      displayName: props.name,
+      nativeName: props.nativeName,
+      flag: props.emoji,
+      isRTL: isRTLLocale(locale) // Assume this helper exists
+    };
+  });
+}
+
+// Create options for different display languages
+const englishOptions = createLocaleOptions([
+  'en-US', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'zh-CN', 'ar-SA'
+], 'en');
+
+console.log(englishOptions);
+// [
+//   { code: 'en-US', displayName: 'English (United States)', nativeName: 'English (United States)', flag: '🇺🇸', isRTL: false },
+//   { code: 'es-ES', displayName: 'Spanish (Spain)', nativeName: 'español (España)', flag: '🇪🇸', isRTL: false },
+//   // ...
+// ]
+```
+
+### Custom Mapping
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+const customMapping = {
+  // Business locale
+  'business-english': {
+    code: 'en-US',
+    name: 'Business English',
+    nativeName: 'Business English',
+    regionName: 'Corporate',
+    emoji: '💼'
+  },
+  
+  // Gaming locale
+  'gamer-speak': {
+    code: 'en-GAMING',
+    name: 'Gaming English',
+    nativeName: 'L33t Sp34k',
+    languageName: 'Gaming',
+    nativeLanguageName: 'Gaming',
+    regionName: 'Virtual',
+    emoji: '🎮'
+  }
+};
+
+// Use custom mappings
+const businessProps = getLocaleProperties('business-english', 'en', customMapping);
+console.log(businessProps.regionName); // "Corporate"
+console.log(businessProps.emoji); // "💼"
+
+const gamerProps = getLocaleProperties('gamer-speak', 'en', customMapping);
+console.log(gamerProps.languageName); // "Gaming"
+console.log(gamerProps.nativeName); // "L33t Sp34k"
+```
+
+### Error Handling
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+// Invalid locale codes return fallback data
+const invalidProps = getLocaleProperties('invalid-locale');
+console.log(invalidProps.code); // "invalid-locale"
+console.log(invalidProps.name); // "invalid-locale"
+console.log(invalidProps.emoji); // "🏳️" (default flag)
+
+// Validate before processing
+function safeGetLocaleProperties(locale: string, defaultLocale?: string): LocaleProperties | null {
+  try {
+    const props = getLocaleProperties(locale, defaultLocale);
+    
+    // Check if we got meaningful data
+    if (props.code === locale && props.name === locale) {
+      console.warn(`Potentially invalid locale: ${locale}`);
+      return null;
+    }
+    
+    return props;
+  } catch (error) {
+    console.error(`Failed to get properties for ${locale}:`, error.message);
+    return null;
+  }
+}
+
+const props = safeGetLocaleProperties('xyz');
+if (props) {
+  console.log(`Valid locale: ${props.name}`);
+} else {
+  console.log('Invalid or unrecognized locale');
+}
+```
+
+---
+
+## Performance Considerations
+
+- **No State Overhead**: Function calls don't maintain internal state, ideal for one-off usage
+- **Intl API Caching**: Browser caches Intl objects, but first calls may be slower
+- **Custom Mapping Speed**: Properties from custom mappings resolve faster than Intl APIs
+- **Batch Processing**: For many locales, consider batch processing patterns
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+// Example performance optimization for repeated calls
+class LocalePropertiesCache {
+  private cache = new Map<string, LocaleProperties>();
+  
+  get(locale: string, displayLocale = 'en', customMapping?: any): LocaleProperties {
+    const cacheKey = `${locale}:${displayLocale}:${JSON.stringify(customMapping || {})}`;
+    
+    if (!this.cache.has(cacheKey)) {
+      this.cache.set(cacheKey, getLocaleProperties(locale, displayLocale, customMapping));
+    }
+    
+    return this.cache.get(cacheKey)!;
+  }
+  
+  preload(locales: string[], displayLocale = 'en', customMapping?: any): void {
+    locales.forEach(locale => this.get(locale, displayLocale, customMapping));
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Usage
+const cache = new LocalePropertiesCache();
+
+// Preload common locales
+cache.preload(['en-US', 'es-ES', 'fr-FR', 'de-DE']);
+
+// Fast subsequent access
+console.log(cache.get('en-US').name); // Fast - cached
+console.log(cache.get('es-ES').name); // Fast - cached
+```
+
+---
+
+## Notes
+
+- Function provides comprehensive locale data without GT class instantiation
+- All display names respect the `defaultLocale` parameter for localization
+- Custom mapping properties take precedence over standard Intl APIs  
+- Invalid locales return fallback data with the original code rather than throwing errors
+- The complete `LocaleProperties` interface is always returned
+- Native names are always computed in the target locale itself
+- Emoji flags follow regional conventions with diplomatic considerations
+
+## Next Steps
+
+- **[Explore LocaleProperties interface](/docs/core/types/LocaleProperties)** - Complete interface documentation
+- **[Use GT class method getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
+- **[Get simple locale names with getLocaleName()](/docs/core/functions/locales/getLocaleName)**
+- **[Get locale emoji with getLocaleEmoji()](/docs/core/functions/locales/getLocaleEmoji)**
+- **[Learn about CustomMapping type](/docs/core/types/CustomMapping)**

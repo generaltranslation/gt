@@ -1,0 +1,72 @@
+---
+title: isSameDialect()
+description: API Reference for the isSameDialect function
+---
+
+## Overview
+
+The `isSameDialect()` function checks if multiple BCP-47 locale codes represent the same dialect without requiring a GT class instance.
+
+```typescript
+import { isSameDialect } from 'generaltranslation';
+
+// Same dialect checks
+console.log(isSameDialect('en-US', 'en-US')); // true
+console.log(isSameDialect('en', 'en-US')); // true (base language matches regional)
+console.log(isSameDialect('en-US', 'en-GB')); // false (different regions)
+console.log(isSameDialect('en-US', 'es-ES')); // false (different languages)
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "...locales": {
+      type: '(string | string[])[]',
+      optional: false,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if all locale codes represent the same dialect
+
+---
+
+## Examples
+
+### Content Compatibility Check
+
+```typescript
+import { isSameDialect } from 'generaltranslation';
+
+function canShareContent(sourceLocale: string, targetLocales: string[]) {
+  return targetLocales.filter(target => 
+    isSameDialect(sourceLocale, target)
+  );
+}
+
+const compatible = canShareContent('en-US', ['en-US', 'en-GB', 'en-CA']);
+console.log(compatible); // ['en-US'] - only exact match for different dialects
+```
+
+---
+
+## Notes
+
+- Considers base languages as parents of regional variants
+- Regional variants must match exactly
+- Essential for locale fallback logic
+- Accepts flexible input formats
+- No external dependencies
+
+## Next Steps
+
+- Use GT class method [`isSameDialect()`](/docs/core/class/methods/locales/isSameDialect)
+- Compare languages with [`isSameLanguage()`](/docs/core/functions/locales/isSameLanguage)
+- Check hierarchy with [`isSupersetLocale()`](/docs/core/functions/locales/isSupersetLocale)

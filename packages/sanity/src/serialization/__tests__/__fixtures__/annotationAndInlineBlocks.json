@@ -1,0 +1,140 @@
+{
+  "content": [
+    {
+      "_key": "6fe9a3ecaf0f",
+      "style": "normal",
+      "markDefs": [],
+      "_type": "block",
+      "listItem": "number",
+      "level": 1,
+      "children": [
+        {
+          "_type": "span",
+          "marks": [],
+          "text": "",
+          "_key": "47eb0224d6b5"
+        },
+        {
+          "_key": "d3dcb15f4bfe",
+          "_type": "childObjectField",
+          "title": "This is an inline object in a top-level block list"
+        }
+      ]
+    },
+    {
+      "_key": "a1b026261117",
+      "_type": "block",
+      "markDefs": [],
+      "style": "normal",
+      "level": 2,
+      "listItem": "number",
+      "children": [
+        {
+          "_key": "d3dcb15f4bfe",
+          "_type": "childObjectField",
+          "title": "This is an inline object in a nested list item"
+        }
+      ]
+    },
+    {
+      "_key": "0e55995095df",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "a94d5e26cc99",
+          "_type": "span",
+          "marks": [],
+          "text": "This is block "
+        },
+        {
+          "_key": "3d31216296ab",
+          "_type": "span",
+          "marks": ["2f5ec56ab061"],
+          "text": "text"
+        },
+        {
+          "_key": "d669ccc1799e",
+          "_type": "span",
+          "marks": [],
+          "text": " at the top level. "
+        },
+        {
+          "_key": "0871af4fa11c",
+          "_type": "childObjectField",
+          "title": "This is an inline object in a top-level block text field"
+        },
+        {
+          "_key": "be01d00a77a2",
+          "_type": "span",
+          "marks": [],
+          "text": ""
+        }
+      ],
+      "markDefs": [
+        {
+          "_key": "2f5ec56ab061",
+          "_type": "annotation",
+          "content": [
+            {
+              "_key": "f94daf68d620",
+              "_type": "block",
+              "children": [
+                {
+                  "_key": "0f9944aec4a2",
+                  "_type": "span",
+                  "marks": [],
+                  "text": "This is an annotation on the word \"text\" on block-level content"
+                }
+              ],
+              "markDefs": [],
+              "style": "normal"
+            }
+          ],
+          "title": "Annotation"
+        }
+      ],
+      "style": "normal"
+    },
+    {
+      "_key": "7e1268803bda",
+      "_type": "objectField",
+      "nestedArrayField": [
+        {
+          "_key": "40703bc96a33",
+          "_type": "block",
+          "children": [
+            {
+              "_key": "103500a73aa4",
+              "_type": "span",
+              "marks": [],
+              "text": "This is block text in a nested object."
+            }
+          ],
+          "markDefs": [],
+          "style": "normal"
+        }
+      ],
+      "objectAsField": {
+        "_type": "childObjectField",
+        "content": [
+          {
+            "_key": "663b9b01b63a",
+            "_type": "block",
+            "children": [
+              {
+                "_key": "c64b6cda3790",
+                "_type": "span",
+                "marks": [],
+                "text": "This is block text in a nested object in an object in top-level block text."
+              }
+            ],
+            "markDefs": [],
+            "style": "normal"
+          }
+        ],
+        "title": "This is a nested object in an object in top-level block text."
+      },
+      "title": "This is an object in top-level block text."
+    }
+  ]
+}

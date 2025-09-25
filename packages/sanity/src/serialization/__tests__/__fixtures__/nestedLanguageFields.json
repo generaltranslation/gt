@@ -1,0 +1,54 @@
+{
+  "slices": [
+    {
+      "_key": "6b9d0b28810f",
+      "_type": "localeBlock",
+      "en": [
+        {
+          "_key": "cebb6c538ce0",
+          "_type": "block",
+          "children": [
+            {
+              "_key": "48cc6e3b0754",
+              "_type": "span",
+              "marks": [],
+              "text": "This is block text in my slice."
+            }
+          ],
+          "markDefs": [],
+          "style": "normal"
+        }
+      ],
+      "fr_FR": [
+        {
+          "_key": "8bf012dc2eda",
+          "_type": "block",
+          "children": [
+            {
+              "_key": "44954c1912e1",
+              "_type": "span",
+              "marks": [],
+              "text": "Ceci est une texte du bloque en mon slice"
+            }
+          ],
+          "markDefs": [],
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "_type": "reference",
+      "_key": "13ed4b8013e4",
+      "_ref": "66dd1434-23c3-4d94-9e5a-d117775be828"
+    }
+  ],
+  "pageFields": {
+    "_type": "pageFields",
+    "name": {
+      "_type": "localeString",
+      "en": "Hello, this is my page name in my page field.",
+      "fr_FR": "C'est une field en frances"
+    },
+    "slug": "current slug"
+  }
+}

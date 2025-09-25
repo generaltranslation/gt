@@ -1,0 +1,104 @@
+---
+title: isValidLocale()
+description: API Reference for the isValidLocale function
+---
+
+## Overview
+
+The `isValidLocale()` function validates whether a given string represents a valid BCP-47 locale code. It performs comprehensive format validation without requiring a GT class instance.
+
+```typescript
+import { isValidLocale } from 'generaltranslation';
+
+// Valid locale codes
+console.log(isValidLocale('en-US')); // true
+console.log(isValidLocale('zh-CN')); // true
+console.log(isValidLocale('es')); // true
+
+// Invalid locale codes
+console.log(isValidLocale('invalid')); // false
+console.log(isValidLocale('en_US')); // false (underscore instead of hyphen)
+console.log(isValidLocale('')); // false
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if the locale code is valid, `false` otherwise
+
+---
+
+## Examples
+
+### Basic Validation
+
+```typescript
+import { isValidLocale } from 'generaltranslation';
+
+// Test various locale formats
+const testLocales = ['en-US', 'fr-FR', 'invalid', 'zh-CN', 'es'];
+
+testLocales.forEach(locale => {
+  console.log(`${locale}: ${isValidLocale(locale)}`);
+});
+
+// Output:
+// en-US: true
+// fr-FR: true
+// invalid: false
+// zh-CN: true
+// es: true
+```
+
+### Input Validation
+
+```typescript
+function validateUserLocale(input: string): { valid: boolean; standardized?: string } {
+  if (!input || typeof input !== 'string') {
+    return { valid: false };
+  }
+  
+  // Try standardizing first
+  const standardized = standardizeLocale(input);
+  const valid = isValidLocale(standardized);
+  
+  return {
+    valid,
+    standardized: valid ? standardized : undefined
+  };
+}
+```
+
+---
+
+## Notes
+
+- Validates BCP-47 locale code format
+- Works with custom locale mappings
+- Essential for user input validation
+- No network requests - pure format validation
+- Stateless function suitable for utility libraries
+
+## Next Steps
+
+- Use GT class method [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Standardize format with [`standardizeLocale()`](/docs/core/functions/locales/standardizeLocale)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/functions/locales/getLocaleProperties)

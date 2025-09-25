@@ -1,0 +1,729 @@
+---
+title: requiresTranslation()
+description: API Reference for the GT requiresTranslation method
+---
+
+## Overview
+
+The `requiresTranslation()` method determines whether translation is needed based on source and target locales. It intelligently checks if the source content needs to be translated by comparing locale codes and considering approved locale lists, making it essential for conditional translation logic and performance optimization.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES',
+  locales: ['en-US', 'es-ES', 'fr-FR', 'de-DE']
+});
+
+// Different languages require translation
+console.log(gt.requiresTranslation('en-US', 'es-ES')); // true
+console.log(gt.requiresTranslation('en-US', 'fr-FR')); // true
+
+// Same languages don't require translation
+console.log(gt.requiresTranslation('en-US', 'en-US')); // false
+console.log(gt.requiresTranslation('es-ES', 'es-ES')); // false
+
+// Different dialects of same language don't require translation
+console.log(gt.requiresTranslation('en-US', 'en-GB')); // false
+console.log(gt.requiresTranslation('es-ES', 'es-MX')); // false
+
+// Target not in approved locales
+console.log(gt.requiresTranslation('en-US', 'it-IT')); // false (it-IT not in approved locales)
+```
+
+This method is crucial for optimizing translation workflows by avoiding unnecessary translation requests and ensuring content is only translated when needed and for supported locales.
+
+<Callout>
+**Translation Optimization:**
+Use this method to avoid expensive translation API calls when the source and target locales are similar enough that translation isn't needed, or when targeting unsupported locales.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "sourceLocale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.sourceLocale'
+    },
+    "targetLocale?": {
+      type: 'string', 
+      optional: true,
+      default: 'this.targetLocale'
+    },
+    "approvedLocales?": {
+      type: 'string[]',
+      optional: true,
+      default: 'this.locales'
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+      default: 'this.customMapping'
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `sourceLocale` | The source locale code. If not provided, uses the instance's `sourceLocale` |
+| `targetLocale` | The target locale code. If not provided, uses the instance's `targetLocale` |
+| `approvedLocales` | Array of approved target locales. If not provided, uses the instance's `locales` array |
+| `customMapping` | Optional custom mapping for locale resolution |
+
+### Returns
+
+`boolean` - `true` if translation is required, `false` otherwise
+
+### Throws
+
+- `Error` - If no source locale is provided and the instance has no `sourceLocale` configured
+- `Error` - If no target locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Behavior
+
+### Translation Decision Logic
+
+The method uses the following logic to determine if translation is required:
+1. **Locale validation** - Ensures both source and target locales are provided
+2. **Approved locale check** - Verifies target locale is in the approved list (if provided)
+3. **Same language check** - Compares if source and target are the same language
+4. **Return decision** - Returns `false` if no translation needed, `true` otherwise
+
+### When Translation is NOT Required
+
+- **Same locales**: `'en-US'` → `'en-US'`
+- **Same language, different regions**: `'en-US'` → `'en-GB'`
+- **Target not in approved locales**: Target locale not in `approvedLocales` array
+- **Custom mapping considerations**: When custom mappings resolve to same language
+
+### When Translation IS Required
+
+- **Different languages**: `'en-US'` → `'es-ES'`
+- **Target in approved locales**: Target locale is in the approved list
+- **Cross-language families**: `'zh-CN'` → `'ja-JP'`
+
+---
+
+## Examples
+
+### Basic Translation Requirements
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES',
+  locales: ['en-US', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP']
+});
+
+// Test different locale combinations
+console.log('Same locale:', gt.requiresTranslation('en-US', 'en-US')); // false
+console.log('Same language:', gt.requiresTranslation('en-US', 'en-GB')); // false  
+console.log('Different language:', gt.requiresTranslation('en-US', 'es-ES')); // true
+console.log('Unsupported target:', gt.requiresTranslation('en-US', 'it-IT')); // false
+```
+
+### Conditional Translation Workflow
+
+```typescript
+async function smartTranslate(
+  gt: GT,
+  content: string,
+  targetLocale: string
+): Promise<{ content: string; wasTranslated: boolean; reason: string }> {
+  const sourceLocale = gt.sourceLocale!;
+  
+  // Check if translation is required
+  const needsTranslation = gt.requiresTranslation(sourceLocale, targetLocale);
+  
+  if (!needsTranslation) {
+    // Determine why translation was skipped
+    let reason: string;
+    if (sourceLocale === targetLocale) {
+      reason = 'Source and target locales are identical';
+    } else if (gt.isSameLanguage(sourceLocale, targetLocale)) {
+      reason = 'Source and target are same language (different dialects)';
+    } else if (!gt.locales?.includes(targetLocale)) {
+      reason = 'Target locale not in approved locales list';
+    } else {
+      reason = 'Translation not required by business logic';
+    }
+    
+    return {
+      content,
+      wasTranslated: false,
+      reason
+    };
+  }
+  
+  // Perform translation
+  try {
+    const result = await gt.translate(content, targetLocale);
+    return {
+      content: result.content,
+      wasTranslated: true,
+      reason: 'Translation completed successfully'
+    };
+  } catch (error) {
+    return {
+      content,
+      wasTranslated: false,
+      reason: `Translation failed: ${error.message}`
+    };
+  }
+}
+
+// Usage
+const gt = new GT({
+  sourceLocale: 'en-US',
+  locales: ['en-US', 'es-ES', 'fr-FR']
+});
+
+const testCases = [
+  { content: 'Hello World', target: 'en-US' },  // Same locale
+  { content: 'Hello World', target: 'en-GB' },  // Same language
+  { content: 'Hello World', target: 'es-ES' },  // Different language, approved
+  { content: 'Hello World', target: 'de-DE' }   // Different language, not approved
+];
+
+for (const testCase of testCases) {
+  const result = await smartTranslate(gt, testCase.content, testCase.target);
+  console.log(`Target: ${testCase.target}`);
+  console.log(`Translated: ${result.wasTranslated}`);
+  console.log(`Reason: ${result.reason}`);
+  console.log('---');
+}
+```
+
+### Batch Translation Optimization
+
+```typescript
+interface TranslationRequest {
+  content: string;
+  targetLocale: string;
+  priority?: 'high' | 'medium' | 'low';
+}
+
+interface TranslationPlan {
+  toTranslate: TranslationRequest[];
+  toSkip: Array<TranslationRequest & { reason: string }>;
+  estimatedApiCalls: number;
+}
+
+function planTranslations(
+  requests: TranslationRequest[],
+  gt: GT
+): TranslationPlan {
+  const toTranslate: TranslationRequest[] = [];
+  const toSkip: Array<TranslationRequest & { reason: string }> = [];
+  
+  for (const request of requests) {
+    if (gt.requiresTranslation(gt.sourceLocale, request.targetLocale)) {
+      toTranslate.push(request);
+    } else {
+      let reason: string;
+      if (gt.sourceLocale === request.targetLocale) {
+        reason = 'Source equals target';
+      } else if (gt.isSameLanguage(gt.sourceLocale!, request.targetLocale)) {
+        reason = 'Same language family';
+      } else {
+        reason = 'Target locale not supported';
+      }
+      
+      toSkip.push({ ...request, reason });
+    }
+  }
+  
+  return {
+    toTranslate,
+    toSkip,
+    estimatedApiCalls: toTranslate.length
+  };
+}
+
+// Usage
+const gt = new GT({
+  sourceLocale: 'en-US',
+  locales: ['en-US', 'es-ES', 'fr-FR', 'de-DE']
+});
+
+const translationRequests: TranslationRequest[] = [
+  { content: 'Welcome', targetLocale: 'en-US', priority: 'high' },
+  { content: 'Welcome', targetLocale: 'en-GB', priority: 'high' },
+  { content: 'Welcome', targetLocale: 'es-ES', priority: 'high' },
+  { content: 'Welcome', targetLocale: 'fr-FR', priority: 'medium' },
+  { content: 'Welcome', targetLocale: 'it-IT', priority: 'low' },
+  { content: 'Welcome', targetLocale: 'zh-CN', priority: 'low' } // Not in approved
+];
+
+const plan = planTranslations(translationRequests, gt);
+
+console.log('Translation Plan:');
+console.log(`To translate: ${plan.toTranslate.length} requests`);
+console.log(`To skip: ${plan.toSkip.length} requests`);
+console.log(`Estimated API calls: ${plan.estimatedApiCalls}`);
+
+console.log('\nSkipped requests:');
+plan.toSkip.forEach(request => {
+  console.log(`${request.targetLocale}: ${request.reason}`);
+});
+```
+
+### Custom Mapping Integration
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  locales: ['en-US', 'simplified-chinese', 'spanish'],
+  customMapping: {
+    'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
+    'spanish': { code: 'es-ES', name: 'Spanish' }
+  }
+});
+
+// Test with custom mapped locales
+console.log('English to Chinese:', gt.requiresTranslation('en-US', 'simplified-chinese')); // true
+console.log('English to Spanish:', gt.requiresTranslation('en-US', 'spanish')); // true
+
+// Test with canonical locales (resolved through custom mapping)
+console.log('English to zh-CN:', gt.requiresTranslation('en-US', 'zh-CN')); // true
+console.log('English to es-ES:', gt.requiresTranslation('en-US', 'es-ES')); // true
+
+// Using explicit custom mapping parameter
+const alternateMapping = {
+  'custom-english': { code: 'en-US', name: 'Custom English' }
+};
+
+console.log('Same language through mapping:', 
+  gt.requiresTranslation('en-US', 'custom-english', undefined, alternateMapping)); // false
+```
+
+### Advanced Approval Logic
+
+```typescript
+// Example: Dynamic approval based on user permissions or feature flags
+interface TranslationConfig {
+  sourceLocale: string;
+  userTier: 'free' | 'premium' | 'enterprise';
+  enabledLanguages: string[];
+  maxTranslations: number;
+}
+
+function getApprovedLocales(config: TranslationConfig): string[] {
+  const baseLocales = [config.sourceLocale];
+  
+  switch (config.userTier) {
+    case 'free':
+      return baseLocales.concat(config.enabledLanguages.slice(0, 2));
+    case 'premium':
+      return baseLocales.concat(config.enabledLanguages.slice(0, 5));
+    case 'enterprise':
+      return baseLocales.concat(config.enabledLanguages);
+    default:
+      return baseLocales;
+  }
+}
+
+function checkTranslationQuota(
+  requests: TranslationRequest[],
+  config: TranslationConfig,
+  gt: GT
+): { allowed: TranslationRequest[]; denied: TranslationRequest[] } {
+  const approvedLocales = getApprovedLocales(config);
+  const allowed: TranslationRequest[] = [];
+  const denied: TranslationRequest[] = [];
+  
+  for (const request of requests) {
+    if (gt.requiresTranslation(
+      config.sourceLocale, 
+      request.targetLocale, 
+      approvedLocales
+    )) {
+      if (allowed.length < config.maxTranslations) {
+        allowed.push(request);
+      } else {
+        denied.push(request);
+      }
+    } else {
+      // Not requiring translation, so it's "allowed" (no cost)
+      allowed.push(request);
+    }
+  }
+  
+  return { allowed, denied };
+}
+
+// Usage
+const config: TranslationConfig = {
+  sourceLocale: 'en-US',
+  userTier: 'premium',
+  enabledLanguages: ['es-ES', 'fr-FR', 'de-DE', 'it-IT', 'pt-PT'],
+  maxTranslations: 3
+};
+
+const gt = new GT({ sourceLocale: config.sourceLocale });
+const requests: TranslationRequest[] = [
+  { content: 'Hello', targetLocale: 'es-ES' },
+  { content: 'Hello', targetLocale: 'fr-FR' },
+  { content: 'Hello', targetLocale: 'de-DE' },
+  { content: 'Hello', targetLocale: 'it-IT' },
+  { content: 'Hello', targetLocale: 'zh-CN' } // Not in enabled languages
+];
+
+const quota = checkTranslationQuota(requests, config, gt);
+console.log(`Allowed: ${quota.allowed.length}, Denied: ${quota.denied.length}`);
+```
+
+---
+
+## Error Handling
+
+### Missing Locale Parameters
+
+```typescript
+const gtNoSource = new GT({ targetLocale: 'es-ES' });
+const gtNoTarget = new GT({ sourceLocale: 'en-US' });
+
+try {
+  gtNoSource.requiresTranslation(); // No source locale
+} catch (error) {
+  console.error('Missing source:', error.message);
+  // Error: No source locale provided for requiresTranslation
+}
+
+try {
+  gtNoTarget.requiresTranslation(); // No target locale  
+} catch (error) {
+  console.error('Missing target:', error.message);
+  // Error: No target locale provided for requiresTranslation
+}
+```
+
+### Safe Translation Check
+
+```typescript
+function safeRequiresTranslation(
+  gt: GT,
+  sourceLocale?: string,
+  targetLocale?: string,
+  approvedLocales?: string[]
+): { required: boolean; error?: string; reason?: string } {
+  try {
+    const source = sourceLocale || gt.sourceLocale;
+    const target = targetLocale || gt.targetLocale;
+    const approved = approvedLocales || gt.locales;
+    
+    if (!source) {
+      return {
+        required: false,
+        error: 'No source locale available'
+      };
+    }
+    
+    if (!target) {
+      return {
+        required: false,
+        error: 'No target locale available'
+      };
+    }
+    
+    const required = gt.requiresTranslation(source, target, approved);
+    
+    let reason: string;
+    if (!required) {
+      if (source === target) {
+        reason = 'Source and target are identical';
+      } else if (gt.isSameLanguage(source, target)) {
+        reason = 'Source and target are same language';
+      } else if (approved && !approved.includes(target)) {
+        reason = 'Target not in approved locales';
+      } else {
+        reason = 'Translation not required';
+      }
+    } else {
+      reason = 'Translation required';
+    }
+    
+    return { required, reason };
+  } catch (error) {
+    return {
+      required: false,
+      error: error.message
+    };
+  }
+}
+
+// Usage with error handling
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES',
+  locales: ['en-US', 'es-ES', 'fr-FR']
+});
+
+const testCases = [
+  { source: 'en-US', target: 'es-ES' },
+  { source: 'en-US', target: 'en-GB' },
+  { source: undefined, target: 'es-ES' },
+  { source: 'en-US', target: undefined }
+];
+
+testCases.forEach((testCase, index) => {
+  const result = safeRequiresTranslation(
+    gt, 
+    testCase.source, 
+    testCase.target
+  );
+  
+  console.log(`Test ${index + 1}:`);
+  console.log(`Required: ${result.required}`);
+  console.log(`Reason: ${result.reason || result.error}`);
+  console.log('---');
+});
+```
+
+---
+
+## Integration Patterns
+
+### Translation Service
+
+```typescript
+interface TranslationService {
+  translate(content: string, targetLocale: string): Promise<string>;
+  getQuota(): Promise<{ used: number; limit: number }>;
+}
+
+class SmartTranslationService {
+  private quota = { used: 0, limit: 1000 };
+  
+  constructor(
+    private gt: GT,
+    private translationService: TranslationService
+  ) {}
+  
+  async translateIfNeeded(
+    content: string,
+    targetLocale: string
+  ): Promise<{
+    content: string;
+    wasTranslated: boolean;
+    quotaUsed: boolean;
+    reason: string;
+  }> {
+    // Check if translation is needed
+    if (!this.gt.requiresTranslation(this.gt.sourceLocale, targetLocale)) {
+      return {
+        content,
+        wasTranslated: false,
+        quotaUsed: false,
+        reason: 'Translation not required'
+      };
+    }
+    
+    // Check quota
+    if (this.quota.used >= this.quota.limit) {
+      return {
+        content,
+        wasTranslated: false,
+        quotaUsed: false,
+        reason: 'Translation quota exceeded'
+      };
+    }
+    
+    try {
+      const translatedContent = await this.translationService.translate(
+        content, 
+        targetLocale
+      );
+      
+      this.quota.used++;
+      
+      return {
+        content: translatedContent,
+        wasTranslated: true,
+        quotaUsed: true,
+        reason: 'Translation successful'
+      };
+    } catch (error) {
+      return {
+        content,
+        wasTranslated: false,
+        quotaUsed: false,
+        reason: `Translation failed: ${error.message}`
+      };
+    }
+  }
+  
+  getQuotaStatus() {
+    return {
+      ...this.quota,
+      remaining: this.quota.limit - this.quota.used
+    };
+  }
+}
+```
+
+### Content Management Integration
+
+```typescript
+interface ContentItem {
+  id: string;
+  sourceLocale: string;
+  content: string;
+  translations?: Map<string, string>;
+}
+
+class ContentManager {
+  private items = new Map<string, ContentItem>();
+  
+  constructor(private gt: GT) {}
+  
+  addContent(id: string, content: string, sourceLocale: string) {
+    this.items.set(id, {
+      id,
+      sourceLocale,
+      content,
+      translations: new Map()
+    });
+  }
+  
+  async getContent(
+    id: string, 
+    targetLocale: string
+  ): Promise<{ content: string; source: 'original' | 'translation' | 'fallback' }> {
+    const item = this.items.get(id);
+    if (!item) {
+      throw new Error(`Content item ${id} not found`);
+    }
+    
+    // Check if translation is needed
+    if (!this.gt.requiresTranslation(item.sourceLocale, targetLocale)) {
+      return {
+        content: item.content,
+        source: 'original'
+      };
+    }
+    
+    // Check if translation exists
+    if (item.translations?.has(targetLocale)) {
+      return {
+        content: item.translations.get(targetLocale)!,
+        source: 'translation'
+      };
+    }
+    
+    // Fallback to original if no translation available
+    return {
+      content: item.content,
+      source: 'fallback'
+    };
+  }
+  
+  async ensureTranslation(
+    id: string, 
+    targetLocale: string
+  ): Promise<void> {
+    const item = this.items.get(id);
+    if (!item) return;
+    
+    // Only translate if needed and not already translated
+    if (this.gt.requiresTranslation(item.sourceLocale, targetLocale) &&
+        !item.translations?.has(targetLocale)) {
+      
+      try {
+        const result = await this.gt.translate(item.content, targetLocale);
+        if (!item.translations) {
+          item.translations = new Map();
+        }
+        item.translations.set(targetLocale, result.content);
+      } catch (error) {
+        console.warn(`Failed to translate ${id} to ${targetLocale}:`, error.message);
+      }
+    }
+  }
+}
+```
+
+---
+
+## Performance Considerations
+
+- **Lightweight Check**: Quick locale comparison without expensive operations
+- **Avoids Unnecessary API Calls**: Prevents translation requests when not needed
+- **Custom Mapping Overhead**: Additional processing when custom mappings are involved
+- **Language Comparison**: Uses efficient language code comparison
+
+```typescript
+// Performance optimization for bulk translation decisions
+function batchRequiresTranslation(
+  sourceLocale: string,
+  targetLocales: string[],
+  gt: GT
+): Map<string, boolean> {
+  const results = new Map<string, boolean>();
+  
+  // Pre-filter approved locales if available
+  const approvedSet = gt.locales ? new Set(gt.locales) : null;
+  
+  for (const targetLocale of targetLocales) {
+    // Quick check for approved locales first
+    if (approvedSet && !approvedSet.has(targetLocale)) {
+      results.set(targetLocale, false);
+      continue;
+    }
+    
+    // Check if translation is required
+    results.set(
+      targetLocale,
+      gt.requiresTranslation(sourceLocale, targetLocale)
+    );
+  }
+  
+  return results;
+}
+
+// Usage
+const gt = new GT({
+  sourceLocale: 'en-US',
+  locales: ['en-US', 'es-ES', 'fr-FR', 'de-DE']
+});
+
+const targetLocales = [
+  'en-US', 'en-GB', 'es-ES', 'fr-FR', 
+  'de-DE', 'it-IT', 'pt-PT', 'zh-CN'
+];
+
+const requirements = batchRequiresTranslation('en-US', targetLocales, gt);
+
+console.log('Translation requirements:');
+for (const [locale, required] of requirements.entries()) {
+  console.log(`${locale}: ${required ? 'Required' : 'Not required'}`);
+}
+```
+
+---
+
+## Notes
+
+- Essential for optimizing translation workflows and avoiding unnecessary API calls
+- Considers locale language families, not just exact matches
+- Respects approved locale lists for business logic constraints
+- Works with custom locale mappings for flexible locale management
+- Returns `false` when target locale is not in approved locales (if provided)
+- Used internally by translation methods to determine when to skip translation
+- Critical for cost optimization in translation services
+
+## Next Steps
+
+- **[Check locale relationships with isSameLanguage()](/docs/core/class/methods/locales/isSameLanguage)**
+- **[Determine best locale with determineLocale()](/docs/core/class/methods/locales/determineLocale)**
+- **[Validate locales with isValidLocale()](/docs/core/class/methods/locales/isValidLocale)**
+- **[Explore standalone requiresTranslation()](/docs/core/functions/locales/requiresTranslation)**

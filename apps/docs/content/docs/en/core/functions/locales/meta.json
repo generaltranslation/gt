@@ -1,0 +1,18 @@
+{
+  "title": "Locales",
+  "pages": [
+    "./getLocaleDirection",
+    "./getLocaleEmoji", 
+    "./getLocaleName",
+    "./getLocaleProperties",
+    "./getRegionProperties",
+    "./isValidLocale",
+    "./resolveAliasLocale",
+    "./standardizeLocale",
+    "./isSameDialect",
+    "./isSameLanguage",
+    "./isSupersetLocale", 
+    "./determineLocale",
+    "./requiresTranslation"
+  ]
+}

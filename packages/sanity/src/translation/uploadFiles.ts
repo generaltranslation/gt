@@ -1,7 +1,7 @@
 import type { GTFile, Secrets } from '../types';
 import { gt, overrideConfig } from '../adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { SerializedDocument } from 'sanity-naive-html-serializer';
+import type { SerializedDocument } from '../serialization';
 
 // note: this function is used to create a new translation task
 // uploads files & calls the getTranslationTask function

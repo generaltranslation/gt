@@ -1,0 +1,220 @@
+---
+title: formatDateTime()
+description: API Reference for the formatDateTime() method to format dates and times according to locale conventions
+---
+
+## Overview
+
+The `formatDateTime()` method formats dates and times according to locale-specific conventions using the Internationalization API. It handles date formats, time formats, calendars, and time zones automatically based on the target locale.
+
+```typescript
+const gt = new GT({ targetLocale: 'de-DE' });
+
+const formatted = gt.formatDateTime(new Date(), {
+  dateStyle: 'medium',
+  timeStyle: 'short'
+});
+// Returns: "14. März 2024, 14:30" (German date/time formatting)
+```
+
+<Callout>
+**Locale-Aware Formatting:**
+This method automatically uses the GT instance's rendering locales but allows override through the `locales` option. Different locales have different conventions for date order, separators, month names, and time formats.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `date` | `Date` | The date object to format |
+| `options?` | `DateTimeFormatOptions` | Optional formatting configuration |
+
+### DateTimeFormatOptions
+
+Extends `Intl.DateTimeFormatOptions` with additional locale specification:
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locales?` | `string \| string[]` | Override locales for formatting (defaults to instance locales) |
+| `localeMatcher?` | `'lookup' \| 'best fit'` | Locale matching algorithm (default: 'best fit') |
+| `dateStyle?` | `'full' \| 'long' \| 'medium' \| 'short'` | Overall date formatting style |
+| `timeStyle?` | `'full' \| 'long' \| 'medium' \| 'short'` | Overall time formatting style |
+| `weekday?` | `'long' \| 'short' \| 'narrow'` | Weekday representation |
+| `era?` | `'long' \| 'short' \| 'narrow'` | Era representation |
+| `year?` | `'numeric' \| '2-digit'` | Year representation |
+| `month?` | `'numeric' \| '2-digit' \| 'long' \| 'short' \| 'narrow'` | Month representation |
+| `day?` | `'numeric' \| '2-digit'` | Day representation |
+| `dayPeriod?` | `'narrow' \| 'short' \| 'long'` | Day period formatting (morning, afternoon, etc.) |
+| `hour?` | `'numeric' \| '2-digit'` | Hour representation |
+| `minute?` | `'numeric' \| '2-digit'` | Minute representation |
+| `second?` | `'numeric' \| '2-digit'` | Second representation |
+| `fractionalSecondDigits?` | `1 \| 2 \| 3` | Number of fractional second digits |
+| `timeZoneName?` | `'long' \| 'short' \| 'longOffset' \| 'shortOffset' \| 'longGeneric' \| 'shortGeneric'` | Time zone name format |
+| `timeZone?` | `string` | IANA time zone identifier |
+| `hour12?` | `boolean` | Whether to use 12-hour time format |
+| `hourCycle?` | `'h11' \| 'h12' \| 'h23' \| 'h24'` | Hour cycle preference |
+| `calendar?` | `string` | Calendar system to use |
+| `numberingSystem?` | `string` | Numbering system for digits |
+| `formatMatcher?` | `'basic' \| 'best fit'` | Format matching algorithm (default: 'best fit') |
+
+### Returns
+
+`string` - The formatted date and time according to locale conventions.
+
+---
+
+## Examples
+
+### Basic Date and Time Formatting
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({ targetLocale: 'en-US' });
+const date = new Date('2024-03-14T14:30:45Z');
+
+// Basic date formatting (uses default options)
+console.log(gt.formatDateTime(date));
+// Output: "3/14/2024"
+
+// German locale formatting
+console.log(gt.formatDateTime(date, { locales: 'de-DE' }));
+// Output: "14.3.2024"
+
+// Japanese locale formatting
+console.log(gt.formatDateTime(date, { locales: 'ja-JP' }));
+// Output: "2024/3/14"
+```
+
+### Date and Time Styles
+
+```typescript copy
+const date = new Date('2024-03-14T14:30:45Z');
+
+// Full date style
+console.log(gt.formatDateTime(date, { dateStyle: 'full' }));
+// Output: "Thursday, March 14, 2024"
+
+// Long date with short time
+console.log(gt.formatDateTime(date, {
+  dateStyle: 'long',
+  timeStyle: 'short'
+}));
+// Output: "March 14, 2024 at 7:30 AM"
+
+// Custom date components
+console.log(gt.formatDateTime(date, {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}));
+// Output: "Thursday, March 14, 2024"
+```
+
+### Time Zone and Hour Format
+
+```typescript copy
+const date = new Date('2024-03-14T14:30:45Z');
+
+// Force 12-hour format
+console.log(gt.formatDateTime(date, {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true
+}));
+// Output: "7:30 AM"
+
+// Force 24-hour format
+console.log(gt.formatDateTime(date, {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: false
+}));
+// Output: "07:30"
+
+// Specific time zone
+console.log(gt.formatDateTime(date, {
+  timeZone: 'America/New_York',
+  dateStyle: 'medium',
+  timeStyle: 'short'
+}));
+// Output: "Mar 14, 2024, 10:30 AM"
+```
+
+### Utility Functions
+
+```typescript copy
+// Helper for consistent date-only formatting
+function formatDateOnly(date: Date, locale?: string) {
+  return gt.formatDateTime(date, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    ...(locale && { locales: locale })
+  });
+}
+
+// Helper for time-only formatting
+function formatTimeOnly(date: Date, use24Hour: boolean = false) {
+  return gt.formatDateTime(date, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: !use24Hour
+  });
+}
+
+// Helper for relative timestamps
+function formatTimestamp(date: Date) {
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    return `Today at ${formatTimeOnly(date)}`;
+  } else if (diffDays === 1) {
+    return `Yesterday at ${formatTimeOnly(date)}`;
+  } else if (diffDays < 7) {
+    return gt.formatDateTime(date, {
+      weekday: 'long',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  } else {
+    return formatDateOnly(date);
+  }
+}
+
+const recentDate = new Date('2024-03-13T10:15:00Z');
+console.log(formatTimestamp(recentDate));
+// Output varies based on current date
+
+console.log(formatTimeOnly(new Date()));
+console.log(formatDateOnly(new Date()));
+```
+
+---
+
+## Notes
+
+* Date formatting follows locale-specific conventions automatically
+* The method uses browser-native `Intl.DateTimeFormat` for optimal performance and accuracy
+* Time zones are handled correctly when specified
+* Different locales have different default 12-hour vs 24-hour preferences
+* Calendar systems other than Gregorian are supported for appropriate locales
+* The method is cached internally for performance with repeated use of the same locale/options combination
+* Date objects are treated as immutable - no modifications are made to the input date
+
+## Related Methods
+
+* See [`formatRelativeTime()`](/docs/core/class/methods/formatting/formatRelativeTime) for relative date formatting ("2 days ago")
+* See [`formatMessage()`](/docs/core/class/methods/formatting/formatMessage) for message formatting with date interpolation
+* See standalone [`formatDateTime()`](/docs/core/functions/formatting/formatDateTime) for use without GT instance
+* See [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties) for locale-specific calendar information
+
+## Next Steps
+
+* See [Formatting Guide](/docs/core/guides/formatting) for comprehensive date/time formatting strategies
+* See [Internationalization Guide](/docs/core/guides/i18n) for locale-aware date handling
+* See [Time Zone Guide](/docs/core/guides/timezones) for advanced time zone management

@@ -1,0 +1,185 @@
+---
+title: setConfig()
+description: API Reference for the GT setConfig method
+---
+
+## Overview
+
+The `setConfig()` method updates the configuration of an existing GT instance. This allows you to modify API credentials, locales, and other settings after the instance has been created.
+
+```typescript
+const gt = new GT();
+
+gt.setConfig({
+  apiKey: 'your-new-api-key',
+  projectId: 'your-project-id',
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+```
+
+This method is useful for dynamic configuration updates, credential rotation, or changing project settings at runtime.
+
+<Callout>
+**Configuration Merge:**
+`setConfig()` merges new configuration with existing settings. Only provided parameters are updated, while others remain unchanged.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "params": {
+      type: 'GTConstructorParams',
+      optional: false,
+    }
+  }}
+/>
+
+The `GTConstructorParams` object supports the same properties as the constructor:
+
+| Property | Type | Optional | Description |
+|----------|------|----------|-------------|
+| `apiKey` | `string` | ✓ | Production API key for translation service |
+| `devApiKey` | `string` | ✓ | Development API key |
+| `projectId` | `string` | ✓ | Unique project identifier |
+| `sourceLocale` | `string` | ✓ | Default source locale for translations |
+| `targetLocale` | `string` | ✓ | Default target locale for translations |
+| `locales` | `string[]` | ✓ | Array of supported locale codes |
+| `baseUrl` | `string` | ✓ | Custom API base URL |
+| `customMapping` | `CustomMapping` | ✓ | Custom locale code mappings |
+
+### Returns
+
+`void` - The method updates the instance configuration in-place.
+
+---
+
+## Behavior
+
+### Configuration Merging
+
+The method only updates properties that are explicitly provided:
+
+```typescript
+const gt = new GT({
+  apiKey: 'old-key',
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+gt.setConfig({
+  apiKey: 'new-key'  // Only apiKey is updated
+});
+// sourceLocale and targetLocale remain unchanged
+```
+
+### Locale Validation
+
+All locale codes are validated when provided:
+
+- Invalid locale codes throw an error immediately
+- The instance configuration remains unchanged if validation fails
+- Custom mappings are applied before validation
+
+### Internal State Updates
+
+The method updates several internal properties:
+
+- **Rendering Locales**: Recalculated based on new source/target locales
+- **Custom Mapping**: Reverse mapping is rebuilt for alias resolution
+- **Region Mapping**: Cleared and rebuilt lazily when needed
+
+---
+
+## Examples
+
+### Update API Credentials
+
+```typescript
+const gt = new GT();
+
+// Later, when credentials are available
+gt.setConfig({
+  apiKey: await getApiKeyFromVault(),
+  projectId: 'my-project-123'
+});
+```
+
+### Change Target Locale
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+// Switch to French
+gt.setConfig({
+  targetLocale: 'fr'
+});
+```
+
+### Environment-Specific Configuration
+
+```typescript
+const gt = new GT();
+
+if (process.env.NODE_ENV === 'development') {
+  gt.setConfig({
+    devApiKey: process.env.GT_DEV_API_KEY,
+    baseUrl: 'https://dev-api.generaltranslation.com'
+  });
+} else {
+  gt.setConfig({
+    apiKey: process.env.GT_API_KEY,
+    baseUrl: 'https://api.generaltranslation.com'
+  });
+}
+```
+
+### Dynamic Project Switching
+
+```typescript
+class TranslationManager {
+  private gt = new GT();
+  
+  async switchProject(projectId: string, locales: string[]) {
+    this.gt.setConfig({
+      projectId,
+      locales,
+      targetLocale: locales[0] // Use first locale as default target
+    });
+  }
+}
+```
+
+---
+
+## Performance Considerations
+
+- **Rendering Locales**: Recalculated on every call with locale changes
+- **Custom Mapping**: Reverse mapping rebuilt when `customMapping` is updated
+- **Validation**: All provided locales are validated synchronously
+- **Memory**: Previous custom mappings are replaced, not merged
+
+---
+
+## Notes
+
+- Configuration changes take effect immediately for subsequent method calls
+- Environment variables are not re-read when calling `setConfig()`
+- Custom mappings completely replace existing mappings (not merged)
+- Validation failures leave the instance configuration unchanged
+- The method is synchronous and returns `void`
+
+## Next Steps
+
+- **[Initialize with constructor](/docs/core/class/constructor)**
+- **[Start translating content](/docs/core/class/methods/translation/translate)**
+- **[Learn about GTConstructorParams](/docs/core/types/GTConstructorParams)**
+- **[Explore custom mappings](/docs/core/types/CustomMapping)**

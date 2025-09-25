@@ -1,0 +1,180 @@
+---
+title: downloadTranslatedFile()
+description: API Reference for the downloadTranslatedFile() method to download completed translation files
+---
+
+## Overview
+
+The `downloadTranslatedFile()` method downloads the content of a single translated file as a UTF-8 string. This method is used to retrieve completed translations after they have been processed by the General Translation platform.
+
+```typescript
+const gt = new GT({ apiKey: 'your-api-key' });
+
+const content = await gt.downloadTranslatedFile({
+  fileId: 'file-123',
+  locale: 'es',
+  versionId: 'version-456'
+});
+```
+
+<Callout>
+**Translation Status:**
+This method only works with completed translations. Use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) first to verify that translations are completed before attempting to download.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `file` | `FileInfo` | File information object specifying which file to download |
+| `options?` | `DownloadFileOptions` | Optional configuration for the download request |
+
+#### FileInfo Structure
+
+| Name | Type | Description |
+|------|------|-------------|
+| `fileId` | `string` | Unique identifier of the file to download |
+| `locale` | `string` | Target locale of the translation to download |
+| `versionId?` | `string` | Optional version ID for the file |
+
+#### DownloadFileOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<string>` - The translated file content as a UTF-8 string.
+
+The returned string contains the translated file content in the same format as the original source file, with all translatable text converted to the target locale.
+
+---
+
+## Example
+
+### Basic Usage
+
+Download a single translated JSON file:
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  apiKey: 'your-api-key'
+});
+
+const spanishContent = await gt.downloadTranslatedFile({
+  fileId: 'file-abc-123',
+  locale: 'es',
+  versionId: 'version-456'
+});
+
+// Parse JSON content
+const translations = JSON.parse(spanishContent);
+console.log(translations);
+// Output: { "welcome": "¡Bienvenido!", "goodbye": "¡Adiós!" }
+```
+
+### With Custom Timeout
+
+Download with a specific timeout setting:
+
+```typescript copy
+const content = await gt.downloadTranslatedFile({
+  fileId: 'file-def-789',
+  locale: 'fr'
+}, {
+  timeout: 15000 // 15 seconds
+});
+
+console.log('French translation downloaded successfully');
+```
+
+### Download Multiple Translations
+
+```typescript copy
+const fileId = 'file-homepage-123';
+const versionId = 'version-456';
+const locales = ['es', 'fr', 'de'];
+
+const translations = await Promise.all(
+  locales.map(async locale => {
+    const content = await gt.downloadTranslatedFile({
+      fileId,
+      locale,
+      versionId
+    });
+    
+    return {
+      locale,
+      content: JSON.parse(content)
+    };
+  })
+);
+
+translations.forEach(({ locale, content }) => {
+  console.log(`${locale}:`, content);
+});
+```
+
+### Save to File System
+
+```typescript copy
+import fs from 'fs/promises';
+import path from 'path';
+
+async function downloadAndSaveTranslation(
+  fileId: string, 
+  locale: string, 
+  outputPath: string
+) {
+  try {
+    const content = await gt.downloadTranslatedFile({
+      fileId,
+      locale
+    });
+    
+    // Ensure output directory exists
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    
+    // Write translated content to file
+    await fs.writeFile(outputPath, content, 'utf8');
+    
+    console.log(`Translation saved to ${outputPath}`);
+    return outputPath;
+    
+  } catch (error) {
+    console.error(`Failed to download translation for ${locale}:`, error);
+    throw error;
+  }
+}
+
+// Usage
+await downloadAndSaveTranslation(
+  'file-nav-123',
+  'es',
+  './locales/es/navigation.json'
+);
+```
+
+---
+
+## Notes
+
+* The file must have a completed translation for the specified locale
+* Content is returned as a UTF-8 string regardless of the original file format
+* File content is automatically decoded from Base64 during download
+* The `versionId` parameter is optional but recommended for version-specific downloads
+* Large files may require increased timeout values
+* This method replaces the deprecated `downloadFile()` method
+
+## Next Steps
+
+* See [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to verify translation status before downloading
+* See [`downloadFileBatch()`](/docs/core/class/methods/translation/downloadFileBatch) to download multiple files efficiently
+* See [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) for the file upload process
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translation jobs
+* See [`FileUploadRef`](/docs/core/types/FileUploadRef) for file reference structure details

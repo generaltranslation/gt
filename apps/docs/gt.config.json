@@ -12,6 +12,5 @@
       "exclude": ["content/docs/[locale]/changelog/**/*.mdx"]
     }
   },
-  "locales": ["zh", "de", "fr", "es", "ja"],
-  "_versionId": "6c0c6d36f6c10300382686d7f29231a4de1550a6b9ebbef45438936a59d3ec37"
+  "locales": ["zh", "de", "fr", "es", "ja"]
 }

@@ -1,0 +1,604 @@
+---
+title: isSameDialect()
+description: API Reference for the GT isSameDialect method
+---
+
+## Overview
+
+The `isSameDialect()` method checks if multiple BCP-47 locale codes represent the same dialect. It compares the language and region components of locale codes to determine if they represent the same linguistic variety, making it useful for grouping similar locales or determining locale compatibility.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es-ES'
+});
+
+// Same dialect - same language and region
+console.log(gt.isSameDialect('en-US', 'en-US')); // true
+console.log(gt.isSameDialect('es-ES', 'es-ES')); // true
+
+// Different dialects - same language, different regions
+console.log(gt.isSameDialect('en-US', 'en-GB')); // false
+console.log(gt.isSameDialect('es-ES', 'es-MX')); // false
+
+// Language vs dialect - base language is parent of specific dialect
+console.log(gt.isSameDialect('en', 'en-US')); // true (en is parent of en-US)
+console.log(gt.isSameDialect('zh', 'zh-CN')); // true (zh is parent of zh-CN)
+
+// Different languages
+console.log(gt.isSameDialect('en-US', 'es-ES')); // false
+```
+
+This method is particularly useful for locale fallback logic, content grouping, and determining when translations might be compatible across similar locales.
+
+<Callout>
+**Dialect Hierarchy:**
+The method considers a base language (like `'en'`) to be the same dialect as its regional variants (`'en-US'`, `'en-GB'`). This reflects the hierarchical nature of BCP-47 locale codes where a general language can serve as a fallback for specific regional variants.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "...locales": {
+      type: '(string | string[])[]',
+      optional: false,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `...locales` | Variable number of locale codes (strings) or arrays of locale codes to compare. All provided locales must represent the same dialect |
+
+### Returns
+
+`boolean` - `true` if all provided locale codes represent the same dialect, `false` otherwise
+
+### Throws
+
+No exceptions are thrown. Invalid locale codes are handled gracefully and return `false`.
+
+---
+
+## Behavior
+
+### Dialect Comparison Logic
+
+The method uses the following logic to determine dialect equality:
+1. **Normalize locales** - Standardizes all input locale codes
+2. **Compare language codes** - All locales must have the same base language
+3. **Handle region hierarchy** - A base language matches its regional variants
+4. **Exact dialect matching** - Regional variants must match exactly
+
+### Hierarchy Rules
+
+- Base language (`'en'`) matches any regional variant (`'en-US'`, `'en-GB'`)
+- Regional variants match only exactly (`'en-US'` ≠ `'en-GB'`)
+- Script variants are considered in the comparison when present
+- Different languages never match (`'en'` ≠ `'es'`)
+
+### Input Flexibility
+
+The method accepts:
+- Multiple string parameters: `isSameDialect('en-US', 'en-GB')`
+- Arrays of strings: `isSameDialect(['en-US', 'en-GB'])`
+- Mixed format: `isSameDialect('en-US', ['en-GB', 'en-CA'])`
+- Single locale: `isSameDialect('en-US')` (always returns `true`)
+
+---
+
+## Examples
+
+### Basic Dialect Comparison
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES'
+});
+
+// Same exact dialects
+console.log(gt.isSameDialect('en-US', 'en-US')); // true
+console.log(gt.isSameDialect('zh-CN', 'zh-CN')); // true
+
+// Different dialects of same language
+console.log(gt.isSameDialect('en-US', 'en-GB')); // false
+console.log(gt.isSameDialect('es-ES', 'es-MX')); // false
+console.log(gt.isSameDialect('pt-PT', 'pt-BR')); // false
+
+// Base language with regional variants
+console.log(gt.isSameDialect('en', 'en-US')); // true
+console.log(gt.isSameDialect('es', 'es-ES')); // true
+console.log(gt.isSameDialect('zh', 'zh-CN')); // true
+
+// Different languages
+console.log(gt.isSameDialect('en-US', 'es-ES')); // false
+console.log(gt.isSameDialect('fr-FR', 'de-DE')); // false
+```
+
+### Multiple Locale Comparison
+
+```typescript
+// All same dialect
+console.log(gt.isSameDialect('en-US', 'en-US', 'en-US')); // true
+console.log(gt.isSameDialect('en', 'en-US', 'en')); // true (base matches regional)
+
+// Mixed dialects of same language  
+console.log(gt.isSameDialect('en-US', 'en-GB', 'en-CA')); // false
+
+// Array input
+console.log(gt.isSameDialect(['es-ES', 'es-ES'])); // true
+console.log(gt.isSameDialect(['es-ES', 'es-MX'])); // false
+
+// Mixed input types
+console.log(gt.isSameDialect('en-US', ['en-US', 'en-US'])); // true
+console.log(gt.isSameDialect('fr-FR', ['fr-CA', 'fr-BE'])); // false
+```
+
+### Locale Grouping
+
+```typescript
+// Example: Grouping content by dialect
+const gt = new GT({ sourceLocale: 'en-US' });
+
+interface LocalizedContent {
+  locale: string;
+  title: string;
+  content: string;
+}
+
+const contentItems: LocalizedContent[] = [
+  { locale: 'en-US', title: 'Hello World', content: 'American English content' },
+  { locale: 'en-GB', title: 'Hello World', content: 'British English content' },
+  { locale: 'en-CA', title: 'Hello World', content: 'Canadian English content' },
+  { locale: 'es-ES', title: 'Hola Mundo', content: 'Spanish content' },
+  { locale: 'es-MX', title: 'Hola Mundo', content: 'Mexican Spanish content' },
+  { locale: 'fr-FR', title: 'Bonjour Monde', content: 'French content' }
+];
+
+function groupContentByDialect(items: LocalizedContent[]): Map<string, LocalizedContent[]> {
+  const groups = new Map<string, LocalizedContent[]>();
+  
+  for (const item of items) {
+    let foundGroup = false;
+    
+    // Check if item belongs to existing group
+    for (const [groupKey, groupItems] of groups.entries()) {
+      if (gt.isSameDialect(item.locale, groupKey)) {
+        groupItems.push(item);
+        foundGroup = true;
+        break;
+      }
+    }
+    
+    // Create new group if no match found
+    if (!foundGroup) {
+      groups.set(item.locale, [item]);
+    }
+  }
+  
+  return groups;
+}
+
+const dialectGroups = groupContentByDialect(contentItems);
+
+console.log('Content grouped by dialect:');
+for (const [dialect, items] of dialectGroups.entries()) {
+  console.log(`${dialect}:`, items.map(item => item.locale));
+}
+
+// Output:
+// en-US: ['en-US']
+// en-GB: ['en-GB'] 
+// en-CA: ['en-CA']
+// es-ES: ['es-ES']
+// es-MX: ['es-MX']
+// fr-FR: ['fr-FR']
+```
+
+### Fallback Logic
+
+```typescript
+// Example: Building locale fallback chains based on dialect similarity
+function buildDialectFallbacks(
+  primaryLocale: string,
+  availableLocales: string[],
+  gt: GT
+): string[] {
+  const fallbacks: string[] = [];
+  
+  // Add exact matches first
+  if (availableLocales.includes(primaryLocale)) {
+    fallbacks.push(primaryLocale);
+  }
+  
+  // Add same dialect matches
+  for (const locale of availableLocales) {
+    if (locale !== primaryLocale && gt.isSameDialect(primaryLocale, locale)) {
+      fallbacks.push(locale);
+    }
+  }
+  
+  return fallbacks;
+}
+
+const gt = new GT({ sourceLocale: 'en-US' });
+const availableLocales = ['en-US', 'en-GB', 'en-CA', 'es-ES', 'fr-FR', 'de-DE'];
+
+// Build fallbacks for different primary locales
+const fallbacks = {
+  'en-AU': buildDialectFallbacks('en-AU', availableLocales, gt),
+  'en': buildDialectFallbacks('en', availableLocales, gt),
+  'es-MX': buildDialectFallbacks('es-MX', availableLocales, gt)
+};
+
+console.log('Dialect-based fallbacks:');
+Object.entries(fallbacks).forEach(([primary, fallbackList]) => {
+  console.log(`${primary} → [${fallbackList.join(', ')}]`);
+});
+
+// Output:
+// en-AU → [en-US, en-GB, en-CA] (all English dialects)
+// en → [en-US, en-GB, en-CA] (base language matches all dialects)  
+// es-MX → [es-ES] (only Spanish dialect available)
+```
+
+### Content Compatibility Check
+
+```typescript
+// Example: Checking if content can be shared across locales
+interface ContentRule {
+  sourceLocale: string;
+  canShareWith: string[];
+  reason: string;
+}
+
+function checkContentCompatibility(
+  sourceLocale: string,
+  targetLocales: string[],
+  gt: GT
+): ContentRule {
+  const compatibleLocales = targetLocales.filter(target => {
+    // Same dialect content can be shared
+    return gt.isSameDialect(sourceLocale, target);
+  });
+  
+  let reason: string;
+  if (compatibleLocales.length === targetLocales.length) {
+    reason = 'All targets are same dialect';
+  } else if (compatibleLocales.length > 0) {
+    reason = 'Some targets are same dialect';
+  } else {
+    reason = 'No dialect compatibility';
+  }
+  
+  return {
+    sourceLocale,
+    canShareWith: compatibleLocales,
+    reason
+  };
+}
+
+const gt = new GT({ sourceLocale: 'en-US' });
+
+// Test different content sharing scenarios
+const scenarios = [
+  { source: 'en-US', targets: ['en-US', 'en-GB', 'en-CA'] },
+  { source: 'en', targets: ['en-US', 'en-GB', 'es-ES'] },
+  { source: 'es-ES', targets: ['es-MX', 'pt-BR', 'fr-FR'] },
+  { source: 'zh-CN', targets: ['zh-TW', 'zh-HK', 'ja-JP'] }
+];
+
+scenarios.forEach(scenario => {
+  const compatibility = checkContentCompatibility(
+    scenario.source, 
+    scenario.targets, 
+    gt
+  );
+  
+  console.log(`\nSource: ${scenario.source}`);
+  console.log(`Targets: [${scenario.targets.join(', ')}]`);
+  console.log(`Compatible: [${compatibility.canShareWith.join(', ')}]`);
+  console.log(`Reason: ${compatibility.reason}`);
+});
+```
+
+---
+
+## Error Handling
+
+### Invalid Locale Codes
+
+```typescript
+const gt = new GT({ sourceLocale: 'en-US' });
+
+// Invalid locales return false gracefully
+console.log(gt.isSameDialect('invalid-locale', 'en-US')); // false
+console.log(gt.isSameDialect('en-US', 'xyz')); // false
+console.log(gt.isSameDialect('', 'en-US')); // false
+
+// Mixed valid and invalid
+console.log(gt.isSameDialect('en-US', 'invalid', 'en-GB')); // false
+```
+
+### Empty Input Handling
+
+```typescript
+// Empty input cases
+console.log(gt.isSameDialect()); // true (no locales to compare)
+console.log(gt.isSameDialect('en-US')); // true (single locale)
+console.log(gt.isSameDialect([])); // true (empty array)
+
+// Safe dialect comparison with validation
+function safeIsSameDialect(
+  gt: GT, 
+  ...locales: (string | string[])[]
+): { result: boolean; validLocales: string[]; invalidLocales: string[] } {
+  const allLocales = locales.flat();
+  const validLocales: string[] = [];
+  const invalidLocales: string[] = [];
+  
+  // Separate valid and invalid locales
+  allLocales.forEach(locale => {
+    if (typeof locale === 'string' && locale.trim() && gt.isValidLocale(locale)) {
+      validLocales.push(locale);
+    } else {
+      invalidLocales.push(locale);
+    }
+  });
+  
+  // Only compare valid locales
+  const result = validLocales.length > 0 ? gt.isSameDialect(...validLocales) : false;
+  
+  return {
+    result,
+    validLocales,
+    invalidLocales
+  };
+}
+
+// Usage with validation
+const testCases = [
+  ['en-US', 'en-GB'],
+  ['en-US', 'invalid', 'en-CA'],
+  ['', 'en-US'],
+  ['fr-FR', 'fr-CA']
+];
+
+testCases.forEach(locales => {
+  const result = safeIsSameDialect(gt, ...locales);
+  console.log(`Input: [${locales.join(', ')}]`);
+  console.log(`Result: ${result.result}`);
+  console.log(`Valid: [${result.validLocales.join(', ')}]`);
+  console.log(`Invalid: [${result.invalidLocales.join(', ')}]`);
+  console.log('---');
+});
+```
+
+---
+
+## Integration Patterns
+
+### Locale Selection UI
+
+```typescript
+// Example: Building grouped locale selector
+interface LocaleOption {
+  code: string;
+  name: string;
+  isRegional: boolean;
+}
+
+interface LocaleGroup {
+  language: string;
+  languageName: string;
+  dialects: LocaleOption[];
+}
+
+function buildLocaleGroups(locales: string[], gt: GT): LocaleGroup[] {
+  const groups = new Map<string, LocaleOption[]>();
+  
+  // Group locales by base language
+  locales.forEach(locale => {
+    const properties = gt.getLocaleProperties(locale);
+    const baseLanguage = properties.languageCode;
+    
+    if (!groups.has(baseLanguage)) {
+      groups.set(baseLanguage, []);
+    }
+    
+    groups.get(baseLanguage)!.push({
+      code: locale,
+      name: properties.name,
+      isRegional: locale.includes('-')
+    });
+  });
+  
+  // Convert to grouped structure
+  const localeGroups: LocaleGroup[] = [];
+  
+  for (const [language, dialects] of groups.entries()) {
+    // Check if all dialects are same dialect (for grouping logic)
+    const areSameDialect = dialects.length <= 1 || 
+      gt.isSameDialect(...dialects.map(d => d.code));
+    
+    const languageName = gt.getLocaleProperties(language).languageName;
+    
+    localeGroups.push({
+      language,
+      languageName,
+      dialects: dialects.sort((a, b) => {
+        // Put base language first, then regional variants
+        if (!a.isRegional && b.isRegional) return -1;
+        if (a.isRegional && !b.isRegional) return 1;
+        return a.name.localeCompare(b.name);
+      })
+    });
+  }
+  
+  return localeGroups.sort((a, b) => a.languageName.localeCompare(b.languageName));
+}
+
+// Usage in React component
+const gt = new GT({ sourceLocale: 'en-US' });
+const availableLocales = [
+  'en', 'en-US', 'en-GB', 'en-CA',
+  'es', 'es-ES', 'es-MX',
+  'fr', 'fr-FR', 'fr-CA',
+  'de', 'de-DE', 'de-AT'
+];
+
+function LocaleSelector({ selectedLocale, onLocaleChange }) {
+  const localeGroups = buildLocaleGroups(availableLocales, gt);
+  
+  return (
+    <select value={selectedLocale} onChange={(e) => onLocaleChange(e.target.value)}>
+      {localeGroups.map(group => (
+        <optgroup key={group.language} label={group.languageName}>
+          {group.dialects.map(dialect => (
+            <option key={dialect.code} value={dialect.code}>
+              {dialect.name}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+```
+
+### Content Deduplication
+
+```typescript
+// Example: Removing duplicate content for same dialects
+interface Translation {
+  locale: string;
+  content: string;
+  metadata?: Record<string, any>;
+}
+
+function deduplicateByDialect(
+  translations: Translation[],
+  gt: GT
+): Translation[] {
+  const uniqueTranslations: Translation[] = [];
+  
+  for (const translation of translations) {
+    // Check if we already have a translation for this dialect
+    const existingIndex = uniqueTranslations.findIndex(existing => 
+      gt.isSameDialect(existing.locale, translation.locale)
+    );
+    
+    if (existingIndex === -1) {
+      // No existing translation for this dialect
+      uniqueTranslations.push(translation);
+    } else {
+      // Choose the more specific locale (with region) over base language
+      const existing = uniqueTranslations[existingIndex];
+      const currentIsMoreSpecific = translation.locale.includes('-');
+      const existingIsMoreSpecific = existing.locale.includes('-');
+      
+      if (currentIsMoreSpecific && !existingIsMoreSpecific) {
+        uniqueTranslations[existingIndex] = translation;
+      }
+      // Keep existing if it's more specific or they're equally specific
+    }
+  }
+  
+  return uniqueTranslations;
+}
+
+// Usage
+const translations: Translation[] = [
+  { locale: 'en', content: 'Hello World' },
+  { locale: 'en-US', content: 'Hello World' },
+  { locale: 'en-GB', content: 'Hello World' },
+  { locale: 'es', content: 'Hola Mundo' },
+  { locale: 'es-ES', content: 'Hola Mundo' },
+  { locale: 'fr-FR', content: 'Bonjour Monde' }
+];
+
+const gt = new GT({ sourceLocale: 'en-US' });
+const deduplicated = deduplicateByDialect(translations, gt);
+
+console.log('Original:', translations.map(t => t.locale));
+console.log('Deduplicated:', deduplicated.map(t => t.locale));
+// Note: This example shows the concept - actual deduplication logic 
+// would depend on your specific requirements for handling same dialects
+```
+
+---
+
+## Performance Considerations
+
+- **Multiple Comparisons**: Performance scales with number of input locales
+- **Standardization Overhead**: Each locale is standardized before comparison
+- **No Caching**: Results are not cached between calls
+- **Array Flattening**: Array inputs are flattened, adding minor overhead
+
+```typescript
+// Performance optimization for repeated dialect comparisons
+class DialectComparisonCache {
+  private cache = new Map<string, boolean>();
+  
+  constructor(private gt: GT) {}
+  
+  private getCacheKey(locales: string[]): string {
+    return locales.sort().join('|');
+  }
+  
+  isSameDialect(...locales: (string | string[])[]): boolean {
+    const flatLocales = locales.flat();
+    const cacheKey = this.getCacheKey(flatLocales);
+    
+    if (!this.cache.has(cacheKey)) {
+      const result = this.gt.isSameDialect(...locales);
+      this.cache.set(cacheKey, result);
+    }
+    
+    return this.cache.get(cacheKey)!;
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+  
+  size(): number {
+    return this.cache.size;
+  }
+}
+
+// Usage
+const gt = new GT({ sourceLocale: 'en-US' });
+const cache = new DialectComparisonCache(gt);
+
+// Repeated comparisons are cached
+console.log(cache.isSameDialect('en-US', 'en-GB')); // Computed and cached
+console.log(cache.isSameDialect('en-GB', 'en-US')); // Retrieved from cache
+```
+
+---
+
+## Notes
+
+- Uses standardized locale codes for accurate comparison
+- Considers base languages as parent dialects of regional variants
+- Returns `false` for different languages regardless of regions
+- Handles invalid locale codes gracefully without throwing errors
+- Accepts flexible input formats (strings, arrays, mixed)
+- Essential for building locale fallback chains and content grouping
+- Performance scales linearly with number of input locales
+
+## Next Steps
+
+- **[Compare languages with isSameLanguage()](/docs/core/class/methods/locales/isSameLanguage)**
+- **[Check locale hierarchy with isSupersetLocale()](/docs/core/class/methods/locales/isSupersetLocale)**
+- **[Validate locales with isValidLocale()](/docs/core/class/methods/locales/isValidLocale)**
+- **[Explore standalone isSameDialect()](/docs/core/functions/locales/isSameDialect)**

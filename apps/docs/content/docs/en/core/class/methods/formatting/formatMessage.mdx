@@ -1,0 +1,197 @@
+---
+title: formatMessage()
+description: API Reference for the GT formatMessage method
+---
+
+## Overview
+
+The `formatMessage()` method formats messages with variable substitution and locale-aware formatting. It supports ICU message format patterns and provides internationalized text rendering based on the configured locales.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'fr'
+});
+
+const formatted = gt.formatMessage('Hello {name}, you have {count} messages', {
+  variables: { name: 'Alice', count: 5 }
+});
+// Returns: "Hello Alice, you have 5 messages"
+```
+
+This method is essential for displaying dynamic content with proper locale formatting, including pluralization, number formatting, and variable interpolation.
+
+<Callout>
+**ICU Message Format:**
+The method fully supports ICU message format syntax, enabling complex pluralization, date formatting, and conditional text based on variable values.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "message": {
+      type: 'string',
+      optional: false,
+    },
+    "options?": {
+      type: 'object',
+      optional: true,
+    }
+  }}
+/>
+
+### Options Object
+
+| Property | Type | Optional | Description |
+|----------|------|----------|-------------|
+| `locales` | `string \| string[]` | ✓ | Locale(s) to use for formatting (overrides instance defaults) |
+| `variables` | `FormatVariables` | ✓ | Object containing variables for message interpolation |
+
+### FormatVariables Type
+
+```typescript
+type FormatVariables = {
+  [key: string]: string | number | Date | boolean;
+};
+```
+
+### Returns
+
+`string` - The formatted message with variables substituted and locale-specific formatting applied.
+
+---
+
+## Behavior
+
+### Locale Resolution
+
+The method uses locales in this priority order:
+1. `options.locales` parameter
+2. Instance rendering locales (sourceLocale, targetLocale, library default)
+3. Library default locale ('en')
+
+### Variable Substitution
+
+- Simple variables: `{variableName}` → replaced with string value
+- ICU patterns: `{count, plural, ...}` → processed with ICU formatting rules
+- Missing variables: Left unchanged in the output
+
+### Message Format Support
+
+- **Simple interpolation**: `{variable}`
+- **Number formatting**: `{price, number, ::currency/USD}`, `{discount, number, percent}`, `{num, number, integer}`
+- **Date formatting**: `{date, date, short}`, `{time, time, short}`
+- **Pluralization**: `{count, plural, =0 {none} =1 {one} other {many}}`
+- **Selection**: `{gender, select, male {he} female {she} other {they}}`
+- **Selectordinal**: `{place, selectordinal, =1 {#st} =2 {#nd} =3 {#rd} other {#th}}`
+
+---
+
+## Examples
+
+### Basic Variable Substitution
+
+```typescript
+const gt = new GT({ targetLocale: 'en' });
+
+const message = gt.formatMessage('Welcome {name}!', {
+  variables: { name: 'John' }
+});
+console.log(message); // "Welcome John!"
+```
+
+### Pluralization with ICU Format
+
+```typescript
+const message = gt.formatMessage(
+  'You have {count, plural, =0 {no items} =1 {one item} other {# items}} in your cart',
+  {
+    variables: { count: 3 }
+  }
+);
+console.log(message); // "You have 3 items in your cart"
+```
+
+### Number and Currency Formatting
+
+```typescript
+const gt = new GT({ targetLocale: 'en' });
+
+const message = gt.formatMessage(
+  'Your total is {price, number, ::currency/USD} with {discount, number, percent} off',
+  {
+    variables: { 
+      price: 99.99,
+      discount: 0.15 
+    }
+  }
+);
+console.log(message); // "Your total is $99.99 with 15% off"
+
+// Different number formatting options
+const numberExamples = [
+  { format: '{num, number}', value: 1234.56, output: '1,234.56' },
+  { format: '{num, number, integer}', value: 1234.56, output: '1,235' },
+  { format: '{num, number, percent}', value: 0.15, output: '15%' },
+  { format: '{num, number, ::currency/USD}', value: 99.99, output: '$99.99' }
+];
+
+numberExamples.forEach(example => {
+  console.log(gt.formatMessage(example.format, { variables: { num: example.value } }));
+});
+```
+
+### Complex Message Templates
+
+```typescript
+const orderStatusMessage = gt.formatMessage(`
+  Order #{orderId} status update:
+  - Items: {itemCount, plural, =0 {no items} =1 {one item} other {# items}}
+  - Total: {total, number, ::currency/USD}
+  - Status: {status, select, 
+      pending {Pending} 
+      shipped {Shipped} 
+      delivered {Delivered} 
+      other {Unknown}}
+  - Delivery: {deliveryDate, date, short}
+`, {
+  variables: {
+    orderId: 'ORD-12345',
+    itemCount: 3,
+    total: 149.97,
+    status: 'shipped',
+    deliveryDate: new Date('2024-03-20')
+  }
+});
+```
+
+---
+
+## Performance Considerations
+
+- **Message Parsing**: ICU messages are parsed on each call; consider caching for repeated use
+- **Variable Objects**: Reuse variable objects when possible to reduce memory allocation
+- **Complex Messages**: Very complex ICU patterns may impact performance; benchmark if needed
+- **Locale Loading**: First use of a locale may be slower due to initialization
+
+---
+
+## Notes
+
+- The method processes ICU message format syntax for advanced formatting
+- Variables are substituted before ICU processing
+- Missing variables remain as placeholder text in the output
+- Locale-specific number, date, and currency formatting is applied automatically
+- The method is synchronous and returns formatted text immediately
+
+## Next Steps
+
+- **[Format numbers with formatNum()](/docs/core/class/methods/formatting/formatNum)**
+- **[Format dates with formatDateTime()](/docs/core/class/methods/formatting/formatDateTime)**
+- **[Learn about FormatVariables type](/docs/core/types/FormatVariables)**
+- **[Explore standalone formatMessage()](/docs/core/functions/formatting/formatMessage)**

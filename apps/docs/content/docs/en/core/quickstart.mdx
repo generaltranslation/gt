@@ -1,0 +1,113 @@
+---
+title: Quick Start
+description: Quick Start guide for the generaltranslation library
+---
+
+## Overview
+
+This guide will walk you through the basics of using the generaltranslation library.
+
+
+---
+
+## Quick Start
+
+### Basic Setup
+
+```typescript
+import { GT } from 'generaltranslation';
+
+// Initialize with API credentials
+const gt = new GT({
+  apiKey: process.env.GT_API_KEY,    // Your API key from the dashboard
+  projectId: process.env.GT_PROJECT_ID,  // Your project ID
+  sourceLocale: 'en',               // Source language (English)
+  targetLocale: 'es'               // Default target language (Spanish)
+});
+```
+
+### Environment Variables
+
+Optional environment variables:
+
+```bash
+GT_API_KEY=your-api-key      # Get this from your GT dashboard
+GT_PROJECT_ID=your-project-id # Your project identifier
+```
+
+### Translation Examples
+
+For translations, you will have needed to specify a `GT_PROJECT_ID` and `GT_API_KEY`.
+
+```typescript
+// Simple text translation
+const translated = await gt.translate('Welcome to our app', 'fr');
+// Returns: "Bienvenue dans notre application"
+
+// Translate with context for better accuracy
+const greeting = await gt.translate('Good morning', 'ja', {
+  context: 'Formal business greeting'
+});
+// Returns: "おはようございます" (formal version)
+
+// Batch translation - more efficient for multiple strings
+const results = await gt.translateMany([
+  { source: 'Home' },
+  { source: 'About' },
+  { source: 'Contact' }
+], { targetLocale: 'de' });
+// Returns: [{ translation: 'Startseite' }, { translation: 'Über uns' }, { translation: 'Kontakt' }]
+```
+
+### Formatting Examples
+
+```typescript
+// Numbers formatted according to locale
+gt.formatNum(1234.56); 
+// English: "1,234.56"
+// German: "1.234,56"
+// French: "1 234,56"
+
+// Currency formatting with proper symbols
+gt.formatCurrency(29.99, 'EUR'); 
+// English: "€29.99"
+// German: "29,99 €"
+
+// Dates formatted for the locale
+gt.formatDateTime(new Date()); 
+// English: "12/25/2023, 3:45:30 PM"
+// German: "25.12.2023, 15:45:30"
+
+// Relative time in natural language
+gt.formatRelativeTime(-1, 'day'); // "yesterday"
+gt.formatRelativeTime(2, 'hour'); // "in 2 hours"
+
+// Lists with proper conjunctions
+gt.formatList(['apple', 'banana', 'orange']); 
+// English: "apple, banana, and orange"
+// Spanish: "manzana, plátano y naranja"
+```
+
+### Locale Utilities
+
+```typescript
+// Get detailed locale information
+const props = gt.getLocaleProperties('ja-JP');
+// Returns: { 
+//   language: 'ja', 
+//   region: 'JP', 
+//   name: 'Japanese (Japan)',
+//   direction: 'ltr',
+//   emoji: '🇯🇵'
+// }
+
+// Validate locale codes
+gt.isValidLocale('en'); // true - valid language code
+gt.isValidLocale('en-US'); // true - valid language-region code
+gt.isValidLocale('invalid'); // false - not a real locale
+
+// Compare locale relationships
+gt.isSameLanguage('en', 'en-GB'); // true - same language (English)
+gt.isSameDialect('en', 'en-GB'); // false - different regions
+gt.isSameLanguage('en', 'es'); // false - different languages
+```
