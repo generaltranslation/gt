@@ -54,8 +54,8 @@
     "watch": "pkg-utils watch --strict"
   },
   "dependencies": {
+    "@portabletext/block-tools": "^3.5.5",
     "@portabletext/to-html": "^2.0.14",
-    "@sanity/block-tools": "^3.70.0",
     "@sanity/icons": "^3.7.4",
     "@sanity/incompatible-plugin": "^1.0.5",
     "@sanity/mutator": "^3.98.1",
@@ -72,10 +72,10 @@
     "@sanity/plugin-kit": "^4.0.19",
     "@types/lodash.merge": "^4.6.9",
     "@types/react": "^19.1.12",
-    "jsdom": "^26.1.0",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
     "eslint-config-sanity": "^7.1.4",
+    "jsdom": "^26.1.0",
     "just-clone": "^6.2.0",
     "prettier-plugin-packagejson": "^2.5.19",
     "react": "^19.1.1",
