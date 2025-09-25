@@ -1,0 +1,62 @@
+{
+  "content": [
+    {
+      "_key": "a4d177e92666",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "a896ea6fcd59",
+          "_type": "span",
+          "marks": [],
+          "text": "This is block text at the top level."
+        }
+      ],
+      "markDefs": [],
+      "style": "custom1"
+    },
+    {
+      "_key": "6fe9a3ecaf0f",
+      "style": "custom1",
+      "markDefs": [],
+      "_type": "block",
+      "listItem": "number",
+      "level": 1,
+      "children": [
+        {
+          "_type": "span",
+          "marks": [],
+          "text": "This is custom-styled text in a list item",
+          "_key": "47eb0224d6b5"
+        }
+      ]
+    },
+    {
+      "_key": "9e2ab13c6d63",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "17e856dc4766",
+          "_type": "span",
+          "marks": [],
+          "text": "This is h1 text"
+        }
+      ],
+      "markDefs": [],
+      "style": "h1"
+    },
+    {
+      "_key": "297142fbaf21",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "0b2f9e94a161",
+          "_type": "span",
+          "marks": [],
+          "text": "This is h2 text"
+        }
+      ],
+      "markDefs": [],
+      "style": "h2"
+    }
+  ]
+}

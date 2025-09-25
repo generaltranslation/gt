@@ -25,7 +25,7 @@ import {
   useMessages,
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
-
+import { LocaleProperties } from 'generaltranslation/types';
 export { LocaleSelector, RegionSelector } from './index.client';
 
 export function useGTClass() {

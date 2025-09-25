@@ -1,3 +1,4 @@
+import { LocaleProperties } from 'generaltranslation/types';
 import useGTContext from '../provider/GTContext';
 
 /**
@@ -25,7 +26,7 @@ export function useGTClass() {
  * const localeProperties = useLocaleProperties('en-US');
  * console.log(localeProperties);
  */
-export function useLocaleProperties(locale: string) {
+export function useLocaleProperties(locale: string): LocaleProperties {
   const gt = useGTClass();
   return gt.getLocaleProperties(locale);
 }
