@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 1.0.1
+
+### Patch Changes
+
+- [#684](https://github.com/generaltranslation/gt/pull/684) [`017899f`](https://github.com/generaltranslation/gt/commit/017899f426604e34caa9f18a101f36cc126ee8b8) Thanks [@brian-lou](https://github.com/brian-lou)! - Modify deps
+
 ## 1.0.0
 
 ### Major Changes
