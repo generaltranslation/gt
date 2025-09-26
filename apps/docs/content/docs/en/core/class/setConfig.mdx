@@ -5,7 +5,8 @@ description: API Reference for the GT setConfig method
 
 ## Overview
 
-The `setConfig()` method updates the configuration of an existing GT instance. This allows you to modify API credentials, locales, and other settings after the instance has been created.
+The `setConfig()` method updates the configuration of an existing GT instance.
+This allows you to modify API credentials, locales, and other settings after the instance has been created.
 
 ```typescript
 const gt = new GT();
@@ -18,12 +19,8 @@ gt.setConfig({
 });
 ```
 
-This method is useful for dynamic configuration updates, credential rotation, or changing project settings at runtime.
 
-<Callout>
-**Configuration Merge:**
-`setConfig()` merges new configuration with existing settings. Only provided parameters are updated, while others remain unchanged.
-</Callout>
+The `setConfig()` method will validate all provided locale codes and merge with any existing configuration that was passed to the constructor.
 
 ---
 
@@ -59,58 +56,9 @@ The `GTConstructorParams` object supports the same properties as the constructor
 
 ---
 
-## Behavior
+## Example
 
-### Configuration Merging
-
-The method only updates properties that are explicitly provided:
-
-```typescript
-const gt = new GT({
-  apiKey: 'old-key',
-  sourceLocale: 'en',
-  targetLocale: 'es'
-});
-
-gt.setConfig({
-  apiKey: 'new-key'  // Only apiKey is updated
-});
-// sourceLocale and targetLocale remain unchanged
-```
-
-### Locale Validation
-
-All locale codes are validated when provided:
-
-- Invalid locale codes throw an error immediately
-- The instance configuration remains unchanged if validation fails
-- Custom mappings are applied before validation
-
-### Internal State Updates
-
-The method updates several internal properties:
-
-- **Rendering Locales**: Recalculated based on new source/target locales
-- **Custom Mapping**: Reverse mapping is rebuilt for alias resolution
-- **Region Mapping**: Cleared and rebuilt lazily when needed
-
----
-
-## Examples
-
-### Update API Credentials
-
-```typescript
-const gt = new GT();
-
-// Later, when credentials are available
-gt.setConfig({
-  apiKey: await getApiKeyFromVault(),
-  projectId: 'my-project-123'
-});
-```
-
-### Change Target Locale
+In this example, we switch the target locale from Spanish to French.
 
 ```typescript
 const gt = new GT({
@@ -123,49 +71,6 @@ gt.setConfig({
   targetLocale: 'fr'
 });
 ```
-
-### Environment-Specific Configuration
-
-```typescript
-const gt = new GT();
-
-if (process.env.NODE_ENV === 'development') {
-  gt.setConfig({
-    devApiKey: process.env.GT_DEV_API_KEY,
-    baseUrl: 'https://dev-api.generaltranslation.com'
-  });
-} else {
-  gt.setConfig({
-    apiKey: process.env.GT_API_KEY,
-    baseUrl: 'https://api.generaltranslation.com'
-  });
-}
-```
-
-### Dynamic Project Switching
-
-```typescript
-class TranslationManager {
-  private gt = new GT();
-  
-  async switchProject(projectId: string, locales: string[]) {
-    this.gt.setConfig({
-      projectId,
-      locales,
-      targetLocale: locales[0] // Use first locale as default target
-    });
-  }
-}
-```
-
----
-
-## Performance Considerations
-
-- **Rendering Locales**: Recalculated on every call with locale changes
-- **Custom Mapping**: Reverse mapping rebuilt when `customMapping` is updated
-- **Validation**: All provided locales are validated synchronously
-- **Memory**: Previous custom mappings are replaced, not merged
 
 ---
 

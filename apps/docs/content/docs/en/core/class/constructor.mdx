@@ -89,7 +89,7 @@ Because the General Translation API does not support `cn`, you must specify a cu
 const gt = new GT({
   projectId: 'my-project-id',
   apiKey: 'my-api-key',
-  targetLocale: 'fr',
+  targetLocale: 'es',
   customMapping: {
     'cn': { code: 'zh' }
   }
@@ -102,8 +102,8 @@ You can do other things with custom mappings, such as add custom names, emojis, 
 const gt = new GT({
   projectId: 'my-project-id',
   apiKey: 'my-api-key',
-  targetLocale: 'fr',
-  customMapping: { 'cn': { code: 'zh', name: 'Mandarin', emoji: '🇨🇳' } }
+  targetLocale: 'es',
+  customMapping: { 'en-US': { name: 'Mandarin', emoji: '🇫🇷' } }
 });
 ```
 
@@ -111,10 +111,9 @@ const gt = new GT({
 
 ## Notes
 
+- All parameters are optional, but API operations will require `apiKey` and `projectId`
 - The constructor validates all locale codes immediately, throwing errors for invalid codes
 - Custom mappings take precedence over standard BCP 47 validation
-- The `baseUrl` parameter is primarily for enterprise customers with custom deployments
-- All parameters are optional, but API operations will require `apiKey` and `projectId`
 
 ## Next Steps
 
