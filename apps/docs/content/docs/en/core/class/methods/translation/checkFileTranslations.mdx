@@ -5,7 +5,8 @@ description: API Reference for the checkFileTranslations() method to check trans
 
 ## Overview
 
-The `checkFileTranslations()` method checks the translation status of files without downloading their content. This is useful for monitoring translation progress, checking completion status, and determining which translations are available.
+The `checkFileTranslations()` method checks the translation status of files without downloading their content.
+This is useful for monitoring translation progress, checking completion status, and determining which translations are available.
 
 ```typescript
 const gt = new GT({ apiKey: 'your-api-key' });
@@ -18,11 +19,6 @@ const status = await gt.checkFileTranslations([
   }
 ]);
 ```
-
-<Callout>
-**Status Check Only:**
-This method returns translation metadata and status information without downloading file content. Use [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) to retrieve the actual translated content.
-</Callout>
 
 ## Reference
 
@@ -126,99 +122,17 @@ result.translations.forEach(translation => {
 });
 ```
 
-### Monitoring Translation Progress
-
-Monitor translation progress in a polling loop:
-
-```typescript copy
-async function waitForTranslations(queries: FileTranslationQuery[]) {
-  const maxAttempts = 30;
-  let attempts = 0;
-  
-  while (attempts < maxAttempts) {
-    const result = await gt.checkFileTranslations(queries);
-    
-    const completed = result.translations.filter(t => t.status === 'completed');
-    const pending = result.translations.filter(t => t.status === 'pending');
-    const failed = result.translations.filter(t => t.status === 'failed');
-    
-    console.log(`Progress: ${completed.length}/${result.translations.length} completed`);
-    
-    if (failed.length > 0) {
-      console.error(`${failed.length} translations failed`);
-      break;
-    }
-    
-    if (pending.length === 0) {
-      console.log('All translations completed!');
-      return result.translations;
-    }
-    
-    // Wait before next check
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    attempts++;
-  }
-  
-  throw new Error('Timeout waiting for translations to complete');
-}
-
-// Usage
-const queries = [
-  { versionId: 'version-123', fileName: 'app.json', locale: 'es' },
-  { versionId: 'version-123', fileName: 'app.json', locale: 'fr' }
-];
-
-const completedTranslations = await waitForTranslations(queries);
-```
-
-### Checking Multiple Files and Locales
-
-Efficiently check status for multiple files across multiple locales:
-
-```typescript copy
-const fileNames = ['homepage.json', 'navigation.json', 'footer.json'];
-const locales = ['es', 'fr', 'de', 'it'];
-const versionId = 'version-123';
-
-// Generate all combinations
-const queries = fileNames.flatMap(fileName =>
-  locales.map(locale => ({
-    versionId,
-    fileName,
-    locale
-  }))
-);
-
-const result = await gt.checkFileTranslations(queries);
-
-// Group results by file
-const resultsByFile = result.translations.reduce((acc, translation) => {
-  if (!acc[translation.fileName]) {
-    acc[translation.fileName] = [];
-  }
-  acc[translation.fileName].push(translation);
-  return acc;
-}, {} as Record<string, CompletedFileTranslationData[]>);
-
-// Report status for each file
-Object.entries(resultsByFile).forEach(([fileName, translations]) => {
-  const completed = translations.filter(t => t.status === 'completed').length;
-  console.log(`${fileName}: ${completed}/${translations.length} translations ready`);
-});
-```
-
 ---
 
 ## Notes
 
-* Either `fileName` or `fileId` must be provided in each query - both are not required
-* This method only returns status information - use [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) to get content
 * Translation status includes `pending`, `completed`, and `failed` states
 * Completed translations may still require approval before being published
 * Use this method for efficient status checking when monitoring multiple translation jobs
 
 ## Next Steps
 
+* Check out the [Quickstart](/docs/core/quickstart#translate-your-first-file) for a complete example of how to use this method
 * See [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) to download completed translations
 * See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to create translation jobs
 * See [`querySourceFile()`](/docs/core/class/methods/translation/querySourceFile) to get source file and translation information
