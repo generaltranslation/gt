@@ -5,32 +5,8 @@ description: API Reference for the GT resolveAliasLocale method
 
 ## Overview
 
-The `resolveAliasLocale()` method resolves a canonical locale code back to its original alias locale code when custom mapping is configured. This is the inverse operation of `resolveCanonicalLocale()` and is essential for displaying user-facing locale names while using canonical locales internally.
-
-```typescript
-const gt = new GT({
-  sourceLocale: 'en',
-  customMapping: {
-    'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
-    'traditional-chinese': { code: 'zh-TW', name: 'Traditional Chinese' }
-  }
-});
-
-// Resolve canonical locale back to alias
-const alias = gt.resolveAliasLocale('zh-CN');
-console.log(alias); // "simplified-chinese"
-
-// Non-mapped locale returns the original
-const unchanged = gt.resolveAliasLocale('es-ES');
-console.log(unchanged); // "es-ES"
-```
-
-This method is particularly useful when receiving canonical locale codes from APIs and needing to display the original alias names to users.
-
-<Callout>
-**Custom Locale Mapping:**
-This method only affects locales that have been mapped through the `customMapping` configuration. Regular BCP-47 locale codes pass through unchanged, ensuring backward compatibility and predictable behavior.
-</Callout>
+The `resolveAliasLocale()` method resolves a canonical locale code back to its original alias locale code when custom mapping is configured.
+This is the inverse operation of `resolveCanonicalLocale()`.
 
 ---
 
@@ -69,329 +45,27 @@ This method only affects locales that have been mapped through the `customMappin
 
 ---
 
-## Behavior
-
-### Resolution Process
-
-The method follows this resolution process:
-1. **Check if locale parameter exists** - Throws error if missing
-2. **Look up reverse mapping** - Uses the instance's `reverseCustomMapping` (lazily generated)
-3. **Return alias if found** - Returns the original alias locale code
-4. **Return original if not mapped** - Returns the input locale unchanged
-
-### Reverse Mapping Generation
-
-The reverse mapping is automatically generated from the `customMapping`:
-- Built lazily on first use for performance
-- Maps canonical codes back to alias names
-- Only includes entries where the mapping has a `code` property
-- Cached for subsequent calls
-
-### Custom Mapping Override
-
-When a `customMapping` parameter is provided:
-- Temporarily uses the provided mapping instead of the instance mapping
-- Does not update the instance's cached reverse mapping
-- Useful for one-off resolution operations
-
----
 
 ## Examples
 
-### Basic Alias Resolution
-
 ```typescript
 const gt = new GT({
-  sourceLocale: 'en-US',
-  customMapping: {
-    'american-english': { code: 'en-US', name: 'American English' },
-    'british-english': { code: 'en-GB', name: 'British English' },
-    'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' }
-  }
-});
-
-// Resolve canonical locales back to aliases
-console.log(gt.resolveAliasLocale('en-US')); // "american-english"
-console.log(gt.resolveAliasLocale('en-GB')); // "british-english" 
-console.log(gt.resolveAliasLocale('zh-CN')); // "simplified-chinese"
-
-// Non-mapped locales return unchanged
-console.log(gt.resolveAliasLocale('fr-FR')); // "fr-FR"
-console.log(gt.resolveAliasLocale('es-ES')); // "es-ES"
-```
-
-### API Response Processing
-
-```typescript
-// Example: Processing translation API responses
-const gt = new GT({
-  customMapping: {
-    'chinese': { code: 'zh-CN', name: 'Chinese' },
-    'arabic': { code: 'ar-SA', name: 'Arabic' },
-    'spanish': { code: 'es-ES', name: 'Spanish' }
-  }
-});
-
-interface TranslationApiResponse {
-  locale: string; // Canonical locale from API
-  content: string;
-  status: 'completed' | 'pending';
-}
-
-function processApiResponse(responses: TranslationApiResponse[]) {
-  return responses.map(response => ({
-    ...response,
-    displayLocale: gt.resolveAliasLocale(response.locale), // Convert to user-friendly alias
-    localeName: gt.getLocaleName(gt.resolveAliasLocale(response.locale))
-  }));
-}
-
-// Mock API responses with canonical locales
-const apiResponses: TranslationApiResponse[] = [
-  { locale: 'zh-CN', content: '你好世界', status: 'completed' },
-  { locale: 'ar-SA', content: 'مرحبا بالعالم', status: 'completed' },
-  { locale: 'es-ES', content: 'Hola Mundo', status: 'pending' }
-];
-
-const processedResponses = processApiResponse(apiResponses);
-console.log(processedResponses);
-// [
-//   { locale: 'zh-CN', content: '你好世界', status: 'completed', 
-//     displayLocale: 'chinese', localeName: 'Chinese' },
-//   { locale: 'ar-SA', content: 'مرحبا بالعالم', status: 'completed', 
-//     displayLocale: 'arabic', localeName: 'Arabic' },
-//   { locale: 'es-ES', content: 'Hola Mundo', status: 'pending', 
-//     displayLocale: 'es-ES', localeName: 'Spanish (Spain)' }
-// ]
-```
-
-### User Interface Locale Selection
-
-```typescript
-// Example: Building a locale selector with custom aliases
-const gt = new GT({
-  customMapping: {
-    'english': { code: 'en-US', name: 'English' },
-    'french': { code: 'fr-FR', name: 'Français' },
-    'german': { code: 'de-DE', name: 'Deutsch' },
-    'japanese': { code: 'ja-JP', name: '日本語' }
-  }
-});
-
-interface LocaleOption {
-  alias: string;
-  canonical: string;
-  displayName: string;
-  selected: boolean;
-}
-
-function buildLocaleOptions(currentLocale: string): LocaleOption[] {
-  const supportedCanonicalLocales = ['en-US', 'fr-FR', 'de-DE', 'ja-JP', 'es-ES'];
-  
-  return supportedCanonicalLocales.map(canonical => {
-    const alias = gt.resolveAliasLocale(canonical);
-    return {
-      alias,
-      canonical,
-      displayName: gt.getLocaleName(alias),
-      selected: canonical === currentLocale
-    };
-  });
-}
-
-// Usage in React component
-function LocaleSelector({ currentLocale, onLocaleChange }) {
-  const options = buildLocaleOptions(currentLocale);
-  
-  return (
-    <select 
-      value={currentLocale}
-      onChange={(e) => onLocaleChange(e.target.value)}
-    >
-      {options.map(option => (
-        <option key={option.canonical} value={option.canonical}>
-          {option.displayName}
-        </option>
-      ))}
-    </select>
-  );
-}
-```
-
-### Custom Mapping Override
-
-```typescript
-const gt = new GT({
-  customMapping: {
-    'primary-chinese': { code: 'zh-CN', name: 'Primary Chinese' }
-  }
-});
-
-// Use instance mapping
-console.log(gt.resolveAliasLocale('zh-CN')); // "primary-chinese"
-
-// Override with temporary mapping
-const tempMapping = {
-  'temp-chinese': { code: 'zh-CN', name: 'Temporary Chinese' }
-};
-
-// This creates a temporary reverse mapping for resolution
-console.log(gt.resolveAliasLocale('zh-CN', tempMapping)); // Still uses instance mapping
-
-// Note: To use override mapping, you'd need to call the standalone function
-import { resolveAliasLocale } from 'generaltranslation';
-console.log(resolveAliasLocale('zh-CN', tempMapping)); // Would work with standalone function
-```
-
----
-
-## Error Handling
-
-### Missing Locale Parameter
-
-```typescript
-const gt = new GT({ targetLocale: 'en-US' });
-
-try {
-  // @ts-expect-error - Testing error case
-  const result = gt.resolveAliasLocale();
-} catch (error) {
-  console.error('Resolution failed:', error.message);
-  // Error: No target locale provided for resolveAliasLocale
-}
-```
-
-### Safe Resolution with Fallbacks
-
-```typescript
-function safeResolveAliasLocale(
-  gt: GT, 
-  locale: string | undefined,
-  fallback: string = 'en-US'
-): string {
-  try {
-    if (!locale) {
-      console.warn('No locale provided, using fallback');
-      return fallback;
-    }
-    
-    return gt.resolveAliasLocale(locale);
-  } catch (error) {
-    console.error(`Failed to resolve alias for ${locale}:`, error.message);
-    return fallback;
-  }
-}
-
-// Usage with error handling
-const gt = new GT({
-  customMapping: {
-    'english': { code: 'en-US', name: 'English' }
-  }
-});
-
-console.log(safeResolveAliasLocale(gt, 'en-US')); // "english"
-console.log(safeResolveAliasLocale(gt, undefined)); // "en-US" with warning
-console.log(safeResolveAliasLocale(gt, 'fr-FR')); // "fr-FR"
-```
-
----
-
-## Workflow Integration
-
-### Translation Workflow
-
-```typescript
-// Complete workflow showing canonical/alias locale conversion
-const gt = new GT({
-  sourceLocale: 'en-US',
+  sourceLocale: 'en',
   customMapping: {
     'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
     'traditional-chinese': { code: 'zh-TW', name: 'Traditional Chinese' }
   }
 });
 
-// Step 1: User selects alias locale from UI
-const userSelectedAlias = 'simplified-chinese';
+// Resolve canonical locale back to alias
+const alias = gt.resolveAliasLocale('zh-CN');
+console.log(alias); // "simplified-chinese"
 
-// Step 2: Convert to canonical for API calls
-const canonicalLocale = gt.resolveCanonicalLocale(userSelectedAlias);
-console.log('API locale:', canonicalLocale); // "zh-CN"
-
-// Step 3: Make API call with canonical locale
-async function translateContent(content: string, targetLocale: string) {
-  // API expects canonical locale codes
-  const result = await gt.translate(content, targetLocale);
-  return result;
-}
-
-const translation = await translateContent('Hello World', canonicalLocale);
-
-// Step 4: Process API response and convert back to alias for display
-const responseLocale = 'zh-CN'; // From API response
-const displayAlias = gt.resolveAliasLocale(responseLocale);
-console.log('Display alias:', displayAlias); // "simplified-chinese"
-
-// Step 5: Show user-friendly name
-const displayName = gt.getLocaleName(displayAlias);
-console.log('User display:', displayName); // "Simplified Chinese"
+// Non-mapped locale returns the original
+const unchanged = gt.resolveAliasLocale('es-ES');
+console.log(unchanged); // "es-ES"
 ```
 
-### Batch Resolution
-
-```typescript
-function batchResolveAliasLocales(gt: GT, canonicalLocales: string[]): string[] {
-  return canonicalLocales.map(locale => {
-    try {
-      return gt.resolveAliasLocale(locale);
-    } catch (error) {
-      console.warn(`Failed to resolve alias for ${locale}, keeping original`);
-      return locale;
-    }
-  });
-}
-
-// Usage
-const gt = new GT({
-  customMapping: {
-    'chinese': { code: 'zh-CN' },
-    'arabic': { code: 'ar-SA' }
-  }
-});
-
-const canonicalLocales = ['zh-CN', 'ar-SA', 'fr-FR', 'de-DE'];
-const aliases = batchResolveAliasLocales(gt, canonicalLocales);
-console.log(aliases); // ["chinese", "arabic", "fr-FR", "de-DE"]
-```
-
----
-
-## Performance Considerations
-
-- **Lazy Reverse Mapping**: Reverse mapping is generated on first use and cached
-- **Memory Usage**: Cached reverse mapping uses additional memory for faster lookups
-- **No Validation**: Method doesn't validate locale format for performance
-- **Instance Caching**: Each GT instance maintains its own reverse mapping cache
-
-```typescript
-// Performance tip: Reuse GT instances to benefit from caching
-const gt = new GT({
-  customMapping: {
-    'lang1': { code: 'zh-CN' },
-    'lang2': { code: 'ar-SA' },
-    // ... many mappings
-  }
-});
-
-// First call builds reverse mapping (slower)
-console.time('first-call');
-const result1 = gt.resolveAliasLocale('zh-CN');
-console.timeEnd('first-call');
-
-// Subsequent calls use cached mapping (faster)
-console.time('cached-call');
-const result2 = gt.resolveAliasLocale('ar-SA');
-console.timeEnd('cached-call');
-```
 
 ---
 
@@ -399,15 +73,10 @@ console.timeEnd('cached-call');
 
 - Returns the original alias locale code when a custom mapping exists
 - Returns the input locale unchanged if no mapping is found
-- Uses cached reverse mapping for optimal performance
-- Essential for maintaining user-facing locale names in internationalized applications
-- Works in conjunction with `resolveCanonicalLocale()` for bidirectional conversion
-- Does not validate locale format for performance reasons
-- Thread-safe for read operations after initial reverse mapping generation
 
 ## Next Steps
 
-- **[Resolve canonical locales with resolveCanonicalLocale()](/docs/core/class/methods/locales/resolveCanonicalLocale)**
-- **[Validate locales with isValidLocale()](/docs/core/class/methods/locales/isValidLocale)**
-- **[Get locale properties with getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
-- **[Explore standalone resolveAliasLocale()](/docs/core/functions/locales/resolveAliasLocale)**
+- Resolve canonical locales with [`resolveCanonicalLocale()`](/docs/core/class/methods/locales/resolveCanonicalLocale)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Explore standalone [`resolveAliasLocale()`](/docs/core/functions/locales/resolveAliasLocale)

@@ -5,7 +5,8 @@ description: API Reference for the GT getRegionProperties method
 
 ## Overview
 
-The `getRegionProperties()` method retrieves detailed information about a region code, including its localized name and associated emoji flag. It provides a convenient way to get region-specific display information for building internationalized user interfaces.
+The `getRegionProperties()` method retrieves detailed information about a region code, including its localized name and associated emoji flag.
+It provides a convenient way to get region-specific display information for building internationalized user interfaces.
 
 ```typescript
 const gt = new GT({
@@ -82,40 +83,6 @@ console.log(gt.getRegionProperties('DE')); // { code: 'DE', name: 'Germany', emo
 console.log(gt.getRegionProperties('JP')); // { code: 'JP', name: 'Japan', emoji: '🇯🇵' }
 ```
 
-### Localized Region Names
-
-```typescript
-// German localization
-const gtDe = new GT({ targetLocale: 'de-DE' });
-console.log(gtDe.getRegionProperties('US')); // { code: 'US', name: 'Vereinigte Staaten', emoji: '🇺🇸' }
-console.log(gtDe.getRegionProperties('FR')); // { code: 'FR', name: 'Frankreich', emoji: '🇫🇷' }
-
-// French localization
-const gtFr = new GT({ targetLocale: 'fr-FR' });
-console.log(gtFr.getRegionProperties('US')); // { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
-console.log(gtFr.getRegionProperties('DE')); // { code: 'DE', name: 'Allemagne', emoji: '🇩🇪' }
-```
-
-### Custom Region Mapping
-
-```typescript
-const gt = new GT({
-  targetLocale: 'en-US',
-  customMapping: {
-    'custom-us': {
-      code: 'en-US',
-      regionCode: 'US',
-      regionName: 'USA',
-      emoji: '🗽'
-    }
-  }
-});
-
-// Custom mapping overrides default
-const customProps = gt.getRegionProperties('US');
-console.log(customProps); // { code: 'US', name: 'USA', emoji: '🗽' }
-```
-
 ---
 
 ## Notes
@@ -128,6 +95,6 @@ console.log(customProps); // { code: 'US', name: 'USA', emoji: '🗽' }
 
 ## Next Steps
 
-- **[Get full locale properties with getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
-- **[Get locale emoji with getLocaleEmoji()](/docs/core/class/methods/locales/getLocaleEmoji)**
-- **[Explore standalone getRegionProperties()](/docs/core/functions/locales/getRegionProperties)**
+- Get full locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/class/methods/locales/getLocaleEmoji)
+- Explore standalone [`getRegionProperties()`](/docs/core/functions/locales/getRegionProperties)
