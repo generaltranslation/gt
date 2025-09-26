@@ -19,6 +19,9 @@ const status = await gt.checkSetupStatus('setup-job-123');
 console.log(`Setup status: ${status.status}`);
 ```
 
+<Callout>
+  To check the status of a setup job, you must first called both [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) and [`setupProject()`](/docs/core/class/methods/translation/setupProject).
+</Callout>
 
 ## Reference
 
@@ -68,8 +71,27 @@ type SetupJobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key'
 });
+
+
+const fileRefs = [
+  {
+    fileId: 'file-123',
+    versionId: 'version-456',
+    fileName: 'app.json',
+    fileFormat: 'JSON'
+  },
+  {
+    fileId: 'file-789',
+    versionId: 'version-012',
+    fileName: 'content.md',
+    fileFormat: 'MD'
+  }
+];
+
+const setupResult = await gt.setupProject(fileRefs);
 
 async function checkJobStatus(jobId: string) {
   const status = await gt.checkSetupStatus(jobId);
@@ -84,7 +106,7 @@ async function checkJobStatus(jobId: string) {
   return status;
 }
 
-const jobStatus = await checkJobStatus('setup-job-123');
+const jobStatus = await checkJobStatus(setupResult.setupJobId);
 ```
 
 ---
