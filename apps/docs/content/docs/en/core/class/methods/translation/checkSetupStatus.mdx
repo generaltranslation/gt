@@ -5,7 +5,12 @@ description: API Reference for the checkSetupStatus() method to monitor project 
 
 ## Overview
 
-The `checkSetupStatus()` method checks the current status of a project setup job using its unique identifier. This method is used to monitor the progress of asynchronous setup operations initiated by [`setupProject()`](/docs/core/class/methods/translation/setupProject).
+The `checkSetupStatus()` method checks the current status of a project setup job using its unique identifier.
+This method is used to monitor the progress of asynchronous setup operations initiated by [`setupProject()`](/docs/core/class/methods/translation/setupProject).
+Set up handles tasks like corpus analysis, context generation, glossary generation, etc.
+
+Set up automatically runs when elements of context are missing.
+This typically means that when you run translate for the first time, you will see a setup job running.
 
 ```typescript
 const gt = new GT({ apiKey: 'your-api-key' });
@@ -14,10 +19,6 @@ const status = await gt.checkSetupStatus('setup-job-123');
 console.log(`Setup status: ${status.status}`);
 ```
 
-<Callout>
-**Asynchronous Monitoring:**
-Project setup is an asynchronous operation. Use this method in a polling loop or check periodically until the status becomes `'completed'` or `'failed'`.
-</Callout>
 
 ## Reference
 
@@ -86,128 +87,13 @@ async function checkJobStatus(jobId: string) {
 const jobStatus = await checkJobStatus('setup-job-123');
 ```
 
-### Polling for Completion
-
-```typescript copy
-async function waitForSetupCompletion(jobId: string, maxAttempts: number = 30) {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const status = await gt.checkSetupStatus(jobId);
-    
-    console.log(`Attempt ${attempt}: ${status.status}`);
-    
-    switch (status.status) {
-      case 'completed':
-        console.log('✅ Setup completed successfully!');
-        return status;
-        
-      case 'failed':
-        const errorMsg = status.error?.message || 'Unknown error';
-        throw new Error(`Setup failed: ${errorMsg}`);
-        
-      case 'queued':
-      case 'processing':
-        // Wait before next check
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        break;
-        
-      default:
-        throw new Error(`Unknown status: ${status.status}`);
-    }
-  }
-  
-  throw new Error(`Setup job did not complete within ${maxAttempts} attempts`);
-}
-
-// Usage
-try {
-  const result = await waitForSetupCompletion('setup-job-123');
-  console.log('Setup job completed:', result);
-} catch (error) {
-  console.error('Setup monitoring failed:', error);
-}
-```
-
-### Complete Workflow with Status Monitoring
-
-```typescript copy
-async function setupProjectWithMonitoring(fileRefs: FileUploadRef[]) {
-  console.log('🚀 Starting project setup...');
-  
-  // Step 1: Initiate setup
-  const setupResult = await gt.setupProject(fileRefs);
-  console.log(`Setup job created: ${setupResult.setupJobId}`);
-  
-  // Step 2: Monitor setup progress
-  let isCompleted = false;
-  let attempts = 0;
-  const maxAttempts = 60; // 2 minutes with 2-second intervals
-  
-  while (!isCompleted && attempts < maxAttempts) {
-    attempts++;
-    
-    try {
-      const status = await gt.checkSetupStatus(setupResult.setupJobId);
-      
-      switch (status.status) {
-        case 'queued':
-          console.log(`⏳ [${attempts}] Setup queued, waiting...`);
-          break;
-          
-        case 'processing':
-          console.log(`⚙️  [${attempts}] Setup in progress...`);
-          break;
-          
-        case 'completed':
-          console.log('✅ Setup completed successfully!');
-          isCompleted = true;
-          return status;
-          
-        case 'failed':
-          const errorMsg = status.error?.message || 'Unknown error';
-          throw new Error(`❌ Setup failed: ${errorMsg}`);
-      }
-      
-      if (!isCompleted) {
-        // Wait 2 seconds before next check
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-      
-    } catch (error) {
-      console.error(`❌ Status check failed (attempt ${attempts}):`, error);
-      
-      // Continue trying unless it's the last attempt
-      if (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
-    }
-  }
-  
-  throw new Error(`⏰ Setup did not complete within ${maxAttempts} attempts`);
-}
-
-// Usage
-const fileRefs = [
-  { fileId: 'file-123', versionId: 'version-456', fileName: 'app.json' }
-];
-
-try {
-  await setupProjectWithMonitoring(fileRefs);
-  console.log('🎉 Project is ready for translation!');
-} catch (error) {
-  console.error('🚫 Project setup failed:', error);
-}
-```
-
 ---
 
 ## Notes
 
-* Setup jobs are asynchronous and may take several seconds to minutes depending on project complexity
-* The method polls the API once per call - implement your own polling loop for continuous monitoring
-* Failed jobs include an error message in the `error` property for debugging
+* Set up automatically runs when elements of context are missing.
+* Set up is responsible for corpus analysis, context generation, glossary generation, etc.
 * Job IDs are returned by [`setupProject()`](/docs/core/class/methods/translation/setupProject) and should be stored for status checking
-* Use appropriate timeout values - setup operations can take longer than standard API calls
-* Consider implementing exponential backoff for production polling systems
 
 ## Next Steps
 
