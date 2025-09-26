@@ -5,7 +5,8 @@ description: API Reference for the enqueueFiles() method to enqueue file transla
 
 ## Overview
 
-The `enqueueFiles()` method enqueues translation jobs for previously uploaded files in the General Translation API. This method takes file references and creates translation jobs for the specified target locales.
+The `enqueueFiles()` method enqueues translation jobs for previously uploaded files in the General Translation API.
+This method takes file references and creates translation jobs for the specified target locales.
 
 ```typescript
 const gt = new GT({ apiKey: 'your-api-key' });
@@ -16,9 +17,8 @@ const result = await gt.enqueueFiles(fileRefs, {
 });
 ```
 
-<Callout>
-**File References Required:**
-This method works with file references (`FileUploadRef[]`) from previously uploaded files using [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles). The actual file content should already be uploaded to the General Translation platform.
+<Callout type="info">
+  You can only enqueue files for translation after they have been uploaded.
 </Callout>
 
 ## Reference
@@ -66,78 +66,51 @@ type EnqueueFilesResult = {
 
 ## Example
 
-### Basic Usage
-
-```typescript copy
-import { GT } from 'generaltranslation';
-
+```typescript title="index.ts" copy
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key',
-  sourceLocale: 'en'
 });
 
-// Assume files were previously uploaded
-const fileRefs = [
-  {
-    fileId: 'file-123',
-    versionId: 'version-456',
-    fileName: 'homepage.json'
-  },
-  {
-    fileId: 'file-789',
-    versionId: 'version-012',
-    fileName: 'navigation.json'
-  }
-];
-
-const result = await gt.enqueueFiles(fileRefs, {
-  targetLocales: ['es', 'fr', 'de'],
-  publish: false,
-  requireApproval: true
-});
-
-console.log(`Translation jobs created for ${result.locales.length} locales`);
-```
-
-### With Custom Options
-
-```typescript copy
-const result = await gt.enqueueFiles(fileRefs, {
-  sourceLocale: 'en',
-  targetLocales: ['es-ES', 'fr-FR', 'de-DE'],
-  modelProvider: 'gpt-4',
-  force: true,
-  publish: true,
-  requireApproval: false
-});
-
-// Access translation job details
-result.translations.forEach(translation => {
-  console.log(`Job created for ${translation.targetLocale}`);
-});
-```
-
-### Integration with File Upload
-
-```typescript copy
-// First, upload source files
-const uploadResult = await gt.uploadSourceFiles(files, {
-  sourceLocale: 'en',
-  replace: true
-});
-
-// Then enqueue translation jobs
-const enqueueResult = await gt.enqueueFiles(
-  uploadResult.data.map(file => ({
-    fileId: file.fileId,
-    versionId: file.versionId,
-    fileName: file.fileName
-  })),
-  {
-    targetLocales: ['es', 'fr', 'de'],
-    publish: false
-  }
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
 );
+
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
+});
+
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
+// (5) Download the file
+const result = await gt.downloadFileBatch(translationIds);
 ```
 
 ---
@@ -146,9 +119,6 @@ const enqueueResult = await gt.enqueueFiles(
 
 * File content must be uploaded first using [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles)
 * Translation jobs are asynchronous - use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to monitor progress
-* The `force` option will retranslate files even if translations already exist
-* When `publish` is true, translations become available immediately upon completion
-* Use `requireApproval` for quality control workflows
 
 ## Next Steps
 
