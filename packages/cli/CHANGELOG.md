@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.5
+
+### Patch Changes
+
+- [#687](https://github.com/generaltranslation/gt/pull/687) [`99a1958`](https://github.com/generaltranslation/gt/commit/99a1958124d532bb3817f76a69d5232d9eb26f76) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: showing superfluous warning for composite json paths
+
 ## 2.3.4
 
 ### Patch Changes
