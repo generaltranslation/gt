@@ -71,9 +71,9 @@ export function getResponse({
 /**
  * Extracts the locale from the given pathname.
  */
-export function extractLocale(pathname: string, gt?: GT): string | null {
+export function extractLocale(pathname: string): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
-  return matches ? (gt ? gt.resolveAliasLocale(matches[1]) : matches[1]) : null;
+  return matches ? matches[1] : null;
 }
 
 /**

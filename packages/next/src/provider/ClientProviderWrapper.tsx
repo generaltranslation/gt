@@ -3,8 +3,12 @@ import { ClientProvider as _ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
-import { extractLocale } from '../middleware-dir/utils';
 import { GT, standardizeLocale } from 'generaltranslation';
+
+function extractLocale(pathname: string, gt: GT): string | null {
+  const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
+  return matches ? gt.resolveAliasLocale(matches[1]) : null;
+}
 
 export default function ClientProvider(
   props: ClientProviderProps & {
