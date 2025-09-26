@@ -3,38 +3,45 @@ title: Local Translation Storage
 description: Store translations in your app bundle instead of using a CDN
 ---
 
-Local translation storage bundles translations directly into your app instead of fetching them from a CDN at runtime. This provides faster load times and removes external dependencies, but increases bundle size and requires redeployment for translation updates.
+## What are local translations?
+
+Local translations are stored in your app's bundle, as opposed to being fetched from a CDN (Content Distribution Network). When you add the `gtx-cli translate` command to your build process, this generates translations in JSON format. The final step is getting these translations into your app where they can be used.
+
+There are two ways to do this:
+
+1. **In your app's bundle** (local): Save translations to your app's bundle after generation
+2. **In a CDN** (default): Fetch translations from a CDN at runtime
+
+By default, `gt-next` fetches translations from the General Translation CDN. When translating your app using our API, translations are automatically saved to our CDN.
 
 <Callout>
   **Default behavior:** GT uses CDN storage by default. Only switch to local storage if you need the specific benefits it provides.
 </Callout>
 
-## CDN vs Local Storage
+## Trade-offs
 
-### CDN Storage (Default)
-- Translations served from General Translation CDN
-- Smaller bundle size
-- Easy content updates without redeployment
-- Requires internet connectivity
+### Benefits of Local Translations
+- **Faster load times**: Local translations are served directly from your app, loading faster than translations served from a CDN
+- **No reliance on external services**: Your app's ability to load translations isn't dependent on CDN uptime. If translations aren't found for a locale, the app automatically falls back to the default language
+- **Works offline**: Translations are bundled with your app
 
-### Local Storage
-- Translations bundled with your app
-- Faster load times (no network requests)
-- Works offline
-- Larger bundle size
-- Requires redeployment to update translations
+### Drawbacks of Local Translations  
+- **Increased bundle size**: Local translations increase your app's bundle size, potentially making the app slower to load initially
+- **Content management**: To edit a translation, you must redeploy your app with the new translation every time you make changes
 
-## Quick Setup
+## Setup
 
 ### Step 1: Create Load Function
-Create `src/loadTranslations.js` or `src/loadTranslations.ts`:
+Add a `loadTranslations.[js|ts]` file under `./src` with the following content:
 
-```ts
+```ts title="src/loadTranslations.ts"
 export default async function loadTranslations(locale: string) {
   const translations = await import(`../public/_gt/${locale}.json`);
   return translations.default;
 }
 ```
+
+[`withGTConfig()`](/docs/next/api/config/withGTConfig) automatically picks up the `loadTranslations.[js|ts]` file from your `src/` directory or project root.
 
 ### Step 2: Configure CLI
 Run the configuration command and select local storage:
@@ -47,14 +54,16 @@ When prompted:
 - **Save to CDN?** Select "No"  
 - **Translation directory:** Enter `./public/_gt`
 
+Alternatively, you can manually configure the `gt.config.json` file to use local translations. See the [CLI Configuration docs](/docs/cli/configuration) for more information.
+
 ### Step 3: Generate Translations
-Run the translate command to download translations locally:
+Now when you run the translate command, translations will be automatically downloaded and included in your codebase:
 
 ```bash
 npx gtx-cli translate
 ```
 
-Translations will now be stored in `public/_gt/` and bundled with your app.
+Translations will be stored in `public/_gt/` and bundled with your app.
 
 ## Build Integration
 

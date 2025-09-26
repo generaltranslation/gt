@@ -1,0 +1,226 @@
+---
+title: The <T> Component
+description: How to internationalize JSX components using the <T> component
+---
+
+The [`<T>` component](/docs/react/api/components/t) is the primary tool for internationalizing JSX content in your React application. It wraps your JSX elements and automatically translates them based on the user's locale.
+
+## Quick Start
+
+Transform any static JSX content by wrapping it with [`<T>`](/docs/react/api/components/t):
+
+```jsx
+import { T } from 'gt-react';
+
+// Before
+function Greeting() {
+  return <p>Hello, world!</p>;
+}
+
+// After
+function Greeting() {
+  return <T><p>Hello, world!</p></T>;
+}
+```
+
+For dynamic content within [`<T>`](/docs/react/api/components/t), use [Variable Components](/docs/react/guides/variables) and [Branching Components](/docs/react/guides/branches).
+
+## Basic Usage
+
+The [`<T>` component](/docs/react/api/components/t) accepts any JSX content as children:
+
+```jsx
+// Simple text
+<T>Welcome to our app</T>
+
+// HTML elements
+<T><h1>Page Title</h1></T>
+
+// Complex nested JSX
+<T>
+  <div className="alert">
+    <span>Important:</span> Please read carefully.
+  </div>
+</T>
+```
+
+## Configuration Options
+
+### Adding Context
+
+Provide translation context for ambiguous terms:
+
+```jsx
+<T context="notification popup, not bread">
+  Click the toast to dismiss
+</T>
+```
+
+### Setting Translation IDs
+
+Use explicit IDs for consistent translations:
+
+```jsx
+<T id="welcome-message">
+  Welcome back, user!
+</T>
+```
+
+## When to Use `<T>`
+
+Use [`<T>`](/docs/react/api/components/t) for **static content only**:
+
+```jsx
+// ✅ Static content works
+<T><button>Click here</button></T>
+<T><h1>Welcome to our site</h1></T>
+
+// ❌ Dynamic content breaks
+<T><p>Hello {username}</p></T>
+<T><p>Today is {new Date()}</p></T>
+
+// ✅ Use Variable components for dynamic content
+<T>
+  <p>Hello <Var>{username}</Var></p>
+</T>
+```
+
+<Callout>
+  Variable and Branching components are designed to work inside [`<T>`](/docs/react/api/components/t) for dynamic content. See [Variable Components](/docs/react/guides/variables) and [Branching Components](/docs/react/guides/branches) guides for details.
+</Callout>
+
+## Examples
+
+### Simple Elements
+```jsx
+// Basic text
+<T>Hello, world!</T>
+
+// Button with text
+<T><Button>Submit Form</Button></T>
+
+// Heading with styling
+<T><h1 className="text-2xl font-bold">Welcome</h1></T>
+```
+
+### Complex Components
+```jsx
+// Navigation menu
+<T>
+  <nav className="navbar">
+    <a href="/about">About Us</a>
+    <a href="/contact">Contact</a>
+  </nav>
+</T>
+
+// Alert message
+<T>
+  <div className="alert alert-warning">
+    <AlertIcon className="w-5 h-5" />
+    <span>Your session expires in 5 minutes</span>
+  </div>
+</T>
+```
+
+### With Variables
+```jsx
+// Combining static text with dynamic values
+<T>
+  <p>Welcome back, <Var>{user.name}</Var>!</p>
+</T>
+
+// Form with mixed content
+<T>
+  <label>
+    Email: <input type="email" placeholder="Enter your email" />
+  </label>
+</T>
+```
+
+<Callout>
+  Learn more about the [`<Var>` component](/docs/react/api/components/var) in the [Variable Components Guide](/docs/react/guides/variables).
+</Callout>
+
+## Production Setup
+
+### Build Process
+Add translation to your build pipeline:
+
+```json title="package.json"
+{
+  "scripts": {
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
+  }
+}
+```
+
+### Development vs Production Behavior
+- **Development**: With a dev API key, translations happen on-demand when components render. You'll see real-time translation as you develop.
+- **Production**: All translations are pre-built during the build stage and will be visible once your application is live.
+
+Set your development API key in your environment to enable live translation during development. You can create one in the Dashboard under [API Keys](https://dash.generaltranslation.com/en-US/project/api-keys).
+
+### Privacy Considerations
+Content in [`<T>`](/docs/react/api/components/t) components is sent to the GT API for translation. For sensitive data, use [Variable Components](/docs/react/guides/variables#privacy) to keep private information local:
+
+```jsx
+// Safe - sensitive data stays local
+<T>
+  Welcome back, <Var>{username}</Var>
+</T>
+```
+
+## Common Issues
+
+### Component Boundaries
+[`<T>`](/docs/react/api/components/t) only translates direct children, not content inside other components:
+
+```jsx
+// ❌ Wrong - content inside components won't be translated
+function MyComponent() {
+  return <p>This won't be translated</p>;
+}
+
+<T>
+  <h1>This will be translated</h1>
+  <MyComponent /> {/* Content inside won't be translated */}
+</T>
+
+// ✅ Correct - wrap each component individually
+function MyComponent() {
+  return <T><p>This will be translated</p></T>;
+}
+
+<T><h1>This will be translated</h1></T>
+<MyComponent />
+```
+
+### Nesting `<T>` Components
+
+```jsx
+// ❌ Don't nest <T> components
+<T>
+  <T>Hello world</T> {/* Don't do this */}
+</T>
+```
+
+### Dynamic Content Errors
+The CLI will error on dynamic content in [`<T>`](/docs/react/api/components/t). Wrap dynamic values with Variable components:
+
+```jsx
+// ❌ Wrong - dynamic content breaks
+<T><p>Hello {username}</p></T>
+
+// ✅ Correct - use Variable components
+<T><p>Hello <Var>{username}</Var></p></T>
+```
+
+<Callout>
+  See the [Variable Components Guide](/docs/react/guides/variables) for handling dynamic values and the [Branching Components Guide](/docs/react/guides/branches) for conditional content.
+</Callout>
+
+## Next Steps
+
+- [Variable Components Guide](/docs/react/guides/variables) - Handle dynamic content within JSX translations
+- [Branching Components Guide](/docs/react/guides/branches) - Add conditional logic to your translations
+- [\<T\> Component API Reference](/docs/react/api/components/t)
