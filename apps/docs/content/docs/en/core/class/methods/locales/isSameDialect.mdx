@@ -8,28 +8,6 @@ description: API Reference for the GT isSameDialect method
 The `isSameDialect()` method checks if multiple BCP-47 locale codes represent the same dialect.
 It compares the language and region components of locale codes to determine if they represent the same linguistic variety.
 
-```typescript
-const gt = new GT({
-  sourceLocale: 'en',
-  targetLocale: 'es-ES'
-});
-
-// Same dialect - same language and region
-console.log(gt.isSameDialect('en-US', 'en-US')); // true
-console.log(gt.isSameDialect('es-ES', 'es-ES')); // true
-
-// Different dialects - same language, different regions
-console.log(gt.isSameDialect('en-US', 'en-GB')); // false
-console.log(gt.isSameDialect('es-ES', 'es-MX')); // false
-
-// Language vs dialect - base language is parent of specific dialect
-console.log(gt.isSameDialect('en', 'en-US')); // true (en is parent of en-US)
-console.log(gt.isSameDialect('zh', 'zh-CN')); // true (zh is parent of zh-CN)
-
-// Different languages
-console.log(gt.isSameDialect('en-US', 'es-ES')); // false
-```
-
 ---
 
 ## Reference

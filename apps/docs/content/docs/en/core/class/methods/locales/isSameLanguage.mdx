@@ -5,26 +5,8 @@ description: API Reference for the GT isSameLanguage method
 
 ## Overview
 
-The `isSameLanguage()` method checks if multiple BCP-47 locale codes represent the same base language, ignoring regional and script differences. This is useful for determining language compatibility and grouping content by language family.
-
-```typescript
-const gt = new GT({
-  sourceLocale: 'en-US',
-  targetLocale: 'es-ES'
-});
-
-// Same language, different regions
-console.log(gt.isSameLanguage('en-US', 'en-GB')); // true
-console.log(gt.isSameLanguage('es-ES', 'es-MX')); // true
-console.log(gt.isSameLanguage('zh-CN', 'zh-TW')); // true
-
-// Different languages
-console.log(gt.isSameLanguage('en-US', 'es-ES')); // false
-console.log(gt.isSameLanguage('fr-FR', 'de-DE')); // false
-
-// Base language with variants
-console.log(gt.isSameLanguage('en', 'en-US', 'en-GB')); // true
-```
+The `isSameLanguage()` method checks if multiple BCP-47 locale codes represent the same base language, ignoring regional and script differences.
+This is useful for determining language compatibility and grouping content by language family.
 
 ---
 
@@ -49,27 +31,24 @@ console.log(gt.isSameLanguage('en', 'en-US', 'en-GB')); // true
 
 ## Examples
 
-### Language Family Grouping
-
 ```typescript
-const gt = new GT({ sourceLocale: 'en-US' });
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES'
+});
 
-// Group locales by language
-const locales = ['en-US', 'en-GB', 'es-ES', 'es-MX', 'fr-FR', 'fr-CA'];
-const languageGroups = new Map();
 
-for (const locale of locales) {
-  const language = locale.split('-')[0];
-  if (!languageGroups.has(language)) {
-    languageGroups.set(language, []);
-  }
-  languageGroups.get(language).push(locale);
-}
+// Same language, different regions
+console.log(gt.isSameLanguage('en-US', 'en-GB')); // true
+console.log(gt.isSameLanguage('es-ES', 'es-MX')); // true
+console.log(gt.isSameLanguage('zh-CN', 'zh-TW')); // true
 
-// Verify grouping
-for (const [language, group] of languageGroups) {
-  console.log(`${language}: ${gt.isSameLanguage(...group)}`); // true for each group
-}
+// Different languages
+console.log(gt.isSameLanguage('en-US', 'es-ES')); // false
+console.log(gt.isSameLanguage('fr-FR', 'de-DE')); // false
+
+// Base language with variants
+console.log(gt.isSameLanguage('en', 'en-US', 'en-GB')); // true
 ```
 
 ---
