@@ -9,7 +9,7 @@ The `checkFileTranslations()` method checks the translation status of files with
 This is useful for monitoring translation progress, checking completion status, and determining which translations are available.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const status = await gt.checkFileTranslations([
   {
@@ -84,7 +84,7 @@ type CompletedFileTranslationData = {
 
 Check translation status for specific files and locales:
 
-```typescript copy
+```typescript title="index.ts" copy
 // (1) Create a GT instance
 const targetLocales = ['es', 'fr', 'de'];
 const gt = new GT({

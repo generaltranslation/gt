@@ -9,7 +9,7 @@ The `getProjectData()` method retrieves comprehensive information about a transl
 This method is useful for understanding project configuration and validating project settings.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const projectData = await gt.getProjectData('project-123');
 console.log(`Project: ${projectData.name}`);
@@ -59,12 +59,13 @@ type ProjectData = {
 
 ## Examples
 
-### Basic Usage
+### Basic Usagex
 
 ```typescript title="index.ts" copy
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key'
 });
 

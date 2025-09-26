@@ -5,7 +5,8 @@ description: API Reference for the GT translateMany method for batch translation
 
 ## Overview
 
-The `translateMany()` method efficiently translates multiple content items in a single API request. It's optimized for batch processing and provides better performance than multiple individual `translate()` calls.
+The `translateMany()` method efficiently translates multiple content items in a single API request.
+It's optimized for batch processing and provides better performance than multiple individual `translate()` calls.
 
 ```typescript
 const gt = new GT({
@@ -19,13 +20,6 @@ const result = await gt.translateMany([
   { source: 'Click here to continue' }
 ], { targetLocale: 'es' });
 ```
-
-This method is ideal for translating navigation menus, form labels, error messages, or any collection of related content.
-
-<Callout>
-**Performance Benefits:**
-`translateMany()` reduces API overhead by batching multiple translations into a single request, making it significantly more efficient than multiple `translate()` calls.
-</Callout>
 
 ---
 
@@ -113,8 +107,6 @@ interface TranslateManyResult {
 
 ## Examples
 
-### Basic Batch Translation
-
 ```typescript
 const menuItems = await gt.translateMany([
   { source: 'Home' },
@@ -135,76 +127,18 @@ menuItems.translations.forEach((result, index) => {
 });
 ```
 
-### Mixed Content Types
-
-```typescript
-const mixedContent = await gt.translateMany([
-  { 
-    source: 'Welcome {name}!',
-    context: 'Personalized greeting',
-    tags: ['greeting', 'personal']
-  },
-  { 
-    source: 'You have {count, plural, =0 {no items} =1 {one item} other {# items}}',
-    context: 'Item count display'
-  },
-  { 
-    source: 'Click {{action}} to continue',
-    context: 'Button text with dynamic action'
-  }
-], { 
-  targetLocale: 'de',
-  tags: ['ui'] // Global tag applied to all
-});
-```
-
-### Error Handling
-
-```typescript
-const result = await gt.translateMany([
-  { source: 'Valid text' },
-  { source: '' }, // Empty string might cause error
-  { source: 'Another valid text' }
-], { targetLocale: 'es' });
-
-const successful = result.translations.filter(t => 'translation' in t);
-const failed = result.translations.filter(t => 'error' in t);
-
-console.log(`${successful.length} successful, ${failed.length} failed`);
-console.log(`Success rate: ${result.metadata.successCount}/${result.metadata.totalRequests}`);
-
-// Handle individual results
-result.translations.forEach((translation, index) => {
-  if ('error' in translation) {
-    console.error(`Entry ${index} failed: ${translation.error}`);
-  } else {
-    console.log(`Entry ${index}: "${translation.translation}"`);
-  }
-});
-```
-
----
-
-## Performance Considerations
-
-- **Batch Size**: Optimal batch sizes are typically 10-50 items depending on content length
-- **Memory Usage**: Large batches consume more memory; consider chunking for very large datasets
-- **Network**: Single request reduces network overhead compared to individual translations
-- **Rate Limiting**: Batching helps stay within API rate limits more efficiently
-
 ---
 
 ## Notes
 
-- Each entry can override global metadata settings
+- Translates multiple items in a single API request
 - Translation failures in one entry don't affect others
 - Results maintain the same order as input entries
-- Method is ideal for UI text, configuration data, and structured content
 - Global metadata is merged with per-entry metadata (per-entry takes precedence)
 
 ## Next Steps
 
-- **[Learn about single translations with translate()](/docs/core/class/methods/translation/translate)**
-- **[Explore Entry and EntryMetadata types](/docs/core/types/Entry)**
-- **[Understand TranslateManyResult structure](/docs/core/types/TranslateManyResult)**
-- **[Check file-based workflows with enqueueFiles()](/docs/core/class/methods/translation/enqueueFiles)**
+- Learn about single translations with [translate()](/docs/core/class/methods/translation/translate)
+- Explore [Entry and EntryMetadata types](/docs/core/types/Entry)
+- Understand [TranslateManyResult structure](/docs/core/types/TranslateManyResult)
+- Check file-based workflows with [enqueueFiles()](/docs/core/class/methods/translation/enqueueFiles)

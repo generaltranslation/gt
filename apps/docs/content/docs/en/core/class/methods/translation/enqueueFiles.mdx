@@ -9,7 +9,7 @@ The `enqueueFiles()` method enqueues translation jobs for previously uploaded fi
 This method takes file references and creates translation jobs for the specified target locales.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const result = await gt.enqueueFiles(fileRefs, {
   sourceLocale: 'en',

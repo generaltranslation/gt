@@ -5,7 +5,8 @@ description: API Reference for the GT translate method
 
 ## Overview
 
-The `translate()` method is the primary translation function in the GT library. It translates content from the source locale to a specified target locale using AI-powered translation services.
+The `translate()` method is the primary translation function in the GT library.
+It translates content from the source locale to a specified target locale using AI-powered translation services.
 
 ```typescript
 const gt = new GT({
@@ -147,7 +148,6 @@ When custom mapping includes region or script codes for the target locale, they 
 
 ## Examples
 
-### Basic Text Translation
 
 ```typescript
 const gt = new GT({
@@ -160,121 +160,11 @@ console.log(result);
 // "Bienvenue dans notre application"
 ```
 
-### Translation with Context
-
-```typescript
-const greeting = await gt.translate('Good morning', 'ja', {
-  context: 'Formal business greeting for email'
-});
-console.log(greeting);
-// "おはようございます" (formal morning greeting)
-```
-
-### ICU Message Format
-
-```typescript
-const message = await gt.translate(
-  'You have {count, plural, =0 {no messages} =1 {one message} other {# messages}}',
-  'es',
-  { dataFormat: 'ICU' }
-);
-console.log(message);
-// "Tienes {count, plural, =0 {ningún mensaje} =1 {un mensaje} other {# mensajes}}"
-```
-
-### Translation with Tags
-
-```typescript
-const result = await gt.translate('Click here to continue', 'it', {
-  context: 'Button text on checkout page',
-  tags: ['ui', 'button', 'checkout']
-});
-console.log(result);
-// "Clicca qui per continuare"
-```
-
-
----
-
-## Error Handling
-
-### Authentication Errors
-
-```typescript
-try {
-  const result = await gt.translate('Hello', 'es');
-} catch (error) {
-  if (error.message.includes('No API key provided')) {
-    console.error('Please configure GT with valid API credentials');
-  }
-  if (error.message.includes('No project ID provided')) {
-    console.error('Please set a project ID in GT configuration');
-  }
-}
-```
-
-### Invalid Locale Errors
-
-```typescript
-try {
-  const result = await gt.translate('Hello', 'invalid-locale');
-} catch (error) {
-  console.error('Invalid target locale:', error.message);
-}
-```
-
-### Translation Service Errors
-
-```typescript
-try {
-  const result = await gt.translate('Hello', 'es');
-  
-  if ('error' in result) {
-    console.error('Translation failed:', result.error);
-    console.error('Error code:', result.code);
-    // Fall back to original content
-    return 'Hello';
-  }
-  
-  return result.translation;
-} catch (error) {
-  console.error('Network or API error:', error.message);
-  return 'Hello'; // Fallback to original
-}
-```
-
-### Graceful Degradation
-
-```typescript
-async function safeTranslate(gt: GT, text: string, targetLocale: string) {
-  try {
-    const result = await gt.translate(text, targetLocale);
-    return 'error' in result ? text : result.translation;
-  } catch (error) {
-    console.warn('Translation failed, using original text:', error.message);
-    return text;
-  }
-}
-```
-
----
-
-## Performance Considerations
-
-- **Caching**: Identical translations are cached to improve performance
-- **Batch Processing**: For multiple translations, consider using [`translateMany()`](/docs/core/class/methods/translation/translateMany)
-- **Network**: Method makes API calls - handle network errors appropriately
-- **Rate Limiting**: Respect API rate limits for high-volume usage
-
 ---
 
 ## Notes
 
-- The method supports TypeScript overloads for different content types
-- Custom locale mappings automatically enhance translation context
-- Target locale parameter overrides the instance's default `targetLocale`
-- All locale codes are validated before making API requests
-- Method returns a Promise and should be used with `await` or `.then()`
+- Translates a given string to a target locale and returns a promise
 
 ## Next Steps
 

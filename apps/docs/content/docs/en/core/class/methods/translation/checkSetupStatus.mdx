@@ -13,7 +13,7 @@ Set up automatically runs when elements of context are missing.
 This typically means that when you run translate for the first time, you will see a setup job running.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const status = await gt.checkSetupStatus('setup-job-123');
 console.log(`Setup status: ${status.status}`);

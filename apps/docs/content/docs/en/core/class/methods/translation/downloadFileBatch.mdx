@@ -8,7 +8,7 @@ description: API Reference for the downloadFileBatch() method to download multip
 The `downloadFileBatch()` method downloads multiple translation files in a single batch request.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const result = await gt.downloadFileBatch([
   'translation-id-1', 

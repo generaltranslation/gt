@@ -9,7 +9,7 @@ The `querySourceFile()` method retrieves comprehensive information about a sourc
 This includes file metadata, translation status across all locales, and timestamps for creation, completion, approval, and publishing.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const result = await gt.querySourceFile({
   fileId: 'file-123',
@@ -104,10 +104,11 @@ type FileQueryResult = {
 ## Example
 
 
-```typescript copy
+```typescript title="index.ts" copy
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key'
 });
 

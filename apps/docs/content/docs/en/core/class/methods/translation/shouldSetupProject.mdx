@@ -5,10 +5,11 @@ description: API Reference for the shouldSetupProject() method to check if proje
 
 ## Overview
 
-The `shouldSetupProject()` method checks whether a project requires setup before translation jobs can be enqueued. This method queries the API to determine if the project has been properly initialized and configured for translation workflows.
+The `shouldSetupProject()` method checks whether a project requires setup before translation jobs can be enqueued.
+This method queries the API to determine if the project has been properly initialized and configured for translation workflows.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const result = await gt.shouldSetupProject();
 if (result.shouldSetupProject) {
@@ -18,10 +19,6 @@ if (result.shouldSetupProject) {
 }
 ```
 
-<Callout>
-**Setup Decision Logic:**
-Use this method to conditionally run setup workflows. If the result is `true`, call [`setupProject()`](/docs/core/class/methods/translation/setupProject) before enqueueing translations. If `false`, you can proceed directly to [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles).
-</Callout>
 
 ## Reference
 
@@ -49,7 +46,7 @@ type ShouldSetupProjectResult = {
 
 ### Basic Usage
 
-```typescript copy
+```typescript title="index.ts" copy
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
@@ -72,156 +69,12 @@ async function checkProjectStatus() {
 const status = await checkProjectStatus();
 ```
 
-### Conditional Setup Workflow
-
-```typescript copy
-async function ensureProjectSetup(fileRefs: FileUploadRef[]) {
-  console.log('Checking if project setup is required...');
-  
-  const setupCheck = await gt.shouldSetupProject();
-  
-  if (setupCheck.shouldSetupProject) {
-    console.log('Project setup required, initializing...');
-    
-    // Run setup process
-    const setupResult = await gt.setupProject(fileRefs);
-    console.log(`Setup job started: ${setupResult.setupJobId}`);
-    
-    // Wait for setup completion
-    await waitForSetupCompletion(setupResult.setupJobId);
-    console.log('Project setup completed');
-    
-  } else {
-    console.log('Project already set up, skipping setup process');
-  }
-  
-  return 'ready';
-}
-
-async function waitForSetupCompletion(jobId: string) {
-  let attempts = 0;
-  const maxAttempts = 30;
-  
-  while (attempts < maxAttempts) {
-    const status = await gt.checkSetupStatus(jobId);
-    
-    if (status.status === 'completed') {
-      return;
-    } else if (status.status === 'failed') {
-      throw new Error(`Setup failed: ${status.error?.message}`);
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    attempts++;
-  }
-  
-  throw new Error('Setup timeout');
-}
-
-// Usage
-const fileRefs = [
-  { fileId: 'file-123', versionId: 'version-456', fileName: 'app.json' }
-];
-
-await ensureProjectSetup(fileRefs);
-console.log('Project is ready for translation jobs!');
-```
-
-### Smart Translation Pipeline
-
-```typescript copy
-async function smartTranslationPipeline(
-  files: FileUpload[], 
-  targetLocales: string[]
-) {
-  console.log('Starting smart translation pipeline...');
-  
-  // Step 1: Upload source files
-  console.log('Uploading source files...');
-  const uploadResult = await gt.uploadSourceFiles(files, {
-    sourceLocale: 'en'
-  });
-  
-  console.log(`Uploaded ${uploadResult.count} files`);
-  
-  // Step 2: Check if setup is needed
-  console.log('Checking setup requirements...');
-  const setupCheck = await gt.shouldSetupProject();
-  
-  let setupComplete = false;
-  
-  if (setupCheck.shouldSetupProject) {
-    console.log('Setup required - initializing project...');
-    
-    const setupResult = await gt.setupProject(uploadResult.uploadedFiles);
-    console.log(`Setup job created: ${setupResult.setupJobId}`);
-    
-    // Monitor setup progress
-    let setupAttempts = 0;
-    while (!setupComplete && setupAttempts < 60) {
-      const status = await gt.checkSetupStatus(setupResult.setupJobId);
-      
-      if (status.status === 'completed') {
-        setupComplete = true;
-        console.log('Project setup completed successfully');
-      } else if (status.status === 'failed') {
-        throw new Error(`Setup failed: ${status.error?.message}`);
-      } else {
-        console.log(`Setup ${status.status}... (attempt ${setupAttempts + 1})`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-      
-      setupAttempts++;
-    }
-    
-    if (!setupComplete) {
-      throw new Error('Setup did not complete within expected time');
-    }
-  } else {
-    console.log('Project already set up - proceeding to translations');
-    setupComplete = true;
-  }
-  
-  // Step 3: Enqueue translation jobs
-  console.log('Enqueueing translation jobs...');
-  const enqueueResult = await gt.enqueueFiles(uploadResult.uploadedFiles, {
-    targetLocales,
-    publish: false
-  });
-  
-  console.log(`Translation jobs created for ${enqueueResult.locales.length} locales`);
-  
-  return {
-    uploadedFiles: uploadResult.uploadedFiles,
-    setupWasRequired: setupCheck.shouldSetupProject,
-    translationJobs: enqueueResult
-  };
-}
-
-// Usage
-const files = [
-  {
-    content: JSON.stringify({ welcome: 'Welcome!', goodbye: 'Goodbye!' }),
-    fileName: 'messages.json',
-    fileFormat: 'JSON' as const,
-    locale: 'en'
-  }
-];
-
-const result = await smartTranslationPipeline(files, ['es', 'fr', 'de']);
-console.log('Pipeline result:', result);
-```
-
 ---
 
 ## Notes
 
-* This method performs a lightweight API check and is safe to call frequently
 * The result determines whether [`setupProject()`](/docs/core/class/methods/translation/setupProject) needs to be called
 * Projects typically need setup when they're newly created or when significant structural changes are made
-* Always check setup requirements before attempting to enqueue translation jobs
-* The method uses the GT instance's project configuration to determine setup status
-* No parameters are required - the check is based on the current project context
 
 ## Next Steps
 

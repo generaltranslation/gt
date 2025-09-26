@@ -9,7 +9,7 @@ The `downloadTranslatedFile()` method downloads the content of a single translat
 This method is used to retrieve completed translations after they have been processed by the General Translation platform.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const content = await gt.downloadTranslatedFile({
   fileId: 'file-123',

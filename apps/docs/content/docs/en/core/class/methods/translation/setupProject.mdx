@@ -9,7 +9,7 @@ The `setupProject()` method initializes the setup process for a translation proj
 This creates an asynchronous setup job that analyzes the files and prepares them for translation workflows.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const setupResult = await gt.setupProject(fileRefs, 30000);
 console.log(`Setup job created: ${setupResult.setupJobId}`);
@@ -68,6 +68,7 @@ Initialize project setup with uploaded files:
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key'
 });
 
