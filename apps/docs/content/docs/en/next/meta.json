@@ -19,7 +19,6 @@
     "guides/local-tx",
     "guides/middleware",
     "guides/ssg",
-    "guides/migration",
     "guides/rtl",
     "---Technical Concepts---",
     "concepts/environments",
