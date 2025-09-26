@@ -179,17 +179,6 @@ Variable components can be used outside of [`<T>`](/docs/next/api/components/t) 
 
 ## Common Issues
 
-### Missing Currency Prop
-Always specify the currency for [`<Currency>`](/docs/next/api/components/currency) components:
-
-```jsx
-// ❌ Missing currency
-<Currency>{amount}</Currency>
-
-// ✅ Specify currency
-<Currency currency="USD">{amount}</Currency>
-```
-
 ### Nested `<T>` Components
 Avoid nesting [`<T>`](/docs/next/api/components/t) inside variable components unless you need that content translated:
 
