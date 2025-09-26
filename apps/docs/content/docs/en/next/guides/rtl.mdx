@@ -1,32 +1,25 @@
 ---
-title: Right-to-Left Support
-description: A step by step guide on adding Right-to-Left (RTL) support to your application
+title: Right-to-Left (RTL) Support
+description: Configure your Next.js app for Arabic, Hebrew, and other RTL languages
 ---
 
-## Overview
+Right-to-left (RTL) language support handles text direction and layout mirroring for languages like Arabic, Hebrew, Persian, and Urdu. GT provides automatic direction detection through the `useLocaleDirection()` hook.
 
-While most languages are written left-to-right (LTR), some languages are written right-to-left (RTL).
-These languages include Arabic, Hebrew, Persian, and Urdu which have a combined total of over 500 million speakers worldwide.
+<Callout>
+  **RTL languages:** Over 500 million people speak RTL languages including Arabic, Hebrew, Persian, and Urdu.
+</Callout>
 
-Look at the General Translation landing page in [English](https://generaltranslation.com/en-US/welcome)
-and [Arabic](https://generaltranslation.com/ar/welcome) to illustrate the difference between ltr and rtl rendering.
+## Quick Setup
 
-## Guide
+Use GT's built-in hooks to automatically detect and set text direction:
 
-To add RTL support to your application, all we need to do to is determine the direction of the language and set the direction of
-the text on the screen accordingly.
-
-You can use the `useLocaleDirection()` hook to determine if a language goes `"rtl"` or `"ltr"`.
-
-Use the `useLocale()` function to get the locale in the root layout, then add the `lang` and `dir` props to the `<html>` tag:
-
-```javascript title="my-app/app/layout.tsx" copy
-import { useLocale, useLocaleDirection, GTProvider } from 'gt-next'
+```tsx
+// app/[locale]/layout.tsx
+import { useLocale, useLocaleDirection, GTProvider } from 'gt-next';
 
 export default function RootLayout({ children }) {
-        
   const locale = useLocale(); // e.g. "ar" for Arabic
-  const dir = useLocaleDirection(); // e.g. "rtl" for "right-to-left"
+  const dir = useLocaleDirection(); // e.g. "rtl" for right-to-left
 
   return (
     <html lang={locale} dir={dir}>
@@ -36,6 +29,11 @@ export default function RootLayout({ children }) {
         </GTProvider>
       </body>
     </html>
-  )
+  );
 }
 ```
+
+That's it! GT automatically detects RTL languages and returns the correct direction.
+
+Compare with the [General Translation website](https://generaltranslation.com) in [English](https://generaltranslation.com/en-US/home) vs [Arabic](https://generaltranslation.com/ar/home) to see RTL in action.
+

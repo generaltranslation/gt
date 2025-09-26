@@ -1,146 +1,113 @@
 ---
 title: Static Site Generation
-description: How to support static site generation for your i18n app
+description: Pre-render internationalized pages at build time for optimal performance
 ---
 
-## Overview
+Static Site Generation pre-renders pages at build time, creating static HTML files for each locale. This provides excellent performance and SEO benefits while ensuring all translation content is available immediately when users visit your site.
 
-This guide will show you how to setup your i18n app to support static site generation.
+<Callout>
+  **Requirements:** SSG requires [middleware routing](/docs/next/guides/middleware) and [local translations](/docs/next/guides/local-tx) to work properly with internationalization.
+</Callout>
 
----
+## App Router
 
-### What is static site generation?
+### Setup Requirements
 
-[Static site generation](https://nextjs.org/docs/pages/building-your-application/rendering/static-site-generation) (SSG) is a feature of Next.js that allows you to generate static pages at build time.
-This is useful for performance and SEO. 
+To enable SSG with GT, you need:
 
-## SSG for the `app` router
+1. **App Router with middleware routing** - see [middleware guide](/docs/next/guides/middleware)
+2. **Local translations** - see [local translations guide](/docs/next/guides/local-tx) 
+3. **Client-side imports** - use `gt-next/client` instead of `gt-next`
 
-### Requirements
+### Step 1: GTProvider Configuration
 
-There are a few requirements to enable static site generation for your i18n app.
-Depending on whether you are using the `app` or `pages` directory, the requirements are slightly different.
+Place `GTProvider` in your `[locale]` layout with the `loadTranslations` function:
 
-1. Your app must be using the Next.js app router.
-2. Your app must support i18n routing (see [i18n routing](/docs/next/guides/middleware))
-3. Your app must be using local translations (see [local translations](/docs/next/guides/local-tx))
+```tsx
+// app/[locale]/layout.tsx
+import { GTProvider } from 'gt-next/client';
+import { loadTranslations } from '@/loadTranslations';
 
-### Steps
+export default async function RootLayout({ children, params }) {
+  const { locale } = await params;
+  
+  return (
+    <GTProvider loadTranslations={loadTranslations} locale={locale}>
+      {children}
+    </GTProvider>
+  );
+}
+```
 
-<Steps>
-  <Step>
-    **Step 1:**
-    First, make sure your app has a `<GTProvider>` component at the root layout.
+### Step 2: Use Client Imports
 
-    ```tsx title="app/[locale]/layout.tsx" copy
-    import { GTProvider } from 'gt-next';
-    ```
-    Since the app is using i18n routing, the provider should be placed in the `[locale]/layout.tsx` file.
-    
-    <Accordions>
-      <Accordion title="Why is this required?">
-        SSG requires all parameters to be known at build time. This includes the locale for every statically generated page.
-        Since the `<GTProvider>` component is responsible for providing the translation context to your app, it must know the locale.
+Import all GT components and hooks from `gt-next/client`:
 
-        For the same reason, your app must be using i18n routing (since each route must correspond to a specific locale, for a specific page).
-      </Accordion>
-    </Accordions>
-  </Step>
-  <Step>
-    **Step 2:**
-    Next, make sure your app is using the `loadTranslations` function to load translations.
-    Additionally, pass in the locale as a parameter to the `<GTProvider>`. You can obtain the locale from the `params` object.
+```tsx
+// ✅ Use client imports for SSG
+import { useGT, T } from 'gt-next/client';
 
-    ```tsx title="app/[locale]/layout.tsx"
-    import { loadTranslations } from '@/i18n/loadTranslations';
-    import { GTProvider } from 'gt-next/client';
+// ❌ These prevent SSG
+import { getGT } from 'gt-next/server';
+import { T } from 'gt-next';
+```
 
-    export default async function RootLayout({
-      children,
-      params,
-    }: {
-      children: React.ReactNode;
-      params: Promise<{ locale: string }>;
-    }) {
-      const { locale } = await params;
-      return (
-        <GTProvider loadTranslations={loadTranslations} locale={locale}>
-          {children}
-        </GTProvider>
-      )
-    }
-    ```
-  </Step>
-  <Step>
-    **Step 3:**
-    Then, make sure all of your hooks and components are importing from `gt-next/client`.
+### Step 3: Configure generateStaticParams
 
-    ```tsx
-    import { useGT } from 'gt-next/client';
-    import { T } from 'gt-next/client';
-    ```
-    <Callout type="info">
-      This is important because hooks and components imported from `gt-next/client` never read headers, which don't exist at build time for statically generated pages.
-    </Callout>
-  </Step>
-</Steps>
+Make sure you have [`generateStaticParams`](https://nextjs.org/docs/app/api-reference/functions/generate-static-params) configured for your locales.
 
-Make sure you have configured your Next.js app to use the [`getStaticParams` function](https://nextjs.org/docs/app/api-reference/functions/generate-static-params) correctly!
+### Custom getLocale
 
-That's it! Your app should now support static site generation for multiple languages!
-
-<Accordions>
-  <Accordion title="My pages aren't being statically generated!">
-    If you've followed the steps above and your pages are still not being statically generated, double check that all of your hooks and components are importing from `gt-next`.
-
-    As a rule of thumb, anything that reads headers or cookies will prevent SSG. This means you can't use any of the following:
-    - `await getGT()`
-    - `await getLocale()`
-    - `await getTranslations()`
-    - `import { T } from 'gt-next'`
-    
-  </Accordion>
-</Accordions>
-
-### SSG with custom getLocale [#ssg-custom-get-locale]
-
-SSG can disrupt locale resolution.
-Because of this, you will have to define your own `getLocale()` function that accesses the locale through the url path.
-Depending on your version of Next.js, your solution may be different.
+For SSG, create a custom `getLocale()` function that works with static generation:
 
 #### Next.js 15.5+
-
-Create a new file in the root of your project called `getLocale.ts`.
-
-```ts title="getLocale.ts"
+```ts
+// getLocale.ts
 import { locale } from "next/root-params";
 export default async function getLocale() {
-    return await locale();
+  return await locale();
 }
 ```
 
 #### Next.js 15.1-15.4
-
-Create a new file in the root of your project called `getLocale.ts`.
-
-```ts title="getLocale.ts"
+```ts
+// getLocale.ts  
 import { unstable_rootParams } from "next/server";
 export default async function getLocale() {
-  const result = (await unstable_rootParams())?.locale;
-  return result;
+  return (await unstable_rootParams())?.locale;
 }
 ```
 
+#### Earlier Versions
+Unfortunately, for earlier versions there is no way to access the URL path parameters with SSG. You will have to upgrade to Next.js 15.1 or later.
 
-#### Earlier versions
+### Common Issues
 
-Unfortunately, for earlier versions there is no way to access the url path parameters with SSG.
-You will have to upgrade to Next.js 15.1 or later.
+#### Pages Not Generating Statically
 
+If your pages aren't being statically generated, check that all GT components and hooks import from `gt-next/client`:
 
-## SSG for the `pages` router
+```tsx
+// ❌ These prevent SSG
+import { getGT } from 'gt-next/server';
+import { getLocale } from 'gt-next/server';
+import { getTranslations } from 'gt-next/server';
+import { T } from 'gt-next';
+
+// ✅ These work with SSG
+import { useGT, T } from 'gt-next/client';
+```
+
+Anything that reads headers or cookies will prevent static generation.
+
+## Pages Router
 
 🚧 This section is currently under construction. 🚧
+
+## Next Steps
+
+- [Local Translation Storage](/docs/next/guides/local-tx) - Required for SSG setup
+- [Middleware Guide](/docs/next/guides/middleware) - Required for locale routing
 
 
 
