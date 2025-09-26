@@ -1,5 +1,21 @@
 # gt-sanity
 
+## 1.0.1
+
+### Patch Changes
+
+- [#684](https://github.com/generaltranslation/gt/pull/684) [`017899f`](https://github.com/generaltranslation/gt/commit/017899f426604e34caa9f18a101f36cc126ee8b8) Thanks [@brian-lou](https://github.com/brian-lou)! - Modify deps
+
+## 1.0.0
+
+### Major Changes
+
+- [#682](https://github.com/generaltranslation/gt/pull/682) [`239191d`](https://github.com/generaltranslation/gt/commit/239191d31d65bc88c25c196522fc14f093721799) Thanks [@brian-lou](https://github.com/brian-lou)! - Release V1: Featuring a Translations Tab (individual documents) and Translations Tool (edit all documents).
+
+### Patch Changes
+
+- [#679](https://github.com/generaltranslation/gt/pull/679) [`7ad53b9`](https://github.com/generaltranslation/gt/commit/7ad53b93355d039bb022fbb7312962ab051291eb) Thanks [@brian-lou](https://github.com/brian-lou)! - Improve sanity plugin
+
 ## 0.0.4
 
 ### Patch Changes

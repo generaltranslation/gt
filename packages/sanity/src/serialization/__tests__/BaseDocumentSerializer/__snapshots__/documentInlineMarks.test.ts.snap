@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Global test of working doc-level functionality and snapshot match 1`] = `
+{
+  "content": "<html><head><meta name="_id" content="drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a"><meta name="_type" content="documentLevelArticle"><meta name="_rev" content="fxcnqj-uew-gr7-v6r-z965tfm69"><meta name="version" content="3"></head><body><div class="documentLevelArticle" id="drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a" data-type="object"><span class="title">My Document-Level Article</span><span class="snippet">This is text in my text field.</span><div class="tags" data-type="array"><span>tag 1</span><span>tag 2</span><span>tag 3</span></div><div class="content" data-type="array"><p id="a4d177e92666">This is block text with <span class="unknown__pt__mark__linkField">a website link</span> and <span class="unknown__pt__mark__linkField">a post reference</span><span class="unknown__pt__mark__linkField"> at the top level.</span></p></div></div></body></html>",
+  "name": "drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a",
+}
+`;
+
+exports[`Test of working deserialization and snapshot match 1`] = `
+{
+  "_id": "drafts.d8ffc675-ce86-4f60-9ac8-da164cde3b0a",
+  "_rev": "fxcnqj-uew-gr7-v6r-z965tfm69",
+  "_type": "documentLevelArticle",
+  "content": [
+    {
+      "_key": "a4d177e92666",
+      "_type": "block",
+      "children": [
+        {
+          "_key": "randomKey-10",
+          "_type": "span",
+          "marks": [],
+          "text": "This is block text with a website link and a post reference at the top level.",
+        },
+      ],
+      "markDefs": [],
+      "style": "normal",
+    },
+  ],
+  "snippet": "This is text in my text field.",
+  "tags": [
+    "tag 1",
+    "tag 2",
+    "tag 3",
+  ],
+  "title": "My Document-Level Article",
+}
+`;

@@ -1,6 +1,6 @@
 {
   "name": "gt-sanity",
-  "version": "0.0.5",
+  "version": "1.0.1",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -50,28 +50,33 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prepublishOnly": "npm run build",
+    "test": "vitest run",
     "watch": "pkg-utils watch --strict"
   },
   "dependencies": {
+    "@portabletext/block-tools": "^3.5.5",
     "@portabletext/to-html": "^2.0.14",
-    "@sanity/block-tools": "^3.70.0",
     "@sanity/icons": "^3.7.4",
     "@sanity/incompatible-plugin": "^1.0.5",
+    "@sanity/mutator": "^3.98.1",
+    "@sanity/schema": "^3.98.1",
     "@sanity/ui": "^2.16.4",
     "@sanity/util": "^3.98.1",
     "generaltranslation": "^7.6.3",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
-    "lightningcss": "^1.30.1",
-    "sanity-naive-html-serializer": "^3.2.0"
+    "lodash.merge": "^4.6.2"
   },
   "devDependencies": {
     "@sanity/pkg-utils": "^8.1.6",
     "@sanity/plugin-kit": "^4.0.19",
+    "@types/lodash.merge": "^4.6.9",
     "@types/react": "^19.1.12",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
     "eslint-config-sanity": "^7.1.4",
+    "jsdom": "^26.1.0",
+    "just-clone": "^6.2.0",
     "prettier-plugin-packagejson": "^2.5.19",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

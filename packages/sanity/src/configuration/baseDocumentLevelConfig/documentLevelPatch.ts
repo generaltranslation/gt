@@ -1,7 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocument, SanityDocumentLike } from 'sanity';
-import { BaseDocumentMerger } from 'sanity-naive-html-serializer';
+import { BaseDocumentMerger } from '../../serialization';
 
 import { findLatestDraft } from '../utils/findLatestDraft';
 import { findDocumentAtRevision } from '../utils/findDocumentAtRevision';
@@ -9,7 +9,7 @@ import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMe
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
-import { gtConfig } from '../../adapter/core';
+import { pluginConfig } from '../../adapter/core';
 
 export const documentLevelPatch = async (
   docInfo: GTFile,
@@ -17,10 +17,9 @@ export const documentLevelPatch = async (
   localeId: string,
   client: SanityClient,
   languageField: string = 'language',
-  mergeWithTargetLocale: boolean = false,
-  publish: boolean = false
+  mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
-  const baseLanguage = gtConfig.getSourceLocale();
+  const baseLanguage = pluginConfig.getSourceLocale();
   //this is the document we use to merge with the translated fields
   let baseDoc: SanityDocument | null = null;
 
@@ -100,8 +99,7 @@ export const documentLevelPatch = async (
       baseDoc,
       merged,
       translatedFields,
-      client,
-      publish
+      client
     );
   }
   //otherwise, create a new document
@@ -114,8 +112,7 @@ export const documentLevelPatch = async (
       client,
       translationMetadata,
       docInfo.documentId,
-      languageField,
-      publish
+      languageField
     );
   }
 };

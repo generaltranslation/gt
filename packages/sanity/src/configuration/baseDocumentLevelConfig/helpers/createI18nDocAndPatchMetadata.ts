@@ -1,7 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocumentLike } from 'sanity';
-import { gtConfig } from '../../../adapter/core';
+import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
 
 export async function createI18nDocAndPatchMetadata(
@@ -11,8 +11,7 @@ export async function createI18nDocAndPatchMetadata(
   client: SanityClient,
   translationMetadata: SanityDocumentLike,
   sourceDocumentId: string,
-  languageField: string = 'language',
-  publish: boolean = false
+  languageField: string = 'language'
 ): Promise<void> {
   translatedDoc[languageField] = localeId;
   const translations = translationMetadata.translations as Record<
@@ -34,16 +33,16 @@ export async function createI18nDocAndPatchMetadata(
     sourceDocumentId,
     sourceDocument,
     rest,
-    gtConfig.getIgnoreFields()
+    pluginConfig.getIgnoreFields()
   );
 
   // Check if this is a singleton document and apply singleton mapping
-  const singletons = gtConfig.getSingletons();
+  const singletons = pluginConfig.getSingletons();
   const isSingleton = singletons.includes(sourceDocumentId);
 
   let createDocumentPromise;
   if (isSingleton) {
-    const singletonMapping = gtConfig.getSingletonMapping();
+    const singletonMapping = pluginConfig.getSingletonMapping();
     const translatedDocId = singletonMapping(sourceDocumentId, localeId);
     createDocumentPromise = client.create({
       ...appliedDocument,
@@ -79,22 +78,4 @@ export async function createI18nDocAndPatchMetadata(
       ])
     )
     .commit();
-
-  if (publish) {
-    try {
-      // only publish if the document is a draft
-      if (doc._id.startsWith('drafts.')) {
-        await client.action(
-          {
-            actionType: 'sanity.action.document.publish',
-            draftId: doc._id,
-            publishedId: doc._id.replace('drafts.', ''),
-          },
-          {}
-        );
-      }
-    } catch (error) {
-      console.error('Error publishing document', error);
-    }
-  }
 }

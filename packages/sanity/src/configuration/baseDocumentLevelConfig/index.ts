@@ -5,50 +5,22 @@ import {
   GTSerializedDocument,
   ImportTranslation,
 } from '../../types';
-import { SanityDocument } from 'sanity';
 import { findLatestDraft } from '../utils/findLatestDraft';
-import { documentLevelPatch } from './documentLevelPatch';
-import {
-  BaseDocumentDeserializer,
-  BaseDocumentSerializer,
-  defaultStopTypes,
-  customSerializers,
-  customBlockDeserializers,
-} from 'sanity-naive-html-serializer';
-import { gtConfig } from '../../adapter/core';
+import { pluginConfig } from '../../adapter/core';
+import { importDocument } from '../../translation/importDocument';
+import { serializeDocument } from '../../utils/serialize';
 
 export const baseDocumentLevelConfig = {
   exportForTranslation: async (
-    ...params: Parameters<ExportForTranslation>
+    docInfo: Parameters<ExportForTranslation>[0],
+    context: Parameters<ExportForTranslation>[1]
   ): Promise<GTSerializedDocument> => {
-    const [
-      docInfo,
-      context,
-      serializationOptions = {},
-      languageField = 'language',
-    ] = params;
     const { client, schema } = context;
-    const stopTypes = [
-      ...(serializationOptions.additionalStopTypes ?? []),
-      ...defaultStopTypes,
-    ];
-    const serializers = {
-      ...customSerializers,
-      types: {
-        ...customSerializers.types,
-        ...(serializationOptions.additionalSerializers ?? {}),
-      },
-    };
+    const languageField = pluginConfig.getLanguageField();
     const doc = await findLatestDraft(docInfo.documentId, client);
     delete doc[languageField];
-    const baseLanguage = gtConfig.getSourceLocale();
-    const serialized = BaseDocumentSerializer(schema).serializeDocument(
-      doc,
-      'document',
-      baseLanguage,
-      stopTypes,
-      serializers
-    );
+    const baseLanguage = pluginConfig.getSourceLocale();
+    const serialized = serializeDocument(doc, schema, baseLanguage);
     return {
       content: serialized.content,
       documentId: docInfo.documentId,
@@ -56,43 +28,19 @@ export const baseDocumentLevelConfig = {
     };
   },
   importTranslation: (
-    ...params: Parameters<ImportTranslation>
+    docInfo: Parameters<ImportTranslation>[0],
+    localeId: Parameters<ImportTranslation>[1],
+    document: Parameters<ImportTranslation>[2],
+    context: Parameters<ImportTranslation>[3],
+    mergeWithTargetLocale: boolean = false
   ): Promise<void> => {
-    const [
+    return importDocument(
       docInfo,
       localeId,
       document,
       context,
-      serializationOptions = {},
-      languageField = 'language',
-      mergeWithTargetLocale = false,
-      publish = false,
-    ] = params;
-    const { client } = context;
-    const deserializers = {
-      types: {
-        ...(serializationOptions.additionalDeserializers ?? {}),
-      },
-    };
-    const blockDeserializers = [
-      ...(serializationOptions.additionalBlockDeserializers ?? []),
-      ...customBlockDeserializers,
-    ];
-
-    const deserialized = BaseDocumentDeserializer.deserializeDocument(
-      document,
-      deserializers,
-      blockDeserializers
-    ) as SanityDocument;
-    return documentLevelPatch(
-      docInfo, // versionId is not used here, since we just use the _rev id in the deserialized HTML itself
-      deserialized,
-      localeId,
-      client,
-      languageField,
-      mergeWithTargetLocale,
-      publish
+      mergeWithTargetLocale
     );
   },
-  secretsNamespace: 'translationService',
+  secretsNamespace: 'generaltranslation',
 };
