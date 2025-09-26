@@ -5,7 +5,8 @@ description: API Reference for the getProjectData() method to retrieve project i
 
 ## Overview
 
-The `getProjectData()` method retrieves comprehensive information about a translation project including its name, organization, default locale, and currently configured target locales. This method is useful for understanding project configuration and validating project settings.
+The `getProjectData()` method retrieves comprehensive information about a translation project including its name, organization, default locale, and currently configured target locales.
+This method is useful for understanding project configuration and validating project settings.
 
 ```typescript
 const gt = new GT({ apiKey: 'your-api-key' });
@@ -16,10 +17,6 @@ console.log(`Default locale: ${projectData.defaultLocale}`);
 console.log(`Target locales: ${projectData.currentLocales.join(', ')}`);
 ```
 
-<Callout>
-**Project Configuration:**
-This method provides essential project metadata needed for understanding translation scope, validating locale configurations, and managing multi-project workflows.
-</Callout>
 
 ## Reference
 
@@ -92,132 +89,15 @@ async function getProjectInfo(projectId: string) {
 const projectInfo = await getProjectInfo('my-project-123');
 ```
 
-### Validating Project Configuration
-
-```typescript copy
-async function validateProjectSetup(projectId: string, expectedLocales: string[]) {
-  const project = await gt.getProjectData(projectId);
-  
-  const validation = {
-    projectId: project.id,
-    projectName: project.name,
-    isValid: true,
-    issues: [] as string[],
-    recommendations: [] as string[]
-  };
-  
-  // Check if expected locales are configured
-  const missingLocales = expectedLocales.filter(
-    locale => !project.currentLocales.includes(locale)
-  );
-  
-  if (missingLocales.length > 0) {
-    validation.isValid = false;
-    validation.issues.push(`Missing locales: ${missingLocales.join(', ')}`);
-    validation.recommendations.push('Add missing locales to project configuration');
-  }
-  
-  // Check default locale
-  if (!expectedLocales.includes(project.defaultLocale)) {
-    validation.isValid = false;
-    validation.issues.push(`Default locale ${project.defaultLocale} not in expected locales`);
-    validation.recommendations.push('Ensure default locale matches your source content');
-  }
-  
-  return validation;
-}
-
-// Usage
-const expectedLocales = ['en', 'es', 'fr', 'de'];
-const validation = await validateProjectSetup('project-123', expectedLocales);
-
-if (validation.isValid) {
-  console.log('Project configuration is valid');
-} else {
-  console.log('Project configuration issues found:');
-  validation.issues.forEach(issue => console.log(`  - ${issue}`));
-  console.log('Recommendations:');
-  validation.recommendations.forEach(rec => console.log(`  - ${rec}`));
-}
-```
-
-### Multi-Project Management
-
-```typescript copy
-interface ProjectSummary {
-  id: string;
-  name: string;
-  orgId: string;
-  defaultLocale: string;
-  localeCount: number;
-  locales: string[];
-  status: 'success' | 'error';
-  error?: string;
-}
-
-async function getMultipleProjectsData(projectIds: string[]): Promise<ProjectSummary[]> {
-  const results = await Promise.allSettled(
-    projectIds.map(async (projectId) => {
-      try {
-        const project = await gt.getProjectData(projectId, { timeout: 10000 });
-        
-        return {
-          id: project.id,
-          name: project.name,
-          orgId: project.orgId,
-          defaultLocale: project.defaultLocale,
-          localeCount: project.currentLocales.length,
-          locales: project.currentLocales,
-          status: 'success' as const
-        };
-      } catch (error) {
-        return {
-          id: projectId,
-          name: 'Unknown',
-          orgId: 'Unknown',
-          defaultLocale: 'Unknown',
-          localeCount: 0,
-          locales: [],
-          status: 'error' as const,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        };
-      }
-    })
-  );
-  
-  return results.map(result => 
-    result.status === 'fulfilled' ? result.value : result.reason
-  );
-}
-
-// Usage
-const projectIds = ['project-1', 'project-2', 'project-3'];
-const projects = await getMultipleProjectsData(projectIds);
-
-console.log('=== Multi-Project Summary ===');
-projects.forEach(project => {
-  if (project.status === 'success') {
-    console.log(`${project.name} (${project.id}): ${project.localeCount} locales`);
-    console.log(`   Default: ${project.defaultLocale}, Targets: ${project.locales.join(', ')}`);
-  } else {
-    console.log(`${project.id}: ${project.error}`);
-  }
-});
-
-const successfulProjects = projects.filter(p => p.status === 'success');
-console.log(`\nSuccessfully retrieved ${successfulProjects.length}/${projectIds.length} projects`);
-```
-
 ---
 
 ## Notes
 
+* The method provides read-only access to project information - use the dashboard to modify project settings
 * This method requires a valid project ID - the project must be accessible with the provided API key
 * Project data includes both source and target locale configurations
 * The `currentLocales` array represents all target locales configured for the project
-* Project IDs are case-sensitive and must match exactly
 * Use this method to validate project configuration before starting translation workflows
-* The method provides read-only access to project information - use the dashboard to modify project settings
 
 ## Next Steps
 
