@@ -5,7 +5,8 @@ description: API Reference for the GT determineLocale method
 
 ## Overview
 
-The `determineLocale()` method determines the best matching locale from a list of approved locales based on user preferences. It implements intelligent locale negotiation to find the most suitable locale when exact matches aren't available.
+The `determineLocale()` method determines the best matching locale from a list of approved locales based on user preferences.
+It implements locale negotiation to find the most suitable locale when exact matches aren't available.
 
 ```typescript
 const gt = new GT({
@@ -70,12 +71,8 @@ const gt = new GT({
 // Simulate browser Accept-Language header
 const userPreferences = ['fr-CA', 'en-GB', 'en'];
 const bestMatch = gt.determineLocale(userPreferences);
-console.log(bestMatch); // 'fr-FR' or 'en-GB' based on preference order
+console.log(bestMatch); // 'fr-FR' based on preference order
 
-function selectUserLocale(preferences: string[]): string {
-  const determined = gt.determineLocale(preferences);
-  return determined || gt.sourceLocale || 'en-US';
-}
 ```
 
 ---
@@ -90,6 +87,6 @@ function selectUserLocale(preferences: string[]): string {
 
 ## Next Steps
 
-- **[Check translation needs with requiresTranslation()](/docs/core/class/methods/locales/requiresTranslation)**
-- **[Compare languages with isSameLanguage()](/docs/core/class/methods/locales/isSameLanguage)**
-- **[Explore standalone determineLocale()](/docs/core/functions/locales/determineLocale)**
+- Check translation needs with [`requiresTranslation()`](/docs/core/class/methods/locales/requiresTranslation)
+- Compare languages with [`isSameLanguage()`](/docs/core/class/methods/locales/isSameLanguage)
+- Explore standalone [`determineLocale()`](/docs/core/functions/locales/determineLocale)
