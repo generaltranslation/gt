@@ -130,7 +130,7 @@ export async function generateMetadata(props: {
     '/docs'; // Default to /docs if path is empty
 
   const section = slug && slug.length > 0 ? slug[0] : '';
-  const ogBase = 'https://generaltranslation.com/api/og';
+  const ogBase = 'https://docs.generaltranslation.app/api/og';
   const theme = 'dark';
   const ogUrl = `${ogBase}?l=${encodeURIComponent(locale)}&t=${encodeURIComponent(
     page.data.title ?? ''
