@@ -1,5 +1,5 @@
 ---
-title: Translating JSX
+title: The <T> Component
 description: How to internationalize JSX components using the <T> component
 ---
 
@@ -70,22 +70,16 @@ Use explicit IDs for consistent translations:
 
 Use [`<T>`](/docs/next/api/components/t) for **static content only**:
 
-✅ **Static content:**
 ```jsx
+// ✅ Static content works
 <T><button>Click here</button></T>
 <T><h1>Welcome to our site</h1></T>
-```
 
-❌ **Dynamic content:**
-```jsx
-// Don't do this
+// ❌ Dynamic content breaks
 <T><p>Hello {username}</p></T>
 <T><p>Today is {new Date()}</p></T>
-```
 
-✅ **Dynamic content with Variable components:**
-```jsx
-// Variable components work inside <T>
+// ✅ Use Variable components for dynamic content
 <T>
   <p>Hello <Var>{username}</Var></p>
 </T>
@@ -181,8 +175,8 @@ Content in [`<T>`](/docs/next/api/components/t) components is sent to the GT API
 ### Component Boundaries
 [`<T>`](/docs/next/api/components/t) only translates direct children, not content inside other components:
 
-❌ **Wrong**:
 ```jsx
+// ❌ Wrong - content inside components won't be translated
 function MyComponent() {
   return <p>This won't be translated</p>;
 }
@@ -191,10 +185,8 @@ function MyComponent() {
   <h1>This will be translated</h1>
   <MyComponent /> {/* Content inside won't be translated */}
 </T>
-```
 
-✅ **Correct**:
-```jsx
+// ✅ Correct - wrap each component individually
 function MyComponent() {
   return <T><p>This will be translated</p></T>;
 }
@@ -205,8 +197,8 @@ function MyComponent() {
 
 ### Nesting `<T>` Components
 
-❌ **Don't nest [`<T>`](/docs/next/api/components/t) components**:
 ```jsx
+// ❌ Don't nest <T> components
 <T>
   <T>Hello world</T> {/* Don't do this */}
 </T>
@@ -215,13 +207,11 @@ function MyComponent() {
 ### Dynamic Content Errors
 The CLI will error on dynamic content in [`<T>`](/docs/next/api/components/t). Wrap dynamic values with Variable components:
 
-❌ **Wrong**:
 ```jsx
+// ❌ Wrong - dynamic content breaks
 <T><p>Hello {username}</p></T>
-```
 
-✅ **Correct**:
-```jsx
+// ✅ Correct - use Variable components
 <T><p>Hello <Var>{username}</Var></p></T>
 ```
 
