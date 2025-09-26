@@ -5,7 +5,11 @@ description: API Reference for the GT formatMessage method
 
 ## Overview
 
-The `formatMessage()` method formats messages with variable substitution and locale-aware formatting. It supports ICU message format patterns and provides internationalized text rendering based on the configured locales.
+The `formatMessage()` method formats messages with variable substitution and locale-aware formatting.
+Built on top of Format.JS's [`intl-messageformat`](https://formatjs.github.io/docs/intl-messageformat/) library, it supports ICU message format patterns.
+
+This method is essential for variable interpolation and pluralization.
+It also supports number formatting and date formatting among other features.
 
 ```typescript
 const gt = new GT({
@@ -18,13 +22,6 @@ const formatted = gt.formatMessage('Hello {name}, you have {count} messages', {
 });
 // Returns: "Hello Alice, you have 5 messages"
 ```
-
-This method is essential for displaying dynamic content with proper locale formatting, including pluralization, number formatting, and variable interpolation.
-
-<Callout>
-**ICU Message Format:**
-The method fully supports ICU message format syntax, enabling complex pluralization, date formatting, and conditional text based on variable values.
-</Callout>
 
 ---
 
@@ -68,18 +65,13 @@ type FormatVariables = {
 
 ## Behavior
 
-### Locale Resolution
-
-The method uses locales in this priority order:
-1. `options.locales` parameter
-2. Instance rendering locales (sourceLocale, targetLocale, library default)
-3. Library default locale ('en')
 
 ### Variable Substitution
 
 - Simple variables: `{variableName}` → replaced with string value
 - ICU patterns: `{count, plural, ...}` → processed with ICU formatting rules
-- Missing variables: Left unchanged in the output
+- Missing variables: will result in an error
+- Double curly braces: will escape the curly brace behavior and render as a single curly brace
 
 ### Message Format Support
 
@@ -132,18 +124,6 @@ const message = gt.formatMessage(
   }
 );
 console.log(message); // "Your total is $99.99 with 15% off"
-
-// Different number formatting options
-const numberExamples = [
-  { format: '{num, number}', value: 1234.56, output: '1,234.56' },
-  { format: '{num, number, integer}', value: 1234.56, output: '1,235' },
-  { format: '{num, number, percent}', value: 0.15, output: '15%' },
-  { format: '{num, number, ::currency/USD}', value: 99.99, output: '$99.99' }
-];
-
-numberExamples.forEach(example => {
-  console.log(gt.formatMessage(example.format, { variables: { num: example.value } }));
-});
 ```
 
 ### Complex Message Templates
@@ -172,26 +152,13 @@ const orderStatusMessage = gt.formatMessage(`
 
 ---
 
-## Performance Considerations
-
-- **Message Parsing**: ICU messages are parsed on each call; consider caching for repeated use
-- **Variable Objects**: Reuse variable objects when possible to reduce memory allocation
-- **Complex Messages**: Very complex ICU patterns may impact performance; benchmark if needed
-- **Locale Loading**: First use of a locale may be slower due to initialization
-
----
-
 ## Notes
 
-- The method processes ICU message format syntax for advanced formatting
-- Variables are substituted before ICU processing
-- Missing variables remain as placeholder text in the output
+- The method processes ICU message format syntax for advanced formatting using [`Intl.MessageFormat`](https://formatjs.github.io/docs/intl-messageformat/) from Format.JS.
+- Missing variables will throw an error.
 - Locale-specific number, date, and currency formatting is applied automatically
-- The method is synchronous and returns formatted text immediately
 
 ## Next Steps
 
-- **[Format numbers with formatNum()](/docs/core/class/methods/formatting/formatNum)**
-- **[Format dates with formatDateTime()](/docs/core/class/methods/formatting/formatDateTime)**
-- **[Learn about FormatVariables type](/docs/core/types/FormatVariables)**
-- **[Explore standalone formatMessage()](/docs/core/functions/formatting/formatMessage)**
+- Format numbers with [formatNum()](/docs/core/class/methods/formatting/formatNum)
+- Format dates with [formatDateTime()](/docs/core/class/methods/formatting/formatDateTime)
