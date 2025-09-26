@@ -157,14 +157,18 @@ export default function SearchDialog(props: SharedProps) {
                 if (flatItems.length === 0) return;
                 const newIndex = (selectedIndex + 1) % flatItems.length;
                 setSelectedIndex(newIndex);
-                itemRefs.current[newIndex]?.scrollIntoView({ block: 'nearest' });
+                itemRefs.current[newIndex]?.scrollIntoView({
+                  block: 'nearest',
+                });
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (flatItems.length === 0) return;
                 const newIndex =
                   selectedIndex <= 0 ? flatItems.length - 1 : selectedIndex - 1;
                 setSelectedIndex(newIndex);
-                itemRefs.current[newIndex]?.scrollIntoView({ block: 'nearest' });
+                itemRefs.current[newIndex]?.scrollIntoView({
+                  block: 'nearest',
+                });
               } else if (e.key === 'Enter' && selectedIndex >= 0) {
                 e.preventDefault();
                 const selectedItem = flatItems[selectedIndex];
