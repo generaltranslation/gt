@@ -1,0 +1,7 @@
+{
+  "title": "Locadex",
+  "icon": "Brain",
+  "pages": ["---Getting Started---", "index"],
+  "root": true,
+  "description": "AI i18n Agent"
+}
