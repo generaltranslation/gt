@@ -5,7 +5,8 @@ description: API Reference for the GT getLocaleEmoji method
 
 ## Overview
 
-The `getLocaleEmoji()` method retrieves an emoji flag or symbol for a locale code based on its region. It returns appropriate flag emojis for countries and territories, with fallbacks for languages without specific regions and custom emoji support through mappings.
+The `getLocaleEmoji()` method retrieves an emoji flag or symbol for a locale code based on its region.
+It returns appropriate flag emojis for countries and territories, with fallbacks for languages without specific regions and custom emoji support through mappings.
 
 ```typescript
 const gt = new GT({
@@ -18,14 +19,10 @@ console.log(emoji); // "🇨🇦" (Canadian flag)
 
 const usEmoji = gt.getLocaleEmoji('en-US');
 console.log(usEmoji); // "🇺🇸" (US flag)
+
+const enEmoji = gt.getLocaleEmoji('en');
+console.log(enEmoji); // "🇺🇸" (US flag)
 ```
-
-This method is perfect for building locale selectors, language menus, and any UI component that needs visual representation of countries and languages.
-
-<Callout>
-**Visual Locale Identity:**
-Flag emojis provide instant visual recognition for users, making locale selection more intuitive and user-friendly. Essential for international applications with multiple language options.
-</Callout>
 
 ---
 
@@ -62,32 +59,8 @@ Flag emojis provide instant visual recognition for users, making locale selectio
 
 ---
 
-## Behavior
-
-### Emoji Selection Priority
-
-1. **Custom mapping emoji** (if defined in `customMapping`)
-2. **Region-based flag** (primary method - uses ISO 3166-1 region codes)
-3. **Language-specific exceptions** (for certain languages like Chinese)
-4. **Default flag emoji** (`🏳️`) as fallback
-
-### Region Resolution
-
-- Extracts region code from full locale (e.g., `'US'` from `'en-US'`)
-- Uses maximized locale form for region detection when region is missing
-- Maps region codes to corresponding flag emojis using Unicode regional indicator symbols
-
-### Custom Mapping Integration
-
-- Custom emoji mappings take highest priority
-- Supports canonical locale resolution for aliased codes
-- Allows complete emoji override for any locale
-
----
 
 ## Examples
-
-### Basic Emoji Retrieval
 
 ```typescript
 const gt = new GT({
@@ -106,287 +79,6 @@ console.log(gt.getLocaleEmoji('ja-JP')); // "🇯🇵"
 console.log(gt.getLocaleEmoji('zh-CN')); // "🇨🇳"
 ```
 
-### Building Locale Selector with Emojis
-
-```typescript
-interface LocaleOption {
-  code: string;
-  name: string;
-  emoji: string;
-}
-
-function createLocaleOptions(gt: GT, locales: string[]): LocaleOption[] {
-  return locales.map(locale => ({
-    code: locale,
-    name: gt.getLocaleName(locale),
-    emoji: gt.getLocaleEmoji(locale)
-  }));
-}
-
-const gt = new GT({ sourceLocale: 'en' });
-const localeOptions = createLocaleOptions(gt, [
-  'en-US', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP'
-]);
-
-console.log(localeOptions);
-// [
-//   { code: 'en-US', name: 'English (United States)', emoji: '🇺🇸' },
-//   { code: 'es-ES', name: 'Spanish (Spain)', emoji: '🇪🇸' },
-//   // ...
-// ]
-
-// React component usage
-function LocaleSelector({ onSelect }: { onSelect: (locale: string) => void }) {
-  return (
-    <div className="locale-selector">
-      {localeOptions.map(option => (
-        <button
-          key={option.code}
-          onClick={() => onSelect(option.code)}
-          className="locale-option"
-        >
-          <span className="emoji">{option.emoji}</span>
-          <span className="name">{option.name}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-```
-
-### Custom Emoji Mappings
-
-```typescript
-const gt = new GT({
-  sourceLocale: 'en',
-  customMapping: {
-    'business-english': {
-      code: 'en-US',
-      name: 'Business English',
-      emoji: '💼'
-    },
-    'gaming-lang': {
-      code: 'en-GAMING',
-      name: 'Gaming Language',
-      emoji: '🎮'
-    }
-  }
-});
-
-// Custom emoji usage
-console.log(gt.getLocaleEmoji('business-english')); // "💼"
-console.log(gt.getLocaleEmoji('gaming-lang')); // "🎮"
-
-// Still works with standard locales
-console.log(gt.getLocaleEmoji('fr-FR')); // "🇫🇷"
-```
-
----
-
-## Error Handling
-
-### Missing Target Locale
-
-```typescript
-const gt = new GT(); // No target locale configured
-
-try {
-  const emoji = gt.getLocaleEmoji(); // No parameter provided
-} catch (error) {
-  console.error('No target locale available:', error.message);
-  // Error: No target locale provided for getLocaleEmoji
-}
-```
-
-### Invalid Locale Handling
-
-```typescript
-const gt = new GT({ sourceLocale: 'en' });
-
-// Invalid locale codes return default emoji
-console.log(gt.getLocaleEmoji('invalid-locale')); // "🏳️"
-console.log(gt.getLocaleEmoji('xyz')); // "🏳️"
-
-// Safe emoji retrieval with validation
-function safeGetEmoji(gt: GT, locale: string): {
-  emoji: string;
-  isValid: boolean;
-  warning?: string;
-} {
-  try {
-    if (!gt.isValidLocale(locale)) {
-      return {
-        emoji: gt.getLocaleEmoji(locale), // Still returns fallback
-        isValid: false,
-        warning: `Invalid locale: ${locale}`
-      };
-    }
-    
-    return {
-      emoji: gt.getLocaleEmoji(locale),
-      isValid: true
-    };
-    
-  } catch (error) {
-    return {
-      emoji: '🏳️',
-      isValid: false,
-      warning: `Error retrieving emoji: ${error.message}`
-    };
-  }
-}
-
-// Usage with validation
-const results = [
-  safeGetEmoji(gt, 'en-US'), // Valid
-  safeGetEmoji(gt, 'invalid'), // Invalid
-  safeGetEmoji(gt, 'fr-FR') // Valid
-];
-
-results.forEach(result => {
-  console.log(`Emoji: ${result.emoji}, Valid: ${result.isValid}`);
-  if (result.warning) {
-    console.warn(result.warning);
-  }
-});
-```
-
-### Fallback Emoji Strategy
-
-```typescript
-interface EmojiResult {
-  emoji: string;
-  confidence: 'high' | 'medium' | 'low';
-  source: 'region' | 'custom' | 'default';
-}
-
-function getEmojiWithConfidence(
-  gt: GT,
-  locale: string,
-  customDefaults: Record<string, string> = {}
-): EmojiResult {
-  try {
-    const emoji = gt.getLocaleEmoji(locale);
-    const isValid = gt.isValidLocale(locale);
-    
-    // Check if we got the default emoji
-    if (emoji === '🏳️') {
-      // Try to get custom default for this locale
-      const customEmoji = customDefaults[locale];
-      if (customEmoji) {
-        return {
-          emoji: customEmoji,
-          confidence: 'medium',
-          source: 'custom'
-        };
-      }
-      
-      return {
-        emoji,
-        confidence: 'low',
-        source: 'default'
-      };
-    }
-    
-    // Valid region-based emoji
-    return {
-      emoji,
-      confidence: isValid ? 'high' : 'medium',
-      source: 'region'
-    };
-    
-  } catch (error) {
-    const fallbackEmoji = customDefaults['fallback'] || '❓';
-    return {
-      emoji: fallbackEmoji,
-      confidence: 'low',
-      source: 'default'
-    };
-  }
-}
-
-// Usage with confidence levels
-const gt = new GT({ sourceLocale: 'en' });
-const customDefaults = {
-  'esperanto': '🌍',
-  'latin': '🏛️',
-  'fallback': '❓'
-};
-
-const testLocales = ['en-US', 'fr-FR', 'esperanto', 'invalid-locale'];
-const results = testLocales.map(locale => ({
-  locale,
-  ...getEmojiWithConfidence(gt, locale, customDefaults)
-}));
-
-console.log(results);
-// [
-//   { locale: 'en-US', emoji: '🇺🇸', confidence: 'high', source: 'region' },
-//   { locale: 'esperanto', emoji: '🌍', confidence: 'medium', source: 'custom' },
-//   { locale: 'invalid-locale', emoji: '❓', confidence: 'low', source: 'default' }
-// ]
-```
-
----
-
-## Performance Considerations
-
-- **Custom Mapping Speed**: Custom emojis are resolved faster than region-based lookups
-- **Region Code Extraction**: Minimal overhead for extracting region from locale codes
-- **Unicode Performance**: Flag emojis are standard Unicode characters with good rendering performance
-- **Caching Recommendations**: Consider caching emoji results for frequently accessed locales
-
-```typescript
-// Performance-optimized emoji cache
-class EmojiCache {
-  private cache = new Map<string, string>();
-  
-  constructor(private gt: GT) {}
-  
-  getEmoji(locale: string): string {
-    if (!this.cache.has(locale)) {
-      this.cache.set(locale, this.gt.getLocaleEmoji(locale));
-    }
-    return this.cache.get(locale)!;
-  }
-  
-  preloadEmojis(locales: string[]): void {
-    locales.forEach(locale => this.getEmoji(locale));
-  }
-  
-  getBatch(locales: string[]): Record<string, string> {
-    const result: Record<string, string> = {};
-    locales.forEach(locale => {
-      result[locale] = this.getEmoji(locale);
-    });
-    return result;
-  }
-  
-  clear(): void {
-    this.cache.clear();
-  }
-  
-  size(): number {
-    return this.cache.size;
-  }
-}
-
-// Usage
-const gt = new GT({ sourceLocale: 'en' });
-const emojiCache = new EmojiCache(gt);
-
-// Preload common locales
-emojiCache.preloadEmojis(['en-US', 'fr-FR', 'de-DE', 'es-ES', 'ja-JP']);
-
-// Fast subsequent access
-console.log(emojiCache.getEmoji('en-US')); // Fast - cached
-console.log(emojiCache.getEmoji('fr-FR')); // Fast - cached
-
-// Batch retrieval
-const emojiBatch = emojiCache.getBatch(['en-US', 'fr-FR', 'de-DE']);
-console.log(emojiBatch); // { 'en-US': '🇺🇸', 'fr-FR': '🇫🇷', 'de-DE': '🇩🇪' }
-```
-
 ---
 
 ## Notes
@@ -395,14 +87,12 @@ console.log(emojiBatch); // { 'en-US': '🇺🇸', 'fr-FR': '🇫🇷', 'de-DE':
 - Custom mapping emojis take priority over region-based selection
 - Uses Unicode regional indicator symbols for flag generation
 - Defaults to `🏳️` (white flag) for unrecognized or invalid locales
-- Supports all ISO 3166-1 region codes for comprehensive flag coverage
-- Essential for creating visually appealing locale selectors and international UIs
 - Compatible with all modern browsers and operating systems that support Unicode emojis
 
 ## Next Steps
 
-- **[Get locale properties with getLocaleProperties()](/docs/core/class/methods/locales/getLocaleProperties)**
-- **[Get locale names with getLocaleName()](/docs/core/class/methods/locales/getLocaleName)**
-- **[Validate locales with isValidLocale()](/docs/core/class/methods/locales/isValidLocale)**
-- **[Learn about CustomMapping type](/docs/core/types/CustomMapping)**
-- **[Explore standalone getLocaleEmoji()](/docs/core/functions/locales/getLocaleEmoji)**
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Get locale names with [`getLocaleName()`](/docs/core/class/methods/locales/getLocaleName)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Learn about CustomMapping type](/docs/core/types/CustomMapping)
+- Explore standalone [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
