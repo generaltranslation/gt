@@ -5,14 +5,13 @@ description: Overview of General Translation's React SDK
 
 ## Introduction
 
-The General Translation React SDK is an open-source internationalization (i18n) library for React.
+The General Translation React SDK is an open-source internationalization (i18n) library for React applications.
 
-It offers a set of tools to help you internationalize your React application in a easy and maintainable way,
-with feature parity to other popular i18n libraries.
+It provides a comprehensive set of tools to internationalize your React application in an easy and maintainable way, with feature parity to other popular i18n libraries.
 
-The React SDK can be used without the General Translation platform, and will act very similarly to other i18n libraries.
+The SDK can be used standalone without the General Translation platform and behaves similarly to other i18n libraries.
 
-However, it also integrates with our platform, offering additional features such as:
+However, it also integrates with our platform for enhanced features:
 
 - Translation Hot Reloading in Development
 - Automatic AI translations
@@ -21,52 +20,58 @@ However, it also integrates with our platform, offering additional features such
 
 ## Concepts
 
-There are 4 main concepts to understand about the SDK.
+There are 5 main concepts to understand about the SDK.
 
 <Steps>
   <Step>
-    The `<GTProvider>` component
+    The [`<GTProvider>`](/docs/react/api/components/gtprovider) component
   </Step>
   <Step>
-    The `<T>` component
+    The [`<T>`](/docs/react/api/components/t) component
   </Step>
   <Step>
-    The `useGT` hook
+    The [`useGT`](/docs/react/api/strings/useGT) hook
   </Step>
   <Step>
-    (Optional) The `useTranslations` hook
+    The [`msg()`](/docs/react/api/strings/msg) function for shared strings
+  </Step>
+  <Step>
+    (Optional) The [`useTranslations`](/docs/react/api/dictionary/useTranslations) hook
   </Step>
 </Steps>
 
 ## The `<GTProvider>` component
 
+The [`<GTProvider>`](/docs/react/api/components/gtprovider) component provides translation context to your application, including the current language and relevant translations.
+
 ```tsx
 import { GTProvider } from 'gt-react';
+
+function App() {
+  return (
+    <GTProvider>
+      <div>
+        {/* Your application content */}
+      </div>
+    </GTProvider>
+  );
+}
 ```
 
-The `<GTProvider>` component is the main component that you need to add to your application.
+**Important:** The provider should wrap your entire application and be placed as high in the component tree as possible, such as in your root App component.
 
-It is used to provide the rest of your application with context. 
-
-This context includes the current language and the relevant translations for that language.
-
-### Important Considerations
-
-- The provider should wrap your entire application.
-- Ideally, it should be placed as high in the tree as possible, such as in your root component.
-
-See the [GTProvider](/docs/react/api/components/gtprovider) page for more information.
+See the [`GTProvider`](/docs/react/api/components/gtprovider) API reference for more information.
 
 ## The `<T>` component
 
-The `<T>` component is the recommended way to translate content in your application.
+The [`<T>`](/docs/react/api/components/t) component is the recommended way to translate content in your application.
 
 It is a React component that can be used to wrap any JSX element, and will automatically render the content of the element into a supported language.
 
 <Callout type="info">
-We recommend using the `<T>` component wherever possible, since it allows for the most flexibility in translations.
+We recommend using the [`<T>`](/docs/react/api/components/t) component wherever possible, since it allows for the most flexibility in translations.
 
-Unlike strings, the `<T>` component can be used to translate HTML content, making it much more powerful than string translations.
+Unlike strings, the [`<T>`](/docs/react/api/components/t) component can be used to translate HTML content, making it much more powerful than string translations.
 </Callout>
 
 ### Examples
@@ -91,29 +96,29 @@ Unlike strings, the `<T>` component can be used to translate HTML content, makin
   Formatting can be done easily with the `<T>` component.
   <Num>{1000}</Num>
   <DateTime>{new Date()}</DateTime>
-  <Currency>{1000}</Currency>
+  <Currency currency="USD">{1000}</Currency>
 </T>
 ```
 
-See the [translating JSX](/docs/react/guides/jsx) guide to learn about the different ways to use the `<T>` component.
+The [`<T>`](/docs/react/api/components/t) component works with [variable components](/docs/react/guides/variables) like [`<Num>`](/docs/react/api/components/num), [`<DateTime>`](/docs/react/api/components/datetime), and [`<Currency>`](/docs/react/api/components/currency) for dynamic content formatting.
 
-See the [T API Reference](/docs/react/api/components/t) for the API of the `<T>` component.
+See the [`<T>` component guide](/docs/react/guides/t) to learn about the different ways to use the [`<T>`](/docs/react/api/components/t) component.
 
 ## The `useGT` hook
 
-The `useGT` hook is a React hook that can be used similarly to the `<T>` component, with some trade-offs.
+The [`useGT`](/docs/react/api/strings/useGT) hook is a React hook that can be used similarly to the [`<T>`](/docs/react/api/components/t) component, with some trade-offs.
 
 The hook returns a function that can be used to translate strings.
 
 ```tsx
-const translate = useGT();
+const t = useGT();
 
-translate('Hello, world!');
+t('Hello, world!');
 ```
 
-Compared to the `<T>` component, the `useGT` hook allows for more flexibility in your codebase.
+Compared to the [`<T>`](/docs/react/api/components/t) component, the [`useGT`](/docs/react/api/strings/useGT) hook allows for more flexibility in your codebase.
 
-For example, if you have a complex data structure with nested strings, a `<T>` component would be more difficult to use.
+For example, if you have a complex data structure with nested strings, a [`<T>`](/docs/react/api/components/t) component would be more difficult to use.
 
 ```tsx
 const t = useGT();
@@ -123,13 +128,55 @@ const data = {
 };
 ```
 
-See the [strings](/docs/react/guides/strings) guide to learn more about the `useGT` hook.
+See the [strings](/docs/react/guides/strings) guide to learn more about the [`useGT`](/docs/react/api/strings/useGT) hook.
 
-See the [useGT API Reference](/docs/react/api/strings/useGT) for more information.
+## The `msg()` function
+
+The [`msg()`](/docs/react/api/strings/msg) function is used to mark strings for translation that are used across multiple components or stored in configuration objects.
+
+This is particularly useful for shared content like navigation labels, form messages, or any text that appears in multiple places throughout your application.
+
+```tsx
+// Mark strings for translation
+import { msg } from 'gt-react';
+
+const navItems = [
+  { label: msg('Home'), href: '/' },
+  { label: msg('About'), href: '/about' },
+  { label: msg('Contact'), href: '/contact' }
+];
+```
+
+```tsx
+// Decode and use the marked strings
+import { useMessages } from 'gt-react';
+
+function Navigation() {
+  const m = useMessages();
+  
+  return (
+    <nav>
+      {navItems.map(item => (
+        <a key={item.href} href={item.href}>
+          {m(item.label)}
+        </a>
+      ))}
+    </nav>
+  );
+}
+```
+
+The [`msg()`](/docs/react/api/strings/msg) function encodes strings with translation metadata, and [`useMessages()`](/docs/react/api/dictionary/useMessages) decodes them.
+
+<Callout type="info">
+Use [`msg()`](/docs/react/api/strings/msg) for shared content that needs to be translated consistently across your application. For component-specific content, prefer [`<T>`](/docs/react/api/components/t) or [`useGT()`](/docs/react/api/strings/useGT).
+</Callout>
+
+See the [shared strings](/docs/react/guides/shared-strings) guide to learn more about the `msg()` function.
 
 ## The `useTranslations` hook
 
-The `useTranslations` hook is a React hook that returns a function that can be used to retrieve translations for a given key.
+The [`useTranslations`](/docs/react/api/dictionary/useTranslations) hook is a React hook that returns a function that can be used to retrieve translations for a given key.
 
 ```tsx title="dictionary.ts"
 const dictionary = {
@@ -144,18 +191,18 @@ const translate = useTranslations();
 translate('hello.world');
 ```
 
-This behavior is similar to other translation libraries, such as `react-i18next` and `next-intl`.
+This behavior is similar to other translation libraries, such as [`react-i18next`](https://react.i18next.com/) and [`next-intl`](https://next-intl-docs.vercel.app/).
 
 <Callout type="warn">
-We do not recommend using the `useTranslations` hook in your application. Frequent use of the hook will make your codebase more difficult to maintain, 
+We do not recommend using the [`useTranslations`](/docs/react/api/dictionary/useTranslations) hook in your application. Frequent use of the [`useTranslations`](/docs/react/api/dictionary/useTranslations) hook will make your codebase more difficult to maintain, 
 and will lead to large tech debt.
 
-Instead, we recommend using the `<T>` component or the `useGT` hook.
+Instead, we recommend using the [`<T>`](/docs/react/api/components/t) component or the [`useGT`](/docs/react/api/strings/useGT) hook.
 
-If you are migrating from another i18n library, the `useTranslations` hook is a drop-in replacement and can useful for incrementally migrating your codebase.
+If you are migrating from another i18n library, the [`useTranslations`](/docs/react/api/dictionary/useTranslations) hook is a drop-in replacement and can useful for incrementally migrating your codebase.
 </Callout>
 
-See the [dictionaries](/docs/react/guides/dictionaries) guide to learn more about the `useTranslations` hook.
+See the [dictionaries](/docs/react/guides/dictionaries) guide to learn more about the [`useTranslations`](/docs/react/api/dictionary/useTranslations) hook.
 
 See the [useTranslations API Reference](/docs/react/api/dictionary/useTranslations) for more information.
 
@@ -163,6 +210,7 @@ See the [useTranslations API Reference](/docs/react/api/dictionary/useTranslatio
 
 ## Next Steps
 
-- Learn about how to setup your React project with the SDK: [Project Quickstart](/docs/react)
-- Learn about how to translate strings with the `useGT` hook: [Translating Strings](/docs/react/guides/hooks)
-- Learn about how to translate JSX content with the `<T>` component: [Translating JSX](/docs/react/guides/jsx)
+- Learn about how to setup your React project with the SDK: [Quickstart](/docs/react/tutorials/quickstart)
+- Learn about how to translate JSX content with the [`<T>`](/docs/react/api/components/t) component: [JSX Translation Guide](/docs/react/guides/t)
+- Learn about how to translate strings with the [`useGT`](/docs/react/api/strings/useGT) hook: [String Translation Guide](/docs/react/guides/strings)
+- Learn about shared strings with the [`msg()`](/docs/react/api/strings/msg) function: [Shared Strings Guide](/docs/react/guides/shared-strings)

@@ -3,10 +3,10 @@
   "icon": "Atom",
   "pages": [
     "---Getting Started---",
-    "index",
     "introduction",
+    "index",
     "---Core Translation---",
-    "guides/jsx",
+    "guides/t",
     "guides/variables",
     "guides/branches",
     "guides/strings",

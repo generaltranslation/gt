@@ -20,6 +20,7 @@
     "guides/middleware",
     "guides/ssg",
     "guides/rtl",
+    "guides/migration",
     "---Technical Concepts---",
     "concepts/environments",
     "concepts/stand-alone",

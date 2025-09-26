@@ -91,9 +91,9 @@ Use [`<Num>`](/docs/next/api/components/num) for numbers that should follow loca
 Use [`<Currency>`](/docs/next/api/components/currency) for monetary amounts:
 
 ```jsx
-// Basic currency formatting
+// Basic currency formatting (defaults to "USD")
 <T>
-  Your total is <Currency currency="USD">{total}</Currency>.
+  Your total is <Currency>{total}</Currency>.
 </T>
 
 // Different currencies
@@ -179,20 +179,38 @@ Variable components can be used outside of [`<T>`](/docs/next/api/components/t) 
 
 ## Common Issues
 
-### Nested `<T>` Components
-Avoid nesting [`<T>`](/docs/next/api/components/t) inside variable components unless you need that content translated:
+### Ignoring Localization Options
+
+For [`<Currency>`](/docs/next/api/components/currency), make sure to pass the `currency` prop to specify the currency type. This ensures that the correct currency symbol and formatting are used when displaying the value:
 
 ```jsx
-// ❌ Unintentional translation
+// ❌ Defaults to USD - may not be what users expect
 <T>
-  <Var>
-    <T>Private message: {secret}</T>
-  </Var>
+  The item costs <Currency>{price}</Currency>
 </T>
 
-// ✅ Keep it private
+// ✅ Explicitly specify the currency
 <T>
-  <Var>Private message: {secret}</Var>
+  The item costs <Currency currency="EUR">{price}</Currency>
+</T>
+```
+
+Other components also have optional props that allow you to customize the formatting:
+
+```jsx
+// Basic formatting
+<T>
+  <Num>{count}</Num> items in stock
+</T>
+
+// Custom formatting
+<T>
+  <Num options={{ style: 'percent' }}>{percentage}</Num> completion rate
+</T>
+
+// Date formatting
+<T>
+  Last updated: <DateTime options={{ dateStyle: 'short' }}>{lastUpdate}</DateTime>
 </T>
 ```
 

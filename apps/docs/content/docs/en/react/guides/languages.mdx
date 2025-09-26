@@ -1,28 +1,23 @@
 ---
 title: Changing Languages
-description: How to change the language of your React app
+description: How to configure and switch between languages in your React app
 ---
 
-## Overview
+Language switching allows users to change their preferred locale for your application's content. GT React provides several approaches from simple programmatic switching to pre-built UI components for custom language selectors.
 
-In this guide, we'll show you how to change the language of your React app.
+## Available Methods
 
-If you have not yet setup your app with `gt-react`, please refer to the [quickstart guide](/docs/react) before continuing.
+- **Programmatic**: [`useSetLocale()`](/docs/react/api/helpers/useSetLocale) hook for custom controls
+- **Pre-built UI**: [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component with dropdown
+- **Custom UI**: [`useLocaleSelector()`](/docs/react/api/helpers/useLocaleSelector) hook for building custom selectors
 
-There are three ways to change the language of your app using `gt-react`.
+## Using the `useSetLocale()` hook
 
-1. Using the [`useSetLocale()`](/docs/react/api/helpers/useSetLocale) hook
-2. Using the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component
-3. Using the [`useLocaleSelector()`](/docs/react/api/helpers/useLocaleSelector) hook
-
-We'll cover all three methods in this guide.
-
-## Using the `useSetLocale` hook
-
-The `useSetLocale` hook is a client-side hook that allows you to change the language of your app. It must be used within a `GTProvider` component.
+The [`useSetLocale`](/docs/react/api/helpers/useSetLocale) hook allows you to change the language of your app:
 
 ```tsx
 import { useSetLocale } from 'gt-react';
+
 export default function MyComponent() {
   const setLocale = useSetLocale();
 
@@ -30,13 +25,11 @@ export default function MyComponent() {
 }
 ```
 
-Simply provide the locale you want to change to as the argument to the callback function returned by the `useSetLocale` hook.
+Simply provide the locale you want to change to as the argument to the function returned by the hook.
 
 ## Using the `<LocaleSelector>` component
 
-The `<LocaleSelector>` component is a client-side component that allows you to change the language of your app. It must be used within a `GTProvider` component.
-
-This is a bare-bones UI dropdown that displays all the locales you have enabled in your project, and allows users to select a different locale.
+The [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component provides a ready-to-use dropdown that automatically shows all configured locales:
 
 ```tsx
 import { LocaleSelector } from 'gt-react';
@@ -46,66 +39,66 @@ export default function MyComponent() {
 }
 ```
 
-## Using the `useLocaleSelector` hook
+This component automatically:
+- Shows all configured locales for your project
+- Displays locales in their native language names
+- Handles the switching logic
+- Maintains current selection state
 
-Alternatively, if you would like to create your own locale selector component, you can use the `useLocaleSelector` hook.
+## Using the `useLocaleSelector()` hook
 
-This hook returns the current locale, the list of locales your project supports, and the `useSetLocale` hook.
+If you want to build your own custom locale selector component, use [`useLocaleSelector()`](/docs/react/api/helpers/useLocaleSelector):
 
-Here is an example of how to use the `useLocaleSelector` hook to create a custom locale selector component.
-
-```tsx copy
+```tsx
 import { useLocaleSelector } from 'gt-react';
 
-function capitalizeLanguageName(language: string): string {
-  if (!language) return '';
+function CustomLocaleSelector() {
+  const { 
+    locale,              // Current active locale (e.g., 'en', 'es')
+    locales,             // Array of locales your project supports ['en', 'es', 'fr']
+    setLocale,           // Function to change the locale: setLocale('es')
+    getLocaleProperties  // Function to get display info for a locale
+  } = useLocaleSelector();
+  
+  if (!locales?.length) return null;
+  
   return (
-    language.charAt(0).toUpperCase() +
-    (language.length > 1 ? language.slice(1) : '')
-  );
-}
-
-export default function LocaleDropdown({ className }: { className?: string }) {
-  // Retrieve the locale, locales, and setLocale function
-  const { locale, locales, setLocale, getLocaleProperties } = useLocaleSelector();
-
-  // Helper function to get the display name of a locale
-  const getDisplayName = (locale: string) => {
-    return capitalizeLanguageName(
-      getLocaleProperties(locale).nativeNameWithRegionCode
-    );
-  };
-
-  // If no locales are returned, just render nothing or handle gracefully
-  if (!locales || locales.length === 0 || !setLocale) {
-    return null;
-  }
-
-  return (
-    <Select onValueChange={setLocale} defaultValue={locale}>
-      <SelectTrigger>
-        <SelectValue placeholder='Select language' />
-      </SelectTrigger>
-      <SelectContent className='z-[200!important]' position='popper'>
-        <SelectGroup>
-          {!locale && <SelectItem value='' />}
-
-          {locales.map((locale) => (
-            <SelectItem key={locale} value={locale} suppressHydrationWarning>
-              {getDisplayName(locale)}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+    <select 
+      value={locale || ''} 
+      onChange={(e) => setLocale(e.target.value)}
+    >
+      {locales.map((loc) => {
+        const props = getLocaleProperties(loc);
+        return (
+          <option key={loc} value={loc}>
+            {props.nativeNameWithRegionCode} {/* e.g., "English (US)", "Español (ES)" */}
+          </option>
+        );
+      })}
+    </select>
   );
 }
 ```
 
-See the [API reference](/docs/react/api/helpers/useLocaleSelector) for more information.
+## Important Notes
 
-## Next steps
+### GTProvider Requirement
+Language switching components must be used within a [`<GTProvider>`](/docs/react/api/components/gtprovider):
 
-- Learn more about the [`useSetLocale`](/docs/react/api/helpers/useSetLocale) hook.
-- Learn more about the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component.
-- Learn more about the [`useLocaleSelector`](/docs/react/api/helpers/useLocaleSelector) hook.
+```tsx
+// ✅ Correct
+<GTProvider>
+  <LanguageSwitcher />
+</GTProvider>
+
+// ❌ Wrong - outside provider
+<LanguageSwitcher />
+```
+
+## Next Steps
+
+- [Dynamic Content Guide](/docs/react/guides/dynamic-content) - Runtime content translation  
+- API References:
+  - [`useSetLocale()` Hook](/docs/react/api/helpers/useSetLocale)
+  - [`<LocaleSelector>` Component](/docs/react/api/components/localeSelector)
+  - [`useLocaleSelector()` Hook](/docs/react/api/helpers/useLocaleSelector)

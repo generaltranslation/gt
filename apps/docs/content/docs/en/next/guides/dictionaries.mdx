@@ -85,7 +85,11 @@ Or use JSON format:
 }
 ```
 
+The [`withGTConfig()`](/docs/next/api/config/withGTConfig) function will automatically pick up the dictionary file in your project root or `src` directory.
+
 ### Step 2: Use in Components
+
+The [`useTranslations()`](/docs/react/api/dictionary/useTranslations) hook lets you access dictionary entries:
 
 #### Client Components
 ```tsx
@@ -195,7 +199,7 @@ function DashboardStats() {
 ## Multiple Language Support
 
 ### Automatic Translation (Recommended)
-Most users should use [`loadTranslations`](/docs/next/api/config/load-translations) for automatic dictionary generation:
+Most users should use [`loadTranslations()`](/docs/next/api/config/load-translations) to automatically generate translations from your base dictionary:
 
 ```ts title="dictionary.ts"  
 const dictionary = {
@@ -212,6 +216,17 @@ const dictionary = {
 
 export default dictionary;
 ```
+
+Create a `loadTranslations()` function to load generated translation files:
+
+```js title="src/loadTranslations.ts"
+export default async function loadTranslations(locale) {
+  const translations = await import(`../public/locales/${locale}.json`);
+  return translations.default;
+}
+```
+
+[`withGTConfig()`](/docs/next/api/config/withGTConfig) automatically picks up the `loadTranslations.[js|ts]` file from your `src/` directory or project root.
 
 GT automatically generates translations for other languages based on your base dictionary. Run `npx gtx-cli translate` to generate translations for all configured languages.
 
@@ -243,7 +258,7 @@ This loads JSON translation files from your `public/locales/` directory:
 </Files>
 
 <Callout>
-  **Choose the right approach:** Use `loadTranslations` for new projects with automatic translation, or `loadDictionary` when migrating existing translation files.
+  **Choose the right approach:** Use [`loadTranslations()`](/docs/next/api/config/load-translations) for new projects with automatic translation generation, or [`loadDictionary()`](/docs/next/api/config/load-dictionary) when migrating existing translation files.
 </Callout>
 
 ## Production Setup
@@ -262,15 +277,6 @@ Add translation to your build pipeline:
 ### Development vs Production Behavior
 - **Development**: Dictionary entries translated on-demand with dev API key
 - **Production**: All dictionary translations pre-built during build step
-
-## Migration from Other Libraries
-
-For detailed migration instructions from react-i18next, next-i18next, and other i18n libraries, see the [Migration Guide](/docs/next/guides/migration). The guide covers:
-
-- Complete migration strategies
-- Keeping existing dictionary files with `loadDictionary`  
-- Step-by-step replacement of hooks and components
-- Gradual migration approaches
 
 ## Combining with Components
 

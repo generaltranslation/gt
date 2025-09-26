@@ -1,341 +1,329 @@
 ---
-title: Using Branches
-description: How to use branch components
+title: Branching Components
+description: How to use branching components for conditional content within translations
 ---
 
-## Overview
+Branching components enable conditional content rendering within [`<T>`](/docs/react/api/components/t) components. They handle dynamic logic like if/else statements and pluralization rules while ensuring all content variations can be properly translated.
 
-Branching components in `gt-react` enable dynamic content rendering based on specific conditions. These components include:
+## Available Components
 
-- [`<Branch>`](/docs/react/api/components/branch): Renders content based on a matching `branch` prop.
-- [`<Plural>`](/docs/react/api/components/plural): Renders content based on pluralization rules for a given number.
+- [`<Branch>`](/docs/react/api/components/branch): Conditional content based on values or states
+- [`<Plural>`](/docs/react/api/components/plural): Automatic pluralization using locale-specific rules
 
-Both components provide powerful tools for managing conditional logic and dynamic content in localized applications.
+## Quick Start
 
-In this guide, we will cover:
-<Steps>
-  <Step>
-    What are branch components?
-  </Step>
-  <Step>
-    How to use branch components
-  </Step>
-  <Step>
-    When to use branch components
-  </Step>
-  <Step>
-    Examples
-  </Step>
-  <Step>
-    Common pitfalls
-  </Step>
-</Steps>
+Branching components work inside [`<T>`](/docs/react/api/components/t) to handle conditional logic:
 
----
+```jsx
+import { T, Branch, Plural, Num, Var } from 'gt-react';
 
-## What are branch components?
-
-Branch components dynamically choose which content to render based on a specific condition or value.
-
-### `<Branch>`
-
-The `<Branch>` component allows you to render different content based on a provided `branch` value.
-If no matching branch is found, the fallback `children` content is rendered.
-
-For example, the `<Branch>` component is perfect for conditional rendering based on application state, user preferences, or any dynamic data.
-
-The most common use case is to use it to replace a ternary or conditional operator.
-
-### `<Plural>`
-
-The `<Plural>` component extends the functionality of `<Branch>` by handling pluralization and number agreement automatically.
-It uses the provided `n` value to determine which plural form to display, based on locale-specific rules.
-
-For example, the `<Plural>` component is ideal for rendering singular and plural text dynamically, such as "1 item" vs. "2 items."
-
-Plural components are often combined with `<Num>` components to localize a number and its corresponding text.
-
-### Use with `<T>`
-
-The `<Branch>` and `<Plural>` components should be used within a [`<T>`](/docs/react/guides/jsx) component to sanitize dynamic content for translation.
-
-When used within a `<T>` component, the content is automatically translated and rendered in your user's selected language.
-
-When used standalone, they will just render the content as-is, without translating it.
-
----
-
-## How to use branch components
-
-### Branching logic with `<Branch>`
-
-The `<Branch>` component is used for flexible content switching based on a `branch` value.
-
-You can define multiple possible branches, and the component will render the content corresponding to the matching branch key.
-
-Additionally, you can use other variable components in combination with the `<Branch>` component.
-
-```tsx 
-const branch: 'option1' | 'option2' = 'option1';
-<T>
-  <Branch 
-    branch={branch}
-    option1={<p>Option 1</p>}
-    option2={<p>Option 2</p>}
-  >
-    Fallback content
-  </Branch>
-</T>
-```
-
-The `<Branch>` component should be used within a `<T>` component. This allows for the content to be automatically translated.
-
-See the [API Reference](/docs/react/api/components/branch) for more details.
-
-### Pluralization with `<Plural>` [#plural-logic]
-
-The `<Plural>` component automates pluralization logic based on the value of `n`.
-The component dynamically chooses the appropriate plural form for the given number and locale.
-
-```tsx copy
-const count: number = 1;
-<T>
-  <Plural
-    n={count}
-    singular={<><Num>{1}</Num> item.</>}
-    plural={<><Num>{count}</Num> items.</>}
-    // Additional options
-    zero={<><Num>{count}</Num> items.</>}
-    one={<><Num>{count}</Num> item.</>}
-    two={<><Num>{count}</Num> items.</>}
-    few={<><Num>{count}</Num> items.</>}
-    many={<><Num>{count}</Num> items.</>}
-    other={<><Num>{count}</Num> items.</>}
-    dual={<><Num>{count}</Num> items.</>}
-  />
-</T>
-```
-
-The available plural forms depend on the locale and follow [Unicode CLDR pluralization rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
-
-See the [API Reference](/docs/react/api/components/plural) for more details.
-
----
-
-## When to use branch components
-
-Branch components are important for managing dynamic content in your application.
-
-When you need to display different content based on a condition, use `<Branch>`.
-
-These conditions can be based on a variable component, a boolean, or a function.
-
-For example, if your code has a ternary operator or conditional rendering, you can use `<Branch>` to replace it.
-
-<Tabs items={["Result", "Original"]}>
-  <Tab value="Result">
-    ```tsx
-    const isActive = true;
-    // Ternary operator
-    <Branch branch={isActive} true={<p>The user is active.</p>} false={<p>The user is inactive.</p>}>
-      <p>Status unknown.</p>
-    </Branch>
-
-    // Conditional rendering
-    <Branch branch={isActive} true={<p>The user is active.</p>}>
-      <></>
-    </Branch>
-    ```
-  </Tab>
-  <Tab value="Original">
-    ```tsx
-    // Ternary operator
-    const isActive = true;
-    {isActive ? <p>The user is active.</p> : <p>The user is inactive.</p>}
-
-    // Conditional rendering
-    {isActive && <p>The user is active.</p>}
-    ```
-  </Tab>
-</Tabs>
-
-If you want to render content with correct pluralization, use `<Plural>`.
-
-<Tabs items={["Result", "Original"]}>
-  <Tab value="Result">
-    ```tsx
-    const count = 1;
-    <Plural n={count} one={<p>1 item</p>} other={<p>{count} items</p>} />
-    ```
-  </Tab>
-  <Tab value="Original">
-    ```tsx
-    const count = 1;
-    {count === 1 ? <p>1 item</p> : <p>{count} items</p>}
-    ```
-  </Tab>
-</Tabs>
-
-<Callout>
-  The `<Branch>` and `<Plural>` components can be used standalone, without a `<T>` component.
-  When used standalone, they will just render the content as-is, without translating it.
-
-  However, they are often used within a [`<T>`](/docs/react/guides/jsx) component to sanitize dynamic content for translation.
-</Callout>
-
-
----
-
-## Examples
-
-### `<Branch>`
-
-```tsx copy
-import { T, Branch, Var } from 'gt-react';
-
-export default function UserStatus() {
-  const [status, setStatus] = useState<'active' | 'inactive' | undefined>(undefined);
-  const [name, setName] = useState<string>('John Doe');
+function NotificationPanel({ user, messageCount }) {
   return (
     <T>
-      <Branch
-        branch={status}
-        active={<p>The user <Var>{name}</Var> is active.</p>}
-        inactive={<p>The user <Var>{name}</Var> is inactive.</p>}
+      <Branch 
+        branch={user.status}
+        online={<p><Var>{user.name}</Var> is currently online</p>}
+        away={<p><Var>{user.name}</Var> is away</p>}
       >
-        <p>Status unknown.</p>
+        <p><Var>{user.name}</Var> status unknown</p>
       </Branch>
-    </T>
-  );
-}
-```
-In the example above, the `<Branch>` component dynamically switches between 3 rendered contents based on the value of `status`.
-
-When `status` is `"active"`, the component renders:
-```tsx
-<p>The user <Var>{name}</Var> is active.</p>
-```
-
-When `status` is `"inactive"`, the component renders:
-```tsx
-<p>The user <Var>{name}</Var> is inactive.</p>
-```
-
-When `status` is neither `"active"` nor `"inactive"`, the component renders the fallback content:
-```tsx
-<p>Status unknown.</p>
-```
-
-Since the `<Branch>` component is wrapped in a `<T>` component, the rendered content is automatically translated in context.
-
-
-In this example, it displays different descriptions based on the user's subscription plan.
-```tsx copy
-import { Branch } from 'gt-react';
-
-export default function SubscriptionDetails() {
-  const [plan, setPlan] = useState<'free' | 'premium' | 'enterprise' | undefined>(undefined);
-  return (
-    <Branch
-      branch={plan}
-      free={<p>You are on the Free plan. Upgrade to unlock more features!</p>}
-      premium={<p>You are enjoying the Premium plan with full access to features.</p>}
-      enterprise={<p>You are on the Enterprise plan. Contact support for tailored solutions.</p>}
-    >
-      <p>No subscription plan detected.</p>
-    </Branch>
-  );
-}
-```
-
- * The `branch` prop determines which plan message to display.
- * If `plan` is `"free"`, `"premium"`, or `"enterprise"`, the corresponding message is shown.
- * If `plan` doesn't match any of these values, the fallback content (`"No subscription plan detected."`) is displayed.
-
-
-### `<Plural>`
-
-The `<Plural>` component dynamically handles singular and plural content based on the value of `n`.
-This example displays the number of unread messages in a user's inbox.
-
-```tsx copy
-import { T, Plural, Num } from 'gt-react';
-
-export default function UnreadMessages() {
-  const [unreadCount, setUnreadCount] = useState<number>(1);
-  return (
-    <T>
+      
       <Plural
-        n={unreadCount}
-        one={<>You have <Num>{unreadCount}</Num> unread message.</>}
-        other={<>You have <Num>{unreadCount}</Num> unread messages.</>}
+        n={messageCount}
+        one={<p>You have <Num>{messageCount}</Num> message</p>}
+        other={<p>You have <Num>{messageCount}</Num> messages</p>}
       />
     </T>
   );
 }
 ```
- * The `n` prop specifies the number of unread messages.
- * If `unreadCount` is `1`, the component renders: `"You have 1 unread message."`
- * For any other value, it renders: `"You have X unread messages."` where `X` is the value of `unreadCount` formatted by `<Num>`.
 
----
+## How Branching Components Work
 
-## Common Pitfalls
+Branching components solve conditional rendering within translations by:
 
-### Missing Branch Values [#missing-branch]
+1. **Replacing ternary operators** and conditional logic inside [`<T>`](/docs/react/api/components/t)
+2. **Providing fallback content** when conditions don't match expected values
+3. **Enabling translation** of all possible content variations
+4. **Following locale rules** for pluralization automatically
 
-If a branch value is not provided or does not match any keys, the `<Branch>` component will render the fallback children content.
-Always ensure that the possible branch keys match the values passed to the branch prop.
+```jsx
+// ❌ This breaks - conditional logic in <T>
+<T><p>{isActive ? 'User is active' : 'User is inactive'}</p></T>
 
-```tsx copy
-import { Branch } from 'gt-react';
-
-export default function StatusMessage({ status }) {
-  return (
-    <Branch
-      branch={status}
-      active={<p>The user is active.</p>}
-      inactive={<p>The user is inactive.</p>}
-    >
-      <p>Status unknown.</p>
-    </Branch>
-  );
-}
+// ✅ This works - conditional logic with branching
+<T>
+  <Branch 
+    branch={isActive} 
+    true={<p>User is active</p>}
+    false={<p>User is inactive</p>}
+  />
+</T>
 ```
-If `status` is `undefined` or a value other than `active` or `inactive`, the fallback content `“Status unknown.”` will be displayed.
 
+## Component Guide
 
-### Missing Plural Forms [#plural-locale]
+### `<Branch>` - Conditional Content
 
-Remember to specify all necessary plural forms in your default language.
-This is how `gt-react` ensures that your application always has fallback content to display.
+Use [`<Branch>`](/docs/react/api/components/branch) for any conditional rendering based on values or states:
 
-For example, if English is your default language, you should provide all plural forms for English.
+```jsx
+// User status display
+<T>
+  <Branch 
+    branch={user.role}
+    admin={<p>Administrator Dashboard</p>}
+    user={<p>User Dashboard</p>}
+    guest={<p>Guest Access</p>}
+  >
+    <p>Access level unknown</p>
+  </Branch>
+</T>
 
-```tsx copy
-import { Plural, Num } from 'gt-react';
+// Boolean conditions
+<T>
+  <Branch 
+    branch={isLoggedIn}
+    true={<p>Welcome back!</p>}
+    false={<p>Please log in</p>}
+  />
+</T>
 
+// Subscription tiers
+<T>
+  <Branch
+    branch={subscription.tier}
+    free={<p>Upgrade to unlock premium features</p>}
+    premium={<p>Enjoy your premium experience</p>}
+    enterprise={<p>Contact support for enterprise solutions</p>}
+  >
+    <p>Subscription status unavailable</p>
+  </Branch>
+</T>
+```
+
+### `<Plural>` - Smart Pluralization
+
+Use [`<Plural>`](/docs/react/api/components/plural) for content that changes based on quantity:
+
+```jsx
+// Basic pluralization
+<T>
+  <Plural
+    n={itemCount}
+    one={<p><Num>{itemCount}</Num> item in cart</p>}
+    other={<p><Num>{itemCount}</Num> items in cart</p>}
+  />
+</T>
+
+// Zero handling
+<T>
+  <Plural
+    n={notifications}
+    zero={<p>No new notifications</p>}
+    one={<p><Num>{notifications}</Num> notification</p>}
+    other={<p><Num>{notifications}</Num> notifications</p>}
+  />
+</T>
+
+// Complex pluralization (follows Unicode CLDR rules)
+<T>
+  <Plural
+    n={days}
+    zero={<p>Due today</p>}
+    one={<p>Due in <Num>{days}</Num> day</p>}
+    few={<p>Due in <Num>{days}</Num> days</p>}
+    many={<p>Due in <Num>{days}</Num> days</p>}
+    other={<p>Due in <Num>{days}</Num> days</p>}
+  />
+</T>
+```
+
+### Combining with Variable Components
+
+Branching and variable components work together seamlessly:
+
+```jsx
+<T>
+  <Branch
+    branch={order.status}
+    pending={
+      <p>
+        Order <Var>{order.id}</Var> is pending. 
+        Total: <Currency currency="USD">{order.total}</Currency>
+      </p>
+    }
+    shipped={
+      <p>
+        Order <Var>{order.id}</Var> shipped on <DateTime>{order.shippedDate}</DateTime>
+      </p>
+    }
+    delivered={
+      <p>Order <Var>{order.id}</Var> was delivered successfully</p>
+    }
+  >
+    <p>Order status unknown</p>
+  </Branch>
+</T>
+```
+
+## When to Use Branching Components
+
+### Replace Ternary Operators
+Convert conditional logic for use within [`<T>`](/docs/react/api/components/t):
+
+```jsx
+// ❌ Can't use ternary in <T>
+<T>{isActive ? <p>Active user</p> : <p>Inactive user</p>}</T>
+
+// ✅ Use Branch instead
+<T>
+  <Branch 
+    branch={isActive}
+    true={<p>Active user</p>}
+    false={<p>Inactive user</p>}
+  />
+</T>
+```
+
+### Handle Multiple Conditions
+Replace switch statements or multiple if/else conditions:
+
+```jsx
+// ❌ Complex conditional logic
+<T>
+  {status === 'loading' ? <p>Loading...</p> : 
+   status === 'error' ? <p>Error occurred</p> : 
+   status === 'success' ? <p>Success!</p> : 
+   <p>Unknown status</p>}
+</T>
+
+// ✅ Clean branching logic
+<T>
+  <Branch
+    branch={status}
+    loading={<p>Loading...</p>}
+    error={<p>Error occurred</p>}
+    success={<p>Success!</p>}
+  >
+    <p>Unknown status</p>
+  </Branch>
+</T>
+```
+
+### Pluralization Rules
+Replace manual plural handling:
+
+```jsx
+// ❌ Manual pluralization
+<T>{count === 1 ? <p>1 item</p> : <p>{count} items</p>}</T>
+
+// ✅ Automatic pluralization
+<T>
+  <Plural
+    n={count}
+    one={<p><Num>{count}</Num> item</p>}
+    other={<p><Num>{count}</Num> items</p>}
+  />
+</T>
+```
+
+## Standalone Usage
+
+Branching components can be used outside [`<T>`](/docs/react/api/components/t) for pure logic without translation:
+
+```jsx
+// Pure conditional rendering
+<Branch
+  branch={theme}
+  dark={<DarkModeIcon />}
+  light={<LightModeIcon />}
+>
+  <DefaultIcon />
+</Branch>
+
+// Pure pluralization
 <Plural
   n={count}
-  one={<>You have <Num>{count}</Num> unread message.</>}
-  other={<>You have <Num>{count}</Num> unread messages.</>}
+  one={<SingleItemComponent />}
+  other={<MultipleItemsComponent />}
 />
 ```
 
-Here, we have provided `one` and `other` plural forms for English.
+## Common Issues
 
-Alternatively, you can also provide `singular` and `plural` for English.
+### Missing Branch Keys
+Always provide fallback content for unmatched values:
 
+```jsx
+// ❌ No fallback for unexpected values
+<Branch
+  branch={userRole}
+  admin={<AdminPanel />}
+  user={<UserPanel />}
+  // What if userRole is "moderator"?
+/>
 
----
+// ✅ Always include fallback
+<Branch
+  branch={userRole}
+  admin={<AdminPanel />}
+  user={<UserPanel />}
+>
+  <DefaultPanel /> {/* Fallback for any other value */}
+</Branch>
+```
 
-## Notes
- * Branch components are essential for managing dynamic and localized content in applications.
- * The `<Branch>` component is highly flexible and can adapt to various conditions and states.
- * The `<Plural>` component simplifies pluralization by adhering to locale-specific rules automatically.
- * Always include a fallback `children` prop for better error handling and user experience.
+### Incomplete Plural Forms
+Provide necessary plural forms for your default locale:
+
+```jsx
+// ❌ Missing "other" form
+<Plural
+  n={count}
+  one={<p>1 item</p>}
+  // What about 0, 2, 3, etc.?
+/>
+
+// ✅ Include required forms
+<Plural
+  n={count}
+  zero={<p>No items</p>}
+  one={<p>1 item</p>}
+  other={<p>{count} items</p>}
+/>
+```
+
+### Complex Nested Logic
+Although this works, we recommend keeping branching logic simple and avoid deep nesting:
+
+```jsx
+// ❌ Complex nested branching
+<Branch branch={status}>
+  <Branch branch={subStatus}>
+    {/* Hard to read and maintain */}
+  </Branch>
+</Branch>
+
+// ✅ Flatten logic or use multiple components
+<Branch
+  branch={`${status}-${subStatus}`}
+  active-online={<ActiveOnline />}
+  active-offline={<ActiveOffline />}
+  inactive-online={<InactiveOnline />}
+>
+  <DefaultState />
+</Branch>
+```
+
+<Callout>
+  Learn more about pluralization rules in the [Unicode CLDR documentation](https://cldr.unicode.org/index/cldr-spec/plural-rules).
+</Callout>
 
 ## Next Steps
- * Check out [`<Branch>`](/docs/react/api/components/branch) and [`<Plural>`](/docs/react/api/components/plural) in the API Reference for more details.
- * Learn more about pluralization rules and branching logic in [Unicode CLDR Pluralization Rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
- * Explore how to use [Variable Components](/docs/react/guides/variables).
+
+- [String Translation Guide](/docs/react/guides/strings) - Translate plain text without JSX
+- [Dynamic Content Guide](/docs/react/guides/dynamic-content) - Handle runtime translation
+- API References:
+  - [`<Branch>` Component](/docs/react/api/components/branch)
+  - [`<Plural>` Component](/docs/react/api/components/plural)

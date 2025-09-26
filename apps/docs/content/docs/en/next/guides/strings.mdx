@@ -3,16 +3,16 @@ title: Strings
 description: How to internationalize plain text strings using useGT and getGT
 ---
 
-String translation provides direct access to text translations without JSX, perfect for attributes, object properties, and plain text values. Use [`useGT()`](/docs/next/api/strings/useGT) in client components and [`getGT()`](/docs/next/api/strings/getGT) in server components.
+String translation provides direct access to text translations without JSX, perfect for attributes, object properties, and plain text values. Use [`useGT()`](/docs/next/api/strings/useGT) in synchronous components and [`getGT()`](/docs/next/api/strings/getGT) in asynchronous components.
 
-## Client vs Server Usage
+## Synchronous vs Asynchronous Usage
 
-- **Client Components**: [`useGT()`](/docs/next/api/strings/useGT) hook for React components
-- **Server Components**: [`getGT()`](/docs/next/api/strings/getGT) async function for server-side rendering
+- **Synchronous Components**: [`useGT()`](/docs/next/api/strings/useGT) hook for React components
+- **Asynchronous Components**: [`getGT()`](/docs/next/api/strings/getGT) async function for async components
 
 ## Quick Start
 
-### Client Components
+### Synchronous Components
 ```jsx
 import { useGT } from 'gt-next';
 
@@ -27,7 +27,7 @@ function MyComponent() {
 }
 ```
 
-### Server Components
+### Asynchronous Components
 ```jsx
 import { getGT } from 'gt-next/server';
 
@@ -308,25 +308,24 @@ function MyComponent({ showMessage }) {
 }
 ```
 
-### Server vs Client Confusion
+### Synchronous vs Asynchronous Confusion
 Use the right function for your component type:
 
 ```jsx
-// ❌ Wrong: useGT in server component
-export default async function ServerComponent() {
+// ❌ Wrong: useGT in async component
+export default async function AsyncComponent() {
   const t = useGT(); // This won't work
   return <p>{t('Hello')}</p>;
 }
 
-// ✅ Correct: getGT in server component  
-export default async function ServerComponent() {
+// ✅ Correct: getGT in async component  
+export default async function AsyncComponent() {
   const t = await getGT();
   return <p>{t('Hello')}</p>;
 }
 
-// ✅ Correct: useGT in client component
-'use client';
-export default function ClientComponent() {
+// ✅ Correct: useGT in synchronous component
+export default function SyncComponent() {
   const t = useGT();
   return <p>{t('Hello')}</p>;
 }

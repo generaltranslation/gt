@@ -103,9 +103,11 @@ Use [`useMessages()`](/docs/next/api/dictionary/useMessages) hook:
 ```tsx
 import { useMessages } from 'gt-next';
 
+const encodedString = msg('Hello, world!');
+
 function MyComponent() {
   const m = useMessages();
-  return <div>{m(sharedString)}</div>;
+  return <div>{m(encodedString)}</div>;
 }
 ```
 
@@ -115,9 +117,47 @@ Use [`getMessages()`](/docs/next/api/dictionary/getMessages) function:
 ```tsx
 import { getMessages } from 'gt-next/server';
 
+const encodedString = msg('Hello, world!');
+
 async function MyServerComponent() {
   const m = await getMessages();
-  return <div>{m(sharedString)}</div>;
+  return <div>{m(encodedString)}</div>;
+}
+```
+
+## Getting Original Strings with `decodeMsg()`
+
+Sometimes you need to access the original string without translation, such as for logging, debugging, or comparisons. Use [`decodeMsg()`](/docs/next/api/strings/msg#decodemsg) to extract the original text:
+
+```tsx
+import { decodeMsg } from 'gt-next';
+
+const encoded = msg('Hello, world!');
+const original = decodeMsg(encoded); // "Hello, world!" (original)
+const translated = m(encoded); // "Hello, world!" (in user's language)
+
+// Useful for logging or debugging
+console.log('Original string:', decodeMsg(encoded));
+console.log('Translated string:', m(encoded));
+```
+
+### Use Cases for `decodeMsg()`
+
+- **Development & Debugging**: Log original strings for troubleshooting
+- **Fallback Handling**: Use original text when translations fail
+- **String Comparisons**: Compare against known original values
+- **Analytics**: Track original string usage
+
+```tsx
+// Example: Fallback handling
+function getDisplayText(encodedStr) {
+  const m = useMessages();
+  try {
+    return m(encodedStr);
+  } catch (error) {
+    console.warn('Translation failed, using original:', decodeMsg(encodedStr));
+    return decodeMsg(encodedStr);
+  }
 }
 ```
 
@@ -383,17 +423,6 @@ return <h1>{config.title}</h1>; // Shows encoded string
 // ✅ Correct - decode when using
 const m = useMessages();
 return <h1>{m(config.title)}</h1>; // Shows translated title
-```
-
-### Recovery with decodeMsg()
-To get the original string without translation, use [`decodeMsg()`](/docs/next/api/strings/msg#decodemsg):
-
-```tsx
-import { decodeMsg } from 'gt-next';
-
-const encoded = msg('Hello, world!');
-const original = decodeMsg(encoded); // "Hello, world!" (original)
-const translated = m(encoded); // "Hello, world!" (in user's language)
 ```
 
 ## Next Steps
