@@ -5,15 +5,7 @@ description: API Reference for the GT resolveCanonicalLocale method
 
 ## Overview
 
-The `resolveCanonicalLocale()` method converts alias locale codes to their canonical BCP-47 locale codes when custom mapping is configured.
-
-
-This method ensures compatibility between user-facing locale names and standardized locale codes required by translation APIs and internationalization libraries.
-
-<Callout>
-**API Integration:**
-Use this method to convert user-selected locale aliases into canonical locale codes before making API calls. This ensures your application uses standard BCP-47 codes internally while presenting friendly names to users.
-</Callout>
+Used in the context of aliasing locales (e.g. `cn` -> `zh`), the `resolveCanonicalLocale()` method converts alias locale codes to their canonical BCP-47 locale codes when custom mapping is configured.
 
 ---
 
