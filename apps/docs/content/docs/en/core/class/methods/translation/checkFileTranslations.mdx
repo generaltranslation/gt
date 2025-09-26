@@ -85,41 +85,47 @@ type CompletedFileTranslationData = {
 Check translation status for specific files and locales:
 
 ```typescript copy
-import { GT } from 'generaltranslation';
-
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
 const gt = new GT({
-  apiKey: 'your-api-key'
+  projectId: process.env.GT_PROJECT_ID,
+  apiKey: process.env.GT_API_KEY,
 });
 
-const queries = [
-  {
-    versionId: 'version-123',
-    fileName: 'homepage.json',
-    locale: 'es'
-  },
-  {
-    versionId: 'version-123', 
-    fileName: 'homepage.json',
-    locale: 'fr'
-  },
-  {
-    versionId: 'version-456',
-    fileName: 'navigation.json',
-    locale: 'es'
-  }
-];
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
+);
 
-const result = await gt.checkFileTranslations(queries);
-
-result.translations.forEach(translation => {
-  console.log(`${translation.fileName} (${translation.locale}): ${translation.status}`);
-  if (translation.completedAt) {
-    console.log(`  Completed: ${translation.completedAt}`);
-  }
-  if (translation.publishedAt) {
-    console.log(`  Published: ${translation.publishedAt}`);
-  }
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
 });
+
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
 ```
 
 ---
