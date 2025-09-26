@@ -5,7 +5,8 @@ description: API Reference for the formatDateTime() method to format dates and t
 
 ## Overview
 
-The `formatDateTime()` method formats dates and times according to locale-specific conventions using the Internationalization API. It handles date formats, time formats, calendars, and time zones automatically based on the target locale.
+The `formatDateTime()` method formats dates and times according to locale-specific conventions using the Internationalization API.
+It handles date formats, time formats, calendars, and time zones automatically based on the target locale.
 
 ```typescript
 const gt = new GT({ targetLocale: 'de-DE' });
@@ -14,13 +15,8 @@ const formatted = gt.formatDateTime(new Date(), {
   dateStyle: 'medium',
   timeStyle: 'short'
 });
-// Returns: "14. März 2024, 14:30" (German date/time formatting)
+// Returns: "25.09.2025, 18:06" (German date/time formatting)
 ```
-
-<Callout>
-**Locale-Aware Formatting:**
-This method automatically uses the GT instance's rendering locales but allows override through the `locales` option. Different locales have different conventions for date order, separators, month names, and time formats.
-</Callout>
 
 ## Reference
 
@@ -142,56 +138,6 @@ console.log(gt.formatDateTime(date, {
   timeStyle: 'short'
 }));
 // Output: "Mar 14, 2024, 10:30 AM"
-```
-
-### Utility Functions
-
-```typescript copy
-// Helper for consistent date-only formatting
-function formatDateOnly(date: Date, locale?: string) {
-  return gt.formatDateTime(date, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    ...(locale && { locales: locale })
-  });
-}
-
-// Helper for time-only formatting
-function formatTimeOnly(date: Date, use24Hour: boolean = false) {
-  return gt.formatDateTime(date, {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: !use24Hour
-  });
-}
-
-// Helper for relative timestamps
-function formatTimestamp(date: Date) {
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return `Today at ${formatTimeOnly(date)}`;
-  } else if (diffDays === 1) {
-    return `Yesterday at ${formatTimeOnly(date)}`;
-  } else if (diffDays < 7) {
-    return gt.formatDateTime(date, {
-      weekday: 'long',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-  } else {
-    return formatDateOnly(date);
-  }
-}
-
-const recentDate = new Date('2024-03-13T10:15:00Z');
-console.log(formatTimestamp(recentDate));
-// Output varies based on current date
-
-console.log(formatTimeOnly(new Date()));
-console.log(formatDateOnly(new Date()));
 ```
 
 ---
