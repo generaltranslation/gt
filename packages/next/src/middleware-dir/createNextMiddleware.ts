@@ -73,6 +73,14 @@ export default function createNextMiddleware({
     envParams?.defaultLocale || libraryDefaultLocale;
   const locales: string[] = envParams?.locales || [defaultLocale];
 
+  // add canonical locales
+  const canonicalLocales = Object.values(
+    (envParams?.customMapping || {}) as any
+  )
+    .filter((locale: any) => locale.code)
+    .map((locale: any) => locale.code);
+  locales.push(...canonicalLocales);
+
   // cookies and header names
   const headersAndCookies = envParams?.headersAndCookies || {};
   const localeRoutingEnabledCookieName =
@@ -96,8 +104,6 @@ export default function createNextMiddleware({
   const warningLocales = locales.filter((locale) => !gt.isValidLocale(locale));
   if (warningLocales.length)
     console.warn(createUnsupportedLocalesWarning(warningLocales));
-
-  const approvedLocales = locales;
 
   // ---------- PRE-PROCESSING PATHS ---------- //
 
@@ -159,7 +165,7 @@ export default function createNextMiddleware({
     } = getLocaleFromRequest(
       req,
       defaultLocale,
-      approvedLocales,
+      locales,
       localeRouting,
       gtServicesEnabled,
       prefixDefaultLocale,
