@@ -64,7 +64,7 @@ Add translation generation to your build script:
 ```json
 {
   "scripts": {
-    "build": "gtx translate && next build"
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
   }
 }
 ```
@@ -86,10 +86,10 @@ Ensure translations are generated before building:
 
 ```bash
 # ❌ Build without translations
-npm run build
+<...YOUR_BUILD_COMMAND...>
 
 # ✅ Generate translations first
-gtx translate && npm run build
+npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>
 ```
 
 ### Import Path Errors

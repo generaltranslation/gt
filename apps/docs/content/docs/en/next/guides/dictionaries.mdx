@@ -213,7 +213,7 @@ const dictionary = {
 export default dictionary;
 ```
 
-GT automatically generates translations for other languages based on your base dictionary. Run `gtx translate` to generate translations for all configured languages.
+GT automatically generates translations for other languages based on your base dictionary. Run `npx gtx-cli translate` to generate translations for all configured languages.
 
 ### Manual Translation Files (Migration)
 For migration from other i18n libraries or manual translation management, use [`loadDictionary`](/docs/next/api/config/load-dictionary):
@@ -254,7 +254,7 @@ Add translation to your build pipeline:
 ```json title="package.json"
 {
   "scripts": {
-    "build": "gtx translate && next build"
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
   }
 }
 ```
