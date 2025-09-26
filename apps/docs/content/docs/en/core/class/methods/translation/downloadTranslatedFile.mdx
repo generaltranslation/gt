@@ -5,10 +5,11 @@ description: API Reference for the downloadTranslatedFile() method to download c
 
 ## Overview
 
-The `downloadTranslatedFile()` method downloads the content of a single translated file as a UTF-8 string. This method is used to retrieve completed translations after they have been processed by the General Translation platform.
+The `downloadTranslatedFile()` method downloads the content of a single translated file as a UTF-8 string.
+This method is used to retrieve completed translations after they have been processed by the General Translation platform.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const content = await gt.downloadTranslatedFile({
   fileId: 'file-123',
@@ -18,8 +19,9 @@ const content = await gt.downloadTranslatedFile({
 ```
 
 <Callout>
-**Translation Status:**
-This method only works with completed translations. Use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) first to verify that translations are completed before attempting to download.
+  **Translation Status:**
+  This method only works with completed translations.
+  Use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) first to verify that translations are completed before attempting to download.
 </Callout>
 
 ## Reference
@@ -55,121 +57,64 @@ The returned string contains the translated file content in the same format as t
 
 ## Example
 
-### Basic Usage
-
-Download a single translated JSON file:
-
-```typescript copy
-import { GT } from 'generaltranslation';
-
+```typescript title="index.ts" copy
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
 const gt = new GT({
-  apiKey: 'your-api-key'
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
 });
 
-const spanishContent = await gt.downloadTranslatedFile({
-  fileId: 'file-abc-123',
-  locale: 'es',
-  versionId: 'version-456'
-});
-
-// Parse JSON content
-const translations = JSON.parse(spanishContent);
-console.log(translations);
-// Output: { "welcome": "¡Bienvenido!", "goodbye": "¡Adiós!" }
-```
-
-### With Custom Timeout
-
-Download with a specific timeout setting:
-
-```typescript copy
-const content = await gt.downloadTranslatedFile({
-  fileId: 'file-def-789',
-  locale: 'fr'
-}, {
-  timeout: 15000 // 15 seconds
-});
-
-console.log('French translation downloaded successfully');
-```
-
-### Download Multiple Translations
-
-```typescript copy
-const fileId = 'file-homepage-123';
-const versionId = 'version-456';
-const locales = ['es', 'fr', 'de'];
-
-const translations = await Promise.all(
-  locales.map(async locale => {
-    const content = await gt.downloadTranslatedFile({
-      fileId,
-      locale,
-      versionId
-    });
-    
-    return {
-      locale,
-      content: JSON.parse(content)
-    };
-  })
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
 );
 
-translations.forEach(({ locale, content }) => {
-  console.log(`${locale}:`, content);
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
 });
-```
 
-### Save to File System
-
-```typescript copy
-import fs from 'fs/promises';
-import path from 'path';
-
-async function downloadAndSaveTranslation(
-  fileId: string, 
-  locale: string, 
-  outputPath: string
-) {
-  try {
-    const content = await gt.downloadTranslatedFile({
-      fileId,
-      locale
-    });
-    
-    // Ensure output directory exists
-    await fs.mkdir(path.dirname(outputPath), { recursive: true });
-    
-    // Write translated content to file
-    await fs.writeFile(outputPath, content, 'utf8');
-    
-    console.log(`Translation saved to ${outputPath}`);
-    return outputPath;
-    
-  } catch (error) {
-    console.error(`Failed to download translation for ${locale}:`, error);
-    throw error;
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
   }
+  await new Promise(resolve => setTimeout(resolve, 1000));
 }
 
-// Usage
-await downloadAndSaveTranslation(
-  'file-nav-123',
-  'es',
-  './locales/es/navigation.json'
+// (5) Download the file
+const result = await Promise.all(
+  translationIds.map(id => gt.downloadTranslatedFile(id))
 );
+
 ```
+
 
 ---
 
 ## Notes
 
+* Retrieves downloaded file as a UTF-8 string
 * The file must have a completed translation for the specified locale
-* Content is returned as a UTF-8 string regardless of the original file format
-* File content is automatically decoded from Base64 during download
-* The `versionId` parameter is optional but recommended for version-specific downloads
-* Large files may require increased timeout values
-* This method replaces the deprecated `downloadFile()` method
+* Will fail if file is not found
 
 ## Next Steps
 

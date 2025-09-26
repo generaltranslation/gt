@@ -5,18 +5,18 @@ description: API Reference for the setupProject() method to initialize translati
 
 ## Overview
 
-The `setupProject()` method initializes the setup process for a translation project using previously uploaded files. This creates a setup job that analyzes the files and prepares them for translation workflows.
+The `setupProject()` method initializes the setup process for a translation project using previously uploaded files.
+This creates an asynchronous setup job that analyzes the files and prepares them for translation workflows.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const setupResult = await gt.setupProject(fileRefs, 30000);
 console.log(`Setup job created: ${setupResult.setupJobId}`);
 ```
 
-<Callout>
-**Asynchronous Setup:**
-Project setup is an asynchronous process. Use [`checkSetupStatus()`](/docs/core/class/methods/translation/checkSetupStatus) to monitor the setup job progress and completion.
+<Callout type="info">
+  You must have previously uploaded the files using [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) before calling `setupProject()`.
 </Callout>
 
 ## Reference
@@ -64,10 +64,11 @@ type SetupProjectResult = {
 
 Initialize project setup with uploaded files:
 
-```typescript copy
+```typescript title="index.ts" copy
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key'
 });
 
@@ -91,60 +92,6 @@ const setupResult = await gt.setupProject(fileRefs);
 console.log(`Setup initiated with job ID: ${setupResult.setupJobId}`);
 ```
 
-### With Custom Timeout
-
-Set a specific timeout for the setup request:
-
-```typescript copy
-const setupResult = await gt.setupProject(fileRefs, 45000); // 45 second timeout
-
-console.log(`Setup status: ${setupResult.status}`);
-console.log(`Job ID: ${setupResult.setupJobId}`);
-```
-
-### Complete Workflow
-
-Full workflow from file upload to setup completion:
-
-```typescript copy
-// Step 1: Upload source files
-const uploadResult = await gt.uploadSourceFiles(files, {
-  sourceLocale: 'en',
-  replace: true
-});
-
-// Step 2: Start project setup
-const setupResult = await gt.setupProject(
-  uploadResult.data.map(file => ({
-    fileId: file.fileId,
-    versionId: file.versionId,
-    fileName: file.fileName,
-    fileFormat: file.fileFormat
-  }))
-);
-
-// Step 3: Monitor setup progress
-let setupComplete = false;
-while (!setupComplete) {
-  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-  
-  const status = await gt.checkSetupStatus(setupResult.setupJobId);
-  console.log(`Setup progress: ${status.progress}%`);
-  
-  if (status.status === 'completed') {
-    setupComplete = true;
-    console.log('Project setup completed successfully!');
-  } else if (status.status === 'failed') {
-    throw new Error(`Setup failed: ${status.message}`);
-  }
-}
-
-// Step 4: Now ready to enqueue translation jobs
-const enqueueResult = await gt.enqueueFiles(fileRefs, {
-  targetLocales: ['es', 'fr', 'de']
-});
-```
-
 ---
 
 ## Notes
@@ -153,7 +100,6 @@ const enqueueResult = await gt.enqueueFiles(fileRefs, {
 * Project setup analyzes file content and structure to optimize translation workflows
 * The setup job runs asynchronously - monitor progress with [`checkSetupStatus()`](/docs/core/class/methods/translation/checkSetupStatus)
 * Setup is typically required before enqueueing translation jobs for new projects
-* The default timeout is applied if not specified in the `timeoutMs` parameter
 
 ## Next Steps
 

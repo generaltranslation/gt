@@ -5,10 +5,11 @@ description: API Reference for the querySourceFile() method to get source file a
 
 ## Overview
 
-The `querySourceFile()` method retrieves comprehensive information about a source file and all its associated translations. This includes file metadata, translation status across all locales, and timestamps for creation, completion, approval, and publishing.
+The `querySourceFile()` method retrieves comprehensive information about a source file and all its associated translations.
+This includes file metadata, translation status across all locales, and timestamps for creation, completion, approval, and publishing.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
 
 const result = await gt.querySourceFile({
   fileId: 'file-123',
@@ -18,11 +19,6 @@ const result = await gt.querySourceFile({
 console.log(`Source file: ${result.sourceFile.fileName}`);
 console.log(`Available in ${result.translations.length} locales`);
 ```
-
-<Callout>
-**Comprehensive File Information:**
-This method provides complete file lifecycle information including source file details, translation progress across all locales, and processing timestamps. Use this for detailed status reports and file management workflows.
-</Callout>
 
 ## Reference
 
@@ -107,12 +103,12 @@ type FileQueryResult = {
 
 ## Example
 
-### Basic File Query
 
-```typescript copy
+```typescript title="index.ts" copy
 import { GT } from 'generaltranslation';
 
 const gt = new GT({
+  projectId: 'your-project-id',
   apiKey: 'your-api-key'
 });
 
@@ -143,244 +139,16 @@ async function getFileInfo(fileId: string, versionId?: string) {
 const fileInfo = await getFileInfo('file-123', 'version-456');
 ```
 
-### Translation Progress Analysis
-
-```typescript copy
-async function analyzeTranslationProgress(fileId: string) {
-  const result = await gt.querySourceFile({ fileId });
-  
-  const analysis = {
-    file: {
-      name: result.sourceFile.fileName,
-      format: result.sourceFile.fileFormat,
-      sourceLocale: result.sourceFile.sourceLocale
-    },
-    progress: {
-      totalLocales: result.translations.length,
-      completed: 0,
-      published: 0,
-      inProgress: 0
-    }
-  };
-  
-  // Calculate progress metrics
-  result.translations.forEach(translation => {
-    if (translation.publishedAt) {
-      analysis.progress.published++;
-    } else if (translation.completedAt) {
-      analysis.progress.completed++;
-    } else if (translation.createdAt) {
-      analysis.progress.inProgress++;
-    }
-  });
-  
-  return analysis;
-}
-
-// Usage
-const progressAnalysis = await analyzeTranslationProgress('file-123');
-console.log('Progress Analysis:', progressAnalysis);
-```
-
-### File Lifecycle Tracking
-
-```typescript copy
-async function getFileLifecycle(fileId: string) {
-  const result = await gt.querySourceFile({ fileId });
-  const events = [];
-  
-  // Add source file events
-  events.push({
-    type: 'created',
-    timestamp: result.sourceFile.createdAt
-  });
-  
-  // Add translation events
-  result.translations.forEach(translation => {
-    if (translation.completedAt) {
-      events.push({
-        type: 'completed',
-        locale: translation.locale,
-        timestamp: translation.completedAt
-      });
-    }
-    
-    if (translation.publishedAt) {
-      events.push({
-        type: 'published',
-        locale: translation.locale,
-        timestamp: translation.publishedAt
-      });
-    }
-  });
-  
-  // Sort by timestamp
-  events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  
-  return {
-    fileName: result.sourceFile.fileName,
-    timeline: events
-  };
-}
-
-// Usage
-const lifecycle = await getFileLifecycle('file-123');
-console.log(`File: ${lifecycle.fileName}`);
-console.log('Timeline:', lifecycle.timeline);
-```
-
-### Batch File Queries
-
-```typescript copy
-async function queryMultipleFiles(fileQueries: FileQuery[]) {
-  const results = await Promise.allSettled(
-    fileQueries.map(async query => {
-      try {
-        const result = await gt.querySourceFile(query, { timeout: 10000 });
-        return { query, result, status: 'success' as const };
-      } catch (error) {
-        return { 
-          query, 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          status: 'error' as const
-        };
-      }
-    })
-  );
-  
-  const successful = results
-    .filter((r): r is PromiseFulfilledResult<{ query: FileQuery; result: any; status: 'success' }> => 
-      r.status === 'fulfilled' && r.value.status === 'success')
-    .map(r => r.value);
-  
-  const failed = results
-    .filter((r): r is PromiseFulfilledResult<{ query: FileQuery; error: string; status: 'error' }> => 
-      r.status === 'fulfilled' && r.value.status === 'error')
-    .map(r => r.value);
-  
-  return {
-    successful,
-    failed,
-    summary: {
-      total: fileQueries.length,
-      successful: successful.length,
-      failed: failed.length
-    }
-  };
-}
-
-// Usage
-const fileQueries = [
-  { fileId: 'file-1', versionId: 'version-1' },
-  { fileId: 'file-2', versionId: 'version-2' },
-  { fileId: 'file-3' } // No version specified
-];
-
-const batchResults = await queryMultipleFiles(fileQueries);
-console.log('Batch query results:', batchResults.summary);
-
-batchResults.successful.forEach(({ query, result }) => {
-  console.log(`✅ ${result.sourceFile.fileName}: ${result.translations.length} translations`);
-});
-
-batchResults.failed.forEach(({ query, error }) => {
-  console.log(`❌ ${query.fileId}: ${error}`);
-});
-```
-
-### Translation Status Dashboard
-
-```typescript copy
-async function createTranslationDashboard(fileIds: string[]) {
-  const dashboard = {
-    timestamp: new Date().toISOString(),
-    files: [] as any[],
-    summary: {
-      totalFiles: fileIds.length,
-      totalTranslations: 0,
-      completedTranslations: 0,
-      publishedTranslations: 0,
-      averageCompletionRate: 0
-    }
-  };
-  
-  for (const fileId of fileIds) {
-    try {
-      const result = await gt.querySourceFile({ fileId });
-      
-      const fileStats = {
-        fileId,
-        fileName: result.sourceFile.fileName,
-        format: result.sourceFile.fileFormat,
-        sourceLocale: result.sourceFile.sourceLocale,
-        totalLocales: result.translations.length,
-        completed: result.translations.filter(t => t.completedAt).length,
-        published: result.translations.filter(t => t.publishedAt).length,
-        completionRate: result.translations.length > 0 
-          ? (result.translations.filter(t => t.completedAt).length / result.translations.length) * 100 
-          : 0,
-        lastUpdate: result.sourceFile.updatedAt,
-        translations: result.translations.map(t => ({
-          locale: t.locale,
-          status: getTranslationStatus(t),
-          completedAt: t.completedAt,
-          publishedAt: t.publishedAt
-        }))
-      };
-      
-      dashboard.files.push(fileStats);
-      dashboard.summary.totalTranslations += fileStats.totalLocales;
-      dashboard.summary.completedTranslations += fileStats.completed;
-      dashboard.summary.publishedTranslations += fileStats.published;
-      
-    } catch (error) {
-      console.error(`Failed to query file ${fileId}:`, error);
-      dashboard.files.push({
-        fileId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
-  
-  dashboard.summary.averageCompletionRate = dashboard.files.length > 0
-    ? dashboard.files
-        .filter(f => !f.error)
-        .reduce((sum, f) => sum + f.completionRate, 0) / dashboard.files.filter(f => !f.error).length
-    : 0;
-  
-  return dashboard;
-}
-
-// Usage
-const fileIds = ['file-1', 'file-2', 'file-3', 'file-4'];
-const dashboard = await createTranslationDashboard(fileIds);
-
-console.log('=== Translation Dashboard ===');
-console.log(`Files: ${dashboard.summary.totalFiles}`);
-console.log(`Total Translations: ${dashboard.summary.totalTranslations}`);
-console.log(`Completed: ${dashboard.summary.completedTranslations} (${dashboard.summary.averageCompletionRate.toFixed(1)}% avg)`);
-console.log(`Published: ${dashboard.summary.publishedTranslations}`);
-
-dashboard.files.forEach(file => {
-  if (file.error) {
-    console.log(`❌ ${file.fileId}: ${file.error}`);
-  } else {
-    console.log(`📄 ${file.fileName}: ${file.completed}/${file.totalLocales} completed (${file.completionRate.toFixed(1)}%)`);
-  }
-});
-```
 
 ---
 
 ## Notes
 
-* This method provides comprehensive file information including all translation states
-* The `versionId` parameter is optional - if not provided, the latest version is queried
+* Returns the source file and translation status for all target locales
 * Translation timestamps follow the lifecycle: `createdAt` → `completedAt` → `approvedAt` → `publishedAt`
 * Null timestamps indicate that stage hasn't been reached yet
 * The `locales` array in the source file shows all target locales configured for translation
 * Use this method for detailed reporting, progress tracking, and file management workflows
-* Results include both completed and in-progress translations across all configured locales
 
 ## Next Steps
 
