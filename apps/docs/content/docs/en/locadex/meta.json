@@ -1,6 +1,6 @@
 {
   "title": "Locadex",
-  "description": "AI i18n engineer",
+  "description": "AI i18n agent",
   "icon": "Brain",
   "root": true,
   "pages": ["---Getting Started---", "mintlify", "next", "monorepos"]
