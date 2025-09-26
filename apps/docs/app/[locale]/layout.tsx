@@ -11,6 +11,8 @@ import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import AnalyticsBanner from '@/components/analytics/AnalyticsBanner';
+import SearchDialog from '@/components/SearchDialog';
+import PrefetchSearchIndex from '@/components/PrefetchSearchIndex';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -72,6 +74,10 @@ export default async function Layout({
         <PostHogProvider>
           <GTProvider locale={locale}>
             <RootProvider
+              search={{
+                // Use static client via a custom dialog with lazy tokenizers
+                SearchDialog: SearchDialog,
+              }}
               i18n={{
                 locale: locale,
                 locales: locales,
@@ -91,7 +97,7 @@ export default async function Layout({
                     transform(option, node) {
                       const meta = source.getNodeMeta(node);
                       if (!meta) return option;
-                      const color = `var(--${meta.file.dirname}-color, var(--purple-500, #8b5cf6))`;
+                      const color = `var(--${meta.file.dirname}-color, var(--blue-500, #3b82f6))`;
                       return {
                         ...option,
                         icon: (
@@ -118,7 +124,7 @@ export default async function Layout({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-100/20">
+                        <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-100/20">
                           <h3 className="font-semibold text-sm flex items-center gap-2">
                             <SiGithub />
                             Star on GitHub
@@ -131,6 +137,7 @@ export default async function Layout({
                 tree={source.pageTree[locale]}
                 {...options}
               >
+                <PrefetchSearchIndex />
                 {children}
               </DocsLayout>
               <AnalyticsBanner />
