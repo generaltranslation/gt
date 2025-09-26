@@ -52,21 +52,18 @@ This is the inverse operation of `resolveCanonicalLocale()`.
 const gt = new GT({
   sourceLocale: 'en',
   customMapping: {
-    'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
-    'traditional-chinese': { code: 'zh-TW', name: 'Traditional Chinese' }
+    'cn': { code: 'zh', name: 'Mandarin' },
   }
 });
 
 // Resolve canonical locale back to alias
-const alias = gt.resolveAliasLocale('zh-CN');
-console.log(alias); // "simplified-chinese"
+const alias = gt.resolveAliasLocale('zh');
+console.log(alias); // "cn"
 
 // Non-mapped locale returns the original
-const unchanged = gt.resolveAliasLocale('es-ES');
-console.log(unchanged); // "es-ES"
+const unchanged = gt.resolveAliasLocale('es');
+console.log(unchanged); // "es"
 ```
-
-
 ---
 
 ## Notes
