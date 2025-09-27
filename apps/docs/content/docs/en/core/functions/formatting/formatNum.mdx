@@ -5,7 +5,8 @@ description: Standalone function to format numbers according to locale conventio
 
 ## Overview
 
-The standalone `formatNum()` function formats numbers according to locale-specific conventions without requiring a GT instance. It provides the same functionality as the GT class method but can be used independently.
+The standalone `formatNum()` function formats numbers according to locale-specific conventions without requiring a GT instance.
+It provides the same functionality as the GT class method but can be used independently.
 
 ```typescript
 import { formatNum } from 'generaltranslation';
@@ -17,11 +18,6 @@ const formatted = formatNum(1234.56, {
 });
 // Returns: "1.234,56 €"
 ```
-
-<Callout>
-**Standalone Usage:**
-This function requires explicit locale specification since it doesn't inherit from a GT instance. It's ideal for utility functions, libraries, or when you need formatting without full GT functionality.
-</Callout>
 
 ## Reference
 
@@ -65,10 +61,6 @@ console.log(formatNum(1234.567, { locales: 'en-US' }));
 // German formatting
 console.log(formatNum(1234.567, { locales: 'de-DE' }));
 // Output: "1.234,567"
-
-// Multiple locale fallbacks
-console.log(formatNum(1234.567, { locales: ['fr-CA', 'fr-FR', 'en'] }));
-// Output: Uses French Canadian if supported, otherwise French, otherwise English
 ```
 
 ### Currency Formatting
@@ -98,62 +90,6 @@ console.log(formatNum(1234.56, {
 }));
 // Output: "¥1,235"
 ```
-
-### Utility Functions
-
-```typescript copy
-// Create locale-specific formatters
-function createNumberFormatter(locale: string) {
-  return {
-    decimal: (num: number) => formatNum(num, { locales: locale }),
-    currency: (num: number, currency: string) => formatNum(num, {
-      locales: locale,
-      style: 'currency',
-      currency
-    }),
-    percent: (num: number) => formatNum(num, {
-      locales: locale,
-      style: 'percent'
-    })
-  };
-}
-
-const usFormatter = createNumberFormatter('en-US');
-const deFormatter = createNumberFormatter('de-DE');
-
-console.log(usFormatter.decimal(1234.56)); // "1,234.56"
-console.log(deFormatter.decimal(1234.56)); // "1.234,56"
-
-console.log(usFormatter.currency(1234.56, 'USD')); // "$1,234.56"
-console.log(deFormatter.currency(1234.56, 'EUR')); // "1.234,56 €"
-```
-
-### Cross-Platform Number Formatting
-
-```typescript copy
-// Format numbers for multiple locales simultaneously
-function formatForMultipleLocales(number: number, locales: string[]) {
-  return locales.map(locale => ({
-    locale,
-    formatted: formatNum(number, { locales: locale })
-  }));
-}
-
-const results = formatForMultipleLocales(1234567.89, [
-  'en-US', 'de-DE', 'fr-FR', 'ja-JP', 'ar-SA'
-]);
-
-results.forEach(({ locale, formatted }) => {
-  console.log(`${locale}: ${formatted}`);
-});
-// Output:
-// en-US: 1,234,567.89
-// de-DE: 1.234.567,89
-// fr-FR: 1 234 567,89
-// ja-JP: 1,234,567.89
-// ar-SA: ١٬٢٣٤٬٥٦٧٫٨٩
-```
-
 ---
 
 ## Notes
@@ -164,15 +100,9 @@ results.forEach(({ locale, formatted }) => {
 * Fallback locales are processed in order if the primary locale is not supported
 * All standard `Intl.NumberFormat` options are supported
 
-## Related Functions
+## Next Steps
 
 * See [`formatDateTime()`](/docs/core/functions/formatting/formatDateTime) for standalone date formatting
 * See [`formatMessage()`](/docs/core/functions/formatting/formatMessage) for standalone message formatting
 * See GT class [`formatNum()`](/docs/core/class/methods/formatting/formatNum) for instance-based usage
 * See [`formatCurrency()`](/docs/core/functions/formatting/formatCurrency) for specialized currency formatting
-
-## Next Steps
-
-* See [Standalone Functions Guide](/docs/core/guides/standalone-functions) for using functions without GT instances
-* See [Formatting Guide](/docs/core/guides/formatting) for comprehensive number formatting strategies
-* See [Utility Libraries Guide](/docs/core/guides/utility-libraries) for building formatting utilities

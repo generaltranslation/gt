@@ -5,7 +5,11 @@ description: API Reference for the standalone formatMessage function
 
 ## Overview
 
-The standalone `formatMessage()` function formats messages with variable substitution and locale-aware formatting without requiring a GT class instance. It's a lightweight utility for basic message formatting needs.
+The `formatMessage()` method formats messages with variable substitution and locale-aware formatting.
+Built on top of Format.JS's [`intl-messageformat`](https://formatjs.github.io/docs/intl-messageformat/) library, it supports ICU message format patterns.
+
+This method is essential for variable interpolation and pluralization.
+It also supports number formatting and date formatting among other features.
 
 ```typescript
 import { formatMessage } from 'generaltranslation';
@@ -17,12 +21,6 @@ const formatted = formatMessage('Hello {name}, you have {count} messages', {
 // Returns: "Hello Alice, you have 5 messages"
 ```
 
-This function is ideal when you need message formatting capabilities without the full GT class overhead, such as in utility libraries or lightweight components.
-
-<Callout>
-**Lightweight Alternative:**
-Unlike the GT class method, this standalone function requires explicit locale configuration and doesn't maintain any state, making it perfect for stateless formatting operations.
-</Callout>
 
 ---
 
@@ -168,18 +166,8 @@ console.log(templates.itemCount(5)); // "5 éléments"
 
 ---
 
-## Performance Considerations
-
-- **No State**: Function creates no persistent state, making it memory-efficient
-- **ICU Parsing**: Message parsing happens on each call; cache results for repeated use
-- **Locale Loading**: First use of a locale may be slower due to Intl API initialization
-- **Variable Objects**: Reuse variable objects when possible
-
----
-
 ## Notes
 
-- This is a stateless function - no configuration is retained between calls
 - Requires explicit locale specification in options
 - Supports same ICU message format features as GT class method
 - Returns empty string for empty input templates
@@ -187,7 +175,7 @@ console.log(templates.itemCount(5)); // "5 éléments"
 
 ## Next Steps
 
-- **[Use GT class formatMessage() for stateful formatting](/docs/core/class/methods/formatting/formatMessage)**
-- **[Format numbers with standalone formatNum()](/docs/core/functions/formatting/formatNum)**
-- **[Learn about FormatVariables type](/docs/core/types/FormatVariables)**
-- **[Explore other standalone functions](/docs/core/functions/locales/getLocaleName)**
+- Use GT class [`formatMessage()`](/docs/core/class/methods/formatting/formatMessage) for stateful formatting
+- Format numbers with standalone [`formatNum()`](/docs/core/functions/formatting/formatNum)
+- Learn about [`FormatVariables` type](/docs/core/types/FormatVariables)
+- Explore other standalone functions [`getLocaleName()`](/docs/core/functions/locales/getLocaleName)
