@@ -7,15 +7,6 @@ description: API Reference for the isSameDialect function
 
 The `isSameDialect()` function checks if multiple BCP-47 locale codes represent the same dialect without requiring a GT class instance.
 
-```typescript
-import { isSameDialect } from 'generaltranslation';
-
-// Same dialect checks
-console.log(isSameDialect('en-US', 'en-US')); // true
-console.log(isSameDialect('en', 'en-US')); // true (base language matches regional)
-console.log(isSameDialect('en-US', 'en-GB')); // false (different regions)
-console.log(isSameDialect('en-US', 'es-ES')); // false (different languages)
-```
 
 ---
 
@@ -40,20 +31,16 @@ console.log(isSameDialect('en-US', 'es-ES')); // false (different languages)
 
 ## Examples
 
-### Content Compatibility Check
-
 ```typescript
 import { isSameDialect } from 'generaltranslation';
 
-function canShareContent(sourceLocale: string, targetLocales: string[]) {
-  return targetLocales.filter(target => 
-    isSameDialect(sourceLocale, target)
-  );
-}
-
-const compatible = canShareContent('en-US', ['en-US', 'en-GB', 'en-CA']);
-console.log(compatible); // ['en-US'] - only exact match for different dialects
+// Same dialect checks
+console.log(isSameDialect('en-US', 'en-US')); // true
+console.log(isSameDialect('en', 'en-US')); // true (base language matches regional)
+console.log(isSameDialect('en-US', 'en-GB')); // false (different regions)
+console.log(isSameDialect('en-US', 'es-ES')); // false (different languages)
 ```
+
 
 ---
 

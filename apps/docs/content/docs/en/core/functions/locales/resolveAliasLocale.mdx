@@ -7,21 +7,6 @@ description: API Reference for the resolveAliasLocale function
 
 The `resolveAliasLocale()` function converts canonical locale codes back to their alias locale codes when custom mapping is configured. This standalone function provides the same functionality as the GT class method without requiring an instance.
 
-```typescript
-import { resolveAliasLocale } from 'generaltranslation';
-
-const customMapping = {
-  'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
-  'traditional-chinese': { code: 'zh-TW', name: 'Traditional Chinese' }
-};
-
-// Resolve canonical to alias
-console.log(resolveAliasLocale('zh-CN', customMapping)); // 'simplified-chinese'
-console.log(resolveAliasLocale('zh-TW', customMapping)); // 'traditional-chinese'
-
-// Non-mapped locale returns original
-console.log(resolveAliasLocale('es-ES', customMapping)); // 'es-ES'
-```
 
 ---
 
@@ -50,29 +35,21 @@ console.log(resolveAliasLocale('es-ES', customMapping)); // 'es-ES'
 
 ## Examples
 
-### API Response Processing
-
 ```typescript
 import { resolveAliasLocale } from 'generaltranslation';
 
-const mapping = {
-  'chinese': { code: 'zh-CN', name: 'Chinese' },
-  'spanish': { code: 'es-ES', name: 'Spanish' }
+const customMapping = {
+  'simplified-chinese': { code: 'zh-CN', name: 'Simplified Chinese' },
+  'traditional-chinese': { code: 'zh-TW', name: 'Traditional Chinese' }
 };
 
-// Process API response with canonical locales
-function processApiResponse(response: { locale: string; content: string }) {
-  return {
-    ...response,
-    displayLocale: resolveAliasLocale(response.locale, mapping)
-  };
-}
+// Resolve canonical to alias
+console.log(resolveAliasLocale('zh-CN', customMapping)); // 'simplified-chinese'
+console.log(resolveAliasLocale('zh-TW', customMapping)); // 'traditional-chinese'
 
-const response = { locale: 'zh-CN', content: 'Hello' };
-console.log(processApiResponse(response));
-// { locale: 'zh-CN', content: 'Hello', displayLocale: 'chinese' }
+// Non-mapped locale returns original
+console.log(resolveAliasLocale('es-ES', customMapping)); // 'es-ES'
 ```
-
 ---
 
 ## Notes

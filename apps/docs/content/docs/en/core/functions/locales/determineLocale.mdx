@@ -7,24 +7,6 @@ description: API Reference for the determineLocale function
 
 The `determineLocale()` function determines the best matching locale from approved locales based on user preferences without requiring a GT class instance.
 
-```typescript
-import { determineLocale } from 'generaltranslation';
-
-const approvedLocales = ['en-US', 'es-ES', 'fr-FR', 'de-DE'];
-
-// Exact match
-console.log(determineLocale('en-US', approvedLocales)); // 'en-US'
-
-// Language fallback
-console.log(determineLocale('en-GB', approvedLocales)); // 'en-US'
-
-// Multiple preferences
-console.log(determineLocale(['fr-CA', 'es-MX'], approvedLocales)); // 'es-ES'
-
-// No match
-console.log(determineLocale('it-IT', approvedLocales)); // undefined
-```
-
 ---
 
 ## Reference
@@ -62,18 +44,19 @@ console.log(determineLocale('it-IT', approvedLocales)); // undefined
 ```typescript
 import { determineLocale } from 'generaltranslation';
 
-function negotiateContentLocale(acceptLanguage: string, supportedLocales: string[]) {
-  // Parse Accept-Language header (simplified)
-  const preferences = acceptLanguage.split(',').map(lang => lang.trim().split(';')[0]);
-  
-  const bestMatch = determineLocale(preferences, supportedLocales);
-  return bestMatch || supportedLocales[0]; // Fallback to first supported
-}
+const approvedLocales = ['en-US', 'es-ES', 'fr-FR', 'de-DE'];
 
-const supported = ['en-US', 'es-ES', 'fr-FR'];
-const userLang = 'fr-CA,en-GB,en';
-const chosen = negotiateContentLocale(userLang, supported);
-console.log(chosen); // 'fr-FR' or 'en-US' based on preference matching
+// Exact match
+console.log(determineLocale('en-US', approvedLocales)); // 'en-US'
+
+// Language fallback
+console.log(determineLocale('en-GB', approvedLocales)); // 'en-US'
+
+// Multiple preferences
+console.log(determineLocale(['fr-CA', 'es-MX'], approvedLocales)); // 'es-ES'
+
+// No match
+console.log(determineLocale('it-IT', approvedLocales)); // undefined
 ```
 
 ---

@@ -147,13 +147,10 @@ console.log(gt.formatDateTime(date, {
 * Date formatting follows locale-specific conventions automatically
 * The method uses browser-native `Intl.DateTimeFormat` for optimal performance and accuracy
 * Time zones are handled correctly when specified
-* Different locales have different default 12-hour vs 24-hour preferences
-* Calendar systems other than Gregorian are supported for appropriate locales
-* The method is cached internally for performance with repeated use of the same locale/options combination
-* Date objects are treated as immutable - no modifications are made to the input date
 
 ## Related Methods
 
+* Check out [`Intl.DateTimeFormat` documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more options
 * See [`formatRelativeTime()`](/docs/core/class/methods/formatting/formatRelativeTime) for relative date formatting ("2 days ago")
 * See [`formatMessage()`](/docs/core/class/methods/formatting/formatMessage) for message formatting with date interpolation
 * See standalone [`formatDateTime()`](/docs/core/functions/formatting/formatDateTime) for use without GT instance

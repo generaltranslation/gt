@@ -7,21 +7,6 @@ description: API Reference for the getRegionProperties function
 
 The `getRegionProperties()` function retrieves detailed information about a region code without requiring a GT class instance.
 
-```typescript
-import { getRegionProperties } from 'generaltranslation';
-
-// Get region properties with English names
-console.log(getRegionProperties('US', 'en-US'));
-// { code: 'US', name: 'United States', emoji: '🇺🇸' }
-
-console.log(getRegionProperties('JP', 'en-US'));
-// { code: 'JP', name: 'Japan', emoji: '🇯🇵' }
-
-// Get region properties with localized names
-console.log(getRegionProperties('US', 'de-DE'));
-// { code: 'US', name: 'Vereinigte Staaten', emoji: '🇺🇸' }
-```
-
 ---
 
 ## Reference
@@ -53,26 +38,22 @@ console.log(getRegionProperties('US', 'de-DE'));
 
 ## Examples
 
-### Multi-language Region Display
 
 ```typescript
 import { getRegionProperties } from 'generaltranslation';
 
-function getRegionInLanguages(regionCode: string, languages: string[]) {
-  return languages.map(lang => ({
-    language: lang,
-    region: getRegionProperties(regionCode, lang)
-  }));
-}
+// Get region properties with English names
+console.log(getRegionProperties('US', 'en-US'));
+// { code: 'US', name: 'United States', emoji: '🇺🇸' }
 
-const regions = getRegionInLanguages('FR', ['en-US', 'de-DE', 'es-ES']);
-console.log(regions);
-// [
-//   { language: 'en-US', region: { code: 'FR', name: 'France', emoji: '🇫🇷' }},
-//   { language: 'de-DE', region: { code: 'FR', name: 'Frankreich', emoji: '🇫🇷' }},
-//   { language: 'es-ES', region: { code: 'FR', name: 'Francia', emoji: '🇫🇷' }}
-// ]
+console.log(getRegionProperties('JP', 'en-US'));
+// { code: 'JP', name: 'Japan', emoji: '🇯🇵' }
+
+// Get region properties with localized names
+console.log(getRegionProperties('US', 'de-DE'));
+// { code: 'US', name: 'Vereinigte Staaten', emoji: '🇺🇸' }
 ```
+
 
 ---
 

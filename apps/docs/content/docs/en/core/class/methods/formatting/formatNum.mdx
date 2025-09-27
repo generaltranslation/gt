@@ -149,12 +149,10 @@ console.log(gt.formatNum(1234567, { notation: 'scientific' }));
 * The method uses browser-native `Intl.NumberFormat` for optimal performance and accuracy
 * Currency formatting requires both `style: 'currency'` and a valid `currency` code
 * Unit formatting requires both `style: 'unit'` and a valid `unit` identifier
-* Some locales use different numbering systems (e.g., Arabic numerals vs. Arabic-Indic numerals)
-* Grouping separators vary by locale (comma, period, space, or none)
-* The method is cached internally for performance with repeated use of the same locale/options combination
 
 ## Next Steps
 
+* Check out [`Intl.NumberFormat` documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) for more options
 * See [`formatCurrency()`](/docs/core/class/methods/formatting/formatCurrency) for specialized currency formatting
 * See [`formatMessage()`](/docs/core/class/methods/formatting/formatMessage) for message formatting with number interpolation
 * See standalone [`formatNum()`](/docs/core/functions/formatting/formatNum) for use without GT instance

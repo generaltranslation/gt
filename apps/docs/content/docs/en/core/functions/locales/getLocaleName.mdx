@@ -5,7 +5,8 @@ description: API Reference for the standalone getLocaleName function
 
 ## Overview
 
-The standalone `getLocaleName()` function retrieves the display name of a locale code without requiring a GT class instance. It uses the `Intl.DisplayNames` API to provide localized locale names for any valid BCP-47 locale code.
+The standalone `getLocaleName()` function retrieves the display name of a locale code without requiring a GT class instance.
+It uses the `Intl.DisplayNames` API to provide localized locale names for any valid BCP-47 locale code.
 
 ```typescript
 import { getLocaleName } from 'generaltranslation';
@@ -13,13 +14,6 @@ import { getLocaleName } from 'generaltranslation';
 const name = getLocaleName('fr-CA', 'en');
 console.log(name); // "French (Canada)"
 ```
-
-This function is perfect for building locale selectors, internationalized UIs, or any situation where you need human-readable locale names without the full GT class overhead.
-
-<Callout>
-**Lightweight Utility:**
-This standalone function provides locale name resolution without maintaining state, making it ideal for utility libraries, components, and situations where you only need name resolution.
-</Callout>
 
 ---
 
@@ -83,8 +77,6 @@ The function localizes names using this priority:
 
 ## Examples
 
-### Basic Usage
-
 ```typescript
 import { getLocaleName } from 'generaltranslation';
 
@@ -126,98 +118,17 @@ console.log(options);
 // ]
 ```
 
-### Internationalized Locale Selector
-
-```typescript
-import { getLocaleName } from 'generaltranslation';
-
-interface LocaleOption {
-  code: string;
-  displayName: string;
-  nativeName: string;
-}
-
-function createInternationalizedSelector(
-  locales: string[],
-  userLocale: string = 'en'
-): LocaleOption[] {
-  return locales.map(locale => ({
-    code: locale,
-    displayName: getLocaleName(locale, userLocale),
-    nativeName: getLocaleName(locale, locale) // Native name
-  }));
-}
-
-const selector = createInternationalizedSelector([
-  'en',
-  'fr', 
-  'es',
-  'de'
-], 'fr'); // French user
-
-console.log(selector);
-// [
-//   { code: 'en', displayName: 'anglais (États-Unis)', nativeName: 'English (United States)' },
-//   { code: 'fr', displayName: 'français (France)', nativeName: 'français (France)' },
-//   ...
-// ]
-```
-
-### React Integration
-
-```typescript
-import { getLocaleName } from 'generaltranslation';
-import React, { useMemo } from 'react';
-
-interface LocaleSelectorProps {
-  locales: string[];
-  currentLocale: string;
-  userLocale?: string;
-  onLocaleChange: (locale: string) => void;
-}
-
-export function LocaleSelector({ 
-  locales, 
-  currentLocale, 
-  userLocale = 'en',
-  onLocaleChange 
-}: LocaleSelectorProps) {
-  const options = useMemo(
-    () => locales.map(locale => ({
-      value: locale,
-      label: getLocaleName(locale, userLocale)
-    })),
-    [locales, userLocale]
-  );
-  
-  return (
-    <select 
-      value={currentLocale} 
-      onChange={(e) => onLocaleChange(e.target.value)}
-    >
-      {options.map(({ value, label }) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      ))}
-    </select>
-  );
-}
-```
-
 ---
 
 ## Notes
 
-- Function is stateless and requires no initialization
 - Custom mappings take precedence over standard Intl.DisplayNames
 - Returns the locale code itself if no display name can be determined
-- The function handles both language-only and language-region locale codes
 - Display locale parameter determines the language of the returned name
 
 ## Next Steps
 
-- **[Get locale emoji with standalone getLocaleEmoji()](/docs/core/functions/locales/getLocaleEmoji)**
-- **[Use GT class method for stateful operations](/docs/core/class/methods/locales/getLocaleName)**
-- **[Learn about CustomMapping type](/docs/core/types/CustomMapping)**
-- **[Validate locales with isValidLocale()](/docs/core/functions/locales/isValidLocale)**
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
+- Use GT class method for stateful operations [`getLocaleName()`](/docs/core/class/methods/locales/getLocaleName)
+- Learn about [`CustomMapping` type](/docs/core/types/CustomMapping)
+- Validate locales with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)

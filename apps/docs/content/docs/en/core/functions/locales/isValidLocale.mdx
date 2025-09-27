@@ -7,20 +7,6 @@ description: API Reference for the isValidLocale function
 
 The `isValidLocale()` function validates whether a given string represents a valid BCP-47 locale code. It performs comprehensive format validation without requiring a GT class instance.
 
-```typescript
-import { isValidLocale } from 'generaltranslation';
-
-// Valid locale codes
-console.log(isValidLocale('en-US')); // true
-console.log(isValidLocale('zh-CN')); // true
-console.log(isValidLocale('es')); // true
-
-// Invalid locale codes
-console.log(isValidLocale('invalid')); // false
-console.log(isValidLocale('en_US')); // false (underscore instead of hyphen)
-console.log(isValidLocale('')); // false
-```
-
 ---
 
 ## Reference
@@ -48,43 +34,18 @@ console.log(isValidLocale('')); // false
 
 ## Examples
 
-### Basic Validation
-
 ```typescript
 import { isValidLocale } from 'generaltranslation';
 
-// Test various locale formats
-const testLocales = ['en-US', 'fr-FR', 'invalid', 'zh-CN', 'es'];
+// Valid locale codes
+console.log(isValidLocale('en-US')); // true
+console.log(isValidLocale('zh-CN')); // true
+console.log(isValidLocale('es')); // true
 
-testLocales.forEach(locale => {
-  console.log(`${locale}: ${isValidLocale(locale)}`);
-});
-
-// Output:
-// en-US: true
-// fr-FR: true
-// invalid: false
-// zh-CN: true
-// es: true
-```
-
-### Input Validation
-
-```typescript
-function validateUserLocale(input: string): { valid: boolean; standardized?: string } {
-  if (!input || typeof input !== 'string') {
-    return { valid: false };
-  }
-  
-  // Try standardizing first
-  const standardized = standardizeLocale(input);
-  const valid = isValidLocale(standardized);
-  
-  return {
-    valid,
-    standardized: valid ? standardized : undefined
-  };
-}
+// Invalid locale codes
+console.log(isValidLocale('invalid')); // false
+console.log(isValidLocale('en_US')); // false (underscore instead of hyphen)
+console.log(isValidLocale('')); // false
 ```
 
 ---

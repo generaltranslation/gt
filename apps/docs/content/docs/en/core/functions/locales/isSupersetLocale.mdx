@@ -7,20 +7,6 @@ description: API Reference for the isSupersetLocale function
 
 The `isSupersetLocale()` function checks if one locale is a superset of another in the BCP-47 hierarchy without requiring a GT class instance.
 
-```typescript
-import { isSupersetLocale } from 'generaltranslation';
-
-// Base language is superset of regional variant
-console.log(isSupersetLocale('en', 'en-US')); // true
-console.log(isSupersetLocale('es', 'es-ES')); // true
-
-// Regional variant is NOT superset of base language
-console.log(isSupersetLocale('en-US', 'en')); // false
-
-// Same locales are supersets of themselves
-console.log(isSupersetLocale('en-US', 'en-US')); // true
-```
-
 ---
 
 ## Reference
@@ -48,20 +34,19 @@ console.log(isSupersetLocale('en-US', 'en-US')); // true
 
 ## Examples
 
-### Fallback Chain
 
 ```typescript
 import { isSupersetLocale } from 'generaltranslation';
 
-function findFallbacks(targetLocale: string, availableLocales: string[]) {
-  return availableLocales.filter(locale => 
-    isSupersetLocale(locale, targetLocale)
-  );
-}
+// Base language is superset of regional variant
+console.log(isSupersetLocale('en', 'en-US')); // true
+console.log(isSupersetLocale('es', 'es-ES')); // true
 
-const available = ['en', 'en-US', 'es', 'fr'];
-const fallbacks = findFallbacks('en-GB', available);
-console.log(fallbacks); // ['en'] - base language can serve as fallback
+// Regional variant is NOT superset of base language
+console.log(isSupersetLocale('en-US', 'en')); // false
+
+// Same locales are supersets of themselves
+console.log(isSupersetLocale('en-US', 'en-US')); // true
 ```
 
 ---
