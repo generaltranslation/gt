@@ -9,8 +9,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "composite": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "**/__tests__/**/*", "**/__mocks__/**/*"]
+  "exclude": ["node_modules", "dist", "**/__tests__/**/*", "**/__mocks__/**/*"],
+  "references": [
+    {
+      "path": "../core"
+    }
+  ]
 }
