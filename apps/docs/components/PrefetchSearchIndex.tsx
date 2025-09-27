@@ -20,7 +20,8 @@ export default function PrefetchSearchIndex() {
       try {
         // Ask the browser to download the search data for this language.
         // The result is stored in the HTTP cache automatically.
-        await fetch(`/api/search/${locale}`);
+        const apiUrl = process.env.NEXT_PUBLIC_DOCS_API_URL || '';
+        await fetch(`${apiUrl}/api/search/${locale}`);
       } catch {
         // If it fails (offline, etc.), just ignore it.
       }
