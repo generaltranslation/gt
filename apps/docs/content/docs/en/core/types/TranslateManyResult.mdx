@@ -5,215 +5,53 @@ description: Type definition for results returned by batch translation operation
 
 ## Overview
 
-`TranslateManyResult` represents the result of a batch translation operation performed by the [`translateMany()`](/docs/core/class/methods/translation/translateMany) method. It's an array of individual [`TranslationResult`](/docs/core/types/TranslationResult) objects, one for each entry in the batch request.
+`TranslateManyResult` represents the result of batch translation operations with [`translateMany()`](/docs/core/class/methods/translation/translateMany).
 
 ```typescript
 type TranslateManyResult = Array<TranslationResult>;
 ```
 
-This type enables processing of multiple translation requests in a single operation while maintaining individual result tracking for success and error handling.
+## Structure
 
-## Type Definition
-
-### Structure
-
-`TranslateManyResult` is an array where each element corresponds to the translation result of an [`Entry`](/docs/core/types/Entry) from the input batch:
+Array of [`TranslationResult`](/docs/core/types/TranslationResult) objects, maintaining the same order as input entries.
 
 ```typescript
-// Each array element is a TranslationResult
 type TranslationResult = RequestSuccess | TranslationError;
-
-type RequestSuccess = TypedResult & {
-  locale: string;
-  reference: TranslationResultReference;
-};
-
-type TranslationError = {
-  error: string;
-  code: number;
-  reference?: TranslationResultReference;
-};
 ```
-
-### Array Ordering
-
-The results maintain the same order as the input entries:
-- `result[0]` corresponds to `entries[0]`
-- `result[1]` corresponds to `entries[1]`
-- And so on...
-
----
 
 ## Examples
 
-### Basic Batch Processing
+### Basic Usage
 
 ```typescript copy
-import { GT, Entry, TranslateManyResult } from 'generaltranslation';
+import { GT, TranslateManyResult } from 'generaltranslation';
 
 const gt = new GT({
   apiKey: 'your-api-key',
-  sourceLocale: 'en',
-  targetLocale: 'es'
+  sourceLocale: 'en'
 });
 
-async function processBatchTranslation() {
-  const entries: Entry[] = [
-    { source: 'Hello world' },
-    { source: 'Welcome to our app' },
-    { source: 'Click here to continue' }
-  ];
-  
-  const results: TranslateManyResult = await gt.translateMany(entries);
-  
-  results.forEach((result, index) => {
-    if ('error' in result) {
-      console.error(`Entry ${index} failed: ${result.error}`);
-    } else {
-      console.log(`Entry ${index}: ${result.translation}`);
-    }
-  });
-}
+const entries = [
+  { source: 'Hello', targetLocale: 'es' },
+  { source: 'Goodbye', targetLocale: 'es' }
+];
+
+const results: TranslateManyResult = await gt.translateMany(entries);
 ```
 
-### Error Handling and Success Filtering
+### Error Handling
 
 ```typescript copy
-function separateResults(results: TranslateManyResult) {
-  const successes: RequestSuccess[] = [];
-  const errors: TranslationError[] = [];
-  
-  results.forEach((result, index) => {
-    if ('error' in result) {
-      errors.push(result);
-    } else {
-      successes.push(result);
-    }
-  });
-  
-  return { successes, errors };
-}
-
-async function robustBatchTranslation(entries: Entry[]) {
-  const results = await gt.translateMany(entries);
-  const { successes, errors } = separateResults(results);
-  
-  console.log(`${successes.length} succeeded, ${errors.length} failed`);
-  
-  return successes.map(result => ({
-    content: result.translation,
-    locale: result.locale,
-    format: result.dataFormat
-  }));
-}
+results.forEach((result, index) => {
+  if ('error' in result) {
+    console.error(`Entry ${index} failed: ${result.error}`);
+  } else {
+    console.log(`Entry ${index}: ${result.translation}`);
+  }
+});
 ```
-
-### Product Catalog Translation
-
-```typescript copy
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-}
-
-async function translateProductCatalog(
-  products: Product[], 
-  targetLocale: string
-): Promise<Product[]> {
-  // Create entries for each product field
-  const entries: Entry[] = [];
-  const productMap: Array<{ productId: string; field: keyof Product }> = [];
-  
-  products.forEach(product => {
-    ['name', 'description', 'category'].forEach(field => {
-      entries.push({
-        source: product[field as keyof Product],
-        targetLocale,
-        metadata: { context: `Product ${field}` }
-      });
-      productMap.push({ productId: product.id, field: field as keyof Product });
-    });
-  });
-  
-  const results: TranslateManyResult = await gt.translateMany(entries);
-  
-  // Map results back to products
-  const translatedProducts = [...products];
-  results.forEach((result, index) => {
-    const { productId, field } = productMap[index];
-    const product = translatedProducts.find(p => p.id === productId);
-    
-    if (product && 'translation' in result) {
-      product[field] = result.translation as string;
-    }
-  });
-  
-  return translatedProducts;
-}
-```
-
-### Performance Monitoring
-
-```typescript copy
-interface BatchMetrics {
-  total: number;
-  success: number;
-  errors: number;
-  executionTime: number;
-}
-
-function analyzeResults(
-  results: TranslateManyResult,
-  executionTime: number
-): BatchMetrics {
-  const successCount = results.filter(r => 'translation' in r).length;
-  
-  return {
-    total: results.length,
-    success: successCount,
-    errors: results.length - successCount,
-    executionTime
-  };
-}
-
-async function monitoredBatchTranslation(entries: Entry[]) {
-  const startTime = performance.now();
-  const results = await gt.translateMany(entries);
-  const endTime = performance.now();
-  
-  const metrics = analyzeResults(results, endTime - startTime);
-  
-  console.log('Metrics:', {
-    'Success Rate': `${(metrics.success / metrics.total * 100).toFixed(2)}%`,
-    'Execution Time': `${metrics.executionTime.toFixed(2)}ms`
-  });
-  
-  return results;
-}
-```
-
----
-
-## Notes
-
-* Results maintain the same order as input entries for predictable mapping
-* Each result can be either a success or error independently
-* Batch operations are more efficient than individual translation calls
-* Error handling should account for partial batch failures
-* The array length always equals the number of input entries
-* Results can be processed individually or filtered by success/error status
 
 ## Related Types
 
-* See [`TranslationResult`](/docs/core/types/TranslationResult) for individual result structure  
-* See [`Entry`](/docs/core/types/Entry) for input entry format
-* See [`RequestSuccess`](/docs/core/types/RequestSuccess) for successful translation data
-* See [`TranslationError`](/docs/core/types/TranslationError) for error result data
-
-## Next Steps
-
-* See [`translateMany()`](/docs/core/class/methods/translation/translateMany) method documentation
-* See [Batch Translation Guide](/docs/core/guides/batch-translation) for optimization strategies
-* See [Error Handling Guide](/docs/core/guides/error-handling) for robust error processing
+* [`TranslationResult`](/docs/core/types/TranslationResult) - Individual result structure
+* [`Entry`](/docs/core/types/Entry) - Input entry format

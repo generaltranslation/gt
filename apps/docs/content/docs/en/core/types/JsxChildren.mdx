@@ -5,497 +5,72 @@ description: Type definition for JSX content that can be translated and rendered
 
 ## Overview
 
-`JsxChildren` represents JSX content that can contain text, elements, and variables for dynamic translation. It's the primary type for structured content that needs to maintain formatting and interactivity across different languages.
+`JsxChildren` represents JSX content containing text, elements, and variables for translation.
 
 ```typescript
 type JsxChildren = JsxChild | JsxChild[];
 ```
 
-This type enables rich, translatable content with embedded components, styling, links, and dynamic variables while preserving the structure during translation.
-
-## Type Definition
-
-### JsxChildren Structure
-
-`JsxChildren` can be either a single `JsxChild` or an array of `JsxChild` elements:
+## Structure
 
 ```typescript
 type JsxChild = string | JsxElement | Variable;
 ```
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `string` | Plain text content | `"Hello world"` |
-| `JsxElement` | Structured element with tag, props, and children | `{ t: 'div', c: ['content'] }` |
-| `Variable` | Dynamic placeholder for runtime values | `{ k: 'userName' }` |
+| Type | Description |
+|------|-------------|
+| `string` | Plain text content |
+| `JsxElement` | Structured element |
+| `Variable` | Dynamic placeholder |
 
-### JsxElement Structure
+### JsxElement
 
 ```typescript
 type JsxElement = {
-  t?: string;     // tag name
-  i?: number;     // id  
-  d?: GTProp;     // GT data/properties
+  t?: string;      // tag name
+  i?: number;      // id  
+  d?: GTProp;      // GT properties
   c?: JsxChildren; // children
 };
 ```
 
-### GTProp (GT Properties)
+## Examples
 
-```typescript
-type GTProp = {
-  b?: Record<string, JsxChildren>; // Branches for conditional content
-  t?: 'p' | 'b';                   // Branch transformation type
-} & HtmlContentPropKeysRecord;     // HTML attributes (placeholder, title, etc.)
-```
-
----
-
-## Example
-
-### Basic JSX Content
+### Basic Usage
 
 ```typescript copy
 import { JsxChildren, Variable } from 'generaltranslation';
 
 // Simple text
-const simpleText: JsxChildren = "Welcome to our application!";
+const text: JsxChildren = "Welcome!";
 
 // Text with variables
 const greeting: JsxChildren = [
   "Hello, ",
   { k: 'userName' } as Variable,
-  "! Welcome back."
-];
-
-// Mixed content array
-const mixedContent: JsxChildren = [
-  "You have ",
-  { k: 'messageCount', v: 'n' } as Variable,
-  " new messages."
+  "!"
 ];
 ```
 
-### Structured JSX Elements
+### Structured Elements
 
 ```typescript copy
-// Simple div element
+// Div element
 const divElement: JsxChildren = {
   t: 'div',
-  c: ['This is a div with text content']
+  c: ['Content here']
 };
 
-// Element with attributes
+// Link with title
 const linkElement: JsxChildren = {
   t: 'a',
-  d: {
-    ti: 'Visit our homepage'  // title attribute
-  },
-  c: ['Click here to continue']
-};
-
-// Nested elements
-const nestedContent: JsxChildren = {
-  t: 'article',
-  c: [
-    {
-      t: 'h2', 
-      c: ['Article Title']
-    },
-    {
-      t: 'p',
-      c: [
-        'This article was written by ',
-        {
-          t: 'strong',
-          c: [{ k: 'authorName' } as Variable]
-        },
-        ' on ',
-        { k: 'publishDate', v: 'd' } as Variable
-      ]
-    }
-  ]
+  d: { ti: 'Visit homepage' },
+  c: ['Click here']
 };
 ```
-
-### Rich E-commerce Content
-
-```typescript copy
-const productCard: JsxChildren = {
-  t: 'div',
-  d: {
-    ti: 'Product information card'
-  },
-  c: [
-    // Product name as heading
-    {
-      t: 'h3',
-      c: [{ k: 'productName' } as Variable]
-    },
-    
-    // Product image
-    {
-      t: 'img',
-      d: {
-        alt: { k: 'productName' } as Variable,
-        ti: 'Product image'
-      }
-    },
-    
-    // Price section
-    {
-      t: 'div',
-      c: [
-        {
-          t: 'span',
-          d: { ti: 'Current price' },
-          c: [{ k: 'currentPrice', v: 'c' } as Variable]
-        },
-        ' ',
-        {
-          t: 'del',
-          d: { ti: 'Original price' },
-          c: [{ k: 'originalPrice', v: 'c' } as Variable]
-        }
-      ]
-    },
-    
-    // Stock status
-    {
-      t: 'p',
-      c: [
-        'Only ',
-        { k: 'stockCount', v: 'n' } as Variable,
-        ' left in stock!'
-      ]
-    },
-    
-    // Action button
-    {
-      t: 'button',
-      d: {
-        ti: 'Add this item to your cart'
-      },
-      c: ['Add to Cart']
-    }
-  ]
-};
-```
-
-### Form Content with Variables
-
-```typescript copy
-const contactForm: JsxChildren = {
-  t: 'form',
-  c: [
-    {
-      t: 'h2',
-      c: ['Contact Us']
-    },
-    
-    // Name field
-    {
-      t: 'div',
-      c: [
-        {
-          t: 'label',
-          c: ['Your Name']
-        },
-        {
-          t: 'input',
-          d: {
-            pl: 'Enter your full name'  // placeholder
-          }
-        }
-      ]
-    },
-    
-    // Email field
-    {
-      t: 'div', 
-      c: [
-        {
-          t: 'label',
-          c: ['Email Address']
-        },
-        {
-          t: 'input',
-          d: {
-            pl: 'your.email@example.com'
-          }
-        }
-      ]
-    },
-    
-    // Dynamic greeting
-    {
-      t: 'p',
-      c: [
-        'Hello ',
-        { k: 'visitorName' } as Variable,
-        ', we\'d love to hear from you!'
-      ]
-    },
-    
-    // Submit button
-    {
-      t: 'button',
-      d: {
-        ti: 'Submit your message'
-      },
-      c: ['Send Message']
-    }
-  ]
-};
-```
-
-### Blog Post Content
-
-```typescript copy
-const blogPost: JsxChildren = [
-  // Article header
-  {
-    t: 'header',
-    c: [
-      {
-        t: 'h1',
-        c: [{ k: 'postTitle' } as Variable]
-      },
-      {
-        t: 'div',
-        c: [
-          'By ',
-          {
-            t: 'a',
-            d: { ti: 'View author profile' },
-            c: [{ k: 'authorName' } as Variable]
-          },
-          ' on ',
-          { k: 'publishDate', v: 'd' } as Variable
-        ]
-      }
-    ]
-  },
-  
-  // Article content
-  {
-    t: 'article',
-    c: [
-      {
-        t: 'p',
-        c: [{ k: 'introduction' } as Variable]
-      },
-      
-      {
-        t: 'blockquote',
-        c: [
-          { k: 'quote' } as Variable,
-          {
-            t: 'cite',
-            c: [' - ', { k: 'quoteAuthor' } as Variable]
-          }
-        ]
-      },
-      
-      {
-        t: 'p',
-        c: [
-          'This post has been viewed ',
-          { k: 'viewCount', v: 'n' } as Variable,
-          ' times and has ',
-          { k: 'commentCount', v: 'n' } as Variable,
-          ' comments.'
-        ]
-      }
-    ]
-  }
-];
-```
-
-### Notification Templates
-
-```typescript copy
-interface NotificationTemplates {
-  success: JsxChildren;
-  warning: JsxChildren;
-  error: JsxChildren;
-  info: JsxChildren;
-}
-
-const notifications: NotificationTemplates = {
-  success: {
-    t: 'div',
-    c: [
-      {
-        t: 'strong',
-        c: ['Success!']
-      },
-      ' Your changes have been saved.'
-    ]
-  },
-  
-  warning: {
-    t: 'div', 
-    c: [
-      {
-        t: 'strong',
-        c: ['Warning:']
-      },
-      ' You have ',
-      { k: 'warningCount', v: 'n' } as Variable,
-      ' unsaved changes.'
-    ]
-  },
-  
-  error: {
-    t: 'div',
-    c: [
-      {
-        t: 'strong', 
-        c: ['Error:']
-      },
-      ' ',
-      { k: 'errorMessage' } as Variable
-    ]
-  },
-  
-  info: {
-    t: 'div',
-    c: [
-      'Last updated ',
-      { k: 'lastUpdateTime', v: 'd' } as Variable,
-      ' by ',
-      { k: 'updatedBy' } as Variable
-    ]
-  }
-};
-```
-
-### Accessibility-Rich Content
-
-```typescript copy
-const accessibleContent: JsxChildren = {
-  t: 'section',
-  d: {
-    arl: 'User dashboard section'  // aria-label
-  },
-  c: [
-    {
-      t: 'h2',
-      c: ['Dashboard Overview']
-    },
-    
-    // Data table with accessibility
-    {
-      t: 'table',
-      d: {
-        ti: 'User statistics table'
-      },
-      c: [
-        {
-          t: 'thead',
-          c: [
-            {
-              t: 'tr',
-              c: [
-                { t: 'th', c: ['Metric'] },
-                { t: 'th', c: ['Value'] },
-                { t: 'th', c: ['Change'] }
-              ]
-            }
-          ]
-        },
-        {
-          t: 'tbody',
-          c: [
-            {
-              t: 'tr',
-              c: [
-                { t: 'td', c: ['Total Users'] },
-                {
-                  t: 'td',
-                  c: [{ k: 'totalUsers', v: 'n' } as Variable]
-                },
-                {
-                  t: 'td',
-                  c: [
-                    '+',
-                    { k: 'userGrowth', v: 'n' } as Variable,
-                    '%'
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-};
-```
-
-### Helper Functions
-
-```typescript copy
-// Helper function to create simple elements
-function createElement(
-  tag: string, 
-  children: JsxChildren,
-  props?: Partial<GTProp>
-): JsxElement {
-  return {
-    t: tag,
-    c: children,
-    ...(props && { d: props })
-  };
-}
-
-// Helper function to wrap text with an element
-function wrapText(
-  text: string | Variable, 
-  tag: string,
-  props?: Partial<GTProp>
-): JsxElement {
-  return createElement(tag, [text], props);
-}
-
-// Usage examples
-const helpers = {
-  boldText: wrapText('Important message', 'strong'),
-  linkedText: wrapText(
-    'Click here', 
-    'a', 
-    { ti: 'Navigate to next page' }
-  ),
-  heading: createElement('h1', ['Page Title']),
-  paragraph: createElement('p', [
-    'Welcome, ',
-    { k: 'userName' } as Variable
-  ])
-};
-```
-
----
-
-## Notes
-
-* JSX content maintains structure and formatting during translation
-* HTML attributes are preserved using the `d` (data) property with GT-specific keys
-* Variables can be embedded anywhere within the content tree
-* Elements can be nested to any depth while maintaining translatability
-* Accessibility attributes (`aria-label`, `title`, etc.) are fully supported
-* The structure is optimized for both translation and rendering performance
 
 ## Related Types
 
-* See [`JsxChild`](/docs/core/types/JsxChild) for individual child element types
-* See [`JsxElement`](/docs/core/types/JsxElement) for structured element definitions
-* See [`Variable`](/docs/core/types/Variable) for dynamic content placeholders
-* See [`GTProp`](/docs/core/types/GTProp) for element properties and attributes
-* See [`Content`](/docs/core/types/Content) for the broader content type union
-
-## Next Steps
-
-* See [JSX Translation Guide](/docs/core/guides/jsx-translation) for best practices
-* See [Accessibility Guide](/docs/core/guides/accessibility) for inclusive design
-* See [Component Translation](/docs/core/guides/component-translation) for React integration
+* [`JsxChild`](/docs/core/types/JsxChild) - Individual child element types
+* [`JsxElement`](/docs/core/types/JsxElement) - Structured element definitions
+* [`Variable`](/docs/core/types/Variable) - Dynamic content placeholders

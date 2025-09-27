@@ -5,7 +5,7 @@ description: Type definition for variables used in translation content
 
 ## Overview
 
-`Variable` represents a placeholder in translation content that can be dynamically replaced with values during rendering. Variables are used within JSX content and ICU message formats to create dynamic, parameterized translations.
+`Variable` represents a placeholder for dynamic content in translations.
 
 ```typescript
 type Variable = {
@@ -15,48 +15,40 @@ type Variable = {
 };
 ```
 
-Variables enable content like `"Hello {name}"` to be translated and formatted with dynamic values substituted at runtime.
-
-## Type Definition
-
-### Variable Structure
+## Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `k` | `string` | The variable key/name (e.g., "name", "count", "price") |
-| `i?` | `number` | Optional internal identifier for the variable |
-| `v?` | `VariableType` | Optional type specification for formatting behavior |
+| `k` | `string` | Variable key/name |
+| `i?` | `number` | Internal identifier |
+| `v?` | `VariableType` | Formatting type |
 
 ### VariableType
-
-Specifies how the variable should be formatted:
 
 ```typescript
 type VariableType = 'v' | 'n' | 'd' | 'c';
 ```
 
-| Value | Type | Description |
-|-------|------|-------------|
-| `'v'` | Variable | Default variable (plain text substitution) |
-| `'n'` | Number | Numeric value with locale-appropriate number formatting |
-| `'d'` | Date | Date/time value with locale-appropriate date formatting |
-| `'c'` | Currency | Monetary value with locale-appropriate currency formatting |
-
----
+| Value | Description |
+|-------|-------------|
+| `'v'` | Plain text substitution |
+| `'n'` | Number formatting |
+| `'d'` | Date formatting |
+| `'c'` | Currency formatting |
 
 ## Examples
 
-### Basic Variable Types
+### Basic Usage
 
 ```typescript copy
-import { Variable, VariableType } from 'generaltranslation';
+import { Variable } from 'generaltranslation';
 
-// Simple text variable
+// Text variable
 const nameVariable: Variable = {
   k: 'userName'
 };
 
-// Number variable with formatting
+// Number variable
 const countVariable: Variable = {
   k: 'itemCount',
   v: 'n'
@@ -64,127 +56,24 @@ const countVariable: Variable = {
 
 // Currency variable
 const priceVariable: Variable = {
-  k: 'totalPrice', 
+  k: 'price',
   v: 'c'
-};
-
-// Date variable
-const dateVariable: Variable = {
-  k: 'orderDate',
-  v: 'd'
 };
 ```
 
-### Variables in JSX Content
+### In JSX Content
 
 ```typescript copy
-import { JsxChildren, Variable } from 'generaltranslation';
-
-// JSX content with embedded variables
-const welcomeContent: JsxChildren = [
+const welcomeContent = [
   'Welcome back, ',
   { k: 'userName' } as Variable,
   '! You have ',
-  { k: 'unreadCount', v: 'n' } as Variable,
-  ' unread messages.'
+  { k: 'messageCount', v: 'n' } as Variable,
+  ' messages.'
 ];
-
-// JSX elements with variables
-const productInfo: JsxChildren = {
-  t: 'div',
-  c: [
-    'Product: ',
-    { k: 'productName' } as Variable,
-    {
-      t: 'span', 
-      c: ['Price: ', { k: 'price', v: 'c' } as Variable]
-    }
-  ]
-};
 ```
-
-### Variable Creation and Validation
-
-```typescript copy
-// Helper function to create variables
-function createVariable(key: string, type?: VariableType): Variable {
-  const variable: Variable = { k: key };
-  if (type) variable.v = type;
-  return variable;
-}
-
-// Create typed variables
-const variables = {
-  userName: createVariable('userName'),
-  itemCount: createVariable('itemCount', 'n'),
-  orderTotal: createVariable('orderTotal', 'c'),
-  shipDate: createVariable('shipDate', 'd')
-};
-
-// Validation helper
-function isValidVariable(obj: any): obj is Variable {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    typeof obj.k === 'string' &&
-    obj.k.length > 0 &&
-    (obj.v === undefined || ['v', 'n', 'd', 'c'].includes(obj.v))
-  );
-}
-```
-
-### E-commerce Product Example
-
-```typescript copy
-// Product card with multiple variable types
-const productCard: JsxChildren = {
-  t: 'div',
-  c: [
-    {
-      t: 'h3',
-      c: [{ k: 'productName' } as Variable]
-    },
-    {
-      t: 'p',
-      c: [
-        'Price: ',
-        { k: 'price', v: 'c' } as Variable,
-        ' - Available in ',
-        { k: 'colorCount', v: 'n' } as Variable,
-        ' colors'
-      ]
-    },
-    {
-      t: 'small',
-      c: [
-        'Ships by ',
-        { k: 'shippingDate', v: 'd' } as Variable
-      ]
-    }
-  ]
-};
-```
-
----
-
-## Notes
-
-* The `k` property is the only required field and serves as the variable identifier
-* Variable types (`v`) affect how values are formatted during rendering
-* The optional `i` field is used internally for optimization and deduplication
-* Variables are commonly embedded within JSX content and ICU message strings
-* Variable formatting respects the user's locale for numbers, dates, and currency
-* Variable keys should be descriptive and consistent across your application
 
 ## Related Types
 
-* See [`VariableType`](/docs/core/types/VariableType) for formatting type specifications
-* See [`JsxChildren`](/docs/core/types/JsxChildren) for JSX content with embedded variables
-* See [`Content`](/docs/core/types/Content) for general content types that can include variables
-* See [`IcuMessage`](/docs/core/types/IcuMessage) for ICU message format with variables
-
-## Next Steps
-
-* See [Variable Usage Guide](/docs/core/guides/variables) for best practices with variables
-* See [Formatting Guide](/docs/core/guides/formatting) for locale-specific formatting
-* See [ICU Message Format Guide](/docs/core/guides/icu-messages) for advanced variable usage
+* [`VariableType`](/docs/core/types/VariableType) - Formatting type specifications
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX content with variables

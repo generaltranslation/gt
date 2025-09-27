@@ -5,7 +5,7 @@ description: Type definition for metadata that customizes translation behavior i
 
 ## Overview
 
-`EntryMetadata` provides optional configuration to customize translation behavior for individual [`Entry`](/docs/core/types/Entry) objects in batch translation operations. It allows fine-grained control over translation models, formats, locales, and caching.
+`EntryMetadata` provides optional configuration for [`Entry`](/docs/core/types/Entry) objects in batch translation operations.
 
 ```typescript
 type EntryMetadata = {
@@ -21,158 +21,61 @@ type EntryMetadata = {
 };
 ```
 
-## Type Definition
-
-### Properties
+## Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `context?` | `string` | Additional context information to help translators understand the content |
-| `id?` | `string` | Unique identifier for the translation entry |
-| `hash?` | `string` | Content hash for caching and deduplication |
-| `dataFormat?` | `DataFormat` | Explicit format specification ('JSX', 'ICU', 'I18NEXT') |
-| `sourceLocale?` | `string` | Source locale override for this specific entry |
-| `actionType?` | `ActionType` | Translation model preference ('standard', 'fast', or custom) |
-| `timeout?` | `number` | Request timeout in milliseconds for this entry |
-| `regionCode?` | `string` | ISO region code for locale-specific customization |
-| `scriptCode?` | `string` | ISO script code for writing system specification |
+| `context?` | `string` | Context for translators |
+| `id?` | `string` | Unique identifier |
+| `hash?` | `string` | Content hash for caching |
+| `dataFormat?` | `DataFormat` | Format specification |
+| `sourceLocale?` | `string` | Source locale override |
+| `actionType?` | `ActionType` | Translation model preference |
+| `timeout?` | `number` | Request timeout (ms) |
+| `regionCode?` | `string` | ISO region code |
+| `scriptCode?` | `string` | ISO script code |
 
 ### Related Types
 
-#### DataFormat
 ```typescript
 type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
-```
-
-#### ActionType
-```typescript
 type ActionType = 'standard' | 'fast' | string;
 ```
 
-- `'standard'` - Higher quality translation model (slower)
-- `'fast'` - Faster translation model (lower latency)
-- `string` - Custom model identifier
-
----
-
 ## Examples
 
-### Basic Metadata Usage
+### Basic Usage
 
 ```typescript copy
 import { Entry, EntryMetadata } from 'generaltranslation';
 
-const basicMetadata: EntryMetadata = {
-  context: 'Button text in the main navigation menu',
-  id: 'nav-home-button'
+const metadata: EntryMetadata = {
+  context: 'Button text',
+  actionType: 'fast'
 };
 
 const entry: Entry = {
-  source: 'Home',
+  source: 'Save',
   targetLocale: 'es',
-  metadata: basicMetadata
+  metadata
 };
 ```
 
-### Performance and Format Specification
+### With ICU Format
 
 ```typescript copy
-const performanceMetadata: EntryMetadata = {
-  actionType: 'fast',
-  timeout: 5000,
-  context: 'Simple UI text needing quick translation'
-};
-
-const icuMetadata: EntryMetadata = {
-  dataFormat: 'ICU',
-  actionType: 'standard',
-  context: 'Plural form for item count'
-};
-
-const quickEntry: Entry = {
-  source: 'Loading...',
-  targetLocale: 'fr',
-  metadata: performanceMetadata
-};
-
-const pluralEntry: Entry = {
-  source: '{count, plural, =0 {no items} =1 {one item} other {{count} items}}',
-  targetLocale: 'de',
-  metadata: icuMetadata
-};
-```
-
-### Regional Customization
-
-```typescript copy
-const regionalMetadata: EntryMetadata = {
-  regionCode: 'MX',
-  scriptCode: 'Latn',
-  context: 'Mexican Spanish variant for currency'
-};
-
-const regionalEntry: Entry = {
-  source: 'Price: $25.00',
+const icuEntry: Entry = {
+  source: '{count, plural, other {{count} items}}',
   targetLocale: 'es',
-  metadata: regionalMetadata
-};
-```
-
-### Mixed Batch Translation
-
-```typescript copy
-const batchEntries: Entry[] = [
-  {
-    source: 'Save',
-    targetLocale: 'es',
-    metadata: {
-      actionType: 'fast',
-      context: 'Save button',
-      id: 'btn-save'
-    }
-  },
-  {
-    source: 'Your data will be processed according to our privacy policy.',
-    targetLocale: 'es',
-    metadata: {
-      actionType: 'standard',
-      context: 'Legal disclaimer text',
-      timeout: 15000
-    }
-  },
-  {
-    source: 'Color',
-    targetLocale: 'en-GB',
-    metadata: {
-      regionCode: 'GB',
-      context: 'British English spelling'
-    }
+  metadata: {
+    dataFormat: 'ICU',
+    context: 'Item count'
   }
-];
+};
 ```
-
----
-
-## Notes
-
-* All `EntryMetadata` properties are optional - only specify what you need to override
-* The `hash` field is useful for implementing translation caching systems
-* `actionType` affects both translation quality and processing time
-* `regionCode` and `scriptCode` enable locale variants (e.g., 'es-MX' vs 'es-ES')  
-* `dataFormat` should match your content type for optimal results
-* `timeout` values should account for content complexity and network latency
-* `sourceLocale` overrides the GT instance's default source locale for specific entries
 
 ## Related Types
 
-* See [`Entry`](/docs/core/types/Entry) for the parent type that uses this metadata
-* See [`ActionType`](/docs/core/types/ActionType) for translation model options
-* See [`DataFormat`](/docs/core/types/DataFormat) for content format specifications
-* See [`LocaleProperties`](/docs/core/types/LocaleProperties) for locale-specific information
-
-## Next Steps
-
-* See [`translateMany()`](/docs/core/class/methods/translation/translateMany) to use entries with metadata
-* See [Performance Guide](/docs/core/guides/performance) for actionType optimization
-* See [Localization Guide](/docs/core/guides/localization) for regional customization strategies
-* See [Caching Guide](/docs/core/guides/caching) for hash-based caching implementation
+* [`Entry`](/docs/core/types/Entry) - Parent type using this metadata
+* [`ActionType`](/docs/core/types/ActionType) - Translation model options
+* [`DataFormat`](/docs/core/types/DataFormat) - Content format specifications

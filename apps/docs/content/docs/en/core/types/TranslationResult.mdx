@@ -5,19 +5,15 @@ description: Type definition for translation results returned by translate() met
 
 ## Overview
 
-`TranslationResult` is a union type that represents the result of a translation operation. It can be either a successful translation (`RequestSuccess`) or an error (`TranslationError`).
+`TranslationResult` represents the result of translation operations.
 
 ```typescript
 type TranslationResult = RequestSuccess | TranslationError;
 ```
 
-This type is returned by the [`translate()`](/docs/core/class/methods/translation/translate) method and related translation functions in the General Translation core library.
-
-## Type Definition
+## Union Types
 
 ### RequestSuccess
-
-Represents a successful translation result:
 
 ```typescript
 type RequestSuccess = TypedResult & {
@@ -26,48 +22,7 @@ type RequestSuccess = TypedResult & {
 };
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `locale` | `string` | The target locale of the translation |
-| `reference` | `TranslationResultReference` | Reference information for the translation |
-| `translation` | `JsxChildren \| I18nextMessage \| IcuMessage` | The translated content |
-| `dataFormat` | `'JSX' \| 'ICU' \| 'I18NEXT'` | The format of the translated content |
-
-#### TypedResult
-
-The translation content and format:
-
-```typescript
-type TypedResult =
-  | {
-      translation: JsxChildren;
-      dataFormat: 'JSX';
-    }
-  | {
-      translation: I18nextMessage | IcuMessage;
-      dataFormat: 'ICU' | 'I18NEXT';
-    };
-```
-
-#### TranslationResultReference
-
-Reference information for tracking translations:
-
-```typescript
-type TranslationResultReference = {
-  id?: string;
-  hash: string;
-};
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `id?` | `string` | Optional unique identifier for the translation |
-| `hash` | `string` | Content hash for caching and deduplication |
-
 ### TranslationError
-
-Represents an error that occurred during translation:
 
 ```typescript
 type TranslationError = {
@@ -77,14 +32,6 @@ type TranslationError = {
 };
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `error` | `string` | Human-readable error message |
-| `code` | `number` | Numeric error code for programmatic handling |
-| `reference?` | `TranslationResultReference` | Optional reference information |
-
----
-
 ## Examples
 
 ### Basic Error Handling
@@ -92,24 +39,14 @@ type TranslationError = {
 ```typescript copy
 import { GT, TranslationResult } from 'generaltranslation';
 
-const gt = new GT({
-  apiKey: 'your-api-key',
-  sourceLocale: 'en',
-  targetLocale: 'es'
-});
+const gt = new GT({ apiKey: 'your-api-key' });
 
-async function translateWithErrorHandling(content: string) {
-  const result: TranslationResult = await gt.translate(content);
-  
-  if ('error' in result) {
-    console.error(`Translation failed: ${result.error} (Code: ${result.code})`);
-    return null;
-  }
-  
-  console.log(`Translated to ${result.locale}`);
-  console.log(`Content hash: ${result.reference.hash}`);
-  
-  return result.translation;
+const result: TranslationResult = await gt.translate('Hello');
+
+if ('error' in result) {
+  console.error(`Translation failed: ${result.error}`);
+} else {
+  console.log(`Translation: ${result.translation}`);
 }
 ```
 
@@ -120,102 +57,14 @@ function isTranslationError(result: TranslationResult): result is TranslationErr
   return 'error' in result;
 }
 
-function isTranslationSuccess(result: TranslationResult): result is RequestSuccess {
-  return 'translation' in result;
-}
-
-async function safeTranslate(content: string) {
-  const result = await gt.translate(content);
-  
-  if (isTranslationError(result)) {
-    throw new Error(`Translation failed: ${result.error}`);
-  }
-  
-  return {
-    content: result.translation,
-    locale: result.locale,
-    format: result.dataFormat,
-    hash: result.reference.hash
-  };
+if (isTranslationError(result)) {
+  // Handle error
+} else {
+  // Handle success
 }
 ```
-
-### Batch Results Processing
-
-```typescript copy
-import { TranslateManyResult } from 'generaltranslation';
-
-async function processBatchResults(sources: string[]) {
-  const results: TranslateManyResult = await gt.translateMany(
-    sources.map(source => ({ source }))
-  );
-  
-  const successes: RequestSuccess[] = [];
-  const errors: TranslationError[] = [];
-  
-  results.forEach(result => {
-    if (isTranslationError(result)) {
-      errors.push(result);
-    } else {
-      successes.push(result);
-    }
-  });
-  
-  console.log(`${successes.length} succeeded, ${errors.length} failed`);
-  
-  return successes.map(success => ({
-    text: success.translation,
-    locale: success.locale,
-    format: success.dataFormat
-  }));
-}
-```
-
-### Format-Specific Handling
-
-```typescript copy
-function extractTranslationContent(result: RequestSuccess): string | JsxChildren {
-  switch (result.dataFormat) {
-    case 'JSX':
-      return result.translation as JsxChildren;
-    case 'ICU':
-    case 'I18NEXT':
-      return result.translation as string;
-    default:
-      throw new Error(`Unsupported format: ${result.dataFormat}`);
-  }
-}
-
-async function translateAndExtract(content: string) {
-  const result = await gt.translate(content);
-  
-  if (isTranslationError(result)) {
-    throw new Error(result.error);
-  }
-  
-  return extractTranslationContent(result);
-}
-```
-
----
-
-## Notes
-
-* Always check if a `TranslationResult` is an error before accessing success properties
-* The `reference.hash` can be used for caching translations and avoiding duplicate requests
-* Different `dataFormat` values require different handling of the `translation` property
-* Error codes can be used for programmatic error handling and retry logic
-* The `reference.id` field is optional and may not be present in all results
 
 ## Related Types
 
-* See [`TranslateManyResult`](/docs/core/types/TranslateManyResult) for batch translation results
-* See [`TranslationError`](/docs/core/types/TranslationError) for error handling details  
-* See [`JsxChildren`](/docs/core/types/JsxChildren) for JSX translation content
-* See [`I18nextMessage`](/docs/core/types/I18nextMessage) and [`IcuMessage`](/docs/core/types/IcuMessage) for string format types
-
-## Next Steps
-
-* See [`translate()`](/docs/core/class/methods/translation/translate) to understand how this type is used
-* See [`translateMany()`](/docs/core/class/methods/translation/translateMany) for batch operations
-* See [Error Handling Guide](/docs/core/guides/error-handling) for best practices with translation errors
+* [`TranslateManyResult`](/docs/core/types/TranslateManyResult) - Batch translation results
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX content type

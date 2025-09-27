@@ -5,7 +5,7 @@ description: Type definition for translation entries used in batch translation o
 
 ## Overview
 
-`Entry` represents a translation request object that contains source content, target locale, and metadata. It's primarily used with the [`translateMany()`](/docs/core/class/methods/translation/translateMany) method for batch translation operations.
+`Entry` represents a translation request object for batch translation operations with [`translateMany()`](/docs/core/class/methods/translation/translateMany).
 
 ```typescript
 type Entry = {
@@ -15,32 +15,21 @@ type Entry = {
 };
 ```
 
-## Type Definition
-
-### Entry Structure
+## Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `source` | `Content` | The source content to translate (JsxChildren, string, etc.) |
-| `targetLocale?` | `string` | Optional target locale (falls back to instance targetLocale) |
+| `source` | `Content` | Source content to translate |
+| `targetLocale?` | `string` | Target locale (falls back to instance targetLocale) |
 | `metadata?` | `EntryMetadata` | Optional metadata for translation customization |
 
 ### Content Type
-
-The `source` can be various content types:
 
 ```typescript
 type Content = JsxChildren | I18nextMessage | IcuMessage | string;
 ```
 
-- `JsxChildren` - JSX content for React components
-- `I18nextMessage` - String content using i18next format
-- `IcuMessage` - String content using ICU message format  
-- `string` - Plain string content
-
-## EntryMetadata
-
-Optional metadata to customize translation behavior:
+### EntryMetadata
 
 ```typescript
 type EntryMetadata = {
@@ -56,35 +45,20 @@ type EntryMetadata = {
 };
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `context?` | `string` | Additional context for the translator |
-| `id?` | `string` | Unique identifier for the translation |
-| `hash?` | `string` | Content hash for caching |
-| `dataFormat?` | `DataFormat` | Format specification ('JSX', 'ICU', 'I18NEXT') |
-| `sourceLocale?` | `string` | Source locale override |
-| `actionType?` | `ActionType` | Translation model preference ('standard', 'fast') |
-| `timeout?` | `number` | Request timeout override |
-| `regionCode?` | `string` | Specific region code for localization |
-| `scriptCode?` | `string` | Script code for writing system |
-
 ### ActionType
-
-Specifies the translation model to use:
 
 ```typescript
 type ActionType = 'standard' | 'fast' | string;
 ```
 
-- `'standard'` - Use the standard translation model (higher quality)
-- `'fast'` - Use the fast translation model (lower latency)
-- `string` - Custom model identifier
+- `'standard'` - Higher quality translation model
+- `'fast'` - Lower latency translation model
 
 ---
 
-## Example
+## Examples
 
-### Basic Entry Creation
+### Basic Usage
 
 ```typescript copy
 import { Entry } from 'generaltranslation';
@@ -95,204 +69,36 @@ const entries: Entry[] = [
     targetLocale: 'es'
   },
   {
-    source: 'Welcome to our app',
-    targetLocale: 'fr'
-  },
-  {
     source: 'Good morning',
     targetLocale: 'de',
     metadata: {
-      context: 'Formal greeting for business app'
-    }
-  }
-];
-```
-
-### Entries with Metadata
-
-```typescript copy
-const entriesWithMetadata: Entry[] = [
-  {
-    source: 'There are {count, plural, =0 {no items} =1 {one item} other {{count} items}}',
-    targetLocale: 'es',
-    metadata: {
-      dataFormat: 'ICU',
-      actionType: 'standard',
-      context: 'Shopping cart item count'
-    }
-  },
-  {
-    source: 'Welcome {{name}} to the dashboard',
-    targetLocale: 'fr',
-    metadata: {
-      dataFormat: 'I18NEXT',
-      actionType: 'fast',
-      id: 'dashboard-welcome'
-    }
-  }
-];
-```
-
-### JSX Content Entries
-
-```typescript copy
-const jsxEntries: Entry[] = [
-  {
-    source: <p>Welcome to <strong>our app</strong></p>,
-    targetLocale: 'es',
-    metadata: {
-      dataFormat: 'JSX',
-      context: 'Homepage welcome message'
-    }
-  },
-  {
-    source: <div>Click <button>here</button> to continue</div>,
-    targetLocale: 'fr',
-    metadata: {
-      dataFormat: 'JSX',
+      context: 'Formal greeting',
       actionType: 'standard'
     }
   }
 ];
 ```
 
-### Regional Customization
+### With translateMany()
 
 ```typescript copy
-const regionalEntries: Entry[] = [
-  {
-    source: 'Welcome to the store',
-    targetLocale: 'en-US',
-    metadata: {
-      regionCode: 'US',
-      context: 'American English variant'
-    }
-  },
-  {
-    source: 'Welcome to the shop',
-    targetLocale: 'en-GB',
-    metadata: {
-      regionCode: 'GB',
-      context: 'British English variant'
-    }
-  }
-];
-```
-
-### Performance Optimization
-
-```typescript copy
-const optimizedEntries: Entry[] = [
-  {
-    source: 'Quick notification message',
-    targetLocale: 'es',
-    metadata: {
-      actionType: 'fast', // Use faster model for simple content
-      timeout: 5000
-    }
-  },
-  {
-    source: 'Detailed legal document with complex terminology...',
-    targetLocale: 'fr',
-    metadata: {
-      actionType: 'standard', // Use standard model for complex content
-      timeout: 30000,
-      context: 'Legal document requiring precise translation'
-    }
-  }
-];
-```
-
-### Batch Translation Usage
-
-```typescript copy
-import { GT, TranslateManyResult } from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 const gt = new GT({
   apiKey: 'your-api-key',
   sourceLocale: 'en'
 });
 
-async function translateEntries(entries: Entry[]) {
-  const results: TranslateManyResult = await gt.translateMany(
-    entries,
-    {
-      context: 'Global app translation batch'
-    }
-  );
-  
-  return results.map((result, index) => {
-    if ('error' in result) {
-      console.error(`Entry ${index} failed:`, result.error);
-      return null;
-    }
-    
-    return {
-      original: entries[index].source,
-      translated: result.translation,
-      locale: result.locale,
-      format: result.dataFormat
-    };
-  }).filter(Boolean);
-}
-
 const entries: Entry[] = [
   { source: 'Home', targetLocale: 'es' },
-  { source: 'About', targetLocale: 'es' },
-  { source: 'Contact', targetLocale: 'es' }
+  { source: 'About', targetLocale: 'es' }
 ];
 
-const translations = await translateEntries(entries);
+const results = await gt.translateMany(entries);
 ```
-
-### Content Hash for Caching
-
-```typescript copy
-import crypto from 'crypto';
-
-function createHashedEntry(source: string, targetLocale: string): Entry {
-  const hash = crypto
-    .createHash('sha256')
-    .update(source + targetLocale)
-    .digest('hex');
-  
-  return {
-    source,
-    targetLocale,
-    metadata: {
-      hash,
-      id: `translation-${hash.substring(0, 8)}`
-    }
-  };
-}
-
-const hashedEntries = [
-  'Welcome',
-  'About Us', 
-  'Contact'
-].map(text => createHashedEntry(text, 'es'));
-```
-
----
-
-## Notes
-
-* The `targetLocale` field is optional - if not provided, the GT instance's `targetLocale` is used
-* Metadata is completely optional but provides fine-grained control over translation behavior
-* The `actionType` affects both translation quality and speed - choose based on content complexity
-* Content hashes can be used for caching and avoiding duplicate translations
-* Region and script codes allow for locale-specific customizations beyond language
-* JSX content requires `dataFormat: 'JSX'` in metadata for proper handling
 
 ## Related Types
 
-* See [`EntryMetadata`](/docs/core/types/EntryMetadata) for detailed metadata options
-* See [`TranslateManyResult`](/docs/core/types/TranslateManyResult) for batch translation results
-* See [`Content`](/docs/core/types/Content) for supported content types
-* See [`ActionType`](/docs/core/types/ActionType) for translation model options
-
-## Next Steps
-
-* See [`translateMany()`](/docs/core/class/methods/translation/translateMany) to use Entry objects for batch translation
-* See [Translation Guide](/docs/core/guides/translation) for best practices with entries
-* See [Performance Guide](/docs/core/guides/performance) for actionType optimization strategies
+* [`EntryMetadata`](/docs/core/types/EntryMetadata) - Metadata options
+* [`TranslateManyResult`](/docs/core/types/TranslateManyResult) - Batch translation results
+* [`Content`](/docs/core/types/Content) - Supported content types

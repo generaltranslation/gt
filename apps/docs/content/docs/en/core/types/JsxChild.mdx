@@ -5,134 +5,42 @@ description: Union type representing individual elements within JSX content
 
 ## Overview
 
-`JsxChild` represents a single element that can appear within JSX content. It's a union type that encompasses all possible individual items that can be part of translatable JSX structure.
+`JsxChild` represents a single element within JSX content.
 
 ```typescript
 type JsxChild = string | JsxElement | Variable;
 ```
 
-This type is the building block for [`JsxChildren`](/docs/core/types/JsxChildren), allowing flexible composition of text, structured elements, and dynamic variables in translatable content.
+## Union Members
 
-## Type Definition
-
-### Union Members
-
-| Type | Description | Example |
-|------|-------------|---------|
-| `string` | Plain text content | `"Hello world"`, `"Click here"` |
-| `JsxElement` | Structured HTML-like element | `{ t: 'div', c: ['content'] }` |
-| `Variable` | Dynamic placeholder for runtime substitution | `{ k: 'userName', v: 'v' }` |
-
----
+| Type | Description |
+|------|-------------|
+| `string` | Plain text content |
+| `JsxElement` | Structured element |
+| `Variable` | Dynamic placeholder |
 
 ## Examples
 
-### Basic Child Types
+### Basic Types
 
 ```typescript copy
 import { JsxChild, Variable } from 'generaltranslation';
 
-// String child (plain text)
-const textChild: JsxChild = "Welcome to our application!";
+// String
+const text: JsxChild = "Welcome!";
 
-// Variable child (dynamic content)
-const nameVar: JsxChild = { k: 'userName' } as Variable;
+// Variable
+const name: JsxChild = { k: 'userName' } as Variable;
 
-// Formatted variable child
-const priceVar: JsxChild = { k: 'totalPrice', v: 'c' } as Variable;
-```
-
-### Element Children
-
-```typescript copy
-// Simple element child
-const linkElement: JsxChild = {
+// Element
+const link: JsxChild = {
   t: 'a',
-  d: { ti: 'Go to homepage' },
-  c: ['Home']
-};
-
-// Complex element with nested content
-const productCard: JsxChild = {
-  t: 'article',
-  d: { ti: 'Product information' },
-  c: [
-    {
-      t: 'h3',
-      c: [{ k: 'productName' } as Variable]
-    },
-    {
-      t: 'p',
-      c: ['Price: ', { k: 'price', v: 'c' } as Variable]
-    }
-  ]
+  c: ['Click here']
 };
 ```
-
-### Mixed Child Array
-
-```typescript copy
-// Array mixing different JsxChild types
-const mixedChildren: JsxChild[] = [
-  "Welcome back, ",                    // String
-  { k: 'userName' } as Variable,       // Variable
-  "! You have ",                       // String
-  { k: 'messageCount', v: 'n' } as Variable,  // Number variable
-  " new ",                             // String
-  {                                    // Element
-    t: 'a',
-    d: { ti: 'View messages' },
-    c: ['messages']
-  },
-  " waiting."                          // String
-];
-```
-
-### Type Guards and Validation
-
-```typescript copy
-// Type guard functions
-function isStringChild(child: JsxChild): child is string {
-  return typeof child === 'string';
-}
-
-function isVariableChild(child: JsxChild): child is Variable {
-  return typeof child === 'object' && child !== null && 'k' in child;
-}
-
-function isElementChild(child: JsxChild): child is JsxElement {
-  return typeof child === 'object' && child !== null && 't' in child;
-}
-
-// Validate an array of children
-function validateJsxChildArray(children: any[]): children is JsxChild[] {
-  return children.every(child => 
-    typeof child === 'string' || 
-    (typeof child === 'object' && child !== null)
-  );
-}
-```
-
----
-
-## Notes
-
-* `JsxChild` is the singular form, while `JsxChildren` can be either a single child or array of children
-* String children are the simplest form and represent plain text content
-* Variable children enable dynamic content substitution at runtime
-* Element children provide structure and can contain nested children
-* All child types can be mixed freely within the same content structure
-* Each child type maintains its own properties while fitting into the unified type system
 
 ## Related Types
 
-* See [`JsxChildren`](/docs/core/types/JsxChildren) for collections of JsxChild elements
-* See [`JsxElement`](/docs/core/types/JsxElement) for structured element definitions
-* See [`Variable`](/docs/core/types/Variable) for dynamic content placeholders
-* See [`VariableType`](/docs/core/types/VariableType) for variable formatting options
-
-## Next Steps
-
-* See [JSX Content Composition Guide](/docs/core/guides/jsx-composition) for building complex content
-* See [Variable Integration Guide](/docs/core/guides/variables) for dynamic content strategies
-* See [Element Structure Guide](/docs/core/guides/jsx-elements) for structured content patterns
+* [`JsxChildren`](/docs/core/types/JsxChildren) - Collections of JsxChild elements
+* [`JsxElement`](/docs/core/types/JsxElement) - Structured elements
+* [`Variable`](/docs/core/types/Variable) - Dynamic placeholders

@@ -5,13 +5,11 @@ description: Union type representing all supported content formats for translati
 
 ## Overview
 
-`Content` is a union type that represents all supported content formats that can be translated using General Translation. It provides a unified interface for different content types while preserving their specific formatting and structure.
+`Content` represents all supported content formats for translation.
 
 ```typescript
 type Content = JsxChildren | IcuMessage | I18nextMessage;
 ```
-
-This type enables flexible content handling across JSX components, ICU message formats, and i18next message formats within a single translation system.
 
 ## Type Definition
 
@@ -23,17 +21,6 @@ This type enables flexible content handling across JSX components, ICU message f
 | `IcuMessage` | ICU MessageFormat strings | Complex pluralization, date/number formatting |
 | `I18nextMessage` | i18next compatible message strings | Simple interpolation, existing i18next projects |
 
-### Content Format Mapping
-
-```typescript
-type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
-
-// Content type corresponds to DataFormat values:
-// 'JSX' → JsxChildren
-// 'ICU' → IcuMessage (string)
-// 'I18NEXT' → I18nextMessage (string)
-```
-
 ---
 
 ## Examples
@@ -41,111 +28,34 @@ type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 ### JSX Content
 
 ```typescript copy
-import { Content, Variable } from 'generaltranslation';
-
-// Simple text content
-const simpleText: Content = "Welcome to our application!";
-
-// JSX with elements and variables
 const jsxContent: Content = {
   t: 'div',
-  c: [
-    {
-      t: 'h1',
-      c: ['Product Details']
-    },
-    {
-      t: 'p',
-      c: [
-        'Price: ',
-        { t: 'strong', c: [{ k: 'price', v: 'c' } as Variable] }
-      ]
-    }
-  ]
+  c: ['Hello ', { k: 'userName' }]
 };
-
-// Mixed JSX array
-const mixedContent: Content = [
-  'Hello, ',
-  { k: 'userName' } as Variable,
-  '! You have ',
-  { k: 'messageCount', v: 'n' } as Variable,
-  ' messages.'
-];
 ```
 
 ### ICU Message Format
 
 ```typescript copy
-import { IcuMessage } from 'generaltranslation';
-
-// Simple ICU message
-const greeting: Content = 'Hello {name}!' as IcuMessage;
-
-// ICU with pluralization
-const itemCount: Content = '{count, plural, =0 {no items} =1 {one item} other {{count} items}}' as IcuMessage;
-
-// ICU with currency formatting
-const price: Content = 'Total: {amount, number, currency}' as IcuMessage;
+const icuContent: Content = 'Hello {name}!' as IcuMessage;
 ```
 
 ### i18next Format
 
 ```typescript copy
-import { I18nextMessage } from 'generaltranslation';
-
-// Simple i18next interpolation
-const welcome: Content = 'Welcome back, {{name}}!' as I18nextMessage;
-
-// i18next with count
-const items: Content = '{{count}} item' as I18nextMessage;
-
-// i18next with nested keys
-const nested: Content = 'Click $t(buttons.submit) to continue' as I18nextMessage;
-```
-
-### Content Type Detection
-
-```typescript copy
-function getContentType(content: Content): 'jsx' | 'icu' | 'i18next' {
-  if (typeof content === 'object') {
-    return 'jsx';
-  }
-  
-  if (typeof content === 'string') {
-    if (content.includes('{{') && content.includes('}}')) {
-      return 'i18next';
-    }
-    if (content.includes('{') && content.includes('}')) {
-      return 'icu';
-    }
-  }
-  
-  return 'i18next';
-}
+const i18nextContent: Content = 'Welcome back, {{name}}!' as I18nextMessage;
 ```
 
 ---
 
 ## Notes
 
-* `Content` unifies different message formats under a single type for flexible handling
-* JSX content supports rich formatting, nested elements, and complex structures
-* ICU messages provide powerful formatting for numbers, dates, plurals, and selections
-* i18next messages offer simple interpolation compatible with existing i18next projects
-* Content type can often be inferred from structure, but explicit DataFormat specification is recommended
-* All content types support variables for dynamic value substitution
+* `Content` unifies different message formats under a single type
+* Content type can be inferred from structure or explicitly specified
 
 ## Related Types
 
-* See [`JsxChildren`](/docs/core/types/JsxChildren) for rich JSX content structure
-* See [`IcuMessage`](/docs/core/types/IcuMessage) for ICU MessageFormat strings
-* See [`I18nextMessage`](/docs/core/types/I18nextMessage) for i18next message format
-* See [`DataFormat`](/docs/core/types/DataFormat) for format specification
-* See [`Variable`](/docs/core/types/Variable) for dynamic content placeholders
-
-## Next Steps
-
-* See [Content Format Guide](/docs/core/guides/content-formats) for choosing the right format
-* See [JSX Translation Guide](/docs/core/guides/jsx-translation) for rich content translation
-* See [ICU Message Guide](/docs/core/guides/icu-messages) for advanced message formatting
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX content structure
+* [`IcuMessage`](/docs/core/types/IcuMessage) - ICU MessageFormat strings
+* [`I18nextMessage`](/docs/core/types/I18nextMessage) - i18next message format
+* [`DataFormat`](/docs/core/types/DataFormat) - Format specification

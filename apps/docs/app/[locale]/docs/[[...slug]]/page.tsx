@@ -34,6 +34,7 @@ import { Rate } from '@/components/rate';
 import { Metadata } from 'next';
 import { getLocale } from 'gt-next/server';
 import { Mermaid } from '@/components/mdx/mermaid';
+import Video from '@/components/Video';
 
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
@@ -49,6 +50,7 @@ const customMdxComponents = {
   AllLogoCards,
   SupportedLocales,
   Mermaid,
+  Video,
 };
 export default async function Page(props: {
   params: Promise<{ slug?: string[]; locale: string }>;

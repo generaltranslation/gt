@@ -1,17 +1,17 @@
 {
   "title": "Translation",
   "pages": [
+    "./checkFileTranslations",
+    "./checkSetupStatus",
+    "./downloadFileBatch",
+    "./downloadTranslatedFile",
+    "./enqueueFiles",
+    "./getProjectData",
+    "./querySourceFile",
+    "./setupProject",
+    "./shouldSetupProject",
     "./translate",
     "./translateMany",
-    "./enqueueFiles",
-    "./setupProject",
-    "./checkSetupStatus",
-    "./shouldSetupProject",
-    "./checkFileTranslations",
-    "./querySourceFile",
-    "./getProjectData",
-    "./uploadSourceFiles",
-    "./downloadTranslatedFile",
-    "./downloadFileBatch"
+    "./uploadSourceFiles"
   ]
 }

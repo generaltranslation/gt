@@ -7,8 +7,6 @@ description: API Reference for the requiresTranslation function
 
 The `requiresTranslation()` function determines whether translation is needed between source and target locales without requiring a GT class instance.
 
-
-
 ---
 
 ## Reference
@@ -64,9 +62,7 @@ console.log(requiresTranslation('en-US', 'es-ES', approved)); // true (approved 
 
 ## Notes
 
-- Avoids unnecessary translation for same languages
 - Respects approved locale constraints
-- Essential for optimizing translation workflows
 - Returns false when target not in approved list
 - Considers custom locale mappings
 

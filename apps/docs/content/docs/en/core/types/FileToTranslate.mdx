@@ -5,7 +5,7 @@ description: Type definition for file objects used in batch file translation ope
 
 ## Overview
 
-`FileToTranslate` represents a file object that can be submitted for translation through batch file operations. It contains the file content, metadata, and format information needed to process the file for multiple target locales.
+`FileToTranslate` represents a file object for batch translation operations with [`enqueueFiles()`](/docs/core/class/methods/files/enqueueFiles).
 
 ```typescript
 type FileToTranslate = {
@@ -17,170 +17,53 @@ type FileToTranslate = {
 };
 ```
 
-This type is used with [`enqueueFiles()`](/docs/core/class/methods/files/enqueueFiles) and other batch file operations to specify files for translation.
-
-## Type Definition
-
-### Properties
+## Properties
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `content` | `string` | **Yes** | The raw content of the file as a string |
-| `fileName` | `string` | **Yes** | Unique identifier for the file (typically file path + name) |
-| `fileFormat` | `FileFormat` | **Yes** | The format of the file (JSON, MDX, MD, etc.) |
-| `formatMetadata?` | `Record<string, any>` | No | Optional metadata specific to the file format |
-| `dataFormat?` | `DataFormat` | No | Optional format of the data within the file |
+| `content` | `string` | **Yes** | Raw file content |
+| `fileName` | `string` | **Yes** | File identifier |
+| `fileFormat` | `FileFormat` | **Yes** | File format |
+| `formatMetadata?` | `Record<string, any>` | No | Format-specific metadata |
+| `dataFormat?` | `DataFormat` | No | Data format within file |
 
 ### Related Types
 
-#### FileFormat
 ```typescript
 type FileFormat = 'JSON' | 'MDX' | 'MD' | 'HTML' | 'TXT' | string;
-```
-
-#### DataFormat  
-```typescript
 type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 ```
 
----
-
 ## Examples
 
-### Basic File Types
+### JSON File
 
 ```typescript copy
 import { FileToTranslate } from 'generaltranslation';
 
-// JSON translation file
 const jsonFile: FileToTranslate = {
   content: JSON.stringify({
-    "welcome": "Welcome to our application",
-    "buttons": {
-      "save": "Save",
-      "cancel": "Cancel"
-    }
+    "welcome": "Welcome",
+    "save": "Save"
   }),
-  fileName: 'src/locales/en/common.json',
+  fileName: 'common.json',
   fileFormat: 'JSON',
   dataFormat: 'I18NEXT'
 };
-
-// Markdown documentation file
-const markdownFile: FileToTranslate = {
-  content: `# Getting Started
-
-Welcome to our platform! This guide will help you get started.
-
-## Quick Start
-
-1. **Sign up** for an account
-2. **Verify** your email address  
-3. **Start** using the platform`,
-  fileName: 'docs/getting-started.md',
-  fileFormat: 'MD'
-};
 ```
 
-### MDX with Components
+### MDX File
 
 ```typescript copy
-// MDX file with React components
 const mdxFile: FileToTranslate = {
-  content: `---
-title: Product Features
----
-
-import { FeatureCard } from '../components/FeatureCard'
-
-# Product Features
-
-<FeatureCard 
-  title="Real-time Collaboration"
-  description="Work together with your team"
-/>
-
-## Pricing
-
-Starting at **$9.99/month** for individuals.`,
-  fileName: 'content/products/features.mdx',
+  content: `# Getting Started\n\nWelcome to our platform!`,
+  fileName: 'docs/start.mdx',
   fileFormat: 'MDX',
-  dataFormat: 'JSX',
-  formatMetadata: {
-    preserveFrontMatter: true,
-    componentParsing: true
-  }
+  dataFormat: 'JSX'
 };
 ```
-
-### HTML Templates
-
-```typescript copy
-// Email template with variables
-const emailTemplate: FileToTranslate = {
-  content: `<!DOCTYPE html>
-<html>
-<body>
-  <div class="container">
-    <h1>Welcome {{userName}}!</h1>
-    <p>Thank you for joining our platform.</p>
-    <a href="{{dashboardUrl}}">Get Started</a>
-  </div>
-</body>
-</html>`,
-  fileName: 'templates/emails/welcome.html',
-  fileFormat: 'HTML',
-  dataFormat: 'I18NEXT',
-  formatMetadata: {
-    preserveAttributes: ['href', 'class']
-  }
-};
-```
-
-### File Validation Utility
-
-```typescript copy
-// Utility to validate file structure
-function validateFileToTranslate(file: FileToTranslate): boolean {
-  if (!file.content || typeof file.content !== 'string') return false;
-  if (!file.fileName || typeof file.fileName !== 'string') return false;
-  if (!file.fileFormat || typeof file.fileFormat !== 'string') return false;
-  
-  // Format-specific validation
-  if (file.fileFormat === 'JSON') {
-    try {
-      JSON.parse(file.content);
-    } catch {
-      return false;
-    }
-  }
-  
-  return true;
-}
-```
-
----
-
-## Notes
-
-* The `content` property must contain the raw file content as a string
-* `fileName` should be unique and descriptive, often including the file path
-* `fileFormat` determines how the file will be processed and parsed
-* `formatMetadata` provides format-specific configuration options
-* `dataFormat` specifies the internal data format when different from the file format
-* JSON files typically use `I18NEXT` data format for simple key-value pairs
-* MDX and HTML files often use `JSX` data format for rich content with components
-* File validation should be performed before enqueueing for translation
 
 ## Related Types
 
-* See [`FileFormat`](/docs/core/types/FileFormat) for supported file format values
-* See [`DataFormat`](/docs/core/types/DataFormat) for internal data format specifications  
-* See [`EnqueueFilesOptions`](/docs/core/types/EnqueueFilesOptions) for batch processing options
-* See [`EnqueueFilesResult`](/docs/core/types/EnqueueFilesResult) for operation results
-
-## Next Steps
-
-* See [`enqueueFiles()`](/docs/core/class/methods/files/enqueueFiles) method for batch file processing
-* See [File Translation Guide](/docs/core/guides/file-translation) for format-specific best practices
-* See [Content Format Guide](/docs/core/guides/content-formats) for choosing appropriate formats
+* [`EnqueueFilesOptions`](/docs/core/types/EnqueueFilesOptions) - Batch processing options
+* [`DataFormat`](/docs/core/types/DataFormat) - Data format specifications

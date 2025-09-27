@@ -5,7 +5,7 @@ description: Configuration options for batch file translation operations
 
 ## Overview
 
-`EnqueueFilesOptions` defines the configuration parameters for enqueueing multiple files for translation using batch file operations. It provides control over publication settings, approval workflows, target locales, and processing behavior.
+`EnqueueFilesOptions` configures batch file translation operations.
 
 ```typescript
 type EnqueueFilesOptions = {
@@ -22,415 +22,55 @@ type EnqueueFilesOptions = {
 };
 ```
 
-This type is used with file enqueueing operations to specify how files should be processed and translated across multiple target locales.
-
-## Type Definition
-
-### Properties
+## Properties
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `publish?` | `boolean` | No | Whether to automatically publish translations |
-| `requireApproval?` | `boolean` | No | Whether translations require approval before publication |
-| `description?` | `string` | No | **@deprecated** Description for the project (will be removed in v8.0.0) |
-| `sourceLocale?` | `string` | No | Source locale override (falls back to GT instance default) |
-| `targetLocales` | `string[]` | **Yes** | Array of target locale codes for translation |
-| `version?` | `string` | No | Custom version identifier for this batch |
-| `_versionId?` | `string` | No | **@deprecated** Internal version ID (will be removed in v8.0.0) |
-| `timeout?` | `number` | No | Request timeout in milliseconds |
-| `modelProvider?` | `string` | No | Specific translation model provider to use |
-| `force?` | `boolean` | No | Force processing even if files haven't changed |
+| `publish?` | `boolean` | No | Auto-publish translations |
+| `requireApproval?` | `boolean` | No | Require approval workflow |
+| `sourceLocale?` | `string` | No | Source locale override |
+| `targetLocales` | `string[]` | **Yes** | Target locale codes |
+| `version?` | `string` | No | Version identifier |
+| `timeout?` | `number` | No | Request timeout (ms) |
+| `modelProvider?` | `string` | No | Translation model provider |
+| `force?` | `boolean` | No | Force reprocessing |
 
-### Required vs Optional Fields
+## Examples
 
-```typescript
-type RequiredEnqueueFilesOptions = EnqueueFilesOptions & 
-  Required<Pick<EnqueueFilesOptions, 'sourceLocale'>>;
-```
-
-Some operations may require `sourceLocale` to be explicitly provided rather than inferred from the GT instance.
-
----
-
-## Example
-
-### Basic File Enqueueing
+### Basic Usage
 
 ```typescript copy
-import { GT, EnqueueFilesOptions, FileToTranslate } from 'generaltranslation';
+import { GT, EnqueueFilesOptions } from 'generaltranslation';
 
-const gt = new GT({
-  apiKey: 'your-api-key',
-  sourceLocale: 'en'
-});
-
-const files: FileToTranslate[] = [
-  {
-    content: '{"welcome": "Welcome to our app"}',
-    fileName: 'common.json',
-    fileFormat: 'JSON'
-  }
-];
-
-const basicOptions: EnqueueFilesOptions = {
-  targetLocales: ['es', 'fr', 'de']
+const options: EnqueueFilesOptions = {
+  targetLocales: ['es', 'fr', 'de'],
+  publish: false,
+  requireApproval: true
 };
 
-// Enqueue files for translation
-const result = await gt.enqueueFiles(files, basicOptions);
+const result = await gt.enqueueFiles(files, options);
 ```
 
-### Production Workflow Configuration
+### Development vs Production
 
 ```typescript copy
-const productionOptions: EnqueueFilesOptions = {
-  publish: false,              // Don't auto-publish
-  requireApproval: true,       // Require human approval
-  sourceLocale: 'en-US',      // Explicit source locale
-  targetLocales: [
-    'es-ES', 'es-MX', 'es-AR', // Spanish variants
-    'fr-FR', 'fr-CA',          // French variants  
-    'de-DE', 'de-AT',          // German variants
-    'ja-JP', 'ko-KR', 'zh-CN'  // Asian languages
-  ],
-  version: 'v2.1.0',          // Semantic versioning
-  timeout: 60000,             // 60 second timeout
-  modelProvider: 'premium',    // Use premium model
-  force: true                 // Force reprocessing
+// Development
+const devOptions: EnqueueFilesOptions = {
+  targetLocales: ['es'],
+  publish: true,
+  requireApproval: false
 };
 
-// Use with comprehensive file set
-const result = await gt.enqueueFiles(productionFiles, productionOptions);
-```
-
-### Development Workflow
-
-```typescript copy
-const developmentOptions: EnqueueFilesOptions = {
-  publish: true,               // Auto-publish for dev
-  requireApproval: false,      // Skip approval in dev
-  targetLocales: ['es'],       // Single target for testing
-  version: `dev-${Date.now()}`, // Timestamp versioning
-  timeout: 30000,             // Shorter timeout
-  force: false                // Don't force unchanged files
+// Production  
+const prodOptions: EnqueueFilesOptions = {
+  targetLocales: ['es', 'fr', 'de', 'ja'],
+  publish: false,
+  requireApproval: true,
+  modelProvider: 'premium'
 };
-
-// Quick development iteration
-const devResult = await gt.enqueueFiles(devFiles, developmentOptions);
 ```
-
-### Multi-Brand Configuration
-
-```typescript copy
-interface BrandConfig {
-  brandId: string;
-  locales: string[];
-  modelProvider?: string;
-  requireApproval: boolean;
-}
-
-const brandConfigs: BrandConfig[] = [
-  {
-    brandId: 'premium-brand',
-    locales: ['es-ES', 'fr-FR', 'de-DE', 'ja-JP'],
-    modelProvider: 'premium',
-    requireApproval: true
-  },
-  {
-    brandId: 'budget-brand', 
-    locales: ['es-MX', 'fr-CA'],
-    modelProvider: 'standard',
-    requireApproval: false
-  }
-];
-
-async function enqueueBrandFiles(
-  files: FileToTranslate[],
-  config: BrandConfig
-): Promise<EnqueueFilesResult> {
-  const options: EnqueueFilesOptions = {
-    targetLocales: config.locales,
-    requireApproval: config.requireApproval,
-    publish: !config.requireApproval, // Auto-publish if no approval needed
-    modelProvider: config.modelProvider,
-    version: `${config.brandId}-${new Date().toISOString().split('T')[0]}`,
-    force: false
-  };
-  
-  return await gt.enqueueFiles(files, options);
-}
-
-// Process each brand
-for (const config of brandConfigs) {
-  const result = await enqueueBrandFiles(brandFiles, config);
-  console.log(`${config.brandId}: ${result.translations.length} translations queued`);
-}
-```
-
-### E-commerce Seasonal Campaign
-
-```typescript copy
-interface CampaignTranslationConfig {
-  campaignId: string;
-  priority: 'high' | 'medium' | 'low';
-  deadline: Date;
-  markets: Array<{
-    locale: string;
-    requiresApproval: boolean;
-  }>;
-}
-
-function createCampaignOptions(
-  config: CampaignTranslationConfig
-): EnqueueFilesOptions {
-  const timeoutByPriority = {
-    high: 120000,    // 2 minutes
-    medium: 60000,   // 1 minute  
-    low: 30000       // 30 seconds
-  };
-  
-  return {
-    targetLocales: config.markets.map(m => m.locale),
-    requireApproval: config.markets.some(m => m.requiresApproval),
-    publish: false,  // Manual publish after review
-    version: `campaign-${config.campaignId}`,
-    timeout: timeoutByPriority[config.priority],
-    modelProvider: config.priority === 'high' ? 'premium' : 'standard',
-    force: true      // Always reprocess campaign content
-  };
-}
-
-// Holiday campaign example
-const holidayCampaign: CampaignTranslationConfig = {
-  campaignId: 'holiday-2024',
-  priority: 'high',
-  deadline: new Date('2024-11-15'),
-  markets: [
-    { locale: 'es-MX', requiresApproval: true },
-    { locale: 'fr-CA', requiresApproval: true },
-    { locale: 'de-DE', requiresApproval: false }
-  ]
-};
-
-const campaignOptions = createCampaignOptions(holidayCampaign);
-const campaignResult = await gt.enqueueFiles(campaignFiles, campaignOptions);
-```
-
-### Automated CI/CD Pipeline
-
-```typescript copy
-interface PipelineConfig {
-  environment: 'development' | 'staging' | 'production';
-  branch: string;
-  commitHash: string;
-  buildNumber: number;
-}
-
-function createPipelineOptions(
-  config: PipelineConfig,
-  baseTargetLocales: string[]
-): EnqueueFilesOptions {
-  const environmentSettings = {
-    development: {
-      publish: true,
-      requireApproval: false,
-      timeout: 30000,
-      modelProvider: 'standard'
-    },
-    staging: {
-      publish: false,
-      requireApproval: true,
-      timeout: 60000,
-      modelProvider: 'standard'
-    },
-    production: {
-      publish: false,
-      requireApproval: true,
-      timeout: 120000,
-      modelProvider: 'premium'
-    }
-  };
-  
-  const settings = environmentSettings[config.environment];
-  
-  return {
-    ...settings,
-    targetLocales: baseTargetLocales,
-    version: `${config.environment}-${config.buildNumber}`,
-    sourceLocale: 'en-US',
-    force: config.environment === 'production' // Force production builds
-  };
-}
-
-// Usage in CI/CD
-const pipelineConfig: PipelineConfig = {
-  environment: process.env.NODE_ENV as any,
-  branch: process.env.GIT_BRANCH || 'main',
-  commitHash: process.env.GIT_COMMIT || 'unknown',
-  buildNumber: parseInt(process.env.BUILD_NUMBER || '0')
-};
-
-const supportedLocales = ['es-ES', 'fr-FR', 'de-DE', 'ja-JP'];
-const pipelineOptions = createPipelineOptions(pipelineConfig, supportedLocales);
-
-console.log(`Enqueueing files for ${pipelineConfig.environment} environment`);
-const pipelineResult = await gt.enqueueFiles(sourceFiles, pipelineOptions);
-```
-
-### Content Management System Integration
-
-```typescript copy
-interface CMSTranslationJob {
-  contentType: 'page' | 'post' | 'product' | 'category';
-  publishDate?: Date;
-  priority: number;
-  authorId: string;
-  tags: string[];
-}
-
-class CMSTranslationManager {
-  private gt: GT;
-  
-  constructor(gt: GT) {
-    this.gt = gt;
-  }
-  
-  async translateContent(
-    files: FileToTranslate[],
-    job: CMSTranslationJob,
-    targetLocales: string[]
-  ): Promise<EnqueueFilesResult> {
-    const options: EnqueueFilesOptions = {
-      targetLocales,
-      publish: job.contentType === 'page' ? false : true, // Pages need approval
-      requireApproval: job.priority > 7, // High priority needs approval
-      version: this.generateVersion(job),
-      timeout: this.calculateTimeout(job),
-      modelProvider: this.selectModelProvider(job),
-      force: job.tags.includes('urgent')
-    };
-    
-    return await this.gt.enqueueFiles(files, options);
-  }
-  
-  private generateVersion(job: CMSTranslationJob): string {
-    const timestamp = job.publishDate || new Date();
-    return `cms-${job.contentType}-${job.authorId}-${timestamp.getTime()}`;
-  }
-  
-  private calculateTimeout(job: CMSTranslationJob): number {
-    const baseTimeout = 30000;
-    const priorityMultiplier = Math.max(1, job.priority / 5);
-    return Math.min(baseTimeout * priorityMultiplier, 300000); // Max 5 minutes
-  }
-  
-  private selectModelProvider(job: CMSTranslationJob): string {
-    if (job.tags.includes('marketing') || job.priority > 8) {
-      return 'premium';
-    }
-    return 'standard';
-  }
-}
-
-// Usage
-const cmsManager = new CMSTranslationManager(gt);
-const contentJob: CMSTranslationJob = {
-  contentType: 'product',
-  priority: 9,
-  authorId: 'user123',
-  tags: ['marketing', 'featured'],
-  publishDate: new Date('2024-04-01')
-};
-
-const result = await cmsManager.translateContent(
-  productFiles,
-  contentJob,
-  ['es-ES', 'fr-FR', 'de-DE']
-);
-```
-
-### Options Validation
-
-```typescript copy
-function validateEnqueueFilesOptions(
-  options: EnqueueFilesOptions
-): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-  
-  // Required field validation
-  if (!options.targetLocales || !Array.isArray(options.targetLocales)) {
-    errors.push('targetLocales is required and must be an array');
-  } else if (options.targetLocales.length === 0) {
-    errors.push('targetLocales must contain at least one locale');
-  }
-  
-  // Locale format validation
-  const localeRegex = /^[a-z]{2}(-[A-Z]{2})?(-[A-Z][a-z]{3})?$/;
-  options.targetLocales?.forEach(locale => {
-    if (!localeRegex.test(locale)) {
-      errors.push(`Invalid locale format: ${locale}`);
-    }
-  });
-  
-  // Timeout validation
-  if (options.timeout !== undefined) {
-    if (typeof options.timeout !== 'number' || options.timeout <= 0) {
-      errors.push('timeout must be a positive number');
-    } else if (options.timeout > 600000) { // 10 minutes max
-      errors.push('timeout cannot exceed 10 minutes (600000ms)');
-    }
-  }
-  
-  // Version validation
-  if (options.version !== undefined && typeof options.version !== 'string') {
-    errors.push('version must be a string');
-  }
-  
-  // Model provider validation
-  const validProviders = ['standard', 'premium', 'fast'];
-  if (options.modelProvider && !validProviders.includes(options.modelProvider)) {
-    errors.push(`Invalid model provider: ${options.modelProvider}`);
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-// Usage
-const testOptions: EnqueueFilesOptions = {
-  targetLocales: ['invalid-locale', 'es-ES'],
-  timeout: -1000,
-  modelProvider: 'nonexistent'
-};
-
-const validation = validateEnqueueFilesOptions(testOptions);
-if (!validation.isValid) {
-  console.error('Invalid options:', validation.errors);
-}
-```
-
----
-
-## Notes
-
-* `targetLocales` is the only required field - all other options have sensible defaults
-* The `publish` and `requireApproval` flags control the approval workflow
-* Version strings help track and manage different translation batches
-* Timeout values should account for file size and complexity
-* Model provider selection affects translation quality and processing time
-* Force flag bypasses change detection and reprocesses all files
-* Deprecated fields should be avoided in new implementations
 
 ## Related Types
 
-* See [`FileToTranslate`](/docs/core/types/FileToTranslate) for file input structure
-* See [`EnqueueFilesResult`](/docs/core/types/EnqueueFilesResult) for operation results
-* See [`RequiredEnqueueFilesOptions`](/docs/core/types/RequiredEnqueueFilesOptions) for stricter validation
-
-## Next Steps
-
-* See [`enqueueFiles()`](/docs/core/class/methods/files/enqueueFiles) method documentation
-* See [File Translation Guide](/docs/core/guides/file-translation) for workflow patterns
-* See [Batch Processing Guide](/docs/core/guides/batch-processing) for optimization strategies
+* [`FileToTranslate`](/docs/core/types/FileToTranslate) - File input structure
+* [`enqueueFiles()`](/docs/core/class/methods/files/enqueueFiles) - Method using this type

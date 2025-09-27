@@ -5,7 +5,7 @@ description: Type definition for structured HTML-like elements in translatable J
 
 ## Overview
 
-`JsxElement` represents structured HTML-like elements within translatable JSX content. It defines the shape of elements that can contain children, attributes, and metadata while maintaining translatability across languages.
+`JsxElement` represents structured HTML-like elements in translatable JSX content.
 
 ```typescript
 type JsxElement = {
@@ -16,40 +16,23 @@ type JsxElement = {
 };
 ```
 
-This type enables creation of complex, nested content structures that preserve HTML semantics and accessibility features during translation.
-
-## Type Definition
-
-### Properties
+## Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `t?` | `string` | HTML tag name (e.g., 'div', 'span', 'a', 'button') |
-| `i?` | `number` | Optional internal identifier for the element |
-| `d?` | `GTProp` | GT properties containing HTML attributes and metadata |
-| `c?` | `JsxChildren` | Child content (text, variables, or nested elements) |
+| `t?` | `string` | HTML tag name |
+| `i?` | `number` | Internal identifier |
+| `d?` | `GTProp` | GT properties/attributes |
+| `c?` | `JsxChildren` | Child content |
 
-### GTProp Structure
+### Common GT Keys
 
-```typescript
-type GTProp = {
-  b?: Record<string, JsxChildren>; // Branches for conditional content
-  t?: 'p' | 'b';                   // Branch transformation type
-} & HtmlContentPropKeysRecord;     // HTML attributes
-```
-
-### Supported HTML Attributes (via GTProp)
-
-| GT Key | HTML Attribute | Description |
-|--------|----------------|-------------|
-| `pl` | `placeholder` | Input placeholder text |
-| `ti` | `title` | Tooltip/title attribute |
-| `alt` | `alt` | Alternative text for images |
-| `arl` | `aria-label` | Accessibility label |
-| `arb` | `aria-labelledby` | References to labelling elements |
-| `ard` | `aria-describedby` | References to describing elements |
-
----
+| GT Key | HTML Attribute |
+|--------|----------------|
+| `pl` | `placeholder` |
+| `ti` | `title` |
+| `alt` | `alt` |
+| `arl` | `aria-label` |
 
 ## Examples
 
@@ -58,126 +41,22 @@ type GTProp = {
 ```typescript copy
 import { JsxElement, Variable } from 'generaltranslation';
 
-// Simple element with text content
+// Simple element
 const heading: JsxElement = {
   t: 'h1',
-  c: ['Welcome to our application']
+  c: ['Welcome']
 };
 
-// Element with variables
-const greeting: JsxElement = {
-  t: 'p',
-  c: [
-    'Hello, ',
-    { k: 'userName' } as Variable,
-    '! You have ',
-    { k: 'messageCount', v: 'n' } as Variable,
-    ' new messages.'
-  ]
-};
-```
-
-### Elements with Attributes
-
-```typescript copy
-// Button with accessibility attributes
-const submitButton: JsxElement = {
+// With attributes
+const button: JsxElement = {
   t: 'button',
-  d: {
-    ti: 'Submit the contact form',
-    arl: 'Submit button'
-  },
-  c: ['Submit Form']
-};
-
-// Input with placeholder text
-const emailInput: JsxElement = {
-  t: 'input',
-  d: {
-    pl: 'Enter your email address',
-    ti: 'Email field for registration'
-  }
+  d: { ti: 'Submit form' },
+  c: ['Submit']
 };
 ```
-
-### Nested Structures
-
-```typescript copy
-// Product card with nested elements
-const productCard: JsxElement = {
-  t: 'article',
-  d: {
-    arl: 'Product information card'
-  },
-  c: [
-    {
-      t: 'h3',
-      c: [{ k: 'productName' } as Variable]
-    },
-    {
-      t: 'p',
-      c: [
-        'Price: ',
-        {
-          t: 'strong',
-          c: [{ k: 'price', v: 'c' } as Variable]
-        }
-      ]
-    },
-    {
-      t: 'button',
-      d: { ti: 'Add to shopping cart' },
-      c: ['Add to Cart']
-    }
-  ]
-};
-```
-
-### Helper Functions
-
-```typescript copy
-// Utility for creating elements
-function createElement(
-  tag: string,
-  children?: JsxChildren,
-  props?: GTProp
-): JsxElement {
-  const element: JsxElement = { t: tag };
-  if (children) element.c = children;
-  if (props) element.d = props;
-  return element;
-}
-
-// Usage
-const title = createElement('h2', ['Page Title']);
-const description = createElement('p', [
-  'Created by ',
-  { k: 'authorName' } as Variable
-]);
-```
-```
-
----
-
-## Notes
-
-* All properties are optional, allowing for flexible element creation
-* The `t` property should contain valid HTML tag names
-* GT properties (`d`) use shortened keys to reduce payload size
-* Accessibility attributes are fully supported through GT properties  
-* Elements can be nested to arbitrary depth while maintaining translatability
-* The `i` property is used internally for optimization and should be unique within a content tree
-* Children can mix text, variables, and other elements freely
 
 ## Related Types
 
-* See [`JsxChildren`](/docs/core/types/JsxChildren) for the children content type
-* See [`JsxChild`](/docs/core/types/JsxChild) for individual child element types
-* See [`GTProp`](/docs/core/types/GTProp) for element properties and attributes
-* See [`Variable`](/docs/core/types/Variable) for dynamic content within elements
-
-## Next Steps
-
-* See [JSX Element Guide](/docs/core/guides/jsx-elements) for advanced element patterns
-* See [Accessibility Guide](/docs/core/guides/accessibility) for inclusive design practices
-* See [HTML Attributes Guide](/docs/core/guides/html-attributes) for supported attribute mappings
+* [`JsxChildren`](/docs/core/types/JsxChildren) - Children content type
+* [`JsxChild`](/docs/core/types/JsxChild) - Individual child elements
+* [`Variable`](/docs/core/types/Variable) - Dynamic content

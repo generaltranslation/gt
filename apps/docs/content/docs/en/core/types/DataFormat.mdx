@@ -5,13 +5,11 @@ description: Enumeration of supported content format types for translation
 
 ## Overview
 
-`DataFormat` is a string literal union type that specifies the format of translatable content. It determines how content should be processed, validated, and rendered by the translation system.
+`DataFormat` specifies the format of translatable content.
 
 ```typescript
 type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 ```
-
-This type ensures type safety when working with different content formats and enables the translation system to apply appropriate processing logic for each format type.
 
 ## Type Definition
 
@@ -33,363 +31,36 @@ This type ensures type safety when working with different content formats and en
 
 ---
 
-## Example
+## Examples
 
 ### Format Specification
 
 ```typescript copy
-import { DataFormat, Entry, EntryMetadata } from 'generaltranslation';
-
-// Explicit format specification in metadata
 const jsxEntry: Entry = {
-  source: {
-    t: 'div',
-    c: ['Hello ', { k: 'name' }]
-  },
+  source: { t: 'div', c: ['Hello ', { k: 'name' }] },
   targetLocale: 'es',
-  metadata: {
-    dataFormat: 'JSX' as DataFormat
-  }
+  metadata: { dataFormat: 'JSX' }
 };
 
 const icuEntry: Entry = {
   source: 'Hello {name}',
   targetLocale: 'es',
-  metadata: {
-    dataFormat: 'ICU' as DataFormat
-  }
+  metadata: { dataFormat: 'ICU' }
 };
-
-const i18nextEntry: Entry = {
-  source: 'Hello {{name}}',
-  targetLocale: 'es',
-  metadata: {
-    dataFormat: 'I18NEXT' as DataFormat
-  }
-};
-```
-
-### Format Detection
-
-```typescript copy
-function detectDataFormat(content: any): DataFormat {
-  // JSX content (objects or arrays)
-  if (typeof content === 'object' && content !== null) {
-    return 'JSX';
-  }
-  
-  // String content - detect ICU vs i18next
-  if (typeof content === 'string') {
-    // ICU format indicators
-    if (content.includes('{') && content.includes(', ')) {
-      return 'ICU';
-    }
-    
-    // i18next format indicators
-    if (content.includes('{{') && content.includes('}}')) {
-      return 'I18NEXT';
-    }
-    
-    // Simple variables default to ICU
-    if (content.includes('{') && content.includes('}')) {
-      return 'ICU';
-    }
-    
-    // Plain text defaults to i18next
-    return 'I18NEXT';
-  }
-  
-  throw new Error('Unable to detect data format');
-}
-
-// Usage examples
-const examples = [
-  { t: 'div', c: ['Hello'] },              // JSX
-  'Hello {name}',                          // ICU
-  'Hello {{name}}',                        // I18NEXT
-  '{count, plural, one {item} other {items}}', // ICU
-  'Welcome back!'                          // I18NEXT (default)
-];
-
-examples.forEach(content => {
-  const format = detectDataFormat(content);
-  console.log(`Format: ${format}`, content);
-});
-```
-
-### Format-Specific Processing
-
-```typescript copy
-interface FormatProcessor {
-  jsx(content: JsxChildren): string;
-  icu(content: IcuMessage): string;  
-  i18next(content: I18nextMessage): string;
-}
-
-class ContentRenderer implements FormatProcessor {
-  process(content: any, format: DataFormat): string {
-    switch (format) {
-      case 'JSX':
-        return this.jsx(content);
-      case 'ICU':
-        return this.icu(content);
-      case 'I18NEXT':
-        return this.i18next(content);
-      default:
-        throw new Error(`Unsupported format: ${format}`);
-    }
-  }
-  
-  jsx(content: JsxChildren): string {
-    // Render JSX to string
-    if (typeof content === 'string') return content;
-    if (Array.isArray(content)) {
-      return content.map(child => this.renderChild(child)).join('');
-    }
-    return this.renderElement(content);
-  }
-  
-  icu(content: IcuMessage): string {
-    // Process ICU message format
-    return content; // Simplified - would use ICU processor
-  }
-  
-  i18next(content: I18nextMessage): string {
-    // Process i18next message format
-    return content; // Simplified - would use i18next processor
-  }
-  
-  private renderChild(child: JsxChild): string {
-    if (typeof child === 'string') return child;
-    if ('k' in child) return `{${child.k}}`;
-    return this.renderElement(child);
-  }
-  
-  private renderElement(element: JsxElement): string {
-    const tag = element.t || 'span';
-    const children = element.c ? this.jsx(element.c) : '';
-    return `<${tag}>${children}</${tag}>`;
-  }
-}
-```
-
-### Format Validation
-
-```typescript copy
-function validateDataFormat(format: any): format is DataFormat {
-  return typeof format === 'string' && 
-         ['JSX', 'ICU', 'I18NEXT'].includes(format);
-}
-
-function validateContentMatchesFormat(content: any, format: DataFormat): boolean {
-  switch (format) {
-    case 'JSX':
-      return typeof content === 'object' || Array.isArray(content);
-    case 'ICU':
-    case 'I18NEXT':
-      return typeof content === 'string';
-    default:
-      return false;
-  }
-}
-
-// Usage
-const validations = [
-  { content: { t: 'div' }, format: 'JSX' },        // ✅ Valid
-  { content: 'Hello {name}', format: 'ICU' },      // ✅ Valid  
-  { content: { t: 'div' }, format: 'ICU' },        // ❌ Invalid
-  { content: 'Hello', format: 'UNKNOWN' }          // ❌ Invalid format
-];
-
-validations.forEach(({ content, format }) => {
-  const formatValid = validateDataFormat(format);
-  const contentValid = formatValid ? 
-    validateContentMatchesFormat(content, format as DataFormat) : false;
-  
-  console.log(`Format: ${format}, Valid: ${formatValid && contentValid}`);
-});
-```
-
-### Format-Specific Templates
-
-```typescript copy
-interface MessageTemplates {
-  welcome: Record<DataFormat, any>;
-  productCard: Record<DataFormat, any>;
-  notification: Record<DataFormat, any>;
-}
-
-const templates: MessageTemplates = {
-  welcome: {
-    'JSX': [
-      'Welcome back, ',
-      { k: 'userName' },
-      '! You have ',
-      { k: 'messageCount', v: 'n' },
-      ' messages.'
-    ],
-    'ICU': 'Welcome back, {userName}! You have {messageCount, number} messages.',
-    'I18NEXT': 'Welcome back, {{userName}}! You have {{messageCount}} messages.'
-  },
-  
-  productCard: {
-    'JSX': {
-      t: 'div',
-      c: [
-        { t: 'h3', c: [{ k: 'productName' }] },
-        { t: 'p', c: ['Price: ', { k: 'price', v: 'c' }] }
-      ]
-    },
-    'ICU': '{productName} - Price: {price, number, currency}',
-    'I18NEXT': '{{productName}} - Price: {{price, currency}}'
-  },
-  
-  notification: {
-    'JSX': {
-      t: 'div',
-      c: [
-        { t: 'strong', c: ['Success!'] },
-        ' Your changes have been saved.'
-      ]
-    },
-    'ICU': 'Success! Your changes have been saved.',
-    'I18NEXT': 'Success! Your changes have been saved.'
-  }
-};
-```
-
-### Format Migration Utilities
-
-```typescript copy
-class FormatMigrator {
-  // Migrate from i18next to ICU format
-  i18nextToIcu(content: I18nextMessage): IcuMessage {
-    return content
-      .replace(/\{\{(\w+)\}\}/g, '{$1}')           // {{var}} → {var}
-      .replace(/\{\{(\w+),\s*(\w+)\}\}/g, '{$1, $2}'); // {{var, format}} → {var, format}
-  }
-  
-  // Migrate from ICU to i18next format (simplified)
-  icuToI18next(content: IcuMessage): I18nextMessage {
-    return content
-      .replace(/\{(\w+)\}/g, '{{$1}}')             // {var} → {{var}}
-      .replace(/\{(\w+),\s*\w+(?:,\s*\w+)?\}/g, '{{$1}}'); // Remove ICU formatting
-  }
-  
-  // Convert simple string to JSX
-  stringToJsx(content: string): JsxChildren {
-    // Simple conversion - would need more complex parsing for real use
-    return [content];
-  }
-  
-  // Extract text from JSX (loses formatting)
-  jsxToString(content: JsxChildren): string {
-    if (typeof content === 'string') return content;
-    if (Array.isArray(content)) {
-      return content.map(child => {
-        if (typeof child === 'string') return child;
-        if ('k' in child) return `{${child.k}}`;
-        return '[element]';
-      }).join('');
-    }
-    return '[element]';
-  }
-}
-
-// Usage
-const migrator = new FormatMigrator();
-const migrations = {
-  toIcu: migrator.i18nextToIcu('Hello {{name}}, you have {{count}} items'),
-  toI18next: migrator.icuToI18next('Hello {name}, you have {count, number} items'),
-  toJsx: migrator.stringToJsx('Hello world'),
-  toString: migrator.jsxToString(['Hello ', { k: 'name' }])
-};
-
-console.log('Migrations:', migrations);
-```
-
-### Format-Aware Translation Entry Builder
-
-```typescript copy
-class TranslationEntryBuilder {
-  private source: any;
-  private locale: string = '';
-  private format?: DataFormat;
-  
-  withSource(source: any): this {
-    this.source = source;
-    return this;
-  }
-  
-  withTargetLocale(locale: string): this {
-    this.locale = locale;
-    return this;
-  }
-  
-  withFormat(format: DataFormat): this {
-    this.format = format;
-    return this;
-  }
-  
-  withAutoFormat(): this {
-    this.format = detectDataFormat(this.source);
-    return this;
-  }
-  
-  build(): Entry {
-    const format = this.format || detectDataFormat(this.source);
-    
-    if (!validateContentMatchesFormat(this.source, format)) {
-      throw new Error(`Content doesn't match specified format: ${format}`);
-    }
-    
-    return {
-      source: this.source,
-      targetLocale: this.locale,
-      metadata: {
-        dataFormat: format
-      }
-    };
-  }
-}
-
-// Usage
-const entries = [
-  new TranslationEntryBuilder()
-    .withSource({ t: 'div', c: ['Hello'] })
-    .withTargetLocale('es')
-    .withFormat('JSX')
-    .build(),
-    
-  new TranslationEntryBuilder()
-    .withSource('Hello {name}')
-    .withTargetLocale('fr')
-    .withAutoFormat()
-    .build()
-];
 ```
 
 ---
 
 ## Notes
 
-* DataFormat determines how content is processed and validated by the translation system
-* JSX format supports rich HTML elements but requires more complex processing
-* ICU format provides powerful built-in formatting for numbers, dates, and pluralization  
-* I18NEXT format offers simple interpolation and wide ecosystem compatibility
-* Format specification in metadata helps ensure proper content processing
-* Auto-detection is possible but explicit format specification is recommended for reliability
+* DataFormat determines how content is processed by the translation system
+* Format specification in metadata ensures proper content processing
+* Auto-detection is possible but explicit specification is recommended
 
 ## Related Types
 
-* See [`Content`](/docs/core/types/Content) for the union of all content format types
-* See [`JsxChildren`](/docs/core/types/JsxChildren) for JSX format content
-* See [`IcuMessage`](/docs/core/types/IcuMessage) for ICU MessageFormat content
-* See [`I18nextMessage`](/docs/core/types/I18nextMessage) for i18next format content
-* See [`EntryMetadata`](/docs/core/types/EntryMetadata) for specifying format in translation entries
-
-## Next Steps
-
-* See [Content Format Guide](/docs/core/guides/content-formats) for choosing the right format
-* See [Format Migration Guide](/docs/core/guides/format-migration) for converting between formats
-* See [Translation Best Practices](/docs/core/guides/best-practices) for format-specific recommendations
+* [`Content`](/docs/core/types/Content) - Union of all content format types
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX format content
+* [`IcuMessage`](/docs/core/types/IcuMessage) - ICU MessageFormat content
+* [`I18nextMessage`](/docs/core/types/I18nextMessage) - i18next format content
+* [`EntryMetadata`](/docs/core/types/EntryMetadata) - Format specification in entries
