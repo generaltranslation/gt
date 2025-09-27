@@ -1,205 +1,145 @@
 ---
-title: Middleware
-description: A step by step guide on adding internationalization (i18n) middleware routing to your application
+title: Language Detection Middleware
+description: Automatic language detection and URL routing based on user preferences
 ---
 
-## Overview
-This guide will walk you through adding i18n middleware routing and localized paths to your Next.js application using `gt-next`'s built-in middleware.
+Middleware automatically detects user language preferences and redirects them to the appropriate localized version of your site. It uses browser settings, geolocation, and user preferences to serve the right language before any content loads.
 
-### What is i18n middleware routing?
+<Callout>
+  **File location:** Place `middleware.ts` in your project root, at the same level as your `app/` directory - not inside it.
+</Callout>
 
-Creating new routes for each language has the advantage of making your website more user friendly and improve SEO.
-i18n routing allows you to associate specific URLs with different locales.
-For example, you can have `/en/airplanes` for English, `/zh/airplanes` for Chinese, and so on.
+## Setup
 
-You can take this one step further with localized paths.
-These are an extension of i18n routing that allow you to specify an alias path for a locale.
-For example, you can specify `/en/airplanes` for English, `/zh/飞机` for Chinese, and so on.
-
----
-
-## Set up i18n routing
-
-We will take you through two easy steps to add i18n routing to your Next.js application:
-
-<Steps>
-    <Step>
-        Add a dynamic route to your app folder.
-    </Step>
-    <Step>
-        Create the middleware file.
-    </Step>
-</Steps>
-
-
-### Step 1: Add a Dynamic Route [#dynamic-route]
-
-Insert a directory in your app folder called `[locale]` (e.g., `app/[locale]`).
-Include all of your pages and layouts under this directory.
+### Step 1: Create Dynamic Route
+Create a `[locale]` directory in your `app/` folder and move all pages inside it:
 
 <Files>
   <Folder name="my-app" defaultOpen={true}>
-    <File name="middleware.js" />
+    <File name="middleware.ts" />
     <Folder name="app" defaultOpen={true}>
       <Folder name="[locale]" defaultOpen={true}>
-        <File name="layout.js" />
-        <File name="page.js" />
-        <Folder name="some-page">
-          <File name="page.js" />
+        <File name="layout.tsx" />
+        <File name="page.tsx" />
+        <Folder name="about">
+          <File name="page.tsx" />
         </Folder>
       </Folder>
       <Folder name="api">
-        <File name="route.js" />
+        <File name="route.ts" />
       </Folder>
-    </Folder>
-    <Folder name="public">
-      <Folder name="images">
-        <File name="logo.png" />
-      </Folder>
-    </Folder>
-    <Folder name="styles">
-      <File name="globals.css" />
     </Folder>
     <File name="next.config.js" />
   </Folder>
 </Files>
 
-Ensure all special files inside `app/` are nested under `app/[locale]`.
+### Step 2: Add Middleware
+Create `middleware.ts` in your project root:
 
-
-
-### Step 2: Add the middleware file [#middleware]
-
-In Next.js, create a file called `middleware.js` (or `.ts` if you are using TypeScript) inside the root directory.
-If you are using the `src/` folder, place it in `src/middleware.js` (or `.ts`) instead.
-Add the [`createNextMiddleware()`](/docs/next/api/middleware/createNextMiddleware) function to the file.
-
-```js title="middleware.js" copy
-import { createNextMiddleware } from 'gt-next/middleware'
+```ts
+import { createNextMiddleware } from 'gt-next/middleware';
 
 export default createNextMiddleware();
 
 export const config = {
-  matcher: [
-    /*
-      * Match all request paths except for the ones starting with:
-      * - api (API routes)
-      * - _next (internal files)
-      * - static files
-      */
-    "/((?!api|static|.*\\..*|_next).*)",
-  ],
-}
+  // Match all paths except API routes, static files, and Next.js internals
+  matcher: ['/((?!api|static|.*\\..*|_next).*)']
+};
 ```
 
----
+This enables automatic language detection and URL routing with locale prefixes like `/en/about`, `/es/about`.
 
-## Set up localized paths
+## Language Detection
 
-You can specify localized paths through the `pathConfig` option in the middleware file.
+The middleware detects user language preferences in this order:
 
-```js title="middleware.js" copy
+1. **URL locale** - `/es/about` → Spanish
+2. **User cookie** - Previous language selection  
+3. **Browser headers** - `Accept-Language` header
+4. **Default locale** - Configured fallback language
+
+The middleware automatically handles browser language detection and cookie persistence without additional configuration.
+
+## Localized Paths
+
+Customize URL paths for different languages:
+
+```ts
 export default createNextMiddleware({
   pathConfig: {
-    // You can specify a shared path (optional)
-    // This will create "/en/about" and "/zh/about"
-    "/about": "/about",
-
-    // Specify localized paths
-    // This will create "/en/airplanes" and "/zh/飞机"
-    "/airplanes": {
-      "zh": "/飞机",
+    // English: /en/products, Chinese: /zh/产品
+    "/products": {
+      "zh": "/产品"
+    },
+    
+    // Dynamic routes: /en/product/123, /zh/产品/123
+    "/product/[id]": {
+      "zh": "/产品/[id]"
     }
-
-    // Add dynamic path parameters
-    // This will create "/en/airports/123" and "/zh/飞机机场/123"
-    "/airports/[id]": {
-      "zh": "/飞机机场/[id]",
-    }
-  },
+  }
 });
 ```
-In this example we create a default path for `/en/about` and localized paths for `/en/airplanes` and `/en/airports/[id]`.
-In Chinese, these will be aliased to `/zh/about`, `/zh/飞机` and `/zh/飞机机场/[id]` respectively.
+
+## URL Structure
+
+By default, your default locale will **not** be prefixed with a locale code:
+
+```
+/about     → /about        (default locale: English)
+/about     → /es/about     (Spanish)
+/about     → /fr/about     (French)
+```
+
+### Add Prefix to Default Locale
+To prefix all locales including the default:
+
+```ts
+export default createNextMiddleware({
+  prefixDefaultLocale: true
+});
+```
+
+Result:
+```
+/about     → /en/about     (English, with prefix)
+/about     → /es/about     (Spanish, with prefix)
+/about     → /fr/about     (French, with prefix)
+```
+
+## Common Issues
+
+### Missing Dynamic Route
+All pages must be inside `[locale]/`:
+
+```
+❌ Wrong:
+app/
+├── page.tsx
+└── about/page.tsx
+
+✅ Correct:
+app/
+└── [locale]/
+    ├── page.tsx
+    └── about/page.tsx
+```
+
+### Matcher Configuration
+Exclude API routes and static files:
+
+```ts
+export const config = {
+  matcher: ['/((?!api|static|.*\\..*|_next).*)']
+};
+```
 
 <Callout>
-  **Tip:**
-  Because the `/about` path remains the same for all locales, you don't need to include it in the `pathConfig` object.
-  Any paths that are not specified in the `pathConfig` object will use the same path for all locales following the locale prefix.
+  Test your middleware configuration thoroughly - incorrect matchers can cause infinite redirects or break static assets.
 </Callout>
 
-
----
-
-## Routing behavior
-
-### Default locale prefixing
-By default, your `defaultLocale` (a.k.a. your app's default language) will not be prefixed with a locale code in the url.
-For example, if your default locale is `en` and you have a page at `/about`, it will be accessible at `/about` in English.
-However, in Chinese, it will be accessible at `/zh/about` in Chinese.
-
-If you do not want this behavior, it can be disabled by setting the `prefixDefaultLocale` to `false` in the middleware configuration.
-
-### Locale detection and redirection
-The middleware will detect the user's locale based on (1) the url path locale, (2) the referrer locale, (3) the accepted languages from the browser, and (4) finally the `defaultLocale`.
-The user will then be redirected accordingly.
-
-
-<Steps>
-  <Step>
-    Locale is always first checked from the url path.
-    This means that if you visit `/zh/about`, your language will assume to be Chinese.
-  </Step>
-  <Step>
-    If the page you visit is not prefixed by a locale, then the middleware will check the user's previous locale.
-    For example, if you are on `/zh`, and you visit `/about`, your language will assume to be Chinese, and you will be redirected to `/zh/about`.
-  </Step>
-  <Step>
-    If neither of these are available, then locale detection will fallback to the user's browser language.
-    For instance, if someone's preferred language is Chinese, and they visit `/about` for the firs time, they will be redirected to `/zh/about`.
-  </Step>
-  <Step>
-    If none of these conditions are met, then the `defaultLocale` will be used as the fallback.
-  </Step>
-</Steps>
-
-If at any time a localized version of the page exists, they will be redirected to the localized url.
-For instance, `/zh/airplanes` will always redirect to `/zh/飞机`.
-
-#### Edge case: Localized paths without locale prefix
-
-If you navigate to a localized path without the locale prefix (e.g., `/飞机`), the middleware will prefix that path with whatever it thinks your current locale is.
-
-For example, visiting `/飞机` will only redirect to `/zh/飞机` if the middleware explicitly recognizes your locale as `zh`.
-This is great but it only works when the middleware thinks your locale is `zh`.
-
-Otherwise, your path will be prefixed with your current locale.
-For example, visiting `/飞机` will redirect to `/en/飞机` if the middleware thinks your locale is `en`.
-This will result in a 404.
-
-We recommend always using the path from your `defaultLocale` for any links in your project.
-This will always automatically redirect to the correct locale localized path.
-```jsx
-<Link href="/about">About</Link>
-<Link href="/planes">Planes</Link>
-<Link href="/airports/123">Airport 123</Link>
-```
-
-If you want to explicitly link to a different locale, then you can do so by using the localized path.
-```jsx
-<Link href="/zh/about">About in Chinese</Link>
-<Link href="/zh/飞机">Planes in Chinese</Link>
-<Link href="/zh/飞机机场/123">Airport 123 in Chinese</Link>
-```
-
-
----
-
-
-## Notes
- * i18n routing changes the URL structure of your application. Each language has its own URL.
- * The middleware file is required to handle the routing logic.
- * You can specify the supported locales in the middleware configuration and next config file.
-
 ## Next Steps
- * See the API docs for [`createNextMiddleware()`](/docs/next/api/middleware/createNextMiddleware).
+
+- [SSG Guide](/docs/next/guides/ssg) - Static generation with locale routing
+- [RTL Support](/docs/next/guides/rtl) - Right-to-left languages  
+- API References:
+  - [`createNextMiddleware()` Function](/docs/next/api/middleware/createNextMiddleware)

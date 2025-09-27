@@ -1,0 +1,98 @@
+---
+title: getLocaleName()
+description: API Reference for the GT getLocaleName method
+---
+
+## Overview
+
+The `getLocaleName()` method retrieves the display name of a locale code using the `Intl.DisplayNames` API.
+It returns a human-readable name for any valid BCP-47 locale code, localized according to the instance's source locale.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+const name = gt.getLocaleName('fr-CA');
+console.log(name); // "French (Canada)"
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale',
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get the display name for. If not provided, uses the instance's `targetLocale` |
+
+### Returns
+
+`string` - The localized display name of the locale.
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Behavior
+
+### Display Language
+
+The display name is localized according to:
+1. Instance's `sourceLocale` (if configured)
+2. Library default locale ('en')
+
+### Custom Mapping Integration
+
+- Custom locale mappings are checked first
+- If a custom name is defined, it takes precedence
+- Falls back to `Intl.DisplayNames` for standard BCP-47 codes
+
+---
+
+## Examples
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'fr'
+});
+
+// Get name for target locale
+console.log(gt.getLocaleName()); // "French (France)"
+
+// Get names for other locales
+console.log(gt.getLocaleName('es')); // "Spanish (Spain)"
+console.log(gt.getLocaleName('de')); // "German (Germany)"
+console.log(gt.getLocaleName('ja')); // "Japanese (Japan)"
+```
+
+---
+
+## Notes
+
+- The method uses the instance's `sourceLocale` to determine display language
+- Custom mapping names take precedence over standard Intl.DisplayNames
+
+## Next Steps
+
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/class/methods/locales/getLocaleEmoji)
+- Get comprehensive locale info with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Learn about CustomMapping type](/docs/core/types/CustomMapping)
+- Explore standalone [`getLocaleName()`](/docs/core/functions/locales/getLocaleName)

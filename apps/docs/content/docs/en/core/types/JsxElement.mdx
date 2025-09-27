@@ -1,0 +1,62 @@
+---
+title: JsxElement
+description: Type definition for structured HTML-like elements in translatable JSX content
+---
+
+## Overview
+
+`JsxElement` represents structured HTML-like elements in translatable JSX content.
+
+```typescript
+type JsxElement = {
+  t?: string;      // tag name
+  i?: number;      // id
+  d?: GTProp;      // GT data/properties
+  c?: JsxChildren; // children
+};
+```
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `t?` | `string` | HTML tag name |
+| `i?` | `number` | Internal identifier |
+| `d?` | `GTProp` | GT properties/attributes |
+| `c?` | `JsxChildren` | Child content |
+
+### Common GT Keys
+
+| GT Key | HTML Attribute |
+|--------|----------------|
+| `pl` | `placeholder` |
+| `ti` | `title` |
+| `alt` | `alt` |
+| `arl` | `aria-label` |
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { JsxElement, Variable } from 'generaltranslation';
+
+// Simple element
+const heading: JsxElement = {
+  t: 'h1',
+  c: ['Welcome']
+};
+
+// With attributes
+const button: JsxElement = {
+  t: 'button',
+  d: { ti: 'Submit form' },
+  c: ['Submit']
+};
+```
+
+## Related Types
+
+* [`JsxChildren`](/docs/core/types/JsxChildren) - Children content type
+* [`JsxChild`](/docs/core/types/JsxChild) - Individual child elements
+* [`Variable`](/docs/core/types/Variable) - Dynamic content

@@ -1,0 +1,140 @@
+---
+title: downloadFileBatch()
+description: API Reference for the downloadFileBatch() method to download multiple translation files in a single request
+---
+
+## Overview
+
+The `downloadFileBatch()` method downloads multiple translation files in a single batch request.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const result = await gt.downloadFileBatch([
+  'translation-id-1', 
+  'translation-id-2', 
+  'translation-id-3'
+]);
+```
+
+<Callout>
+**Batch Efficiency:**
+This method is optimized for downloading multiple files in a single API call, reducing network overhead and improving performance compared to multiple individual `downloadTranslatedFile()` calls.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `fileIds` | `string[]` | Array of translation file IDs to download |
+| `options?` | `DownloadFileBatchOptions` | Optional configuration for the download request |
+
+#### DownloadFileBatchOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<DownloadFileBatchResult>` - Contains the downloaded files and metadata.
+
+```typescript
+type DownloadFileBatchResult = {
+  files: File[];
+  count: number;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `files` | `File[]` | Array of downloaded file objects |
+| `count` | `number` | Number of files successfully downloaded |
+
+#### File Structure
+
+```typescript
+type File = {
+  id: string;
+  fileName: string;
+  data: string;
+  metadata: any;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Translation file ID |
+| `fileName` | `string` | Original file name |
+| `data` | `string` | File content as UTF-8 string (decoded from Base64) |
+| `metadata` | `any` | Additional file metadata |
+
+---
+
+## Examples
+
+
+```typescript title="index.ts" copy
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+});
+
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
+);
+
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
+});
+
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
+// (5) Download the file
+const result = await gt.downloadFileBatch(translationIds);
+```
+
+---
+
+## Notes
+
+* File IDs must be valid translation IDs - use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to verify completion first
+* Files are returned in the same order as the requested IDs when possible
+* Failed individual file downloads within the batch don't cause the entire batch to fail
+
+## Next Steps
+
+* See [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) for single file downloads
+* See [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to verify files are ready for download
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translation jobs
+* See [`fetchTranslations()`](/docs/core/class/methods/translation/fetchTranslations) to get translation metadata
+* See [`DownloadFileBatchResult`](/docs/core/types/DownloadFileBatchResult) for detailed result structure

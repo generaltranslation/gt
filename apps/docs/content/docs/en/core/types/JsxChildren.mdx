@@ -1,0 +1,76 @@
+---
+title: JsxChildren
+description: Type definition for JSX content that can be translated and rendered
+---
+
+## Overview
+
+`JsxChildren` represents JSX content containing text, elements, and variables for translation.
+
+```typescript
+type JsxChildren = JsxChild | JsxChild[];
+```
+
+## Structure
+
+```typescript
+type JsxChild = string | JsxElement | Variable;
+```
+
+| Type | Description |
+|------|-------------|
+| `string` | Plain text content |
+| `JsxElement` | Structured element |
+| `Variable` | Dynamic placeholder |
+
+### JsxElement
+
+```typescript
+type JsxElement = {
+  t?: string;      // tag name
+  i?: number;      // id  
+  d?: GTProp;      // GT properties
+  c?: JsxChildren; // children
+};
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { JsxChildren, Variable } from 'generaltranslation';
+
+// Simple text
+const text: JsxChildren = "Welcome!";
+
+// Text with variables
+const greeting: JsxChildren = [
+  "Hello, ",
+  { k: 'userName' } as Variable,
+  "!"
+];
+```
+
+### Structured Elements
+
+```typescript copy
+// Div element
+const divElement: JsxChildren = {
+  t: 'div',
+  c: ['Content here']
+};
+
+// Link with title
+const linkElement: JsxChildren = {
+  t: 'a',
+  d: { ti: 'Visit homepage' },
+  c: ['Click here']
+};
+```
+
+## Related Types
+
+* [`JsxChild`](/docs/core/types/JsxChild) - Individual child element types
+* [`JsxElement`](/docs/core/types/JsxElement) - Structured element definitions
+* [`Variable`](/docs/core/types/Variable) - Dynamic content placeholders

@@ -1,0 +1,126 @@
+---
+title: checkSetupStatus()
+description: API Reference for the checkSetupStatus() method to monitor project setup job progress
+---
+
+## Overview
+
+The `checkSetupStatus()` method checks the current status of a project setup job using its unique identifier.
+This method is used to monitor the progress of asynchronous setup operations initiated by [`setupProject()`](/docs/core/class/methods/translation/setupProject).
+Set up handles tasks like corpus analysis, context generation, glossary generation, etc.
+
+Set up automatically runs when elements of context are missing.
+This typically means that when you run translate for the first time, you will see a setup job running.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const status = await gt.checkSetupStatus('setup-job-123');
+console.log(`Setup status: ${status.status}`);
+```
+
+<Callout>
+  To check the status of a setup job, you must first called both [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) and [`setupProject()`](/docs/core/class/methods/translation/setupProject).
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `jobId` | `string` | The unique identifier of the setup job to check |
+| `timeoutMs?` | `number` | Optional timeout in milliseconds for the API request |
+
+### Returns
+
+`Promise<CheckSetupStatusResult>` - Contains the current job status and related information.
+
+```typescript
+type CheckSetupStatusResult = {
+  jobId: string;
+  status: SetupJobStatus;
+  error?: { message: string };
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `jobId` | `string` | The setup job identifier that was checked |
+| `status` | `SetupJobStatus` | Current status of the setup job |
+| `error?` | `{ message: string }` | Error information if status is `'failed'` |
+
+#### SetupJobStatus
+
+```typescript
+type SetupJobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+```
+
+- `'queued'` - Job is waiting to be processed
+- `'processing'` - Job is currently being executed
+- `'completed'` - Job finished successfully
+- `'failed'` - Job encountered an error and failed
+
+---
+
+## Example
+
+### Basic Status Checking
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key'
+});
+
+
+const fileRefs = [
+  {
+    fileId: 'file-123',
+    versionId: 'version-456',
+    fileName: 'app.json',
+    fileFormat: 'JSON'
+  },
+  {
+    fileId: 'file-789',
+    versionId: 'version-012',
+    fileName: 'content.md',
+    fileFormat: 'MD'
+  }
+];
+
+const setupResult = await gt.setupProject(fileRefs);
+
+async function checkJobStatus(jobId: string) {
+  const status = await gt.checkSetupStatus(jobId);
+  
+  console.log(`Job ${jobId}:`);
+  console.log(`  Status: ${status.status}`);
+  
+  if (status.error) {
+    console.log(`  Error: ${status.error.message}`);
+  }
+  
+  return status;
+}
+
+const jobStatus = await checkJobStatus(setupResult.setupJobId);
+```
+
+---
+
+## Notes
+
+* Set up automatically runs when elements of context are missing.
+* Set up is responsible for corpus analysis, context generation, glossary generation, etc.
+* Job IDs are returned by [`setupProject()`](/docs/core/class/methods/translation/setupProject) and should be stored for status checking
+
+## Next Steps
+
+* See [`setupProject()`](/docs/core/class/methods/translation/setupProject) to initiate setup jobs
+* See [`shouldSetupProject()`](/docs/core/class/methods/translation/shouldSetupProject) to check if setup is required
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to proceed after setup completion
+* See [`getProjectData()`](/docs/core/class/methods/translation/getProjectData) for project information
+* See [`CheckSetupStatusResult`](/docs/core/types/CheckSetupStatusResult) for detailed result type information

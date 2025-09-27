@@ -33,7 +33,7 @@ This open-source repo contains internationalization libraries for React framewor
 
 ## Add the `<T>` component and see translations as you code:
 
-![Demo](./apps/docs/public/live_translations.gif)
+![Demo](./apps/docs/public/demo.gif)
 
 ## Features
 

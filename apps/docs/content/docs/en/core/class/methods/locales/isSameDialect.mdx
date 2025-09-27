@@ -1,0 +1,110 @@
+---
+title: isSameDialect()
+description: API Reference for the GT isSameDialect method
+---
+
+## Overview
+
+The `isSameDialect()` method checks if multiple BCP-47 locale codes represent the same dialect.
+It compares the language and region components of locale codes to determine if they represent the same linguistic variety.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "...locales": {
+      type: '(string | string[])[]',
+      optional: false,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `...locales` | Variable number of locale codes (strings) or arrays of locale codes to compare. All provided locales must represent the same dialect |
+
+### Returns
+
+`boolean` - `true` if all provided locale codes represent the same dialect, `false` otherwise
+
+### Throws
+
+No exceptions are thrown. Invalid locale codes are handled gracefully and return `false`.
+
+---
+
+## Behavior
+
+### Dialect Comparison Logic
+
+The method uses the following logic to determine dialect equality:
+1. **Normalize locales** - Standardizes all input locale codes
+2. **Compare language codes** - All locales must have the same base language
+3. **Handle region hierarchy** - A base language matches its regional variants
+4. **Exact dialect matching** - Regional variants must match exactly
+
+### Hierarchy Rules
+
+- Base language (`'en'`) matches any regional variant (`'en-US'`, `'en-GB'`)
+- Regional variants match only exactly (`'en-US'` ≠ `'en-GB'`)
+- Script variants are considered in the comparison when present
+- Different languages never match (`'en'` ≠ `'es'`)
+
+### Input Flexibility
+
+The method accepts:
+- Multiple string parameters: `isSameDialect('en-US', 'en-GB')`
+- Arrays of strings: `isSameDialect(['en-US', 'en-GB'])`
+- Mixed format: `isSameDialect('en-US', ['en-GB', 'en-CA'])`
+- Single locale: `isSameDialect('en-US')` (always returns `true`)
+
+---
+
+## Examples
+
+### Basic Dialect Comparison
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES'
+});
+
+// Same exact dialects
+console.log(gt.isSameDialect('en-US', 'en-US')); // true
+console.log(gt.isSameDialect('zh-CN', 'zh-CN')); // true
+
+// Different dialects of same language
+console.log(gt.isSameDialect('en-US', 'en-GB')); // false
+console.log(gt.isSameDialect('es-ES', 'es-MX')); // false
+console.log(gt.isSameDialect('pt-PT', 'pt-BR')); // false
+
+// Base language with regional variants
+console.log(gt.isSameDialect('en', 'en-US')); // true
+console.log(gt.isSameDialect('es', 'es-ES')); // true
+console.log(gt.isSameDialect('zh', 'zh-CN')); // true
+
+// Different languages
+console.log(gt.isSameDialect('en-US', 'es-ES')); // false
+console.log(gt.isSameDialect('fr-FR', 'de-DE')); // false
+```
+
+---
+
+## Notes
+
+- Uses standardized locale codes for accurate comparison
+- Accepts flexible input formats (strings, arrays, mixed)
+
+## Next Steps
+
+- Compare languages with [`isSameLanguage()`](/docs/core/class/methods/locales/isSameLanguage)
+- Check locale hierarchy with [`isSupersetLocale()`](/docs/core/class/methods/locales/isSupersetLocale)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Explore standalone [`isSameDialect()`](/docs/core/functions/locales/isSameDialect)

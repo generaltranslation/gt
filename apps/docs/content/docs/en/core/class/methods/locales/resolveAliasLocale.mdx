@@ -1,0 +1,79 @@
+---
+title: resolveAliasLocale()
+description: API Reference for the GT resolveAliasLocale method
+---
+
+## Overview
+
+The `resolveAliasLocale()` method resolves a canonical locale code back to its original alias locale code when custom mapping is configured.
+This is the inverse operation of `resolveCanonicalLocale()`.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+      default: 'this.customMapping'
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | The canonical locale code to resolve back to its alias |
+| `customMapping` | Optional custom mapping to use instead of the instance's mapping |
+
+### Returns
+
+`string` - The alias locale code if a mapping exists, otherwise the original locale code
+
+### Throws
+
+- `Error` - If no locale is provided and no target locale is configured
+
+---
+
+
+## Examples
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  customMapping: {
+    'cn': { code: 'zh', name: 'Mandarin' },
+  }
+});
+
+// Resolve canonical locale back to alias
+const alias = gt.resolveAliasLocale('zh');
+console.log(alias); // "cn"
+
+// Non-mapped locale returns the original
+const unchanged = gt.resolveAliasLocale('es');
+console.log(unchanged); // "es"
+```
+---
+
+## Notes
+
+- Returns the original alias locale code when a custom mapping exists
+- Returns the input locale unchanged if no mapping is found
+
+## Next Steps
+
+- Resolve canonical locales with [`resolveCanonicalLocale()`](/docs/core/class/methods/locales/resolveCanonicalLocale)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Explore standalone [`resolveAliasLocale()`](/docs/core/functions/locales/resolveAliasLocale)

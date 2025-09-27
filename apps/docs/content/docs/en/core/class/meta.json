@@ -1,0 +1,8 @@
+{
+  "title": "GT Class",
+  "pages": [
+    "./constructor",
+    "./setConfig",
+    "./methods"
+  ]
+}

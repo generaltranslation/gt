@@ -1,0 +1,21 @@
+{
+  "title": "Types",
+  "pages": [
+    "./Content",
+    "./CustomMapping",
+    "./DataFormat",
+    "./EnqueueFilesOptions",
+    "./Entry",
+    "./EntryMetadata",
+    "./FileToTranslate",
+    "./GTConstructorParams",
+    "./JsxChild",
+    "./JsxChildren",
+    "./JsxElement",
+    "./LocaleProperties",
+    "./TranslateManyResult",
+    "./TranslationResult",
+    "./Variable",
+    "./VariableType"
+  ]
+}

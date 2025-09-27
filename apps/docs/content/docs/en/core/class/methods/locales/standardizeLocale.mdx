@@ -1,0 +1,87 @@
+---
+title: standardizeLocale()
+description: API Reference for the GT standardizeLocale method
+---
+
+## Overview
+
+The `standardizeLocale()` method standardizes a BCP-47 locale code to ensure correct formatting and casing.
+It converts locale codes to their proper canonical format, making them suitable for use with internationalization APIs and ensuring consistency across your application.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale'
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | The BCP-47 locale code to standardize. If not provided, uses the instance's `targetLocale` |
+
+### Returns
+
+`string` - The standardized BCP-47 locale code, or empty string if the input is invalid
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Behavior
+
+Common format corrections applied:
+- `en_US` → `en-US` (underscore to hyphen)
+- `zh_cn` → `zh-CN` (underscore to hyphen, casing)
+- `EN-gb` → `en-GB` (language lowercase, region uppercase)
+- `Fr-ca` → `fr-CA` (proper casing throughout)
+- `ja_jp` → `ja-JP` (underscore and casing)
+
+---
+
+## Examples
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es-ES'
+});
+
+// Standardize various locale formats
+console.log(gt.standardizeLocale('en_us')); // "en-US"
+console.log(gt.standardizeLocale('zh_cn')); // "zh-CN"
+console.log(gt.standardizeLocale('EN-gb')); // "en-GB"
+console.log(gt.standardizeLocale('fr-ca')); // "fr-CA"
+
+// Already standardized locales pass through unchanged
+console.log(gt.standardizeLocale('es-ES')); // "es-ES"
+console.log(gt.standardizeLocale('ja-JP')); // "ja-JP"
+```
+
+---
+
+## Notes
+
+- Converts underscores to hyphens and normalizes casing
+- Returns empty string for invalid locale codes
+- Language codes become lowercase, region codes become uppercase
+- Preserves locale extensions and variants when present
+
+## Next Steps
+
+- Validate standardized locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Resolve canonical locales with [`resolveCanonicalLocale()`](/docs/core/class/methods/locales/resolveCanonicalLocale)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Explore standalone [`standardizeLocale()`](/docs/core/functions/locales/standardizeLocale)

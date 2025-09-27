@@ -1,0 +1,118 @@
+---
+title: getLocaleProperties()
+description: API Reference for the standalone getLocaleProperties function
+---
+
+## Overview
+
+The standalone `getLocaleProperties()` function retrieves properties for a locale code without requiring a GT class instance.
+It provides detailed information including display names, region codes, script information, and emoji flags in a complete `LocaleProperties` object.
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+const props = getLocaleProperties('fr-CA', 'en');
+console.log(props.name); // "French (Canada)"
+console.log(props.nativeName); // "français (Canada)"
+console.log(props.emoji); // "🇨🇦"
+console.log(props.regionCode); // "CA"
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "defaultLocale?": {
+      type: 'string',
+      optional: true,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get properties for |
+| `defaultLocale` | Locale to use for localizing display names (defaults to 'en') |
+| `customMapping` | Optional custom mapping for locale codes and properties |
+
+### Returns
+
+`LocaleProperties` - A comprehensive object containing all locale information:
+
+- `code`: Standardized locale code
+- `name`: Display name in default locale
+- `nativeName`: Display name in the locale itself
+- `languageCode`, `languageName`, `nativeLanguageName`: Language information
+- `regionCode`, `regionName`, `nativeRegionName`: Region information  
+- `scriptCode`, `scriptName`, `nativeScriptName`: Script information
+- `maximizedCode`, `minimizedCode`: Canonical forms
+- `nameWithRegionCode`, `nativeNameWithRegionCode`: Combined display formats
+- `emoji`: Flag or representative emoji
+
+---
+
+## Behavior
+
+### Custom Mapping Integration
+
+- Custom mappings are checked first for all properties
+- Supports alias resolution and property overrides
+- Falls back to standard Intl APIs for unmapped codes
+- Canonical locale resolution for aliased locales
+
+---
+
+## Examples
+
+```typescript
+import { getLocaleProperties } from 'generaltranslation';
+
+// English display names
+const enProps = getLocaleProperties('es-MX', 'en');
+console.log(enProps.name); // "Spanish (Mexico)"
+console.log(enProps.languageName); // "Spanish"
+console.log(enProps.regionName); // "Mexico"
+console.log(enProps.emoji); // "🇲🇽"
+
+// French display names
+const frProps = getLocaleProperties('es-MX', 'fr');
+console.log(frProps.name); // "espagnol (Mexique)"
+console.log(frProps.languageName); // "espagnol"
+console.log(frProps.regionName); // "Mexique"
+
+// Native names are always in the target locale
+console.log(enProps.nativeName); // "español (México)"
+console.log(frProps.nativeName); // "español (México)"
+```
+
+
+---
+
+## Notes
+
+- Function provides locale data without GT class instantiation
+- Custom mapping properties take precedence over standard Intl APIs  
+- The complete `LocaleProperties` interface is always returned
+- Native names are always computed in the target locale itself
+
+## Next Steps
+
+- Explore [`LocaleProperties` interface](/docs/core/types/LocaleProperties) - Complete interface documentation
+- Use GT class method [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Get simple locale names with [`getLocaleName()`](/docs/core/functions/locales/getLocaleName)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
+- Learn about [`CustomMapping` type](/docs/core/types/CustomMapping)

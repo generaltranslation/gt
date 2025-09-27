@@ -1,0 +1,60 @@
+---
+title: isSameLanguage()
+description: API Reference for the isSameLanguage function
+---
+
+## Overview
+
+The `isSameLanguage()` function checks if multiple BCP-47 locale codes represent the same base language, ignoring regional differences.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "...locales": {
+      type: '(string | string[])[]',
+      optional: false,
+    }
+  }}
+/>
+
+### Returns
+
+`boolean` - `true` if all locale codes represent the same base language
+
+---
+
+## Examples
+
+
+```typescript
+import { isSameLanguage } from 'generaltranslation';
+
+// Same language, different regions
+console.log(isSameLanguage('en-US', 'en-GB')); // true
+console.log(isSameLanguage('es-ES', 'es-MX')); // true
+console.log(isSameLanguage('zh-CN', 'zh-TW')); // true
+
+// Different languages
+console.log(isSameLanguage('en-US', 'es-ES')); // false
+console.log(isSameLanguage('fr-FR', 'de-DE')); // false
+```
+
+---
+
+## Notes
+
+- Compares only base language codes (before first hyphen)
+- Ignores regional, script, and variant differences
+- Essential for language-based content organization
+- Works with variable number of parameters
+
+## Next Steps
+
+- Use GT class method [`isSameLanguage()`](/docs/core/class/methods/locales/isSameLanguage)
+- Compare dialects with [`isSameDialect()`](/docs/core/functions/locales/isSameDialect)
+- Check requirements with [`requiresTranslation()`](/docs/core/functions/locales/requiresTranslation)

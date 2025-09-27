@@ -1,0 +1,109 @@
+---
+title: getProjectData()
+description: API Reference for the getProjectData() method to retrieve project information and configuration
+---
+
+## Overview
+
+The `getProjectData()` method retrieves comprehensive information about a translation project including its name, organization, default locale, and currently configured target locales.
+This method is useful for understanding project configuration and validating project settings.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const projectData = await gt.getProjectData('project-123');
+console.log(`Project: ${projectData.name}`);
+console.log(`Default locale: ${projectData.defaultLocale}`);
+console.log(`Target locales: ${projectData.currentLocales.join(', ')}`);
+```
+
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `projectId` | `string` | The unique identifier of the project to retrieve |
+| `options?` | `{ timeout?: number }` | Optional configuration for the request |
+
+#### Options
+
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<ProjectData>` - Contains project information and configuration.
+
+```typescript
+type ProjectData = {
+  id: string;
+  name: string;
+  orgId: string;
+  defaultLocale: string;
+  currentLocales: string[];
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Unique project identifier |
+| `name` | `string` | Human-readable project name |
+| `orgId` | `string` | Organization identifier that owns the project |
+| `defaultLocale` | `string` | Default source locale for the project |
+| `currentLocales` | `string[]` | Array of target locales currently configured |
+
+---
+
+## Examples
+
+### Basic Usagex
+
+```typescript title="index.ts" copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key'
+});
+
+async function getProjectInfo(projectId: string) {
+  try {
+    const project = await gt.getProjectData(projectId);
+    
+    console.log('=== Project Information ===');
+    console.log(`ID: ${project.id}`);
+    console.log(`Name: ${project.name}`);
+    console.log(`Organization: ${project.orgId}`);
+    console.log(`Default Locale: ${project.defaultLocale}`);
+    console.log(`Target Locales: ${project.currentLocales.join(', ')}`);
+    
+    return project;
+  } catch (error) {
+    console.error(`Failed to retrieve project ${projectId}:`, error);
+    throw error;
+  }
+}
+
+const projectInfo = await getProjectInfo('my-project-123');
+```
+
+---
+
+## Notes
+
+* The method provides read-only access to project information - use the dashboard to modify project settings
+* This method requires a valid project ID - the project must be accessible with the provided API key
+* Project data includes both source and target locale configurations
+* The `currentLocales` array represents all target locales configured for the project
+* Use this method to validate project configuration before starting translation workflows
+
+## Next Steps
+
+* See [`shouldSetupProject()`](/docs/core/class/methods/translation/shouldSetupProject) to check if project setup is required
+* See [`setupProject()`](/docs/core/class/methods/translation/setupProject) to initialize project setup
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translation jobs
+* See [`querySourceFile()`](/docs/core/class/methods/translation/querySourceFile) for file-specific information
+* See [`ProjectData`](/docs/core/types/ProjectData) for detailed type information

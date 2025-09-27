@@ -1,0 +1,98 @@
+---
+title: getLocaleEmoji()
+description: API Reference for the GT getLocaleEmoji method
+---
+
+## Overview
+
+The `getLocaleEmoji()` method retrieves an emoji flag or symbol for a locale code based on its region.
+It returns appropriate flag emojis for countries and territories, with fallbacks for languages without specific regions and custom emoji support through mappings.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'fr-CA'
+});
+
+const emoji = gt.getLocaleEmoji('fr-CA');
+console.log(emoji); // "🇨🇦" (Canadian flag)
+
+const usEmoji = gt.getLocaleEmoji('en-US');
+console.log(usEmoji); // "🇺🇸" (US flag)
+
+const enEmoji = gt.getLocaleEmoji('en');
+console.log(enEmoji); // "🇺🇸" (US flag)
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale',
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get emoji for. If not provided, uses the instance's `targetLocale` |
+
+### Returns
+
+`string` - Emoji flag or symbol representing the locale:
+- Country/territory flag emoji for locales with regions (e.g., `🇺🇸`, `🇫🇷`, `🇯🇵`)
+- Language-specific emoji for some languages without regions
+- Default flag emoji (`🏳️`) for unrecognized locales
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+
+## Examples
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+// Get emoji for target locale
+console.log(gt.getLocaleEmoji()); // "🇪🇸" (uses targetLocale 'es')
+
+// Get emojis for different locales
+console.log(gt.getLocaleEmoji('en-US')); // "🇺🇸"
+console.log(gt.getLocaleEmoji('fr-FR')); // "🇫🇷"
+console.log(gt.getLocaleEmoji('de-DE')); // "🇩🇪"
+console.log(gt.getLocaleEmoji('ja-JP')); // "🇯🇵"
+console.log(gt.getLocaleEmoji('zh-CN')); // "🇨🇳"
+```
+
+---
+
+## Notes
+
+- Returns flag emojis based on the locale's region code when available
+- Custom mapping emojis take priority over region-based selection
+- Uses Unicode regional indicator symbols for flag generation
+- Defaults to `🏳️` (white flag) for unrecognized or invalid locales
+- Compatible with all modern browsers and operating systems that support Unicode emojis
+
+## Next Steps
+
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Get locale names with [`getLocaleName()`](/docs/core/class/methods/locales/getLocaleName)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Learn about CustomMapping type](/docs/core/types/CustomMapping)
+- Explore standalone [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)

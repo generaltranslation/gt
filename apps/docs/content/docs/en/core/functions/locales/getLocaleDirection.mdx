@@ -1,0 +1,118 @@
+---
+title: getLocaleDirection()
+description: API Reference for the getLocaleDirection function
+---
+
+## Overview
+
+The `getLocaleDirection()` function determines the text direction (left-to-right or right-to-left) for a locale without requiring a GT class instance.
+It uses the `Intl.Locale` API to provide accurate direction detection for any valid BCP-47 locale code.
+
+This function is most often used to set the `dir` attribute of a HTML element based on the locale.
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+const direction = getLocaleDirection('ar-SA');
+console.log(direction); // "rtl"
+
+const englishDirection = getLocaleDirection('en-US');
+console.log(englishDirection); // "ltr"
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to check text direction for |
+
+### Returns
+
+`'ltr' | 'rtl'` - Text direction for the locale:
+- `'ltr'`: Left-to-right (most languages including English, Spanish, French, German, Chinese, Japanese, etc.)
+- `'rtl'`: Right-to-left (Arabic, Hebrew, Persian, Urdu, and other Semitic/Middle Eastern languages)
+
+---
+
+## Behavior
+
+### Direction Detection Algorithm
+
+The function uses the `Intl.Locale` API's `textInfo.direction` property:
+1. Creates an `Intl.Locale` object for the provided locale
+2. Accesses the `textInfo.direction` property for language-specific direction
+3. Returns `'rtl'` for right-to-left languages, `'ltr'` for all others
+4. Defaults to `'ltr'` if the locale is invalid or causes an error
+
+### RTL Language Recognition
+
+Automatically detects RTL languages including:
+- **Arabic** (`ar`, `ar-SA`, `ar-EG`, `ar-AE`, etc.)
+- **Hebrew** (`he`, `he-IL`)
+- **Persian/Farsi** (`fa`, `fa-IR`)
+- **Urdu** (`ur`, `ur-PK`, `ur-IN`)
+- **Pashto** (`ps`)
+- **Sindhi** (`sd`)
+- **Kurdish Sorani** (`ckb`)
+- And other RTL scripts
+
+### Error Handling
+
+- Invalid or malformed locale codes default to `'ltr'`
+- No exceptions thrown for invalid input
+- Robust fallback behavior for edge cases
+
+---
+
+## Examples
+
+### Basic Direction Detection
+
+```typescript
+import { getLocaleDirection } from 'generaltranslation';
+
+// Left-to-right languages
+console.log(getLocaleDirection('en-US')); // "ltr"
+console.log(getLocaleDirection('es-ES')); // "ltr"
+console.log(getLocaleDirection('fr-FR')); // "ltr"
+console.log(getLocaleDirection('ja-JP')); // "ltr"
+console.log(getLocaleDirection('zh-CN')); // "ltr"
+
+// Right-to-left languages
+console.log(getLocaleDirection('ar-SA')); // "rtl"
+console.log(getLocaleDirection('he-IL')); // "rtl"
+console.log(getLocaleDirection('fa-IR')); // "rtl"
+console.log(getLocaleDirection('ur-PK')); // "rtl"
+```
+
+---
+
+## Notes
+
+- Returns `'ltr'` for all left-to-right languages (most languages worldwide)
+- Returns `'rtl'` for right-to-left languages (Arabic, Hebrew, Persian, etc.)
+- Uses the modern `Intl.Locale` API for accurate detection
+- Works with all BCP-47 locale codes
+
+## Next Steps
+
+- Use GT class method [`getLocaleDirection()`](/docs/core/class/methods/locales/getLocaleDirection)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/functions/locales/getLocaleProperties)
+- Validate locales with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
+- Check out the supported locales [here](/docs/platform/locale-strings)

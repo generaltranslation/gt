@@ -1,0 +1,174 @@
+---
+title: translate()
+description: API Reference for the GT translate method
+---
+
+## Overview
+
+The `translate()` method is the primary translation function in the GT library.
+It translates content from the source locale to a specified target locale using AI-powered translation services.
+
+```typescript
+const gt = new GT({
+  apiKey: 'your-api-key',
+  projectId: 'your-project-id'
+});
+
+const result = await gt.translate('Hello, world!', 'es');
+console.log(result); // "¡Hola, mundo!"
+```
+
+The method supports multiple content types including plain text, ICU message format, and i18next-style messages, with optional metadata for improved translation accuracy.
+
+<Callout>
+**Authentication Required:**
+The `translate()` method requires both `apiKey` (or `devApiKey`) and `projectId` to be configured in the GT instance.
+</Callout>
+
+---
+
+## Reference
+
+### Parameters
+
+The `translate()` method has multiple overloads for different content types:
+
+#### Text Content
+<TypeTable
+  type={{
+    "source": {
+      type: 'string',
+      optional: false,
+    },
+    "targetLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "metadata?": {
+      type: 'EntryMetadata',
+      optional: true,
+    }
+  }}
+/>
+
+#### JSX Content
+<TypeTable
+  type={{
+    "source": {
+      type: 'JsxChildren',
+      optional: false,
+    },
+    "targetLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "metadata?": {
+      type: 'Omit<EntryMetadata, "dataFormat"> & { dataFormat?: "JSX" }',
+      optional: true,
+    }
+  }}
+/>
+
+#### ICU Message Format
+<TypeTable
+  type={{
+    "source": {
+      type: 'IcuMessage',
+      optional: false,
+    },
+    "targetLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "metadata?": {
+      type: 'Omit<EntryMetadata, "dataFormat"> & { dataFormat?: "ICU" }',
+      optional: true,
+    }
+  }}
+/>
+
+#### i18next Format
+<TypeTable
+  type={{
+    "source": {
+      type: 'I18nextMessage',
+      optional: false,
+    },
+    "targetLocale": {
+      type: 'string',
+      optional: false,
+    },
+    "metadata?": {
+      type: 'Omit<EntryMetadata, "dataFormat"> & { dataFormat?: "I18NEXT" }',
+      optional: true,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `source` | The content to translate. Can be plain text, JSX elements, ICU messages, or i18next messages |
+| `targetLocale` | BCP-47 locale code for the target language (e.g., 'es', 'fr-CA') |
+| `metadata` | Optional translation context including context, tags, and formatting options |
+
+### Returns
+
+```typescript
+Promise<TranslationResult | TranslationError>
+```
+
+- **TranslationResult**: Contains the translated content and metadata
+- **TranslationError**: Contains error information if translation fails
+
+---
+
+## Behavior
+
+### Content Type Detection
+
+The method automatically detects content type based on the `source` parameter:
+
+- **String**: Treated as plain text or ICU message format
+- **JSX Elements**: Handled as React-style JSX content  
+- **Objects**: Processed as structured message formats
+
+### Locale Resolution
+
+- Target locale is validated against BCP-47 standards
+- Custom locale mappings are applied if configured
+- Canonical locale codes are used for API requests
+
+### Context Enhancement
+
+When custom mapping includes region or script codes for the target locale, they are automatically added to the metadata for improved translation accuracy.
+
+---
+
+## Examples
+
+
+```typescript
+const gt = new GT({
+  apiKey: 'your-api-key',
+  projectId: 'your-project-id'
+});
+
+const result = await gt.translate('Welcome to our application', 'fr');
+console.log(result); 
+// "Bienvenue dans notre application"
+```
+
+---
+
+## Notes
+
+- Translates a given string to a target locale and returns a promise
+
+## Next Steps
+
+- **[Translate multiple items with translateMany()](/docs/core/class/methods/translation/translateMany)**
+- **[Learn about EntryMetadata options](/docs/core/types/EntryMetadata)**
+- **[Explore TranslationResult type](/docs/core/types/TranslationResult)**
+- **[Check translation requirements](/docs/core/class/methods/locales/requiresTranslation)**

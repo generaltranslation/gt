@@ -1,0 +1,128 @@
+---
+title: enqueueFiles()
+description: API Reference for the enqueueFiles() method to enqueue file translation jobs
+---
+
+## Overview
+
+The `enqueueFiles()` method enqueues translation jobs for previously uploaded files in the General Translation API.
+This method takes file references and creates translation jobs for the specified target locales.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const result = await gt.enqueueFiles(fileRefs, {
+  sourceLocale: 'en',
+  targetLocales: ['es', 'fr', 'de']
+});
+```
+
+<Callout type="info">
+  You can only enqueue files for translation after they have been uploaded.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `files` | `FileUploadRef[]` | Array of file references from previously uploaded files |
+| `options` | `EnqueueOptions` | Configuration options for the translation job |
+
+#### EnqueueOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `sourceLocale?` | `string` | Source locale for translation (defaults to instance sourceLocale) |
+| `targetLocales?` | `string[]` | Array of target locales for translation (defaults to instance targetLocale) |
+| `publish?` | `boolean` | Whether to automatically publish translations when complete |
+| `requireApproval?` | `boolean` | Whether translations require approval before publishing |
+| `modelProvider?` | `string` | Specific AI model provider to use for translation |
+| `force?` | `boolean` | Force retranslation even if translations already exist |
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<EnqueueFilesResult>` - Contains job information and processing details.
+
+```typescript
+type EnqueueFilesResult = {
+  translations: CompletedFileTranslationData[];
+  data: Record<string, { fileName: string; versionId: string }>;
+  locales: string[];
+  message: string;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `translations` | `CompletedFileTranslationData[]` | Array of translation job data |
+| `data` | `Record<string, { fileName: string; versionId: string }>` | Map of file identifiers to file metadata |
+| `locales` | `string[]` | List of target locales for the translation jobs |
+| `message` | `string` | Status message from the API |
+
+---
+
+## Example
+
+```typescript title="index.ts" copy
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+});
+
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
+);
+
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
+});
+
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
+// (5) Download the file
+const result = await gt.downloadFileBatch(translationIds);
+```
+
+---
+
+## Notes
+
+* File content must be uploaded first using [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles)
+* Translation jobs are asynchronous - use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to monitor progress
+
+## Next Steps
+
+* See [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) to upload files before enqueueing
+* See [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to monitor translation progress
+* See [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) to retrieve completed translations
+* See [`FileUploadRef`](/docs/core/types/FileUploadRef) for file reference structure details

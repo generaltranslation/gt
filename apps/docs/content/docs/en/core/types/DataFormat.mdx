@@ -1,0 +1,66 @@
+---
+title: DataFormat
+description: Enumeration of supported content format types for translation
+---
+
+## Overview
+
+`DataFormat` specifies the format of translatable content.
+
+```typescript
+type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+```
+
+## Type Definition
+
+### Values
+
+| Value | Description | Content Type | Use Case |
+|-------|-------------|--------------|----------|
+| `'JSX'` | JSX/React component format | `JsxChildren` | Rich UI components with elements and variables |
+| `'ICU'` | ICU MessageFormat | `IcuMessage` (string) | Complex formatting with plurals, dates, numbers |
+| `'I18NEXT'` | i18next message format | `I18nextMessage` (string) | Simple interpolation, existing i18next projects |
+
+### Format Characteristics
+
+| Format | Variables | Pluralization | HTML Elements | Date/Number Formatting |
+|--------|-----------|---------------|---------------|----------------------|
+| **JSX** | ✅ Rich variables | ✅ Via branching | ✅ Full HTML support | ✅ Via variables |
+| **ICU** | ✅ {variable} syntax | ✅ Built-in plurals | ❌ Text only | ✅ Built-in formatters |
+| **I18NEXT** | ✅ {{variable}} syntax | ✅ Via count | ❌ Text only | ✅ Via formatters |
+
+---
+
+## Examples
+
+### Format Specification
+
+```typescript copy
+const jsxEntry: Entry = {
+  source: { t: 'div', c: ['Hello ', { k: 'name' }] },
+  targetLocale: 'es',
+  metadata: { dataFormat: 'JSX' }
+};
+
+const icuEntry: Entry = {
+  source: 'Hello {name}',
+  targetLocale: 'es',
+  metadata: { dataFormat: 'ICU' }
+};
+```
+
+---
+
+## Notes
+
+* DataFormat determines how content is processed by the translation system
+* Format specification in metadata ensures proper content processing
+* Auto-detection is possible but explicit specification is recommended
+
+## Related Types
+
+* [`Content`](/docs/core/types/Content) - Union of all content format types
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX format content
+* [`IcuMessage`](/docs/core/types/IcuMessage) - ICU MessageFormat content
+* [`I18nextMessage`](/docs/core/types/I18nextMessage) - i18next format content
+* [`EntryMetadata`](/docs/core/types/EntryMetadata) - Format specification in entries

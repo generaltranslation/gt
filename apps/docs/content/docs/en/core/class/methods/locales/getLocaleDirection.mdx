@@ -1,0 +1,87 @@
+---
+title: getLocaleDirection()
+description: API Reference for the GT getLocaleDirection method
+---
+
+## Overview
+
+The `getLocaleDirection()` method determines the text direction (left-to-right or right-to-left) for a locale using the `Intl.Locale` API.
+It returns either `'ltr'` for left-to-right languages or `'rtl'` for right-to-left languages.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'ar'
+});
+
+const direction = gt.getLocaleDirection('ar');
+console.log(direction); // "rtl"
+
+const englishDirection = gt.getLocaleDirection('en-US');
+console.log(englishDirection); // "ltr"
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale',
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to check text direction for. If not provided, uses the instance's `targetLocale` |
+
+### Returns
+
+`'ltr' | 'rtl'` - Text direction for the locale:
+- `'ltr'`: Left-to-right (most languages)
+- `'rtl'`: Right-to-left (Arabic, Hebrew, Persian, Urdu, etc.)
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Example
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'ar'
+});
+
+// Check different language directions
+console.log(gt.getLocaleDirection()); // "rtl" (uses targetLocale 'ar')
+console.log(gt.getLocaleDirection('en')); // "ltr"
+console.log(gt.getLocaleDirection('ar')); // "rtl"
+console.log(gt.getLocaleDirection('he')); // "rtl"
+console.log(gt.getLocaleDirection('fa')); // "rtl"
+console.log(gt.getLocaleDirection('fr')); // "ltr"
+```
+
+---
+
+## Notes
+
+- Returns `'ltr'` for all left-to-right languages (most languages worldwide)
+- Returns `'rtl'` for right-to-left languages (Arabic, Hebrew, Persian, etc.)
+
+## Next Steps
+
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/class/methods/locales/getLocaleEmoji)
+- Explore standalone [`getLocaleDirection()`](/docs/core/functions/locales/getLocaleDirection)

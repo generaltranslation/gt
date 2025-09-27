@@ -1,0 +1,145 @@
+---
+title: checkFileTranslations()
+description: API Reference for the checkFileTranslations() method to check translation status without downloading files
+---
+
+## Overview
+
+The `checkFileTranslations()` method checks the translation status of files without downloading their content.
+This is useful for monitoring translation progress, checking completion status, and determining which translations are available.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const status = await gt.checkFileTranslations([
+  {
+    versionId: 'version-123',
+    fileName: 'app.json',
+    locale: 'es'
+  }
+]);
+```
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `data` | `FileTranslationQuery[]` | Array of file translation queries to check |
+| `options?` | `CheckFileTranslationsOptions` | Optional configuration for the request |
+
+#### FileTranslationQuery
+
+| Name | Type | Description |
+|------|------|-------------|
+| `versionId` | `string` | Version ID of the file to check |
+| `fileName?` | `string` | File name identifier (required if `fileId` not provided) |
+| `fileId?` | `string` | File ID identifier (required if `fileName` not provided) |
+| `locale` | `string` | Target locale to check translation status for |
+
+#### CheckFileTranslationsOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<CheckFileTranslationsResult>` - Contains translation status information.
+
+```typescript
+type CheckFileTranslationsResult = {
+  translations: CompletedFileTranslationData[];
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `translations` | `CompletedFileTranslationData[]` | Array of translation status data |
+
+#### CompletedFileTranslationData Structure
+
+```typescript
+type CompletedFileTranslationData = {
+  id: string;
+  fileId: string;
+  versionId: string;
+  fileName: string;
+  locale: string;
+  status: 'completed' | 'pending' | 'failed';
+  completedAt: string | null;
+  approvedAt: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+---
+
+## Examples
+
+### Basic Usage
+
+Check translation status for specific files and locales:
+
+```typescript title="index.ts" copy
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+});
+
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
+);
+
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
+});
+
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+```
+
+---
+
+## Notes
+
+* Translation status includes `pending`, `completed`, and `failed` states
+* Completed translations may still require approval before being published
+* Use this method for efficient status checking when monitoring multiple translation jobs
+
+## Next Steps
+
+* Check out the [Quickstart](/docs/core/quickstart#translate-your-first-file) for a complete example of how to use this method
+* See [`downloadTranslatedFile()`](/docs/core/class/methods/translation/downloadTranslatedFile) to download completed translations
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to create translation jobs
+* See [`querySourceFile()`](/docs/core/class/methods/translation/querySourceFile) to get source file and translation information
+* See [`CompletedFileTranslationData`](/docs/core/types/CompletedFileTranslationData) for detailed status data structure
