@@ -15,7 +15,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.6",
+    "@generaltranslation/supported-locales": "workspace:*",
     "@icons-pack/react-simple-icons": "^12.3.0",
     "@orama/tokenizers": "^3.1.3",
     "@radix-ui/react-slot": "^1.2.2",
@@ -25,8 +25,8 @@
     "fumadocs-mdx": "^11.6.5",
     "fumadocs-typescript": "^4.0.5",
     "fumadocs-ui": "^15.3.4",
-    "gt-next": "^6.2.5",
-    "gtx-cli": "^2.1.8",
+    "gt-next": "workspace:*",
+    "gtx-cli": "workspace:*",
     "lucide-react": "^0.483.0",
     "next": "^15.3.2",
     "next-sitemap": "^4.2.3",

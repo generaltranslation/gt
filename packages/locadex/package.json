@@ -16,7 +16,7 @@
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "gtx-cli": "^2.0.0"
+    "gtx-cli": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

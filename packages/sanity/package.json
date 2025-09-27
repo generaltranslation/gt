@@ -62,7 +62,7 @@
     "@sanity/schema": "^3.98.1",
     "@sanity/ui": "^2.16.4",
     "@sanity/util": "^3.98.1",
-    "generaltranslation": "^7.6.3",
+    "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
     "lodash.merge": "^4.6.2"

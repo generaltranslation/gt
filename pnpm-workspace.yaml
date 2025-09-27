@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+  - examples/*
+
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - '@generaltranslation/*'
+  - gt-next
+  - gt-react
+  - gt-sanity
+  - gtx-cli
+  - generaltranslation

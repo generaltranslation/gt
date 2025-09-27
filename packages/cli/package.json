@@ -87,7 +87,7 @@
     "esbuild": "^0.25.4",
     "fast-glob": "^3.3.3",
     "form-data": "^4.0.4",
-    "generaltranslation": "^7.6.2",
+    "generaltranslation": "workspace:*",
     "gt-remark": "^1.0.1",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",

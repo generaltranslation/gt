@@ -13,9 +13,9 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.13",
-    "generaltranslation": "^7.5.0",
-    "gt-react": "^10.6.1"
+    "@generaltranslation/supported-locales": "workspace:*",
+    "generaltranslation": "workspace:*",
+    "gt-react": "workspace:*"
   },
   "scripts": {
     "patch": "npm version patch",
