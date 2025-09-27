@@ -1,12 +1,3 @@
 {
-  "pages": [
-    "platform",
-    "locadex",
-    "cli",
-    "react",
-    "next",
-    "core",
-    "learn",
-    "changelog"
-  ]
+  "pages": ["platform", "locadex", "react", "next", "cli", "core", "changelog"]
 }

@@ -832,5 +832,111 @@ describe('parseFilesConfig', () => {
         ],
       });
     });
+
+    it('should not warn when pattern is in composite patterns list', () => {
+      const includePatterns = ['src/composite-pattern/*.json'];
+      const excludePatterns = [];
+      const compositePatterns = ['src/composite-pattern/*.json'];
+
+      vi.mocked(fg.sync).mockReturnValue([
+        '/project/src/composite-pattern/config.json',
+      ]);
+
+      expandGlobPatterns(
+        '/project',
+        includePatterns,
+        excludePatterns,
+        'en',
+        defaultLocales,
+        undefined,
+        compositePatterns
+      );
+
+      expect(logWarning).not.toHaveBeenCalled();
+    });
+
+    it('should warn when pattern is not in composite patterns list', () => {
+      const includePatterns = ['src/static/*.json'];
+      const excludePatterns = [];
+      const compositePatterns = ['src/other-pattern/*.json'];
+
+      vi.mocked(fg.sync).mockReturnValue(['/project/src/static/config.json']);
+
+      expandGlobPatterns(
+        '/project',
+        includePatterns,
+        excludePatterns,
+        'en',
+        defaultLocales,
+        undefined,
+        compositePatterns
+      );
+
+      expect(logWarning).toHaveBeenCalledWith(
+        'Pattern "src/static/*.json" does not include [locale], so the CLI tool may incorrectly save translated files.'
+      );
+    });
+
+    it('should handle empty composite patterns array', () => {
+      const includePatterns = ['src/static/*.json'];
+      const excludePatterns = [];
+      const compositePatterns = [];
+
+      vi.mocked(fg.sync).mockReturnValue(['/project/src/static/config.json']);
+
+      expandGlobPatterns(
+        '/project',
+        includePatterns,
+        excludePatterns,
+        'en',
+        defaultLocales,
+        undefined,
+        compositePatterns
+      );
+
+      expect(logWarning).toHaveBeenCalledWith(
+        'Pattern "src/static/*.json" does not include [locale], so the CLI tool may incorrectly save translated files.'
+      );
+    });
+  });
+
+  describe('resolveFiles - composite patterns', () => {
+    beforeEach(() => {
+      vi.mocked(fg.sync).mockReturnValue([]);
+    });
+
+    const defaultLocales = ['en', 'fr', 'es'];
+
+    it('should pass composite patterns to expandGlobPatterns', () => {
+      const files = {
+        json: {
+          include: ['src/[locale]/*.json'],
+        },
+      };
+      const compositePatterns = ['pattern1', 'pattern2'];
+
+      resolveFiles(files, 'en', defaultLocales, '/project', compositePatterns);
+
+      // Verify that expandGlobPatterns was called with composite patterns
+      expect(fg.sync).toHaveBeenCalledWith('/project/src/en/*.json', {
+        absolute: true,
+        ignore: [],
+      });
+    });
+
+    it('should handle undefined composite patterns', () => {
+      const files = {
+        json: {
+          include: ['src/[locale]/*.json'],
+        },
+      };
+
+      resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(fg.sync).toHaveBeenCalledWith('/project/src/en/*.json', {
+        absolute: true,
+        ignore: [],
+      });
+    });
   });
 });

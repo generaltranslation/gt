@@ -53,7 +53,11 @@ export default function SearchDialog(props: SharedProps) {
   const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   const lastMouseMoveTime = useRef<number>(0);
+
+  // Only treat very recent mouse moves as an intentional hover
+  const HOVER_MOVE_WINDOW_MS = 100;
 
   const items = useMemo(
     () => (Array.isArray(query.data) ? query.data : []),
@@ -82,7 +86,7 @@ export default function SearchDialog(props: SharedProps) {
     return out;
   }, [items]);
 
-  // Flat list of all navigable items for keyboard navigation
+  // Build a flat, index-addressable list for keyboard navigation
   const flatItems = useMemo(() => {
     const flat: Array<{
       type: 'page' | 'child';
@@ -99,13 +103,14 @@ export default function SearchDialog(props: SharedProps) {
     return flat;
   }, [groups]);
 
+  // Detect code-like snippets so we can render a more
+  // appropriate icon for matches that look like code/JSON
   function isCodeLike(input: string): boolean {
     const s = input.trim();
     if (s.startsWith('```') || s.includes('```')) return true;
     if (s.includes('=>') || /\b(const|let|function|import|export)\b/.test(s))
       return true;
     if (/\{.*\}|\[.*\]/.test(s) && /[:,]/.test(s)) return true; // JSON-ish
-    if (/\bSELECT\b|\bFROM\b|\bINSERT\b/i.test(s)) return true; // SQL-ish
     return false;
   }
 
@@ -118,7 +123,11 @@ export default function SearchDialog(props: SharedProps) {
         className="fixed inset-0 z-50 backdrop-blur-xs bg-black/30"
         onClick={() => props.onOpenChange(false)}
       />
-      <div className="fixed left-1/2 top-8 z-[51] w-[calc(100%-1rem)] max-w-screen-sm -translate-x-1/2 rounded-xl border bg-fd-popover text-fd-popover-foreground shadow-2xl shadow-black/60 overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed left-1/2 top-8 z-[51] w-[calc(100%-1rem)] max-w-screen-sm -translate-x-1/2 rounded-xl border bg-fd-popover text-fd-popover-foreground shadow-2xl shadow-black/60 overflow-hidden"
+      >
         <div
           className={`flex items-center gap-2 p-3 ${groups.length > 0 || (groups.length === 0 && search.trim()) ? 'border-b' : ''}`}
         >
@@ -139,11 +148,13 @@ export default function SearchDialog(props: SharedProps) {
               setSearch(e.target.value);
               setSelectedIndex(-1);
             }}
+            // Keyboard interactions: Escape closes, arrows move selection, Enter opens.
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 props.onOpenChange(false);
               } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
+                if (flatItems.length === 0) return;
                 const newIndex = (selectedIndex + 1) % flatItems.length;
                 setSelectedIndex(newIndex);
                 itemRefs.current[newIndex]?.scrollIntoView({
@@ -151,6 +162,7 @@ export default function SearchDialog(props: SharedProps) {
                 });
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
+                if (flatItems.length === 0) return;
                 const newIndex =
                   selectedIndex <= 0 ? flatItems.length - 1 : selectedIndex - 1;
                 setSelectedIndex(newIndex);
@@ -182,6 +194,10 @@ export default function SearchDialog(props: SharedProps) {
           <div
             className="p-1 bg-fd-popover overflow-y-auto overflow-x-hidden max-h-[70vh]"
             onMouseMove={() => {
+              // Mark that the user is actively moving the mouse so that
+              // subsequent mouseenter events can update selection. When
+              // keyboard navigation scrolls items into view, we don't want
+              // that to accidentally shift selection.
               lastMouseMoveTime.current = Date.now();
             }}
           >
@@ -216,7 +232,10 @@ export default function SearchDialog(props: SharedProps) {
                               : 'text-fd-foreground hover:text-fd-accent-foreground hover:bg-fd-accent'
                         }`}
                         onMouseEnter={() => {
-                          if (Date.now() - lastMouseMoveTime.current < 100) {
+                          if (
+                            Date.now() - lastMouseMoveTime.current <
+                            HOVER_MOVE_WINDOW_MS
+                          ) {
                             setSelectedIndex(pageItemIndex);
                           }
                         }}
@@ -270,7 +289,7 @@ export default function SearchDialog(props: SharedProps) {
                                 onMouseEnter={() => {
                                   if (
                                     Date.now() - lastMouseMoveTime.current <
-                                    100
+                                    HOVER_MOVE_WINDOW_MS
                                   ) {
                                     setSelectedIndex(childItemIndex);
                                   }

@@ -47,7 +47,8 @@ export function resolveFiles(
   files: FilesOptions,
   locale: string,
   locales: string[],
-  cwd: string
+  cwd: string,
+  compositePatterns?: string[]
 ): {
   resolvedPaths: ResolvedFiles;
   placeholderPaths: ResolvedFiles;
@@ -81,7 +82,8 @@ export function resolveFiles(
         files[fileType]?.exclude || [],
         locale,
         locales,
-        transformPaths[fileType] || undefined
+        transformPaths[fileType] || undefined,
+        compositePatterns
       );
       result[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
@@ -102,7 +104,8 @@ export function expandGlobPatterns(
   excludePatterns: string[],
   locale: string,
   locales: string[],
-  transformPatterns?: TransformOption | string
+  transformPatterns?: TransformOption | string,
+  compositePatterns?: string[]
 ): {
   resolvedPaths: string[];
   placeholderPaths: string[];
@@ -116,7 +119,12 @@ export function expandGlobPatterns(
     // Track positions where [locale] appears in the original pattern
     // It must be included in the pattern, otherwise the CLI tool will not be able to find the correct output path
     // Warn if it's not included
-    if (!pattern.includes('[locale]') && !transformPatterns) {
+    // Ignore if is composite pattern
+    if (
+      !pattern.includes('[locale]') &&
+      !transformPatterns &&
+      !compositePatterns?.includes(pattern)
+    ) {
       logWarning(
         chalk.yellow(
           `Pattern "${pattern}" does not include [locale], so the CLI tool may incorrectly save translated files.`
