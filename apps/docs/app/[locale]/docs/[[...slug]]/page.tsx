@@ -34,6 +34,7 @@ import { Rate } from '@/components/rate';
 import { Metadata } from 'next';
 import { getLocale } from 'gt-next/server';
 import { Mermaid } from '@/components/mdx/mermaid';
+import SplashCursor from '@/components/SplashCursor';
 
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
@@ -78,6 +79,7 @@ export default async function Page(props: {
         path: `apps/docs/content/docs/${locale}/${page.file.path}`,
       }}
     >
+      <SplashCursor />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
