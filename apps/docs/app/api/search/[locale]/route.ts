@@ -102,6 +102,17 @@ function shrinkStructuredData(data: StructuredData): StructuredData {
   return { headings, contents };
 }
 
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
 export async function GET(
   _request: Request,
   ctx: { params: Promise<{ locale: string }> }
@@ -142,6 +153,9 @@ export async function GET(
   return Response.json(data, {
     headers: {
       'Cache-Control': 'public, max-age=31536000, immutable',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
 }
