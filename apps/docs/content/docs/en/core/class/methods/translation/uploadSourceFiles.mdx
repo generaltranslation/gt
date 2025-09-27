@@ -5,20 +5,34 @@ description: API Reference for the uploadSourceFiles() method to upload source f
 
 ## Overview
 
-The `uploadSourceFiles()` method uploads source files to the General Translation platform for translation processing. This is typically the first step in a translation workflow before setting up projects or enqueueing translation jobs.
+The `uploadSourceFiles()` method uploads source files to the General Translation platform for translation processing.
+This is typically the first step in a translation workflow before setting up projects or enqueueing translation jobs.
 
 ```typescript
-const gt = new GT({ apiKey: 'your-api-key' });
+const gt = new GT({ apiKey: 'your-api-key', projectId: 'your-project-id' });
 
 const result = await gt.uploadSourceFiles(files, {
   sourceLocale: 'en'
 });
 ```
 
-<Callout>
-**Base64 Encoding:**
-File content is automatically Base64 encoded during upload to ensure safe transmission of all file types and character encodings.
-</Callout>
+<Mermaid
+  chart="
+graph TD;
+A[uploadSourceFiles];
+B[setupProject];
+C[enqueueFiles];
+E[checkFileTranslations];
+F[downloadFileBatch];
+A --> B;
+B --> C;
+C --> E;
+E --> F;
+"
+/>
+
+
+
 
 ## Reference
 

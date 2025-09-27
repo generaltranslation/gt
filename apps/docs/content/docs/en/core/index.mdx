@@ -70,48 +70,6 @@ const isValid = gt.isValidLocale('de');
 
 ---
 
-## Configuration
-
-Configuration options via [GTConstructorParams](/docs/core/types/GTConstructorParams):
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `apiKey` | `string` | Production API key |
-| `devApiKey` | `string` | Development API key |
-| `projectId` | `string` | Project identifier |
-| `sourceLocale` | `string` | Default source language |
-| `targetLocale` | `string` | Default target language |
-| `locales` | `string[]` | Supported locales list |
-| `baseUrl` | `string` | Custom API endpoint |
-| `customMapping` | `CustomMapping` | Custom locale definitions |
-
----
-
-## Framework Integration
-
-Use with framework-specific packages:
-
-### Next.js
-```typescript
-// Use gt-next for Next.js projects
-import { useGTClass } from 'gt-next/client'; // React hook
-import { getGTClass } from 'gt-next/server'; // Node.js/Express
-```
-
-### React
-```typescript  
-// Use gt-react for React projects
-import { useGTClass } from 'gt-react';
-```
-
-### Node.js/Express/Browser
-```typescript
-// Use core library directly
-import { GT } from 'generaltranslation';
-```
-
----
-
 ## Examples
 
 There are two major types of translation: string translation and file translation.

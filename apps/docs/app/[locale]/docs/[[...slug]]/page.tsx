@@ -33,6 +33,7 @@ import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 import { Rate } from '@/components/rate';
 import { Metadata } from 'next';
 import { getLocale } from 'gt-next/server';
+import { Mermaid } from '@/components/mdx/mermaid';
 
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
@@ -47,6 +48,7 @@ const customMdxComponents = {
   LogoCardContent,
   AllLogoCards,
   SupportedLocales,
+  Mermaid,
 };
 export default async function Page(props: {
   params: Promise<{ slug?: string[]; locale: string }>;
