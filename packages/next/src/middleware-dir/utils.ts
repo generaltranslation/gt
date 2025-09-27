@@ -71,9 +71,9 @@ export function getResponse({
 /**
  * Extracts the locale from the given pathname.
  */
-export function extractLocale(pathname: string, gt: GT): string | null {
+export function extractLocale(pathname: string): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
-  return matches ? gt.resolveAliasLocale(matches[1]) : null;
+  return matches ? matches[1] : null;
 }
 
 /**
@@ -283,7 +283,7 @@ export function getLocaleFromRequest(
   // Check pathname locales
   let pathnameLocale, unstandardizedPathnameLocale;
   if (localeRouting) {
-    unstandardizedPathnameLocale = extractLocale(pathname, gt);
+    unstandardizedPathnameLocale = extractLocale(pathname);
     const extractedLocale = gtServicesEnabled
       ? standardizeLocale(unstandardizedPathnameLocale || '')
       : unstandardizedPathnameLocale;
@@ -298,7 +298,7 @@ export function getLocaleFromRequest(
         approvedLocales
       );
       if (determinedLocale) {
-        pathnameLocale = determinedLocale;
+        pathnameLocale = gt.resolveAliasLocale(determinedLocale);
         candidates.push(pathnameLocale);
       }
     }

@@ -1,5 +1,4 @@
 import { cookies, headers } from 'next/headers';
-import { determineLocale } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { noLocalesCouldBeDeterminedError } from '../errors/createErrors';
 
