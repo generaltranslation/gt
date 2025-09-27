@@ -36,7 +36,6 @@
     "---Tutorials---",
     "tutorials/quickstart",
     "tutorials/quickdeploy",
-    "tutorials/examples/next-speedrun",
     "tutorials/examples/currency-converter"
   ],
   "root": true,
