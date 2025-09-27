@@ -13,6 +13,7 @@ import { FileText, Hash, AlignLeft, Code2 } from 'lucide-react';
 
 export default function SearchDialog(props: SharedProps) {
   const { locale, text } = useI18n();
+  const apiUrl = process.env.NEXT_PUBLIC_DOCS_API_URL || '';
 
   type AnyOramaInstance = Awaited<
     ReturnType<NonNullable<StaticOptions['initOrama']>>
@@ -42,7 +43,7 @@ export default function SearchDialog(props: SharedProps) {
   const clientOptions = useMemo(
     () => ({
       type: 'static' as const,
-      from: `/api/search/${locale}`,
+      from: `${apiUrl}/api/search/${locale}`,
       initOrama,
     }),
     [initOrama, locale]
