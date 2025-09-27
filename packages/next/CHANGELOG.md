@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.6.3
+
+### Patch Changes
+
+- [#692](https://github.com/generaltranslation/gt/pull/692) [`c86fc88`](https://github.com/generaltranslation/gt/commit/c86fc882b92c875b93328178e9211ec414d69011) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: canonical locale issues in middleware
+
 ## 6.6.2
 
 ### Patch Changes
