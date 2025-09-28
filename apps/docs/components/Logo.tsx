@@ -16,7 +16,7 @@ export default function Logo() {
     );
   }, [resolvedTheme]);
 
-  const resolvedLogoSrc = logoSrc || '/no-bg-gt-logo-dark.png';
+  const resolvedLogoSrc = logoSrc || '/no-bg-gt-logo-light.png';
 
   return (
     <span className="flex items-center gap-2 text-lg font-semibold">
