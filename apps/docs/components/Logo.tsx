@@ -16,11 +16,11 @@ export default function Logo() {
     );
   }, [resolvedTheme]);
 
-  if (!logoSrc) return;
+  const resolvedLogoSrc = logoSrc || '/no-bg-gt-logo-dark.png';
 
   return (
     <span className="flex items-center gap-2 text-lg font-semibold">
-      <Image src={logoSrc} width={35} height={35} alt="GT, Inc." />
+      <Image src={resolvedLogoSrc} width={35} height={35} alt="GT" />
       <span className="sr-only">General Translation, Inc.</span>
     </span>
   );
