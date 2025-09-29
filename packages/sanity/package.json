@@ -68,6 +68,7 @@
     "lodash.merge": "^4.6.2"
   },
   "devDependencies": {
+    "@portabletext/types": "^2.0.15",
     "@sanity/pkg-utils": "^8.1.6",
     "@sanity/plugin-kit": "^4.0.19",
     "@types/lodash.merge": "^4.6.9",
