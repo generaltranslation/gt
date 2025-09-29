@@ -5,7 +5,7 @@
     "packages/*",
     "examples/*",
     "apps/*",
-    "test-apps/next/*"
+    "test-apps/**/*"
   ],
   "scripts": {
     "build": "turbo run build --filter='./packages/*'",
