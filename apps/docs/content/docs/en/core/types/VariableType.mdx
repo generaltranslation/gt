@@ -1,0 +1,39 @@
+---
+title: VariableType
+description: Enumeration of variable formatting types for dynamic content translation
+---
+
+## Overview
+
+`VariableType` specifies how variables are formatted in translated content.
+
+```typescript
+type VariableType = 'v' | 'n' | 'd' | 'c';
+```
+
+## Values
+
+| Value | Description |
+|-------|-------------|
+| `'v'` | Plain text substitution |
+| `'n'` | Number formatting |
+| `'d'` | Date formatting |
+| `'c'` | Currency formatting |
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { Variable, VariableType } from 'generaltranslation';
+
+const textVar: Variable = { k: 'name', v: 'v' };
+const numberVar: Variable = { k: 'count', v: 'n' };
+const dateVar: Variable = { k: 'date', v: 'd' };
+const currencyVar: Variable = { k: 'price', v: 'c' };
+```
+
+## Related Types
+
+* [`Variable`](/docs/core/types/Variable) - Parent type using VariableType
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX content with variables

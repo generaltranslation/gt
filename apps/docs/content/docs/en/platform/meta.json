@@ -1,7 +1,7 @@
 {
   "title": "General Translation",
   "description": "Platform",
-  "icon": "House",
+  "icon": "Globe",
   "root": true,
   "pages": [
     "---Getting Started---",

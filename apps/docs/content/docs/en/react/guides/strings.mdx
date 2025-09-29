@@ -1,380 +1,297 @@
 ---
-title: Translating Strings
-description: How to internationalize strings
+title: Strings
+description: How to internationalize plain text strings using useGT
 ---
 
-## Overview
+String translation provides direct access to text translations without JSX, perfect for attributes, object properties, and plain text values. Use [`useGT()`](/docs/react/api/strings/useGT) in React components for string translation.
 
-This guide will walk you through how to internationalize strings in your React app using the `useGT()` hook.
+## Quick Start
 
-We will cover the following:
-<Steps>
-  <Step>
-    When to use the `useGT()` hook
-  </Step>
-  <Step>
-    How to use the `useGT()` hook
-  </Step>
-  <Step>
-    Using variables
-  </Step>
-  <Step>
-    Examples
-  </Step>
-  <Step>
-    Common pitfalls
-  </Step>
-</Steps>
+```jsx
+import { useGT } from 'gt-react';
 
---- 
-
-## When to use the `useGT()` hook
-
-The `useGT()` hook is a React hook that can be used to translate strings.
-
-In most cases, you can use the [`<T>` component](/docs/react/guides/jsx).
-However, in cases where JSX is not appropriate, the `useGT()` hook can be used. 
-
-Some cases where the `useGT()` hook could be more appropriate are:
-- In properties that expect strictly strings, such as `placeholder` or `title` attributes.
-- When the string is part of a larger object, for example:
-
-```jsx copy
-const user = {
-  title: 'Mr.',
-  name: 'John',
-  description: 'John is a software engineer at General Translation',
+function MyComponent() {
+  const t = useGT();
+  return (
+    <input 
+      placeholder={t('Enter your email')}
+      title={t('Email address field')}
+    />
+  );
 }
 ```
-Here, only the `description` property should be translated.
 
-<Callout>
-  Wherever possible, you should use the [`<T>` component](/docs/react/guides/jsx).
-  The `<T>` component allows you to translate JSX content, and is the recommended way to translate strings.
-</Callout>
+## When to Use String Translation
 
----
+String translation is ideal when you need plain text rather than JSX:
 
-## How to use the `useGT()` hook
+### HTML Attributes
+```jsx
+const t = useGT();
 
-The `useGT()` hook has to be called within the [`<GTProvider>`](/docs/react/api/components/gtprovider).
+<input 
+  placeholder={t('Search products...')}
+  aria-label={t('Product search input')}
+  title={t('Type to search our catalog')}
+/>
+```
 
-To translate a string, simply pass the string directly to the function returned by the hook.
+### Object Properties
+```jsx
+const t = useGT();
 
+const user = {
+  name: 'John',
+  role: 'admin',
+  bio: t('Experienced software developer with 5 years in React'),
+  status: t('Currently available for projects')
+};
+```
 
-```jsx copy
-const translate = useGT();
-translate('Hello, world!');
+### Configuration & Constants
+```jsx
+const t = useGT();
+
+const navigationItems = [
+  { label: t('Home'), href: '/' },
+  { label: t('Products'), href: '/products' },
+  { label: t('Contact'), href: '/contact' }
+];
+```
+
+### When to Use [`<T>`](/docs/react/api/components/t) Instead
+Use the [`<T>` component](/docs/react/guides/jsx) for JSX content:
+
+```jsx
+// ✅ Use <T> for JSX content
+<T><p>Welcome to <strong>our store</strong>!</p></T>
+
+// ✅ Use string translation for plain text
+<input placeholder={t('Search products')} />
+```
+
+## Using Variables
+
+### Basic Variables
+Replace placeholders with dynamic values:
+
+```jsx
+const t = useGT();
+const itemCount = 5;
+
+// String with placeholder
+const message = t('You have {count} items in your cart', { count: itemCount });
+// Result: "You have 5 items in your cart"
+```
+
+### Multiple Variables
+```jsx
+const t = useGT();
+const order = { id: 'ORD-123', total: 99.99, date: '2024-01-15' };
+
+const confirmation = t(
+  'Order {orderId} for ${total} was placed on {date}',
+  { 
+    orderId: order.id, 
+    total: order.total, 
+    date: order.date 
+  }
+);
+```
+
+### ICU Message Format
+For advanced formatting, use ICU syntax:
+
+```jsx
+const t = useGT();
+translate('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart', { count: 10 });
 ```
 
 <Callout>
-  Unlike traditional i18n libraries, the `useGT()` hook does not require you to pass a `key` to the function.
-  Instead, the string is passed directly to the function.
-
-  This means that you don't need to use dictionaries!
+  Learn more about ICU Message Format in the [Unicode documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
 </Callout>
-
-## Using variables
-
-Often, you will need to translate strings that contain variables.
-
-For example, you may need to translate a string that contains numerical values. 
-
-To add variables, simply add the variable to the string as a placeholder with `{variable}`, 
-and pass an object as the second argument to the function returned by the hook.
-
-```jsx copy
-const price = 100;
-const translate = useGT();
-translate('There are {count} items in the cart', { count: 10 });
-```
-
-The `{count}` placeholder will be replaced with the value of the `count` variable.
-
-This allows you to display dynamic values in your translations.
-
-For more information on the API, see the [API reference](/docs/react/api/strings/useGT).
-
-`gt-react` supports ICU message format, which allows you to also format your variables.
-
-```jsx copy
-const translate = useGT();
-translate('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}} in the cart');
-```
-
-<Callout>
-  ICU message format is a powerful way to format your variables.
-  For more information, see the [ICU message format documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
-</Callout>
-
-
----
 
 ## Examples
 
-1. Translating a string in a component
-
-<Tabs items={['Result', 'Original']}>
-  <Tab value="Result">
+### Form Inputs
 ```jsx
 import { useGT } from 'gt-react';
 
-export default function MyComponent() {
+function ContactForm() {
   const t = useGT();
+  
   return (
-    <div>
-      <h1>{t('Hello, world!')}</h1>
-    </div>
-  )
+    <form>
+      <input 
+        type="email"
+        placeholder={t('Enter your email address')}
+        aria-label={t('Email input field')}
+      />
+      <textarea 
+        placeholder={t('Tell us about your project...')}
+        aria-label={t('Project description')}
+      />
+      <button type="submit">
+        {t('Send Message')}
+      </button>
+    </form>
+  );
 }
 ```
-  </Tab>
-  <Tab value="Original">
-```jsx
-export default function MyComponent() {
-  return (
-    <div>
-      <h1>Hello, world!</h1>
-    </div>
-  )
-}
-```
-  </Tab>
-</Tabs>
 
-2. Translating a string with variables
-
-<Tabs items={['Result', 'Original']}>
-  <Tab value="Result">
+### Navigation Menu
 ```jsx
 import { useGT } from 'gt-react';
 
-export default function MyComponent() {
+function Navigation() {
   const t = useGT();
-  const count = 10;
+  
+  const menuItems = [
+    { label: t('Home'), href: '/', icon: 'home' },
+    { label: t('About Us'), href: '/about', icon: 'info' },
+    { label: t('Services'), href: '/services', icon: 'briefcase' },
+    { label: t('Contact'), href: '/contact', icon: 'mail' }
+  ];
+
   return (
-    <div>
-      <h1>{t('There are {count} items in the cart', { count })}</h1>
-    </div>
-  )
+    <nav>
+      {menuItems.map((item) => (
+        <a key={item.href} href={item.href} title={item.label}>
+          <Icon name={item.icon} />
+          {item.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 ```
-  </Tab>
-  <Tab value="Original">
+
+### Dynamic Content Factory
 ```jsx
-export default function MyComponent() {
-  const count = 10;
+// utils/productData.js
+export function getProductMessages(t) {
+  return {
+    categories: [
+      { id: 'electronics', name: t('Electronics') },
+      { id: 'clothing', name: t('Clothing') },
+      { id: 'books', name: t('Books') }
+    ],
+    statusMessages: {
+      available: t('In stock and ready to ship'),
+      backordered: t('Currently backordered - ships in 2-3 weeks'),  
+      discontinued: t('This item has been discontinued')
+    },
+    errors: {
+      notFound: t('Product not found'),
+      outOfStock: t('Sorry, this item is currently out of stock')
+    }
+  };
+}
+
+// components/ProductCard.jsx
+import { useGT } from 'gt-react';
+import { getProductMessages } from '../utils/productData';
+
+function ProductCard({ product }) {
+  const t = useGT();
+  const messages = getProductMessages(t);
+  
   return (
     <div>
-      <h1>There are {count} items in the cart</h1>
+      <h3>{product.name}</h3>
+      <p>{messages.statusMessages[product.status]}</p>
+      <span>{messages.categories.find(c => c.id === product.categoryId)?.name}</span>
     </div>
-  )
+  );
 }
 ```
-  </Tab>
-</Tabs>
 
-
-
-3. Translating parts of an object
-
-<Tabs items={['Result', 'Original']}>
-  <Tab value="Result">
+### Component with Document Title
 ```jsx
 import { useGT } from 'gt-react';
+import { useEffect } from 'react';
 
-export default function MyComponent() {
+function ProductPage() {
   const t = useGT();
-  const users = [
-    {
-      name: 'John',
-      description: t('John is a software engineer at General Translation'),
-    },
-    {
-      name: 'Jane',
-      description: t('Jane is a software engineer at Google'),
-    },
-  ]
+  
+  useEffect(() => {
+    document.title = t('Product Catalog - Find What You Need');
+    
+    // Update meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', t('Browse our extensive collection of high-quality products'));
+    }
+  }, [t]);
+  
   return (
     <div>
-      {users.map((user) => (
-        <div key={user.name}>
-          <h1>{user.name}</h1>
-          <p>{user.description}</p>
-        </div>
-      ))}
+      <h1>{t('Featured Products')}</h1>
+      <p>{t('Check out our latest and most popular items')}</p>
     </div>
-  )
+  );
 }
 ```
-  </Tab>
-  <Tab value="Original">
-```jsx
-export default function MyComponent() {
-  const users = [
-    {
-      name: 'John',
-      description: 'John is a software engineer at General Translation',
-    },
-    {
-      name: 'Jane',
-      description: 'Jane is a software engineer at Google',
-    },
-  ]
-  return (
-    <div>
-      {users.map((user) => (
-        <div key={user.name}>
-          <h1>{user.name}</h1>
-          <p>{user.description}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-```
-  </Tab>
-</Tabs>
 
+## Common Issues
 
-
-4. Translating shared constants
-
-<Tabs items={['Result', 'Original']}>
-  <Tab value="Result">
-```jsx copy title="src/llms.ts"
-// Custom function to get LLM data with translations
-export function getLLMData(t: (content: string) => string) {
-  return [
-    {
-      name: 'GPT-4.1',
-      id: 'gpt-4.1',
-      description: t('GPT-4.1 is a large language model developed by OpenAI'),
-    },
-    {
-      name: 'Claude 3.7 Sonnet',
-      id: 'claude-3-7-sonnet',
-      description: t('Claude 3.7 Sonnet is a large language model developed by Anthropic'),
-    },
-  ]
-}
-```
+### Dynamic Content at Runtime
+Strings must be known at build time - you cannot translate dynamic content:
 
 ```jsx
-import { getLLMData } from './llms';
-import { useGT } from 'gt-react';
-
-export default function MyComponent() {
+// ❌ Dynamic content won't work
+function MyComponent() {
+  const [userMessage, setUserMessage] = useState('');
   const t = useGT();
-  const llms = getLLMData(t);
-  return (
-    <div>
-      {llms.map((llm) => (
-        <div key={llm.id}>
-          <h1>{llm.name}</h1>
-          <p>{llm.description}</p>
-        </div>
-      ))}
-    </div>
-  )
+  
+  return <p>{t(userMessage)}</p>; // This will fail
+}
+
+// ✅ Use predefined strings
+function MyComponent() {
+  const [messageType, setMessageType] = useState('welcome');
+  const t = useGT();
+  
+  const messages = {
+    welcome: t('Welcome to our app!'),
+    goodbye: t('Thanks for visiting!')
+  };
+  
+  return <p>{messages[messageType]}</p>;
 }
 ```
-  </Tab>
 
-<Tab value="Original">
-```jsx copy title="src/llms.ts"
-export const llms = [
-  {
-    name: 'GPT-4.1',
-    id: 'gpt-4.1',
-    description: 'GPT-4.1 is a large language model developed by OpenAI',
-  },
-  {
-    name: 'Claude 3.7 Sonnet',
-    id: 'claude-3-7-sonnet',
-    description: 'Claude 3.7 Sonnet is a large language model developed by Anthropic',
-  },
-]
-```
+### Hook Rules Violations
+Follow React hook rules when using [`useGT()`](/docs/react/api/strings/useGT):
 
 ```jsx
-import { llms } from './llms';
+// ❌ Don't call hooks conditionally
+function MyComponent({ showMessage }) {
+  if (showMessage) {
+    const t = useGT(); // Hook rule violation
+    return <p>{t('Hello!')}</p>;
+  }
+  return null;
+}
 
-export default function MyComponent() {
-  return (
-    <div>
-      {llms.map((llm) => (
-        <div key={llm.id}>
-          <h1>{llm.name}</h1>
-          <p>{llm.description}</p>
-        </div>
-      ))}
-    </div>
-  )
+// ✅ Always call hooks at top level
+function MyComponent({ showMessage }) {
+  const t = useGT();
+  
+  if (showMessage) {
+    return <p>{t('Hello!')}</p>;
+  }
+  return null;
 }
 ```
-</Tab>
-</Tabs>
 
-<Callout type="info">
-  In this last example, we turned the `llms` array into a function that returns the data with translations.
-  We passed the `t` function to the function that returns the data.
-
-  Alternatively, you could also turn the `llms` array into a custom hook.
-  However, this is not recommended, as you will need to be very careful about how you use the `useGT()` hook,
-  so as to not violate the [rules of React](https://react.dev/reference/rules/rules-of-hooks).
-
-  <Accordions>
-    <Accordion title="Why can't I directly import the `llms` array?">
-      This is because the `useGT()` hook requires access to the React context of the component that is calling it.
-      This context includes information about the current language and the translations for the current language.
-
-      If you try to import the `llms` array directly, without knowing the current language,
-      you will not be able to translate the strings.
-    </Accordion>
-  </Accordions>
+<Callout>
+  For truly dynamic content that needs runtime translation, see the [Dynamic Content Guide](/docs/react/guides/dynamic-content).
 </Callout>
-
----
-
-## Common Pitfalls
-
-### Translating Dynamic Content
-
-All strings must be known at build time.
-
-This means that you cannot translate dynamic content that is generated or retrieved at runtime.
-
-This includes variables, even if they are strings.
-
-```jsx
-export default function MyComponent() {
-  const [dynamicContent, setDynamicContent] = useState('Hello, world!');
-  const t = useGT();
-  return (
-    <div>
-      <h1>{t(dynamicContent)}</h1> // This will not work
-    </div>
-  )
-}
-```
-
-<Accordions>
-  <Accordion title="Why can't I translate dynamic content?">
-    This is because React is client-side rendered, and no translations can ever occur in production
-    due to security vulnerabilities involving exposed API keys. 
-    In development, translations will work because the development server
-    is not exposed to the public internet.
-  </Accordion>
-</Accordions>
-
-<Callout type="warn">
-  The CLI tool will warn you if you try to translate dynamic content
-</Callout>
-
-
----
 
 ## Next Steps
- * Learn more about the [`<T>` component](/docs/react/guides/jsx).
- * See the [API reference for `useGT()`](/docs/react/api/strings/useGT).
+
+- [Dynamic Content Guide](/docs/react/guides/dynamic-content) - Handle runtime translation
+- [Shared Strings Guide](/docs/react/guides/shared-strings) - Organize reusable translations
+- API References:
+  - [`useGT()` Hook](/docs/react/api/strings/useGT)

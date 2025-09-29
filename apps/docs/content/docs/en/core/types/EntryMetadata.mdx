@@ -1,0 +1,81 @@
+---
+title: EntryMetadata  
+description: Type definition for metadata that customizes translation behavior in Entry objects
+---
+
+## Overview
+
+`EntryMetadata` provides optional configuration for [`Entry`](/docs/core/types/Entry) objects in batch translation operations.
+
+```typescript
+type EntryMetadata = {
+  context?: string;
+  id?: string;
+  hash?: string;
+  dataFormat?: DataFormat;
+  sourceLocale?: string;
+  actionType?: ActionType;
+  timeout?: number;
+  regionCode?: string;
+  scriptCode?: string;
+};
+```
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `context?` | `string` | Context for translators |
+| `id?` | `string` | Unique identifier |
+| `hash?` | `string` | Content hash for caching |
+| `dataFormat?` | `DataFormat` | Format specification |
+| `sourceLocale?` | `string` | Source locale override |
+| `actionType?` | `ActionType` | Translation model preference |
+| `timeout?` | `number` | Request timeout (ms) |
+| `regionCode?` | `string` | ISO region code |
+| `scriptCode?` | `string` | ISO script code |
+
+### Related Types
+
+```typescript
+type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+type ActionType = 'standard' | 'fast' | string;
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { Entry, EntryMetadata } from 'generaltranslation';
+
+const metadata: EntryMetadata = {
+  context: 'Button text',
+  actionType: 'fast'
+};
+
+const entry: Entry = {
+  source: 'Save',
+  targetLocale: 'es',
+  metadata
+};
+```
+
+### With ICU Format
+
+```typescript copy
+const icuEntry: Entry = {
+  source: '{count, plural, other {{count} items}}',
+  targetLocale: 'es',
+  metadata: {
+    dataFormat: 'ICU',
+    context: 'Item count'
+  }
+};
+```
+
+## Related Types
+
+* [`Entry`](/docs/core/types/Entry) - Parent type using this metadata
+* [`ActionType`](/docs/core/types/ActionType) - Translation model options
+* [`DataFormat`](/docs/core/types/DataFormat) - Content format specifications

@@ -27,7 +27,7 @@ export type UploadData = {
 };
 
 export type UploadFilesOptions = {
-  sourceLocale: string;
+  sourceLocale?: string;
   modelProvider?: string;
   timeout?: number;
 };

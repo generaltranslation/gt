@@ -3,5 +3,11 @@
   "description": "AI i18n agent",
   "icon": "Brain",
   "root": true,
-  "pages": ["---Getting Started---", "mintlify", "next", "monorepos"]
+  "pages": [
+    "---Getting Started---",
+    "mintlify",
+    "next",
+    "monorepos",
+    "auto-merge"
+  ]
 }

@@ -1,0 +1,70 @@
+---
+title: TranslationResult
+description: Type definition for translation results returned by translate() methods
+---
+
+## Overview
+
+`TranslationResult` represents the result of translation operations.
+
+```typescript
+type TranslationResult = RequestSuccess | TranslationError;
+```
+
+## Union Types
+
+### RequestSuccess
+
+```typescript
+type RequestSuccess = TypedResult & {
+  locale: string;
+  reference: TranslationResultReference;
+};
+```
+
+### TranslationError
+
+```typescript
+type TranslationError = {
+  error: string;
+  code: number;
+  reference?: TranslationResultReference;
+};
+```
+
+## Examples
+
+### Basic Error Handling
+
+```typescript copy
+import { GT, TranslationResult } from 'generaltranslation';
+
+const gt = new GT({ apiKey: 'your-api-key' });
+
+const result: TranslationResult = await gt.translate('Hello');
+
+if ('error' in result) {
+  console.error(`Translation failed: ${result.error}`);
+} else {
+  console.log(`Translation: ${result.translation}`);
+}
+```
+
+### Type Guards
+
+```typescript copy
+function isTranslationError(result: TranslationResult): result is TranslationError {
+  return 'error' in result;
+}
+
+if (isTranslationError(result)) {
+  // Handle error
+} else {
+  // Handle success
+}
+```
+
+## Related Types
+
+* [`TranslateManyResult`](/docs/core/types/TranslateManyResult) - Batch translation results
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX content type

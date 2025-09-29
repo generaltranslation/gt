@@ -1,0 +1,68 @@
+---
+title: LocaleProperties
+description: TypeScript interface containing comprehensive locale information
+---
+
+## Overview
+
+`LocaleProperties` provides detailed linguistic and regional information about a locale.
+
+```typescript
+interface LocaleProperties {
+  code: string;
+  name: string;
+  nativeName: string;
+  languageCode: string;
+  languageName: string;
+  nativeLanguageName: string;
+  nameWithRegionCode: string;
+  nativeNameWithRegionCode: string;
+  regionCode: string;
+  regionName: string;
+  nativeRegionName: string;
+  scriptCode: string;
+  scriptName: string;
+  nativeScriptName: string;
+  maximizedCode: string;
+  maximizedName: string;
+  nativeMaximizedName: string;
+  minimizedCode: string;
+  minimizedName: string;
+  nativeMinimizedName: string;
+  emoji: string;
+}
+```
+
+Returned by `getLocaleProperties()` methods.
+
+## Key Properties
+
+| Property | Description |
+|----------|-------------|
+| `code` | Original locale code |
+| `name` | Display name in source language |
+| `nativeName` | Display name in native language |
+| `languageCode` | Base language code |
+| `regionCode` | ISO region code |
+| `scriptCode` | ISO script code |
+| `maximizedCode` | Locale with likely script/region |
+| `minimizedCode` | Shortest valid locale code |
+| `emoji` | Flag emoji |
+
+## Examples
+
+### Basic Usage
+
+```typescript
+const gt = new GT({ sourceLocale: 'en-US' });
+const props = gt.getLocaleProperties('de-AT');
+
+console.log(props.name);        // "Austrian German"
+console.log(props.nativeName);  // "Österreichisches Deutsch"
+console.log(props.emoji);       // "🇦🇹"
+```
+
+## Related Types
+
+* [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties) - Method that returns this interface
+* [`CustomMapping`](/docs/core/types/CustomMapping) - Custom locale definitions

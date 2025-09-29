@@ -1,0 +1,110 @@
+---
+title: setupProject()
+description: API Reference for the setupProject() method to initialize translation project setup
+---
+
+## Overview
+
+The `setupProject()` method initializes the setup process for a translation project using previously uploaded files.
+This creates an asynchronous setup job that analyzes the files and prepares them for translation workflows.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const setupResult = await gt.setupProject(fileRefs, 30000);
+console.log(`Setup job created: ${setupResult.setupJobId}`);
+```
+
+<Callout type="info">
+  You must have previously uploaded the files using [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) before calling `setupProject()`.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `files` | `FileUploadRef[]` | Array of file references from previously uploaded source files |
+| `timeoutMs?` | `number` | Optional timeout in milliseconds for the API request |
+
+#### FileUploadRef Structure
+
+```typescript
+type FileUploadRef = {
+  fileId: string;
+  versionId: string;
+  fileName: string;
+  fileFormat?: FileFormat;
+  dataFormat?: DataFormat;
+}
+```
+
+### Returns
+
+`Promise<SetupProjectResult>` - Contains the setup job identifier and initial status.
+
+```typescript
+type SetupProjectResult = {
+  setupJobId: string;
+  status: 'queued';
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `setupJobId` | `string` | Unique identifier for the setup job |
+| `status` | `'queued'` | Initial status of the setup job |
+
+---
+
+## Examples
+
+### Basic Usage
+
+Initialize project setup with uploaded files:
+
+```typescript title="index.ts" copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key'
+});
+
+// File references from previous upload
+const fileRefs = [
+  {
+    fileId: 'file-123',
+    versionId: 'version-456',
+    fileName: 'app.json',
+    fileFormat: 'JSON'
+  },
+  {
+    fileId: 'file-789',
+    versionId: 'version-012',
+    fileName: 'content.md',
+    fileFormat: 'MD'
+  }
+];
+
+const setupResult = await gt.setupProject(fileRefs);
+console.log(`Setup initiated with job ID: ${setupResult.setupJobId}`);
+```
+
+---
+
+## Notes
+
+* Files must be uploaded using [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) before calling `setupProject()`
+* Project setup analyzes file content and structure to optimize translation workflows
+* The setup job runs asynchronously - monitor progress with [`checkSetupStatus()`](/docs/core/class/methods/translation/checkSetupStatus)
+* Setup is typically required before enqueueing translation jobs for new projects
+
+## Next Steps
+
+* See [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) to upload files before setup
+* See [`checkSetupStatus()`](/docs/core/class/methods/translation/checkSetupStatus) to monitor setup progress
+* See [`shouldSetupProject()`](/docs/core/class/methods/translation/shouldSetupProject) to check if setup is required
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translations after setup
+* See [`FileUploadRef`](/docs/core/types/FileUploadRef) for file reference structure details

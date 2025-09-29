@@ -1,0 +1,85 @@
+---
+title: shouldSetupProject()
+description: API Reference for the shouldSetupProject() method to check if project setup is required
+---
+
+## Overview
+
+The `shouldSetupProject()` method checks whether a project requires setup before translation jobs can be enqueued.
+This method queries the API to determine if the project has been properly initialized and configured for translation workflows.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const result = await gt.shouldSetupProject();
+if (result.shouldSetupProject) {
+  console.log('Project setup is required');
+} else {
+  console.log('Project is ready for translations');
+}
+```
+
+
+## Reference
+
+### Parameters
+
+None - this method uses the GT instance configuration to check the project.
+
+### Returns
+
+`Promise<ShouldSetupProjectResult>` - Contains a boolean indicating if setup is required.
+
+```typescript
+type ShouldSetupProjectResult = {
+  shouldSetupProject: boolean;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `shouldSetupProject` | `boolean` | `true` if project setup is required, `false` if already set up |
+
+---
+
+## Examples
+
+### Basic Usage
+
+```typescript title="index.ts" copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  apiKey: 'your-api-key',
+  projectId: 'my-project'
+});
+
+async function checkProjectStatus() {
+  const result = await gt.shouldSetupProject();
+  
+  if (result.shouldSetupProject) {
+    console.log('Project needs setup');
+    return 'setup-required';
+  } else {
+    console.log('Project is ready for translations');
+    return 'ready';
+  }
+}
+
+const status = await checkProjectStatus();
+```
+
+---
+
+## Notes
+
+* The result determines whether [`setupProject()`](/docs/core/class/methods/translation/setupProject) needs to be called
+* Projects typically need setup when they're newly created or when significant structural changes are made
+
+## Next Steps
+
+* See [`setupProject()`](/docs/core/class/methods/translation/setupProject) to perform setup if required
+* See [`checkSetupStatus()`](/docs/core/class/methods/translation/checkSetupStatus) to monitor setup progress
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translations after setup
+* See [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) to upload files before setup
+* See [`ShouldSetupProjectResult`](/docs/core/types/ShouldSetupProjectResult) for the result type details

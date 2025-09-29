@@ -1,0 +1,57 @@
+---
+title: TranslateManyResult
+description: Type definition for results returned by batch translation operations
+---
+
+## Overview
+
+`TranslateManyResult` represents the result of batch translation operations with [`translateMany()`](/docs/core/class/methods/translation/translateMany).
+
+```typescript
+type TranslateManyResult = Array<TranslationResult>;
+```
+
+## Structure
+
+Array of [`TranslationResult`](/docs/core/types/TranslationResult) objects, maintaining the same order as input entries.
+
+```typescript
+type TranslationResult = RequestSuccess | TranslationError;
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { GT, TranslateManyResult } from 'generaltranslation';
+
+const gt = new GT({
+  apiKey: 'your-api-key',
+  sourceLocale: 'en'
+});
+
+const entries = [
+  { source: 'Hello', targetLocale: 'es' },
+  { source: 'Goodbye', targetLocale: 'es' }
+];
+
+const results: TranslateManyResult = await gt.translateMany(entries);
+```
+
+### Error Handling
+
+```typescript copy
+results.forEach((result, index) => {
+  if ('error' in result) {
+    console.error(`Entry ${index} failed: ${result.error}`);
+  } else {
+    console.log(`Entry ${index}: ${result.translation}`);
+  }
+});
+```
+
+## Related Types
+
+* [`TranslationResult`](/docs/core/types/TranslationResult) - Individual result structure
+* [`Entry`](/docs/core/types/Entry) - Input entry format

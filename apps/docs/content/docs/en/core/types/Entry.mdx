@@ -1,0 +1,104 @@
+---
+title: Entry
+description: Type definition for translation entries used in batch translation operations
+---
+
+## Overview
+
+`Entry` represents a translation request object for batch translation operations with [`translateMany()`](/docs/core/class/methods/translation/translateMany).
+
+```typescript
+type Entry = {
+  source: Content;
+  targetLocale?: string;
+  metadata?: EntryMetadata;
+};
+```
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `source` | `Content` | Source content to translate |
+| `targetLocale?` | `string` | Target locale (falls back to instance targetLocale) |
+| `metadata?` | `EntryMetadata` | Optional metadata for translation customization |
+
+### Content Type
+
+```typescript
+type Content = JsxChildren | I18nextMessage | IcuMessage | string;
+```
+
+### EntryMetadata
+
+```typescript
+type EntryMetadata = {
+  context?: string;
+  id?: string;
+  hash?: string;
+  dataFormat?: DataFormat;
+  sourceLocale?: string;
+  actionType?: ActionType;
+  timeout?: number;
+  regionCode?: string;
+  scriptCode?: string;
+};
+```
+
+### ActionType
+
+```typescript
+type ActionType = 'standard' | 'fast' | string;
+```
+
+- `'standard'` - Higher quality translation model
+- `'fast'` - Lower latency translation model
+
+---
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { Entry } from 'generaltranslation';
+
+const entries: Entry[] = [
+  {
+    source: 'Hello, world!',
+    targetLocale: 'es'
+  },
+  {
+    source: 'Good morning',
+    targetLocale: 'de',
+    metadata: {
+      context: 'Formal greeting',
+      actionType: 'standard'
+    }
+  }
+];
+```
+
+### With translateMany()
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({
+  apiKey: 'your-api-key',
+  sourceLocale: 'en'
+});
+
+const entries: Entry[] = [
+  { source: 'Home', targetLocale: 'es' },
+  { source: 'About', targetLocale: 'es' }
+];
+
+const results = await gt.translateMany(entries);
+```
+
+## Related Types
+
+* [`EntryMetadata`](/docs/core/types/EntryMetadata) - Metadata options
+* [`TranslateManyResult`](/docs/core/types/TranslateManyResult) - Batch translation results
+* [`Content`](/docs/core/types/Content) - Supported content types

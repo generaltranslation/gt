@@ -3,5 +3,13 @@
   "description": "generaltranslation",
   "icon": "Network",
   "root": true,
-  "pages": ["index"]
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "quickstart",
+    "---API---",
+    "class",
+    "functions",
+    "types"
+  ]
 }

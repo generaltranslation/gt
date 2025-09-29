@@ -1,0 +1,99 @@
+---
+title: requiresTranslation()
+description: API Reference for the GT requiresTranslation method
+---
+
+## Overview
+
+The `requiresTranslation()` method determines whether translation is needed based on source and target locales.
+It checks if the source content needs to be translated by comparing locale codes and considering approved locale list.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "sourceLocale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.sourceLocale'
+    },
+    "targetLocale?": {
+      type: 'string', 
+      optional: true,
+      default: 'this.targetLocale'
+    },
+    "approvedLocales?": {
+      type: 'string[]',
+      optional: true,
+      default: 'this.locales'
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+      default: 'this.customMapping'
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `sourceLocale` | The source locale code. If not provided, uses the instance's `sourceLocale` |
+| `targetLocale` | The target locale code. If not provided, uses the instance's `targetLocale` |
+| `approvedLocales` | Array of approved target locales. If not provided, uses the instance's `locales` array |
+| `customMapping` | Optional custom mapping for locale resolution |
+
+### Returns
+
+`boolean` - `true` if translation is required, `false` otherwise
+
+### Throws
+
+- `Error` - If no source locale is provided and the instance has no `sourceLocale` configured
+- `Error` - If no target locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Examples
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en-US',
+  targetLocale: 'es-ES',
+  locales: ['en-US', 'es-ES', 'fr-FR', 'de-DE']
+});
+
+// Different languages require translation
+console.log(gt.requiresTranslation('en-US', 'es-ES')); // true
+console.log(gt.requiresTranslation('en-US', 'fr-FR')); // true
+
+// Same languages don't require translation
+console.log(gt.requiresTranslation('en-US', 'en-US')); // false
+console.log(gt.requiresTranslation('es-ES', 'es-ES')); // false
+
+// Different dialects of same language don't require translation
+console.log(gt.requiresTranslation('en-US', 'en-GB')); // false
+console.log(gt.requiresTranslation('es-ES', 'es-MX')); // false
+
+// Target not in approved locales
+console.log(gt.requiresTranslation('en-US', 'it-IT')); // false (it-IT not in approved locales)
+```
+---
+
+## Notes
+
+- Considers locale language families, not just exact matches
+- Respects approved locale lists
+- Returns `false` when target locale is not in approved locales (if provided)
+
+## Next Steps
+
+- Check locale relationships with [`isSameLanguage()`](/docs/core/class/methods/locales/isSameLanguage)
+- Determine best locale with [`determineLocale()`](/docs/core/class/methods/locales/determineLocale)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Explore standalone [`requiresTranslation()`](/docs/core/functions/locales/requiresTranslation)

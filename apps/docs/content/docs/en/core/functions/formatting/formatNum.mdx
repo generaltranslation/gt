@@ -1,0 +1,109 @@
+---
+title: formatNum()
+description: Standalone function to format numbers according to locale conventions
+---
+
+## Overview
+
+The standalone `formatNum()` function formats numbers according to locale-specific conventions without requiring a GT instance.
+It provides the same functionality as the GT class method but can be used independently.
+
+```typescript
+import { formatNum } from 'generaltranslation';
+
+const formatted = formatNum(1234.56, {
+  locales: 'de-DE',
+  style: 'currency',
+  currency: 'EUR'
+});
+// Returns: "1.234,56 €"
+```
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `number` | `number` | The number to format |
+| `options` | `NumberFormatOptions & { locales: string \| string[] }` | Formatting configuration with required locales |
+
+### NumberFormatOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locales` | `string \| string[]` | **Required** - Locales for formatting |
+| `style?` | `'decimal' \| 'currency' \| 'percent' \| 'unit'` | Number formatting style |
+| `currency?` | `string` | Currency code (required when style is 'currency') |
+| `minimumIntegerDigits?` | `number` | Minimum number of integer digits (1-21) |
+| `minimumFractionDigits?` | `number` | Minimum number of fraction digits (0-20) |
+| `maximumFractionDigits?` | `number` | Maximum number of fraction digits (0-20) |
+| `useGrouping?` | `boolean \| 'always' \| 'auto' \| 'min2'` | Whether to use grouping separators |
+| `notation?` | `'standard' \| 'scientific' \| 'engineering' \| 'compact'` | Number notation format |
+
+### Returns
+
+`string` - The formatted number according to locale conventions.
+
+---
+
+## Example
+
+### Basic Usage
+
+```typescript copy
+import { formatNum } from 'generaltranslation';
+
+// Basic number formatting
+console.log(formatNum(1234.567, { locales: 'en-US' }));
+// Output: "1,234.567"
+
+// German formatting
+console.log(formatNum(1234.567, { locales: 'de-DE' }));
+// Output: "1.234,567"
+```
+
+### Currency Formatting
+
+```typescript copy
+// US Dollar
+console.log(formatNum(1234.56, {
+  locales: 'en-US',
+  style: 'currency',
+  currency: 'USD'
+}));
+// Output: "$1,234.56"
+
+// Euro with German locale
+console.log(formatNum(1234.56, {
+  locales: 'de-DE',
+  style: 'currency',
+  currency: 'EUR'
+}));
+// Output: "1.234,56 €"
+
+// Japanese Yen
+console.log(formatNum(1234.56, {
+  locales: 'ja-JP',
+  style: 'currency',
+  currency: 'JPY'
+}));
+// Output: "¥1,235"
+```
+---
+
+## Notes
+
+* Unlike the GT class method, the `locales` parameter is required
+* Uses the same underlying `Intl.NumberFormat` as the GT class method
+* Results are cached internally for performance with repeated locale/options combinations
+* Fallback locales are processed in order if the primary locale is not supported
+* All standard `Intl.NumberFormat` options are supported
+
+## Next Steps
+
+* Check out [`Intl.NumberFormat` documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) for more options
+* See [`formatDateTime()`](/docs/core/functions/formatting/formatDateTime) for standalone date formatting
+* See [`formatMessage()`](/docs/core/functions/formatting/formatMessage) for standalone message formatting
+* See GT class [`formatNum()`](/docs/core/class/methods/formatting/formatNum) for instance-based usage
+* See [`formatCurrency()`](/docs/core/functions/formatting/formatCurrency) for specialized currency formatting

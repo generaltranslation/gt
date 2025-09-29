@@ -1,0 +1,81 @@
+---
+title: resolveCanonicalLocale()
+description: API Reference for the GT resolveCanonicalLocale method
+---
+
+## Overview
+
+Used in the context of aliasing locales (e.g. `cn` -> `zh`), the `resolveCanonicalLocale()` method converts alias locale codes to their canonical BCP-47 locale codes when custom mapping is configured.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+      type: 'string',
+      optional: true,
+      default: 'this.targetLocale'
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+      default: 'this.customMapping'
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | The alias locale code to resolve to canonical form. If not provided, uses the instance's `targetLocale` |
+| `customMapping` | Optional custom mapping to use instead of the instance's mapping |
+
+### Returns
+
+`string` - The canonical BCP-47 locale code if a mapping exists, otherwise the original locale code
+
+### Throws
+
+- `Error` - If no locale is provided and the instance has no `targetLocale` configured
+
+---
+
+## Examples
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  customMapping: {
+    'cn': { code: 'zh', name: 'Mandarin' },
+  }
+});
+
+// Convert alias to canonical locale
+const canonical = gt.resolveCanonicalLocale('cn');
+console.log(canonical); // "zh"
+
+// Regular BCP-47 codes pass through unchanged
+const unchanged = gt.resolveCanonicalLocale('fr-FR');
+console.log(unchanged); // "fr-FR"
+```
+
+---
+
+## Notes
+
+- Converts alias locale codes to canonical BCP-47 locale codes
+- Returns original locale if no custom mapping exists
+- Works with the `customMapping` configuration from the GT constructor
+- No validation is performed on the input or output locale codes
+
+## Next Steps
+
+- Resolve back to aliases with [`resolveAliasLocale()`](/docs/core/class/methods/locales/resolveAliasLocale)
+- Validate locales with [`isValidLocale()`](/docs/core/class/methods/locales/isValidLocale)
+- Standardize locale format with [`standardizeLocale()`](/docs/core/class/methods/locales/standardizeLocale)
+- Get locale properties with [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties)

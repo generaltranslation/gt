@@ -1,0 +1,159 @@
+---
+title: formatNum()
+description: API Reference for the formatNum() method to format numbers according to locale conventions
+---
+
+## Overview
+
+The `formatNum()` method formats numbers according to locale-specific conventions using the Internationalization API.
+It handles decimal separators, thousands separators, and numbering systems automatically based on the target locale.
+
+```typescript
+const gt = new GT({ targetLocale: 'de' });
+
+const formatted = gt.formatNum(1234.56, {
+  style: 'decimal',
+  minimumFractionDigits: 2
+});
+// Returns: "1.234,56" (German number formatting)
+```
+
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `number` | `number` | The number to format |
+| `options?` | `NumberFormatOptions` | Optional formatting configuration |
+
+### NumberFormatOptions
+
+Extends `Intl.NumberFormatOptions` with additional locale specification:
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locales?` | `string \| string[]` | Override locales for formatting (defaults to instance locales) |
+| `style?` | `'decimal' \| 'currency' \| 'percent' \| 'unit'` | Number formatting style |
+| `currency?` | `string` | Currency code (required when style is 'currency') |
+| `currencyDisplay?` | `'symbol' \| 'narrowSymbol' \| 'code' \| 'name'` | How to display the currency |
+| `currencySign?` | `'standard' \| 'accounting'` | Currency sign to use |
+| `unit?` | `string` | Unit identifier (required when style is 'unit') |
+| `unitDisplay?` | `'short' \| 'narrow' \| 'long'` | How to display the unit |
+| `minimumIntegerDigits?` | `number` | Minimum number of integer digits (1-21) |
+| `minimumFractionDigits?` | `number` | Minimum number of fraction digits (0-20) |
+| `maximumFractionDigits?` | `number` | Maximum number of fraction digits (0-20) |
+| `minimumSignificantDigits?` | `number` | Minimum significant digits (1-21) |
+| `maximumSignificantDigits?` | `number` | Maximum significant digits (1-21) |
+| `useGrouping?` | `boolean \| 'always' \| 'auto' \| 'min2'` | Whether to use grouping separators |
+| `notation?` | `'standard' \| 'scientific' \| 'engineering' \| 'compact'` | Number notation format |
+| `compactDisplay?` | `'short' \| 'long'` | Compact notation display style |
+| `signDisplay?` | `'auto' \| 'never' \| 'always' \| 'exceptZero'` | When to display the sign |
+| `roundingMode?` | `'ceil' \| 'floor' \| 'expand' \| 'trunc' \| 'halfCeil' \| 'halfFloor' \| 'halfExpand' \| 'halfTrunc' \| 'halfEven'` | Rounding mode |
+| `roundingIncrement?` | `1 \| 2 \| 5 \| 10 \| 20 \| 25 \| 50 \| 100` | Rounding increment |
+| `trailingZeroDisplay?` | `'auto' \| 'stripIfInteger'` | Whether to display trailing zeros |
+
+### Returns
+
+`string` - The formatted number according to locale conventions.
+
+---
+
+## Examples
+
+### Basic Number Formatting
+
+```typescript copy
+import { GT } from 'generaltranslation';
+
+const gt = new GT({ targetLocale: 'en-US' });
+
+// Basic decimal formatting
+console.log(gt.formatNum(1234.567));
+// Output: "1,234.567"
+
+// German locale formatting
+console.log(gt.formatNum(1234.567, { locales: 'de-DE' }));
+// Output: "1.234,567"
+
+// French locale formatting  
+console.log(gt.formatNum(1234.567, { locales: 'fr-FR' }));
+// Output: "1 234,567"
+```
+
+### Currency Formatting
+
+```typescript copy
+// US Dollar formatting
+console.log(gt.formatNum(1234.56, {
+  style: 'currency',
+  currency: 'USD'
+}));
+// Output: "$1,234.56"
+
+// Euro formatting with German locale
+console.log(gt.formatNum(1234.56, {
+  style: 'currency',
+  currency: 'EUR',
+  locales: 'de-DE'
+}));
+// Output: "1.234,56 €"
+
+// Currency display options
+console.log(gt.formatNum(1234.56, {
+  style: 'currency',
+  currency: 'USD',
+  currencyDisplay: 'code'
+}));
+// Output: "USD 1,234.56"
+
+// Accounting format (parentheses for negative)
+console.log(gt.formatNum(-1234.56, {
+  style: 'currency',
+  currency: 'USD',
+  currencySign: 'accounting'
+}));
+// Output: "($1,234.56)"
+```
+
+### Percentage and Scientific Notation
+
+```typescript copy
+// Basic percentage
+console.log(gt.formatNum(0.1234, { style: 'percent' }));
+// Output: "12%"
+
+// Percentage with decimal places
+console.log(gt.formatNum(0.1234, {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2
+}));
+// Output: "12.34%"
+
+// Compact notation
+console.log(gt.formatNum(1234567, { notation: 'compact' }));
+// Output: "1.2M"
+
+// Scientific notation
+console.log(gt.formatNum(1234567, { notation: 'scientific' }));
+// Output: "1.235E6"
+```
+
+---
+
+## Notes
+
+* Number formatting follows locale-specific conventions automatically
+* The method uses browser-native `Intl.NumberFormat` for optimal performance and accuracy
+* Currency formatting requires both `style: 'currency'` and a valid `currency` code
+* Unit formatting requires both `style: 'unit'` and a valid `unit` identifier
+
+## Next Steps
+
+* Check out [`Intl.NumberFormat` documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) for more options
+* See [`formatCurrency()`](/docs/core/class/methods/formatting/formatCurrency) for specialized currency formatting
+* See [`formatMessage()`](/docs/core/class/methods/formatting/formatMessage) for message formatting with number interpolation
+* See standalone [`formatNum()`](/docs/core/functions/formatting/formatNum) for use without GT instance
+* See [`getLocaleProperties()`](/docs/core/class/methods/locales/getLocaleProperties) for locale-specific formatting information

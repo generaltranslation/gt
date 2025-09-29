@@ -1,0 +1,69 @@
+---
+title: FileToTranslate
+description: Type definition for file objects used in batch file translation operations
+---
+
+## Overview
+
+`FileToTranslate` represents a file object for batch translation operations with [`enqueueFiles()`](/docs/core/class/methods/files/enqueueFiles).
+
+```typescript
+type FileToTranslate = {
+  content: string;
+  fileName: string;
+  fileFormat: FileFormat;
+  formatMetadata?: Record<string, any>;
+  dataFormat?: DataFormat;
+};
+```
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `content` | `string` | **Yes** | Raw file content |
+| `fileName` | `string` | **Yes** | File identifier |
+| `fileFormat` | `FileFormat` | **Yes** | File format |
+| `formatMetadata?` | `Record<string, any>` | No | Format-specific metadata |
+| `dataFormat?` | `DataFormat` | No | Data format within file |
+
+### Related Types
+
+```typescript
+type FileFormat = 'JSON' | 'MDX' | 'MD' | 'HTML' | 'TXT' | string;
+type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+```
+
+## Examples
+
+### JSON File
+
+```typescript copy
+import { FileToTranslate } from 'generaltranslation';
+
+const jsonFile: FileToTranslate = {
+  content: JSON.stringify({
+    "welcome": "Welcome",
+    "save": "Save"
+  }),
+  fileName: 'common.json',
+  fileFormat: 'JSON',
+  dataFormat: 'I18NEXT'
+};
+```
+
+### MDX File
+
+```typescript copy
+const mdxFile: FileToTranslate = {
+  content: `# Getting Started\n\nWelcome to our platform!`,
+  fileName: 'docs/start.mdx',
+  fileFormat: 'MDX',
+  dataFormat: 'JSX'
+};
+```
+
+## Related Types
+
+* [`EnqueueFilesOptions`](/docs/core/types/EnqueueFilesOptions) - Batch processing options
+* [`DataFormat`](/docs/core/types/DataFormat) - Data format specifications

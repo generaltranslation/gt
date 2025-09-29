@@ -1,0 +1,125 @@
+---
+title: downloadTranslatedFile()
+description: API Reference for the downloadTranslatedFile() method to download completed translation files
+---
+
+## Overview
+
+The `downloadTranslatedFile()` method downloads the content of a single translated file as a UTF-8 string.
+This method is used to retrieve completed translations after they have been processed by the General Translation platform.
+
+```typescript
+const gt = new GT({ projectId: 'your-project-id', apiKey: 'your-api-key' });
+
+const content = await gt.downloadTranslatedFile({
+  fileId: 'file-123',
+  locale: 'es',
+  versionId: 'version-456'
+});
+```
+
+<Callout>
+  **Translation Status:**
+  This method only works with completed translations.
+  Use [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) first to verify that translations are completed before attempting to download.
+</Callout>
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `file` | `FileInfo` | File information object specifying which file to download |
+| `options?` | `DownloadFileOptions` | Optional configuration for the download request |
+
+#### FileInfo Structure
+
+| Name | Type | Description |
+|------|------|-------------|
+| `fileId` | `string` | Unique identifier of the file to download |
+| `locale` | `string` | Target locale of the translation to download |
+| `versionId?` | `string` | Optional version ID for the file |
+
+#### DownloadFileOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `number` | Request timeout in milliseconds |
+
+### Returns
+
+`Promise<string>` - The translated file content as a UTF-8 string.
+
+The returned string contains the translated file content in the same format as the original source file, with all translatable text converted to the target locale.
+
+---
+
+## Example
+
+```typescript title="index.ts" copy
+// (1) Create a GT instance
+const targetLocales = ['es', 'fr', 'de'];
+const gt = new GT({
+  projectId: 'your-project-id',
+  apiKey: 'your-api-key',
+});
+
+// (2) Upload the file
+const fileUpload = {
+  content: fileContents,
+  fileName: filePath,
+  fileFormat: 'JSON',
+  locale: 'en',
+};
+const files = [ { source: fileUpload } ];
+const { uploadedFiles } = await gt.uploadSourceFiles(
+  files,
+  { sourceLocale: 'en' }
+);
+
+// (3) Enqueue the file translation job
+const enqueueResult = await gt.enqueueFiles(
+  uploadedFiles,
+  {
+  sourceLocale: 'en',
+  targetLocales: targetLocales,
+});
+
+// (4) Wait for all translations to be completed
+let translationIds = [];
+const statusQuery = Object.values(enqueueResult.data).flatMap(({fileName, versionId}) => {
+  return targetLocales.map((locale) => ({locale, fileName, versionId}));
+});
+while (true) {
+  const status = await gt.checkFileTranslations(statusQuery);
+  if (status.translations.length === statusQuery.length) {
+    translationIds = status.translations.map(translation => translation.id);
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
+// (5) Download the file
+const result = await Promise.all(
+  translationIds.map(id => gt.downloadTranslatedFile(id))
+);
+
+```
+
+
+---
+
+## Notes
+
+* Retrieves downloaded file as a UTF-8 string
+* The file must have a completed translation for the specified locale
+* Will fail if file is not found
+
+## Next Steps
+
+* See [`checkFileTranslations()`](/docs/core/class/methods/translation/checkFileTranslations) to verify translation status before downloading
+* See [`downloadFileBatch()`](/docs/core/class/methods/translation/downloadFileBatch) to download multiple files efficiently
+* See [`uploadSourceFiles()`](/docs/core/class/methods/translation/uploadSourceFiles) for the file upload process
+* See [`enqueueFiles()`](/docs/core/class/methods/translation/enqueueFiles) to start translation jobs
+* See [`FileUploadRef`](/docs/core/types/FileUploadRef) for file reference structure details

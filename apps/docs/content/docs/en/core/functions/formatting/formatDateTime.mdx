@@ -1,0 +1,152 @@
+---
+title: formatDateTime()
+description: Standalone function to format dates and times according to locale conventions
+---
+
+## Overview
+
+The standalone `formatDateTime()` function formats dates and times according to locale-specific conventions without requiring a GT instance.
+It provides the same functionality as the GT class method but can be used independently.
+
+```typescript
+import { formatDateTime } from 'generaltranslation';
+
+const formatted = formatDateTime(new Date(), {
+  locales: 'de-DE',
+  dateStyle: 'medium',
+  timeStyle: 'short'
+});
+// Returns: "26.09.2025, 17:33"
+```
+
+## Reference
+
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `date` | `Date` | The date object to format |
+| `options` | `DateTimeFormatOptions & { locales?: string \| string[] }` | Formatting configuration with optional locales |
+
+### DateTimeFormatOptions
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locales?` | `string \| string[]` | Locales for formatting (defaults to system locale) |
+| `dateStyle?` | `'full' \| 'long' \| 'medium' \| 'short'` | Overall date formatting style |
+| `timeStyle?` | `'full' \| 'long' \| 'medium' \| 'short'` | Overall time formatting style |
+| `weekday?` | `'long' \| 'short' \| 'narrow'` | Weekday representation |
+| `year?` | `'numeric' \| '2-digit'` | Year representation |
+| `month?` | `'numeric' \| '2-digit' \| 'long' \| 'short' \| 'narrow'` | Month representation |
+| `day?` | `'numeric' \| '2-digit'` | Day representation |
+| `hour?` | `'numeric' \| '2-digit'` | Hour representation |
+| `minute?` | `'numeric' \| '2-digit'` | Minute representation |
+| `second?` | `'numeric' \| '2-digit'` | Second representation |
+| `timeZone?` | `string` | IANA time zone identifier |
+| `hour12?` | `boolean` | Whether to use 12-hour time format |
+
+### Returns
+
+`string` - The formatted date and time according to locale conventions.
+
+---
+
+## Example
+
+### Basic Usage
+
+```typescript copy
+import { formatDateTime } from 'generaltranslation';
+
+// Basic formatting with explicit locale
+console.log(formatDateTime(date, { locales: 'en-US' }));
+// Output: "3/14/2024"
+
+// German formatting
+console.log(formatDateTime(date, { locales: 'de-DE' }));
+// Output: "14.3.2024"
+
+// Multiple locale fallbacks
+console.log(formatDateTime(date, { 
+  locales: ['ja-JP', 'en-US'] 
+}));
+// Output: "2024/3/14" (Japanese format)
+```
+
+### Date and Time Styles
+
+```typescript copy
+const date = new Date('2024-03-14T14:30:45Z');
+
+// Full date style
+console.log(formatDateTime(date, {
+  locales: 'en-US',
+  dateStyle: 'full'
+}));
+// Output: "Thursday, March 14, 2024"
+
+// Long date with short time
+console.log(formatDateTime(date, {
+  locales: 'fr-FR',
+  dateStyle: 'long',
+  timeStyle: 'short'
+}));
+// Output: "14 mars 2024 à 07:30"
+
+// Short format across locales
+const locales = ['en-US', 'de-DE', 'ja-JP'];
+locales.forEach(locale => {
+  console.log(`${locale}: ${formatDateTime(date, {
+    locales: locale,
+    dateStyle: 'short',
+    timeStyle: 'short'
+  })}`);
+});
+// Output:
+// en-US: 3/14/24, 7:30 AM
+// de-DE: 14.03.24, 07:30
+// ja-JP: 2024/03/14 7:30
+```
+
+### Time Zone Handling
+
+```typescript copy
+const date = new Date('2024-03-14T14:30:45Z');
+
+// Format for different time zones
+const timeZones = [
+  'America/New_York',
+  'Europe/London', 
+  'Asia/Tokyo'
+];
+
+timeZones.forEach(timeZone => {
+  const formatted = formatDateTime(date, {
+    locales: 'en-US',
+    timeZone,
+    dateStyle: 'medium',
+    timeStyle: 'medium'
+  });
+  console.log(`${timeZone}: ${formatted}`);
+});
+// Output varies based on daylight saving time
+```
+
+---
+
+## Notes
+
+* The `locales` parameter is optional and defaults to the system locale if not provided
+* Uses the same underlying `Intl.DateTimeFormat` as the GT class method
+* Results are cached internally for performance with repeated locale/options combinations
+* All standard `Intl.DateTimeFormat` options are supported
+* Time zones are handled correctly when specified
+* Different locales have different default date/time formats and 12-hour vs 24-hour preferences
+
+## Next Steps
+
+* Check out [`Intl.DateTimeFormat` documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more options
+* See [`formatNum()`](/docs/core/functions/formatting/formatNum) for standalone number formatting
+* See [`formatMessage()`](/docs/core/functions/formatting/formatMessage) for standalone message formatting
+* See GT class [`formatDateTime()`](/docs/core/class/methods/formatting/formatDateTime) for instance-based usage
+* See [`formatRelativeTime()`](/docs/core/functions/formatting/formatRelativeTime) for relative time formatting

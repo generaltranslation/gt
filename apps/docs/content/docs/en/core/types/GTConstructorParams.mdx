@@ -1,0 +1,64 @@
+---
+title: GTConstructorParams
+description: TypeScript interface for GT class constructor parameters
+---
+
+## Overview
+
+`GTConstructorParams` defines configuration options for GT class initialization.
+
+```typescript
+interface GTConstructorParams {
+  apiKey?: string;
+  devApiKey?: string;
+  sourceLocale?: string;
+  targetLocale?: string;
+  locales?: string[];
+  projectId?: string;
+  baseUrl?: string;
+  customMapping?: CustomMapping;
+}
+```
+
+All properties are optional. The constructor reads `GT_API_KEY`, `GT_DEV_API_KEY`, and `GT_PROJECT_ID` from environment variables if not provided.
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `apiKey?` | `string` | Production API key |
+| `devApiKey?` | `string` | Development API key |
+| `sourceLocale?` | `string` | Default source locale |
+| `targetLocale?` | `string` | Default target locale |
+| `locales?` | `string[]` | Supported locale codes |
+| `projectId?` | `string` | Project identifier |
+| `baseUrl?` | `string` | Custom API endpoint |
+| `customMapping?` | `CustomMapping` | Custom locale mappings |
+
+## Examples
+
+### Basic Setup
+
+```typescript copy
+const gt = new GT({
+  apiKey: 'your-api-key',
+  sourceLocale: 'en',
+  targetLocale: 'es',
+  locales: ['en', 'es', 'fr']
+});
+```
+
+### With Environment Variables
+
+```typescript copy
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+// Uses GT_API_KEY and GT_PROJECT_ID from environment
+```
+
+## Related Types
+
+* [`CustomMapping`](/docs/core/types/CustomMapping) - Custom locale definitions
+* [`LocaleProperties`](/docs/core/types/LocaleProperties) - Locale information

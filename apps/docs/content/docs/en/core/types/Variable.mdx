@@ -1,0 +1,79 @@
+---
+title: Variable
+description: Type definition for variables used in translation content
+---
+
+## Overview
+
+`Variable` represents a placeholder for dynamic content in translations.
+
+```typescript
+type Variable = {
+  k: string;
+  i?: number;
+  v?: VariableType;
+};
+```
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `k` | `string` | Variable key/name |
+| `i?` | `number` | Internal identifier |
+| `v?` | `VariableType` | Formatting type |
+
+### VariableType
+
+```typescript
+type VariableType = 'v' | 'n' | 'd' | 'c';
+```
+
+| Value | Description |
+|-------|-------------|
+| `'v'` | Plain text substitution |
+| `'n'` | Number formatting |
+| `'d'` | Date formatting |
+| `'c'` | Currency formatting |
+
+## Examples
+
+### Basic Usage
+
+```typescript copy
+import { Variable } from 'generaltranslation';
+
+// Text variable
+const nameVariable: Variable = {
+  k: 'userName'
+};
+
+// Number variable
+const countVariable: Variable = {
+  k: 'itemCount',
+  v: 'n'
+};
+
+// Currency variable
+const priceVariable: Variable = {
+  k: 'price',
+  v: 'c'
+};
+```
+
+### In JSX Content
+
+```typescript copy
+const welcomeContent = [
+  'Welcome back, ',
+  { k: 'userName' } as Variable,
+  '! You have ',
+  { k: 'messageCount', v: 'n' } as Variable,
+  ' messages.'
+];
+```
+
+## Related Types
+
+* [`VariableType`](/docs/core/types/VariableType) - Formatting type specifications
+* [`JsxChildren`](/docs/core/types/JsxChildren) - JSX content with variables

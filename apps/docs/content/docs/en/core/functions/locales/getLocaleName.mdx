@@ -1,0 +1,134 @@
+---
+title: getLocaleName()
+description: API Reference for the standalone getLocaleName function
+---
+
+## Overview
+
+The standalone `getLocaleName()` function retrieves the display name of a locale code without requiring a GT class instance.
+It uses the `Intl.DisplayNames` API to provide localized locale names for any valid BCP-47 locale code.
+
+```typescript
+import { getLocaleName } from 'generaltranslation';
+
+const name = getLocaleName('fr-CA', 'en');
+console.log(name); // "French (Canada)"
+```
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale": {
+      type: 'string',
+      optional: false,
+    },
+    "defaultLocale?": {
+      type: 'string',
+      optional: true,
+    },
+    "customMapping?": {
+      type: 'CustomMapping',
+      optional: true,
+    }
+  }}
+/>
+
+### Parameters Description
+
+| Parameter | Description |
+|-----------|-------------|
+| `locale` | BCP-47 locale code to get the display name for |
+| `defaultLocale` | Locale to use for localizing the display name (defaults to 'en') |
+| `customMapping` | Optional custom mapping for locale codes and names |
+
+### Returns
+
+`string` - The localized display name of the locale.
+
+---
+
+## Behavior
+
+### Display Language Resolution
+
+The function localizes names using this priority:
+1. `defaultLocale` parameter (if provided)
+2. Library default locale ('en')
+
+### Custom Mapping Integration
+
+- Custom mappings are checked first for both locale codes and names
+- Supports alias resolution and custom display names
+- Falls back to standard Intl.DisplayNames for unmapped codes
+
+### Name Resolution Strategy
+
+1. **Custom mapping name** (highest priority)
+2. **Intl.DisplayNames** in default locale
+3. **Intl.DisplayNames** in library default ('en')
+4. **Locale code itself** (fallback)
+
+---
+
+## Examples
+
+```typescript
+import { getLocaleName } from 'generaltranslation';
+
+// English display names
+console.log(getLocaleName('es', 'en')); // "Spanish (Spain)"
+console.log(getLocaleName('ja', 'en')); // "Japanese (Japan)"
+console.log(getLocaleName('zh', 'en')); // "Chinese (China)"
+```
+
+### Building Locale Options
+
+```typescript
+import { getLocaleName, getLocaleEmoji } from 'generaltranslation';
+
+function buildLocaleOptions(
+  supportedLocales: string[],
+  displayLocale: string = 'en'
+) {
+  return supportedLocales.map(locale => ({
+    value: locale,
+    label: getLocaleName(locale, displayLocale),
+    emoji: getLocaleEmoji(locale)
+  }));
+}
+
+const options = buildLocaleOptions([
+  'en',
+  'es',
+  'fr',
+  'de',
+  'ja'
+], 'en');
+
+console.log(options);
+// [
+//   { value: 'en', label: 'English (United States)', emoji: '🇺🇸' },
+//   { value: 'es', label: 'Spanish (Spain)', emoji: '🇪🇸' },
+//   ...
+// ]
+```
+
+---
+
+## Notes
+
+- Custom mappings take precedence over standard Intl.DisplayNames
+- Returns the locale code itself if no display name can be determined
+- Display locale parameter determines the language of the returned name
+
+## Next Steps
+
+- Get locale emoji with [`getLocaleEmoji()`](/docs/core/functions/locales/getLocaleEmoji)
+- Use GT class method for stateful operations [`getLocaleName()`](/docs/core/class/methods/locales/getLocaleName)
+- Learn about [`CustomMapping` type](/docs/core/types/CustomMapping)
+- Validate locales with [`isValidLocale()`](/docs/core/functions/locales/isValidLocale)

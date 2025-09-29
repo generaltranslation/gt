@@ -1,0 +1,46 @@
+---
+title: JsxChild
+description: Union type representing individual elements within JSX content
+---
+
+## Overview
+
+`JsxChild` represents a single element within JSX content.
+
+```typescript
+type JsxChild = string | JsxElement | Variable;
+```
+
+## Union Members
+
+| Type | Description |
+|------|-------------|
+| `string` | Plain text content |
+| `JsxElement` | Structured element |
+| `Variable` | Dynamic placeholder |
+
+## Examples
+
+### Basic Types
+
+```typescript copy
+import { JsxChild, Variable } from 'generaltranslation';
+
+// String
+const text: JsxChild = "Welcome!";
+
+// Variable
+const name: JsxChild = { k: 'userName' } as Variable;
+
+// Element
+const link: JsxChild = {
+  t: 'a',
+  c: ['Click here']
+};
+```
+
+## Related Types
+
+* [`JsxChildren`](/docs/core/types/JsxChildren) - Collections of JsxChild elements
+* [`JsxElement`](/docs/core/types/JsxElement) - Structured elements
+* [`Variable`](/docs/core/types/Variable) - Dynamic placeholders

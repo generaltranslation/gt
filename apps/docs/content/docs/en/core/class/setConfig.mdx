@@ -1,0 +1,90 @@
+---
+title: setConfig()
+description: API Reference for the GT setConfig method
+---
+
+## Overview
+
+The `setConfig()` method updates the configuration of an existing GT instance.
+This allows you to modify API credentials, locales, and other settings after the instance has been created.
+
+```typescript
+const gt = new GT();
+
+gt.setConfig({
+  apiKey: 'your-new-api-key',
+  projectId: 'your-project-id',
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+```
+
+
+The `setConfig()` method will validate all provided locale codes and merge with any existing configuration that was passed to the constructor.
+
+---
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "params": {
+      type: 'GTConstructorParams',
+      optional: false,
+    }
+  }}
+/>
+
+The `GTConstructorParams` object supports the same properties as the constructor:
+
+| Property | Type | Optional | Description |
+|----------|------|----------|-------------|
+| `apiKey` | `string` | ✓ | Production API key for translation service |
+| `devApiKey` | `string` | ✓ | Development API key |
+| `projectId` | `string` | ✓ | Unique project identifier |
+| `sourceLocale` | `string` | ✓ | Default source locale for translations |
+| `targetLocale` | `string` | ✓ | Default target locale for translations |
+| `locales` | `string[]` | ✓ | Array of supported locale codes |
+| `baseUrl` | `string` | ✓ | Custom API base URL |
+| `customMapping` | `CustomMapping` | ✓ | Custom locale code mappings |
+
+### Returns
+
+`void` - The method updates the instance configuration in-place.
+
+---
+
+## Example
+
+In this example, we switch the target locale from Spanish to French.
+
+```typescript
+const gt = new GT({
+  sourceLocale: 'en',
+  targetLocale: 'es'
+});
+
+// Switch to French
+gt.setConfig({
+  targetLocale: 'fr'
+});
+```
+
+---
+
+## Notes
+
+- Configuration changes take effect immediately for subsequent method calls
+- Environment variables are not re-read when calling `setConfig()`
+- Custom mappings completely replace existing mappings (not merged)
+- Validation failures leave the instance configuration unchanged
+- The method is synchronous and returns `void`
+
+## Next Steps
+
+- **[Initialize with constructor](/docs/core/class/constructor)**
+- **[Start translating content](/docs/core/class/methods/translation/translate)**
+- **[Learn about GTConstructorParams](/docs/core/types/GTConstructorParams)**
+- **[Explore custom mappings](/docs/core/types/CustomMapping)**
