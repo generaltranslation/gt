@@ -7,4 +7,4 @@ import { GT_COMPONENT_CATEGORIES } from '../../constants';
  */
 export type JSXElementWithCanonicalId = t.JSXElement & {
   _gt_canonical_identifier: GT_COMPONENT_CATEGORIES;
-};  
+};

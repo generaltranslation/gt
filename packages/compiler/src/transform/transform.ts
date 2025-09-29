@@ -669,7 +669,6 @@ export function processJSXElement(
   return false;
 }
 
-
 /**
  * Track hash attributes on JSX elements
  * Ported from Rust: track_hash_attributes (lines 141-162)
@@ -681,7 +680,10 @@ export function trackHashAttributes(
   // Check if hash attribute already exists
   if (!getAttr(nodePath.node, '_hash')) {
     // Strip aliased names from element (<_T> -> <T>)
-    const annotatedElement: t.JSXElement = annotateJsxElement(nodePath.node, state);
+    const annotatedElement: t.JSXElement = annotateJsxElement(
+      nodePath.node,
+      state
+    );
 
     // Calculate real hash using AST traversal
     const hash = hashJsx(annotatedElement);
@@ -700,7 +702,6 @@ export function trackHashAttributes(
     );
   }
 }
-
 
 // /**
 //  * Calculate element hash given an annotated element
@@ -872,7 +873,10 @@ export function performSecondPassTransformation(
 
       // TODO: Implement full traversal state management like Rust
       // Save state, determine context, inject attributes, restore state
-      const componentType = determineComponentType(element, state.importTracker);
+      const componentType = determineComponentType(
+        element,
+        state.importTracker
+      );
 
       // Inject hash attributes on translation components
       if (state.settings.compileTimeHash && componentType.isTranslation) {

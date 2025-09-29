@@ -1,5 +1,3 @@
-
-
 /**
  * Different TYPES of gt components
  */

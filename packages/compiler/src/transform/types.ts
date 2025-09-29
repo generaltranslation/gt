@@ -1,5 +1,3 @@
-
-
 // Core modules
 import { StringCollector } from '../visitor/string-collector';
 import { ImportTracker } from '../visitor/import-tracker';
@@ -10,13 +8,12 @@ import { Logger } from '../logging';
  * Matches the Rust TransformVisitor structure
  */
 export interface TransformState {
-    settings: PluginSettings;
-    stringCollector: StringCollector;
-    importTracker: ImportTracker;
-    logger: Logger;
-    statistics: {
-      jsxElementCount: number;
-      dynamicContentViolations: number;
-    };
-  }
-  
+  settings: PluginSettings;
+  stringCollector: StringCollector;
+  importTracker: ImportTracker;
+  logger: Logger;
+  statistics: {
+    jsxElementCount: number;
+    dynamicContentViolations: number;
+  };
+}

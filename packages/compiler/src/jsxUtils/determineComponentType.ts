@@ -1,9 +1,13 @@
-import { TransformState } from "../transform/types";
-import { isBranchComponent, isTranslationComponent, isVariableComponent } from "../visitor/analysis";
+import { TransformState } from '../transform/types';
+import {
+  isBranchComponent,
+  isTranslationComponent,
+  isVariableComponent,
+} from '../visitor/analysis';
 import * as t from '@babel/types';
-import { ScopeTracker } from "../visitor/scope-tracker";
-import { ImportTracker } from "../visitor/import-tracker";
-import { GT_COMPONENT_TYPES } from "../constants";
+import { ScopeTracker } from '../visitor/scope-tracker';
+import { ImportTracker } from '../visitor/import-tracker';
+import { GT_COMPONENT_TYPES } from '../constants';
 
 /**
  * Check if we should track this component based on imports or known components
@@ -12,8 +16,7 @@ function shouldTrackComponentAsTranslation(
   name: string,
   scopeTracker: ScopeTracker
 ): boolean {
-  const translationVariable =
-    scopeTracker.getTranslationVariable(name);
+  const translationVariable = scopeTracker.getTranslationVariable(name);
   if (
     translationVariable &&
     isTranslationComponent(translationVariable.canonicalName)
@@ -68,7 +71,6 @@ function shouldTrackNamespaceComponent(
   return { isTranslation: false, isVariable: false, isBranch: false };
 }
 
-
 /**
  * Determine component type from JSX element
  */
@@ -105,7 +107,7 @@ export function determineComponentType(
  * @param element - The JSX element to look up the component type for
  * @param importTracker - The import tracker to use to look up the component type
  * @returns The component type or null if the component type is not found
- * 
+ *
  * Will only return the name for gt components, other components will return null
  */
 export function getComponentType(
@@ -120,13 +122,12 @@ export function getComponentType(
     const name = elementName.name;
 
     // Look up the canonical component name via the scope tracker
-    const canonicalName = importTracker.scopeTracker.getTranslationVariable(name);
-
-
+    const canonicalName =
+      importTracker.scopeTracker.getTranslationVariable(name);
   } else if (
-    t.isJSXMemberExpression(elementName)
-    && t.isJSXIdentifier(elementName.object)
-    && t.isJSXIdentifier(elementName.property)
+    t.isJSXMemberExpression(elementName) &&
+    t.isJSXIdentifier(elementName.object) &&
+    t.isJSXIdentifier(elementName.property)
   ) {
     const objName = elementName.object.name;
     const propName = elementName.property.name;
@@ -137,6 +138,5 @@ export function getComponentType(
     }
 
     // Look up the alias via the scope tracker
-
   }
 }

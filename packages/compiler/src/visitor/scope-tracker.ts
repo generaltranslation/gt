@@ -5,8 +5,8 @@
  * Manages variable shadowing and GT component imports
  */
 
-import { GT_ALL_FUNCTIONS } from "../constants";
-import { isGTFunction } from "./analysis";
+import { GT_ALL_FUNCTIONS } from '../constants';
+import { isGTFunction } from './analysis';
 
 // TODO: separate callback funtions and imported functions
 
@@ -37,7 +37,7 @@ export interface ScopedVariable {
   canonicalName: string | GT_ALL_FUNCTIONS;
   /** The variable name (t, translationFunction, etc.) */
   aliasName: string;
-  /** Whether the variable is a translation function 
+  /** Whether the variable is a translation function
    * @deprecated
    */
   isTranslationFunction: boolean;
@@ -231,12 +231,11 @@ export class ScopeTracker {
     return variable;
   }
 
-  private isScopedGTFunction(variable: ScopedVariable): variable is ScopedGTFunction {
+  private isScopedGTFunction(
+    variable: ScopedVariable
+  ): variable is ScopedGTFunction {
     return isGTFunction(variable.canonicalName);
   }
-
-
-
 
   /* =============================== */
   /* Namespace Import Methods */
