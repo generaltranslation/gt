@@ -9,8 +9,8 @@
   "scripts": {
     "build": "turbo run build --filter='./packages/*'",
     "test": "turbo run test --filter='./packages/*'",
-    "lint": "turbo run lint",
-    "lint:fix": "turbo run lint:fix",
+    "lint": "turbo run lint --filter='./packages/*'",
+    "lint:fix": "turbo run lint:fix --filter='./packages/*'",
     "transpile": "turbo run transpile --filter='./packages/*'",
     "release": "changeset publish",
     "build:clean": "turbo run build:clean --filter='./packages/*'",
