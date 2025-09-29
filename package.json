@@ -8,13 +8,13 @@
   ],
   "scripts": {
     "build": "turbo run build --filter='./packages/*'",
-    "test": "turbo run test",
+    "test": "turbo run test --filter='./packages/*'",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
-    "transpile": "turbo run transpile",
+    "transpile": "turbo run transpile --filter='./packages/*'",
     "release": "changeset publish",
-    "build:clean": "turbo run build:clean",
-    "build:release": "turbo run build:release",
+    "build:clean": "turbo run build:clean --filter='./packages/*'",
+    "build:release": "turbo run build:release --filter='./packages/*'",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "changeset": "changeset",
     "version-packages": "changeset version"
