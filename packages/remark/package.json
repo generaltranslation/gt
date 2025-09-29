@@ -21,8 +21,8 @@
   ],
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
-    "build:clean": "rm -rf dist && npm run build",
-    "build:release": "npm run build:clean",
+    "build:clean": "rm -rf dist && pnpm run build",
+    "build:release": "pnpm run build:clean",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
     "test": "vitest run",
@@ -48,6 +48,7 @@
     "mdast-util-find-and-replace": "^3.0.1"
   },
   "devDependencies": {
+    "unified": "^11.0.5",
     "@types/mdast": "^4.0.4",
     "typescript": "^5.7.3",
     "vitest": "^3.2.4"

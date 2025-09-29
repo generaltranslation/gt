@@ -2,7 +2,9 @@
   "name": "gt-libraries",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*",
+    "apps/*"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -57,5 +59,10 @@
   "dependencies": {
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "rollup": "npm:@rollup/wasm-node"
+    }
   }
 }
