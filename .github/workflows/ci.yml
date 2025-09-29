@@ -47,7 +47,7 @@ jobs:
         run: pnpm run lint
 
       - name: Build packages
-        run: pnpm run build -- --filter="!gt-sanity"
+        run: pnpm run build
 
       - name: Run tests
         run: pnpm run test
@@ -83,7 +83,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm run build -- --filter="!gt-sanity"
+        run: pnpm run build
 
       - name: Link packages (Unix)
         if: runner.os != 'Windows'
