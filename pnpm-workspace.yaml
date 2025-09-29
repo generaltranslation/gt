@@ -2,7 +2,7 @@ packages:
   - apps/*
   - packages/*
   - examples/*
-  - test-apps/**/*
+  - test-apps/next/*
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
