@@ -83,6 +83,14 @@ export const createStringRenderError = (
 ) =>
   `gt-next Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
 
+export const invalidLocalesError = (locales: string[]) =>
+  `gt-next Error: You are using invalid locale codes in your configuration. ` +
+  `You must either specify a list of valid locales or use "customMapping" to ` +
+  `specify aliases for the following invalid locales: ${locales.join(', ')}.`;
+
+export const invalidCanonicalLocalesError = (locales: string[]) =>
+  `gt-next Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
+
 // ---- WARNINGS ---- //
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>
@@ -148,3 +156,8 @@ export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make su
 
 export const standardizedLocalesWarning = (locales: string[]) =>
   `gt-next: You are using The following locales were standardized: ${locales.join(', ')}.`;
+
+export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
+  `gt-next: You are using The following canonical locales were standardized: ${locales.join(', ')}.`;
+
+export const deprecatedLocaleMappingWarning = `gt-next: You are using the deprecated localeMapping configuration. Please move "customMapping" to your gt.config.json file.`;

@@ -8,6 +8,7 @@ import loadJSON from '../../fs/loadJSON.js';
 import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
 import { logError } from '../../console/logging.js';
+import { randomUUID } from 'node:crypto';
 
 export async function createDictionaryUpdates(
   dictionaryPath: string,
@@ -29,7 +30,10 @@ export async function createDictionaryUpdates(
     });
 
     const bundledCode = result.outputFiles[0].text;
-    const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
+    const tempFilePath = path.join(
+      os.tmpdir(),
+      `bundled-dictionary-${randomUUID()}.js`
+    );
     await fs.promises.writeFile(tempFilePath, bundledCode);
 
     // Load the module using dynamic import

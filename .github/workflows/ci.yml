@@ -27,18 +27,24 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: npm install
+        run: npm install && npm install lightningcss
+
+      - name: Rebuild packages
+        run: npm rebuild
+
+      - name: Link packages
+        run: ./scripts/linkPackages.sh
 
       - name: Run lint
         run: npm run lint
 
       - name: Build packages
-        run: npm run build
+        run: npm run build -- --filter="!gt-sanity"
 
       - name: Run tests
         run: npm run test
 
-  run-tests:
+  test-builds:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -61,10 +67,10 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: npm install
+        run: npm install && npm install lightningcss
 
       - name: Build packages
-        run: npm run build
+        run: npm run build -- --filter="!gt-sanity"
 
       - name: Link packages (Unix)
         if: runner.os != 'Windows'

@@ -73,6 +73,32 @@ Here is an skeleton of the `gt.config.json` file:
   "dictionary": "./dictionary.json"
 }
 ```
+### Locale aliasing
+
+In the case you want to alias a locale (e.g. `cn` instead of `zh`), you can specify a custom mapping in the `gt.config.json` file.
+
+```json title="gt.config.json"
+{
+  "customMapping": {
+    "cn": {
+      "code": "zh",
+    }
+  }
+}
+```
+
+You can also specify different attributes for the aliased locale.
+
+```json title="gt.config.json"
+{
+  "customMapping": {
+    "cn": {
+      "code": "zh",
+      "name": "Mandarin",
+    }
+  }
+}
+```
 
 ---
 

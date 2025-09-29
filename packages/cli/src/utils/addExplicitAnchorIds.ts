@@ -5,7 +5,8 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import { Root, Heading, Text, InlineCode, Node } from 'mdast';
-import { logErrorAndExit } from '../console/logging.js';
+import { logWarning } from '../console/logging.js';
+import escapeHtmlInTextNodes from 'gt-remark';
 
 /**
  * Generates a slug from heading text
@@ -126,7 +127,7 @@ export function addExplicitAnchorIds(
       ? `translated file: ${translatedPath}`
       : 'translated file';
 
-    logErrorAndExit(
+    logWarning(
       `Header count mismatch detected! ${sourceFile} has ${sourceHeadingMap.length} headers but ${translatedFile} has ${translatedHeadings.length} headers. ` +
         `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
         `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`
@@ -212,12 +213,12 @@ function applyInlineIds(
       // Add the ID to the heading
       const lastChild = heading.children[heading.children.length - 1];
       if (lastChild?.type === 'text') {
-        lastChild.value += ` {#${id}}`;
+        lastChild.value += ` \\{#${id}\\}`;
       } else {
         // If last child is not text, add a new text node
         heading.children.push({
           type: 'text',
-          value: ` {#${id}}`,
+          value: ` \\{#${id}\\}`,
         });
       }
     }
@@ -227,24 +228,20 @@ function applyInlineIds(
   // Convert the modified AST back to MDX string
   try {
     const stringifyProcessor = unified()
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx)
+      .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
-        bullet: '-',
-        emphasis: '_',
-        strong: '*',
-        rule: '-',
-        ruleRepetition: 3,
-        ruleSpaces: false,
         handlers: {
           // Custom handler to prevent escaping of {#id} syntax
           text(node: any) {
             return node.value;
           },
         },
-      })
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
+      });
 
-    let content = stringifyProcessor.stringify(processedAst);
+    const outTree = stringifyProcessor.runSync(processedAst);
+    let content = stringifyProcessor.stringify(outTree);
 
     // Handle newline formatting to match original input
     if (content.endsWith('\n') && !translatedContent.endsWith('\n')) {

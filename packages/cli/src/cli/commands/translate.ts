@@ -3,14 +3,14 @@ import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import { checkFileTranslations } from '../../api/checkFileTranslations.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import { logError, logErrorAndExit } from '../../console/logging.js';
+import { logError } from '../../console/logging.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import copyFile from '../../fs/copyFile.js';
-import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
+import localizeStaticImports from '../../utils/localizeStaticImports.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -35,7 +35,8 @@ export async function handleTranslate(
       settings.locales,
       options.timeout,
       (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-      settings
+      settings,
+      options.force
     );
   }
 }
@@ -69,7 +70,8 @@ export async function handleDownload(
     settings.locales,
     options.timeout,
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-    settings
+    settings,
+    false // force is not applicable for downloading staged translations
   );
 }
 
@@ -86,7 +88,12 @@ export async function postProcessTranslations(settings: Settings) {
 
     // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
     // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
-    // await processAnchorIds(settings);
+    await processAnchorIds(settings);
+  }
+
+  // Localize static imports (import Snippet from /snippets/file.mdx -> import Snippet from /snippets/[locale]/file.mdx)
+  if (settings.options?.experimentalLocalizeStaticImports) {
+    await localizeStaticImports(settings);
   }
 
   // Flatten json files into a single file

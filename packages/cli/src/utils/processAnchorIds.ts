@@ -34,6 +34,11 @@ export default async function processAnchorIds(settings: Settings) {
 
       for (const translatedPath of translatedFiles) {
         try {
+          // Check if translated file exists before processing
+          if (!fs.existsSync(translatedPath)) {
+            continue;
+          }
+
           // Find the corresponding source file
           const sourcePath = Object.keys(filesMap).find(
             (key) => filesMap[key] === translatedPath

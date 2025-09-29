@@ -369,7 +369,7 @@ export default class I18NConfiguration {
    */
   requiresTranslation(locale: string): [boolean, boolean] {
     if (!this.translationEnabled) return [false, false];
-    const translationRequired = requiresTranslation(
+    const translationRequired = this.gt.requiresTranslation(
       this.defaultLocale,
       locale,
       this.locales
@@ -391,6 +391,15 @@ export default class I18NConfiguration {
     locale: string
   ): Promise<Dictionary | undefined> {
     return await this._dictionaryManager?.getDictionary(locale);
+  }
+
+  /**
+   * Set the dictionary for a given locale
+   * @param {string} locale - The locale code.
+   * @param {Dictionary} dictionary - The dictionary data.
+   */
+  setDictionaryTranslations(locale: string, dictionary: Dictionary) {
+    this._dictionaryManager?.setDictionary(locale, dictionary);
   }
 
   // ----- CACHED TRANSLATIONS ----- //

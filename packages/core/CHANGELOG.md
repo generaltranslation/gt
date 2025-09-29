@@ -1,5 +1,47 @@
 # generaltranslation
 
+## 7.6.3
+
+### Patch Changes
+
+- [#677](https://github.com/generaltranslation/gt/pull/677) [`73fb32f`](https://github.com/generaltranslation/gt/commit/73fb32fecc936530691c0f8ad3624a4c63852575) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix locale aliasing on some API functions
+
+## 7.6.2
+
+### Patch Changes
+
+- [#660](https://github.com/generaltranslation/gt/pull/660) [`2ddff43`](https://github.com/generaltranslation/gt/commit/2ddff430817ad61e996b516c539b6b7b944e618e) Thanks [@brian-lou](https://github.com/brian-lou)! - Update API utility functions
+
+## 7.6.1
+
+### Patch Changes
+
+- [#653](https://github.com/generaltranslation/gt/pull/653) [`55d3619`](https://github.com/generaltranslation/gt/commit/55d36190b8f61fff7ddcb3d9aecf1cd3474c420b) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding return type to file uploads
+
+## 7.6.0
+
+### Minor Changes
+
+- [#651](https://github.com/generaltranslation/gt/pull/651) [`3e5705b`](https://github.com/generaltranslation/gt/commit/3e5705bc96005441798619fec97574fa15a5a2bd) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Split up file upload into source/translation specific uploads; added project setup visibility
+
+## 7.5.0
+
+### Minor Changes
+
+- [#638](https://github.com/generaltranslation/gt/pull/638) [`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale aliasing
+
+## 7.4.3
+
+### Patch Changes
+
+- [#626](https://github.com/generaltranslation/gt/pull/626) [`de93e08`](https://github.com/generaltranslation/gt/commit/de93e0824ebab1b9483739462027510498abfcfe) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add force flag
+
+## 7.4.2
+
+### Patch Changes
+
+- [#623](https://github.com/generaltranslation/gt/pull/623) [`288d2c6`](https://github.com/generaltranslation/gt/commit/288d2c657ff46eb5f4a5cdbc76ecc3f9be85228f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add --force flag for overwriting cached translations
+
 ## 7.4.1
 
 ### Patch Changes

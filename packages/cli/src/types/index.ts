@@ -1,3 +1,4 @@
+import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
 export type { Updates } from 'generaltranslation/types';
@@ -18,6 +19,7 @@ export type Options = {
   suppressWarnings: boolean;
   dryRun: boolean;
   timeout: number;
+  force?: boolean;
   stageTranslations?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
@@ -41,6 +43,7 @@ export type TranslateFlags = {
   dryRun: boolean;
   stageTranslations?: boolean;
   publish?: boolean;
+  force?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
@@ -153,6 +156,7 @@ export type Settings = {
   projectId?: string;
   defaultLocale: string;
   locales: string[];
+  customMapping?: CustomMapping;
   files:
     | {
         resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale

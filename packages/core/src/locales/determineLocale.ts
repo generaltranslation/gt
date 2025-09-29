@@ -2,6 +2,7 @@ import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _isSameLanguage from './isSameLanguage';
 import _isSameDialect from './isSameDialect';
 import _getLocaleProperties from './getLocaleProperties';
+import { CustomMapping } from './customLocaleMapping';
 
 /**
  * Given a list of locales and a list of approved locales, sorted in preference order
@@ -10,12 +11,15 @@ import _getLocaleProperties from './getLocaleProperties';
  */
 export default function _determineLocale(
   locales: string | string[],
-  approvedLocales: string[]
+  approvedLocales: string[],
+  customMapping?: CustomMapping
 ): string | undefined {
   if (typeof locales === 'string') locales = [locales];
-  locales = locales.filter(_isValidLocale).map(_standardizeLocale);
+  locales = locales
+    .filter((locale) => _isValidLocale(locale, customMapping))
+    .map(_standardizeLocale);
   approvedLocales = approvedLocales
-    .filter(_isValidLocale)
+    .filter((locale) => _isValidLocale(locale, customMapping))
     .map(_standardizeLocale);
   for (const locale of locales) {
     const candidates = approvedLocales.filter((approvedLocale) =>

@@ -1,5 +1,67 @@
 # gt-next
 
+## 6.6.3
+
+### Patch Changes
+
+- [#692](https://github.com/generaltranslation/gt/pull/692) [`c86fc88`](https://github.com/generaltranslation/gt/commit/c86fc882b92c875b93328178e9211ec414d69011) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: canonical locale issues in middleware
+
+## 6.6.2
+
+### Patch Changes
+
+- [#680](https://github.com/generaltranslation/gt/pull/680) [`a73a532`](https://github.com/generaltranslation/gt/commit/a73a5323bbcaace8955a2261dae1bba20955c67b) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Improved types for getLocaleDirection
+
+## 6.6.1
+
+### Patch Changes
+
+- [#673](https://github.com/generaltranslation/gt/pull/673) [`250d8d2`](https://github.com/generaltranslation/gt/commit/250d8d275871cf2915fe51d633691b8ae546d9b2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: return type for t.obj
+
+- Updated dependencies [[`250d8d2`](https://github.com/generaltranslation/gt/commit/250d8d275871cf2915fe51d633691b8ae546d9b2)]:
+  - gt-react@10.6.1
+
+## 6.6.0
+
+### Minor Changes
+
+- [#659](https://github.com/generaltranslation/gt/pull/659) [`59e922a`](https://github.com/generaltranslation/gt/commit/59e922a97719f35c6ac9c783c48d50111fec3836) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: access dictinoary subtrees via t.obj()
+
+### Patch Changes
+
+- Updated dependencies [[`59e922a`](https://github.com/generaltranslation/gt/commit/59e922a97719f35c6ac9c783c48d50111fec3836)]:
+  - gt-react@10.6.0
+
+## 6.4.1
+
+### Patch Changes
+
+- [#648](https://github.com/generaltranslation/gt/pull/648) [`c8facea`](https://github.com/generaltranslation/gt/commit/c8facead18a3c581e9d4ca53224ab17b8ce1e059) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: MFunctionType required fields
+
+- Updated dependencies [[`c8facea`](https://github.com/generaltranslation/gt/commit/c8facead18a3c581e9d4ca53224ab17b8ce1e059)]:
+  - gt-react@10.5.1
+
+## 6.4.0
+
+### Minor Changes
+
+- [#638](https://github.com/generaltranslation/gt/pull/638) [`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale aliasing
+
+### Patch Changes
+
+- Updated dependencies [[`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d)]:
+  - gt-react@10.5.0
+  - generaltranslation@7.5.0
+
+## 6.3.6
+
+### Patch Changes
+
+- [#633](https://github.com/generaltranslation/gt/pull/633) [`c21ca5a`](https://github.com/generaltranslation/gt/commit/c21ca5a187c64942d4702ebd99aee8aff8ae7dab) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added typing and allowed null | undefined for the useMessages m function
+
+- Updated dependencies [[`c21ca5a`](https://github.com/generaltranslation/gt/commit/c21ca5a187c64942d4702ebd99aee8aff8ae7dab)]:
+  - gt-react@10.4.3
+
 ## 6.3.5
 
 ### Patch Changes

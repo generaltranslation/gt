@@ -76,6 +76,7 @@ export default async function GTProvider({
   return (
     <ClientProvider
       dictionary={dictionary}
+      dictionaryTranslations={dictionaryTranslations}
       translations={translations}
       locale={locale}
       locales={I18NConfig.getLocales()}

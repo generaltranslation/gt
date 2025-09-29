@@ -1,7 +1,7 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { promptText } from '../console/logging.js';
 import chalk from 'chalk';
-import { isValidLocale } from 'generaltranslation';
+import { gt } from '../utils/gt.js';
 
 export async function getDesiredLocales(): Promise<{
   defaultLocale: string;
@@ -23,7 +23,7 @@ export async function getDesiredLocales(): Promise<{
         return 'Please enter at least one locale';
       }
       for (const locale of localeList) {
-        if (!isValidLocale(locale)) {
+        if (!gt.isValidLocale(locale)) {
           return 'Please enter a valid locale (e.g., en, fr, es)';
         }
       }

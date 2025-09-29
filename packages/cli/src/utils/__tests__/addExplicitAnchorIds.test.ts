@@ -18,7 +18,7 @@ describe('addExplicitAnchorIds', () => {
       experimentalAddHeaderAnchorIds: 'mintlify' as const,
     },
   };
-  it('should add explicit IDs to all headings (default {#id} format)', () => {
+  it('should add explicit IDs to all headings (default \\{#id} format)', () => {
     const input = `# Getting Started
 
 ## Code-based workflow
@@ -46,12 +46,14 @@ Another section here.
       { heading: 'Web editor workflow', id: 'web-editor-workflow' },
     ]);
 
-    expect(result.content).toContain('# Getting Started {#getting-started}');
     expect(result.content).toContain(
-      '## Code-based workflow {#code-based-workflow}'
+      '# Getting Started \\{#getting-started\\}'
     );
     expect(result.content).toContain(
-      '## Web editor workflow {#web-editor-workflow}'
+      '## Code-based workflow \\{#code-based-workflow\\}'
+    );
+    expect(result.content).toContain(
+      '## Web editor workflow \\{#web-editor-workflow\\}'
     );
   });
 
@@ -88,8 +90,10 @@ No links here either.
       { heading: 'No Links Here', id: 'no-links-here' },
       { heading: 'Another Section', id: 'another-section' },
     ]);
-    expect(result.content).toContain('## No Links Here {#no-links-here}');
-    expect(result.content).toContain('## Another Section {#another-section}');
+    expect(result.content).toContain('## No Links Here \\{#no-links-here\\}');
+    expect(result.content).toContain(
+      '## Another Section \\{#another-section\\}'
+    );
   });
 
   it('should handle JSX href attributes in raw JSX', () => {
@@ -110,7 +114,7 @@ No links here either.
       id: 'implementation-details',
     });
     expect(result.content).toContain(
-      '## Implementation Details {#implementation-details}'
+      '## Implementation Details \\{#implementation-details\\}'
     );
   });
 
@@ -146,7 +150,7 @@ Regular content without any anchor links.
       heading: 'Some Section',
       id: 'some-section',
     });
-    expect(result.content).toContain('## Some Section {#some-section}');
+    expect(result.content).toContain('## Some Section \\{#some-section\\}');
   });
 
   it('should handle most markdown content successfully', () => {
@@ -164,7 +168,7 @@ Regular content without any anchor links.
       heading: 'Section',
       id: 'section',
     });
-    expect(result.content).toContain('## Section {#section}');
+    expect(result.content).toContain('## Section \\{#section\\}');
   });
 
   // Edge case tests that we expect to fail currently
@@ -188,10 +192,10 @@ Regular content without any anchor links.
 
     // Should now handle formatted headings correctly
     expect(result.content).toContain(
-      '## **Bold Heading** with formatting {#bold-heading-with-formatting}'
+      '## **Bold Heading** with formatting \\{#bold-heading-with-formatting\\}'
     );
     expect(result.content).toContain(
-      '## `Code Heading` example {#code-heading-example}'
+      '## `Code Heading` example \\{#code-heading-example\\}'
     );
   });
 
@@ -220,7 +224,7 @@ This is just an example
     });
 
     // Should add ID to real heading but NOT the code block heading
-    expect(result.content).toContain('## Real Heading {#real-heading}');
+    expect(result.content).toContain('## Real Heading \\{#real-heading\\}');
     expect(result.content).not.toContain(
       '<div id="fake-heading-in-code-block">'
     );
@@ -244,7 +248,7 @@ This section explains the code workflow.
 Another section here.
 `;
 
-    it('should add {#id} format in standard mode', () => {
+    it('should add \\{#id} format in standard mode', () => {
       const sourceHeadingMap = extractHeadingInfo(basicInput);
       const result = addExplicitAnchorIds(
         basicInput,
@@ -255,19 +259,21 @@ Another section here.
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
 
-      expect(result.content).toContain('# Getting Started {#getting-started}');
       expect(result.content).toContain(
-        '## Code-based workflow {#code-based-workflow}'
+        '# Getting Started \\{#getting-started\\}'
       );
       expect(result.content).toContain(
-        '## Web editor workflow {#web-editor-workflow}'
+        '## Code-based workflow \\{#code-based-workflow\\}'
+      );
+      expect(result.content).toContain(
+        '## Web editor workflow \\{#web-editor-workflow\\}'
       );
 
       // Should NOT contain div wrapping
       expect(result.content).not.toContain('<div id="getting-started">');
     });
 
-    it('should use inline {#id} format when experimentalLocalizeStaticUrls is enabled', () => {
+    it('should use inline \\{#id} format when experimentalLocalizeStaticUrls is enabled', () => {
       const sourceHeadingMap = extractHeadingInfo(basicInput);
       const result = addExplicitAnchorIds(
         basicInput,
@@ -278,13 +284,15 @@ Another section here.
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
 
-      // Should use inline {#id} format (same as standard mode)
-      expect(result.content).toContain('# Getting Started {#getting-started}');
+      // Should use inline \\{#id} format (same as standard mode)
       expect(result.content).toContain(
-        '## Code-based workflow {#code-based-workflow}'
+        '# Getting Started \\{#getting-started\\}'
       );
       expect(result.content).toContain(
-        '## Web editor workflow {#web-editor-workflow}'
+        '## Code-based workflow \\{#code-based-workflow\\}'
+      );
+      expect(result.content).toContain(
+        '## Web editor workflow \\{#web-editor-workflow\\}'
       );
 
       // Should NOT contain div wrapping
@@ -312,8 +320,8 @@ Another section here.
         '<div id="web-editor-workflow">\n  ## Web editor workflow\n</div>'
       );
 
-      // Should NOT contain {#id} format
-      expect(result.content).not.toContain('{#getting-started}');
+      // Should NOT contain \\{#id} format
+      expect(result.content).not.toContain('\\{#getting-started\\}');
     });
   });
 
@@ -337,13 +345,13 @@ Another section here.
       expect(result.addedIds).toHaveLength(3);
 
       expect(result.content).toContain(
-        '## **Bold Heading** with formatting {#bold-heading-with-formatting}'
+        '## **Bold Heading** with formatting \\{#bold-heading-with-formatting\\}'
       );
       expect(result.content).toContain(
-        '## `Code Heading` example {#code-heading-example}'
+        '## `Code Heading` example \\{#code-heading-example\\}'
       );
       expect(result.content).toContain(
-        '## _Italic_ and **mixed** formatting {#italic-and-mixed-formatting}'
+        '## *Italic* and **mixed** formatting \\{#italic-and-mixed-formatting\\}'
       );
     });
 
@@ -400,11 +408,11 @@ More content.
         { heading: 'Another Real Heading', id: 'another-real-heading' },
       ]);
 
-      expect(result.content).toContain('## Real Heading {#real-heading}');
+      expect(result.content).toContain('## Real Heading \\{#real-heading\\}');
       expect(result.content).toContain(
-        '## Another Real Heading {#another-real-heading}'
+        '## Another Real Heading \\{#another-real-heading\\}'
       );
-      expect(result.content).not.toContain('{#fake-heading-in-code-block}');
+      expect(result.content).not.toContain('\\{#fake-heading-in-code-block\\}');
 
       // Code block should remain unchanged
       expect(result.content).toContain(
@@ -462,15 +470,15 @@ More content.
       expect(result.addedIds).toHaveLength(4);
 
       expect(result.content).toContain(
-        '## Code & Design Workflow! {#code-design-workflow}'
+        '## Code &amp; Design Workflow! \\{#code-design-workflow\\}'
       );
       expect(result.content).toContain(
-        '## API Reference (v2.0) {#api-reference-v20}'
+        '## API Reference (v2.0) \\{#api-reference-v20\\}'
       );
       expect(result.content).toContain(
-        '## Getting Started: Step 1 {#getting-started-step-1}'
+        '## Getting Started: Step 1 \\{#getting-started-step-1\\}'
       );
-      expect(result.content).toContain("## What's New? {#whats-new}");
+      expect(result.content).toContain('## What&#39;s New? \\{#whats-new\\}');
     });
 
     it('should handle special characters in Mintlify mode', () => {
@@ -524,12 +532,12 @@ More content.
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(6);
 
-      expect(result.content).toContain('# H1 Heading {#h1-heading}');
-      expect(result.content).toContain('## H2 Heading {#h2-heading}');
-      expect(result.content).toContain('### H3 Heading {#h3-heading}');
-      expect(result.content).toContain('#### H4 Heading {#h4-heading}');
-      expect(result.content).toContain('##### H5 Heading {#h5-heading}');
-      expect(result.content).toContain('###### H6 Heading {#h6-heading}');
+      expect(result.content).toContain('# H1 Heading \\{#h1-heading\\}');
+      expect(result.content).toContain('## H2 Heading \\{#h2-heading\\}');
+      expect(result.content).toContain('### H3 Heading \\{#h3-heading\\}');
+      expect(result.content).toContain('#### H4 Heading \\{#h4-heading\\}');
+      expect(result.content).toContain('##### H5 Heading \\{#h5-heading\\}');
+      expect(result.content).toContain('###### H6 Heading \\{#h6-heading\\}');
     });
 
     it('should handle all heading levels in Mintlify mode', () => {
@@ -593,8 +601,8 @@ Más contenido.`;
 
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(2);
-      expect(result.content).toContain('## Cabecera 1 {#header-1}');
-      expect(result.content).toContain('## Cabecera 2 {#header-2}');
+      expect(result.content).toContain('## Cabecera 1 \\{#header-1\\}');
+      expect(result.content).toContain('## Cabecera 2 \\{#header-2\\}');
     });
 
     // Note: Testing the header count mismatch failure is complex in a unit test environment

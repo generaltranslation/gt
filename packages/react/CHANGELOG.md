@@ -1,5 +1,40 @@
 # gt-react
 
+## 10.6.1
+
+### Patch Changes
+
+- [#673](https://github.com/generaltranslation/gt/pull/673) [`250d8d2`](https://github.com/generaltranslation/gt/commit/250d8d275871cf2915fe51d633691b8ae546d9b2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: return type for t.obj
+
+## 10.6.0
+
+### Minor Changes
+
+- [#659](https://github.com/generaltranslation/gt/pull/659) [`59e922a`](https://github.com/generaltranslation/gt/commit/59e922a97719f35c6ac9c783c48d50111fec3836) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: access dictinoary subtrees via t.obj()
+
+## 10.5.1
+
+### Patch Changes
+
+- [#648](https://github.com/generaltranslation/gt/pull/648) [`c8facea`](https://github.com/generaltranslation/gt/commit/c8facead18a3c581e9d4ca53224ab17b8ce1e059) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: MFunctionType required fields
+
+## 10.5.0
+
+### Minor Changes
+
+- [#638](https://github.com/generaltranslation/gt/pull/638) [`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale aliasing
+
+### Patch Changes
+
+- Updated dependencies [[`16bf30d`](https://github.com/generaltranslation/gt/commit/16bf30d70a0599ec863305f4f7a5a0852dd07e5d)]:
+  - generaltranslation@7.5.0
+
+## 10.4.3
+
+### Patch Changes
+
+- [#633](https://github.com/generaltranslation/gt/pull/633) [`c21ca5a`](https://github.com/generaltranslation/gt/commit/c21ca5a187c64942d4702ebd99aee8aff8ae7dab) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added typing and allowed null | undefined for the useMessages m function
+
 ## 10.4.2
 
 ### Patch Changes

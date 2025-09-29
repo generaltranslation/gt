@@ -158,12 +158,18 @@ export async function generateSettings(
   mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
 
   // Resolve all glob patterns in the files object
+  const compositePatterns = [
+    ...Object.entries(mergedOptions.options?.jsonSchema || {}),
+  ]
+    .filter(([, schema]) => schema.composite)
+    .map(([key]) => key);
   mergedOptions.files = mergedOptions.files
     ? resolveFiles(
         mergedOptions.files as FilesOptions,
         mergedOptions.defaultLocale,
         mergedOptions.locales,
-        cwd
+        cwd,
+        compositePatterns
       )
     : undefined;
 
@@ -231,6 +237,7 @@ export async function generateSettings(
     apiKey: mergedOptions.apiKey,
     baseUrl: mergedOptions.baseUrl,
     sourceLocale: mergedOptions.defaultLocale,
+    customMapping: mergedOptions.customMapping,
   });
 
   return mergedOptions;

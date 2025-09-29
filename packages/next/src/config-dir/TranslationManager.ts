@@ -1,5 +1,4 @@
 import { standardizeLocale } from 'generaltranslation';
-import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { TranslatedChildren, Translations } from 'gt-react/internal';
 import loadTranslations from './loadTranslation';

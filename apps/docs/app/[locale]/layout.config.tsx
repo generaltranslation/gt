@@ -1,8 +1,9 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Logo from '@/components/Logo';
 
-import { Book, Earth, MessageSquareText } from 'lucide-react';
-import { SiDiscord } from '@icons-pack/react-simple-icons';
+import { Earth } from 'lucide-react';
+// import { Book, MessageSquareText } from 'lucide-react';
+// import { SiDiscord } from '@icons-pack/react-simple-icons';
 
 /**
  * Shared layout configurations
@@ -32,19 +33,19 @@ export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
       url: '/',
     },
     links: [
-      {
+      /*{
         text: translations?.docs || 'Docs',
         url: '/docs',
         active: 'nested-url',
         icon: <Book />,
-      },
+      },*/
       {
         text: translations?.dashboard || 'Dashboard',
         url: '/dashboard',
         active: 'nested-url',
         icon: <Earth />,
       },
-      {
+      /*{
         text: translations?.blog || 'Blog',
         url: '/blog',
         active: 'nested-url',
@@ -55,7 +56,7 @@ export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
         url: 'https://discord.gg/W99K6fchSu',
         active: 'nested-url',
         icon: <SiDiscord />,
-      },
+      },*/
     ],
     githubUrl: 'https://github.com/generaltranslation/gt',
   };

@@ -1,69 +1,61 @@
-import { TranslationRequestConfig } from '../types';
+import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
-import {
-  FileToTranslate,
-  EnqueueFilesResult,
-  RequiredEnqueueFilesOptions,
-} from '../types-dir/enqueueFiles';
 import generateRequestHeaders from './utils/generateRequestHeaders';
+import { FileUploadRef } from 'src/types-dir/uploadFiles';
+
+export type EnqueueOptions = {
+  sourceLocale: string;
+  targetLocales: string[];
+  publish?: boolean;
+  requireApproval?: boolean;
+  modelProvider?: string;
+  force?: boolean;
+  timeout?: number;
+};
 
 /**
  * @internal
- * Sends multiple files for translation to the General Translation API.
- * @param files - The files to translate
+ * Enqueues files for translation in the General Translation API.
+ * @param files - References of files to translate (file content already uploaded)
  * @param options - The options for the API call
  * @param config - The configuration for the API call
  * @returns The result of the API call
  */
 export default async function _enqueueFiles(
-  files: FileToTranslate[],
-  options: RequiredEnqueueFilesOptions,
+  files: FileUploadRef[],
+  options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/files/upload`;
-  const { projectId } = config;
-  const {
-    sourceLocale,
-    targetLocales,
-    publish,
-    requireApproval,
-    version,
-    modelProvider,
-  } = options;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/enqueue`;
 
-  const fileData = files.map((file) => ({
-    content: Buffer.from(file.content).toString('base64'),
-    fileName: file.fileName,
-    fileFormat: file.fileFormat,
-    fileDataFormat: file.dataFormat,
-    formatMetadata: file.formatMetadata,
-  }));
-
-  const uploadData = {
-    files: fileData,
-    sourceLocale,
-    targetLocales,
-    projectId,
-    publish,
-    requireApproval,
-    version,
-    modelProvider,
+  const body = {
+    files: files.map((f) => ({
+      fileId: f.fileId,
+      versionId: f.versionId,
+      fileName: f.fileName,
+    })),
+    targetLocales: options.targetLocales,
+    sourceLocale: options.sourceLocale,
+    publish: options.publish,
+    requireApproval: options.requireApproval,
+    modelProvider: options.modelProvider,
+    force: options.force,
   };
 
-  // Request the file uploads
   let response;
   try {
+    // Request translations
     response = await fetchWithTimeout(
       url,
       {
         method: 'POST',
         headers: generateRequestHeaders(config, false),
-        body: JSON.stringify(uploadData),
+        body: JSON.stringify(body),
       },
       timeout
     );
@@ -73,8 +65,6 @@ export default async function _enqueueFiles(
 
   // Validate response
   await validateResponse(response);
-
-  // Parse response
-  const responseData = await response.json();
-  return responseData as EnqueueFilesResult;
+  const result = (await response.json()) as EnqueueFilesResult;
+  return result;
 }

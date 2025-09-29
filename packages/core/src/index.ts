@@ -26,9 +26,7 @@ import {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-  EnqueueFilesOptions,
   EnqueueFilesResult,
-  FileToTranslate,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
   DownloadFileBatchOptions,
@@ -57,19 +55,29 @@ import {
   invalidLocalesError,
   noProjectIdProvidedError,
   noApiKeyProvidedError,
-  invalidAuthError,
 } from './logging/errors';
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _enqueueFiles from './translate/enqueueFiles';
+import _setupProject, { SetupProjectResult } from './translate/setupProject';
+import {
+  _checkSetupStatus,
+  CheckSetupStatusResult,
+} from './translate/checkSetupStatus';
+import _shouldSetupProject, {
+  ShouldSetupProjectResult,
+} from './translate/shouldSetupProject';
+import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations from './translate/checkFileTranslations';
-import _downloadFile from './translate/downloadFile';
+import _downloadFile, { _downloadFileV2 } from './translate/downloadFile';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import _fetchTranslations from './translate/fetchTranslations';
-import { FileTranslationQuery } from './types-dir/checkFileTranslations';
-import { RequiredEnqueueFilesOptions } from './types-dir/enqueueFiles';
+import {
+  FileQuery,
+  FileQueryResult,
+  FileTranslationQuery,
+} from './types-dir/checkFileTranslations';
 import {
   CheckTranslationStatusOptions,
   TranslationStatusResult,
@@ -79,6 +87,20 @@ import {
   _getRegionProperties,
   CustomRegionMapping,
 } from './locales/getRegionProperties';
+import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
+import { _resolveAliasLocale } from './locales/resolveAliasLocale';
+import _uploadSourceFiles from './translate/uploadSourceFiles';
+import _uploadTranslations from './translate/uploadTranslations';
+import {
+  FileUpload,
+  FileUploadRef,
+  RequiredUploadFilesOptions,
+  UploadFilesOptions,
+  UploadFilesResponse,
+} from './types-dir/uploadFiles';
+import _querySourceFile from './translate/querySourceFile';
+import { ProjectData } from './types-dir/project';
+import _getProjectData from './projects/getProjectData';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -148,6 +170,9 @@ export class GT {
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
 
+  /** Lazily derived reverse custom mapping for alias locales */
+  reverseCustomMapping?: Record<string, string>;
+
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
 
@@ -197,14 +222,14 @@ export class GT {
     // source locale
     if (sourceLocale) {
       this.sourceLocale = _standardizeLocale(sourceLocale);
-      if (!_isValidLocale(this.sourceLocale))
+      if (!_isValidLocale(this.sourceLocale, customMapping))
         throw new Error(invalidLocaleError(this.sourceLocale));
     }
 
     // target locale
     if (targetLocale) {
       this.targetLocale = _standardizeLocale(targetLocale);
-      if (!_isValidLocale(this.targetLocale))
+      if (!_isValidLocale(this.targetLocale, customMapping))
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
@@ -234,7 +259,17 @@ export class GT {
 
     // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
-    if (customMapping) this.customMapping = customMapping;
+    if (customMapping) {
+      this.customMapping = customMapping;
+      this.reverseCustomMapping = Object.fromEntries(
+        Object.entries(customMapping)
+          .filter(
+            ([_, value]) =>
+              value && typeof value === 'object' && 'code' in value
+          )
+          .map(([key, value]) => [(value as { code: string }).code, key])
+      );
+    }
   }
 
   // -------------- Private Methods -------------- //
@@ -304,9 +339,17 @@ export class GT {
     this._validateAuth('enqueueTranslationEntries');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueEntriesOptions = {
+    let mergedOptions: EnqueueEntriesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales?.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
     };
 
     // Request the translation entry updates
@@ -318,44 +361,86 @@ export class GT {
   }
 
   /**
-   * Enqueues files for translation processing.
+   * Enqueues project setup job using the specified file references
    *
-   * @param {FileToTranslate[]} files - Array of files to enqueue for translation.
-   * @param {EnqueueFilesOptions} options - Options for enqueueing files.
-   * @returns {Promise<EnqueueFilesResult>} The result of the enqueue operation.
+   * This method creates setup jobs that will process source file references
+   * and generate a project setup. The files parameter contains references (IDs) to source
+   * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
+   * for processing and will generate a project setup based on the source files.
    *
-   * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
+   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
+   */
+  async setupProject(
+    files: FileUploadRef[],
+    timeoutMs?: number
+  ): Promise<SetupProjectResult> {
+    this._validateAuth('setupProject');
+    return await _setupProject(files, this._getTranslationConfig(), timeoutMs);
+  }
+
+  /**
+   * Checks the current status of a project setup job by its unique identifier.
    *
-   * const result = await gt.enqueueFiles([
-   *   {
-   *     content: 'Hello, world!',
-   *     fileName: 'Button.tsx',
-   *     fileFormat: 'TS',
-   *     dataFormat: 'JSX',
-   *   },
-   * ], {
-   *   sourceLocale: 'en-US',
-   *   targetLocales: ['es-ES', 'fr-FR'],
-   *   publish: true,
-   *   description: 'Translations for the Button component',
-   * });
+   * This method polls the API to determine whether a setup job is still running,
+   * has completed successfully, or has failed. Setup jobs are created when
+   * uploading source files to initialize project translation workflows.
+   *
+   * @param {string} jobId - The unique identifier of the setup job to check
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @returns {Promise<CheckSetupStatusResult>} Object containing the job status
+   */
+  async checkSetupStatus(
+    jobId: string,
+    timeoutMs?: number
+  ): Promise<CheckSetupStatusResult> {
+    this._validateAuth('checkSetupStatus');
+    return await _checkSetupStatus(
+      jobId,
+      this._getTranslationConfig(),
+      timeoutMs
+    );
+  }
+
+  /**
+   * Checks if a prpject requires setup.
+   *
+   * This method queries API to check if a project has been set up and returns
+   * true if setup is missing
+   *
+   * @returns {Promise<ShouldSetupProjectResult>} Object containing shouldSetupProject
+   */
+  async shouldSetupProject(): Promise<ShouldSetupProjectResult> {
+    this._validateAuth('shouldSetupProject');
+    return await _shouldSetupProject(this._getTranslationConfig());
+  }
+
+  /**
+   * Enqueues translation jobs for previously uploaded source files.
+   *
+   * This method creates translation jobs that will process existing source files
+   * and generate translations in the specified target languages. The files parameter
+   * contains references (IDs) to source files that have already been uploaded via
+   * uploadSourceFiles. The translation jobs are queued for processing and will
+   * generate translated content based on the source files and target locales provided.
+   *
+   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
+   * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
-    files: FileToTranslate[],
-    options: EnqueueFilesOptions
+    files: FileUploadRef[],
+    options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options
-    const mergedOptions: EnqueueFilesOptions = {
+    let mergedOptions: EnqueueOptions = {
       ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale!,
+      targetLocales: options.targetLocales ?? [this.targetLocale!],
     };
 
     // Require source locale
@@ -365,10 +450,27 @@ export class GT {
       throw new Error(error);
     }
 
-    // Request the file updates
+    // Require target locale(s)
+    if (
+      !mergedOptions.targetLocales ||
+      mergedOptions.targetLocales.length === 0
+    ) {
+      const error = noTargetLocaleProvidedError('enqueueFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Replace target locales with canonical locales
+    mergedOptions = {
+      ...mergedOptions,
+      targetLocales: mergedOptions.targetLocales.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
+    };
+
     return await _enqueueFiles(
       files,
-      mergedOptions as RequiredEnqueueFilesOptions,
+      mergedOptions,
       this._getTranslationConfig()
     );
   }
@@ -402,14 +504,111 @@ export class GT {
     // Validation
     this._validateAuth('checkFileTranslations');
 
+    // Replace target locales with canonical locales
+    data = data.map((item) => ({
+      ...item,
+      locale: this.resolveCanonicalLocale(item.locale),
+    }));
+
     // Request the file translation status
-    return await _checkFileTranslations(
+    const result = await _checkFileTranslations(
       data,
       options,
       this._getTranslationConfig()
     );
+
+    // Resolve canonical locales
+    result.translations = result.translations.map((item) => ({
+      ...item,
+      locale: this.resolveAliasLocale(item.locale),
+    }));
+    return result;
   }
 
+  /**
+   * Gets source and translation information for a given file ID and version ID.
+   *
+   * @param {FileQuery} data - File query containing file ID and version ID.
+   * @param {CheckFileTranslationsOptions} options - Options for getting source and translation information.
+   * @returns {Promise<FileQueryResult>} The source file and translation information.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.querySourceFile(
+   *   { fileId: '1234567890', versionId: '1234567890' },
+   *   { timeout: 10000 }
+   * );
+   *
+   */
+  async querySourceFile(
+    data: FileQuery,
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<FileQueryResult> {
+    // Validation
+    this._validateAuth('querySourceFile');
+
+    // Request the file translation status
+    const result = await _querySourceFile(
+      data,
+      options,
+      this._getTranslationConfig()
+    );
+    // Replace locales with canonical locales
+    result.translations = result.translations.map((item) => ({
+      ...item,
+      locale: this.resolveAliasLocale(item.locale),
+    }));
+    result.sourceFile.locales = result.sourceFile.locales.map((locale) =>
+      this.resolveAliasLocale(locale)
+    );
+    result.sourceFile.sourceLocale = this.resolveAliasLocale(
+      result.sourceFile.sourceLocale
+    );
+    return result;
+  }
+  /**
+   * Get project data for a given project ID.
+   *
+   * @param {string} projectId - The ID of the project to get the data for.
+   * @returns {Promise<ProjectData>} The project data.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.getProjectData(
+   *   '1234567890'
+   * );
+   *
+   */
+  async getProjectData(
+    projectId: string,
+    options: { timeout?: number } = {}
+  ): Promise<ProjectData> {
+    // Validation
+    this._validateAuth('getProjectData');
+
+    // Request the file translation status
+    const result = await _getProjectData(
+      projectId,
+      options,
+      this._getTranslationConfig()
+    );
+    // Replace locales with canonical locales
+    result.currentLocales = result.currentLocales.map((item) =>
+      this.resolveAliasLocale(item)
+    );
+    result.defaultLocale = this.resolveAliasLocale(result.defaultLocale);
+    return result;
+  }
   /**
    * Checks the translation status of a version.
    *
@@ -418,6 +617,7 @@ export class GT {
    * @returns {Promise<TranslationStatusResult>} The translation status of the version.
    *
    * @example
+   * @deprecated Use the {@link checkFileTranslations} method instead. Will be removed in v7.0.0.
    * const gt = new GT({
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',
@@ -449,7 +649,7 @@ export class GT {
    * @param {string} translationId - The ID of the translation to download.
    * @param {DownloadFileOptions} options - Options for downloading the file.
    * @returns {Promise<DownloadFileResult>} The downloaded file content and metadata.
-   *
+   * @deprecated Use the {@link downloadTranslatedFile} method instead. Will be removed in v7.0.0.
    * @example
    * const gt = new GT({
    *   sourceLocale: 'en-US',
@@ -473,6 +673,43 @@ export class GT {
       options,
       this._getTranslationConfig()
     );
+  }
+  /**
+   * Downloads a single translated file.
+   *
+   * @param {string} file - The file to download.
+   * @param {DownloadFileOptions} options - Options for downloading the file.
+   * @returns {Promise<string>} The downloaded file content.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.downloadTranslatedFile({
+   *   fileId: '1234567890',
+   *   locale: 'es-ES',
+   *   versionId: '1234567890',
+   * }, {
+   *   timeout: 10000,
+   * });
+   */
+  async downloadTranslatedFile(
+    file: {
+      fileId: string;
+      locale: string;
+      versionId?: string;
+    },
+    options: DownloadFileOptions = {}
+  ): Promise<string> {
+    // Validation
+    this._validateAuth('downloadTranslatedFile');
+
+    file.locale = this.resolveCanonicalLocale(file.locale);
+
+    return await _downloadFileV2(file, options, this._getTranslationConfig());
   }
 
   /**
@@ -598,6 +835,9 @@ export class GT {
       throw new Error(error);
     }
 
+    // Replace target locale with canonical locale
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
+
     // Request the translation
     return await _translate(
       source,
@@ -677,13 +917,19 @@ export class GT {
     }
 
     if (typeof this.customMapping?.[targetLocale] === 'object') {
-      const { regionCode, scriptCode } = this.customMapping[targetLocale];
+      const { regionCode, scriptCode } = this.customMapping[targetLocale] as {
+        regionCode: string;
+        scriptCode: string;
+      };
       metadata = {
         ...(regionCode && { regionCode }),
         ...(scriptCode && { scriptCode }),
         ...metadata,
       };
     }
+
+    // Replace target locale with canonical locale
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
 
     // Request the translation
     return await _translate(
@@ -743,10 +989,116 @@ export class GT {
       };
     }
 
+    // Replace target locale with canonical locale
+    globalMetadata = {
+      ...globalMetadata,
+      ...(globalMetadata.targetLocale && {
+        targetLocale: this.resolveCanonicalLocale(globalMetadata.targetLocale),
+      }),
+    };
+    sources = sources.map((source) => ({
+      ...source,
+      ...(source.targetLocale && {
+        targetLocale: this.resolveCanonicalLocale(source.targetLocale),
+      }),
+    }));
+
     // Request the translation
     return await _translateMany(
       sources,
       globalMetadata,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Uploads source files to the translation service without any translation content.
+   *
+   * This method creates or replaces source file entries in your project. Each uploaded
+   * file becomes a source that can later be translated into target languages. The files
+   * are processed and stored as base entries that serve as the foundation for generating
+   * translations through the translation workflow.
+   *
+   * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
+   * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings
+   * @returns {Promise<UploadFilesResponse>} Upload result containing file IDs, version information, and upload status
+   */
+  async uploadSourceFiles(
+    files: { source: FileUpload }[],
+    options: UploadFilesOptions
+  ): Promise<UploadFilesResponse> {
+    // Validation
+    this._validateAuth('uploadSourceFiles');
+
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('uploadSourceFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    return await _uploadSourceFiles(
+      files,
+      mergedOptions as RequiredUploadFilesOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Uploads translation files that correspond to previously uploaded source files.
+   *
+   * This method allows you to provide translated content for existing source files in your project.
+   * Each translation must reference an existing source file and include the translated content
+   * along with the target locale information. This is used when you have pre-existing translations
+   * that you want to upload directly rather than generating them through the translation service.
+   *
+   * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
+   *   - `source`: Reference to the existing source file (contains IDs but no content)
+   *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
+   * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings
+   * @returns {Promise<UploadFilesResponse>} Upload result containing translation IDs, status, and processing information
+   */
+  async uploadTranslations(
+    files: {
+      source: FileUpload; // reference only (no content)
+      translations: FileUpload[]; // each has content + ids + locale
+    }[],
+    options: UploadFilesOptions
+  ): Promise<UploadFilesResponse> {
+    // Validation
+    this._validateAuth('uploadTranslations');
+
+    // Merge instance settings with options
+    const mergedOptions: UploadFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('uploadTranslations');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Ensure all translation locales use canonical locales
+    const targetFiles = files.map((f) => ({
+      ...f,
+      translations: f.translations.map((t) => ({
+        ...t,
+        locale: this.resolveCanonicalLocale(t.locale),
+      })),
+    }));
+
+    return await _uploadTranslations(
+      targetFiles,
+      mergedOptions as RequiredUploadFilesOptions,
       this._getTranslationConfig()
     );
   }
@@ -1070,13 +1422,19 @@ export class GT {
   requiresTranslation(
     sourceLocale = this.sourceLocale,
     targetLocale = this.targetLocale,
-    approvedLocales: string[] | undefined = this.locales
+    approvedLocales: string[] | undefined = this.locales,
+    customMapping: CustomMapping | undefined = this.customMapping
   ): boolean {
     if (!sourceLocale)
       throw new Error(noSourceLocaleProvidedError('requiresTranslation'));
     if (!targetLocale)
       throw new Error(noTargetLocaleProvidedError('requiresTranslation'));
-    return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+    return _requiresTranslation(
+      sourceLocale,
+      targetLocale,
+      approvedLocales,
+      customMapping
+    );
   }
 
   /**
@@ -1092,9 +1450,10 @@ export class GT {
    */
   determineLocale(
     locales: string | string[],
-    approvedLocales: string[] | undefined = this.locales || []
+    approvedLocales: string[] | undefined = this.locales || [],
+    customMapping: CustomMapping | undefined = this.customMapping
   ): string | undefined {
-    return _determineLocale(locales, approvedLocales);
+    return _determineLocale(locales, approvedLocales, customMapping);
   }
 
   /**
@@ -1118,6 +1477,7 @@ export class GT {
    * Checks if a given BCP 47 locale code is valid.
    *
    * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to validate
+   * @param {customMapping} [customMapping=this.customMapping] - The custom mapping to use for validation
    * @returns {boolean} True if the locale code is valid, false otherwise
    * @throws {Error} If no target locale is provided
    *
@@ -1125,9 +1485,47 @@ export class GT {
    * gt.isValidLocale('en-US');
    * // Returns: true
    */
-  isValidLocale(locale = this.targetLocale): boolean {
+  isValidLocale(
+    locale = this.targetLocale,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
-    return isValidLocale(locale);
+    return isValidLocale(locale, customMapping);
+  }
+
+  /**
+   * Resolves the canonical locale for a given locale.
+   * @param locale - The locale to resolve the canonical locale for
+   * @param customMapping - The custom mapping to use for resolving the canonical locale
+   * @returns The canonical locale
+   */
+  resolveCanonicalLocale(
+    locale: string | undefined = this.targetLocale,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): string {
+    if (!locale)
+      throw new Error(noTargetLocaleProvidedError('resolveCanonicalLocale'));
+
+    if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
+      return (customMapping[locale] as { code: string }).code;
+    }
+
+    return locale;
+  }
+
+  /**
+   * Resolves the alias locale for a given locale.
+   * @param locale - The locale to resolve the alias locale for
+   * @param customMapping - The custom mapping to use for resolving the alias locale
+   * @returns The alias locale
+   */
+  resolveAliasLocale(
+    locale: string,
+    customMapping: CustomMapping | undefined = this.customMapping
+  ): string {
+    if (!locale)
+      throw new Error(noTargetLocaleProvidedError('resolveAliasLocale'));
+    return _resolveAliasLocale(locale, customMapping);
   }
 
   /**
@@ -1474,9 +1872,15 @@ export function getRegionProperties(
 export function requiresTranslation(
   sourceLocale: string,
   targetLocale: string,
-  approvedLocales?: string[]
+  approvedLocales?: string[],
+  customMapping?: CustomMapping
 ): boolean {
-  return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+  return _requiresTranslation(
+    sourceLocale,
+    targetLocale,
+    approvedLocales,
+    customMapping
+  );
 }
 
 /**
@@ -1487,9 +1891,10 @@ export function requiresTranslation(
  */
 export function determineLocale(
   locales: string | string[],
-  approvedLocales: string[] | undefined = []
+  approvedLocales: string[] | undefined = [],
+  customMapping: CustomMapping | undefined = undefined
 ): string | undefined {
-  return _determineLocale(locales, approvedLocales);
+  return _determineLocale(locales, approvedLocales, customMapping);
 }
 
 /**
@@ -1505,10 +1910,27 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
 /**
  * Checks if a given BCP 47 locale code is valid.
  * @param {string} locale - The BCP 47 locale code to validate.
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
  * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
  */
-export function isValidLocale(locale: string): boolean {
-  return _isValidLocale(locale);
+export function isValidLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): boolean {
+  return _isValidLocale(locale, customMapping);
+}
+
+/**
+ * Resolves the alias locale for a given locale.
+ * @param {string} locale - The locale to resolve the alias locale for
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the alias locale
+ * @returns {string} The alias locale
+ */
+export function resolveAliasLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): string {
+  return _resolveAliasLocale(locale, customMapping);
 }
 
 /**

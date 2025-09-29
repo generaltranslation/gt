@@ -1,0 +1,94 @@
+---
+title: Locadex for Mintlify
+description: Automate translation for your Mintlify docs
+---
+
+<div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', height: 0 }}>
+  <iframe
+    src="https://www.youtube.com/embed/kfxH4AP3AmI"
+    title="Locadex on Mintlify Demo"
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      border: 0
+    }}
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+  ></iframe>
+</div>
+
+**Locadex is an AI agent built to handle 100% of internationalization (i18n) and translation work for you.**
+
+It takes 5 minutes to install, after which your Mintlify docs will be configured and translated into all the languages you choose automatically.
+
+Locadex:
+* Sets up i18n routing and redirects in your docs
+* Translates markdown files, code blocks, and snippets in context
+* Continuously translates as you push new content
+
+### Step 1: Sign into the General Translation Dashboard
+
+Sign into the General Translation [Dashboard](https://dash.generaltranslation.com).
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/1.png)
+
+### Step 2: Connect GitHub
+
+Navigate to the [Locadex](https://dash.generaltranslation.com) section in your dashboard and click "Connect GitHub".
+
+You'll be redirected to GitHub to authorize the connection.
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/2.png)
+
+### Step 3: Install the GitHub App
+
+Choose which repositories to give Locadex access to:
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/3.png)
+
+Click "Install" to complete the GitHub app installation.
+
+### Step 4: Link Repository to Project
+
+You'll be directed back to your General Translation project, where you can select the repository with your Mintlify docs.
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/4.png)
+
+### Step 5: Configure Settings
+
+On the configuration screen, set up:
+
+- **Which languages do you need?**: The languages you want the docs to be available in
+
+- **Default locale**: The language you originally wrote the docs in
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/5.png)
+
+### Step 6: Complete Installation
+
+Click "Install" to activate Locadex for your repository:
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/6.png)
+
+### Step 7: Review the PR
+
+Locadex will create a pull request on your main branch. This may take a few minutes to complete.
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/7.png)
+
+Review the PR and merge it to complete your i18n setup.
+
+### Step 8: Continuous internationalization
+
+After the initial setup PR is merged, Locadex monitors your main branch for commits and updates translations as needed.
+
+![Installation screen for Locadex](/locadex-screenshots/mintlify/8.png)
+
+### Supported frameworks
+
+Currently, Locadex only supports Mintlify and [Next.js App router](/docs/locadex) apps. 
+
+[Get in touch](mailto:founders@generaltranslation.com) to request support for other frameworks.

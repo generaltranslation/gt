@@ -1,5 +1,4 @@
 import { cookies, headers } from 'next/headers';
-import { determineLocale } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { noLocalesCouldBeDeterminedError } from '../errors/createErrors';
 
@@ -65,7 +64,9 @@ export async function getNextLocale(
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);
 
-    const result = determineLocale(preferredLocales, locales) || defaultLocale;
+    const gt = getI18NConfig().getGTClass();
+    const result =
+      gt.determineLocale(preferredLocales, locales) || defaultLocale;
 
     return result;
   })();

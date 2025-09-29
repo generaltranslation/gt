@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -18,10 +18,11 @@ import {
 import { GTProviderProps } from '../types/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
-import { GT } from 'generaltranslation';
+import { GT, resolveAliasLocale } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useRegionState } from './hooks/useRegionState';
+import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -68,6 +69,9 @@ export default function GTProvider({
   ...metadata
 }: GTProviderProps) {
   // ---------- PROPS ---------- //
+  if (_locale) {
+    _locale = resolveAliasLocale(_locale, customMapping);
+  }
 
   // Read env to get projectId and API key
   const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
@@ -90,6 +94,7 @@ export default function GTProvider({
     locales,
     ssr,
     localeCookieName,
+    customMapping,
   });
 
   // Define the region instance
@@ -125,8 +130,14 @@ export default function GTProvider({
 
   // ---------- LOAD DICTIONARY ---------- //
 
-  const dictionary = useLoadDictionary({
+  const {
+    dictionary,
+    setDictionary,
+    dictionaryTranslations,
+    setDictionaryTranslations,
+  } = useLoadDictionary({
     _dictionary,
+    _dictionaryTranslations: {},
     loadDictionary,
     locale,
     defaultLocale,
@@ -154,6 +165,7 @@ export default function GTProvider({
     cacheUrl,
     projectId,
     _versionId,
+    gt,
   });
 
   // ------- RUNTIME TRANSLATION ----- //
@@ -194,6 +206,21 @@ export default function GTProvider({
 
   const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
     dictionary,
+    dictionaryTranslations,
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    developmentApiEnabled,
+    registerIcuForTranslation
+  );
+
+  const _dictionaryObjFunction = useCreateInternalUseTranslationsObjFunction(
+    dictionary || {},
+    dictionaryTranslations || {},
+    setDictionary,
+    setDictionaryTranslations,
     translations,
     locale,
     defaultLocale,
@@ -201,7 +228,7 @@ export default function GTProvider({
     dialectTranslationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
-    renderSettings
+    _dictionaryFunction
   );
 
   // ----- RETURN ----- //
@@ -220,6 +247,7 @@ export default function GTProvider({
         _filterMessagesForPreload,
         _preloadMessages,
         _dictionaryFunction,
+        _dictionaryObjFunction,
         developmentApiEnabled,
         locale,
         locales: approvedLocales,

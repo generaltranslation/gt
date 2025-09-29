@@ -1,8 +1,5 @@
-import {
-  isValidLocale,
-  isSameDialect,
-  standardizeLocale,
-} from 'generaltranslation';
+import { isSameDialect, standardizeLocale } from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
@@ -62,6 +59,11 @@ export default function createNextMiddleware({
     }
   }
 
+  // gt instance
+  const gt = new GT({
+    customMapping: envParams?.customMapping,
+  });
+
   // using gt services
   const gtServicesEnabled =
     process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true';
@@ -70,6 +72,14 @@ export default function createNextMiddleware({
   const defaultLocale: string =
     envParams?.defaultLocale || libraryDefaultLocale;
   const locales: string[] = envParams?.locales || [defaultLocale];
+
+  // add canonical locales
+  const canonicalLocales = Object.values(
+    (envParams?.customMapping || {}) as any
+  )
+    .filter((locale: any) => locale.code)
+    .map((locale: any) => locale.code);
+  locales.push(...canonicalLocales);
 
   // cookies and header names
   const headersAndCookies = envParams?.headersAndCookies || {};
@@ -86,16 +96,14 @@ export default function createNextMiddleware({
   const localeHeaderName =
     headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
 
-  if (!isValidLocale(defaultLocale))
+  if (!gt.isValidLocale(defaultLocale))
     throw new Error(
       `gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`
     );
 
-  const warningLocales = locales.filter((locale) => !isValidLocale(locale));
+  const warningLocales = locales.filter((locale) => !gt.isValidLocale(locale));
   if (warningLocales.length)
     console.warn(createUnsupportedLocalesWarning(warningLocales));
-
-  const approvedLocales = locales;
 
   // ---------- PRE-PROCESSING PATHS ---------- //
 
@@ -157,14 +165,15 @@ export default function createNextMiddleware({
     } = getLocaleFromRequest(
       req,
       defaultLocale,
-      approvedLocales,
+      locales,
       localeRouting,
       gtServicesEnabled,
       prefixDefaultLocale,
       defaultLocalePaths,
       referrerLocaleCookieName,
       localeCookieName,
-      resetLocaleCookieName
+      resetLocaleCookieName,
+      gt
     );
 
     const headerList = new Headers(req.headers);

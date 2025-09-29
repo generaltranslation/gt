@@ -1,5 +1,5 @@
-import React from 'react';
 import { Dictionary, DictionaryEntry } from '../types/types';
+import { get } from './indexDict';
 
 export function isValidDictionaryEntry(
   value: unknown
@@ -28,14 +28,10 @@ export function getDictionaryEntry<T extends Dictionary>(
   let current: Dictionary | DictionaryEntry = dictionary;
   const dictionaryPath = id.split('.');
   for (const key of dictionaryPath) {
-    if (
-      typeof current !== 'object' ||
-      Array.isArray(current) ||
-      React.isValidElement(current)
-    ) {
+    if (typeof current !== 'object' && !Array.isArray(current)) {
       return undefined;
     }
-    current = (current as Dictionary)[key];
+    current = get(current as Dictionary, key);
   }
   return current;
 }

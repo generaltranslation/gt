@@ -1,0 +1,107 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Global test of working field-level functionality and snapshot match 1`] = `
+{
+  "_id": "drafts.2947533e-1ea5-4116-955b-339608d3445d",
+  "_rev": "l58oha-n06-1s4-f6i-74g6cuakl",
+  "_type": "fieldLevelArticle",
+  "config": {
+    "en": {
+      "_type": "objectField",
+      "nestedArrayField": [
+        {
+          "_key": "f49b4d7e3e51",
+          "_type": "block",
+          "children": [
+            {
+              "_key": "randomKey-16",
+              "_type": "span",
+              "marks": [],
+              "text": "This is block text 1 level deep",
+            },
+          ],
+          "markDefs": [],
+          "style": "normal",
+        },
+      ],
+      "objectAsField": {
+        "_type": "childObjectField",
+        "content": [
+          {
+            "_key": "869168fe3a2a",
+            "_type": "block",
+            "children": [
+              {
+                "_key": "randomKey-14",
+                "_type": "span",
+                "marks": [],
+                "text": "This is block text 2 levels deep",
+              },
+            ],
+            "markDefs": [],
+            "style": "normal",
+          },
+        ],
+        "title": "This is one level deeper",
+      },
+      "title": "This is an object nested in a document",
+    },
+  },
+  "content": {
+    "en": [
+      {
+        "_key": "e2a39d768ff8",
+        "_type": "block",
+        "children": [
+          {
+            "_key": "randomKey-18",
+            "_type": "span",
+            "marks": [],
+            "text": "This is block text at the top level.",
+          },
+        ],
+        "markDefs": [],
+        "style": "normal",
+      },
+      {
+        "_key": "271b0c6ee984",
+        "_type": "objectField",
+        "objectAsField": {
+          "_type": "childObjectField",
+          "content": [
+            {
+              "_key": "4f24f6fbfae7",
+              "_type": "block",
+              "children": [
+                {
+                  "_key": "randomKey-24",
+                  "_type": "span",
+                  "marks": [],
+                  "text": "This is block text in a nested object in an object in top-level block text.",
+                },
+              ],
+              "markDefs": [],
+              "style": "normal",
+            },
+          ],
+          "title": "This is a nested object in an object in top-level block text.",
+        },
+        "title": "This is an object in top-level block text.",
+      },
+    ],
+  },
+  "snippet": {
+    "en": "This is text in my text field",
+  },
+  "tags": {
+    "en": [
+      "tag 1",
+      "tag 2",
+      "tag 3",
+    ],
+  },
+  "title": {
+    "en": "My Field-Level Article",
+  },
+}
+`;

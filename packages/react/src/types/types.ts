@@ -31,12 +31,15 @@ export type TaggedChildren = TaggedChild[] | TaggedChild;
 export type Entry = string;
 export type MetaEntry = {
   $context?: string;
+  $_hash?: string;
   [key: string]: unknown;
 };
 export type DictionaryEntry = Entry | [Entry] | [Entry, MetaEntry];
-export type Dictionary = {
-  [key: string]: Dictionary | DictionaryEntry;
-};
+export type Dictionary =
+  | {
+      [key: string]: Dictionary | DictionaryEntry;
+    }
+  | (Dictionary | DictionaryEntry)[];
 export type FlattenedDictionary = {
   [key: string]: DictionaryEntry;
 };
@@ -117,3 +120,12 @@ export type _Message = {
   $_hash?: string;
 };
 export type _Messages = _Message[];
+
+export type MFunctionType = <T extends string | null | undefined>(
+  encodedMsg: T,
+  options?: Record<string, any>
+) => T extends string ? string : T;
+export type TFunctionType = (
+  message: string,
+  options?: InlineTranslationOptions
+) => string;
