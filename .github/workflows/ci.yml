@@ -40,9 +40,6 @@ jobs:
       - name: Rebuild packages
         run: pnpm rebuild
 
-      - name: Link packages
-        run: ./scripts/linkPackages.sh
-
       - name: Run lint
         run: pnpm run lint
 
@@ -85,24 +82,14 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
-      - name: Link packages (Unix)
-        if: runner.os != 'Windows'
-        run: ./scripts/linkPackages.sh
-
-      - name: Link packages (Windows)
-        if: runner.os == 'Windows'
-        run: .\scripts\linkPackages.ps1
-
       - name: Test Builds
         run: |
           cd test-apps/next/base
           pnpm install
-          pnpm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
           pnpm run build
           pnpm run build:turbopack
 
           cd ../general-cases
           pnpm install
-          pnpm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
           pnpm run build
           pnpm run build:turbopack
