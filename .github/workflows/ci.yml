@@ -82,18 +82,12 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
-      - name: Link packages (Windows)
-        if: runner.os == 'Windows'
-        run: .\scripts\linkPackages.ps1
-
       - name: Test Builds
         run: |
           cd test-apps/next/base
-          pnpm install
           pnpm run build
           pnpm run build:turbopack
 
           cd ../general-cases
-          pnpm install
           pnpm run build
           pnpm run build:turbopack
