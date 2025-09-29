@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "pnpm run i18n && next build",
+    "build": "pnpm --filter gtx-cli build && pnpm run i18n && next build",
     "build:base": "next build",
     "dev": "next dev --turbopack",
     "start": "next start",
