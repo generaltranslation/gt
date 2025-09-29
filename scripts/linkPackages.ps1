@@ -5,34 +5,34 @@ Write-Output "Linking packages on Windows..."
 
 # Link core
 Set-Location packages/core
-npm link
+pnpm link
 Set-Location ../..
 
 # Link cli
 Set-Location packages/cli
-npm link
-npm link generaltranslation
+pnpm link
+pnpm link generaltranslation
 Set-Location ../..
 
 # Link supported-locales
 Set-Location packages/supported-locales
-npm link
-npm link generaltranslation
+pnpm link
+pnpm link generaltranslation
 Set-Location ../..
 
 # Link react
 Set-Location packages/react
-npm link
-npm link generaltranslation
-npm link "@generaltranslation/supported-locales"
+pnpm link
+pnpm link generaltranslation
+pnpm link "@generaltranslation/supported-locales"
 Set-Location ../..
 
 # Link next
 Set-Location packages/next
-npm link
-npm link generaltranslation
-npm link "@generaltranslation/supported-locales"
-npm link gt-react
+pnpm link
+pnpm link generaltranslation
+pnpm link "@generaltranslation/supported-locales"
+pnpm link gt-react
 Set-Location ../..
 
 Write-Output "✅ Package linking completed on Windows"

@@ -1,37 +1,37 @@
 # Link core
 cd packages/core
-npm link
+pnpm link
 cd ../..
 
 # Link cli
 cd packages/cli
-npm link
-npm link generaltranslation
+pnpm link
+pnpm link generaltranslation
 cd ../..
 
 # Link supported-locales
 cd packages/supported-locales
-npm link
-npm link generaltranslation
+pnpm link
+pnpm link generaltranslation
 cd ../.. 
 
 # Link react
 cd packages/react
-npm link
-npm link generaltranslation
-npm link @generaltranslation/supported-locales
+pnpm link
+pnpm link generaltranslation
+pnpm link @generaltranslation/supported-locales
 cd ../..
 
 # Link next
 cd packages/next
-npm link
-npm link generaltranslation
-npm link @generaltranslation/supported-locales
-npm link gt-react
+pnpm link
+pnpm link generaltranslation
+pnpm link @generaltranslation/supported-locales
+pnpm link gt-react
 cd ../..
 
 # Link sanity
 cd packages/sanity
-npm link
-npm link generaltranslation
+pnpm link
+pnpm link generaltranslation
 cd ../..
