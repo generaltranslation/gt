@@ -2,6 +2,6 @@
   "title": "Locadex",
   "description": "AI i18n agent",
   "icon": "Brain",
-  "pages": ["---Getting Started---", "index"],
-  "root": true
+  "root": true,
+  "pages": ["---Getting Started---", "mintlify", "next", "monorepos"]
 }
