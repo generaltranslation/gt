@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "10.6.1",
+  "version": "10.6.3-alpha.1",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -21,7 +21,7 @@
     "patch": "pnpm version patch",
     "transpile": "tsc",
     "build": "rollup -c",
-    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",

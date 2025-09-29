@@ -35,7 +35,7 @@
     "patch": "pnpm version patch",
     "build": "tsc",
     "build:release": "pnpm run build:clean",
-    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "dev": "pnpm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "eslint .",

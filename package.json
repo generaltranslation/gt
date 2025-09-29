@@ -59,10 +59,5 @@
   "dependencies": {
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
-  },
-  "pnpm": {
-    "overrides": {
-      "rollup": "npm:@rollup/wasm-node"
-    }
   }
 }

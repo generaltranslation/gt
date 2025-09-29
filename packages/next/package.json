@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.6.3",
+  "version": "6.6.4-alpha.1",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -21,7 +21,7 @@
     "patch": "pnpm version patch",
     "transpile": "tsc",
     "build": "pnpm run build:swc-plugin && pnpm run transpile",
-    "build:clean": "rm -rf ./swc-plugin/target && rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
+    "build:clean": "rm -rf ./swc-plugin/target && sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "build:swc-plugin": "cargo build --release --target wasm32-wasip1 --manifest-path ./swc-plugin/Cargo.toml && node scripts/copy-wasm.js",
     "build:no-swc-plugin": "pnpm run transpile",

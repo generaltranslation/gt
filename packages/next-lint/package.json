@@ -37,7 +37,7 @@
     "patch": "pnpm version patch",
     "transpile": "tsc",
     "build": "pnpm run transpile",
-    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "dev": "tsc --watch",
     "release": "pnpm run build:clean && pnpm publish",
