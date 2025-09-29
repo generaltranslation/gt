@@ -30,7 +30,7 @@
     "patch": "pnpm version patch",
     "transpile": "tsc",
     "build": "pnpm run transpile",
-    "build:clean": "rm -rf dist; pnpm run lint && pnpm run build",
+    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run lint && pnpm run build",
     "build:release": "pnpm run build:clean",
     "dev": "pnpm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",

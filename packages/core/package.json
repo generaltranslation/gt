@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "7.6.3",
+  "version": "7.6.4-alpha.2",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build:release": "pnpm run build:clean",
-    "build:clean": "rm -rf dist; pnpm run build",
+    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
     "build": "rollup -c",
     "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",

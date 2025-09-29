@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
-    "build:clean": "rm -rf dist && pnpm run build",
+    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
     "build:release": "pnpm run build:clean",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",

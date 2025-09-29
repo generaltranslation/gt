@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build:release": "pnpm run build:clean",
-    "build:clean": "rm -rf dist; pnpm run build",
+    "build:clean": "rm -rf dist && rm tsconfig.tsbuildinfo && pnpm run build",
     "build": "rollup -c",
     "lint": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\" --fix",
