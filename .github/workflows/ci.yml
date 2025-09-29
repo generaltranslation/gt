@@ -8,6 +8,9 @@ on:
       - "packages/*/package.json"
       - ".changeset/**"
 
+env:
+  CI: true
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -32,7 +35,7 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: pnpm install && pnpm install lightningcss
+        run: pnpm install
 
       - name: Rebuild packages
         run: pnpm rebuild
@@ -77,7 +80,7 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: pnpm install && pnpm install lightningcss
+        run: pnpm install
 
       - name: Build packages
         run: pnpm run build -- --filter="!gt-sanity"

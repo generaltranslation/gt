@@ -12,6 +12,8 @@ permissions:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+env:
+  CI: true
 jobs:
   release:
     name: Release
@@ -35,7 +37,7 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install Dependencies
-        run: pnpm install && pnpm install lightningcss
+        run: pnpm install
 
       - name: Build packages
         run: pnpm run build:release
