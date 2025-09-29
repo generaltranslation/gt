@@ -3,36 +3,28 @@ $ErrorActionPreference = "Stop"
 
 Write-Output "Linking packages on Windows..."
 
-# Link core
-Set-Location packages/core
-pnpm link
-Set-Location ../..
 
-# Link cli
+# Link cli to core
 Set-Location packages/cli
-pnpm link
-pnpm link generaltranslation
+pnpm link ../core
 Set-Location ../..
 
-# Link supported-locales
+# Link supported-locales to core
 Set-Location packages/supported-locales
-pnpm link
-pnpm link generaltranslation
+pnpm link ../core
 Set-Location ../..
 
-# Link react
+# Link react to core and supported-locales
 Set-Location packages/react
-pnpm link
-pnpm link generaltranslation
-pnpm link "@generaltranslation/supported-locales"
+pnpm link ../core
+pnpm link ../supported-locales
 Set-Location ../..
 
-# Link next
+# Link next to core, supported-locales, and react
 Set-Location packages/next
-pnpm link
-pnpm link generaltranslation
-pnpm link "@generaltranslation/supported-locales"
-pnpm link gt-react
+pnpm link ../core
+pnpm link ../supported-locales
+pnpm link ../react
 Set-Location ../..
 
 Write-Output "✅ Package linking completed on Windows"
