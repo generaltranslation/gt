@@ -11,7 +11,6 @@ import { Logger } from './logging';
 
 // Import transformation functions
 import {
-  TransformState,
   processImportDeclaration,
   trackVariableAssignment,
   processCallExpression,
@@ -20,6 +19,7 @@ import {
   trackArrowParameterOverrides,
   performSecondPassTransformation,
 } from './transform/transform';
+import { TransformState } from './transform/types';
 
 /**
  * GT Universal Plugin Options

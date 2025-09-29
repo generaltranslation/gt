@@ -2,13 +2,6 @@ import * as t from '@babel/types';
 import { hashSource } from 'generaltranslation/id';
 import traverse from '@babel/traverse';
 
-// Core modules
-import { StringCollector } from '../visitor/string-collector';
-import { ImportTracker } from '../visitor/import-tracker';
-import { JsxTraversal } from '../ast/traversal';
-import { PluginSettings } from '../config';
-import { Logger } from '../logging';
-
 // Analysis and utilities
 import { createDynamicContentWarning } from '../visitor/errors';
 import { NodePath } from '@babel/traverse';
@@ -25,6 +18,15 @@ import {
   extractPropFromJSXCall,
 } from './jsxUtils';
 
+// Hashing
+import { hashJsx } from '../hash/hashJsx';
+
+// Types
+import { TransformState } from './types';
+import { getAttr } from '../jsxUtils/attributes/getAttr';
+import { annotateJsxElement } from '../jsxUtils/annotation/annotateJsxElement';
+import { determineComponentType } from '../jsxUtils/determineComponentType';
+
 /**
  * Generate warning message for dynamic function call violations
  * Ported from Rust: create_dynamic_function_warning (lines 15-29)
@@ -39,21 +41,6 @@ export function createDynamicFunctionWarning(
   } else {
     return `gt-next: ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
   }
-}
-
-/**
- * Plugin state for processing files
- * Matches the Rust TransformVisitor structure
- */
-export interface TransformState {
-  settings: PluginSettings;
-  stringCollector: StringCollector;
-  importTracker: ImportTracker;
-  logger: Logger;
-  statistics: {
-    jsxElementCount: number;
-    dynamicContentViolations: number;
-  };
 }
 
 /**
@@ -258,7 +245,7 @@ export function trackFunctionCallAssignment(
 
   if (translationVariable) {
     // This will be either useGT or getGT, not the alias
-    const originalName = translationVariable.originalName;
+    const originalName = translationVariable.canonicalName;
 
     // Check if its getGT or useGT
     if (isTranslationFunction(originalName)) {
@@ -288,7 +275,6 @@ export function trackFunctionCallAssignment(
 
 /**
  * Track overriding variables (ones that shadow existing GT imports)
- * Ported from Rust: track_overriding_variable (lines 505-517)
  */
 export function trackOverridingVariable(
   variableName: string,
@@ -581,13 +567,13 @@ export function processCallExpression(
   const variable = state.importTracker.scopeTracker.getVariable(functionName);
   if (state.settings.filename?.endsWith('page.tsx')) {
     console.log(
-      `[transform] functionName: ${functionName}, ${variable?.originalName}`
+      `[transform] functionName: ${functionName}, ${variable?.canonicalName}`
     );
   }
 
   if (variable && variable.type !== 'other') {
     // Register the useGT/getGT as aggregators on the string collector
-    const originalName = variable.originalName;
+    const originalName = variable.canonicalName;
     const identifier = variable.identifier;
 
     // Detect t() calls (translation function callbacks)
@@ -619,7 +605,7 @@ export function processCallExpression(
       if (!translationVariable) {
         return false;
       }
-      const originalName = translationVariable.originalName;
+      const originalName = translationVariable.canonicalName;
       const identifier = translationVariable.identifier;
 
       if (isTranslationComponent(originalName)) {
@@ -664,11 +650,10 @@ export function processJSXElement(
   state: TransformState
 ): boolean {
   const element = path.node;
-  const componentType = determineComponentType(element, state);
+  const componentType = determineComponentType(element, state.importTracker);
   if (state.settings.filename?.endsWith('page.tsx')) {
     console.log(`[transform] componentType: ${componentType}`);
   }
-
   if (componentType.isTranslation) {
     state.statistics.jsxElementCount += 1;
 
@@ -676,7 +661,7 @@ export function processJSXElement(
       if (state.settings.filename?.endsWith('page.tsx')) {
         console.log(`[transform] processJSXElement: ${element}`);
       }
-      trackHashAttributes(element, state);
+      trackHashAttributes(path, state);
       return true; // Transformation may be applied later
     }
   }
@@ -684,117 +669,22 @@ export function processJSXElement(
   return false;
 }
 
-/**
- * Determine component type from JSX element
- * Ported from Rust: determine_component_type (lines 625-645)
- */
-export function determineComponentType(
-  element: t.JSXElement,
-  state: TransformState
-): { isTranslation: boolean; isVariable: boolean; isBranch: boolean } {
-  const elementName = element.openingElement.name;
-
-  if (t.isJSXIdentifier(elementName)) {
-    const name = elementName.name;
-    const isTranslation = shouldTrackComponentAsTranslation(name, state);
-    const isVariable = shouldTrackComponentAsVariable(name, state);
-    const isBranch = shouldTrackComponentAsBranch(name, state);
-    return { isTranslation, isVariable, isBranch };
-  } else if (t.isJSXMemberExpression(elementName)) {
-    if (
-      t.isJSXIdentifier(elementName.object) &&
-      t.isJSXIdentifier(elementName.property)
-    ) {
-      const objName = elementName.object.name;
-      const propName = elementName.property.name;
-      return shouldTrackNamespaceComponent(objName, propName, state);
-    }
-  }
-
-  return { isTranslation: false, isVariable: false, isBranch: false };
-}
-
-/**
- * Check if we should track this component based on imports or known components
- * Ported from Rust: should_track_component_as_translation (lines 203-216)
- */
-export function shouldTrackComponentAsTranslation(
-  name: string,
-  state: TransformState
-): boolean {
-  const translationVariable =
-    state.importTracker.scopeTracker.getTranslationVariable(name);
-  if (
-    translationVariable &&
-    isTranslationComponent(translationVariable.originalName)
-  ) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Check if we should track this component as a variable component
- * Ported from Rust: should_track_component_as_variable (lines 218-227)
- */
-export function shouldTrackComponentAsVariable(
-  name: string,
-  state: TransformState
-): boolean {
-  const variable = state.importTracker.scopeTracker.getVariable(name);
-  if (variable && isVariableComponent(variable.originalName)) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Check if we should track this component as a branch component
- * Ported from Rust: should_track_component_as_branch (lines 229-238)
- */
-export function shouldTrackComponentAsBranch(
-  name: string,
-  state: TransformState
-): boolean {
-  const branchVariable = state.importTracker.scopeTracker.getVariable(name);
-  if (branchVariable && isBranchComponent(branchVariable.originalName)) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Check if we should track a namespace component (GT.T, GT.Var, etc.)
- * Ported from Rust: should_track_namespace_component (lines 240-250)
- */
-export function shouldTrackNamespaceComponent(
-  obj: string,
-  prop: string,
-  state: TransformState
-): { isTranslation: boolean; isVariable: boolean; isBranch: boolean } {
-  if (state.importTracker.namespaceImports.has(obj)) {
-    const isTranslation = isTranslationComponent(prop);
-    const isVariable = isVariableComponent(prop);
-    const isBranch = isBranchComponent(prop);
-    return { isTranslation, isVariable, isBranch };
-  }
-  return { isTranslation: false, isVariable: false, isBranch: false };
-}
 
 /**
  * Track hash attributes on JSX elements
  * Ported from Rust: track_hash_attributes (lines 141-162)
  */
 export function trackHashAttributes(
-  element: t.JSXElement,
+  nodePath: NodePath<t.JSXElement>,
   state: TransformState
 ): void {
   // Check if hash attribute already exists
-  const hasHashAttr = determineHasHashAttr(element);
+  if (!getAttr(nodePath.node, '_hash')) {
+    // Strip aliased names from element (<_T> -> <T>)
+    const annotatedElement: t.JSXElement = annotateJsxElement(nodePath.node, state);
 
-  if (!hasHashAttr) {
     // Calculate real hash using AST traversal
-    const { hash } = calculateElementHash(element);
+    const hash = hashJsx(annotatedElement);
 
     // Store the translation JSX
     const counterId = state.stringCollector.incrementCounter();
@@ -811,43 +701,28 @@ export function trackHashAttributes(
   }
 }
 
-/**
- * Determine if element has hash attribute
- * Ported from Rust: determine_has_hash_attr (lines 647-656)
- */
-export function determineHasHashAttr(element: t.JSXElement): boolean {
-  return element.openingElement.attributes.some((attr) => {
-    return (
-      t.isJSXAttribute(attr) &&
-      t.isJSXIdentifier(attr.name) &&
-      attr.name.name === '_hash'
-    );
-  });
-}
 
-/**
- * Calculate element hash (placeholder implementation)
- * Ported from Rust: calculate_element_hash (needs JsxTraversal implementation)
- * @unimplemented
- */
-export function calculateElementHash(_element: t.JSXElement): {
-  hash: string;
-  jsonString: string;
-} {
-  // Simplified hash calculation - in full implementation this would use JsxTraversal
-  // to properly traverse the JSX element and extract content like the Rust version
+// /**
+//  * Calculate element hash given an annotated element
+//  */
+// export function calculateElementHash(element: t.JSXElement, state: TransformState): {
+//   hash: string;
+// } {
+//   // Simplified hash calculation - in full implementation this would use JsxTraversal
+//   // to properly traverse the JSX element and extract content like the Rust version
+//   const hash = hashJsx(state, element);
 
-  // Create a simplified data structure for hashing that matches the expected format
-  // In full implementation this would use JsxTraversal to properly extract JSX content
-  const sanitizedData = {
-    source: ['<T>'], // Simplified JSX representation as array of strings
-    dataFormat: 'ICU' as const,
-  };
+//   // Create a simplified data structure for hashing that matches the expected format
+//   // In full implementation this would use JsxTraversal to properly extract JSX content
+//   // const sanitizedData = {
+//   //   source: ['<T>'], // Simplified JSX representation as array of strings
+//   //   dataFormat: 'ICU' as const,
+//   // };
 
-  const hash = hashSource(sanitizedData);
-  const jsonString = JSON.stringify(sanitizedData);
-  return { hash, jsonString };
-}
+//   // const hash = hashSource(sanitizedData);
+//   // const jsonString = JSON.stringify(sanitizedData);
+//   return { hash };
+// }
 
 /**
  * Create translation JSX object
@@ -949,7 +824,7 @@ export function performSecondPassTransformation(
         }
 
         if (translationVariable) {
-          const originalName = translationVariable.originalName;
+          const originalName = translationVariable.canonicalName;
 
           // Detect useGT/getGT calls - inject content arrays
           if (isTranslationFunction(originalName)) {
@@ -997,7 +872,7 @@ export function performSecondPassTransformation(
 
       // TODO: Implement full traversal state management like Rust
       // Save state, determine context, inject attributes, restore state
-      const componentType = determineComponentType(element, state);
+      const componentType = determineComponentType(element, state.importTracker);
 
       // Inject hash attributes on translation components
       if (state.settings.compileTimeHash && componentType.isTranslation) {

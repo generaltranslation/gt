@@ -5,6 +5,11 @@
  * Manages variable shadowing and GT component imports
  */
 
+import { GT_ALL_FUNCTIONS } from "../constants";
+import { isGTFunction } from "./analysis";
+
+// TODO: separate callback funtions and imported functions
+
 /**
  * Information about a scope
  */
@@ -28,15 +33,24 @@ export type VariableType = 'generaltranslation' | 'react' | 'other';
 export interface ScopedVariable {
   /** The scope ID */
   scopeId: number;
-  /** The original name of the variable (useGT, getGT, T, etc.) */
-  originalName: string;
+  /** The canonical name of the variable (useGT, getGT, T, etc.) */
+  canonicalName: string | GT_ALL_FUNCTIONS;
   /** The variable name (t, translationFunction, etc.) */
-  variableName: string;
-  /** Whether the variable is a translation function */
+  aliasName: string;
+  /** Whether the variable is a translation function 
+   * @deprecated
+   */
   isTranslationFunction: boolean;
   type: VariableType;
   /** The identifier for the variable */
   identifier: number;
+}
+
+export interface ScopedGTFunction extends ScopedVariable {
+  /** The canonical name of the GT function (useGT, getGT, etc.) */
+  canonicalName: GT_ALL_FUNCTIONS;
+  /** The type of GT function */
+  type: 'generaltranslation';
 }
 
 /**
@@ -55,6 +69,10 @@ export class ScopeTracker {
   private scopedVariables: Map<string, ScopedVariable[]> = new Map();
   /** Namespace imports (e.g., GT from 'gt-next') */
   private namespaceImports: Set<string> = new Set();
+
+  /* =============================== */
+  /* Scope Tracker Methods */
+  /* =============================== */
 
   /**
    * Enter a new scope and return the new scope ID
@@ -114,45 +132,53 @@ export class ScopeTracker {
     }
   }
 
+  /* =============================== */
+  /* Variable Tracking Methods */
+  /* =============================== */
+
   /**
    * Track a variable assignment in the current scope
    */
   trackVariable(
-    variableName: string,
-    assignedValue: string,
+    aliasName: string,
+    canonicalName: string,
     isTranslationFunction: boolean,
     type: VariableType,
     identifier: number
   ): void {
     const scopedVar: ScopedVariable = {
       scopeId: this.currentScope,
-      originalName: assignedValue,
-      variableName: variableName,
+      canonicalName,
+      aliasName,
       isTranslationFunction,
       type,
       identifier,
     };
 
-    const existingVars = this.scopedVariables.get(variableName) || [];
+    const existingVars = this.scopedVariables.get(aliasName) || [];
     existingVars.push(scopedVar);
-    this.scopedVariables.set(variableName, existingVars);
+    this.scopedVariables.set(aliasName, existingVars);
   }
 
   /**
-   * Track a translation function variable (convenience method)
+   * Track a translation function variable
    */
   trackTranslationVariable(
-    variableName: string,
-    functionName: string,
+    aliasName: string,
+    canonicalName: GT_ALL_FUNCTIONS,
     identifier: number
   ): void {
-    this.trackVariable(
-      variableName,
-      functionName,
-      true,
-      'generaltranslation',
-      identifier
-    );
+    const scopedVar: ScopedGTFunction = {
+      scopeId: this.currentScope,
+      canonicalName,
+      aliasName,
+      isTranslationFunction: true,
+      type: 'generaltranslation',
+      identifier,
+    };
+    const existingVars = this.scopedVariables.get(aliasName) || [];
+    existingVars.push(scopedVar);
+    this.scopedVariables.set(aliasName, existingVars);
   }
 
   /**
@@ -173,6 +199,10 @@ export class ScopeTracker {
     this.trackVariable(variableName, assignedValue, false, 'other', 0); // 0 because we don't care about the identifier
   }
 
+  /* =============================== */
+  /* Variable Retrieval Methods */
+  /* =============================== */
+
   /**
    * Find if a variable is accessible in the current scope
    */
@@ -188,10 +218,29 @@ export class ScopeTracker {
   /**
    * Get the translation variable info if it exists in current scope
    */
-  getTranslationVariable(variableName: string): ScopedVariable | undefined {
+  getTranslationVariable(variableName: string): ScopedGTFunction | undefined {
     const variable = this.getVariable(variableName);
-    return variable && variable.isTranslationFunction ? variable : undefined;
+    if (!variable) {
+      return undefined;
+    }
+
+    // Check if the variable is a translation function
+    if (!this.isScopedGTFunction(variable)) {
+      return undefined;
+    }
+    return variable;
   }
+
+  private isScopedGTFunction(variable: ScopedVariable): variable is ScopedGTFunction {
+    return isGTFunction(variable.canonicalName);
+  }
+
+
+
+
+  /* =============================== */
+  /* Namespace Import Methods */
+  /* =============================== */
 
   /**
    * Add a namespace import (e.g., GT from 'gt-next')
@@ -206,6 +255,10 @@ export class ScopeTracker {
   hasNamespaceImport(name: string): boolean {
     return this.namespaceImports.has(name);
   }
+
+  /* =============================== */
+  /* Debugging Methods */
+  /* =============================== */
 
   /**
    * Get scope info for debugging

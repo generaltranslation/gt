@@ -70,7 +70,7 @@ export class ImportTracker {
    */
   shouldTrackComponentAsTranslation(name: string): boolean {
     const variable = this.scopeTracker.getTranslationVariable(name);
-    if (variable && isTranslationComponent(variable.originalName)) {
+    if (variable && isTranslationComponent(variable.canonicalName)) {
       return true;
     }
     return false;
@@ -81,7 +81,7 @@ export class ImportTracker {
    */
   shouldTrackComponentAsVariable(name: string): boolean {
     const variable = this.scopeTracker.getVariable(name);
-    if (variable && isVariableComponent(variable.originalName)) {
+    if (variable && isVariableComponent(variable.canonicalName)) {
       return true;
     }
     return false;
@@ -92,7 +92,7 @@ export class ImportTracker {
    */
   shouldTrackComponentAsBranch(name: string): boolean {
     const variable = this.scopeTracker.getVariable(name);
-    if (variable && isBranchComponent(variable.originalName)) {
+    if (variable && isBranchComponent(variable.canonicalName)) {
       return true;
     }
     return false;

@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { TransformState } from './transform';
+import { TransformState } from './types';
 import { ScopedVariable } from '../visitor/scope-tracker';
 
 export function extractPropFromJSXCall(
@@ -84,7 +84,7 @@ export function getOriginalNameFromExpression(
   if (!translationVariable) {
     return null;
   }
-  return translationVariable.originalName;
+  return translationVariable.canonicalName;
 }
 
 export function getTranslationVariableFromExpression(
