@@ -1,16 +1,16 @@
-import { NodePath } from "@babel/traverse";
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { TransformState } from "../../state/types";
-import { getCalleeExprFunctionName } from "../../transform/transform";
-import { isTranslationFunctionCallback } from "../../utils/constants/analysis";
-import { isJsxFunction } from "../../utils/constants/analysis";
-import { extractComponentNameFromJSXCall } from "../../transform/jsxUtils";
-import { extractPropFromJSXCall } from "../../transform/jsxUtils";
-import { isTranslationComponent } from "../../utils/constants/analysis";
-import { isVariableComponent } from "../../utils/constants/analysis";
-import { isBranchComponent } from "../../utils/constants/analysis";
-import { checkCallExprForViolations } from "../../transform/transform";
-import { trackTranslationCallback } from "../../transform/transform";
+import { TransformState } from '../../state/types';
+import { getCalleeExprFunctionName } from '../../transform/transform';
+import { isTranslationFunctionCallback } from '../../utils/constants/analysis';
+import { isJsxFunction } from '../../utils/constants/analysis';
+import { extractComponentNameFromJSXCall } from '../../transform/jsxUtils';
+import { extractPropFromJSXCall } from '../../transform/jsxUtils';
+import { isTranslationComponent } from '../../utils/constants/analysis';
+import { isVariableComponent } from '../../utils/constants/analysis';
+import { isBranchComponent } from '../../utils/constants/analysis';
+import { checkCallExprForViolations } from '../../transform/transform';
+import { trackTranslationCallback } from '../../transform/transform';
 
 /**
  * Process call expressions to detect t() calls (FIRST PASS - Collection only)

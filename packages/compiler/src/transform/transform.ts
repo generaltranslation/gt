@@ -24,7 +24,10 @@ import { hashJsx } from '../utils/hash/hashJsx';
 import { TransformState } from '../state/types';
 import { getAttr } from '../utils/getAttr';
 import { annotateJsxElement } from './jsx-annotation/annotateJsxElement';
-import { determineComponentType, getComponentType } from './determineComponentType';
+import {
+  determineComponentType,
+  getComponentType,
+} from './determineComponentType';
 import { processImportDeclaration } from '../processing/first-pass/processImportDeclaration';
 import { trackVariableAssignment } from './variableTracking/trackVariableAssignment';
 import { trackParameterOverrides } from './variableTracking/trackParameterOverrides';
@@ -282,8 +285,6 @@ export function createTranslationContent(
 export function createTranslationHash(hash: string): any {
   return { hash };
 }
-
-
 
 /**
  * Perform the second pass transformation using collected data

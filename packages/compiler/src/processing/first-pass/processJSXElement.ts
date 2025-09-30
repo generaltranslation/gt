@@ -1,9 +1,9 @@
-import { NodePath } from "@babel/traverse";
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { GT_COMPONENT_TYPES } from "../../utils/constants/constants";
-import { getComponentType } from "../../transform/determineComponentType";
-import { registerHash } from "../../transform/registration/registerHash";
-import { TransformState } from "../../state/types";
+import { GT_COMPONENT_TYPES } from '../../utils/constants/constants';
+import { getComponentType } from '../../transform/determineComponentType';
+import { registerHash } from '../../transform/registration/registerHash';
+import { TransformState } from '../../state/types';
 
 /**
  * Process JSX elements to detect GT components and collect content

@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/traverse";
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { TransformState } from "../../state/types";
-import { getAttr } from "../../utils/getAttr";
-import { annotateJsxElement } from "../jsx-annotation/annotateJsxElement";
-import { hashJsx } from "../../utils/hash/hashJsx";
-import { TranslationJsx } from "../../state/string-collector";
-
+import { TransformState } from '../../state/types';
+import { getAttr } from '../../utils/getAttr';
+import { annotateJsxElement } from '../jsx-annotation/annotateJsxElement';
+import { hashJsx } from '../../utils/hash/hashJsx';
+import { TranslationJsx } from '../../state/string-collector';
 
 /**
  * Record the hash for a JSX element
@@ -31,8 +30,7 @@ export function registerHash(
   state.stringCollector.initializeAggregator(counterId);
 
   // Add the message to the string collector for the JSX element
-  state.stringCollector.setTranslationJsx(
-    counterId,
-    { hash } as TranslationJsx
-  );
+  state.stringCollector.setTranslationJsx(counterId, {
+    hash,
+  } as TranslationJsx);
 }

@@ -1,5 +1,9 @@
 import * as t from '@babel/types';
-import { VariableType, HtmlContentProps, SanitizedChild } from '../utils/hash/JsxHasher';
+import {
+  VariableType,
+  HtmlContentProps,
+  SanitizedChild,
+} from '../utils/hash/JsxHasher';
 import {
   hasSignificantWhitespace,
   isNormalWhitespace,
