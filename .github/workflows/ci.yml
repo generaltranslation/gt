@@ -12,7 +12,7 @@ env:
   CI: true
 
 jobs:
-  run-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -86,3 +86,9 @@ jobs:
 
           pnpm exec turbo build --filter=general-cases...
           pnpm exec turbo build:turbopack --filter=general-cases...
+
+  run-tests:
+    needs: [tests, test-builds]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All tests passed"
