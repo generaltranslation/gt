@@ -22,6 +22,7 @@
     "@radix-ui/react-slot": "^1.2.2",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "fumadocs-core": "^15.3.4",
     "fumadocs-mdx": "^11.6.5",
     "fumadocs-typescript": "^4.0.5",
