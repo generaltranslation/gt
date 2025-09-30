@@ -30,7 +30,7 @@
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-next": "workspace:*",
-    "gtx-cli": "workspace:*",
+    "gtx-cli": "^2.3.5",
     "lucide-react": "^0.483.0",
     "next": "^15.3.2",
     "next-sitemap": "^4.2.3",
