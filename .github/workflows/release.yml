@@ -37,7 +37,8 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install Dependencies
-        run: pnpm install
+        # not frozen since we are using workspaces & package versions will change
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build packages
         run: pnpm run build:release
