@@ -115,7 +115,7 @@ function T({
         );
       }
     } else {
-      console.error(`<T>: No _hash found`);
+      console.error(`[GT-REACT] <T>: No _hash found`);
     }
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);

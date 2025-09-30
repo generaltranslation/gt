@@ -59,9 +59,6 @@ export function getCalleeExprFunctionName(
   return null;
 }
 
-
-
-
 /**
  * Check for violations in a call expression
  * Ported from Rust: check_call_expr_for_violations (lines 302-343)
@@ -398,7 +395,6 @@ export function processJSXElement(
 
 /**
  * Track hash attributes on JSX elements
- * Ported from Rust: track_hash_attributes (lines 141-162)
  */
 export function trackHashAttributes(
   nodePath: NodePath<t.JSXElement>,
@@ -456,7 +452,6 @@ export function trackHashAttributes(
 export function createTranslationJsx(hash: string): any {
   return { hash };
 }
-
 
 /**
  * Perform the second pass transformation using collected data

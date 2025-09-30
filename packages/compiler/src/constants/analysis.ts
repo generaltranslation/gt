@@ -93,7 +93,6 @@ export function isJsxFunction(name: string): boolean {
   return ['jsxDEV', 'jsx', 'jsxs', 'React.createElement'].includes(name);
 }
 
-
 /**
  * Check if it's a GT import source
  */
@@ -104,6 +103,10 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
 /**
  * Check if it's a React import source
  */
-export function isReactImportSource(name: string): name is REACT_IMPORT_SOURCES {
-  return Object.values(REACT_IMPORT_SOURCES).includes(name as REACT_IMPORT_SOURCES);
+export function isReactImportSource(
+  name: string
+): name is REACT_IMPORT_SOURCES {
+  return Object.values(REACT_IMPORT_SOURCES).includes(
+    name as REACT_IMPORT_SOURCES
+  );
 }

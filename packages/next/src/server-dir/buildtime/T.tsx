@@ -191,7 +191,7 @@ async function T({
           );
         }
       } else {
-        console.error(`<T>: No _hash found`);
+        console.error(`[GT-NEXT] <T>: No _hash found`);
       }
       const target = await I18NConfig.translateJsx({
         // do on demand translation

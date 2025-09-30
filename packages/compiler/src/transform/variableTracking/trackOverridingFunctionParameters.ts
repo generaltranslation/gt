@@ -1,8 +1,7 @@
 import * as t from '@babel/types';
-import { ScopeTracker } from "../../visitor/scope-tracker";
+import { ScopeTracker } from '../../visitor/scope-tracker';
 import { trackOverridingVariable } from './trackOverridingVariable';
 import { extractIdentifiersFromLVal } from '../../jsxUtils/extractIdentifiersFromLVal';
-
 
 /**
  * Track overriding function parameters
@@ -10,7 +9,9 @@ import { extractIdentifiersFromLVal } from '../../jsxUtils/extractIdentifiersFro
  * (useGT, useMessages) => {...}
  */
 export function trackOverridingFunctionParameters(
-  params: t.FunctionParameter[] | (t.FunctionParameter | t.TSParameterProperty)[],
+  params:
+    | t.FunctionParameter[]
+    | (t.FunctionParameter | t.TSParameterProperty)[],
   scopeTracker: ScopeTracker
 ): void {
   for (const param of params) {

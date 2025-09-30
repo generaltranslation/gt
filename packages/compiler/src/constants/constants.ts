@@ -64,5 +64,5 @@ export enum GT_IMPORT_SOURCES {
  * React import sources
  */
 export enum REACT_IMPORT_SOURCES {
-  JSX_DEV_RUNTIME = 'react/jsx-dev-runtime'
+  JSX_DEV_RUNTIME = 'react/jsx-dev-runtime',
 }

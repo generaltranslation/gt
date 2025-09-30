@@ -1,7 +1,10 @@
 import * as t from '@babel/types';
 import { TransformState } from '../types';
 import { ImportTracker } from '../../visitor/import-tracker';
-import { isGTImportSource, isReactImportSource } from '../../constants/analysis';
+import {
+  isGTImportSource,
+  isReactImportSource,
+} from '../../constants/analysis';
 import { ScopeTracker } from '../../visitor/scope-tracker';
 import { GT_ALL_FUNCTIONS } from '../../constants/constants';
 
@@ -14,7 +17,7 @@ import { GT_ALL_FUNCTIONS } from '../../constants/constants';
 export function trackImportDeclaration(
   scopeTracker: ScopeTracker,
   importSource: string,
-  importDecl: t.ImportDeclaration,
+  importDecl: t.ImportDeclaration
 ): void {
   for (const specifier of importDecl.specifiers) {
     if (t.isImportSpecifier(specifier)) {
@@ -28,26 +31,29 @@ export function trackImportDeclaration(
 }
 
 function handleImportSpecifier(
-  scopeTracker: ScopeTracker, 
+  scopeTracker: ScopeTracker,
   importSpecifier: t.ImportSpecifier,
-  importSource: string,
+  importSource: string
 ): void {
   const alias = importSpecifier.local.name;
   const originalName = t.isIdentifier(importSpecifier.imported)
     ? importSpecifier.imported.name
     : importSpecifier.imported.value;
   if (isGTImportSource(importSource)) {
-    scopeTracker.trackTranslationVariable(alias, originalName as GT_ALL_FUNCTIONS, 0);
+    scopeTracker.trackTranslationVariable(
+      alias,
+      originalName as GT_ALL_FUNCTIONS,
+      0
+    );
   } else if (isReactImportSource(importSource)) {
     scopeTracker.trackReactVariable(alias, originalName, 0);
   }
-
 }
 
 function handleImportDefaultSpecifier(
-  scopeTracker: ScopeTracker, 
+  scopeTracker: ScopeTracker,
   importNamespaceSpecifier: t.ImportDefaultSpecifier,
-  importSource: string,
+  importSource: string
 ): void {
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {
@@ -58,9 +64,9 @@ function handleImportDefaultSpecifier(
 }
 
 function handleImportNamespaceSpecifier(
-  scopeTracker: ScopeTracker, 
+  scopeTracker: ScopeTracker,
   importNamespaceSpecifier: t.ImportNamespaceSpecifier,
-  importSource: string,
+  importSource: string
 ): void {
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {

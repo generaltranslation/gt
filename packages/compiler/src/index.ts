@@ -141,7 +141,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             ArrowFunctionExpression: {
               enter(path) {
                 state.importTracker.enterScope();
-                trackArrowParameterOverrides(path, state.importTracker.scopeTracker);
+                trackArrowParameterOverrides(
+                  path,
+                  state.importTracker.scopeTracker
+                );
               },
               exit(_path) {
                 state.importTracker.exitScope();

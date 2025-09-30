@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/traverse";
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { ScopeTracker } from "../../visitor/scope-tracker";
-import { trackOverridingFunctionParameters } from "./trackOverridingFunctionParameters";
+import { ScopeTracker } from '../../visitor/scope-tracker';
+import { trackOverridingFunctionParameters } from './trackOverridingFunctionParameters';
 
 /**
  * Track function parameter overrides that could shadow variables
