@@ -9,7 +9,7 @@
   "linked": [],
   "access": "public",
   "baseBranch": "main",
-  "updateInternalDependencies": "patch",
+  "updateInternalDependencies": "major",
   "ignore": [
     "docs",
     "base",
