@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { GT_COMPONENT_TYPES } from '../../constants';
+import { GT_COMPONENT_TYPES } from '../../constants/constants';
 
 /**
  * JSXElementWithCanonicalId is a JSXElement with a _gt_canonical_identifier field

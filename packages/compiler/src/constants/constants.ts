@@ -29,8 +29,6 @@ export enum GT_FUNCTIONS {
   getGT = 'getGT',
   useTranslations = 'useTranslations',
   getTranslations = 'getTranslations',
-  useDict = 'useDict',
-  getDict = 'getDict',
   msg = 'msg',
   useMessages = 'useMessages',
   getMessages = 'getMessages',
@@ -44,8 +42,6 @@ export enum GT_CALLBACK_FUNCTIONS {
   getGT_callback = 'getGT_callback',
   useTranslations_callback = 'useTranslations_callback',
   getTranslations_callback = 'getTranslations_callback',
-  useDict_callback = 'useDict_callback',
-  getDict_callback = 'getDict_callback',
   useMessages_callback = 'useMessages_callback',
   getMessages_callback = 'getMessages_callback',
 }
@@ -54,3 +50,19 @@ export enum GT_CALLBACK_FUNCTIONS {
  * All gt functions (both regular and callback functions)
  */
 export type GT_ALL_FUNCTIONS = GT_FUNCTIONS | GT_CALLBACK_FUNCTIONS;
+
+/**
+ * GT import sources
+ */
+export enum GT_IMPORT_SOURCES {
+  GT_NEXT = 'gt-next',
+  GT_NEXT_CLIENT = 'gt-next/client',
+  GT_NEXT_SERVER = 'gt-next/server',
+}
+
+/**
+ * React import sources
+ */
+export enum REACT_IMPORT_SOURCES {
+  JSX_DEV_RUNTIME = 'react/jsx-dev-runtime'
+}

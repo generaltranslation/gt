@@ -3,7 +3,6 @@ import { hashSource } from 'generaltranslation/id';
 import traverse from '@babel/traverse';
 
 // Analysis and utilities
-import { createDynamicContentWarning } from '../visitor/errors';
 import { NodePath } from '@babel/traverse';
 import {
   isTranslationComponent,
@@ -12,7 +11,7 @@ import {
   isTranslationFunction,
   isTranslationFunctionCallback,
   isJsxFunction,
-} from '../visitor/analysis';
+} from '../constants/analysis';
 import {
   extractComponentNameFromJSXCall,
   extractPropFromJSXCall,
@@ -23,9 +22,13 @@ import { hashJsx } from '../hash/hashJsx';
 
 // Types
 import { TransformState } from './types';
-import { getAttr } from '../jsxUtils/attributes/getAttr';
+import { getAttr } from '../jsxUtils/getAttr';
 import { annotateJsxElement } from '../jsxUtils/annotation/annotateJsxElement';
 import { determineComponentType } from '../jsxUtils/determineComponentType';
+import { processImportDeclaration } from './imports/processImportDeclaration';
+import { trackVariableAssignment } from './variableTracking/trackVariableAssignment';
+import { trackParameterOverrides } from './variableTracking/trackParameterOverrides';
+import { trackArrowParameterOverrides } from './variableTracking/trackArrowParameterOverrides';
 
 /**
  * Generate warning message for dynamic function call violations
@@ -56,273 +59,8 @@ export function getCalleeExprFunctionName(
   return null;
 }
 
-export function trackImportDeclaration(
-  state: TransformState,
-  importDecl: t.ImportDeclaration,
-  shouldTrackDeclaration: (originalName: string) => boolean,
-  trackDeclaration: (
-    localName: string,
-    originalName: string,
-    counterId: number
-  ) => void,
-  trackNamespaceImport: (localName: string) => void
-): void {
-  // Process named imports: import { T, Var, useGT } from 'gt-next'
-  for (const specifier of importDecl.specifiers) {
-    if (t.isImportSpecifier(specifier)) {
-      // Named import
-      const localName = specifier.local.name;
-      const originalName =
-        specifier.imported && t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : localName;
 
-      // Store the mapping: local_name -> original_name
-      if (shouldTrackDeclaration(originalName)) {
-        if (state.settings.filename?.endsWith('page.tsx')) {
-          console.log(
-            '[transform] Tracking translation: import {',
-            localName,
-            'as',
-            originalName,
-            '}'
-          );
-        }
-        // Note: Need to implement these methods in ImportTracker
-        trackDeclaration(localName, originalName, 0);
-      }
-    } else if (t.isImportNamespaceSpecifier(specifier)) {
-      // Handle namespace imports: import * as GT from 'gt-next'
-      trackNamespaceImport(specifier.local.name);
-    }
-  }
-}
 
-/**
- * Process import declarations to track GT imports
- * Ported from Rust: process_gt_import_declaration (lines 252-299)
- */
-export function processImportDeclaration(
-  path: NodePath<t.ImportDeclaration>,
-  state: TransformState
-): void {
-  const importDecl = path.node;
-  const srcValue = importDecl.source.value;
-
-  // Only process gt-next imports
-  if (
-    srcValue === 'gt-next' ||
-    srcValue === 'gt-next/client' ||
-    srcValue === 'gt-next/server'
-  ) {
-    const shouldTrackDeclaration = (originalName: string) =>
-      isTranslationComponent(originalName) ||
-      isVariableComponent(originalName) ||
-      isBranchComponent(originalName) ||
-      isTranslationFunction(originalName);
-
-    const trackDeclaration = (
-      localName: string,
-      originalName: string,
-      counterId: number
-    ) =>
-      state.importTracker.scopeTracker.trackTranslationVariable(
-        localName,
-        originalName,
-        counterId
-      );
-
-    trackImportDeclaration(
-      state,
-      importDecl,
-      shouldTrackDeclaration,
-      trackDeclaration,
-      state.importTracker.namespaceImports.add
-    );
-  } else if (srcValue === 'react/jsx-dev-runtime') {
-    const shouldTrackDeclaration = (originalName: string) =>
-      isJsxFunction(originalName);
-
-    const trackDeclaration = (
-      localName: string,
-      originalName: string,
-      counterId: number
-    ) =>
-      state.importTracker.scopeTracker.trackReactVariable(
-        localName,
-        originalName,
-        counterId
-      );
-
-    trackImportDeclaration(
-      state,
-      importDecl,
-      shouldTrackDeclaration,
-      trackDeclaration,
-      state.importTracker.namespaceImports.add
-    );
-  }
-}
-
-/**
- * Track variable assignments like: const t = useGT()
- * Ported from Rust: track_variable_assignment (lines 580-623)
- */
-export function trackVariableAssignment(
-  path: NodePath<t.VariableDeclarator>,
-  state: TransformState
-): void {
-  const varDeclarator = path.node;
-
-  if (varDeclarator.init) {
-    // Handle simple identifier assignment: const t = useGT()
-    if (t.isIdentifier(varDeclarator.id)) {
-      const variableName = varDeclarator.id.name;
-
-      if (
-        t.isCallExpression(varDeclarator.init) &&
-        t.isIdentifier(varDeclarator.init.callee)
-      ) {
-        if (state.settings.filename?.endsWith('page.tsx')) {
-          console.log(
-            '[transform] trackVariableAssignment',
-            variableName,
-            '=',
-            varDeclarator.init.callee.name
-          );
-        }
-        // Only direct assignments can be translation functions
-        trackFunctionCallAssignment(
-          varDeclarator.init.callee.name,
-          variableName,
-          state
-        );
-      } else if (
-        t.isAwaitExpression(varDeclarator.init) &&
-        t.isCallExpression(varDeclarator.init.argument) &&
-        t.isIdentifier(varDeclarator.init.argument.callee)
-      ) {
-        if (state.settings.filename?.endsWith('page.tsx')) {
-          console.log(
-            '[transform] trackVariableAssignment',
-            variableName,
-            '= await',
-            varDeclarator.init.argument.callee.name
-          );
-        }
-        // Only direct assignments can be translation functions
-        trackFunctionCallAssignment(
-          varDeclarator.init.argument.callee.name,
-          variableName,
-          state
-        );
-      } else {
-        // Not a function call, treat as overriding
-        trackOverridingVariable(variableName, state);
-      }
-    } else if (t.isLVal(varDeclarator.id)) {
-      // Handle ALL destructuring patterns: const { t } = anything
-      const identifiers = extractIdentifiersFromPattern(varDeclarator.id);
-      for (const identifier of identifiers) {
-        trackOverridingVariable(identifier, state);
-      }
-    }
-  }
-}
-
-/**
- * Track function call assignments
- * Ported from Rust: track_function_call_assignment (lines 542-578)
- */
-export function trackFunctionCallAssignment(
-  calleeName: string,
-  variableName: string,
-  state: TransformState
-): void {
-  // Check if the callee is a translation function
-  const translationVariable =
-    state.importTracker.scopeTracker.getTranslationVariable(calleeName);
-
-  if (translationVariable) {
-    // This will be either useGT or getGT, not the alias
-    const originalName = translationVariable.canonicalName;
-
-    // Check if its getGT or useGT
-    if (isTranslationFunction(originalName)) {
-      // Get counter_id
-      const counterId = state.stringCollector.incrementCounter();
-      // Create a new entry in the string collector for this call
-      state.stringCollector.initializeAggregator(counterId);
-
-      // Track translation function using scope system (useGT_callback, getGT_callback)
-      state.importTracker.scopeTracker.trackTranslationVariable(
-        variableName,
-        `${originalName}_callback`,
-        counterId
-      );
-
-      if (state.settings.filename?.endsWith('page.tsx')) {
-        console.log(
-          `[transform] trackFunctionCallAssignment - tracked callback [${counterId}]: ${variableName} -> ${originalName}_callback`
-        );
-      }
-    }
-  } else {
-    // Not a translation function, treat as overriding
-    trackOverridingVariable(variableName, state);
-  }
-}
-
-/**
- * Track overriding variables (ones that shadow existing GT imports)
- */
-export function trackOverridingVariable(
-  variableName: string,
-  state: TransformState
-): void {
-  if (state.importTracker.scopeTracker.getVariable(variableName)) {
-    state.importTracker.scopeTracker.trackRegularVariable(
-      variableName,
-      'other'
-    );
-  }
-}
-
-/**
- * Extract identifiers from destructuring patterns
- * Ported from Rust: extract_identifiers_from_pattern (lines 465-503)
- */
-export function extractIdentifiersFromPattern(pattern: t.LVal): string[] {
-  const identifiers: string[] = [];
-
-  if (t.isIdentifier(pattern)) {
-    identifiers.push(pattern.name);
-  } else if (t.isObjectPattern(pattern)) {
-    for (const prop of pattern.properties) {
-      if (t.isObjectProperty(prop)) {
-        if (t.isIdentifier(prop.value)) {
-          identifiers.push(prop.value.name);
-        } else if (t.isLVal(prop.value)) {
-          identifiers.push(...extractIdentifiersFromPattern(prop.value));
-        }
-      } else if (t.isRestElement(prop)) {
-        identifiers.push(...extractIdentifiersFromPattern(prop.argument));
-      }
-    }
-  } else if (t.isArrayPattern(pattern)) {
-    for (const elem of pattern.elements) {
-      if (elem && t.isLVal(elem)) {
-        identifiers.push(...extractIdentifiersFromPattern(elem));
-      }
-    }
-  } else if (t.isAssignmentPattern(pattern)) {
-    identifiers.push(...extractIdentifiersFromPattern(pattern.left));
-  } else if (t.isRestElement(pattern)) {
-    identifiers.push(...extractIdentifiersFromPattern(pattern.argument));
-  }
-
-  return identifiers;
-}
 
 /**
  * Check for violations in a call expression
@@ -565,11 +303,6 @@ export function processCallExpression(
 
   // Check if this is a tracked translation function call
   const variable = state.importTracker.scopeTracker.getVariable(functionName);
-  if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log(
-      `[transform] functionName: ${functionName}, ${variable?.canonicalName}`
-    );
-  }
 
   if (variable && variable.type !== 'other') {
     // Register the useGT/getGT as aggregators on the string collector
@@ -651,16 +384,10 @@ export function processJSXElement(
 ): boolean {
   const element = path.node;
   const componentType = determineComponentType(element, state.importTracker);
-  if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log(`[transform] componentType: ${componentType}`);
-  }
   if (componentType.isTranslation) {
     state.statistics.jsxElementCount += 1;
 
     if (state.settings.compileTimeHash) {
-      if (state.settings.filename?.endsWith('page.tsx')) {
-        console.log(`[transform] processJSXElement: ${element}`);
-      }
       trackHashAttributes(path, state);
       return true; // Transformation may be applied later
     }
@@ -693,9 +420,6 @@ export function trackHashAttributes(
     state.stringCollector.initializeAggregator(counterId);
 
     // Add the message to the string collector for the JSX element
-    if (state.settings.filename?.endsWith('page.tsx')) {
-      console.log(`[transform] trackHashAttributes: ${hash}`);
-    }
     state.stringCollector.setTranslationJsx(
       counterId,
       createTranslationJsx(hash)
@@ -733,47 +457,6 @@ export function createTranslationJsx(hash: string): any {
   return { hash };
 }
 
-/**
- * Track function parameter overrides that could shadow variables
- * Ported from Rust: track_parameter_overrides (lines 520-528)
- */
-export function trackParameterOverrides(
-  path: NodePath<t.Function>,
-  state: TransformState
-): void {
-  const func = path.node;
-  const params = func.params || [];
-
-  for (const param of params) {
-    if (t.isLVal(param)) {
-      const identifiers = extractIdentifiersFromPattern(param);
-      for (const identifier of identifiers) {
-        trackOverridingVariable(identifier, state);
-      }
-    }
-  }
-}
-
-/**
- * Track arrow function parameter overrides
- * Ported from Rust: track_arrow_parameter_overrides (lines 531-539)
- */
-export function trackArrowParameterOverrides(
-  path: NodePath<t.ArrowFunctionExpression>,
-  state: TransformState
-): void {
-  const arrowFunc = path.node;
-  const params = arrowFunc.params || [];
-
-  for (const param of params) {
-    if (t.isLVal(param)) {
-      const identifiers = extractIdentifiersFromPattern(param);
-      for (const identifier of identifiers) {
-        trackOverridingVariable(identifier, state);
-      }
-    }
-  }
-}
 
 /**
  * Perform the second pass transformation using collected data
@@ -817,13 +500,6 @@ export function performSecondPassTransformation(
         const translationVariable =
           state.importTracker.scopeTracker.getTranslationVariable(functionName);
 
-        if (state.settings.filename?.endsWith('page.tsx')) {
-          console.log(
-            `[transform] callExpression: ${functionName}`,
-            translationVariable
-          );
-        }
-
         if (translationVariable) {
           const originalName = translationVariable.canonicalName;
 
@@ -833,11 +509,6 @@ export function performSecondPassTransformation(
               callExpr,
               state
             );
-            if (state.settings.filename?.endsWith('page.tsx')) {
-              console.log(
-                `[transform] inject content array: ${originalName} ${modifiedCallExpr}`
-              );
-            }
             if (modifiedCallExpr) {
               callPath.replaceWith(modifiedCallExpr);
               hasTransformations = true;
@@ -901,7 +572,7 @@ export function performSecondPassTransformation(
     Function: {
       enter(path) {
         state.importTracker.enterScope();
-        trackParameterOverrides(path, state);
+        trackParameterOverrides(path, state.importTracker.scopeTracker);
       },
       exit(_path) {
         state.importTracker.exitScope();
@@ -911,7 +582,7 @@ export function performSecondPassTransformation(
     ArrowFunctionExpression: {
       enter(path) {
         state.importTracker.enterScope();
-        trackArrowParameterOverrides(path, state);
+        trackArrowParameterOverrides(path, state.importTracker.scopeTracker);
       },
       exit(_path) {
         state.importTracker.exitScope();

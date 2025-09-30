@@ -14,9 +14,9 @@ import {
   isTranslationComponent as isTranslationComponentName,
   isVariableComponent as isVariableComponentName,
   isBranchComponent as isBranchComponentName,
-} from '../visitor/analysis';
+} from '../constants/analysis';
 import { getAttr } from '../jsxUtils/getAttr';
-import { GT_COMPONENT_TYPES } from '../constants';
+import { GT_COMPONENT_TYPES } from '../constants/constants';
 import { JSXElementWithCanonicalId } from '../jsxUtils/annotation/types';
 import { getTag } from './getTag';
 

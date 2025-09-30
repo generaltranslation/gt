@@ -5,8 +5,8 @@
  * Manages variable shadowing and GT component imports
  */
 
-import { GT_ALL_FUNCTIONS } from '../constants';
-import { isGTFunction } from './analysis';
+import { GT_ALL_FUNCTIONS, GT_CALLBACK_FUNCTIONS } from '../constants/constants';
+import { isGTFunction } from '../constants/analysis';
 
 // TODO: separate callback funtions and imported functions
 
@@ -168,17 +168,18 @@ export class ScopeTracker {
     canonicalName: GT_ALL_FUNCTIONS,
     identifier: number
   ): void {
-    const scopedVar: ScopedGTFunction = {
-      scopeId: this.currentScope,
-      canonicalName,
-      aliasName,
-      isTranslationFunction: true,
-      type: 'generaltranslation',
-      identifier,
-    };
-    const existingVars = this.scopedVariables.get(aliasName) || [];
-    existingVars.push(scopedVar);
-    this.scopedVariables.set(aliasName, existingVars);
+    this.trackVariable(aliasName, canonicalName, true, 'generaltranslation', identifier);
+  }
+
+  /**
+ * Track a translation function variable
+ */
+  trackTranslationCallbackVariable(
+    aliasName: string,
+    canonicalName: GT_CALLBACK_FUNCTIONS,
+    identifier: number
+  ): void {
+    this.trackVariable(aliasName, canonicalName, true, 'generaltranslation', identifier);
   }
 
   /**

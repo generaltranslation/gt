@@ -11,15 +11,15 @@ import { Logger } from './logging';
 
 // Import transformation functions
 import {
-  processImportDeclaration,
-  trackVariableAssignment,
   processCallExpression,
   processJSXElement,
-  trackParameterOverrides,
-  trackArrowParameterOverrides,
   performSecondPassTransformation,
 } from './transform/transform';
+import { processImportDeclaration } from './transform/imports/processImportDeclaration';
 import { TransformState } from './transform/types';
+import { trackVariableAssignment } from './transform/variableTracking/trackVariableAssignment';
+import { trackArrowParameterOverrides } from './transform/variableTracking/trackArrowParameterOverrides';
+import { trackParameterOverrides } from './transform/variableTracking/trackParameterOverrides';
 
 /**
  * GT Universal Plugin Options
@@ -51,11 +51,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         );
       },
       transform(code: string, id: string) {
-        if (id.endsWith('page.tsx')) {
-          console.log('[gt-unplugin] transforming', id);
-          console.log('[gt-unplugin] code content:');
-          console.log(code);
-        }
         try {
           // Initialize processing state
           const state = initializeState(options, id);
@@ -65,9 +60,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             state.settings.disableBuildChecks &&
             !state.settings.compileTimeHash
           ) {
-            if (id.endsWith('page.tsx')) {
-              console.log('[gt-unplugin] skipping');
-            }
             return null;
           }
 
@@ -112,11 +104,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
             // JSX processing - matches Rust VisitMut
             JSXElement(path) {
-              if (state.settings.filename?.endsWith('page.tsx')) {
-                console.log(`[transform] JSXElement: ${path.node}`);
-              } else {
-                console.log(state.settings.filename);
-              }
               processJSXElement(path, state); // Collection only, returns boolean but we ignore it
             },
 
@@ -144,7 +131,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             Function: {
               enter(path) {
                 state.importTracker.enterScope();
-                trackParameterOverrides(path, state);
+                trackParameterOverrides(path, state.importTracker.scopeTracker);
               },
               exit(_path) {
                 state.importTracker.exitScope();
@@ -154,7 +141,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             ArrowFunctionExpression: {
               enter(path) {
                 state.importTracker.enterScope();
-                trackArrowParameterOverrides(path, state);
+                trackArrowParameterOverrides(path, state.importTracker.scopeTracker);
               },
               exit(_path) {
                 state.importTracker.exitScope();
@@ -249,10 +236,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
                 retainLines: true,
                 compact: false,
               });
-
-              if (id.endsWith('page.tsx')) {
-                console.log(`[GT Unplugin] Transformed: ${id}`);
-              }
               return {
                 code: result.code,
                 map: result.map,
