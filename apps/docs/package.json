@@ -25,6 +25,7 @@
     "fumadocs-mdx": "^11.6.5",
     "fumadocs-typescript": "^4.0.5",
     "fumadocs-ui": "^15.3.4",
+    "generaltranslation": "^7.6.3",
     "gt-next": "^6.6.3",
     "gtx-cli": "^2.3.5",
     "lucide-react": "^0.483.0",
