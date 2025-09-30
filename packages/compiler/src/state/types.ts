@@ -2,7 +2,7 @@
 import { StringCollector } from './StringCollector';
 import { ImportTracker } from './ImportTracker';
 import { PluginSettings } from './config';
-import { Logger } from '../logging';
+import { Logger } from './logging';
 /**
  * Plugin state for processing files
  * Matches the Rust TransformVisitor structure

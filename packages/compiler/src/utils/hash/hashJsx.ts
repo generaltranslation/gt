@@ -28,14 +28,17 @@ import { getTag } from '../jsx/getTag';
  */
 class IndexObject {
   index: number;
-  constructor() {
-    this.index = 1;
+  constructor(index: number = 1) {
+    this.index = index;
   }
   increment() {
     this.index += 1;
   }
   get() {
     return this.index;
+  }
+  copy() {
+    return new IndexObject(this.index);
   }
 }
 
@@ -175,7 +178,6 @@ function handleJsxSpreadChild(expression: t.JSXSpreadChild): string {
  */
 function createGTPropData(
   element: t.JSXElement | t.JSXFragment,
-  index: IndexObject
 ): GTProp {
   const result: GTProp = {};
   if (t.isJSXFragment(element)) {
@@ -271,7 +273,7 @@ function createBranchGTPropData(
   if (t.isJSXFragment(element)) {
     return {};
   }
-  const result: GTProp = createGTPropData(element, index);
+  const result: GTProp = createGTPropData(element);
   if (isPluralComponent(element)) {
     result.t = 'p';
   } else {
@@ -324,7 +326,7 @@ function createGTProp(
   if (isBranchComponent(element)) {
     return createBranchGTPropData(element, index);
   }
-  return createGTPropData(element, index);
+  return createGTPropData(element);
 }
 
 /**

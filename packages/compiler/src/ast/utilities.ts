@@ -8,7 +8,7 @@ import {
   hasSignificantWhitespace,
   isNormalWhitespace,
   trimNormalWhitespace,
-} from '../whitespace';
+} from '../utils/whitespace';
 
 /**
  * Custom number to string function to match JS behavior

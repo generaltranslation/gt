@@ -7,7 +7,7 @@ import traverse from '@babel/traverse';
 import { StringCollector } from './state/StringCollector';
 import { ImportTracker } from './state/ImportTracker';
 import { PluginConfig, PluginSettings } from './state/config';
-import { Logger } from './logging';
+import { Logger } from './state/logging';
 
 // Import transformation functions
 import { performSecondPassTransformation } from './transform/transform';

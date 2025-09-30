@@ -3,7 +3,7 @@ import {
   trimNormalWhitespace,
   hasSignificantWhitespace,
   isNormalWhitespace,
-} from '../whitespace';
+} from '../utils/whitespace';
 
 describe('whitespace', () => {
   describe('trimNormalWhitespace', () => {
