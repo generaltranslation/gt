@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { TransformState } from './transform/types';
+import { TransformState } from '../../state/types';
 /**
  * Variable types matching the TypeScript definition
  */

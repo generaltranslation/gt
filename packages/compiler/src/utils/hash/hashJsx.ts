@@ -13,11 +13,11 @@ import {
   isTranslationComponent as isTranslationComponentName,
   isVariableComponent as isVariableComponentName,
   isBranchComponent as isBranchComponentName,
-} from '../utils/constants/analysis';
-import { getAttr } from '../utils/getAttr';
-import { GT_COMPONENT_TYPES } from '../utils/constants/constants';
-import { JSXElementWithCanonicalId } from '../transform/jsx-annotation/types';
-import { getTag } from '../utils/hash/getTag';
+} from '../constants/analysis';
+import { getAttr } from '../getAttr';
+import { GT_COMPONENT_TYPES } from '../constants/constants';
+import { JSXElementWithCanonicalId } from '../../transform/jsx-annotation/types';
+import { getTag } from './getTag';
 
 /* =============================== */
 /* Helper Functions */

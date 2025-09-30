@@ -8,8 +8,8 @@
 import {
   GT_ALL_FUNCTIONS,
   GT_CALLBACK_FUNCTIONS,
-} from '../constants/constants';
-import { isGTFunction } from '../constants/analysis';
+} from '../utils/constants/constants';
+import { isGTFunction } from '../utils/constants/analysis';
 
 // TODO: separate callback funtions and imported functions
 

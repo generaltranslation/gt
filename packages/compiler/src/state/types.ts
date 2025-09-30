@@ -1,7 +1,7 @@
 // Core modules
-import { StringCollector } from '../visitor/string-collector';
-import { ImportTracker } from '../visitor/import-tracker';
-import { PluginSettings } from '../config';
+import { StringCollector } from './string-collector';
+import { ImportTracker } from './import-tracker';
+import { PluginSettings } from './config';
 import { Logger } from '../logging';
 /**
  * Plugin state for processing files

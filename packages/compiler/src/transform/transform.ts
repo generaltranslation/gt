@@ -11,24 +11,26 @@ import {
   isTranslationFunction,
   isTranslationFunctionCallback,
   isJsxFunction,
-} from '../constants/analysis';
+} from '../utils/constants/analysis';
 import {
   extractComponentNameFromJSXCall,
   extractPropFromJSXCall,
 } from './jsxUtils';
 
 // Hashing
-import { hashJsx } from '../hash/hashJsx';
+import { hashJsx } from '../utils/hash/hashJsx';
 
 // Types
-import { TransformState } from './types';
-import { getAttr } from '../jsxUtils/getAttr';
-import { annotateJsxElement } from '../jsxUtils/annotation/annotateJsxElement';
-import { determineComponentType } from '../jsxUtils/determineComponentType';
-import { processImportDeclaration } from './imports/processImportDeclaration';
+import { TransformState } from '../state/types';
+import { getAttr } from '../utils/getAttr';
+import { annotateJsxElement } from './jsx-annotation/annotateJsxElement';
+import { determineComponentType, getComponentType } from './determineComponentType';
+import { processImportDeclaration } from '../processing/first-pass/processImportDeclaration';
 import { trackVariableAssignment } from './variableTracking/trackVariableAssignment';
 import { trackParameterOverrides } from './variableTracking/trackParameterOverrides';
 import { trackArrowParameterOverrides } from './variableTracking/trackArrowParameterOverrides';
+import { registerHash } from './registration/registerHash';
+import { GT_COMPONENT_TYPES } from '../utils/constants/constants';
 
 /**
  * Generate warning message for dynamic function call violations
@@ -166,7 +168,6 @@ export function trackTranslationCallback(
 
 /**
  * Helper function to extract string content from expressions
- * Ported from Rust: extract_string_from_expr
  */
 export function extractStringFromExpr(
   expr: t.Expression | t.SpreadElement
@@ -282,176 +283,7 @@ export function createTranslationHash(hash: string): any {
   return { hash };
 }
 
-/**
- * Process call expressions to detect t() calls (FIRST PASS - Collection only)
- * Ported from Rust: visit_mut_call_expr (lines 118-142)
- */
-export function processCallExpression(
-  path: NodePath<t.CallExpression>,
-  state: TransformState
-): boolean {
-  const callExpr = path.node;
 
-  // Get function name from callee - matches Rust get_callee_expr_function_name
-  const functionName = getCalleeExprFunctionName(callExpr);
-  if (!functionName) {
-    return false;
-  }
-
-  // Check if this is a tracked translation function call
-  const variable = state.importTracker.scopeTracker.getVariable(functionName);
-
-  if (variable && variable.type !== 'other') {
-    // Register the useGT/getGT as aggregators on the string collector
-    const originalName = variable.canonicalName;
-    const identifier = variable.identifier;
-
-    // Detect t() calls (translation function callbacks)
-    if (isTranslationFunctionCallback(originalName)) {
-      if (callExpr.arguments && callExpr.arguments.length > 0) {
-        const firstArg = callExpr.arguments[0];
-        if (t.isArgumentPlaceholder(firstArg)) {
-          return false;
-        }
-
-        // Check for violations
-        checkCallExprForViolations(firstArg, functionName, state);
-
-        // Track the t() function call
-        trackTranslationCallback(callExpr, firstArg, identifier, state);
-      }
-    } else if (isJsxFunction(originalName)) {
-      // For JSX function, process their children
-
-      // Get the name of the component
-      const componentName = extractComponentNameFromJSXCall(callExpr);
-      if (!componentName) {
-        return false;
-      }
-
-      // Map it back to an original name
-      const translationVariable =
-        state.importTracker.scopeTracker.getTranslationVariable(componentName);
-      if (!translationVariable) {
-        return false;
-      }
-      const originalName = translationVariable.canonicalName;
-      const identifier = translationVariable.identifier;
-
-      if (isTranslationComponent(originalName)) {
-        // Get children
-        const children = extractPropFromJSXCall(callExpr, 'children');
-        if (!children) {
-          return false;
-        }
-
-        // Get id & context
-        const id = extractPropFromJSXCall(callExpr, 'id');
-        const context = extractPropFromJSXCall(callExpr, 'context');
-
-        // TODO: Check for violations
-
-        // Calculate hash
-        // TODO: add id & context to options
-        // const { hash } = hashExpression(children, undefined);
-        // if (!hash) {
-        //   return false;
-        // }
-
-        // TODO: add to string collector
-        // TODO: add to string collector for the t() function
-      } else if (isVariableComponent(originalName)) {
-      } else if (isBranchComponent(originalName)) {
-      } else {
-        return false;
-      }
-    }
-  }
-
-  return false; // This is collection pass - no transformations yet
-}
-
-/**
- * Process JSX elements to detect GT components and collect content
- * Ported from Rust: (to be implemented)
- */
-export function processJSXElement(
-  path: NodePath<t.JSXElement>,
-  state: TransformState
-): boolean {
-  const element = path.node;
-  const componentType = determineComponentType(element, state.importTracker);
-  if (componentType.isTranslation) {
-    state.statistics.jsxElementCount += 1;
-
-    if (state.settings.compileTimeHash) {
-      trackHashAttributes(path, state);
-      return true; // Transformation may be applied later
-    }
-  }
-
-  return false;
-}
-
-/**
- * Track hash attributes on JSX elements
- */
-export function trackHashAttributes(
-  nodePath: NodePath<t.JSXElement>,
-  state: TransformState
-): void {
-  // Check if hash attribute already exists
-  if (!getAttr(nodePath.node, '_hash')) {
-    // Strip aliased names from element (<_T> -> <T>)
-    const annotatedElement: t.JSXElement = annotateJsxElement(
-      nodePath.node,
-      state
-    );
-
-    // Calculate real hash using AST traversal
-    const hash = hashJsx(annotatedElement);
-
-    // Store the translation JSX
-    const counterId = state.stringCollector.incrementCounter();
-    state.stringCollector.initializeAggregator(counterId);
-
-    // Add the message to the string collector for the JSX element
-    state.stringCollector.setTranslationJsx(
-      counterId,
-      createTranslationJsx(hash)
-    );
-  }
-}
-
-// /**
-//  * Calculate element hash given an annotated element
-//  */
-// export function calculateElementHash(element: t.JSXElement, state: TransformState): {
-//   hash: string;
-// } {
-//   // Simplified hash calculation - in full implementation this would use JsxTraversal
-//   // to properly traverse the JSX element and extract content like the Rust version
-//   const hash = hashJsx(state, element);
-
-//   // Create a simplified data structure for hashing that matches the expected format
-//   // In full implementation this would use JsxTraversal to properly extract JSX content
-//   // const sanitizedData = {
-//   //   source: ['<T>'], // Simplified JSX representation as array of strings
-//   //   dataFormat: 'ICU' as const,
-//   // };
-
-//   // const hash = hashSource(sanitizedData);
-//   // const jsonString = JSON.stringify(sanitizedData);
-//   return { hash };
-// }
-
-/**
- * Create translation JSX object
- * Ported from Rust: StringCollector::create_translation_jsx
- */
-export function createTranslationJsx(hash: string): any {
-  return { hash };
-}
 
 /**
  * Perform the second pass transformation using collected data

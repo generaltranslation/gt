@@ -10,7 +10,7 @@ import {
   isVariableComponent,
   isBranchComponent,
   isTranslationFunction,
-} from '../constants/analysis';
+} from '../utils/constants/analysis';
 
 /**
  * Import tracker for GT components and functions

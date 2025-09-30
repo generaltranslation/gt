@@ -1,6 +1,6 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { ScopeTracker } from '../../visitor/scope-tracker';
+import { ScopeTracker } from '../../state/scope-tracker';
 import { trackOverridingFunctionParameters } from './trackOverridingFunctionParameters';
 
 /**

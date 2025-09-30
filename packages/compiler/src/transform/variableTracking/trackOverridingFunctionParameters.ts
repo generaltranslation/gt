@@ -1,7 +1,7 @@
 import * as t from '@babel/types';
-import { ScopeTracker } from '../../visitor/scope-tracker';
+import { ScopeTracker } from '../../state/scope-tracker';
 import { trackOverridingVariable } from './trackOverridingVariable';
-import { extractIdentifiersFromLVal } from '../../jsxUtils/extractIdentifiersFromLVal';
+import { extractIdentifiersFromLVal } from '../../utils/extractIdentifiersFromLVal';
 
 /**
  * Track overriding function parameters

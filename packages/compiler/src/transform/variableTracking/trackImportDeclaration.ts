@@ -1,12 +1,10 @@
 import * as t from '@babel/types';
-import { TransformState } from '../types';
-import { ImportTracker } from '../../visitor/import-tracker';
 import {
   isGTImportSource,
   isReactImportSource,
-} from '../../constants/analysis';
-import { ScopeTracker } from '../../visitor/scope-tracker';
-import { GT_ALL_FUNCTIONS } from '../../constants/constants';
+} from '../../utils/constants/analysis';
+import { ScopeTracker } from '../../state/scope-tracker';
+import { GT_ALL_FUNCTIONS } from '../../utils/constants/constants';
 
 /**
  * Track import declarations for GT and React e.g. import { T, Var, useGT } from 'gt-next'

@@ -16,7 +16,7 @@ import {
   VariableType,
   SanitizedData,
   JsxHasher,
-} from '../hash';
+} from '../utils/hash/JsxHasher';
 
 // Temporary types until we implement the full visitor system
 type TransformVisitor = {

@@ -3,11 +3,11 @@ import {
   isGTComponent,
   isTranslationComponent,
   isVariableComponent,
-} from '../constants/analysis';
+} from '../utils/constants/analysis';
 import * as t from '@babel/types';
-import { ScopeTracker } from '../visitor/scope-tracker';
-import { ImportTracker } from '../visitor/import-tracker';
-import { GT_ALL_FUNCTIONS, GT_COMPONENT_TYPES } from '../constants/constants';
+import { ScopeTracker } from '../state/scope-tracker';
+import { ImportTracker } from '../state/import-tracker';
+import { GT_COMPONENT_TYPES } from '../utils/constants/constants';
 
 /**
  * Check if we should track this component based on imports or known components

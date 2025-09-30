@@ -1,8 +1,8 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { TransformState } from '../types';
-import { extractIdentifiersFromLVal } from '../../jsxUtils/extractIdentifiersFromLVal';
-import { GT_CALLBACK_FUNCTIONS } from '../../constants/constants';
+import { TransformState } from '../../state/types';
+import { extractIdentifiersFromLVal } from '../../utils/extractIdentifiersFromLVal';
+import { GT_CALLBACK_FUNCTIONS } from '../../utils/constants/constants';
 import { trackOverridingVariable } from './trackOverridingVariable';
 
 /**
@@ -59,7 +59,6 @@ export function trackVariableAssignment(
     }
   }
 }
-
 
 /* =============================== */
 /* Handlers */

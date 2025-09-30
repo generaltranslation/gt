@@ -4,22 +4,65 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { StringCollector } from './visitor/string-collector';
-import { ImportTracker } from './visitor/import-tracker';
-import { PluginConfig, PluginSettings } from './config';
+import { StringCollector } from './state/string-collector'; 
+import { ImportTracker } from './state/import-tracker';
+import { PluginConfig, PluginSettings } from './state/config';
 import { Logger } from './logging';
 
 // Import transformation functions
 import {
-  processCallExpression,
-  processJSXElement,
   performSecondPassTransformation,
 } from './transform/transform';
-import { processImportDeclaration } from './transform/imports/processImportDeclaration';
-import { TransformState } from './transform/types';
+import { processImportDeclaration } from './processing/first-pass/processImportDeclaration';
+import { TransformState } from './state/types';
 import { trackVariableAssignment } from './transform/variableTracking/trackVariableAssignment';
 import { trackArrowParameterOverrides } from './transform/variableTracking/trackArrowParameterOverrides';
 import { trackParameterOverrides } from './transform/variableTracking/trackParameterOverrides';
+import { processCallExpression } from './processing/first-pass/processCallExpression';
+import { processJSXElement } from './processing/first-pass/processJSXElement';
+
+
+
+/**
+ * Architecture:
+ * 
+ * Babel functions:
+ * - 1-to-1 relationship with processing functions
+ * - Handle (1) enter/exit scope (2) invoking processing function
+ * 
+ * ex) JSXElement()
+ * 
+ * Processing functions:
+ * - Are dependent on the pass, so they have three categories: (1) first pass, (2) second pass, (3) shared/general
+ * - Invoke transformation functions and utility functions
+ * - Has the following file structure:
+ * 
+ * + processing
+ * | sharedProcessingFunction.ts
+ * | + first-pass
+ * | | firstPassProcessingFunction.ts
+ * | + second-pass
+ * | | secondPassProcessingFunction.ts
+ * 
+ * ex) processJSXElement()
+ * 
+ * 
+ * Transformation functions:
+ * - Are AGNOSTIC to pass number
+ * - MUST be stateful in some way
+ * 
+ * ex) trackImportDeclaration()
+ * 
+ * Utility functions:
+ * - Are AGNOSTIC to pass number
+ * - Are stateless
+ * 
+ * ex) extractIdentifiersFromLVal()
+ * 
+ * State:
+ * - Includes classes for tracking state
+ * 
+ */
 
 /**
  * GT Universal Plugin Options

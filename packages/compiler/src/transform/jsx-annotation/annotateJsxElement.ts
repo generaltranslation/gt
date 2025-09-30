@@ -1,7 +1,7 @@
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
-import { getComponentType } from '../../transform/determineComponentType';
-import { JSXElementWithCanonicalId } from '../../transform/jsx-annotation/types';
+import { getComponentType } from '../determineComponentType';
+import { JSXElementWithCanonicalId } from './types';
 import { GT_COMPONENT_TYPES } from '../../utils/constants/constants';
 
 /**
