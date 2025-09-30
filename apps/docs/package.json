@@ -15,6 +15,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.13",
     "@generaltranslation/supported-locales": "^2.0.13",
     "@icons-pack/react-simple-icons": "^12.3.0",
     "@orama/orama": "^3.1.14",
@@ -38,10 +39,9 @@
     "posthog-node": "^4.17.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.2"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.0.13",
     "@types/mdx": "^2.0.13",
     "@types/node": "22.13.10",
     "@types/react": "^19.0.10",
