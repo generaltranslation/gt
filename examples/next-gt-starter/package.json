@@ -9,9 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "generaltranslation": "^6.1.10",
-    "gt-next": "^5.2.24",
-    "gtx-cli": "^1.1.13",
+    "generaltranslation": "workspace:*",
+    "gt-next": "workspace:*",
+    "gtx-cli": "workspace:*",
     "next": "^15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

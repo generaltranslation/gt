@@ -40,16 +40,16 @@
     "v2-incompatible.js"
   ],
   "scripts": {
-    "release": "npm run build && npm publish --access public",
-    "release:alpha": "npm run build && npm publish --access public --tag alpha",
-    "release:beta": "npm run build && npm publish --access public --tag beta",
-    "release:latest": "npm run build && npm publish --access public --tag latest",
+    "release": "pnpm run build && pnpm publish --access public",
+    "release:alpha": "pnpm run build && pnpm publish --access public --tag alpha",
+    "release:beta": "pnpm run build && pnpm publish --access public --tag beta",
+    "release:latest": "pnpm run build && pnpm publish --access public --tag latest",
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "format": "prettier --write --cache --ignore-unknown .",
     "link-watch": "plugin-kit link-watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "test": "vitest run",
     "watch": "pkg-utils watch --strict"
   },
@@ -62,12 +62,13 @@
     "@sanity/schema": "^3.98.1",
     "@sanity/ui": "^2.16.4",
     "@sanity/util": "^3.98.1",
-    "generaltranslation": "^7.6.3",
+    "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
     "lodash.merge": "^4.6.2"
   },
   "devDependencies": {
+    "@portabletext/types": "^2.0.15",
     "@sanity/pkg-utils": "^8.1.6",
     "@sanity/plugin-kit": "^4.0.19",
     "@types/lodash.merge": "^4.6.9",

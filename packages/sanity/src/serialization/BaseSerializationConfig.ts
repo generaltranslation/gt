@@ -1,6 +1,6 @@
 // Adapted from https://github.com/sanity-io/sanity-naive-html-serializer
 
-import { PortableTextBlockStyle } from '@portabletext/types';
+import type { PortableTextBlockStyle } from '@portabletext/types';
 
 import {
   PortableTextBlockComponent,

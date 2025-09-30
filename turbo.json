@@ -27,6 +27,10 @@
       "dependsOn": ["^build:clean"],
       "outputs": ["dist/**"]
     },
+    "build:turbopack": {
+      "dependsOn": ["^build:turbopack"],
+      "outputs": ["dist/**"]
+    },
     "build:release": {
       "dependsOn": ["^build:release"],
       "outputs": ["dist/**"],

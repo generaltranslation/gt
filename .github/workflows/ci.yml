@@ -4,22 +4,32 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths-ignore:
-      - 'packages/*/CHANGELOG.md'
-      - 'packages/*/package.json'
-      - '.changeset/**'
+      - "packages/*/CHANGELOG.md"
+      - "packages/*/package.json"
+      - ".changeset/**"
+
+env:
+  CI: true
+permissions:
+  contents: read
 
 jobs:
-  lint-and-test:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: "pnpm"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -27,22 +37,19 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: npm install && npm install lightningcss
+        run: pnpm install
 
       - name: Rebuild packages
-        run: npm rebuild
-
-      - name: Link packages
-        run: ./scripts/linkPackages.sh
+        run: pnpm rebuild
 
       - name: Run lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Build packages
-        run: npm run build -- --filter="!gt-sanity"
+        run: pnpm run build
 
       - name: Run tests
-        run: npm run test
+        run: pnpm run test
 
   test-builds:
     strategy:
@@ -54,12 +61,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: 'npm'
+          cache: "pnpm"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -67,29 +79,18 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: npm install && npm install lightningcss
-
-      - name: Build packages
-        run: npm run build -- --filter="!gt-sanity"
-
-      - name: Link packages (Unix)
-        if: runner.os != 'Windows'
-        run: ./scripts/linkPackages.sh
-
-      - name: Link packages (Windows)
-        if: runner.os == 'Windows'
-        run: .\scripts\linkPackages.ps1
+        run: pnpm install
 
       - name: Test Builds
         run: |
-          cd test-apps/next/base
-          npm install
-          npm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
-          npm run build
-          npm run build:turbopack
+          pnpm exec turbo build --filter=base...
+          pnpm exec turbo build:turbopack --filter=base...
 
-          cd ../general-cases
-          npm install
-          npm link gt-next gt-react gtx-cli @generaltranslation/supported-locales generaltranslation
-          npm run build
-          npm run build:turbopack
+          pnpm exec turbo build --filter=general-cases...
+          pnpm exec turbo build:turbopack --filter=general-cases...
+
+  run-tests:
+    needs: [tests, test-builds]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All tests passed"
