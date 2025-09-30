@@ -176,9 +176,7 @@ function handleJsxSpreadChild(expression: t.JSXSpreadChild): string {
  * @param index - The index of the element
  * @returns The GT prop data
  */
-function createGTPropData(
-  element: t.JSXElement | t.JSXFragment,
-): GTProp {
+function createGTPropData(element: t.JSXElement | t.JSXFragment): GTProp {
   const result: GTProp = {};
   if (t.isJSXFragment(element)) {
     return result;
