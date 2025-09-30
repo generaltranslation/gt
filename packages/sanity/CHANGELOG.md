@@ -1,5 +1,14 @@
 # gt-sanity
 
+## 1.0.2
+
+### Patch Changes
+
+- [#698](https://github.com/generaltranslation/gt/pull/698) [`9eefc14`](https://github.com/generaltranslation/gt/commit/9eefc14577013fcfa699344c4a950c12d3b3350b) Thanks [@brian-lou](https://github.com/brian-lou)! - Switch monorepo package manager to pnpm (no new features or bugs fixed). Please report issues to https://github.com/generaltranslation/gt
+
+- Updated dependencies [[`9eefc14`](https://github.com/generaltranslation/gt/commit/9eefc14577013fcfa699344c4a950c12d3b3350b)]:
+  - generaltranslation@7.6.4
+
 ## 1.0.1
 
 ### Patch Changes
