@@ -79,19 +79,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build packages
-        run: pnpm run build
-
-      - name: Link packages (Windows)
-        if: runner.os == 'Windows'
-        run: .\scripts\linkPackages.ps1
-
       - name: Test Builds
         run: |
-          cd test-apps/next/base
-          pnpm run build
-          pnpm run build:turbopack
+          pnpm run build --filter=base...
+          pnpm run build:turbopack --filter=base...
 
-          cd ../general-cases
-          pnpm run build
-          pnpm run build:turbopack
+          pnpm run build --filter=general-cases...
+          pnpm run build:turbopack --filter=general-cases...
