@@ -10,5 +10,15 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "docs",
+    "base",
+    "general-cases",
+    "create-react-app",
+    "ai-chatbot",
+    "next-create-app",
+    "next-starter",
+    "next-pages-router",
+    "vite-create-app"
+  ]
 }
