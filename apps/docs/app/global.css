@@ -324,13 +324,6 @@
   padding-top: var(--gt-content-top-gap) !important;
 }
 
-@media (min-width: 768px) {
-  /* Only apply when sidebar is expanded (not collapsed) */
-  #nd-sidebar[data-collapsed='false'] {
-    transform: translateX(var(--gt-sidebar-shift));
-  }
-}
-
 /* ---------- SIDEBAR ---------- */
 
 /* Sidebar item density controls */
