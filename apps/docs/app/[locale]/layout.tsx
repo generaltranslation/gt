@@ -95,14 +95,14 @@ export default async function Layout({
                 sidebar={{
                   tabs: {
                     transform(option, node) {
-                      const meta = source.getNodeMeta(node);
+                      const meta = source.getNodeMeta(node, locale);
                       if (!meta) return option;
-                      const color = `var(--${meta.file.dirname}-color, var(--blue-500, #3b82f6))`;
+                      const color = `var(--${meta.file.name}-color, var(--blue-500, #3b82f6))`;
                       return {
                         ...option,
                         icon: (
                           <div
-                            className="rounded-md p-1 shadow-lg ring-2 [&_svg]:size-5"
+                            className="gt-root-icon flex items-center justify-center w-8 h-8 rounded-md shadow-lg ring-2"
                             style={
                               {
                                 color,
@@ -113,6 +113,10 @@ export default async function Layout({
                           >
                             {node.icon}
                           </div>
+                        ),
+                        title: <span className="ml-3">{option.title}</span>,
+                        description: (
+                          <span className="ml-3">{option.description}</span>
                         ),
                       };
                     },

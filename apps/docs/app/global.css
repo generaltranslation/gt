@@ -224,3 +224,138 @@
   padding-bottom: 1rem;
   font-size: 0.875rem; /* text-sm */
 }
+
+/* ---------- TABS ---------- */
+
+/* Show selected tab description in RootToggle trigger on desktop
+   By default, fumadocs hides it with `md:hidden`. We re-enable it here.
+*/
+@media (min-width: 768px) {
+  #nd-sidebar [data-state] > .shrink-0 + div > p:nth-child(2) {
+    display: block !important;
+  }
+}
+
+/* Enlarge RootToggle icon to match two-line text height */
+@media (min-width: 768px) {
+  /* Selected trigger */
+  #nd-sidebar [data-state]:has(.gt-root-icon) > .shrink-0:first-child {
+    width: 2.5rem !important; /* w-10 */
+    height: 2.5rem !important; /* h-10 */
+  }
+
+  /* Items inside the dropdown list */
+  #nd-sidebar a:has(.gt-root-icon) > .shrink-0:first-child {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  /* Vertically center icon and text in RootToggle trigger and dropdown */
+  #nd-sidebar [data-state]:has(.gt-root-icon),
+  #nd-sidebar a:has(.gt-root-icon) {
+    align-items: center !important;
+  }
+
+  /* Tighter spacing only for the selected trigger */
+  #nd-sidebar [data-state]:has(.gt-root-icon) {
+    gap: 0 !important;
+  }
+
+  /* Remove extra left margins on trigger text (we keep ml-3 for dropdown) */
+  #nd-sidebar [data-state]:has(.gt-root-icon) > .shrink-0 + div > * {
+    margin-left: 0 !important;
+  }
+
+  /* Pull the text container slightly into the icon to get closer than 0 gap */
+  #nd-sidebar [data-state]:has(.gt-root-icon) > .shrink-0 + div {
+    margin-left: -0.6rem !important; /* -0.5 spacing */
+  }
+
+  /* Ensure the SVG sits centered within the icon box */
+  #nd-sidebar [data-state]:has(.gt-root-icon) > .shrink-0:first-child,
+  #nd-sidebar a:has(.gt-root-icon) > .shrink-0:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+  }
+
+  /* Avoid baseline shift for inline SVGs */
+  #nd-sidebar .gt-root-icon svg {
+    display: block !important;
+  }
+}
+
+/* ---------- CONTENT PADDING ---------- */
+
+/* Increase padding between sidebar and docs content */
+:root {
+  --gt-sidebar-gap: 1.5rem; /* tweak this value as desired */
+}
+
+@media (min-width: 768px) {
+  /* Push inner content without moving the navbar or layout lines */
+  #nd-page {
+    padding-inline-start: var(--gt-sidebar-gap);
+  }
+}
+
+/* Add extra gap between article content and the right-side TOC ("On this page") */
+:root {
+  --gt-toc-gap: 1.25rem; /* tweak this value as desired */
+}
+
+@media (min-width: 1280px) {
+  /* Increase right padding inside the page container so content sits farther from the TOC */
+  #nd-page {
+    padding-inline-end: calc(
+      var(--fd-toc-width) + var(--gt-toc-gap)
+    ) !important;
+  }
+}
+
+/* Control top spacing between header/nav and the docs content */
+:root {
+  --gt-content-top-gap: 2.75rem; /* default equals original pt-8 */
+}
+
+/* Only affect notebook layout articles so headers/lines stay aligned */
+.fd-notebook-layout #nd-page article {
+  padding-top: var(--gt-content-top-gap) !important;
+}
+
+/* ---------- SIDEBAR ---------- */
+
+/* Sidebar item density controls */
+:root {
+  --gt-sidebar-item-gap: 0.375rem; /* gap between icon and text (default 0.5rem) */
+  --gt-sidebar-item-py: 0.375rem; /* vertical padding for each item (default 0.5rem) */
+  --gt-sidebar-section-gap: 0.25rem; /* space under group label (default ~0.375rem) */
+}
+
+@media (min-width: 768px) {
+  /* Tighten spacing for links and folder triggers in the scrollable tree only */
+  #nd-sidebar .overscroll-contain a,
+  #nd-sidebar .overscroll-contain button {
+    gap: var(--gt-sidebar-item-gap) !important;
+    padding-top: var(--gt-sidebar-item-py) !important;
+    padding-bottom: var(--gt-sidebar-item-py) !important;
+  }
+
+  /* Reduce space under separators/group titles */
+  #nd-sidebar .overscroll-contain p {
+    margin-bottom: var(--gt-sidebar-section-gap) !important;
+  }
+}
+
+/* Nudge the left sidebar horizontally without affecting header/search */
+:root {
+  --gt-sidebar-shift: -0.25rem; /* positive = move right, negative = move left */
+}
+
+@media (min-width: 768px) {
+  /* Only apply when sidebar is expanded (not collapsed) */
+  #nd-sidebar[data-collapsed='false'] {
+    transform: translateX(var(--gt-sidebar-shift));
+  }
+}
