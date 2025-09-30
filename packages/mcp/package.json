@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/mcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "General Translation MCP Server",
   "main": "dist/index.js",
   "type": "module",

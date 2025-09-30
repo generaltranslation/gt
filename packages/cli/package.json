@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.3.6-alpha.3",
+  "version": "2.3.6",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -88,7 +88,7 @@
     "fast-glob": "^3.3.3",
     "form-data": "^4.0.4",
     "generaltranslation": "workspace:*",
-    "gt-remark": "^1.0.1",
+    "gt-remark": "^1.0.2",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
