@@ -19,6 +19,15 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
 }
 
 /**
+ * Check if a name is a GT component
+ * @param name - The name to check
+ * @returns True if the name is a GT component
+ */
+export function isGTComponent(name: string): name is GT_COMPONENT_TYPES {
+  return Object.values(GT_COMPONENT_TYPES).includes(name as GT_COMPONENT_TYPES);
+}
+
+/**
  * Check if a component name matches known gt-next translation components
  */
 export function isTranslationComponent(

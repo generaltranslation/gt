@@ -33,6 +33,9 @@ export interface GTUnpluginOptions extends PluginConfig {
  *
  * Universal plugin for compile-time optimization of GT translation components
  * that works across webpack, Vite, Rollup, and other bundlers.
+ * 
+ * First pass: construct all information. no replacements, lest we lose our the monkey patching
+ * Second pass: inject all information (hashes, messages, etc.)
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {

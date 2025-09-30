@@ -1,13 +1,13 @@
-import { TransformState } from '../transform/types';
 import {
   isBranchComponent,
+  isGTComponent,
   isTranslationComponent,
   isVariableComponent,
 } from '../visitor/analysis';
 import * as t from '@babel/types';
 import { ScopeTracker } from '../visitor/scope-tracker';
 import { ImportTracker } from '../visitor/import-tracker';
-import { GT_COMPONENT_TYPES } from '../constants';
+import { GT_ALL_FUNCTIONS, GT_COMPONENT_TYPES } from '../constants';
 
 /**
  * Check if we should track this component based on imports or known components
@@ -116,27 +116,34 @@ export function getComponentType(
 ): GT_COMPONENT_TYPES | null {
   // Get the element name, eg T from <T>, GT.T from <GT.T>, etc., but wrapped
   const elementName = element.openingElement.name;
+  let canonicalName: string | null = null;
 
   if (t.isJSXIdentifier(elementName)) {
     // Get the string name, eg T from <T>
     const name = elementName.name;
 
     // Look up the canonical component name via the scope tracker
-    const canonicalName =
-      importTracker.scopeTracker.getTranslationVariable(name);
+    canonicalName =
+      importTracker.scopeTracker.getTranslationVariable(name)?.canonicalName ?? null;
   } else if (
     t.isJSXMemberExpression(elementName) &&
     t.isJSXIdentifier(elementName.object) &&
     t.isJSXIdentifier(elementName.property)
   ) {
     const objName = elementName.object.name;
-    const propName = elementName.property.name;
 
     // Check if the objec is GT namespace import
     if (!importTracker.namespaceImports.has(objName)) {
       return null;
     }
 
-    // Look up the alias via the scope tracker
+    canonicalName = elementName.property.name;
   }
+
+  // Check if the canonical name is a GT component
+  if (!canonicalName || !isGTComponent(canonicalName)) {
+    return null;
+  }
+  
+  return canonicalName;
 }
