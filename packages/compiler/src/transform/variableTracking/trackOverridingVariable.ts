@@ -1,4 +1,4 @@
-import { ScopeTracker } from '../../state/scope-tracker';
+import { ScopeTracker } from '../../state/ScopeTracker';
 
 /**
  * Track overriding variables (ones that shadow existing GT imports)

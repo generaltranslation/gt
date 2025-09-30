@@ -4,7 +4,7 @@ import {
   TranslationContent,
   TranslationJsx,
   TranslationHash,
-} from '../string-collector';
+} from '../StringCollector';
 
 describe('StringCollector', () => {
   let collector: StringCollector;

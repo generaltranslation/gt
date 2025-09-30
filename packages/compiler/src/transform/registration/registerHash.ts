@@ -1,10 +1,10 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
-import { getAttr } from '../../utils/getAttr';
+import { getAttr } from '../../utils/jsx/getAttr';
 import { annotateJsxElement } from '../jsx-annotation/annotateJsxElement';
 import { hashJsx } from '../../utils/hash/hashJsx';
-import { TranslationJsx } from '../../state/string-collector';
+import { TranslationJsx } from '../../state/StringCollector';
 
 /**
  * Record the hash for a JSX element

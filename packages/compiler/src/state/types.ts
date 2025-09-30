@@ -1,6 +1,6 @@
 // Core modules
-import { StringCollector } from './string-collector';
-import { ImportTracker } from './import-tracker';
+import { StringCollector } from './StringCollector';
+import { ImportTracker } from './ImportTracker';
 import { PluginSettings } from './config';
 import { Logger } from '../logging';
 /**

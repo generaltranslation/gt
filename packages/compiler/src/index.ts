@@ -4,8 +4,8 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { StringCollector } from './state/string-collector';
-import { ImportTracker } from './state/import-tracker';
+import { StringCollector } from './state/StringCollector';
+import { ImportTracker } from './state/ImportTracker';
 import { PluginConfig, PluginSettings } from './state/config';
 import { Logger } from './logging';
 

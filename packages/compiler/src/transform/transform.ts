@@ -11,7 +11,7 @@ import {
   isTranslationFunction,
   isTranslationFunctionCallback,
   isJsxFunction,
-} from '../utils/constants/analysis';
+} from '../utils/constants/helpers';
 import {
   extractComponentNameFromJSXCall,
   extractPropFromJSXCall,
@@ -22,7 +22,7 @@ import { hashJsx } from '../utils/hash/hashJsx';
 
 // Types
 import { TransformState } from '../state/types';
-import { getAttr } from '../utils/getAttr';
+import { getAttr } from '../utils/jsx/getAttr';
 import { annotateJsxElement } from './jsx-annotation/annotateJsxElement';
 import {
   determineComponentType,

@@ -4,13 +4,13 @@
 
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { ScopeTracker } from './scope-tracker';
+import { ScopeTracker } from './ScopeTracker';
 import {
   isTranslationComponent,
   isVariableComponent,
   isBranchComponent,
   isTranslationFunction,
-} from '../utils/constants/analysis';
+} from '../utils/constants/helpers';
 
 /**
  * Import tracker for GT components and functions

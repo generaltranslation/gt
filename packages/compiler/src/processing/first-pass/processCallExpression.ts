@@ -2,13 +2,13 @@ import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { getCalleeExprFunctionName } from '../../transform/transform';
-import { isTranslationFunctionCallback } from '../../utils/constants/analysis';
-import { isJsxFunction } from '../../utils/constants/analysis';
+import { isTranslationFunctionCallback } from '../../utils/constants/helpers';
+import { isJsxFunction } from '../../utils/constants/helpers';
 import { extractComponentNameFromJSXCall } from '../../transform/jsxUtils';
 import { extractPropFromJSXCall } from '../../transform/jsxUtils';
-import { isTranslationComponent } from '../../utils/constants/analysis';
-import { isVariableComponent } from '../../utils/constants/analysis';
-import { isBranchComponent } from '../../utils/constants/analysis';
+import { isTranslationComponent } from '../../utils/constants/helpers';
+import { isVariableComponent } from '../../utils/constants/helpers';
+import { isBranchComponent } from '../../utils/constants/helpers';
 import { checkCallExprForViolations } from '../../transform/transform';
 import { trackTranslationCallback } from '../../transform/transform';
 

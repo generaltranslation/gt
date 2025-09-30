@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
 import { TransformState } from '../state/types';
-import { ScopedVariable } from '../state/scope-tracker';
+import { ScopedVariable } from '../state/ScopeTracker';
 
 export function extractPropFromJSXCall(
   callExpr: t.CallExpression,

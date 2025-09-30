@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   createDynamicContentWarning,
   createDynamicFunctionWarning,
-} from '../errors';
+} from '../../utils/errors';
 
 describe('errors', () => {
   describe('createDynamicContentWarning', () => {

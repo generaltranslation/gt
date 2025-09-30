@@ -2,8 +2,8 @@ import * as t from '@babel/types';
 import {
   isGTImportSource,
   isReactImportSource,
-} from '../../utils/constants/analysis';
-import { ScopeTracker } from '../../state/scope-tracker';
+} from '../../utils/constants/helpers';
+import { ScopeTracker } from '../../state/ScopeTracker';
 import { GT_ALL_FUNCTIONS } from '../../utils/constants/constants';
 
 /**
