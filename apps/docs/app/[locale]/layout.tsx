@@ -103,11 +103,13 @@ export default async function Layout({
                         icon: (
                           <div
                             className="gt-root-icon flex items-center justify-center w-8 h-8 rounded-md shadow-lg ring-2"
-                            style={{
-                              color,
-                              border: `1px solid color-mix(in oklab, ${color} 50%, transparent)`,
-                              ['--tw-ring-color' as any]: `color-mix(in oklab, ${color} 20%, transparent)`,
-                            }}
+                            style={
+                              {
+                                color,
+                                border: `1px solid color-mix(in oklab, ${color} 50%, transparent)`,
+                                '--tw-ring-color': `color-mix(in oklab, ${color} 20%, transparent)`,
+                              } as object
+                            }
                           >
                             {node.icon}
                           </div>
