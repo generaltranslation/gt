@@ -124,7 +124,8 @@ export function getComponentType(
 
     // Look up the canonical component name via the scope tracker
     canonicalName =
-      importTracker.scopeTracker.getTranslationVariable(name)?.canonicalName ?? null;
+      importTracker.scopeTracker.getTranslationVariable(name)?.canonicalName ??
+      null;
   } else if (
     t.isJSXMemberExpression(elementName) &&
     t.isJSXIdentifier(elementName.object) &&
@@ -144,6 +145,6 @@ export function getComponentType(
   if (!canonicalName || !isGTComponent(canonicalName)) {
     return null;
   }
-  
+
   return canonicalName;
 }

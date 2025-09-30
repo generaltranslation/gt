@@ -45,13 +45,13 @@ class IndexObject {
  */
 function createError(message: string, node?: t.Node): Error {
   let errorMessage = `[GT_PLUGIN] ${message}`;
-  
+
   if (node && node.loc) {
     errorMessage += ` (at line ${node.loc.start.line}, column ${node.loc.start.column + 1})`;
   }
-  
+
   errorMessage += ` in ${__filename}`;
-  
+
   return new Error(errorMessage);
 }
 
@@ -61,7 +61,6 @@ function createError(message: string, node?: t.Node): Error {
 function getComponentType(source: t.JSXElement): GT_COMPONENT_TYPES | null {
   return (source as JSXElementWithCanonicalId)._gt_canonical_identifier || null;
 }
-
 
 /**
  * Minifies canonical names
@@ -75,9 +74,12 @@ const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.Plural]: 'p',
 } as const;
 function minifyCanonicalName(canonicalName: GT_COMPONENT_TYPES): string {
-  return MINIFY_CANONICAL_NAME_MAP[canonicalName as keyof typeof MINIFY_CANONICAL_NAME_MAP] || canonicalName;
+  return (
+    MINIFY_CANONICAL_NAME_MAP[
+      canonicalName as keyof typeof MINIFY_CANONICAL_NAME_MAP
+    ] || canonicalName
+  );
 }
-
 
 const defaultVariableNames = {
   [GT_COMPONENT_TYPES.Var]: 'value',
@@ -90,7 +92,7 @@ const baseVariablePrefix = '_gt_';
 function getVariableName(
   variableType: keyof typeof defaultVariableNames,
   id: number,
-  name?: string,
+  name?: string
 ): string {
   if (name) return name;
   const baseVariableName = defaultVariableNames[variableType] || 'value';
@@ -120,15 +122,21 @@ function handleExpression(expression: t.Expression): string {
   if (t.isStringLiteral(expression)) {
     return expression.value;
   }
-  
+
   if (t.isTemplateLiteral(expression)) {
     if (expression.expressions.length > 0) {
-      throw createError('Encountered a template literal with expressions inside of a translation component: <T>{`${expression}`}</T>', expression);
+      throw createError(
+        'Encountered a template literal with expressions inside of a translation component: <T>{`${expression}`}</T>',
+        expression
+      );
     }
     return expression.quasis[0].value.cooked || '';
   }
-  
-  throw createError('Encountered an expression inside of a translation component: <T>{expression}</T>', expression);
+
+  throw createError(
+    'Encountered an expression inside of a translation component: <T>{expression}</T>',
+    expression
+  );
 }
 
 /**
@@ -136,9 +144,14 @@ function handleExpression(expression: t.Expression): string {
  * @param expression - The expression to handle
  * @returns The expression value
  */
-function handleJsxExpressionContainer(expression: t.JSXExpressionContainer): string {
+function handleJsxExpressionContainer(
+  expression: t.JSXExpressionContainer
+): string {
   if (t.isJSXEmptyExpression(expression.expression)) {
-    throw createError('Encountered an empty expression inside of a translation component: <T>{}</T>', expression);
+    throw createError(
+      'Encountered an empty expression inside of a translation component: <T>{}</T>',
+      expression
+    );
   }
   return handleExpression(expression.expression);
 }
@@ -149,9 +162,11 @@ function handleJsxExpressionContainer(expression: t.JSXExpressionContainer): str
  * @returns The expression value
  */
 function handleJsxSpreadChild(expression: t.JSXSpreadChild): string {
-  throw createError('Encountered a spread child inside of a translation component: <T>{...expression}</T>', expression);
+  throw createError(
+    'Encountered a spread child inside of a translation component: <T>{...expression}</T>',
+    expression
+  );
 }
-
 
 /**
  * Create a GT prop data
@@ -159,7 +174,10 @@ function handleJsxSpreadChild(expression: t.JSXSpreadChild): string {
  * @param index - The index of the element
  * @returns The GT prop data
  */
-function createGTPropData(element: t.JSXElement | t.JSXFragment, index: IndexObject): GTProp {
+function createGTPropData(
+  element: t.JSXElement | t.JSXFragment,
+  index: IndexObject
+): GTProp {
   const result: GTProp = {};
   if (t.isJSXFragment(element)) {
     return result;
@@ -184,8 +202,12 @@ function createGTPropData(element: t.JSXElement | t.JSXFragment, index: IndexObj
  * @param checkFunction - The function to check the component type
  * @returns True if the component is a specific type
  */
-function _checkComponentType(component: t.JSXElement | t.JSXFragment, checkFunction: (string: string) => boolean): boolean {
-  const canonicalName = (component as JSXElementWithCanonicalId)._gt_canonical_identifier;
+function _checkComponentType(
+  component: t.JSXElement | t.JSXFragment,
+  checkFunction: (string: string) => boolean
+): boolean {
+  const canonicalName = (component as JSXElementWithCanonicalId)
+    ._gt_canonical_identifier;
   if (!canonicalName || !checkFunction(canonicalName)) {
     return false;
   }
@@ -216,7 +238,10 @@ function isBranchComponent(component: t.JSXElement | t.JSXFragment): boolean {
  * @returns True if the component is a plural component
  */
 function isPluralComponent(component: t.JSXElement | t.JSXFragment): boolean {
-  return _checkComponentType(component, (name) => name === GT_COMPONENT_TYPES.Plural);
+  return _checkComponentType(
+    component,
+    (name) => name === GT_COMPONENT_TYPES.Plural
+  );
 }
 
 /**
@@ -224,10 +249,11 @@ function isPluralComponent(component: t.JSXElement | t.JSXFragment): boolean {
  * @param component - The component to check
  * @returns True if the component is a translation component
  */
-function isTranslationComponent(component: t.JSXElement | t.JSXFragment): boolean {
+function isTranslationComponent(
+  component: t.JSXElement | t.JSXFragment
+): boolean {
   return _checkComponentType(component, isTranslationComponentName);
 }
-
 
 /* =============================== */
 /* Recursive Functions */
@@ -239,7 +265,10 @@ function isTranslationComponent(component: t.JSXElement | t.JSXFragment): boolea
  * @param index - The index of the element
  * @returns The branch GT prop data
  */
-function createBranchGTPropData(element: t.JSXElement | t.JSXFragment, index: IndexObject): GTProp {
+function createBranchGTPropData(
+  element: t.JSXElement | t.JSXFragment,
+  index: IndexObject
+): GTProp {
   if (t.isJSXFragment(element)) {
     return {};
   }
@@ -249,7 +278,7 @@ function createBranchGTPropData(element: t.JSXElement | t.JSXFragment, index: In
   } else {
     result.t = 'b';
   }
-  
+
   // Children
   const branches = Object.fromEntries(
     element.openingElement.attributes.map((attr) => {
@@ -260,9 +289,12 @@ function createBranchGTPropData(element: t.JSXElement | t.JSXFragment, index: In
       if (t.isJSXAttribute(attr)) {
         name = attr.name.name;
       } else {
-        throw createError('Encountered a spread attribute inside of a branch component: <Branch attr={...spread}/>', attr);
+        throw createError(
+          'Encountered a spread attribute inside of a branch component: <Branch attr={...spread}/>',
+          attr
+        );
       }
-      
+
       // Parse value
       if (t.isStringLiteral(attr.value)) {
         value = attr.value.value;
@@ -280,14 +312,16 @@ function createBranchGTPropData(element: t.JSXElement | t.JSXFragment, index: In
   return result;
 }
 
-
 /**
  * Creates a GT prop
  * @param element - The element to create a GT prop for
  * @param index - The index of the element
  * @returns The GT prop
  */
-function createGTProp(element: t.JSXElement | t.JSXFragment, index: IndexObject): GTProp {
+function createGTProp(
+  element: t.JSXElement | t.JSXFragment,
+  index: IndexObject
+): GTProp {
   if (isBranchComponent(element)) {
     return createBranchGTPropData(element, index);
   }
@@ -298,14 +332,22 @@ function createGTProp(element: t.JSXElement | t.JSXFragment, index: IndexObject)
  * Create jsx variable
  */
 function createVariable(variable: t.JSXElement, index: IndexObject): Variable {
-  const canonicalName = (variable as JSXElementWithCanonicalId)._gt_canonical_identifier;
+  const canonicalName = (variable as JSXElementWithCanonicalId)
+    ._gt_canonical_identifier;
   if (!canonicalName) {
-    throw createError('Variable component is missing annotation for canonical name', variable);
+    throw createError(
+      'Variable component is missing annotation for canonical name',
+      variable
+    );
   }
   const name = getAttr(variable, 'name');
   return {
     i: index.get(),
-    k: getVariableName(canonicalName as keyof typeof defaultVariableNames, index.get(), name || undefined),
+    k: getVariableName(
+      canonicalName as keyof typeof defaultVariableNames,
+      index.get(),
+      name || undefined
+    ),
     v: minifyCanonicalName(canonicalName) as VariableType,
   };
 }
@@ -344,7 +386,10 @@ function createJsxElement(
 /**
  * Create jsx child
  */
-function createJsxChild(child: t.JSXElement['children'][number], index: IndexObject): JsxChild {
+function createJsxChild(
+  child: t.JSXElement['children'][number],
+  index: IndexObject
+): JsxChild {
   // handle text
   if (t.isJSXText(child)) {
     return handleJsxText(child);
@@ -379,7 +424,6 @@ function createJsxChildren(
   return children.map((child) => createJsxChild(child, index));
 }
 
-
 /* =============================== */
 /* Entry Point */
 /* =============================== */
@@ -391,14 +435,18 @@ export function hashJsx(source: t.JSXElement): string {
   // Validate that the source is a <T> or <Tx> component
   const componentType = getComponentType(source);
   if (!componentType || !isTranslationComponent(source)) {
-    throw createError(`Source is not a <T> or <Tx> component! Instead got: <${componentType}>`, source);
+    throw createError(
+      `Source is not a <T> or <Tx> component! Instead got: <${componentType}>`,
+      source
+    );
   }
 
   // Collect relevant data for hashing
   const index = new IndexObject();
   const jsxChildren = createJsxChildren(source.children, index);
   const id = getAttr(source, 'id') || getAttr(source, '$id') || undefined;
-  const context = getAttr(source, 'context') || getAttr(source, '$context') || undefined;
+  const context =
+    getAttr(source, 'context') || getAttr(source, '$context') || undefined;
 
   // Hash the source
   return hashSource({

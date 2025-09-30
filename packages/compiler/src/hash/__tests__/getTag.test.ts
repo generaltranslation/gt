@@ -10,7 +10,7 @@ describe('getTag', () => {
         t.jsxClosingElement(t.jsxIdentifier('div')),
         []
       );
-      
+
       expect(getTag(element)).toBe('div');
     });
 
@@ -20,7 +20,7 @@ describe('getTag', () => {
         t.jsxClosingElement(t.jsxIdentifier('MyComponent')),
         []
       );
-      
+
       expect(getTag(element)).toBe('MyComponent');
     });
 
@@ -29,13 +29,13 @@ describe('getTag', () => {
         t.jsxIdentifier('React'),
         t.jsxIdentifier('Fragment')
       );
-      
+
       const element = t.jsxElement(
         t.jsxOpeningElement(memberExpression, []),
         t.jsxClosingElement(memberExpression),
         []
       );
-      
+
       expect(getTag(element)).toBe('React.Fragment');
     });
 
@@ -47,34 +47,31 @@ describe('getTag', () => {
         ),
         t.jsxIdentifier('Button')
       );
-      
+
       const element = t.jsxElement(
         t.jsxOpeningElement(nestedMemberExpression, []),
         t.jsxClosingElement(nestedMemberExpression),
         []
       );
-      
+
       expect(getTag(element)).toBe('MyLibrary.Components.Button');
     });
 
     it('should handle deeply nested JSX member expression', () => {
       const deeplyNestedExpression = t.jsxMemberExpression(
         t.jsxMemberExpression(
-          t.jsxMemberExpression(
-            t.jsxIdentifier('A'),
-            t.jsxIdentifier('B')
-          ),
+          t.jsxMemberExpression(t.jsxIdentifier('A'), t.jsxIdentifier('B')),
           t.jsxIdentifier('C')
         ),
         t.jsxIdentifier('D')
       );
-      
+
       const element = t.jsxElement(
         t.jsxOpeningElement(deeplyNestedExpression, []),
         t.jsxClosingElement(deeplyNestedExpression),
         []
       );
-      
+
       expect(getTag(element)).toBe('A.B.C.D');
     });
 
@@ -83,14 +80,16 @@ describe('getTag', () => {
         t.jsxIdentifier('svg'),
         t.jsxIdentifier('rect')
       );
-      
+
       const element = t.jsxElement(
         t.jsxOpeningElement(namespacedName, []),
         t.jsxClosingElement(namespacedName),
         []
       );
-      
-      expect(() => getTag(element)).toThrow('JSXNamespacedName is not supported');
+
+      expect(() => getTag(element)).toThrow(
+        'JSXNamespacedName is not supported'
+      );
     });
   });
 
@@ -101,7 +100,7 @@ describe('getTag', () => {
         t.jsxClosingFragment(),
         []
       );
-      
+
       expect(getTag(fragment)).toBe('fragment');
     });
   });
@@ -113,20 +112,19 @@ describe('getTag', () => {
         null,
         []
       );
-      
+
       expect(getTag(element)).toBe('input');
     });
 
     it('should handle JSX elements with attributes', () => {
       const element = t.jsxElement(
-        t.jsxOpeningElement(
-          t.jsxIdentifier('div'),
-          [t.jsxAttribute(t.jsxIdentifier('className'), t.stringLiteral('test'))]
-        ),
+        t.jsxOpeningElement(t.jsxIdentifier('div'), [
+          t.jsxAttribute(t.jsxIdentifier('className'), t.stringLiteral('test')),
+        ]),
         t.jsxClosingElement(t.jsxIdentifier('div')),
         []
       );
-      
+
       expect(getTag(element)).toBe('div');
     });
 
@@ -136,7 +134,7 @@ describe('getTag', () => {
         t.jsxClosingElement(t.jsxIdentifier('div')),
         [t.jsxText('Hello World')]
       );
-      
+
       expect(getTag(element)).toBe('div');
     });
   });
