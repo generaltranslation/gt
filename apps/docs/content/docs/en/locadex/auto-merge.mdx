@@ -1,0 +1,61 @@
+---
+title: Auto-merge Pull Requests
+description: Configure Locadex to automatically merge pull requests
+---
+Auto-merge eliminates manual PR review for Locadex-generated pull requests. When enabled, PRs created by Locadex merge automatically without requiring your approval.
+
+This applies to all PRs Locadex creates, including:
+- Continuous i18n
+- Update Locales
+- Translation redeployments
+
+*This does not apply to Setup or Re-run Setup PRs.*
+
+For Mintlify projects, auto-merge is enabled by default.
+
+## Enable auto-merge
+
+Navigate to the Locadex page in your dashboard and toggle auto-merge under "Run Configuration":
+
+![Click the auto merge toggle](/locadex-screenshots/auto-merge/run-configuration.png)
+
+**Make sure to click "Save" after toggling auto-merge** to apply your changes.
+
+**Note**: The Auto-merge toggle only appears when "Locadex Action" is set to "Create pull request".
+
+## Bypass branch protection rules
+
+If your default branch has protection rules, Locadex will continue creating PRs but cannot merge them automatically. Configure Locadex to bypass branch protection:
+
+### Step 1: Open repository rulesets
+
+In your GitHub repository settings, select "Rulesets" from the Rules section.
+
+### Step 2: Identify blocking rules
+
+Find rules preventing automatic merges. Common blockers include:
+
+- "Require a pull request before merging"
+- Required status checks
+- Required review approvals
+
+![Require a pull request before merging](/locadex-screenshots/auto-merge/require-pull-request.png)
+
+**Note**: Multiple rules may need updating.
+
+### Step 3: Add bypass permissions
+
+Click the rule blocking auto-merge, then:
+
+1. Click "Add Bypass"
+2. Select "Locadex Agent" from the dropdown
+
+![Add Bypass button with "Locadex Agent selected"](/locadex-screenshots/auto-merge/add-bypass.png)
+
+### Step 4: Save changes
+
+Click "Save" at the bottom of the page to apply your changes.
+
+**Make sure to click "Save"** — this step is easy to miss.
+
+Locadex will now automatically merge PRs it creates on your default branch.
