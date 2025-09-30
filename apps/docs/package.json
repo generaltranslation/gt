@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "pnpm run build:upstream && pnpm run i18n && next build",
-    "build:upstream": "pnpm build --filter=...base",
+    "build": "pnpm run i18n && next build",
     "build:base": "next build",
     "dev": "next dev --turbopack",
     "start": "next start",
