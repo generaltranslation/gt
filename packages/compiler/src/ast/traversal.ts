@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { PLURAL_FORMS } from './constants';
+import { PLURAL_FORMS } from '../utils/constants/constants';
 import {
   buildSanitizedTextContent,
   filterJsxChildren,
