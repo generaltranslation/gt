@@ -16,8 +16,17 @@
     "declarationMap": true,
     "removeComments": false,
     "allowSyntheticDefaultImports": true,
+    "composite": true,
     "jsx": "react-jsx"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../supported-locales"
+    }
+  ]
 }

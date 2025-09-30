@@ -8,7 +8,7 @@ import {
 } from '../serialization/';
 import { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { pluginConfig } from '../adapter/core';
-import { merge } from 'lodash';
+import merge from 'lodash.merge';
 
 export function deserializeDocument(document: string) {
   const deserializers = merge(

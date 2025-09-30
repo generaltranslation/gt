@@ -10,8 +10,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "gt-next": "^6.3.0",
-    "gtx-cli": "^2.1.8",
+    "gt-next": "workspace:*",
+    "gtx-cli": "workspace:*",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0"

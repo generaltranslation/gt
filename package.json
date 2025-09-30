@@ -2,17 +2,20 @@
   "name": "gt-libraries",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*",
+    "apps/*",
+    "test-apps/**/*"
   ],
   "scripts": {
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "lint:fix": "turbo run lint:fix",
-    "transpile": "turbo run transpile",
+    "build": "turbo run build --filter='./packages/*'",
+    "test": "turbo run test --filter='./packages/*'",
+    "lint": "turbo run lint --filter='./packages/*'",
+    "lint:fix": "turbo run lint:fix --filter='./packages/*'",
+    "transpile": "turbo run transpile --filter='./packages/*'",
     "release": "changeset publish",
-    "build:clean": "turbo run build:clean",
-    "build:release": "turbo run build:release",
+    "build:clean": "turbo run build:clean --filter='./packages/*'",
+    "build:release": "turbo run build:release --filter='./packages/*'",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "changeset": "changeset",
     "version-packages": "changeset version"
@@ -53,7 +56,7 @@
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
-  "packageManager": "npm@11.6.0",
+  "packageManager": "pnpm@9.15.9",
   "dependencies": {
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
