@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.6.5
+
+### Patch Changes
+
+- [#706](https://github.com/generaltranslation/gt/pull/706) [`df39ab3`](https://github.com/generaltranslation/gt/commit/df39ab33c48096a66a7c8843aa24325504176277) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: ignore browser locale
+
 ## 6.6.4
 
 ### Patch Changes
