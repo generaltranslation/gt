@@ -17,6 +17,7 @@ import {
   SanitizedData,
   JsxHasher,
 } from '../utils/hash/JsxHasher';
+import { getAttr } from '../utils/jsx/getAttr';
 
 // Temporary types until we implement the full visitor system
 type TransformVisitor = {
@@ -34,25 +35,6 @@ type TransformVisitor = {
     component: string
   ): [boolean, boolean, boolean];
 };
-
-// Temporary function until we implement jsx-utils
-function extractAttributeFromJsxAttr(
-  element: t.JSXElement,
-  attrName: string
-): string | null {
-  for (const attr of element.openingElement.attributes) {
-    if (
-      t.isJSXAttribute(attr) &&
-      t.isJSXIdentifier(attr.name) &&
-      attr.name.name === attrName
-    ) {
-      if (attr.value && t.isStringLiteral(attr.value)) {
-        return attr.value.value;
-      }
-    }
-  }
-  return null;
-}
 
 /**
  * Information about a GT component extracted during analysis
@@ -84,14 +66,11 @@ export class JsxTraversal {
 
     if (sanitizedChildren) {
       // Get the id from the element
-      const id =
-        extractAttributeFromJsxAttr(element, 'id') ||
-        extractAttributeFromJsxAttr(element, '$id');
+      const id = getAttr(element, 'id') || getAttr(element, '$id');
 
       // Get the context from the element
       const context =
-        extractAttributeFromJsxAttr(element, 'context') ||
-        extractAttributeFromJsxAttr(element, '$context');
+        getAttr(element, 'context') || getAttr(element, '$context');
 
       // Create the full SanitizedData structure to match TypeScript implementation
       const sanitizedData: SanitizedData = {

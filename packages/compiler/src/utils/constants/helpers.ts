@@ -75,15 +75,8 @@ export function isTranslationFunction(
  */
 export function isTranslationFunctionCallback(
   name: string
-): name is
-  | GT_CALLBACK_FUNCTIONS.useGT_callback
-  | GT_CALLBACK_FUNCTIONS.getGT_callback {
-  return (
-    [
-      GT_CALLBACK_FUNCTIONS.useGT_callback,
-      GT_CALLBACK_FUNCTIONS.getGT_callback,
-    ] as string[]
-  ).includes(name);
+): name is GT_CALLBACK_FUNCTIONS {
+  return (Object.values(GT_CALLBACK_FUNCTIONS) as string[]).includes(name);
 }
 
 /**

@@ -11,28 +11,35 @@ import { Logger } from './state/logging';
 
 // Import transformation functions
 import { performSecondPassTransformation } from './transform/transform';
-import { processImportDeclaration } from './processing/first-pass/processImportDeclaration';
+import { processImportDeclaration } from './processing/processImportDeclaration';
 import { TransformState } from './state/types';
 import { trackVariableAssignment } from './transform/variableTracking/trackVariableAssignment';
 import { trackArrowParameterOverrides } from './transform/variableTracking/trackArrowParameterOverrides';
 import { trackParameterOverrides } from './transform/variableTracking/trackParameterOverrides';
 import { processCallExpression } from './processing/first-pass/processCallExpression';
 import { processJSXElement } from './processing/first-pass/processJSXElement';
+import { ErrorTracker } from './state/ErrorTracker';
 
 /**
+ * First Pass:
+ * - Collect + calculate all data
+ * - Check for violations
+ *
+ * Second Pass:
+ * - Inject all data
+ *
  * Architecture:
  *
  * Babel functions:
  * - 1-to-1 relationship with processing functions
  * - Handle (1) enter/exit scope (2) invoking processing function
- *
- * ex) JSXElement()
+ * - ex) JSXElement()
  *
  * Processing functions:
  * - Are dependent on the pass, so they have three categories: (1) first pass, (2) second pass, (3) shared/general
  * - Invoke transformation functions and utility functions
+ * - ex) processJSXElement()
  * - Has the following file structure:
- *
  * + processing
  * | sharedProcessingFunction.ts
  * | + first-pass
@@ -40,24 +47,20 @@ import { processJSXElement } from './processing/first-pass/processJSXElement';
  * | + second-pass
  * | | secondPassProcessingFunction.ts
  *
- * ex) processJSXElement()
  *
  *
  * Transformation functions:
  * - Are AGNOSTIC to pass number
  * - MUST be stateful in some way
- *
- * ex) trackImportDeclaration()
+ * - ex) trackImportDeclaration()
  *
  * Utility functions:
  * - Are AGNOSTIC to pass number
  * - Are stateless
- *
- * ex) extractIdentifiersFromLVal()
+ * - ex) extractIdentifiersFromLVal()
  *
  * State:
  * - Includes classes for tracking state
- *
  */
 
 /**
@@ -264,6 +267,17 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             },
           });
 
+          // Check for errors
+          if (state.errorTracker.getErrors().length > 0) {
+            for (const error of state.errorTracker.getErrors()) {
+              state.logger.logError(error);
+            }
+
+            throw new Error(
+              `[GT Unplugin] Encountered ${state.errorTracker.getErrors().length} errors while processing ${id}.`
+            );
+          }
+
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
           let hasTransformations = false;
           if (state.settings.compileTimeHash) {
@@ -327,6 +341,7 @@ function initializeState(
     stringCollector: new StringCollector(),
     importTracker: new ImportTracker(),
     logger: new Logger(settings.logLevel),
+    errorTracker: new ErrorTracker(),
     statistics: {
       jsxElementCount: 0,
       dynamicContentViolations: 0,

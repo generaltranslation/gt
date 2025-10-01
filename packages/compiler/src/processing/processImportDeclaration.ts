@@ -1,7 +1,7 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { TransformState } from '../../state/types';
-import { trackImportDeclaration } from '../../transform/variableTracking/trackImportDeclaration';
+import { TransformState } from '../state/types';
+import { trackImportDeclaration } from '../transform/variableTracking/trackImportDeclaration';
 
 /**
  * Process import declarations to track GT imports

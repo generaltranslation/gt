@@ -5,51 +5,17 @@ import traverse from '@babel/traverse';
 // Analysis and utilities
 import { NodePath } from '@babel/traverse';
 import {
-  isTranslationComponent,
-  isVariableComponent,
-  isBranchComponent,
   isTranslationFunction,
   isTranslationFunctionCallback,
-  isJsxFunction,
 } from '../utils/constants/helpers';
-import {
-  extractComponentNameFromJSXCall,
-  extractPropFromJSXCall,
-} from './jsxUtils';
-
-// Hashing
-import { hashJsx } from '../utils/hash/hashJsx';
-
 // Types
 import { TransformState } from '../state/types';
-import { getAttr } from '../utils/jsx/getAttr';
-import { annotateJsxElement } from './jsx-annotation/annotateJsxElement';
-import {
-  determineComponentType,
-  getComponentType,
-} from './determineComponentType';
-import { processImportDeclaration } from '../processing/first-pass/processImportDeclaration';
+import { determineComponentType } from './determineComponentType';
+import { processImportDeclaration } from '../processing/processImportDeclaration';
 import { trackVariableAssignment } from './variableTracking/trackVariableAssignment';
 import { trackParameterOverrides } from './variableTracking/trackParameterOverrides';
 import { trackArrowParameterOverrides } from './variableTracking/trackArrowParameterOverrides';
-import { registerHash } from './registration/registerHash';
-import { GT_COMPONENT_TYPES } from '../utils/constants/constants';
-
-/**
- * Generate warning message for dynamic function call violations
- * Ported from Rust: create_dynamic_function_warning (lines 15-29)
- */
-export function createDynamicFunctionWarning(
-  filename?: string,
-  functionName?: string,
-  violationType?: string
-): string {
-  if (filename) {
-    return `gt-next in ${filename}: ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
-  } else {
-    return `gt-next: ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
-  }
-}
+import { createDynamicFunctionWarning } from '../utils/errors';
 
 /**
  * Helper function to get callee function name
@@ -118,58 +84,6 @@ export function checkCallExprForViolations(
 }
 
 /**
- * Track t() function calls
- * Ported from Rust: track_translation_callback (lines 164-201)
- */
-export function trackTranslationCallback(
-  callExpr: t.CallExpression,
-  stringArg: t.Expression | t.SpreadElement,
-  identifier: number,
-  state: TransformState
-): void {
-  // Get the options (second argument)
-  const secondArg =
-    callExpr.arguments.length > 1 ? callExpr.arguments[1] : undefined;
-  const options =
-    secondArg && !t.isArgumentPlaceholder(secondArg) ? secondArg : undefined;
-
-  // Get context and id from options
-  const { context, id } = extractIdAndContextFromOptions(options);
-
-  // Calculate hash for the call expression
-  const { hash } = calculateHashForCallExpr(stringArg, options);
-
-  if (extractStringFromExpr(stringArg)) {
-    const message = extractStringFromExpr(stringArg);
-    if (hash && message) {
-      // Construct the translation content object
-      const translationContent = createTranslationContent(
-        message,
-        hash,
-        id,
-        context
-      );
-
-      // Add the translation content to the string collector
-      state.stringCollector.setTranslationContent(
-        identifier,
-        translationContent
-      );
-
-      // Store the t() function call
-      const counterId = state.stringCollector.incrementCounter();
-      state.stringCollector.initializeAggregator(counterId);
-
-      // Add the message to the string collector for the t() function
-      state.stringCollector.setTranslationHash(
-        counterId,
-        createTranslationHash(hash)
-      );
-    }
-  }
-}
-
-/**
  * Helper function to extract string content from expressions
  */
 export function extractStringFromExpr(
@@ -226,38 +140,6 @@ export function extractIdAndContextFromOptions(
   }
 
   return { context, id };
-}
-
-/**
- * Calculate hash for a call expression
- * Ported from Rust: calculate_hash_for_call_expr (lines 345-377)
- */
-export function calculateHashForCallExpr(
-  stringArg: t.Expression | t.SpreadElement,
-  options: t.Expression | t.SpreadElement | undefined
-): { hash?: string; jsonString?: string } {
-  // Extract the string content
-  const stringContent = extractStringFromExpr(stringArg);
-  if (!stringContent) {
-    return {};
-  }
-
-  // Extract the options content
-  const { id, context } = extractIdAndContextFromOptions(options);
-
-  // Construct the sanitized data object matching generaltranslation/id format
-  const sanitizedData = {
-    source: [stringContent], // JsxChildren expects array of strings/components
-    id,
-    context,
-    dataFormat: 'ICU' as const,
-  };
-
-  // Calculate hash using hashSource from generaltranslation/id
-  const hash = hashSource(sanitizedData);
-  const jsonString = JSON.stringify(sanitizedData);
-
-  return { hash, jsonString };
 }
 
 /**

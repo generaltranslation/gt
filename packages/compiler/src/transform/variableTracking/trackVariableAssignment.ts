@@ -4,6 +4,8 @@ import { TransformState } from '../../state/types';
 import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFromLVal';
 import { GT_CALLBACK_FUNCTIONS } from '../../utils/constants/constants';
 import { trackOverridingVariable } from './trackOverridingVariable';
+import { getCalleeNameFromExpression as _getCalleeNameFromExpression } from '../../utils/jsx/getCalleeNameFromExpression';
+import { isGTFunctionAssignment } from '../isGTFunctionAssignment';
 
 /**
  * Track variable assignments like: const t = useGT()
@@ -25,7 +27,7 @@ export function trackVariableAssignment(
   );
 
   // Determine if this is a gt function assignment
-  const isGTFunctionAssignment = determineIsGTFunctionAssignment(
+  const gtFunctionAssignment = isGTFunctionAssignment(
     namespaceName,
     functionName,
     state
@@ -36,11 +38,11 @@ export function trackVariableAssignment(
 
   // Add tracking for identifiers
   for (const identifier of identifiers) {
-    if (isGTFunctionAssignment) {
+    if (gtFunctionAssignment) {
       // Increment the counter
       const counterId = state.stringCollector.incrementCounter();
 
-      // Resolve the canonical function name (functionName is not null from determineIsGTFunctionAssignment)
+      // Resolve the canonical function name (functionName is not null from isGTFunctionAssignment)
       const canonicalFunctionName =
         state.importTracker.scopeTracker.getTranslationVariable(functionName!)
           ?.canonicalName ?? null;
@@ -74,73 +76,5 @@ function getCalleeNameFromExpression(expr: t.Expression | null | undefined): {
   if (!expr) {
     return { namespaceName: null, functionName: null };
   }
-
-  // If its an await expression, unwrap it
-  if (t.isAwaitExpression(expr)) {
-    return getCalleeNameFromExpression(expr.argument);
-  }
-
-  // Check that this is a call expression eg: func()
-  if (!t.isCallExpression(expr)) {
-    return { namespaceName: null, functionName: null };
-  }
-
-  // Get the callee name
-  const calleeName = expr.callee;
-
-  // Simple case: ... = useGT();
-  if (t.isIdentifier(calleeName)) {
-    return { namespaceName: null, functionName: calleeName.name };
-  }
-
-  // Member expression: ... = GT.useGT();
-  if (t.isMemberExpression(calleeName)) {
-    if (
-      t.isIdentifier(calleeName.object) &&
-      t.isIdentifier(calleeName.property)
-    ) {
-      return {
-        namespaceName: calleeName.object.name,
-        functionName: calleeName.property.name,
-      };
-    }
-  }
-
-  return { namespaceName: null, functionName: null };
-}
-
-/**
- * Determine if the function assignment is a GT function assignment
- */
-function determineIsGTFunctionAssignment(
-  namespaceName: string | null,
-  functionName: string | null,
-  state: TransformState
-): boolean {
-  // If there is no function name, its not a GT function assignment
-  if (!functionName) {
-    return false;
-  }
-
-  // Check if the namespace is a GT namespace
-  if (
-    namespaceName &&
-    !state.importTracker.namespaceImports.has(namespaceName)
-  ) {
-    return false;
-  }
-
-  // Check if the function is a function we want to track callbacks for: useGT, useMessages, etc.
-  const canonicalFunctionName =
-    state.importTracker.scopeTracker.getTranslationVariable(functionName)
-      ?.canonicalName ?? null;
-  if (
-    !Object.values(GT_CALLBACK_FUNCTIONS).includes(
-      `${canonicalFunctionName}_callback` as GT_CALLBACK_FUNCTIONS
-    )
-  ) {
-    return false;
-  }
-
-  return true;
+  return _getCalleeNameFromExpression(expr);
 }

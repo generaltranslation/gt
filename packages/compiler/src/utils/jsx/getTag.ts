@@ -1,7 +1,7 @@
 import * as t from '@babel/types';
 
 /**
- * Get the tag name from a JSX element or fragment
+ * Get the tag name from a JSX element or fragment, eg "div" from <div>
  * @param element - The element to get the tag name from
  * @returns The tag name
  */

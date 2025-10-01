@@ -81,3 +81,15 @@ export const PLURAL_FORMS = new Set([
   'many',
   'other',
 ]);
+
+/**
+ * Fields that must be string literals for useGT_callback / getGT_callback
+ */
+export enum USEGT_CALLBACK_OPTIONS {
+  $id = '$id',
+  $context = '$context',
+}
+export const USEGT_CALLBACK_OPTION_NAMES = {
+  [USEGT_CALLBACK_OPTIONS.$id]: 'id',
+  [USEGT_CALLBACK_OPTIONS.$context]: 'context',
+};

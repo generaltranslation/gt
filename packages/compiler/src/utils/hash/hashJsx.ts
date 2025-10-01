@@ -322,7 +322,7 @@ function createGTProp(
   index: IndexObject
 ): GTProp {
   if (isBranchComponent(element)) {
-    return createBranchGTPropData(element, index);
+    return createBranchGTPropData(element, index.copy());
   }
   return createGTPropData(element);
 }
