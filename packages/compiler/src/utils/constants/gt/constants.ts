@@ -22,18 +22,21 @@ export enum GT_COMPONENT_TYPES {
 }
 
 /**
- * Different gt functions
+ * GT functions that produce callbacks
  */
-export enum GT_FUNCTIONS {
+export enum GT_FUNCTIONS_WITH_CALLBACKS {
   useGT = 'useGT',
   getGT = 'getGT',
   useTranslations = 'useTranslations',
   getTranslations = 'getTranslations',
-  msg = 'msg',
   useMessages = 'useMessages',
   getMessages = 'getMessages',
 }
 
+/**
+ * Different gt functions
+ */
+export type GT_FUNCTIONS = GT_FUNCTIONS_WITH_CALLBACKS | 'msg';
 /**
  * gt callback functions
  */
@@ -45,6 +48,25 @@ export enum GT_CALLBACK_FUNCTIONS {
   useMessages_callback = 'useMessages_callback',
   getMessages_callback = 'getMessages_callback',
 }
+
+/**
+ * Maps GT Functions to their callback functions
+ */
+export const GT_FUNCTIONS_TO_CALLBACKS: Record<
+  GT_FUNCTIONS_WITH_CALLBACKS,
+  GT_CALLBACK_FUNCTIONS
+> = {
+  [GT_FUNCTIONS_WITH_CALLBACKS.useGT]: GT_CALLBACK_FUNCTIONS.useGT_callback,
+  [GT_FUNCTIONS_WITH_CALLBACKS.getGT]: GT_CALLBACK_FUNCTIONS.getGT_callback,
+  [GT_FUNCTIONS_WITH_CALLBACKS.useTranslations]:
+    GT_CALLBACK_FUNCTIONS.useTranslations_callback,
+  [GT_FUNCTIONS_WITH_CALLBACKS.getTranslations]:
+    GT_CALLBACK_FUNCTIONS.getTranslations_callback,
+  [GT_FUNCTIONS_WITH_CALLBACKS.useMessages]:
+    GT_CALLBACK_FUNCTIONS.useMessages_callback,
+  [GT_FUNCTIONS_WITH_CALLBACKS.getMessages]:
+    GT_CALLBACK_FUNCTIONS.getMessages_callback,
+};
 
 /**
  * All gt functions (both regular and callback functions)

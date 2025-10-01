@@ -10,10 +10,11 @@ import {
   isVariableComponent,
   isBranchComponent,
   isTranslationFunction,
-} from '../utils/constants/helpers';
+} from '../utils/constants/gt/helpers';
 
 /**
  * Import tracker for GT components and functions
+ * TODO: what if someone has a namespace that overrides the imported namespace?
  */
 export class ImportTracker {
   /** Scope tracker for tracking variables */

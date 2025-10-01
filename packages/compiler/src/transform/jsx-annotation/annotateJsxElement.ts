@@ -2,7 +2,7 @@ import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { getComponentType } from '../determineComponentType';
 import { JSXElementWithCanonicalId } from './types';
-import { GT_COMPONENT_TYPES } from '../../utils/constants/constants';
+import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 
 /**
  * Recursively traverse and annotate JSX element names in-place

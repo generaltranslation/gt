@@ -8,8 +8,8 @@
 import {
   GT_ALL_FUNCTIONS,
   GT_CALLBACK_FUNCTIONS,
-} from '../utils/constants/constants';
-import { isGTFunction } from '../utils/constants/helpers';
+} from '../utils/constants/gt/constants';
+import { isGTFunction } from '../utils/constants/gt/helpers';
 
 // TODO: separate callback funtions and imported functions
 
@@ -181,7 +181,12 @@ export class ScopeTracker {
   }
 
   /**
-   * Track a translation function variable
+   * Track a translation callback function variable
+   * const useGT_callback = useGT()
+   * @param aliasName - The alias name of callback variable
+   * @param canonicalName - The canonical name of the callback function
+   * @param identifier - The identifier of the callback function
+   * TODO: canonicalName might have to be shifted to the name of the RValue eg useGT in t = useGT() so you can properly map back to the original function
    */
   trackTranslationCallbackVariable(
     aliasName: string,

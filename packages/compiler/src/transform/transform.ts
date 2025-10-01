@@ -1,5 +1,4 @@
 import * as t from '@babel/types';
-import { hashSource } from 'generaltranslation/id';
 import traverse from '@babel/traverse';
 
 // Analysis and utilities
@@ -7,15 +6,15 @@ import { NodePath } from '@babel/traverse';
 import {
   isTranslationFunction,
   isTranslationFunctionCallback,
-} from '../utils/constants/helpers';
+} from '../utils/constants/gt/helpers';
 // Types
 import { TransformState } from '../state/types';
 import { determineComponentType } from './determineComponentType';
 import { processImportDeclaration } from '../processing/processImportDeclaration';
-import { trackVariableAssignment } from './variableTracking/trackVariableAssignment';
-import { trackParameterOverrides } from './variableTracking/trackParameterOverrides';
-import { trackArrowParameterOverrides } from './variableTracking/trackArrowParameterOverrides';
+import { trackParameterOverrides } from './tracking/trackParameterOverrides';
+import { trackArrowParameterOverrides } from './tracking/trackArrowParameterOverrides';
 import { createDynamicFunctionWarning } from '../utils/errors';
+import { processVariableAssignment } from '../processing/processVariableDeclarator';
 
 /**
  * Helper function to get callee function name
@@ -180,9 +179,9 @@ export function performSecondPassTransformation(
   state: TransformState
 ): boolean {
   if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log('[gt-unplugin] ===============================');
-    console.log('[gt-unplugin]         PASS 2');
-    console.log('[gt-unplugin] ===============================');
+    console.log('[GT_PLUGIN] ===============================');
+    console.log('[GT_PLUGIN]         PASS 2');
+    console.log('[GT_PLUGIN] ===============================');
   }
   // Reset counter for second pass - matches Rust TransformVisitor::new()
   state.stringCollector.resetCounter();
@@ -198,7 +197,7 @@ export function performSecondPassTransformation(
 
     // Process variable declarations to track assignments (fold_var_declarator)
     VariableDeclarator(path) {
-      trackVariableAssignment(path, state);
+      processVariableAssignment(path, state);
     },
 
     // Process function calls - inject content arrays and hashes (fold_call_expr)

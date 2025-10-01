@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { USEGT_CALLBACK_OPTIONS } from '../constants/constants';
+import { USEGT_CALLBACK_OPTIONS } from '../constants/gt/constants';
 
 /**
  * Validate useGT_callback / getGT_callback

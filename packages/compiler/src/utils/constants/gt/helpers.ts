@@ -7,6 +7,7 @@ import {
   GT_CALLBACK_FUNCTIONS,
   GT_COMPONENT_TYPES,
   GT_FUNCTIONS,
+  GT_FUNCTIONS_WITH_CALLBACKS,
   GT_IMPORT_SOURCES,
   REACT_IMPORT_SOURCES,
 } from './constants';
@@ -17,7 +18,33 @@ import {
  * @returns True if the name is a GT function
  */
 export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
-  return Object.values(GT_FUNCTIONS).includes(name as GT_FUNCTIONS);
+  return [
+    'useGT',
+    'getGT',
+    'useTranslations',
+    'getTranslations',
+    'useMessages',
+    'getMessages',
+    'msg',
+  ].includes(name);
+}
+
+/**
+ * Check if a name is a GT function with callbacks
+ * @param name - The name to check
+ * @returns True if the name is a GT function with callbacks
+ */
+export function isGTFunctionWithCallbacks(
+  name: string
+): name is GT_FUNCTIONS_WITH_CALLBACKS {
+  return [
+    'useGT',
+    'getGT',
+    'useTranslations',
+    'getTranslations',
+    'useMessages',
+    'getMessages',
+  ].includes(name);
 }
 
 /**
@@ -64,10 +91,8 @@ export function isBranchComponent(name: string): name is GT_COMPONENT_TYPES {
 /**
  * Check if a name is a GT translation function
  */
-export function isTranslationFunction(
-  name: string
-): name is GT_FUNCTIONS.useGT | GT_FUNCTIONS.getGT {
-  return ([GT_FUNCTIONS.useGT, GT_FUNCTIONS.getGT] as string[]).includes(name);
+export function isTranslationFunction(name: string): name is 'useGT' | 'getGT' {
+  return ['useGT', 'getGT'].includes(name);
 }
 
 /**

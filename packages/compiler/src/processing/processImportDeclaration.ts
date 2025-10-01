@@ -1,11 +1,10 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
 import { TransformState } from '../state/types';
-import { trackImportDeclaration } from '../transform/variableTracking/trackImportDeclaration';
+import { trackImportDeclaration } from '../transform/tracking/trackImportDeclaration';
 
 /**
  * Process import declarations to track GT imports
- * Ported from Rust: process_gt_import_declaration (lines 252-299)
  */
 export function processImportDeclaration(
   path: NodePath<t.ImportDeclaration>,

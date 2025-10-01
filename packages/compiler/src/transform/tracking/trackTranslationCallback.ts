@@ -7,7 +7,7 @@ import { createTranslationContent } from '../transform';
 import { createTranslationHash } from '../transform';
 import { getStringLiteralFromExpression } from '../../utils/jsx/getStringLiteralFromExpression';
 import { getObjectPropertyFromObjectExpression } from '../../utils/jsx/getObjectPropertyFromObjectExpression';
-import { USEGT_CALLBACK_OPTION_NAMES } from '../../utils/constants/constants';
+import { USEGT_CALLBACK_OPTION_NAMES } from '../../utils/constants/gt/constants';
 
 /**
  * Track gt() function invocations

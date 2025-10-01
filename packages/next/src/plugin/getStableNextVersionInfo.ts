@@ -77,3 +77,5 @@ export const swcPluginCompatible = comparePackageVersion(
   getNextVersion(),
   SWC_PLUGIN_SUPPORT
 );
+
+// TODO: disable babel plugin if using react <= 16

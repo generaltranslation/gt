@@ -13,17 +13,19 @@ import { Logger } from './state/logging';
 import { performSecondPassTransformation } from './transform/transform';
 import { processImportDeclaration } from './processing/processImportDeclaration';
 import { TransformState } from './state/types';
-import { trackVariableAssignment } from './transform/variableTracking/trackVariableAssignment';
-import { trackArrowParameterOverrides } from './transform/variableTracking/trackArrowParameterOverrides';
-import { trackParameterOverrides } from './transform/variableTracking/trackParameterOverrides';
+import { trackArrowParameterOverrides } from './transform/tracking/trackArrowParameterOverrides';
+import { trackParameterOverrides } from './transform/tracking/trackParameterOverrides';
 import { processCallExpression } from './processing/first-pass/processCallExpression';
 import { processJSXElement } from './processing/first-pass/processJSXElement';
 import { ErrorTracker } from './state/ErrorTracker';
+import { processVariableAssignment } from './processing/processVariableDeclarator';
 
 /**
  * First Pass:
  * - Collect + calculate all data
  * - Check for violations
+ * - "Register" - collect data to inject
+ * - "Track" - track a function call/variable assignment
  *
  * Second Pass:
  * - Inject all data
@@ -82,7 +84,7 @@ export interface GTUnpluginOptions extends PluginConfig {
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
     return {
-      name: '@generaltranslation/gt-unplugin',
+      name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
         // Only transform TSX and JSX files
         return (
@@ -106,9 +108,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           if (id.endsWith('page.tsx')) {
-            console.log('[gt-unplugin] ===============================');
-            console.log('[gt-unplugin]         PASS 1');
-            console.log('[gt-unplugin] ===============================');
+            console.log('[GT_PLUGIN] ===============================');
+            console.log('[GT_PLUGIN]         PASS 1');
+            console.log('[GT_PLUGIN] ===============================');
           }
 
           // Parse the code into AST
@@ -137,7 +139,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             },
 
             VariableDeclarator(path) {
-              trackVariableAssignment(path, state);
+              processVariableAssignment(path, state);
             },
 
             CallExpression(path) {
@@ -193,7 +195,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               },
             },
 
-            // Missing from Rust VisitMut - function expressions
             FunctionExpression: {
               enter(_path) {
                 state.importTracker.enterScope();
