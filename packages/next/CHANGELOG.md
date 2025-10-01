@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.6.6
+
+### Patch Changes
+
+- [#708](https://github.com/generaltranslation/gt/pull/708) [`83bd501`](https://github.com/generaltranslation/gt/commit/83bd501ab0ba342d6974685dacbcb8b800f20145) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add memoization to useGT and useMessages callbacks
+
+- Updated dependencies [[`83bd501`](https://github.com/generaltranslation/gt/commit/83bd501ab0ba342d6974685dacbcb8b800f20145)]:
+  - gt-react@10.6.4
+
 ## 6.6.5
 
 ### Patch Changes
