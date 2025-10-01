@@ -16,7 +16,12 @@ import {
   GT_ALL_FUNCTIONS,
   GT_CALLBACK_FUNCTIONS,
 } from '../../utils/constants/constants';
-import { validateTranslationFunctionCallback, validateUseGTCallback, validateUseMessagesCallback, validateUseTranslationsCallback } from '../../utils/validation/validateTranslationFunctionCallback';
+import {
+  validateTranslationFunctionCallback,
+  validateUseGTCallback,
+  validateUseMessagesCallback,
+  validateUseTranslationsCallback,
+} from '../../utils/validation/validateTranslationFunctionCallback';
 import { getStringLiteralFromExpression } from '../../utils/jsx/getStringLiteralFromExpression';
 import { getObjectPropertyFromObjectExpression } from '../../utils/jsx/getObjectPropertyFromObjectExpression';
 import { getStringLiteralFromObjectExpression } from '../../utils/jsx/getStringLiteralFromObjectExpression';
@@ -171,12 +176,13 @@ function handleGeneralTranslationVariable(
         return;
     }
   } else if (is(canonicalName)) {
-    switch (canonicalName) {
+    switch (
+      canonicalName
       // case GT_FUNCTIONS
+    ) {
     }
   }
 }
-
 
 /**
  * Handle useGT_callback / getGT_callback
@@ -194,9 +200,14 @@ function handleUseGTCallback(
   }
 
   // Track the function call
-  trackUseGTCallback(identifier, state, useGTCallbackParams.content!, useGTCallbackParams.context, useGTCallbackParams.id);
+  trackUseGTCallback(
+    identifier,
+    state,
+    useGTCallbackParams.content!,
+    useGTCallbackParams.context,
+    useGTCallbackParams.id
+  );
 }
-
 
 /**
  * Handle useTranslations_callback / getTranslations_callback
@@ -207,7 +218,8 @@ function handleUseTranslationsCallback(
   identifier: number
 ) {
   // Check for violations
-  const useTranslationsCallbackParams = validateUseTranslationsCallback(callExpr);
+  const useTranslationsCallbackParams =
+    validateUseTranslationsCallback(callExpr);
   state.errorTracker.addErrors(useTranslationsCallbackParams.errors);
   if (useTranslationsCallbackParams.errors.length > 0) {
     return;
@@ -216,7 +228,6 @@ function handleUseTranslationsCallback(
   // Track the function call
   trackUseTranslationsCallback(identifier, state);
 }
-
 
 /**
  * Handle useMessages_callback / getMessages_callback
