@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -10,16 +10,16 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "build:clean": "rm -rf dist; npm run build",
-    "build:release": "npm run build:clean",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
     "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
-    "release": "npm run build:clean && npm publish",
-    "release:alpha": "npm run build:clean && npm publish --tag alpha",
-    "release:beta": "npm run build:clean && npm publish --tag beta",
-    "release:latest": "npm run build:clean && npm publish --tag latest"
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest"
   },
   "exports": {
     ".": {
@@ -87,7 +87,7 @@
     "esbuild": "^0.25.4",
     "fast-glob": "^3.3.3",
     "form-data": "^4.0.4",
-    "generaltranslation": "^7.6.2",
+    "generaltranslation": "workspace:*",
     "gt-remark": "^1.0.1",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
@@ -107,19 +107,24 @@
     "yaml": "^2.8.0"
   },
   "devDependencies": {
+    "@babel/types": "^7.28.4",
     "@biomejs/biome": "^1.9.4",
     "@types/babel__generator": "^7.27.0",
     "@types/babel__traverse": "^7.20.6",
     "@types/figlet": "^1.7.0",
+    "@types/mdast": "^4.0.0",
+    "@types/micromatch": "^4.0.9",
     "@types/mock-require": "^2.0.3",
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.4",
     "@types/resolve": "^1.20.2",
     "eslint": "^9.20.0",
     "esm": "^3.2.25",
-    "mdast": "^3.0.0",
+    "mdast-util-mdx-jsx": "^3.2.0",
+    "mdast-util-mdxjs-esm": "^2.0.1",
     "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
+    "tslib": "^2.8.1",
     "typescript": "^5.5.4"
   }
 }

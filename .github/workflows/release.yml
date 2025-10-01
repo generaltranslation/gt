@@ -12,6 +12,8 @@ permissions:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+env:
+  CI: true
 jobs:
   release:
     name: Release
@@ -20,11 +22,14 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 24
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: "pnpm"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -32,10 +37,11 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install Dependencies
-        run: npm install && npm install lightningcss
+        # not frozen since we are using workspaces & package versions will change
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build packages
-        run: npm run build:release
+        run: pnpm run build:release
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
@@ -43,9 +49,9 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: npm run release
-          commit: '[ci] release'
-          title: '[ci] release'
+          publish: pnpm run release
+          commit: "[ci] release"
+          title: "[ci] release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

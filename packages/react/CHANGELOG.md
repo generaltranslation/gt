@@ -1,5 +1,21 @@
 # gt-react
 
+## 10.6.4
+
+### Patch Changes
+
+- [#708](https://github.com/generaltranslation/gt/pull/708) [`83bd501`](https://github.com/generaltranslation/gt/commit/83bd501ab0ba342d6974685dacbcb8b800f20145) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add memoization to useGT and useMessages callbacks
+
+## 10.6.3
+
+### Patch Changes
+
+- [#698](https://github.com/generaltranslation/gt/pull/698) [`9eefc14`](https://github.com/generaltranslation/gt/commit/9eefc14577013fcfa699344c4a950c12d3b3350b) Thanks [@brian-lou](https://github.com/brian-lou)! - Switch monorepo package manager to pnpm (no new features or bugs fixed). Please report issues to https://github.com/generaltranslation/gt
+
+- Updated dependencies [[`9eefc14`](https://github.com/generaltranslation/gt/commit/9eefc14577013fcfa699344c4a950c12d3b3350b)]:
+  - @generaltranslation/supported-locales@2.0.14
+  - generaltranslation@7.6.4
+
 ## 10.6.1
 
 ### Patch Changes

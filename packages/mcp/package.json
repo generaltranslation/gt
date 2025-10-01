@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/mcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "General Translation MCP Server",
   "main": "dist/index.js",
   "type": "module",
@@ -12,7 +12,8 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0"
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.14.2",
@@ -26,19 +27,19 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "patch": "npm version patch",
+    "patch": "pnpm version patch",
     "transpile": "tsc",
-    "build": "npm run transpile",
-    "build:clean": "rm -rf dist; npm run lint && npm run build",
-    "build:release": "npm run build:clean",
-    "dev": "npm run build && node dist/index.js",
+    "build": "pnpm run transpile",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm lint && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "dev": "pnpm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "release": "npm run build:clean && npm publish --access public",
-    "release:alpha": "npm run build:clean && npm publish --access public --tag alpha",
-    "release:beta": "npm run build:clean && npm publish --access public --tag beta",
-    "release:latest": "npm run build:clean && npm publish --access public --tag latest",
+    "release": "pnpm run build:clean && pnpm publish --access public",
+    "release:alpha": "pnpm run build:clean && pnpm publish --access public --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --access public --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --access public --tag latest",
     "test": "vitest run",
     "test:watch": "vitest"
   },
