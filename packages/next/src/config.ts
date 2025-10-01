@@ -547,6 +547,9 @@ export function withGTConfig(
       }),
     experimental: {
       ...nextConfig.experimental,
+      ...(rootParamStability === 'experimental' && {
+        rootParams: true,
+      }),
       // TODO: uncomment
       // // SWC Plugin
       // swcPlugins: [
