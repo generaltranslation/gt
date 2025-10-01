@@ -55,6 +55,13 @@ export default function useMessages(_messages?: _Messages): MFunctionType {
     }
   }
 
+  function _m<T extends string | null | undefined>(
+    encodedMsg: T,
+    options: Record<string, any> = {}
+  ): T extends string ? string : T {
+    return _mFunction(encodedMsg, options, preloadedTranslations);
+  }
+
   /**
    * @param {string} encodedMsg - The encoded message string, typically created by the `msg()` utility.
    * @param {InlineTranslationOptions} options
@@ -71,12 +78,6 @@ export default function useMessages(_messages?: _Messages): MFunctionType {
    * const m = useMessages()
    * m(example2); // Translates 'My name is John' in context
    */
-  function _m<T extends string | null | undefined>(
-    encodedMsg: T,
-    options: Record<string, any> = {}
-  ): T extends string ? string : T {
-    return _mFunction(encodedMsg, options, preloadedTranslations);
-  }
   const m = useCallback(_m, [preloadedTranslations, _mFunction]);
 
   return m;

@@ -52,6 +52,17 @@ export default function useGT(_messages?: _Messages) {
     }
   }
 
+  function _gt(
+    string: string,
+    options: Record<string, any> & {
+      $id?: string;
+      $context?: string;
+      $_hash?: string;
+    } = {}
+  ): string {
+    return _tFunction(string, options, preloadedTranslations);
+  }
+
   /**
    * @param {string} message
    * @param {InlineTranslationOptions} options Interpolated variables and translation context.
@@ -64,16 +75,6 @@ export default function useGT(_messages?: _Messages) {
    * // With a context and a custom identifier:
    * gt('My name is {name}', { name: "John", $context: 'name is a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
    */
-  function _gt(
-    string: string,
-    options: Record<string, any> & {
-      $id?: string;
-      $context?: string;
-      $_hash?: string;
-    } = {}
-  ): string {
-    return _tFunction(string, options, preloadedTranslations);
-  }
   const gt = useCallback(_gt, [preloadedTranslations, _tFunction]);
 
   return gt;
