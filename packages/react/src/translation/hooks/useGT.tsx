@@ -3,19 +3,20 @@ import useGTContext from '../../provider/GTContext';
 import { _Messages, Translations } from '../../types/types';
 import { useable } from '../../promises/dangerouslyUsable';
 import { reactHasUse } from '../../promises/reactHasUse';
+import { useCallback } from 'react';
 
 /**
- * Gets the translation function `t` provided by `<GTProvider>`.
+ * Gets the translation function `gt` provided by `<GTProvider>`.
  *
  * @returns {Function} A translation function that accepts an ICU message format string and returns the translation of that string.
  *
  * @example
- * const t = useGT();
- * console.log(t('To be or not to be...'));
+ * const gt = useGT();
+ * console.log(gt('To be or not to be...'));
  *
  * @example
- * const t = useGT();
- * t('My name is {customName}', { customName: "Brian", id: 'my-name', context: 'a proper noun' } )
+ * const gt = useGT();
+ * gt('My name is {customName}', { customName: "Brian", id: 'my-name', context: 'a proper noun' } )
  */
 export default function useGT(_messages?: _Messages) {
   const {
@@ -26,7 +27,7 @@ export default function useGT(_messages?: _Messages) {
     _tFunction,
     locale,
   } = useGTContext(
-    `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be called within a <GTProvider>.`
+    `useGT(): No context provided. You're trying to get the gt() function from the useGT() hook, which can be called within a <GTProvider>.`
   );
 
   let preloadedTranslations: Translations | undefined;
@@ -57,13 +58,13 @@ export default function useGT(_messages?: _Messages) {
    * @returns The translated version of content
    *
    * @example
-   * t('Hello, world!'); // Translates 'Hello, world!'
+   * gt('Hello, world!'); // Translates 'Hello, world!'
    *
    * @example
    * // With a context and a custom identifier:
-   * t('My name is {name}', { name: "John", $context: 'name is a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
+   * gt('My name is {name}', { name: "John", $context: 'name is a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
    */
-  function t(
+  function _gt(
     string: string,
     options: Record<string, any> & {
       $id?: string;
@@ -73,6 +74,7 @@ export default function useGT(_messages?: _Messages) {
   ): string {
     return _tFunction(string, options, preloadedTranslations);
   }
+  const gt = useCallback(_gt, [preloadedTranslations, _tFunction]);
 
-  return t;
+  return gt;
 }
