@@ -112,24 +112,13 @@ async function T({
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
     hash =
-      // _hash ||
+      _hash ||
       hashSource({
         source: childrenAsObjects,
         ...(context && { context }),
         ...(id && { id }),
         dataFormat: 'JSX',
       });
-    if (_hash) {
-      if (hash === _hash) {
-        console.log(`<T>: _hash found`);
-      } else {
-        console.error(
-          `<T>: _hash mismatch: ${hash} (runtime) !== ${_hash} (buildtime)`
-        );
-      }
-    } else {
-      console.error(`<T>: No _hash found`);
-    }
     translationEntry = translations?.[hash];
   }
 
@@ -174,25 +163,13 @@ async function T({
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
       hash ||=
-        // _hash ||
+        _hash ||
         hashSource({
           source: childrenAsObjects,
           ...(context && { context }),
           ...(id && { id }),
           dataFormat: 'JSX',
         });
-
-      if (_hash) {
-        if (hash === _hash) {
-          console.log(`<T>: _hash found`);
-        } else {
-          console.error(
-            `<T>: _hash mismatch: ${hash} (runtime) !== ${_hash} (buildtime)`
-          );
-        }
-      } else {
-        console.error(`[GT-NEXT] <T>: No _hash found`);
-      }
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,
