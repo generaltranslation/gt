@@ -57,7 +57,10 @@ export async function getNextLocale(
     // }
 
     // Give an error here
-    if (preferredLocales.length === 0) {
+    if (
+      preferredLocales.length === 0 &&
+      process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
+    ) {
       throw new Error(noLocalesCouldBeDeterminedError);
     }
 
