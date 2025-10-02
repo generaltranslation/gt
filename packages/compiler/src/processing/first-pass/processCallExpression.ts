@@ -2,7 +2,7 @@ import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import {
-  isGTFunction,
+  isTranslationComponent,
   isTranslationFunctionCallback,
 } from '../../utils/constants/gt/helpers';
 import { getCalleeNameFromExpression } from '../../utils/jsx/getCalleeNameFromExpression';
@@ -15,12 +15,12 @@ import {
   validateUseMessagesCallback,
   validateUseTranslationsCallback,
 } from '../../utils/validation/validateTranslationFunctionCallback';
-import { getStringLiteralFromExpression } from '../../utils/jsx/getStringLiteralFromExpression';
-import { getStringLiteralFromObjectExpression } from '../../utils/jsx/getStringLiteralFromObjectExpression';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { regsiterUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
 import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
-import { VariableType } from '../../state/ScopeTracker';
+import { getCanonicalFunctionName } from '../../transform/getCanonicalFunctionName';
+import { isReactFunction } from '../../utils/constants/react/helpers';
+import { validateTranslationComponentArgs } from '../../transform/validation/validateTranslationComponentArgs';
 
 /**
  * Process call expressions
@@ -43,55 +43,70 @@ export function processCallExpression(
   }
 
   // Get the canonical function name
-  const canonicalFunctionName = getCanonicalFunctionName(
-    state,
+  const { canonicalName, identifier, type } = getCanonicalFunctionName(
+    state.importTracker,
     namespaceName,
     functionName
   );
+  if (!canonicalName) {
+    return;
+  }
 
-  if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log(
-      '[GT_PLUGIN] processCallExpression',
-      JSON.stringify(callExpr, null, 2)
+  // Handle each respective case
+  if (
+    type === 'generaltranslation' &&
+    isTranslationFunctionCallback(canonicalName)
+  ) {
+    // Handle translation function callbacks (useGT_callback, etc.)
+    handleTranslationCallbackInvocation(
+      callExpr,
+      state,
+      canonicalName,
+      identifier!
     );
+  } else if (type === 'react' && isReactFunction(canonicalName)) {
+    // Handle react variables (jsxDEV, etc.)
+    handleReactInvocation(callExpr, state);
+  } else {
+    // TODO: handle other variables
   }
 
   // Check if this is a tracked function
-  let canonicalName: GT_ALL_FUNCTIONS;
-  let identifier: number;
-  let type: VariableType;
-  if (namespaceName) {
-    if (state.importTracker.namespaceImports.has(namespaceName)) {
-      canonicalName = functionName as GT_ALL_FUNCTIONS;
-      // Invalid identifier number, we aren't tracking namespace imports (eg you will never see GT.gt() GT.t() nor GT.m())
-      identifier = -1;
-      type = 'generaltranslation';
-    } else {
-      return;
-    }
-  } else {
-    const variable = state.importTracker.scopeTracker.getVariable(functionName);
-    if (!variable) {
-      return;
-    }
-    canonicalName = variable.canonicalName as GT_ALL_FUNCTIONS;
-    identifier = variable.identifier;
-    type = variable.type;
-  }
+  // let canonicalName: GT_ALL_FUNCTIONS;
+  // let identifier: number;
+  // let type: VariableType;
+  // if (namespaceName) {
+  //   if (state.importTracker.namespaceImports.has(namespaceName)) {
+  //     canonicalName = functionName as GT_ALL_FUNCTIONS;
+  //     // Invalid identifier number, we aren't tracking namespace imports (eg you will never see GT.gt() GT.t() nor GT.m())
+  //     identifier = -1;
+  //     type = 'generaltranslation';
+  //   } else {
+  //     return;
+  //   }
+  // } else {
+  //   const variable = state.importTracker.scopeTracker.getVariable(functionName);
+  //   if (!variable) {
+  //     return;
+  //   }
+  //   canonicalName = variable.canonicalName as GT_ALL_FUNCTIONS;
+  //   identifier = variable.identifier;
+  //   type = variable.type;
+  // }
 
-  // Handle different types of variables
-  if (type === 'generaltranslation') {
-    handleGeneralTranslationVariable(
-      callExpr,
-      state,
-      canonicalName as GT_ALL_FUNCTIONS,
-      identifier
-    );
-  } else if (type === 'react') {
-    handleReactVariable(callExpr, state);
-  } else if (type === 'other') {
-    // TODO: handle other variables
-  }
+  // // Handle different types of variables
+  // if (type === 'generaltranslation') {
+  //   handleTranslationCallbackInvocation(
+  //     callExpr,
+  //     state,
+  //     canonicalName as GT_ALL_FUNCTIONS,
+  //     identifier
+  //   );
+  // } else if (type === 'react') {
+  //   handleReactVariable(callExpr, state);
+  // } else if (type === 'other') {
+  //   // TODO: handle other variables
+  // }
 
   /*
   if (variable && variable.type !== 'other') {
@@ -171,52 +186,30 @@ export function processCallExpression(
 
 /**
  * Handle general translation variables
+ * useGTCallback(), useTranslationsCallback(), useMessagesCallback(), etc.
  */
-function handleGeneralTranslationVariable(
+function handleTranslationCallbackInvocation(
   callExpr: t.CallExpression,
   state: TransformState,
   canonicalName: GT_ALL_FUNCTIONS,
   identifier: number
 ) {
-  if (isTranslationFunctionCallback(canonicalName)) {
-    // Handle translation function callbacks (useGTCallback(), useTranslationsCallback(), useMessagesCallback())
-    switch (canonicalName) {
-      case GT_CALLBACK_FUNCTIONS.useGT_callback:
-      case GT_CALLBACK_FUNCTIONS.getGT_callback:
-        handleUseGTCallback(callExpr, state, identifier);
-        break;
-      case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
-      case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-        handleUseTranslationsCallback(callExpr, state, identifier);
-        break;
-      case GT_CALLBACK_FUNCTIONS.useMessages_callback:
-      case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-        handleUseMessagesCallback(callExpr, state, identifier);
-        break;
-      default:
-        return;
-    }
-  } else if (isGTFunction(canonicalName)) {
-    // Handle GT functions (useGT(), useTranslations(), useMessages(), msg())
-    // switch (canonicalName) {
-    //   case GT_FUNCTIONS.useGT:
-    //   case GT_FUNCTIONS.getGT:
-    //     handleUseGT(callExpr, state, identifier);
-    //     break;
-    //   case GT_FUNCTIONS.useTranslations:
-    //   case GT_FUNCTIONS.getTranslations:
-    //     handleUseTranslations(callExpr, state, identifier);
-    //     break;
-    //   case GT_FUNCTIONS.useMessages:
-    //   case GT_FUNCTIONS.getMessages:
-    //     handleUseMessages(callExpr, state, identifier);
-    //     break;
-    //   case GT_FUNCTIONS.msg:
-    //     handleMsg(callExpr, state, identifier);
-    //     break;
-    //   default:
-    //     return;
-    // }
+  // Handle translation function callbacks ()
+  switch (canonicalName) {
+    case GT_CALLBACK_FUNCTIONS.useGT_callback:
+    case GT_CALLBACK_FUNCTIONS.getGT_callback:
+      handleUseGTCallback(callExpr, state, identifier);
+      break;
+    case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
+    case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
+      handleUseTranslationsCallback(callExpr, state, identifier);
+      break;
+    case GT_CALLBACK_FUNCTIONS.useMessages_callback:
+    case GT_CALLBACK_FUNCTIONS.getMessages_callback:
+      handleUseMessagesCallback(callExpr, state, identifier);
+      break;
+    default:
+      return;
   }
 }
 
@@ -287,38 +280,58 @@ function handleUseMessagesCallback(
 }
 
 /**
- * Handle react variables
+ * Handle react function invocations
+ * jsxDEV, jsx, jsxs, ...
+ *
+ * We want to check these because they wrap <T> and other components
  */
-function handleReactVariable(
+function handleReactInvocation(
   callExpr: t.CallExpression,
   state: TransformState
-) {}
-
-function getParamsFromUseGTCallback(callExpr: t.CallExpression): {
-  content: string;
-  context?: string;
-  id?: string;
-} {
-  // Get content
-  const content = getStringLiteralFromExpression(
-    callExpr.arguments[0] as t.Expression
-  );
-  if (!content) {
-    throw new Error(
-      'Validation check failed - content is not a string literal'
+) {
+  if (state.settings.filename?.endsWith('page.tsx')) {
+    console.log(
+      '[GT_PLUGIN] React invocation:',
+      JSON.stringify(callExpr, null, 2)
     );
   }
-
-  // Get second argument
-  const secondArg =
-    callExpr.arguments.length > 1 ? callExpr.arguments[1] : undefined;
-  if (!secondArg || !t.isObjectExpression(secondArg)) {
-    return { content };
+  // Check if it contains a GT component (first argument)
+  if (callExpr.arguments.length === 0) {
+    return;
+  }
+  const firstArg = callExpr.arguments[0];
+  if (!t.isExpression(firstArg)) {
+    return;
   }
 
-  // Get context and id
-  const context = getStringLiteralFromObjectExpression(secondArg, '$context');
-  const id = getStringLiteralFromObjectExpression(secondArg, '$id');
+  // Get function name from callee
+  const { namespaceName, functionName } = getCalleeNameFromExpression(firstArg);
+  if (!functionName) {
+    return;
+  }
+  // Get the canonical function name
+  const { canonicalName, type } = getCanonicalFunctionName(
+    state.importTracker,
+    namespaceName,
+    functionName
+  );
+  if (!canonicalName) {
+    return;
+  }
 
-  return { content, context, id };
+  // Filter out non-GT components
+  if (type !== 'generaltranslation' || !isTranslationComponent(canonicalName)) {
+    return;
+  }
+
+  // Validate the arguments
+  const { errors, hash, id, context, children } =
+    validateTranslationComponentArgs(callExpr, canonicalName, state);
+  if (errors.length > 0) {
+    state.errorTracker.addErrors(errors);
+    return;
+  }
+
+  // Track the component (increment counter, initialize aggregator, set hash)
+  trackTranslationComponent(callExpr, state, hash);
 }

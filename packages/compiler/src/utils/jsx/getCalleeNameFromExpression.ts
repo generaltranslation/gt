@@ -2,6 +2,7 @@ import * as t from '@babel/types';
 
 /**
  * Get the callee name from an expression: ... = useGT();
+ * Rule of thumb, only call on expressions with parentheses
  */
 export function getCalleeNameFromExpression(expr: t.Expression): {
   namespaceName: string | null;

@@ -71,7 +71,10 @@ export const GT_FUNCTIONS_TO_CALLBACKS: Record<
 /**
  * All gt functions (both regular and callback functions)
  */
-export type GT_ALL_FUNCTIONS = GT_FUNCTIONS | GT_CALLBACK_FUNCTIONS;
+export type GT_ALL_FUNCTIONS =
+  | GT_FUNCTIONS
+  | GT_CALLBACK_FUNCTIONS
+  | GT_COMPONENT_TYPES;
 
 /**
  * GT import sources
@@ -80,13 +83,6 @@ export enum GT_IMPORT_SOURCES {
   GT_NEXT = 'gt-next',
   GT_NEXT_CLIENT = 'gt-next/client',
   GT_NEXT_SERVER = 'gt-next/server',
-}
-
-/**
- * React import sources
- */
-export enum REACT_IMPORT_SOURCES {
-  JSX_DEV_RUNTIME = 'react/jsx-dev-runtime',
 }
 
 /**

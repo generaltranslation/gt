@@ -6,10 +6,8 @@ import {
   GT_ALL_FUNCTIONS,
   GT_CALLBACK_FUNCTIONS,
   GT_COMPONENT_TYPES,
-  GT_FUNCTIONS,
   GT_FUNCTIONS_WITH_CALLBACKS,
   GT_IMPORT_SOURCES,
-  REACT_IMPORT_SOURCES,
 } from './constants';
 
 /**
@@ -26,6 +24,20 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'useMessages',
     'getMessages',
     'msg',
+    'useGT_callback',
+    'getGT_callback',
+    'useTranslations_callback',
+    'getTranslations_callback',
+    'useMessages_callback',
+    'getMessages_callback',
+    'T',
+    'Tx',
+    'Var',
+    'Currency',
+    'DateTime',
+    'Num',
+    'Branch',
+    'Plural',
   ].includes(name);
 }
 
@@ -62,7 +74,7 @@ export function isGTComponent(name: string): name is GT_COMPONENT_TYPES {
 export function isTranslationComponent(
   name: string
 ): name is GT_COMPONENT_TYPES.T {
-  return name === GT_COMPONENT_TYPES.T;
+  return [GT_COMPONENT_TYPES.T].includes(name as GT_COMPONENT_TYPES);
 }
 
 /**
@@ -101,7 +113,14 @@ export function isTranslationFunction(name: string): name is 'useGT' | 'getGT' {
 export function isTranslationFunctionCallback(
   name: string
 ): name is GT_CALLBACK_FUNCTIONS {
-  return (Object.values(GT_CALLBACK_FUNCTIONS) as string[]).includes(name);
+  return [
+    'useGT_callback',
+    'getGT_callback',
+    'useTranslations_callback',
+    'getTranslations_callback',
+    'useMessages_callback',
+    'getMessages_callback',
+  ].includes(name);
 }
 
 /**
@@ -116,15 +135,4 @@ export function isJsxFunction(name: string): boolean {
  */
 export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
   return Object.values(GT_IMPORT_SOURCES).includes(name as GT_IMPORT_SOURCES);
-}
-
-/**
- * Check if it's a React import source
- */
-export function isReactImportSource(
-  name: string
-): name is REACT_IMPORT_SOURCES {
-  return Object.values(REACT_IMPORT_SOURCES).includes(
-    name as REACT_IMPORT_SOURCES
-  );
 }

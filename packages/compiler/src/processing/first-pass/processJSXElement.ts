@@ -9,6 +9,7 @@ import { TransformState } from '../../state/types';
  * Process JSX elements to detect GT components and collect content
  *
  * TODO: this function may actually never be invoked... perhaps should remove it?
+ * @deprecated
  */
 export function processJSXElement(
   path: NodePath<t.JSXElement>,

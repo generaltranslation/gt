@@ -111,6 +111,10 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    console.log(
+      '[GT-NEXT] <T>: childrenAsObjects',
+      JSON.stringify(childrenAsObjects, null, 2)
+    );
     hash =
       _hash ||
       hashSource({
@@ -162,6 +166,10 @@ async function T({
   const translationPromise = (async () => {
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
+      console.log(
+        '[GT-NEXT] <T>: childrenAsObjects',
+        JSON.stringify(childrenAsObjects, null, 2)
+      );
       hash ||=
         _hash ||
         hashSource({

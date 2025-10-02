@@ -41,11 +41,14 @@ export function processVariableAssignment(
   }
 
   // Get the canonical function name
-  const canonicalFunctionName = getCanonicalFunctionName(
-    state,
+  const { canonicalName, type } = getCanonicalFunctionName(
+    state.importTracker,
     namespaceName,
     functionName
   );
+  if (!canonicalName) {
+    return;
+  }
 
   // Extract identifiers from the LVal
   const identifiers = extractIdentifiersFromLVal(varDeclarator.id);
@@ -54,12 +57,11 @@ export function processVariableAssignment(
   // (1) GT callback functions
   // (2) Variables with overriding names
   if (
-    canonicalFunctionName &&
-    isGTFunctionWithCallbacks(canonicalFunctionName)
+    type === 'generaltranslation' &&
+    isGTFunctionWithCallbacks(canonicalName)
   ) {
     // Track GT functions with callbacks (useGT, useTranslations, useMessages, etc.)
-    const callbackFunctionName =
-      GT_FUNCTIONS_TO_CALLBACKS[canonicalFunctionName];
+    const callbackFunctionName = GT_FUNCTIONS_TO_CALLBACKS[canonicalName];
 
     // Increment the counter
     const counterId = state.stringCollector.incrementCounter();

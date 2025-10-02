@@ -21,6 +21,14 @@ import { ErrorTracker } from './state/ErrorTracker';
 import { processVariableAssignment } from './processing/processVariableDeclarator';
 
 /**
+ * TODO:
+ * - Add tracking for special identifiers: undefined, Nan, etc.
+ * - Add tracking for multiple namespaces (Required for handling React.Fragment)
+ * - Add tracking for parameter declarations
+ *
+ * DONE:
+ * - Add tracking for Fragment component
+ *
  * First Pass:
  * - Collect + calculate all data
  * - Check for violations

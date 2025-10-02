@@ -255,7 +255,7 @@ export class ScopeTracker {
   private isScopedGTFunction(
     variable: ScopedVariable
   ): variable is ScopedGTFunction {
-    return isGTFunction(variable.canonicalName);
+    return variable.type === 'generaltranslation';
   }
 
   /* =============================== */

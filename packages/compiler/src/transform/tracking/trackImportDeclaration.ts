@@ -1,10 +1,8 @@
 import * as t from '@babel/types';
-import {
-  isGTImportSource,
-  isReactImportSource,
-} from '../../utils/constants/gt/helpers';
+import { isGTImportSource } from '../../utils/constants/gt/helpers';
 import { ScopeTracker } from '../../state/ScopeTracker';
 import { GT_ALL_FUNCTIONS } from '../../utils/constants/gt/constants';
+import { isReactImportSource } from '../../utils/constants/react/helpers';
 
 /**
  * Track import declarations for GT and React e.g. import { T, Var, useGT } from 'gt-next'
@@ -28,6 +26,10 @@ export function trackImportDeclaration(
   }
 }
 
+/**
+ * Handle import specifiers
+ * import { T, Var, useGT } from 'gt-next'
+ */
 function handleImportSpecifier(
   scopeTracker: ScopeTracker,
   importSpecifier: t.ImportSpecifier,
@@ -48,6 +50,10 @@ function handleImportSpecifier(
   }
 }
 
+/**
+ * Handle import default specifiers
+ * import GT from 'gt-next'
+ */
 function handleImportDefaultSpecifier(
   scopeTracker: ScopeTracker,
   importNamespaceSpecifier: t.ImportDefaultSpecifier,
@@ -57,10 +63,15 @@ function handleImportDefaultSpecifier(
   if (isGTImportSource(importSource)) {
     scopeTracker.addNamespaceImport(namespace);
   } else if (isReactImportSource(importSource)) {
-    scopeTracker.addNamespaceImport(namespace);
+    // TODO: track React import default
+    // scopeTracker.addNamespaceImport(namespace);
   }
 }
 
+/**
+ * Handle import namespace specifiers
+ * import * as GT from 'gt-next'
+ */
 function handleImportNamespaceSpecifier(
   scopeTracker: ScopeTracker,
   importNamespaceSpecifier: t.ImportNamespaceSpecifier,
@@ -69,8 +80,8 @@ function handleImportNamespaceSpecifier(
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {
     scopeTracker.addNamespaceImport(namespace);
-  }
-  if (isReactImportSource(importSource)) {
-    scopeTracker.addNamespaceImport(namespace);
+  } else if (isReactImportSource(importSource)) {
+    // TODO: track React import namespace
+    // scopeTracker.addNamespaceImport(namespace);
   }
 }
