@@ -68,7 +68,7 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option(
-      '--clear-translated-files',
+      '--experimental-clear-translated-files',
       'Clear translated files before downloading new translations',
       false
     );
