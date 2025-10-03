@@ -5,6 +5,10 @@ import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
+import {
+  clearLocaleFolders,
+  extractLocaleFolders,
+} from '../fs/clearLocaleFolder.js';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -46,6 +50,18 @@ export async function checkFileTranslations(
 
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
+
+  // Clear locale folders before any downloads (if enabled)
+  if (
+    options.options?.clearTranslatedFiles === true &&
+    fileQueryData.length > 0
+  ) {
+    const outputPaths = fileQueryData
+      .map((file) => resolveOutputPath(file.fileName, file.locale))
+      .filter((path): path is string => path !== null);
+    const localeFolders = extractLocaleFolders(outputPaths);
+    await clearLocaleFolders(localeFolders);
+  }
 
   const downloadStatus = {
     downloaded: new Set<string>(),

@@ -66,6 +66,11 @@ export function attachTranslateFlags(command: Command) {
       '--force',
       'Force a retranslation, invalidating all existing cached translations if they exist.',
       false
+    )
+    .option(
+      '--clear-translated-files',
+      'Clear translated files before downloading new translations',
+      false
     );
   return command;
 }

@@ -7,7 +7,6 @@ import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
-import { clearLocaleFolders, extractLocaleFolders } from '../fs/clearLocaleFolder.js';
 
 export type BatchedFiles = Array<{
   translationId: string;
@@ -57,13 +56,6 @@ export async function downloadFileBatch(
       // Download the files
       const responseData = await gt.downloadFileBatch(fileIds);
       const downloadedFiles = responseData.files || [];
-
-      // Clear locale folders before writing if enabled (defaults to true)
-      if (options.options?.clearTranslatedFiles !== false && downloadedFiles.length > 0) {
-        const outputPaths = files.map((file) => file.outputPath);
-        const localeFolders = extractLocaleFolders(outputPaths);
-        await clearLocaleFolders(localeFolders);
-      }
 
       // Process each file in the response
       for (const file of downloadedFiles) {

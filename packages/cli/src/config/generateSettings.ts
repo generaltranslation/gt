@@ -178,7 +178,7 @@ export async function generateSettings(
     clearTranslatedFiles:
       gtConfig.options?.clearTranslatedFiles ??
       options.clearTranslatedFiles ??
-      true,
+      false,
     experimentalLocalizeStaticImports:
       gtConfig.options?.experimentalLocalizeStaticImports ||
       options.experimentalLocalizeStaticImports,
