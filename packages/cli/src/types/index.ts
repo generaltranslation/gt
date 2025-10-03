@@ -21,6 +21,7 @@ export type Options = {
   timeout: number;
   force?: boolean;
   stageTranslations?: boolean;
+  clearTranslatedFiles?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
@@ -43,6 +44,7 @@ export type TranslateFlags = {
   dryRun: boolean;
   stageTranslations?: boolean;
   publish?: boolean;
+  clearTranslatedFiles?: boolean;
   force?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
@@ -190,6 +192,7 @@ export type AdditionalOptions = {
   excludeStaticImports?: string[]; // A list of file globs to include for static import localization
   docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
   copyFiles?: string[]; // array of files to copy to the target locale
+  clearTranslatedFiles?: boolean; // if true, clear locale folders before writing translations (default: true)
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
   experimentalAddHeaderAnchorIds?: 'mintlify'; // Format for anchor IDs when experimentalLocalizeStaticUrls is enabled: 'mintlify' for div wrapping, undefined for inline {#id}

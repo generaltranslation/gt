@@ -175,6 +175,10 @@ export async function generateSettings(
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),
+    clearTranslatedFiles:
+      gtConfig.options?.clearTranslatedFiles ??
+      options.clearTranslatedFiles ??
+      true,
     experimentalLocalizeStaticImports:
       gtConfig.options?.experimentalLocalizeStaticImports ||
       options.experimentalLocalizeStaticImports,
