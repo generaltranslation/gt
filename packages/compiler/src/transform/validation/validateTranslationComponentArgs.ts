@@ -5,6 +5,7 @@ import { getObjectPropertyFromObjectExpression } from '../../utils/jsx/getObject
 import { validateExpressionIsStringLiteral } from '../../utils/validation/validateExpressionIsStringLiteral';
 import { JsxChildren } from 'generaltranslation/types';
 import { constructJsxChildren } from '../jsx-children';
+import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 /**
  * Given a translation component, validate the arguments
  */
@@ -14,7 +15,7 @@ export function validateTranslationComponentArgs(
   state: TransformState
 ): {
   errors: string[];
-  hash?: string;
+  _hash?: string;
   id?: string;
   context?: string;
   children?: JsxChildren;
@@ -57,7 +58,7 @@ function validateTComponentArgs(
   state: TransformState
 ): {
   errors: string[];
-  hash?: string;
+  _hash?: string;
   id?: string;
   context?: string;
   children?: JsxChildren;
@@ -77,14 +78,14 @@ function validateTComponentArgs(
   // Validate hash
   const hashValidation = validateStringProperty(args, '_hash');
   errors.push(...hashValidation.errors);
-  const hash = hashValidation.value;
+  const _hash = hashValidation.value;
 
   // Validate children
   const childrenValidation = validateChildrenProperty(args, state);
   errors.push(...childrenValidation.errors);
   const children = childrenValidation.value;
 
-  return { errors, id, context, hash, children };
+  return { errors, id, context, _hash, children };
 }
 
 /**
@@ -100,15 +101,14 @@ export function validateChildrenProperty(
   const errors: string[] = [];
 
   // Get the children property
-  const children = getObjectPropertyFromObjectExpression(args, 'children');
-  if (!children) {
-    errors.push(`The <${GT_COMPONENT_TYPES.T}> component must have children`);
+  const childrenValidation = validateChildrenPropertyFromObjectExpression(args);
+  if (childrenValidation.errors.length > 0) {
+    errors.push(...childrenValidation.errors);
     return { errors };
   }
-  if (!t.isObjectExpression(children)) {
-    errors.push(
-      `The children property of the <${GT_COMPONENT_TYPES.T}> component must be an object expression`
-    );
+  const children = childrenValidation.value;
+  if (!children) {
+    errors.push(`The <${GT_COMPONENT_TYPES.T}> component must have children`);
     return { errors };
   }
 
@@ -116,6 +116,14 @@ export function validateChildrenProperty(
   const validation = constructJsxChildren(children, state);
   errors.push(...validation.errors);
   const value = validation.value;
+
+  // Validate that the children are valid jsx children
+  if (!value) {
+    errors.push(
+      `The <${GT_COMPONENT_TYPES.T}> component must have jsx children`
+    );
+    return { errors };
+  }
 
   return { errors, value };
 }

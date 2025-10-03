@@ -13,10 +13,25 @@ export const REACT_FUNCTION_VALUES = [
 ] as const;
 export type ReactFunction = (typeof REACT_FUNCTION_VALUES)[number];
 
+/**
+ * Special React components
+ */
 export enum REACT_COMPONENTS {
+  Activity = 'Activity',
   Fragment = 'Fragment',
+  Profiler = 'Profiler',
+  Suspense = 'Suspense',
+  SuspenseList = 'SuspenseList',
+  ViewTransition = 'ViewTransition',
 }
-export const REACT_COMPONENT_VALUES = [REACT_COMPONENTS.Fragment] as const;
+export const REACT_COMPONENT_VALUES = [
+  REACT_COMPONENTS.Activity,
+  REACT_COMPONENTS.Fragment,
+  REACT_COMPONENTS.Profiler,
+  REACT_COMPONENTS.Suspense,
+  REACT_COMPONENTS.SuspenseList,
+  REACT_COMPONENTS.ViewTransition,
+] as const;
 export type ReactComponent = (typeof REACT_COMPONENT_VALUES)[number];
 
 /**

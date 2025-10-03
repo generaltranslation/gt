@@ -34,9 +34,16 @@ export enum GT_FUNCTIONS_WITH_CALLBACKS {
 }
 
 /**
+ * Other GT functions
+ */
+export enum GT_OTHER_FUNCTIONS {
+  msg = 'msg',
+}
+
+/**
  * Different gt functions
  */
-export type GT_FUNCTIONS = GT_FUNCTIONS_WITH_CALLBACKS | 'msg';
+export type GT_FUNCTIONS = GT_FUNCTIONS_WITH_CALLBACKS | GT_OTHER_FUNCTIONS;
 /**
  * gt callback functions
  */
@@ -111,3 +118,15 @@ export const USEGT_CALLBACK_OPTION_NAMES = {
   [USEGT_CALLBACK_OPTIONS.$id]: 'id',
   [USEGT_CALLBACK_OPTIONS.$context]: 'context',
 };
+
+/**
+ * Maps GT Component Types to their minified names
+ */
+export const MINIFY_CANONICAL_NAME_MAP = {
+  [GT_COMPONENT_TYPES.Var]: 'v',
+  [GT_COMPONENT_TYPES.Num]: 'n',
+  [GT_COMPONENT_TYPES.Currency]: 'c',
+  [GT_COMPONENT_TYPES.DateTime]: 'd',
+  [GT_COMPONENT_TYPES.Branch]: 'b',
+  [GT_COMPONENT_TYPES.Plural]: 'p',
+} as const;

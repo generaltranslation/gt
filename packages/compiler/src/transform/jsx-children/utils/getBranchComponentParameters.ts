@@ -1,0 +1,54 @@
+import * as t from '@babel/types';
+import { GT_COMPONENT_TYPES } from '../../../utils/constants/gt/constants';
+import { isHtmlContentProp } from '../../../utils/constants/gt/helpers';
+/**
+ * Given object expression, get the branch component args
+ */
+export function getBranchComponentParameters(
+  parameters: t.ObjectExpression,
+  canonicalName: string
+): [string, t.Expression][] {
+  // Get the args
+  const args = parameters.properties
+    .map((property) => {
+      // filter out non expression values
+      if (!t.isObjectProperty(property)) {
+        return null;
+      }
+      if (!t.isExpression(property.value)) {
+        return null;
+      }
+
+      // get property name
+      let propertyName: string;
+      if (t.isStringLiteral(property.key)) {
+        propertyName = property.key.value;
+      } else if (t.isIdentifier(property.value)) {
+        propertyName = property.value.name;
+      } else {
+        return null;
+      }
+
+      // Filter out html content props
+      if (isHtmlContentProp(propertyName)) {
+        return null;
+      }
+
+      // Filter by branch component type
+      if (
+        canonicalName === GT_COMPONENT_TYPES.Branch &&
+        propertyName === 'branch'
+      ) {
+        return null;
+      } else if (
+        canonicalName === GT_COMPONENT_TYPES.Plural &&
+        propertyName === 'n'
+      ) {
+        return null;
+      }
+
+      return [propertyName, property.value];
+    })
+    .filter((arg) => arg !== null) as [string, t.Expression][];
+  return args;
+}

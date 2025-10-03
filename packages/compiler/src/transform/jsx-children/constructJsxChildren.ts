@@ -1,4 +1,12 @@
-import { JsxChild, JsxChildren, JsxElement } from 'generaltranslation/types';
+import {
+  GTProp,
+  HTML_CONTENT_PROPS,
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  Variable,
+  VariableType as GTVariableType,
+} from 'generaltranslation/types';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import { validateIdentifier } from './validation/validateIdentifier';
@@ -6,6 +14,23 @@ import { validateTemplateLiteral } from './validation/validateTemplateLiteral';
 import { validateChildrenElement } from './validation/validateChildrenElement';
 import { getCalleeNameFromJsxExpressionParam } from './utils/getCalleeNameFromJsxExpressionParam';
 import { getCanonicalFunctionName } from '../getCanonicalFunctionName';
+import { isReactComponent } from '../../utils/constants/react/helpers';
+import { REACT_COMPONENTS } from '../../utils/constants/react/constants';
+import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs';
+import { IdObject } from './utils/id';
+import { VariableType } from '../../state/ScopeTracker';
+import {
+  defaultVariableNames,
+  getVariableName,
+  isBranchComponent,
+  isGTComponent,
+  isVariableComponent,
+  minifyCanonicalName,
+} from '../../utils/constants/gt/helpers';
+import { validateStringLiteralPropertyFromArg } from './validation/validateStringLiteralPropertyFromArg';
+import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
+import { getBranchComponentParameters } from './utils/getBranchComponentParameters';
+import { validateNameFieldForVarComponent } from './validation/validateNameFieldForVarComponent';
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object
@@ -16,10 +41,16 @@ import { getCanonicalFunctionName } from '../getCanonicalFunctionName';
  * On invalid children, quit immediately
  */
 export function _constructJsxChildren(
-  children: t.Expression,
-  state: TransformState
+  children: t.Expression | undefined,
+  state: TransformState,
+  id: IdObject = new IdObject()
 ): { errors: string[]; value?: JsxChildren } {
   const errors: string[] = [];
+
+  // Skip if no children
+  if (children === undefined) {
+    return { errors, value: undefined };
+  }
 
   let value: JsxChildren | undefined;
   if (t.isArrayExpression(children)) {
@@ -36,7 +67,7 @@ export function _constructJsxChildren(
       }
 
       // Construct JsxChild
-      const validation = constructJsxChild(child, state);
+      const validation = constructJsxChild(child, state, id);
       errors.push(...validation.errors);
       if (errors.length > 0) {
         return { errors };
@@ -47,7 +78,7 @@ export function _constructJsxChildren(
     }
   } else {
     // Handle single child
-    const validation = constructJsxChild(children, state);
+    const validation = constructJsxChild(children, state, id);
     errors.push(...validation.errors);
     if (errors.length > 0) {
       return { errors };
@@ -64,14 +95,15 @@ export function _constructJsxChildren(
  */
 function constructJsxChild(
   child: Exclude<t.Expression, t.ArrayExpression>,
-  state: TransformState
+  state: TransformState,
+  id: IdObject
 ): { errors: string[]; value?: JsxChild } {
   const errors: string[] = [];
   let value: JsxChild | undefined;
 
   if (t.isCallExpression(child)) {
     // Construct JsxElement
-    const validation = constructJsxElement(child, state);
+    const validation = constructJsxElement(child, state, id);
     errors.push(...validation.errors);
     if (errors.length > 0) {
       return { errors };
@@ -117,10 +149,13 @@ function constructJsxChild(
  */
 function constructJsxElement(
   callExpr: t.CallExpression,
-  state: TransformState
-): { errors: string[]; value?: JsxElement } {
+  state: TransformState,
+  id: IdObject
+): { errors: string[]; value?: JsxElement | Variable } {
   const errors: string[] = [];
-  let value: JsxElement | undefined;
+
+  // Increment id
+  id.increment();
 
   // Get first argument
   if (callExpr.arguments.length === 0) {
@@ -151,11 +186,216 @@ function constructJsxElement(
     functionName
   );
 
-  // Handle GT components: <Var>, <Num>, <Currency>, etc.
-  if (canonicalName && type === 'generaltranslation') {
-  } else {
-    // Handle normal components: <div>, <Fragment>, etc.
+  // Handle variable components
+  if (
+    canonicalName &&
+    type === 'generaltranslation' &&
+    isVariableComponent(canonicalName)
+  ) {
+    const variableValidation = constructVariable(
+      canonicalName,
+      callExpr.arguments,
+      id
+    );
+    errors.push(...variableValidation.errors);
+    if (variableValidation.errors.length > 0) {
+      return { errors };
+    }
+    const variable: Variable = variableValidation.value!;
+    return { errors, value: variable };
   }
+
+  // Set the component name
+  let componentName: string;
+  const idNumber: number = id.get();
+  if (canonicalName && type === 'generaltranslation') {
+    // Handle GT components: <Var>, <Num>, <Currency>, etc.
+
+    // Check that this is a gt component
+    if (!isGTComponent(canonicalName)) {
+      errors.push(
+        `Failed to construct JsxElement! ${canonicalName} is not a valid GT component`
+      );
+      return { errors };
+    }
+    // Get the name of the component
+    componentName = canonicalName;
+  } else if (canonicalName && type === 'react') {
+    // Handle fragment + special react components
+    if (!isReactComponent(canonicalName)) {
+      errors.push(
+        `Failed to construct JsxElement! ${canonicalName} is not a valid React component`
+      );
+      return { errors };
+    }
+
+    // Get the name of the componet
+    componentName =
+      canonicalName === REACT_COMPONENTS.Fragment
+        ? REACT_COMPONENTS.Fragment
+        : functionName;
+  } else {
+    // Handle all other components: div, etc.
+    componentName = functionName;
+  }
+
+  // Get children from args
+  const childrenValidation = validateChildrenFromArgs(callExpr.arguments);
+  if (childrenValidation.errors.length > 0) {
+    errors.push(...childrenValidation.errors);
+    return { errors };
+  }
+
+  // Construct JsxChildren
+  const jsxChildrenValidation = _constructJsxChildren(
+    childrenValidation.value,
+    state
+  );
+  errors.push(...jsxChildrenValidation.errors);
+  if (jsxChildrenValidation.errors.length > 0) {
+    return { errors };
+  }
+  const children: JsxChildren | undefined = jsxChildrenValidation.value;
+
+  // Construct GT Tag
+  const tagValidation = constructGTProp(
+    callExpr.arguments,
+    id,
+    state,
+    canonicalName,
+    type
+  );
+  errors.push(...tagValidation.errors);
+  if (tagValidation.errors.length > 0) {
+    return { errors };
+  }
+  const tag: GTProp | undefined = tagValidation.value;
+
+  // Return result
+  const value: JsxElement = {
+    t: componentName,
+    i: idNumber,
+    c: children,
+    d: tag,
+  };
+  return { errors, value };
+}
+
+/**
+ * Given a canonical name, constructs a GTProp
+ */
+function constructGTProp(
+  args: (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[],
+  id: IdObject,
+  state: TransformState,
+  canonicalName?: string,
+  type?: VariableType
+): { errors: string[]; value?: GTProp } {
+  const errors: string[] = [];
+  const value: GTProp = {};
+
+  // Validate Parameters
+  if (args.length < 2) {
+    errors.push('Failed to construct GTProp! Missing parameters');
+    return { errors };
+  }
+  const parameters = args[1];
+  if (!t.isObjectExpression(parameters)) {
+    errors.push(
+      'Failed to construct GTProp! Parameter field must be an object expression'
+    );
+    return { errors };
+  }
+
+  // Get the html content props
+  Object.entries(HTML_CONTENT_PROPS).forEach(([prop, name]) => {
+    const validation = validateStringLiteralPropertyFromArg(parameters, name);
+    if (validation.errors.length > 0) {
+      errors.push(...validation.errors);
+      return { errors };
+    }
+    if (!validation.value) return;
+    value[prop as keyof typeof HTML_CONTENT_PROPS] = validation.value;
+  });
+
+  // For Branch and Plural, get the properties
+  if (
+    canonicalName &&
+    type === 'generaltranslation' &&
+    isBranchComponent(canonicalName)
+  ) {
+    // Add branch component type tag
+    value['t'] = canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : 'p';
+
+    // Get the branching parameters
+    const branchingParameters = getBranchComponentParameters(
+      parameters,
+      canonicalName
+    );
+
+    // Add branch component branches
+    const branches = {} as Record<string, JsxChildren>;
+
+    // Add branch component branches
+    for (const [name, parameter] of branchingParameters) {
+      const validation = _constructJsxChildren(parameter, state, id.copy());
+      errors.push(...validation.errors);
+      if (validation.errors.length > 0) {
+        return { errors };
+      }
+      if (!validation.value) continue;
+      branches[name] = validation.value;
+    }
+
+    if (Object.keys(branches).length > 0) {
+      value['b'] = branches;
+    }
+  }
+
+  // Return result
+  return { errors, value: Object.keys(value).length > 0 ? value : undefined };
+}
+
+/**
+ * Construct Variable
+ */
+function constructVariable(
+  canonicalName: GT_COMPONENT_TYPES,
+  args: (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[],
+  id: IdObject
+): { errors: string[]; value?: Variable } {
+  const errors: string[] = [];
+  // Validate Parameters
+  if (args.length < 2) {
+    errors.push('Failed to construct GTProp! Missing parameters');
+    return { errors };
+  }
+  const parameters = args[1];
+  if (!t.isObjectExpression(parameters)) {
+    errors.push(
+      'Failed to construct GTProp! Parameter field must be an object expression'
+    );
+    return { errors };
+  }
+
+  // Validate Parameters
+  const nameValidation = validateNameFieldForVarComponent(parameters);
+  errors.push(...nameValidation.errors);
+  if (nameValidation.errors.length > 0) {
+    return { errors };
+  }
+  const name = nameValidation.value;
+
+  // Check for name field
+  const value: Variable = {
+    i: id.get(),
+    k: getVariableName(
+      canonicalName as keyof typeof defaultVariableNames,
+      id.get(),
+      name
+    ),
+    v: minifyCanonicalName(canonicalName) as GTVariableType,
+  };
 
   return { errors, value };
 }

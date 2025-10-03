@@ -1,4 +1,8 @@
-import { REACT_IMPORT_SOURCES } from './constants';
+import {
+  REACT_COMPONENT_VALUES,
+  REACT_IMPORT_SOURCES,
+  ReactComponent,
+} from './constants';
 import { REACT_FUNCTION_VALUES, ReactFunction } from './constants';
 
 /**
@@ -17,4 +21,11 @@ export function isReactImportSource(
   return Object.values(REACT_IMPORT_SOURCES).includes(
     name as REACT_IMPORT_SOURCES
   );
+}
+
+/**
+ * Check if a component is a React component
+ */
+export function isReactComponent(name: string): name is ReactComponent {
+  return REACT_COMPONENT_VALUES.includes(name as ReactComponent);
 }

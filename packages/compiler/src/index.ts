@@ -23,8 +23,11 @@ import { processVariableAssignment } from './processing/processVariableDeclarato
 /**
  * TODO:
  * - Add tracking for special identifiers: undefined, Nan, etc.
+ * - Add override tracking for parameter declarations
+ * - Add override tracking for forLoop declaration (specifically: let gt of items; let gt in obj)
+ * - Add override tracking for catch clause declaration
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
- * - Add tracking for parameter declarations
+ * - Whitespace handling
  *
  * DONE:
  * - Add tracking for Fragment component

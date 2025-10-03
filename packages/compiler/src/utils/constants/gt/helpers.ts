@@ -8,7 +8,12 @@ import {
   GT_COMPONENT_TYPES,
   GT_FUNCTIONS_WITH_CALLBACKS,
   GT_IMPORT_SOURCES,
+  MINIFY_CANONICAL_NAME_MAP,
 } from './constants';
+import {
+  HTML_CONTENT_PROPS,
+  HtmlContentPropValuesRecord,
+} from 'generaltranslation/types';
 
 /**
  * Check if a name is a GT function
@@ -135,4 +140,50 @@ export function isJsxFunction(name: string): boolean {
  */
 export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
   return Object.values(GT_IMPORT_SOURCES).includes(name as GT_IMPORT_SOURCES);
+}
+
+/**
+ * Check if is a html content prop
+ */
+export function isHtmlContentProp(
+  name: string
+): name is keyof HtmlContentPropValuesRecord {
+  return Object.values(HTML_CONTENT_PROPS).includes(
+    name as keyof HtmlContentPropValuesRecord
+  );
+}
+
+/**
+ * Minify the canonical name
+ */
+export function minifyCanonicalName(canonicalName: GT_COMPONENT_TYPES): string {
+  return (
+    MINIFY_CANONICAL_NAME_MAP[
+      canonicalName as keyof typeof MINIFY_CANONICAL_NAME_MAP
+    ] || canonicalName
+  );
+}
+
+/**
+ * Default variable names
+ */
+export const defaultVariableNames = {
+  [GT_COMPONENT_TYPES.Var]: 'value',
+  [GT_COMPONENT_TYPES.Num]: 'n',
+  [GT_COMPONENT_TYPES.DateTime]: 'date',
+  [GT_COMPONENT_TYPES.Currency]: 'cost',
+} as const;
+const baseVariablePrefix = '_gt_';
+
+/**
+ * Get the variable name
+ */
+export function getVariableName(
+  variableType: keyof typeof defaultVariableNames,
+  id: number,
+  name?: string
+): string {
+  if (name) return name;
+  const baseVariableName = defaultVariableNames[variableType] || 'value';
+  return `${baseVariablePrefix}${baseVariableName}_${id}`;
 }
