@@ -1,6 +1,5 @@
 import * as t from '@babel/types';
 import { GT_COMPONENT_TYPES } from '../../../utils/constants/gt/constants';
-import { isHtmlContentProp } from '../../../utils/constants/gt/helpers';
 /**
  * Given object expression, get the branch component args
  */
@@ -13,9 +12,11 @@ export function getBranchComponentParameters(
     .map((property) => {
       // filter out non expression values
       if (!t.isObjectProperty(property)) {
+        console.log('Not an object property', property);
         return null;
       }
       if (!t.isExpression(property.value)) {
+        console.log('Not an expression', property.value);
         return null;
       }
 
@@ -23,14 +24,15 @@ export function getBranchComponentParameters(
       let propertyName: string;
       if (t.isStringLiteral(property.key)) {
         propertyName = property.key.value;
-      } else if (t.isIdentifier(property.value)) {
-        propertyName = property.value.name;
+      } else if (t.isIdentifier(property.key)) {
+        propertyName = property.key.name;
       } else {
+        console.log('Not an identifier', property.key);
         return null;
       }
 
-      // Filter out html content props
-      if (isHtmlContentProp(propertyName)) {
+      // Avoid children property
+      if (propertyName === 'children') {
         return null;
       }
 

@@ -1,6 +1,6 @@
 export class IdObject {
   id: number;
-  constructor(id: number = 1) {
+  constructor(id: number = 0) {
     this.id = id;
   }
   increment() {

@@ -232,7 +232,7 @@ function constructJsxElement(
     // Get the name of the componet
     componentName =
       canonicalName === REACT_COMPONENTS.Fragment
-        ? REACT_COMPONENTS.Fragment
+        ? `C${id.get()}`
         : functionName;
   } else {
     // Handle all other components: div, etc.
@@ -249,7 +249,8 @@ function constructJsxElement(
   // Construct JsxChildren
   const jsxChildrenValidation = _constructJsxChildren(
     childrenValidation.value,
-    state
+    state,
+    id
   );
   errors.push(...jsxChildrenValidation.errors);
   if (jsxChildrenValidation.errors.length > 0) {
@@ -275,8 +276,8 @@ function constructJsxElement(
   const value: JsxElement = {
     t: componentName,
     i: idNumber,
-    c: children,
     d: tag,
+    c: children,
   };
   return { errors, value };
 }
@@ -307,26 +308,12 @@ function constructGTProp(
     return { errors };
   }
 
-  // Get the html content props
-  Object.entries(HTML_CONTENT_PROPS).forEach(([prop, name]) => {
-    const validation = validateStringLiteralPropertyFromArg(parameters, name);
-    if (validation.errors.length > 0) {
-      errors.push(...validation.errors);
-      return { errors };
-    }
-    if (!validation.value) return;
-    value[prop as keyof typeof HTML_CONTENT_PROPS] = validation.value;
-  });
-
   // For Branch and Plural, get the properties
   if (
     canonicalName &&
     type === 'generaltranslation' &&
     isBranchComponent(canonicalName)
   ) {
-    // Add branch component type tag
-    value['t'] = canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : 'p';
-
     // Get the branching parameters
     const branchingParameters = getBranchComponentParameters(
       parameters,
@@ -349,7 +336,19 @@ function constructGTProp(
 
     if (Object.keys(branches).length > 0) {
       value['b'] = branches;
+      value['t'] = canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : 'p';
     }
+  } else {
+    // Get the html content props
+    Object.entries(HTML_CONTENT_PROPS).forEach(([prop, name]) => {
+      const validation = validateStringLiteralPropertyFromArg(parameters, name);
+      if (validation.errors.length > 0) {
+        errors.push(...validation.errors);
+        return { errors };
+      }
+      if (!validation.value) return;
+      value[prop as keyof typeof HTML_CONTENT_PROPS] = validation.value;
+    });
   }
 
   // Return result
