@@ -53,7 +53,7 @@ export async function checkFileTranslations(
 
   // Clear locale folders before any downloads (if enabled)
   if (
-    options.options?.clearTranslatedFiles === true &&
+    options.options?.experimentalClearTranslatedFiles === true &&
     fileQueryData.length > 0
   ) {
     const outputPaths = fileQueryData
