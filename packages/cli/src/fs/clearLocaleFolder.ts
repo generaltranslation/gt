@@ -11,17 +11,13 @@ export async function clearLocaleFolders(
 ): Promise<void> {
   for (const folder of localeFolders) {
     try {
-      const exists = await fs
-        .access(folder)
-        .then(() => true)
-        .catch(() => false);
-
-      if (exists) {
-        await fs.rm(folder, { recursive: true, force: true });
-        logSuccess(`Cleared locale folder: ${folder}`);
-      }
+      await fs.stat(folder);
+      await fs.rm(folder, { recursive: true, force: true });
+      logSuccess(`Cleared locale folder: ${folder}`);
     } catch (error) {
-      logWarning(`Failed to clear locale folder ${folder}: ${error}`);
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        logWarning(`Failed to clear locale folder ${folder}: ${error}`);
+      }
     }
   }
 }
