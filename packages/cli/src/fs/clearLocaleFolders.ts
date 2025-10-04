@@ -34,64 +34,31 @@ function extractLocaleDirectories(
   return localeDirs;
 }
 
-/**
- * Gets all files in a directory that should be deleted
- * Files matching exclude patterns are kept, everything else is deleted
- * @param dirPath - The directory path
- * @param excludePatterns - Array of glob patterns with [locale] or [locales] placeholder for files to KEEP
- * @param currentLocale - The current locale directory being processed (e.g., "es", "fr")
- * @param allLocales - All target locales for [locales] placeholder expansion
- * @param cwd - Current working directory for resolving relative paths
- * @returns Array of file paths that should be deleted
- */
 async function getFilesToDelete(
   dirPath: string,
-  excludePatterns: string[] | undefined,
+  excludePatterns: string[],
   currentLocale: string,
-  allLocales: string[],
   cwd: string
 ): Promise<string[]> {
-  // Get all files in the directory
   const allFiles = fg.sync(path.join(dirPath, '**/*'), {
     absolute: true,
     onlyFiles: true,
   });
 
-  // If no exclude patterns, delete everything
-  if (!excludePatterns || excludePatterns.length === 0) {
-    return allFiles;
-  }
+  const absoluteCwd = path.resolve(cwd);
+  const expandedExcludePatterns = excludePatterns.map((p) => {
+    const resolvedPattern = path.isAbsolute(p)
+      ? p
+      : path.join(absoluteCwd, p);
+    return resolvedPattern
+      .replace(/\[locale\]/g, currentLocale)
+      .replace(/\[locales\]/g, currentLocale);
+  });
 
-  // Expand exclude patterns with [locale] and [locales] placeholders
-  // These patterns identify files we want to KEEP
-  const expandedExcludePatterns = Array.from(
-    new Set(
-      excludePatterns.flatMap((p) => {
-        // Resolve relative paths to absolute paths
-        // Ensure cwd is always absolute by resolving it first
-        const absoluteCwd = path.resolve(cwd);
-        const resolvedPattern = path.isAbsolute(p)
-          ? p
-          : path.join(absoluteCwd, p);
-
-        // Replace [locale] with the current locale
-        // For [locales], we only want to match the current locale (not all locales)
-        return [
-          resolvedPattern
-            .replace(/\[locale\]/g, currentLocale)
-            .replace(/\[locales\]/g, currentLocale),
-        ];
-      })
-    )
-  );
-
-  // Find files that match the exclude patterns (these should be KEPT)
-  // Use micromatch to match patterns against the file list
   const filesToKeep = micromatch(allFiles, expandedExcludePatterns, {
     dot: true,
   });
 
-  // Return files that are NOT in the keep list
   const filesToKeepSet = new Set(filesToKeep);
   return allFiles.filter((file) => !filesToKeepSet.has(file));
 }
@@ -124,20 +91,16 @@ export async function clearLocaleFolders(
         continue;
       }
 
-      // If no exclude patterns, just delete the entire directory
-      if (!excludePatterns || excludePatterns.length === 0) {
+      if (!excludePatterns?.length) {
         await fs.rm(dir, { recursive: true, force: true });
         logSuccess(`Cleared locale directory: ${dir}`);
         continue;
       }
 
-      // Otherwise, selectively delete files using fast-glob
-      // Pass the current locale (not defaultLocale) so [locale] placeholder matches current directory
       const filesToDelete = await getFilesToDelete(
         dir,
         excludePatterns,
         locale,
-        locales,
         cwd
       );
 
