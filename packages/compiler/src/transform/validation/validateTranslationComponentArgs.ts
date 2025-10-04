@@ -113,7 +113,7 @@ export function validateChildrenProperty(
   }
 
   // TODO: remove
-  recordInputs(children, state);
+  // recordInputs(children, state);
 
   // Validate that the children property is a string literal
   const validation = constructJsxChildren(children, state);
