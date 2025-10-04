@@ -3,39 +3,51 @@ import path from 'node:path';
 import { logSuccess, logWarning } from '../console/logging.js';
 
 /**
- * Clears locale folders before writing new translations
- * @param localeFolders - Set of locale folder paths to clear
+ * Extracts locale directories from translated file paths.
+ * Groups files by their immediate parent containing a locale code.
+ * For example: "snippets/es/api-test/file.mdx" -> "snippets/es"
  */
-export async function clearLocaleFolders(
-  localeFolders: Set<string>
-): Promise<void> {
-  for (const folder of localeFolders) {
-    try {
-      await fs.stat(folder);
-      await fs.rm(folder, { recursive: true, force: true });
-      logSuccess(`Cleared locale folder: ${folder}`);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logWarning(`Failed to clear locale folder ${folder}: ${error}`);
+function extractLocaleDirectories(filePaths: Set<string>): Set<string> {
+  const localeDirs = new Set<string>();
+
+  for (const filePath of filePaths) {
+    const parts = filePath.split(path.sep);
+
+    // Find directory segments that are likely locale codes (2-3 letter codes)
+    for (let i = 0; i < parts.length - 1; i++) {
+      const segment = parts[i];
+      // Match common locale patterns: 2-5 chars, possibly with hyphen (en, es, en-US, zh-CN)
+      if (/^[a-z]{2}(-[A-Z]{2})?$/.test(segment)) {
+        // Found a locale directory, capture up to and including this segment
+        const localeDir = parts.slice(0, i + 1).join(path.sep);
+        localeDirs.add(localeDir);
+        break;
       }
     }
   }
+
+  return localeDirs;
 }
 
 /**
- * Extracts unique locale folders from file paths
- * @param filePaths - Array of file paths that contain locale-specific directories
- * @returns Set of unique locale folder paths
+ * Clears translated files before writing new translations
+ * @param filePaths - Set of translated file paths to clear
  */
-export function extractLocaleFolders(filePaths: string[]): Set<string> {
-  const folders = new Set<string>();
+export async function clearTranslatedFiles(
+  filePaths: Set<string>
+): Promise<void> {
+  // Extract locale directories and delete them recursively
+  const localeDirs = extractLocaleDirectories(filePaths);
 
-  for (const filePath of filePaths) {
-    const dir = path.dirname(filePath);
-    // Get the top-level locale directory by finding the parent until we hit a known locale pattern
-    // For paths like "snippets/es/file.md", we want to capture "snippets/es"
-    folders.add(dir);
+  for (const dir of localeDirs) {
+    try {
+      await fs.stat(dir);
+      await fs.rm(dir, { recursive: true, force: true });
+      logSuccess(`Cleared locale directory: ${dir}`);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        logWarning(`Failed to clear locale directory ${dir}: ${error}`);
+      }
+    }
   }
-
-  return folders;
 }

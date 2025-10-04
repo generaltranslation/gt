@@ -5,10 +5,7 @@ import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
-import {
-  clearLocaleFolders,
-  extractLocaleFolders,
-} from '../fs/clearLocaleFolder.js';
+import { clearTranslatedFiles } from '../fs/clearLocaleFolder.js';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -51,16 +48,23 @@ export async function checkFileTranslations(
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
 
-  // Clear locale folders before any downloads (if enabled)
+  // Clear translated files before any downloads (if enabled)
   if (
     options.options?.experimentalClearTranslatedFiles === true &&
     fileQueryData.length > 0
   ) {
-    const outputPaths = fileQueryData
-      .map((file) => resolveOutputPath(file.fileName, file.locale))
-      .filter((path): path is string => path !== null);
-    const localeFolders = extractLocaleFolders(outputPaths);
-    await clearLocaleFolders(localeFolders);
+    const translatedFiles = new Set(
+      fileQueryData
+        .map((file) => {
+          const outputPath = resolveOutputPath(file.fileName, file.locale);
+          // Only clear if the output path is different from the source (i.e., there's a transform)
+          return outputPath !== null && outputPath !== file.fileName
+            ? outputPath
+            : null;
+        })
+        .filter((path): path is string => path !== null)
+    );
+    await clearTranslatedFiles(translatedFiles);
   }
 
   const downloadStatus = {
