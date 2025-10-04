@@ -47,9 +47,7 @@ async function getFilesToDelete(
 
   const absoluteCwd = path.resolve(cwd);
   const expandedExcludePatterns = excludePatterns.map((p) => {
-    const resolvedPattern = path.isAbsolute(p)
-      ? p
-      : path.join(absoluteCwd, p);
+    const resolvedPattern = path.isAbsolute(p) ? p : path.join(absoluteCwd, p);
     return resolvedPattern
       .replace(/\[locale\]/g, currentLocale)
       .replace(/\[locales\]/g, currentLocale);
