@@ -64,7 +64,7 @@ export async function checkFileTranslations(
         })
         .filter((path): path is string => path !== null)
     );
-    await clearTranslatedFiles(translatedFiles, locales);
+    await clearTranslatedFiles(translatedFiles);
   }
 
   const downloadStatus = {
