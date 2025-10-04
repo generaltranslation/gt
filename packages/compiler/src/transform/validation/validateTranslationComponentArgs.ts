@@ -112,6 +112,9 @@ export function validateChildrenProperty(
     return { errors };
   }
 
+  // TODO: remove
+  // recordInputs(children, state);
+
   // Validate that the children property is a string literal
   const validation = constructJsxChildren(children, state);
   errors.push(...validation.errors);
@@ -200,4 +203,31 @@ function getStringLiteralFromExpression(
       return expr.quasis[0]?.value.cooked || '';
     }
   }
+}
+
+// TODO: remove
+function recordInputs(children: any, state: TransformState) {
+  // console.log(`[GT_PLUGIN] Recording inputs`);
+  const output = {
+    children,
+    state: {
+      stringCollector: state.stringCollector.serialize(),
+      importTracker: state.importTracker.serialize(),
+    },
+  };
+  const stringifiedOutput = JSON.stringify(output, null, 2);
+
+  const fs = require('fs');
+  const path = require('path');
+
+  const outputDir = path.dirname(state.settings.filename || '');
+  const filePath = path.join(outputDir, 'state.json');
+
+  if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+  }
+  // console.log('[GT_PLUGIN] Writing to', filePath);
+  fs.writeFileSync(filePath, stringifiedOutput);
 }

@@ -12,6 +12,9 @@ import {
 import renderVariable from '../variables/renderVariable';
 import { hashSource } from 'generaltranslation/id';
 
+// TODO: remove
+import { headers } from 'next/headers';
+
 /**
  * Build-time translation component that renders its children in the user's given locale.
  *
@@ -111,10 +114,7 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    console.log(
-      '[GT-NEXT] <T>: childrenAsObjects',
-      JSON.stringify(childrenAsObjects, null, 2)
-    );
+    // recordJsxChildren(childrenAsObjects); // TODO: REMOVE
     hash =
       _hash ||
       hashSource({
@@ -166,10 +166,6 @@ async function T({
   const translationPromise = (async () => {
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
-      console.log(
-        '[GT-NEXT] <T>: childrenAsObjects',
-        JSON.stringify(childrenAsObjects, null, 2)
-      );
       hash ||=
         _hash ||
         hashSource({
@@ -218,3 +214,27 @@ async function T({
 T._gtt = 'translate-server';
 
 export default T;
+
+// TODO: remove
+async function recordJsxChildren(children: any) {
+  // console.log(`[GT-NEXT] Recording JsxChildren`);
+  const fs = require('fs');
+  const path = require('path');
+
+  const headerList = await headers();
+  const pathname = headerList.get('x-current-path');
+  if (!pathname) {
+    throw new Error('Pathname not found');
+  }
+
+  const outputDir = path.join(process.cwd(), 'app', pathname || '');
+  const filePath = path.join(outputDir, 'expected.json');
+
+  if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+  }
+  // console.log('[GT-NEXT] Writing to', filePath);
+  fs.writeFileSync(filePath, JSON.stringify(children, null, 2));
+}

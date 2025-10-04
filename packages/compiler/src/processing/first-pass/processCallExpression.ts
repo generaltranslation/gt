@@ -231,9 +231,7 @@ function handleReactInvocation(
   // Validate the arguments
   const { errors, _hash, id, context, children } =
     validateTranslationComponentArgs(callExpr, canonicalName, state);
-  if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log('[GT_PLUGIN] JsxChildren:', JSON.stringify(children, null, 2));
-  }
+
   if (errors.length > 0) {
     state.errorTracker.addErrors(errors);
     return;

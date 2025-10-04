@@ -73,7 +73,7 @@ export function _constructJsxChildren(
         return { errors };
       }
       // Skip if no value
-      if (validation.value === undefined) break;
+      if (validation.value === undefined) continue;
       (value as JsxChild[]).push(validation.value!);
     }
   } else {
@@ -121,7 +121,7 @@ function constructJsxChild(
   } else if (t.isNumericLiteral(child)) {
     value = child.value.toString();
   } else if (t.isBooleanLiteral(child)) {
-    value = child.value.toString();
+    value = undefined;
   } else if (t.isNullLiteral(child)) {
     value = undefined;
   } else if (t.isIdentifier(child)) {
@@ -276,8 +276,8 @@ function constructJsxElement(
   const value: JsxElement = {
     t: componentName,
     i: idNumber,
-    d: tag,
-    c: children,
+    ...(tag !== undefined && { d: tag }),
+    ...(children !== undefined && { c: children }),
   };
   return { errors, value };
 }
@@ -330,7 +330,7 @@ function constructGTProp(
       if (validation.errors.length > 0) {
         return { errors };
       }
-      if (!validation.value) continue;
+      if (validation.value === undefined) continue;
       branches[name] = validation.value;
     }
 
@@ -346,7 +346,7 @@ function constructGTProp(
         errors.push(...validation.errors);
         return { errors };
       }
-      if (!validation.value) return;
+      if (validation.value === undefined) return;
       value[prop as keyof typeof HTML_CONTENT_PROPS] = validation.value;
     });
   }

@@ -1,0 +1,1039 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 212,
+    "end": 723,
+    "loc": {
+      "start": {
+        "line": 6,
+        "column": 18,
+        "index": 212
+      },
+      "end": {
+        "line": 23,
+        "column": 9,
+        "index": 723
+      }
+    },
+    "elements": [
+      {
+        "type": "CallExpression",
+        "start": 240,
+        "end": 335,
+        "loc": {
+          "start": {
+            "line": 7,
+            "column": 26,
+            "index": 240
+          },
+          "end": {
+            "line": 10,
+            "column": 14,
+            "index": 335
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 240,
+          "end": 244,
+          "loc": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "index": 240
+            },
+            "end": {
+              "line": 7,
+              "column": 30,
+              "index": 244
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 245,
+            "end": 253,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 31,
+                "index": 245
+              },
+              "end": {
+                "line": 7,
+                "column": 39,
+                "index": 253
+              },
+              "identifierName": "Currency"
+            },
+            "name": "Currency"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 255,
+            "end": 334,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 41,
+                "index": 255
+              },
+              "end": {
+                "line": 10,
+                "column": 13,
+                "index": 334
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 273,
+                "end": 288,
+                "loc": {
+                  "start": {
+                    "line": 8,
+                    "column": 16,
+                    "index": 273
+                  },
+                  "end": {
+                    "line": 8,
+                    "column": 31,
+                    "index": 288
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 273,
+                  "end": 281,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 16,
+                      "index": 273
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 24,
+                      "index": 281
+                    },
+                    "identifierName": "currency"
+                  },
+                  "name": "currency"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 283,
+                  "end": 288,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 26,
+                      "index": 283
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 31,
+                      "index": 288
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "USD",
+                    "raw": "\"USD\""
+                  },
+                  "value": "USD"
+                }
+              },
+              {
+                "type": "ObjectProperty",
+                "start": 306,
+                "end": 320,
+                "loc": {
+                  "start": {
+                    "line": 9,
+                    "column": 16,
+                    "index": 306
+                  },
+                  "end": {
+                    "line": 9,
+                    "column": 30,
+                    "index": 320
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 306,
+                  "end": 314,
+                  "loc": {
+                    "start": {
+                      "line": 9,
+                      "column": 16,
+                      "index": 306
+                    },
+                    "end": {
+                      "line": 9,
+                      "column": 24,
+                      "index": 314
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Identifier",
+                  "start": 316,
+                  "end": 320,
+                  "loc": {
+                    "start": {
+                      "line": 9,
+                      "column": 26,
+                      "index": 316
+                    },
+                    "end": {
+                      "line": 9,
+                      "column": 30,
+                      "index": 320
+                    },
+                    "identifierName": "test"
+                  },
+                  "name": "test"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 226,
+            "end": 239,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 226
+              },
+              "end": {
+                "line": 7,
+                "column": 25,
+                "index": 239
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 363,
+        "end": 466,
+        "loc": {
+          "start": {
+            "line": 11,
+            "column": 26,
+            "index": 363
+          },
+          "end": {
+            "line": 14,
+            "column": 14,
+            "index": 466
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 363,
+          "end": 367,
+          "loc": {
+            "start": {
+              "line": 11,
+              "column": 26,
+              "index": 363
+            },
+            "end": {
+              "line": 11,
+              "column": 30,
+              "index": 367
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 368,
+            "end": 376,
+            "loc": {
+              "start": {
+                "line": 11,
+                "column": 31,
+                "index": 368
+              },
+              "end": {
+                "line": 11,
+                "column": 39,
+                "index": 376
+              },
+              "identifierName": "Currency"
+            },
+            "name": "Currency"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 378,
+            "end": 465,
+            "loc": {
+              "start": {
+                "line": 11,
+                "column": 41,
+                "index": 378
+              },
+              "end": {
+                "line": 14,
+                "column": 13,
+                "index": 465
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 396,
+                "end": 411,
+                "loc": {
+                  "start": {
+                    "line": 12,
+                    "column": 16,
+                    "index": 396
+                  },
+                  "end": {
+                    "line": 12,
+                    "column": 31,
+                    "index": 411
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 396,
+                  "end": 404,
+                  "loc": {
+                    "start": {
+                      "line": 12,
+                      "column": 16,
+                      "index": 396
+                    },
+                    "end": {
+                      "line": 12,
+                      "column": 24,
+                      "index": 404
+                    },
+                    "identifierName": "currency"
+                  },
+                  "name": "currency"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 406,
+                  "end": 411,
+                  "loc": {
+                    "start": {
+                      "line": 12,
+                      "column": 26,
+                      "index": 406
+                    },
+                    "end": {
+                      "line": 12,
+                      "column": 31,
+                      "index": 411
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "USD",
+                    "raw": "\"USD\""
+                  },
+                  "value": "USD"
+                }
+              },
+              {
+                "type": "ObjectProperty",
+                "start": 429,
+                "end": 451,
+                "loc": {
+                  "start": {
+                    "line": 13,
+                    "column": 16,
+                    "index": 429
+                  },
+                  "end": {
+                    "line": 13,
+                    "column": 38,
+                    "index": 451
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 429,
+                  "end": 437,
+                  "loc": {
+                    "start": {
+                      "line": 13,
+                      "column": 16,
+                      "index": 429
+                    },
+                    "end": {
+                      "line": 13,
+                      "column": 24,
+                      "index": 437
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "CallExpression",
+                  "start": 439,
+                  "end": 451,
+                  "loc": {
+                    "start": {
+                      "line": 13,
+                      "column": 26,
+                      "index": 439
+                    },
+                    "end": {
+                      "line": 13,
+                      "column": 38,
+                      "index": 451
+                    }
+                  },
+                  "callee": {
+                    "type": "ArrowFunctionExpression",
+                    "start": 440,
+                    "end": 448,
+                    "loc": {
+                      "start": {
+                        "line": 13,
+                        "column": 27,
+                        "index": 440
+                      },
+                      "end": {
+                        "line": 13,
+                        "column": 35,
+                        "index": 448
+                      }
+                    },
+                    "id": null,
+                    "generator": false,
+                    "async": false,
+                    "params": [],
+                    "body": {
+                      "type": "Identifier",
+                      "start": 444,
+                      "end": 448,
+                      "loc": {
+                        "start": {
+                          "line": 13,
+                          "column": 31,
+                          "index": 444
+                        },
+                        "end": {
+                          "line": 13,
+                          "column": 35,
+                          "index": 448
+                        },
+                        "identifierName": "test"
+                      },
+                      "name": "test"
+                    },
+                    "extra": {
+                      "parenthesized": true,
+                      "parenStart": 439
+                    }
+                  },
+                  "arguments": []
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 349,
+            "end": 362,
+            "loc": {
+              "start": {
+                "line": 11,
+                "column": 12,
+                "index": 349
+              },
+              "end": {
+                "line": 11,
+                "column": 25,
+                "index": 362
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 494,
+        "end": 593,
+        "loc": {
+          "start": {
+            "line": 15,
+            "column": 26,
+            "index": 494
+          },
+          "end": {
+            "line": 18,
+            "column": 14,
+            "index": 593
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 494,
+          "end": 498,
+          "loc": {
+            "start": {
+              "line": 15,
+              "column": 26,
+              "index": 494
+            },
+            "end": {
+              "line": 15,
+              "column": 30,
+              "index": 498
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 499,
+            "end": 507,
+            "loc": {
+              "start": {
+                "line": 15,
+                "column": 31,
+                "index": 499
+              },
+              "end": {
+                "line": 15,
+                "column": 39,
+                "index": 507
+              },
+              "identifierName": "Currency"
+            },
+            "name": "Currency"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 509,
+            "end": 592,
+            "loc": {
+              "start": {
+                "line": 15,
+                "column": 41,
+                "index": 509
+              },
+              "end": {
+                "line": 18,
+                "column": 13,
+                "index": 592
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 527,
+                "end": 542,
+                "loc": {
+                  "start": {
+                    "line": 16,
+                    "column": 16,
+                    "index": 527
+                  },
+                  "end": {
+                    "line": 16,
+                    "column": 31,
+                    "index": 542
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 527,
+                  "end": 535,
+                  "loc": {
+                    "start": {
+                      "line": 16,
+                      "column": 16,
+                      "index": 527
+                    },
+                    "end": {
+                      "line": 16,
+                      "column": 24,
+                      "index": 535
+                    },
+                    "identifierName": "currency"
+                  },
+                  "name": "currency"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 537,
+                  "end": 542,
+                  "loc": {
+                    "start": {
+                      "line": 16,
+                      "column": 26,
+                      "index": 537
+                    },
+                    "end": {
+                      "line": 16,
+                      "column": 31,
+                      "index": 542
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "USD",
+                    "raw": "\"USD\""
+                  },
+                  "value": "USD"
+                }
+              },
+              {
+                "type": "ObjectProperty",
+                "start": 560,
+                "end": 578,
+                "loc": {
+                  "start": {
+                    "line": 17,
+                    "column": 16,
+                    "index": 560
+                  },
+                  "end": {
+                    "line": 17,
+                    "column": 34,
+                    "index": 578
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 560,
+                  "end": 568,
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 16,
+                      "index": 560
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 24,
+                      "index": 568
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "BinaryExpression",
+                  "start": 570,
+                  "end": 578,
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 26,
+                      "index": 570
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 34,
+                      "index": 578
+                    }
+                  },
+                  "left": {
+                    "type": "Identifier",
+                    "start": 570,
+                    "end": 574,
+                    "loc": {
+                      "start": {
+                        "line": 17,
+                        "column": 26,
+                        "index": 570
+                      },
+                      "end": {
+                        "line": 17,
+                        "column": 30,
+                        "index": 574
+                      },
+                      "identifierName": "test"
+                    },
+                    "name": "test"
+                  },
+                  "operator": "+",
+                  "right": {
+                    "type": "NumericLiteral",
+                    "start": 577,
+                    "end": 578,
+                    "loc": {
+                      "start": {
+                        "line": 17,
+                        "column": 33,
+                        "index": 577
+                      },
+                      "end": {
+                        "line": 17,
+                        "column": 34,
+                        "index": 578
+                      }
+                    },
+                    "extra": {
+                      "rawValue": 1,
+                      "raw": "1"
+                    },
+                    "value": 1
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 480,
+            "end": 493,
+            "loc": {
+              "start": {
+                "line": 15,
+                "column": 12,
+                "index": 480
+              },
+              "end": {
+                "line": 15,
+                "column": 25,
+                "index": 493
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 621,
+        "end": 713,
+        "loc": {
+          "start": {
+            "line": 19,
+            "column": 26,
+            "index": 621
+          },
+          "end": {
+            "line": 22,
+            "column": 14,
+            "index": 713
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 621,
+          "end": 625,
+          "loc": {
+            "start": {
+              "line": 19,
+              "column": 26,
+              "index": 621
+            },
+            "end": {
+              "line": 19,
+              "column": 30,
+              "index": 625
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 626,
+            "end": 634,
+            "loc": {
+              "start": {
+                "line": 19,
+                "column": 31,
+                "index": 626
+              },
+              "end": {
+                "line": 19,
+                "column": 39,
+                "index": 634
+              },
+              "identifierName": "Currency"
+            },
+            "name": "Currency"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 636,
+            "end": 712,
+            "loc": {
+              "start": {
+                "line": 19,
+                "column": 41,
+                "index": 636
+              },
+              "end": {
+                "line": 22,
+                "column": 13,
+                "index": 712
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 654,
+                "end": 669,
+                "loc": {
+                  "start": {
+                    "line": 20,
+                    "column": 16,
+                    "index": 654
+                  },
+                  "end": {
+                    "line": 20,
+                    "column": 31,
+                    "index": 669
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 654,
+                  "end": 662,
+                  "loc": {
+                    "start": {
+                      "line": 20,
+                      "column": 16,
+                      "index": 654
+                    },
+                    "end": {
+                      "line": 20,
+                      "column": 24,
+                      "index": 662
+                    },
+                    "identifierName": "currency"
+                  },
+                  "name": "currency"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 664,
+                  "end": 669,
+                  "loc": {
+                    "start": {
+                      "line": 20,
+                      "column": 26,
+                      "index": 664
+                    },
+                    "end": {
+                      "line": 20,
+                      "column": 31,
+                      "index": 669
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "USD",
+                    "raw": "\"USD\""
+                  },
+                  "value": "USD"
+                }
+              },
+              {
+                "type": "ObjectProperty",
+                "start": 687,
+                "end": 698,
+                "loc": {
+                  "start": {
+                    "line": 21,
+                    "column": 16,
+                    "index": 687
+                  },
+                  "end": {
+                    "line": 21,
+                    "column": 27,
+                    "index": 698
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 687,
+                  "end": 695,
+                  "loc": {
+                    "start": {
+                      "line": 21,
+                      "column": 16,
+                      "index": 687
+                    },
+                    "end": {
+                      "line": 21,
+                      "column": 24,
+                      "index": 695
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "NumericLiteral",
+                  "start": 697,
+                  "end": 698,
+                  "loc": {
+                    "start": {
+                      "line": 21,
+                      "column": 26,
+                      "index": 697
+                    },
+                    "end": {
+                      "line": 21,
+                      "column": 27,
+                      "index": 698
+                    }
+                  },
+                  "extra": {
+                    "rawValue": 0,
+                    "raw": "0"
+                  },
+                  "value": 0
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 607,
+            "end": 620,
+            "loc": {
+              "start": {
+                "line": 19,
+                "column": 12,
+                "index": 607
+              },
+              "end": {
+                "line": 19,
+                "column": 25,
+                "index": 620
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "aggregators": [],
+      "globalCallCounter": 0
+    },
+    "importTracker": {
+      "scopeTracker": {
+        "nextScopeId": 3,
+        "currentScope": 2,
+        "scopeStack": [
+          0,
+          1
+        ],
+        "scopeInfo": {
+          "1": {
+            "id": 1,
+            "parentId": 0,
+            "depth": 0
+          },
+          "2": {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2
+          }
+        },
+        "scopedVariables": {
+          "_jsx": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsx",
+              "aliasName": "_jsx",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "_jsxs": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsxs",
+              "aliasName": "_jsxs",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "T": [
+            {
+              "scopeId": 0,
+              "canonicalName": "T",
+              "aliasName": "T",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ],
+          "Currency": [
+            {
+              "scopeId": 0,
+              "canonicalName": "Currency",
+              "aliasName": "Currency",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ]
+        },
+        "namespaceImports": []
+      },
+      "namespaceImports": []
+    }
+  }
+}

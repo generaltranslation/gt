@@ -179,9 +179,9 @@ export function performSecondPassTransformation(
   state: TransformState
 ): boolean {
   if (state.settings.filename?.endsWith('page.tsx')) {
-    console.log('[GT_PLUGIN] ===============================');
-    console.log('[GT_PLUGIN]         PASS 2');
-    console.log('[GT_PLUGIN] ===============================');
+    // console.log('[GT_PLUGIN] ===============================');
+    // console.log('[GT_PLUGIN]         PASS 2');
+    // console.log('[GT_PLUGIN] ===============================');
   }
   // Reset counter for second pass - matches Rust TransformVisitor::new()
   state.stringCollector.resetCounter();

@@ -1,0 +1,600 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 186,
+    "end": 422,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 32,
+        "index": 186
+      },
+      "end": {
+        "line": 13,
+        "column": 10,
+        "index": 422
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 186,
+      "end": 190,
+      "loc": {
+        "start": {
+          "line": 5,
+          "column": 32,
+          "index": 186
+        },
+        "end": {
+          "line": 5,
+          "column": 36,
+          "index": 190
+        },
+        "identifierName": "_jsx"
+      },
+      "name": "_jsx"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 191,
+        "end": 197,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 37,
+            "index": 191
+          },
+          "end": {
+            "line": 5,
+            "column": 43,
+            "index": 197
+          },
+          "identifierName": "Plural"
+        },
+        "name": "Plural"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 199,
+        "end": 421,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 45,
+            "index": 199
+          },
+          "end": {
+            "line": 13,
+            "column": 9,
+            "index": 421
+          }
+        },
+        "properties": [
+          {
+            "type": "ObjectProperty",
+            "start": 213,
+            "end": 217,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 12,
+                "index": 213
+              },
+              "end": {
+                "line": 6,
+                "column": 16,
+                "index": 217
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 213,
+              "end": 214,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 12,
+                  "index": 213
+                },
+                "end": {
+                  "line": 6,
+                  "column": 13,
+                  "index": 214
+                },
+                "identifierName": "n"
+              },
+              "name": "n"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 216,
+              "end": 217,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 15,
+                  "index": 216
+                },
+                "end": {
+                  "line": 6,
+                  "column": 16,
+                  "index": 217
+                }
+              },
+              "extra": {
+                "rawValue": 1,
+                "raw": "1"
+              },
+              "value": 1
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 231,
+            "end": 376,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 231
+              },
+              "end": {
+                "line": 11,
+                "column": 14,
+                "index": 376
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 231,
+              "end": 234,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 12,
+                  "index": 231
+                },
+                "end": {
+                  "line": 7,
+                  "column": 15,
+                  "index": 234
+                },
+                "identifierName": "one"
+              },
+              "name": "one"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "CallExpression",
+              "start": 250,
+              "end": 376,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 31,
+                  "index": 250
+                },
+                "end": {
+                  "line": 11,
+                  "column": 14,
+                  "index": 376
+                }
+              },
+              "callee": {
+                "type": "Identifier",
+                "start": 250,
+                "end": 254,
+                "loc": {
+                  "start": {
+                    "line": 7,
+                    "column": 31,
+                    "index": 250
+                  },
+                  "end": {
+                    "line": 7,
+                    "column": 35,
+                    "index": 254
+                  },
+                  "identifierName": "_jsx"
+                },
+                "name": "_jsx"
+              },
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "start": 255,
+                  "end": 261,
+                  "loc": {
+                    "start": {
+                      "line": 7,
+                      "column": 36,
+                      "index": 255
+                    },
+                    "end": {
+                      "line": 7,
+                      "column": 42,
+                      "index": 261
+                    },
+                    "identifierName": "Plural"
+                  },
+                  "name": "Plural"
+                },
+                {
+                  "type": "ObjectExpression",
+                  "start": 263,
+                  "end": 375,
+                  "loc": {
+                    "start": {
+                      "line": 7,
+                      "column": 44,
+                      "index": 263
+                    },
+                    "end": {
+                      "line": 11,
+                      "column": 13,
+                      "index": 375
+                    }
+                  },
+                  "properties": [
+                    {
+                      "type": "ObjectProperty",
+                      "start": 281,
+                      "end": 285,
+                      "loc": {
+                        "start": {
+                          "line": 8,
+                          "column": 16,
+                          "index": 281
+                        },
+                        "end": {
+                          "line": 8,
+                          "column": 20,
+                          "index": 285
+                        }
+                      },
+                      "method": false,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 281,
+                        "end": 282,
+                        "loc": {
+                          "start": {
+                            "line": 8,
+                            "column": 16,
+                            "index": 281
+                          },
+                          "end": {
+                            "line": 8,
+                            "column": 17,
+                            "index": 282
+                          },
+                          "identifierName": "n"
+                        },
+                        "name": "n"
+                      },
+                      "computed": false,
+                      "shorthand": false,
+                      "value": {
+                        "type": "NumericLiteral",
+                        "start": 284,
+                        "end": 285,
+                        "loc": {
+                          "start": {
+                            "line": 8,
+                            "column": 19,
+                            "index": 284
+                          },
+                          "end": {
+                            "line": 8,
+                            "column": 20,
+                            "index": 285
+                          }
+                        },
+                        "extra": {
+                          "rawValue": 1,
+                          "raw": "1"
+                        },
+                        "value": 1
+                      }
+                    },
+                    {
+                      "type": "ObjectProperty",
+                      "start": 303,
+                      "end": 322,
+                      "loc": {
+                        "start": {
+                          "line": 9,
+                          "column": 16,
+                          "index": 303
+                        },
+                        "end": {
+                          "line": 9,
+                          "column": 35,
+                          "index": 322
+                        }
+                      },
+                      "method": false,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 303,
+                        "end": 306,
+                        "loc": {
+                          "start": {
+                            "line": 9,
+                            "column": 16,
+                            "index": 303
+                          },
+                          "end": {
+                            "line": 9,
+                            "column": 19,
+                            "index": 306
+                          },
+                          "identifierName": "one"
+                        },
+                        "name": "one"
+                      },
+                      "computed": false,
+                      "shorthand": false,
+                      "value": {
+                        "type": "StringLiteral",
+                        "start": 308,
+                        "end": 322,
+                        "loc": {
+                          "start": {
+                            "line": 9,
+                            "column": 21,
+                            "index": 308
+                          },
+                          "end": {
+                            "line": 9,
+                            "column": 35,
+                            "index": 322
+                          }
+                        },
+                        "extra": {
+                          "rawValue": "Good morning",
+                          "raw": "\"Good morning\""
+                        },
+                        "value": "Good morning"
+                      }
+                    },
+                    {
+                      "type": "ObjectProperty",
+                      "start": 340,
+                      "end": 361,
+                      "loc": {
+                        "start": {
+                          "line": 10,
+                          "column": 16,
+                          "index": 340
+                        },
+                        "end": {
+                          "line": 10,
+                          "column": 37,
+                          "index": 361
+                        }
+                      },
+                      "method": false,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 340,
+                        "end": 345,
+                        "loc": {
+                          "start": {
+                            "line": 10,
+                            "column": 16,
+                            "index": 340
+                          },
+                          "end": {
+                            "line": 10,
+                            "column": 21,
+                            "index": 345
+                          },
+                          "identifierName": "other"
+                        },
+                        "name": "other"
+                      },
+                      "computed": false,
+                      "shorthand": false,
+                      "value": {
+                        "type": "StringLiteral",
+                        "start": 347,
+                        "end": 361,
+                        "loc": {
+                          "start": {
+                            "line": 10,
+                            "column": 23,
+                            "index": 347
+                          },
+                          "end": {
+                            "line": 10,
+                            "column": 37,
+                            "index": 361
+                          }
+                        },
+                        "extra": {
+                          "rawValue": "Good evening",
+                          "raw": "\"Good evening\""
+                        },
+                        "value": "Good evening"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": "#__PURE__",
+                  "start": 236,
+                  "end": 249,
+                  "loc": {
+                    "start": {
+                      "line": 7,
+                      "column": 17,
+                      "index": 236
+                    },
+                    "end": {
+                      "line": 7,
+                      "column": 30,
+                      "index": 249
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 390,
+            "end": 411,
+            "loc": {
+              "start": {
+                "line": 12,
+                "column": 12,
+                "index": 390
+              },
+              "end": {
+                "line": 12,
+                "column": 33,
+                "index": 411
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 390,
+              "end": 395,
+              "loc": {
+                "start": {
+                  "line": 12,
+                  "column": 12,
+                  "index": 390
+                },
+                "end": {
+                  "line": 12,
+                  "column": 17,
+                  "index": 395
+                },
+                "identifierName": "other"
+              },
+              "name": "other"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 397,
+              "end": 411,
+              "loc": {
+                "start": {
+                  "line": 12,
+                  "column": 19,
+                  "index": 397
+                },
+                "end": {
+                  "line": 12,
+                  "column": 33,
+                  "index": 411
+                }
+              },
+              "extra": {
+                "rawValue": "Good evening",
+                "raw": "\"Good evening\""
+              },
+              "value": "Good evening"
+            }
+          }
+        ]
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 172,
+        "end": 185,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 18,
+            "index": 172
+          },
+          "end": {
+            "line": 5,
+            "column": 31,
+            "index": 185
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "aggregators": [],
+      "globalCallCounter": 0
+    },
+    "importTracker": {
+      "scopeTracker": {
+        "nextScopeId": 3,
+        "currentScope": 2,
+        "scopeStack": [
+          0,
+          1
+        ],
+        "scopeInfo": {
+          "1": {
+            "id": 1,
+            "parentId": 0,
+            "depth": 0
+          },
+          "2": {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2
+          }
+        },
+        "scopedVariables": {
+          "_jsx": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsx",
+              "aliasName": "_jsx",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "T": [
+            {
+              "scopeId": 0,
+              "canonicalName": "T",
+              "aliasName": "T",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ],
+          "Plural": [
+            {
+              "scopeId": 0,
+              "canonicalName": "Plural",
+              "aliasName": "Plural",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ]
+        },
+        "namespaceImports": []
+      },
+      "namespaceImports": []
+    }
+  }
+}

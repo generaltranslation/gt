@@ -1,0 +1,12 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "morning": "Good morning",
+      "evening": "Good evening"
+    },
+    "t": "b"
+  },
+  "c": "default"
+}

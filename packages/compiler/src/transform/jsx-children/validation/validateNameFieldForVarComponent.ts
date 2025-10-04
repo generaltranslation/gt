@@ -29,8 +29,8 @@ export function validateNameFieldForVarComponent(
     return { errors };
   }
   if (
-    !t.isStringLiteral(nameProperty.value) ||
-    t.isTemplateLiteral(nameProperty.value)
+    !t.isStringLiteral(nameProperty.value) &&
+    !t.isTemplateLiteral(nameProperty.value)
   ) {
     errors.push(
       'Failed to construct Variable! Name field must be a string literal'

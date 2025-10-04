@@ -1,0 +1,272 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 185,
+    "end": 310,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 18,
+        "index": 185
+      },
+      "end": {
+        "line": 10,
+        "column": 9,
+        "index": 310
+      }
+    },
+    "elements": [
+      {
+        "type": "StringLiteral",
+        "start": 199,
+        "end": 214,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 12,
+            "index": 199
+          },
+          "end": {
+            "line": 6,
+            "column": 27,
+            "index": 214
+          }
+        },
+        "extra": {
+          "rawValue": "First sibling",
+          "raw": "\"First sibling\""
+        },
+        "value": "First sibling"
+      },
+      {
+        "type": "CallExpression",
+        "start": 242,
+        "end": 300,
+        "loc": {
+          "start": {
+            "line": 7,
+            "column": 26,
+            "index": 242
+          },
+          "end": {
+            "line": 9,
+            "column": 14,
+            "index": 300
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 242,
+          "end": 246,
+          "loc": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "index": 242
+            },
+            "end": {
+              "line": 7,
+              "column": 30,
+              "index": 246
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 247,
+            "end": 250,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 31,
+                "index": 247
+              },
+              "end": {
+                "line": 7,
+                "column": 34,
+                "index": 250
+              },
+              "identifierName": "Var"
+            },
+            "name": "Var"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 252,
+            "end": 299,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 36,
+                "index": 252
+              },
+              "end": {
+                "line": 9,
+                "column": 13,
+                "index": 299
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 270,
+                "end": 285,
+                "loc": {
+                  "start": {
+                    "line": 8,
+                    "column": 16,
+                    "index": 270
+                  },
+                  "end": {
+                    "line": 8,
+                    "column": 31,
+                    "index": 285
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 270,
+                  "end": 278,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 16,
+                      "index": 270
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 24,
+                      "index": 278
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 280,
+                  "end": 285,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 26,
+                      "index": 280
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 31,
+                      "index": 285
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "100",
+                    "raw": "\"100\""
+                  },
+                  "value": "100"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 228,
+            "end": 241,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 228
+              },
+              "end": {
+                "line": 7,
+                "column": 25,
+                "index": 241
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "aggregators": [],
+      "globalCallCounter": 0
+    },
+    "importTracker": {
+      "scopeTracker": {
+        "nextScopeId": 3,
+        "currentScope": 2,
+        "scopeStack": [
+          0,
+          1
+        ],
+        "scopeInfo": {
+          "1": {
+            "id": 1,
+            "parentId": 0,
+            "depth": 0
+          },
+          "2": {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2
+          }
+        },
+        "scopedVariables": {
+          "_jsx": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsx",
+              "aliasName": "_jsx",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "_jsxs": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsxs",
+              "aliasName": "_jsxs",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "Var": [
+            {
+              "scopeId": 0,
+              "canonicalName": "Var",
+              "aliasName": "Var",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ],
+          "T": [
+            {
+              "scopeId": 0,
+              "canonicalName": "T",
+              "aliasName": "T",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ]
+        },
+        "namespaceImports": []
+      },
+      "namespaceImports": []
+    }
+  }
+}

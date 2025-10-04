@@ -12,11 +12,9 @@ export function getBranchComponentParameters(
     .map((property) => {
       // filter out non expression values
       if (!t.isObjectProperty(property)) {
-        console.log('Not an object property', property);
         return null;
       }
       if (!t.isExpression(property.value)) {
-        console.log('Not an expression', property.value);
         return null;
       }
 
@@ -27,7 +25,6 @@ export function getBranchComponentParameters(
       } else if (t.isIdentifier(property.key)) {
         propertyName = property.key.name;
       } else {
-        console.log('Not an identifier', property.key);
         return null;
       }
 

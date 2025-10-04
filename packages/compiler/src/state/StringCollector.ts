@@ -224,4 +224,23 @@ export class StringCollector {
   resetCounter(): void {
     this.globalCallCounter = 0;
   }
+
+  /**
+   * Helper convert to string
+   */
+  serialize(): any {
+    const output = {
+      aggregators: this.aggregators,
+      globalCallCounter: this.globalCallCounter,
+    };
+    return output;
+  }
+
+  /**
+   * Helper to repopulate
+   */
+  unserialize(input: any): void {
+    this.aggregators = input.aggregators;
+    this.globalCallCounter = input.globalCallCounter;
+  }
 }

@@ -19,6 +19,7 @@ export enum GT_COMPONENT_TYPES {
   Num = 'Num',
   Branch = 'Branch',
   Plural = 'Plural',
+  LocaleSelector = 'LocaleSelector',
 }
 
 /**

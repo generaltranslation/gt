@@ -286,4 +286,35 @@ export class ScopeTracker {
   getScopeInfo(scopeId: number): ScopeInfo | undefined {
     return this.scopeInfo.get(scopeId) || undefined;
   }
+
+  /**
+   * Helper convert to string
+   */
+  serialize(): any {
+    return {
+      nextScopeId: this.nextScopeId,
+      currentScope: this.currentScope,
+      scopeStack: this.scopeStack,
+      scopeInfo: Object.fromEntries(this.scopeInfo),
+      scopedVariables: Object.fromEntries(this.scopedVariables),
+      namespaceImports: Array.from(this.namespaceImports),
+    };
+  }
+
+  /**
+   * Helper to repopulate
+   */
+  unserialize(input: any): void {
+    this.nextScopeId = input.nextScopeId;
+    this.currentScope = input.currentScope;
+    this.scopeStack = input.scopeStack;
+    this.scopeInfo = new Map(
+      Object.entries(input.scopeInfo).map(([key, value]) => [
+        Number(key),
+        value as ScopeInfo,
+      ])
+    );
+    this.scopedVariables = new Map(Object.entries(input.scopedVariables));
+    this.namespaceImports = new Set(input.namespaceImports);
+  }
 }

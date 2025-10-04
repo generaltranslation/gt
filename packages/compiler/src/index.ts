@@ -28,6 +28,7 @@ import { processVariableAssignment } from './processing/processVariableDeclarato
  * - Add override tracking for catch clause declaration
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
  * - Whitespace handling
+ * - For errors log the location of the error
  *
  * DONE:
  * - Add tracking for Fragment component
@@ -118,11 +119,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          if (id.endsWith('page.tsx')) {
-            console.log('[GT_PLUGIN] ===============================');
-            console.log('[GT_PLUGIN]         PASS 1');
-            console.log('[GT_PLUGIN] ===============================');
-          }
+          // if (id.endsWith('page.tsx')) {
+          //   console.log('[GT_PLUGIN] ===============================');
+          //   console.log('[GT_PLUGIN]         PASS 1');
+          //   console.log('[GT_PLUGIN] ===============================');
+          // }
 
           // Parse the code into AST
           const ast = parser.parse(code, {

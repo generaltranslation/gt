@@ -128,6 +128,24 @@ export class ImportTracker {
   exitScope(): void {
     this.scopeTracker.exitScope();
   }
+
+  /**
+   * Helper convert to string
+   */
+  serialize(): any {
+    return {
+      scopeTracker: this.scopeTracker.serialize(),
+      namespaceImports: Array.from(this.namespaceImports),
+    };
+  }
+
+  /**
+   * Helper to repopulate
+   */
+  unserialize(input: any): void {
+    this.scopeTracker.unserialize(input.scopeTracker);
+    this.namespaceImports = input.namespaceImports;
+  }
 }
 
 /**
