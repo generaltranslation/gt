@@ -1,0 +1,56 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "compact": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "No spaces",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          },
+          "at all"
+        ]
+      },
+      "spaced": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          " ",
+          "Lots of spaces ",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          },
+          " everywhere",
+          " "
+        ]
+      },
+      "mixed": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "Text",
+          {
+            "t": "span",
+            "i": 3,
+            "c": " embedded spaces "
+          },
+          "more text",
+          {
+            "i": 4,
+            "k": "_gt_value_4",
+            "v": "v"
+          },
+          "final text"
+        ]
+      }
+    },
+    "t": "b"
+  }
+}

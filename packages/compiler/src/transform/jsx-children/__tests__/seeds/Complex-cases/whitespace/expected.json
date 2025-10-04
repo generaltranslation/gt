@@ -1,0 +1,520 @@
+[
+  "Normal text ",
+  {
+    "t": "div",
+    "i": 1,
+    "c": "and some nesting"
+  },
+  {
+    "t": "div",
+    "i": 2,
+    "c": "content before"
+  },
+  " trailing text",
+  "Text    with     multiple   spaces",
+  {
+    "t": "C3",
+    "i": 3,
+    "c": [
+      "        Text   ",
+      {
+        "t": "div",
+        "i": 4,
+        "c": "yo    yo"
+      },
+      "   with  ",
+      {
+        "t": "span",
+        "i": 5
+      },
+      "   multiple   spaces"
+    ]
+  },
+  "Hello World    with   spaces",
+  {
+    "t": "i",
+    "i": 6,
+    "d": {
+      "b": {
+        "singular": "",
+        "plural": "Files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 7,
+    "d": {
+      "b": {
+        "singular": "   File   ",
+        "plural": "   Files   "
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 8,
+    "d": {
+      "b": {
+        "option1": "",
+        "option2": "   Padded   ",
+        "option3": {
+          "t": "span",
+          "i": 9,
+          "c": "JSX content"
+        }
+      },
+      "t": "b"
+    }
+  },
+  "Start",
+  {
+    "t": "strong",
+    "i": 9,
+    "c": "Bold"
+  },
+  {
+    "t": "em",
+    "i": 10,
+    "c": "Italic"
+  },
+  "End",
+  {
+    "t": "div",
+    "i": 11,
+    "c": "Before"
+  },
+  {
+    "t": "div",
+    "i": 12,
+    "c": "After"
+  },
+  "User:",
+  {
+    "i": 13,
+    "k": "_gt_value_13",
+    "v": "v"
+  },
+  "has",
+  {
+    "i": 14,
+    "k": "_gt_n_14",
+    "v": "n"
+  },
+  "items",
+  "Click ",
+  {
+    "t": "a",
+    "i": 15,
+    "c": "here"
+  },
+  " to continue.",
+  "Line 1 Line 2 with tabs Line 3 with spaces",
+  "You have ",
+  {
+    "t": "i",
+    "i": 16,
+    "d": {
+      "b": {
+        "singular": "  1 item  ",
+        "plural": "  2 items  "
+      },
+      "t": "p"
+    }
+  },
+  "Total: ",
+  {
+    "i": 17,
+    "k": "_gt_cost_17",
+    "v": "c"
+  },
+  " available",
+  "Status: ",
+  {
+    "t": "i",
+    "i": 18,
+    "d": {
+      "b": {
+        "singular": true,
+        "plural": false
+      },
+      "t": "p"
+    }
+  },
+  " - ",
+  {
+    "t": "i",
+    "i": 19,
+    "d": {
+      "b": {
+        "singular": null,
+        "plural": "Active"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "div",
+    "i": 20,
+    "c": "Content"
+  },
+  "   ",
+  {
+    "t": "div",
+    "i": 21,
+    "c": "More content"
+  },
+  "Boundary whitespace test",
+  "Hello ",
+  {
+    "i": 22,
+    "k": "_gt_value_22",
+    "v": "v"
+  },
+  ", you have ",
+  {
+    "i": 23,
+    "k": "_gt_n_23",
+    "v": "n"
+  },
+  " new messages.",
+  {
+    "t": "i",
+    "i": 24,
+    "d": {
+      "b": {
+        "singular": "1 file",
+        "plural": "2 files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "div",
+    "i": 25,
+    "c": [
+      "Welcome ",
+      {
+        "t": "strong",
+        "i": 26,
+        "c": "user"
+      },
+      ",",
+      {
+        "t": "br",
+        "i": 27
+      },
+      "You have ",
+      {
+        "t": "span",
+        "i": 28,
+        "c": "messages"
+      },
+      " waiting."
+    ]
+  },
+  "Text    with     multiple   spaces Text    with     multiple   spaces",
+  {
+    "t": "f",
+    "i": 29,
+    "d": {
+      "b": {
+        "short": "Brief",
+        "long": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "mixed": {
+          "t": "C30",
+          "i": 30,
+          "c": [
+            "Very long text with ",
+            {
+              "i": 31,
+              "k": "_gt_value_31",
+              "v": "v"
+            },
+            " that continues for a very long time and includes multiple ",
+            {
+              "i": 32,
+              "k": "_gt_n_32",
+              "v": "n"
+            },
+            " ",
+            "numeric values and",
+            " ",
+            {
+              "i": 33,
+              "k": "_gt_cost_33",
+              "v": "c"
+            },
+            " monetary amounts spread throughout the content to test how the algorithm handles very large content blocks with mixed variable types."
+          ]
+        }
+      },
+      "t": "b"
+    }
+  },
+  "Hello World    with   spaces",
+  {
+    "t": "div",
+    "i": 30
+  },
+  {
+    "t": "div",
+    "i": 31
+  },
+  {
+    "t": "i",
+    "i": 32,
+    "d": {
+      "b": {
+        "singular": true,
+        "dual": {
+          "t": "C33",
+          "i": 33,
+          "c": []
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 33,
+    "d": {
+      "b": {
+        "singular": true,
+        "dual": {
+          "t": "C34",
+          "i": 34,
+          "c": true
+        }
+      },
+      "t": "p"
+    }
+  },
+  " yo   yo  yo yo",
+  {
+    "t": "div",
+    "i": 34,
+    "c": true
+  },
+  {
+    "t": "div",
+    "i": 35,
+    "c": [
+      {
+        "t": "div",
+        "i": 36
+      },
+      {
+        "t": "div",
+        "i": 37
+      }
+    ]
+  },
+  "Hello ",
+  {
+    "t": "div",
+    "i": 38,
+    "c": "there"
+  },
+  {
+    "t": "div",
+    "i": 39,
+    "c": "there"
+  },
+  {
+    "t": "i",
+    "i": 40,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "C41",
+          "i": 41,
+          "c": [
+            "Text",
+            {
+              "t": "C42",
+              "i": 42
+            },
+            "More text"
+          ]
+        },
+        "plural": {
+          "t": "C41",
+          "i": 41,
+          "c": [
+            {
+              "t": "C42",
+              "i": 42,
+              "c": "Fragment"
+            },
+            "content"
+          ]
+        },
+        "other": {
+          "t": "C41",
+          "i": 41,
+          "c": {
+            "t": "C42",
+            "i": 42
+          }
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "C41",
+    "i": 41,
+    "c": true
+  },
+  {
+    "t": "C42",
+    "i": 42
+  },
+  {
+    "t": "C43",
+    "i": 43,
+    "c": []
+  },
+  {
+    "t": "span",
+    "i": 44,
+    "c": true
+  },
+  {
+    "t": "span",
+    "i": 45
+  },
+  {
+    "t": "span",
+    "i": 46,
+    "c": []
+  },
+  {
+    "t": "f",
+    "i": 47,
+    "d": {
+      "b": {
+        "true_val": {
+          "t": "C48",
+          "i": 48,
+          "c": true
+        },
+        "false_val": {
+          "t": "C48",
+          "i": 48
+        },
+        "mixed_true": {
+          "t": "C48",
+          "i": 48,
+          "c": [
+            "Before ",
+            " after"
+          ]
+        },
+        "mixed_false": {
+          "t": "C48",
+          "i": 48,
+          "c": [
+            "Before ",
+            " after"
+          ]
+        },
+        "multiple": {
+          "t": "C48",
+          "i": 48,
+          "c": [
+            {
+              "t": "div",
+              "i": 49
+            }
+          ]
+        }
+      },
+      "t": "b"
+    }
+  },
+  " yo   yo ",
+  {
+    "t": "f",
+    "i": 48,
+    "d": {
+      "b": {
+        "option1": {
+          "t": "C49",
+          "i": 49,
+          "c": [
+            {
+              "t": "C50",
+              "i": 50,
+              "c": [
+                {
+                  "t": "C51",
+                  "i": 51,
+                  "c": {
+                    "t": "C52",
+                    "i": 52,
+                    "c": [
+                      {
+                        "t": "C53",
+                        "i": 53,
+                        "c": "Text"
+                      },
+                      {
+                        "t": "C54",
+                        "i": 54
+                      },
+                      {
+                        "t": "C55",
+                        "i": 55,
+                        "c": "More"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "t": "span",
+                  "i": 56,
+                  "c": "Element"
+                }
+              ]
+            },
+            {
+              "t": "C57",
+              "i": 57,
+              "c": "Final"
+            }
+          ]
+        },
+        "option2": {
+          "t": "C49",
+          "i": 49,
+          "c": {
+            "t": "C50",
+            "i": 50,
+            "c": {
+              "t": "C51",
+              "i": 51,
+              "c": [
+                {
+                  "t": "C52",
+                  "i": 52,
+                  "c": {
+                    "t": "C53",
+                    "i": 53,
+                    "c": "Flat"
+                  }
+                },
+                " "
+              ]
+            }
+          }
+        }
+      },
+      "t": "b"
+    }
+  }
+]

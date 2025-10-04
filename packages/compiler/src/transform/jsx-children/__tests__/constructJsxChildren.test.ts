@@ -8,6 +8,7 @@ import { Logger } from '../../../state/logging';
 import { ErrorTracker } from '../../../state/ErrorTracker';
 import { PluginSettings } from '../../../state/config';
 import { stripTField } from './stripTField';
+import { hashSource } from 'generaltranslation/id';
 import { JsxChildren } from 'generaltranslation/types';
 
 // TODO: ignore error if its just keys out of order
@@ -62,9 +63,22 @@ function createTest(dirPath: string) {
       if (!result.value) {
         expect(result.value).toEqual(expected);
       } else {
+        // expect children structures to be equal
         expect(stripTField(result.value as JsxChildren)).toEqual(
           stripTField(expected as JsxChildren)
         );
+
+        // Check hash
+        const calculatedHash = hashSource({
+          source: result.value,
+          dataFormat: 'JSX',
+        });
+        const expectedHash = hashSource({
+          source: expected,
+          dataFormat: 'JSX',
+        });
+
+        expect(calculatedHash).toEqual(expectedHash);
       }
     });
   } catch (error) {

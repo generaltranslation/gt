@@ -18,7 +18,7 @@ function handleChildren(children: JsxChildren) {
 }
 
 function handleChild(child: JsxChild) {
-  if (typeof child !== 'object') return;
+  if (typeof child !== 'object' || child === null) return;
 
   // Remove t field:
   if ('t' in child && child.t) {

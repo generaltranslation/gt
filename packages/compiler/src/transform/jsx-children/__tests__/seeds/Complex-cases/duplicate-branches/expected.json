@@ -1,0 +1,66 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "version1": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "Identical content with ",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          },
+          " and",
+          " ",
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          }
+        ]
+      },
+      "version2": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "Identical content with ",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          },
+          " and",
+          " ",
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          }
+        ]
+      },
+      "different": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "Different content with ",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          },
+          " and",
+          " ",
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          }
+        ]
+      }
+    },
+    "t": "b"
+  }
+}

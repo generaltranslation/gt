@@ -31,6 +31,7 @@ import { validateStringLiteralPropertyFromArg } from './validation/validateStrin
 import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import { getBranchComponentParameters } from './utils/getBranchComponentParameters';
 import { validateNameFieldForVarComponent } from './validation/validateNameFieldForVarComponent';
+import { validateUnaryExpression } from './validation/validateUnaryExpression';
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object
@@ -48,8 +49,13 @@ export function _constructJsxChildren(
   const errors: string[] = [];
 
   // Skip if no children
-  if (children === undefined) {
-    return { errors, value: undefined };
+  if (!children) {
+    return { errors, value: children };
+  }
+
+  // Edge case: true booleanLiteral
+  if (t.isBooleanLiteral(children) && children.value) {
+    return { errors, value: children.value as unknown as JsxChildren };
   }
 
   let value: JsxChildren | undefined;
@@ -124,6 +130,13 @@ function constructJsxChild(
     value = undefined;
   } else if (t.isNullLiteral(child)) {
     value = undefined;
+  } else if (t.isUnaryExpression(child)) {
+    const validation = validateUnaryExpression(child);
+    errors.push(...validation.errors);
+    if (errors.length > 0) {
+      return { errors };
+    }
+    value = validation.value;
   } else if (t.isIdentifier(child)) {
     // <T>{name}</T> or <T>{undefined}</T>
     const validation = validateIdentifier(child, state);
@@ -325,6 +338,16 @@ function constructGTProp(
 
     // Add branch component branches
     for (const [name, parameter] of branchingParameters) {
+      // Special exceptions for branches:
+      if (t.isNullLiteral(parameter)) {
+        branches[name] = null as unknown as JsxChildren;
+        continue;
+      } else if (t.isBooleanLiteral(parameter)) {
+        branches[name] = parameter.value as unknown as JsxChildren;
+        continue;
+      }
+
+      // Otherwise, construct the JsxChildren
       const validation = _constructJsxChildren(parameter, state, id.copy());
       errors.push(...validation.errors);
       if (validation.errors.length > 0) {

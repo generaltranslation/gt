@@ -1,0 +1,901 @@
+[
+  {
+    "t": "i",
+    "i": 1,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "C2",
+          "i": 2,
+          "c": " "
+        },
+        "plural": {
+          "t": "C2",
+          "i": 2,
+          "c": " "
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 2,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "C3",
+          "i": 3,
+          "c": "\\t"
+        },
+        "plural": {
+          "t": "C3",
+          "i": 3,
+          "c": "\\n"
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "span",
+    "i": 3,
+    "c": "start"
+  },
+  " ",
+  {
+    "t": "span",
+    "i": 4,
+    "c": "middle"
+  },
+  " ",
+  {
+    "t": "span",
+    "i": 5,
+    "c": "end"
+  },
+  {
+    "t": "div",
+    "i": 6,
+    "c": "surrounded by spaces"
+  },
+  {
+    "t": "C7",
+    "i": 7,
+    "c": " leading spaces"
+  },
+  {
+    "t": "C8",
+    "i": 8,
+    "c": "trailing spaces "
+  },
+  {
+    "t": "C9",
+    "i": 9,
+    "c": " both sides "
+  },
+  {
+    "t": "i",
+    "i": 10,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "C11",
+          "i": 11,
+          "c": {
+            "t": "C12",
+            "i": 12,
+            "c": {
+              "t": "C13",
+              "i": 13,
+              "c": {
+                "t": "C14",
+                "i": 14,
+                "c": "deep fragment nesting"
+              }
+            }
+          }
+        },
+        "plural": "files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 11,
+    "d": {
+      "b": {
+        "option1": {
+          "t": "C12",
+          "i": 12,
+          "c": [
+            "text",
+            {
+              "t": "span",
+              "i": 13,
+              "c": "element"
+            },
+            "42",
+            "more text"
+          ]
+        },
+        "option2": "simple"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "C12",
+    "i": 12,
+    "c": "start"
+  },
+  {
+    "t": "div",
+    "i": 13,
+    "c": "middle"
+  },
+  {
+    "t": "C14",
+    "i": 14,
+    "c": "end"
+  },
+  {
+    "t": "i",
+    "i": 15,
+    "d": {
+      "b": {
+        "zero": "0",
+        "one": "0",
+        "two": "999999999999",
+        "few": "-999999999999",
+        "many": "1e-9",
+        "other": "-1e-9"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 16,
+    "d": {
+      "b": {
+        "tiny": "0.1",
+        "precise": "3.141592653589793",
+        "scientific": "1.23e-10",
+        "big_scientific": "12300000000"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "f",
+    "i": 17,
+    "d": {
+      "b": {
+        "small": "1",
+        "medium": "2748",
+        "large": "3735928559",
+        "mixed": "1194684"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "f",
+    "i": 18,
+    "d": {
+      "b": {
+        "option1": {
+          "t": "C19",
+          "i": 19,
+          "c": [
+            "text",
+            {
+              "t": "span",
+              "i": 20,
+              "c": "element"
+            },
+            "42",
+            "-1",
+            "3.14159",
+            "1000000",
+            "255",
+            "2748",
+            "3735928559",
+            "255",
+            "2748",
+            "NaN",
+            "Infinity",
+            {
+              "t": "C21",
+              "i": 21
+            },
+            {
+              "t": "C22",
+              "i": 22,
+              "c": " "
+            },
+            "5",
+            "more text"
+          ]
+        },
+        "option2": "simple",
+        "option3": {
+          "t": "C19",
+          "i": 19,
+          "c": [
+            "Hello ",
+            {
+              "t": "span",
+              "i": 20,
+              "c": "world"
+            },
+            "!"
+          ]
+        }
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 19,
+    "d": {
+      "b": {
+        "singular": "Quotes: \" and '",
+        "plural": "Backslashes: \\\\ and \\\\n and \\\\t",
+        "other": "Unicode: \\u0041 and \\x41"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 20,
+    "d": {
+      "b": {
+        "json": "{\"key\": \"value\", \"array\": [1,2,3]}",
+        "regex": "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/",
+        "path": "C:\\Program Files\\App\\file.exe"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "f",
+    "i": 21,
+    "d": {
+      "b": {
+        "url": "https://example.com:8080/path?param=value&other=123#section",
+        "email": "user.name+tag@subdomain.example-site.co.uk",
+        "css": "body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 22,
+    "d": {
+      "b": {
+        "zero": false,
+        "one": true,
+        "two": null,
+        "few": "",
+        "many": "0",
+        "other": "false"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 23,
+    "d": {
+      "b": {
+        "truthy": true,
+        "falsy": false,
+        "nullish": null,
+        "empty": "",
+        "zero": "0",
+        "string_true": "true",
+        "string_false": "false"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 24,
+    "d": {
+      "b": {
+        "singular": "Template with ${escaped} and `backticks`",
+        "plural": "Multi\n            line\n            template\n            literal",
+        "other": "Mixed \"quotes\" and 'apostrophes' in template"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 25,
+    "d": {
+      "b": {
+        "code": "function test() { return `Hello ${name}`; }",
+        "markdown": "# Title\n\n**Bold** and *italic* text.\n\n```js\nconst x = 42;\n```",
+        "xml": "<root><child attr=\"value\">content</child></root>"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 26,
+    "d": {
+      "b": {
+        "zero": "",
+        "one": "1",
+        "two": "2",
+        "few": "few",
+        "many": "many",
+        "other": "other",
+        "singular": "sing",
+        "plural": "plur"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 27,
+    "d": {
+      "b": {
+        "a": "option a",
+        "b": "option b",
+        "c": "option c",
+        "d": "option d",
+        "e": "option e",
+        "f": {
+          "t": "C28",
+          "i": 28,
+          "c": "fragment f"
+        },
+        "g": {
+          "t": "span",
+          "i": 28,
+          "c": "element g"
+        },
+        "h": "42",
+        "i": true,
+        "j": null
+      },
+      "t": "b"
+    }
+  },
+  {
+    "i": 28,
+    "k": "_underscore",
+    "v": "v"
+  },
+  {
+    "i": 29,
+    "k": "camelCase",
+    "v": "v"
+  },
+  {
+    "i": 30,
+    "k": "kebab-case",
+    "v": "v"
+  },
+  {
+    "i": 31,
+    "k": "snake_case",
+    "v": "v"
+  },
+  {
+    "i": 32,
+    "k": "PascalCase",
+    "v": "v"
+  },
+  {
+    "i": 33,
+    "k": "123numeric",
+    "v": "v"
+  },
+  {
+    "i": 34,
+    "k": "special!@#$%",
+    "v": "v"
+  },
+  {
+    "i": 35,
+    "k": "n1",
+    "v": "n"
+  },
+  {
+    "i": 36,
+    "k": "n2",
+    "v": "n"
+  },
+  {
+    "i": 37,
+    "k": "n3",
+    "v": "n"
+  },
+  {
+    "i": 38,
+    "k": "n4",
+    "v": "n"
+  },
+  {
+    "i": 39,
+    "k": "n5",
+    "v": "n"
+  },
+  {
+    "i": 40,
+    "k": "usd1",
+    "v": "c"
+  },
+  {
+    "i": 41,
+    "k": "eur1",
+    "v": "c"
+  },
+  {
+    "i": 42,
+    "k": "jpy1",
+    "v": "c"
+  },
+  {
+    "i": 43,
+    "k": "btc1",
+    "v": "c"
+  },
+  {
+    "i": 44,
+    "k": "dt1",
+    "v": "d"
+  },
+  {
+    "i": 45,
+    "k": "dt2",
+    "v": "d"
+  },
+  {
+    "i": 46,
+    "k": "dt3",
+    "v": "d"
+  },
+  {
+    "i": 47,
+    "k": "dt4",
+    "v": "d"
+  },
+  {
+    "t": "f",
+    "i": 48,
+    "d": {
+      "b": {
+        "option1": {
+          "t": "i",
+          "i": 49,
+          "d": {
+            "b": {
+              "singular": {
+                "t": "f",
+                "i": 50,
+                "d": {
+                  "b": {
+                    "option1": {
+                      "t": "i",
+                      "i": 51,
+                      "d": {
+                        "b": {
+                          "singular": {
+                            "t": "f",
+                            "i": 52,
+                            "d": {
+                              "b": {
+                                "option1": {
+                                  "t": "i",
+                                  "i": 53,
+                                  "d": {
+                                    "b": {
+                                      "singular": {
+                                        "t": "f",
+                                        "i": 54,
+                                        "d": {
+                                          "b": {
+                                            "option1": {
+                                              "t": "i",
+                                              "i": 55,
+                                              "d": {
+                                                "b": {
+                                                  "singular": {
+                                                    "t": "f",
+                                                    "i": 56,
+                                                    "d": {
+                                                      "b": {
+                                                        "option1": {
+                                                          "t": "i",
+                                                          "i": 57,
+                                                          "d": {
+                                                            "b": {
+                                                              "singular": {
+                                                                "t": "f",
+                                                                "i": 58,
+                                                                "d": {
+                                                                  "b": {
+                                                                    "option1": {
+                                                                      "i": 59,
+                                                                      "k": "deep7",
+                                                                      "v": "v"
+                                                                    },
+                                                                    "option2": "l6 end"
+                                                                  },
+                                                                  "t": "b"
+                                                                }
+                                                              },
+                                                              "plural": "l5 plural"
+                                                            },
+                                                            "t": "p"
+                                                          }
+                                                        },
+                                                        "option2": "l5 end"
+                                                      },
+                                                      "t": "b"
+                                                    }
+                                                  },
+                                                  "plural": "l4 plural"
+                                                },
+                                                "t": "p"
+                                              }
+                                            },
+                                            "option2": "l4 end"
+                                          },
+                                          "t": "b"
+                                        }
+                                      },
+                                      "plural": "l3 plural"
+                                    },
+                                    "t": "p"
+                                  }
+                                },
+                                "option2": "l3 end"
+                              },
+                              "t": "b"
+                            }
+                          },
+                          "plural": "l2 plural"
+                        },
+                        "t": "p"
+                      }
+                    },
+                    "option2": "l2 end"
+                  },
+                  "t": "b"
+                }
+              },
+              "plural": "l1 plural"
+            },
+            "t": "p"
+          }
+        },
+        "option2": "l1 end"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "div",
+    "i": 49,
+    "c": {
+      "t": "f",
+      "i": 50,
+      "d": {
+        "b": {
+          "option1": {
+            "t": "C51",
+            "i": 51,
+            "c": [
+              {
+                "t": "span",
+                "i": 52,
+                "c": "Before plural"
+              },
+              {
+                "t": "i",
+                "i": 53,
+                "d": {
+                  "b": {
+                    "singular": {
+                      "t": "div",
+                      "i": 54,
+                      "c": [
+                        "Single item: ",
+                        {
+                          "i": 55,
+                          "k": "single_count",
+                          "v": "n"
+                        },
+                        "costing",
+                        " ",
+                        {
+                          "i": 56,
+                          "k": "single_price",
+                          "v": "c"
+                        },
+                        "at ",
+                        {
+                          "i": 57,
+                          "k": "single_time",
+                          "v": "d"
+                        },
+                        "in",
+                        " ",
+                        {
+                          "t": "f",
+                          "i": 58,
+                          "d": {
+                            "b": {
+                              "home": {
+                                "t": "C59",
+                                "i": 59,
+                                "c": [
+                                  "home folder with ",
+                                  {
+                                    "i": 60,
+                                    "k": "home_var",
+                                    "v": "v"
+                                  }
+                                ]
+                              },
+                              "work": "office"
+                            },
+                            "t": "b"
+                          }
+                        }
+                      ]
+                    },
+                    "plural": {
+                      "t": "div",
+                      "i": 54,
+                      "c": [
+                        "Multiple items: ",
+                        {
+                          "i": 55,
+                          "k": "multi_count",
+                          "v": "n"
+                        },
+                        "costing",
+                        " ",
+                        {
+                          "i": 56,
+                          "k": "multi_price",
+                          "v": "c"
+                        },
+                        {
+                          "t": "C57",
+                          "i": 57,
+                          "c": "with fragments"
+                        },
+                        " and ",
+                        {
+                          "t": "span",
+                          "i": 58,
+                          "c": "elements"
+                        }
+                      ]
+                    }
+                  },
+                  "t": "p"
+                }
+              },
+              {
+                "t": "span",
+                "i": 54,
+                "c": "After plural"
+              }
+            ]
+          },
+          "option2": "simple option"
+        },
+        "t": "b"
+      }
+    }
+  },
+  "",
+  {
+    "i": 51,
+    "k": "_gt_value_51",
+    "v": "v"
+  },
+  {
+    "t": "f",
+    "i": 52,
+    "d": {
+      "b": {
+        "invalid": "ignored",
+        "also_invalid": "also ignored"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "f",
+    "i": 53,
+    "d": {
+      "b": {
+        "latin": "àáâãäåæçèéêëìíîï",
+        "cyrillic": "абвгдежзийклмнопрстуфхцчшщъыьэюя",
+        "greek": "αβγδεζηθικλμνξοπρστυφχψω",
+        "arabic": "ابتثجحخدذرزسشصضطظعغفقكلمنهوي",
+        "hebrew": "אבגדהוזחטיכלמנסעפצקרשת",
+        "chinese": "你好世界中文测试",
+        "japanese": "こんにちは世界ひらがなカタカナ漢字",
+        "korean": "안녕하세요세계한글테스트",
+        "emoji": "🌍🌎🌏🚀⚡️🎉💯✨🔥💎🌟⭐️🎯",
+        "symbols": "©®™€£¥¢¤§¶†‡•…‰‱′″‴‵‶‷‸‹›«»¿¡",
+        "math": "∀∂∃∅∇∈∉∋∌∏∑−∕∗∘∙√∝∞∟∠∡∢∣∤∥∦∧∨∩∪∫∬∭∮"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 54,
+    "d": {
+      "b": {
+        "singular": "English left-to-right",
+        "plural": "العربية من اليمين إلى اليسار",
+        "other": "עברית מימין לשמאל"
+      },
+      "t": "p"
+    }
+  },
+  "Normal text ",
+  {
+    "t": "div",
+    "i": 55,
+    "c": "and some nesting"
+  },
+  " with trailing space",
+  {
+    "t": "i",
+    "i": 56,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "C57",
+          "i": 57,
+          "c": " "
+        },
+        "plural": {
+          "t": "C57",
+          "i": 57
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 57,
+    "d": {
+      "b": {
+        "zero": "0",
+        "one": "1",
+        "two": "-1",
+        "few": "3.14159",
+        "many": "1000000",
+        "other": "255"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 58,
+    "d": {
+      "b": {
+        "empty": "",
+        "whitespace": "   padded   ",
+        "fragment": {
+          "t": "C59",
+          "i": 59,
+          "c": "fragment content"
+        },
+        "element": {
+          "t": "span",
+          "i": 59,
+          "c": "element content"
+        },
+        "number": "42",
+        "boolean": true,
+        "null_value": null
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "span",
+    "i": 59,
+    "c": "word1"
+  },
+  " ",
+  {
+    "t": "span",
+    "i": 60,
+    "c": "word2"
+  },
+  " ",
+  {
+    "t": "span",
+    "i": 61,
+    "c": "word3"
+  },
+  {
+    "t": "C62",
+    "i": 62,
+    "c": "Fragment start"
+  },
+  " middle text ",
+  {
+    "t": "C63",
+    "i": 63,
+    "c": "Fragment end"
+  },
+  {
+    "t": "f",
+    "i": 64,
+    "d": {
+      "b": {
+        "path_a": {
+          "t": "div",
+          "i": 65,
+          "c": [
+            {
+              "i": 66,
+              "k": "shared1",
+              "v": "v"
+            },
+            {
+              "i": 67,
+              "k": "shared2",
+              "v": "n"
+            },
+            {
+              "i": 68,
+              "k": "shared3",
+              "v": "c"
+            }
+          ]
+        },
+        "path_b": {
+          "t": "C65",
+          "i": 65,
+          "c": [
+            {
+              "i": 66,
+              "k": "shared1",
+              "v": "v"
+            },
+            {
+              "i": 67,
+              "k": "shared2",
+              "v": "n"
+            },
+            {
+              "i": 68,
+              "k": "shared3",
+              "v": "c"
+            }
+          ]
+        }
+      },
+      "t": "b"
+    }
+  }
+]

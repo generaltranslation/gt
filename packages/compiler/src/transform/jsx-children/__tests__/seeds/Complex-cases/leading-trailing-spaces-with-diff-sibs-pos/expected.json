@@ -1,0 +1,24 @@
+[
+  {
+    "t": "div",
+    "i": 1,
+    "c": "before"
+  },
+  " space after div space before div ",
+  {
+    "t": "div",
+    "i": 2,
+    "c": "after"
+  },
+  {
+    "t": "div",
+    "i": 3,
+    "c": "first"
+  },
+  " middle space ",
+  {
+    "t": "div",
+    "i": 4,
+    "c": "last"
+  }
+]

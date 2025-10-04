@@ -114,7 +114,7 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    // recordJsxChildren(childrenAsObjects); // TODO: REMOVE
+    recordJsxChildren(childrenAsObjects); // TODO: REMOVE
     hash =
       _hash ||
       hashSource({

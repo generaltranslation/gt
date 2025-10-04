@@ -1,0 +1,55 @@
+[
+  "Normal text ",
+  {
+    "t": "div",
+    "i": 1,
+    "c": "nested content"
+  },
+  " more text",
+  {
+    "t": "i",
+    "i": 2,
+    "d": {
+      "b": {
+        "zero": "No files",
+        "one": "One file",
+        "two": "Two files",
+        "few": "Few files",
+        "many": "Many files",
+        "other": "Other files",
+        "singular": {
+          "t": "C3",
+          "i": 3,
+          "c": "Single file"
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 3,
+    "d": {
+      "b": {
+        "option1": "",
+        "option2": "   padded   ",
+        "option3": {
+          "i": 4,
+          "k": "_gt_value_4",
+          "v": "v"
+        },
+        "option4": {
+          "t": "C4",
+          "i": 4,
+          "c": "fragment content"
+        },
+        "option5": {
+          "t": "div",
+          "i": 4,
+          "c": "element content"
+        }
+      },
+      "t": "b"
+    }
+  }
+]
