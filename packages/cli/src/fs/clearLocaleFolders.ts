@@ -33,7 +33,7 @@ function extractLocaleDirectories(filePaths: Set<string>): Set<string> {
  * Clears translated files before writing new translations
  * @param filePaths - Set of translated file paths to clear
  */
-export async function clearTranslatedFiles(
+export async function clearLocaleFolders(
   filePaths: Set<string>
 ): Promise<void> {
   // Extract locale directories and delete them recursively

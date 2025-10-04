@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'node:path';
-import { clearTranslatedFiles } from '../clearLocaleFolder.js';
+import { clearLocaleFolders } from '../clearLocaleFolders.js';
 import os from 'os';
 
 describe('clearTranslatedFiles', () => {
@@ -27,12 +27,14 @@ describe('clearTranslatedFiles', () => {
       path.join(testDir, 'snippets', 'es', 'file.mdx'),
     ]);
 
-    await clearTranslatedFiles(filePaths, ['es']);
+    await clearLocaleFolders(filePaths);
 
     // Verify the es directory was deleted
     await expect(fs.access(esDir)).rejects.toThrow();
     // Verify parent directory still exists
-    await expect(fs.access(path.join(testDir, 'snippets'))).resolves.toBeUndefined();
+    await expect(
+      fs.access(path.join(testDir, 'snippets'))
+    ).resolves.toBeUndefined();
   });
 
   it('should delete locale directories with nested files', async () => {
@@ -45,10 +47,12 @@ describe('clearTranslatedFiles', () => {
       path.join(testDir, 'snippets', 'es', 'api-test', 'introduction.mdx'),
     ]);
 
-    await clearTranslatedFiles(filePaths, ['es']);
+    await clearLocaleFolders(filePaths);
 
     // Verify the es directory (and all contents) was deleted
-    await expect(fs.access(path.join(testDir, 'snippets', 'es'))).rejects.toThrow();
+    await expect(
+      fs.access(path.join(testDir, 'snippets', 'es'))
+    ).rejects.toThrow();
   });
 
   it('should handle multiple locale directories', async () => {
@@ -71,7 +75,7 @@ describe('clearTranslatedFiles', () => {
       path.join(testDir, 'docs', 'de', 'file3.mdx'),
     ]);
 
-    await clearTranslatedFiles(filePaths, ['es', 'fr', 'de']);
+    await clearLocaleFolders(filePaths);
 
     // Verify all locale directories were deleted
     await expect(fs.access(esDir)).rejects.toThrow();
@@ -95,7 +99,7 @@ describe('clearTranslatedFiles', () => {
       path.join(testDir, 'content', 'zh-CN', 'file.mdx'),
     ]);
 
-    await clearTranslatedFiles(filePaths, ['en-US', 'zh-CN']);
+    await clearLocaleFolders(filePaths);
 
     // Verify locale directories were deleted
     await expect(fs.access(enUSDir)).rejects.toThrow();
@@ -112,7 +116,7 @@ describe('clearTranslatedFiles', () => {
       path.join(testDir, 'components', 'button', 'file.tsx'),
     ]);
 
-    await clearTranslatedFiles(filePaths, ['es', 'fr']);
+    await clearLocaleFolders(filePaths);
 
     // Verify the directory was NOT deleted (no locale pattern found)
     await expect(fs.access(notLocaleDir)).resolves.toBeUndefined();
@@ -126,7 +130,7 @@ describe('clearTranslatedFiles', () => {
     ]);
 
     // Should not throw an error
-    await expect(clearTranslatedFiles(filePaths, ['es'])).resolves.toBeUndefined();
+    await expect(clearLocaleFolders(filePaths)).resolves.toBeUndefined();
   });
 
   it('should handle multiple files in the same locale directory', async () => {
@@ -142,7 +146,7 @@ describe('clearTranslatedFiles', () => {
       path.join(testDir, 'snippets', 'es', 'file3.mdx'),
     ]);
 
-    await clearTranslatedFiles(filePaths, ['es']);
+    await clearLocaleFolders(filePaths);
 
     // Should only delete the directory once
     await expect(fs.access(esDir)).rejects.toThrow();
@@ -164,13 +168,15 @@ describe('clearTranslatedFiles', () => {
 
     const filePaths = new Set([deepPath]);
 
-    await clearTranslatedFiles(filePaths, ['es']);
+    await clearLocaleFolders(filePaths);
 
     // Should delete docs/v2/es and everything inside it
     const esDir = path.join(testDir, 'docs', 'v2', 'es');
     await expect(fs.access(esDir)).rejects.toThrow();
 
     // Parent directories should still exist
-    await expect(fs.access(path.join(testDir, 'docs', 'v2'))).resolves.toBeUndefined();
+    await expect(
+      fs.access(path.join(testDir, 'docs', 'v2'))
+    ).resolves.toBeUndefined();
   });
 });

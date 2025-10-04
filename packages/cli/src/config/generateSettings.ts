@@ -187,9 +187,9 @@ export async function generateSettings(
     experimentalFlattenJsonFiles:
       gtConfig.options?.experimentalFlattenJsonFiles ||
       options.experimentalFlattenJsonFiles,
-    experimentalClearTranslatedFiles:
-      gtConfig.options?.experimentalClearTranslatedFiles ||
-      options.experimentalClearTranslatedFiles,
+    experimentalClearLocaleFolders:
+      gtConfig.options?.experimentalClearLocaleFolders ||
+      options.experimentalClearLocaleFolders,
   };
 
   // Add additional options if provided
