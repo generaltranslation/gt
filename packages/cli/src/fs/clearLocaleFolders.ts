@@ -7,17 +7,20 @@ import { logSuccess, logWarning } from '../console/logging.js';
  * Groups files by their immediate parent containing a locale code.
  * For example: "snippets/es/api-test/file.mdx" -> "snippets/es"
  */
-function extractLocaleDirectories(filePaths: Set<string>): Set<string> {
+function extractLocaleDirectories(
+  filePaths: Set<string>,
+  locales: string[]
+): Set<string> {
   const localeDirs = new Set<string>();
+  const localeSet = new Set(locales);
 
   for (const filePath of filePaths) {
     const parts = filePath.split(path.sep);
 
-    // Find directory segments that are likely locale codes (2-3 letter codes)
+    // Find directory segments that match the provided locales
     for (let i = 0; i < parts.length - 1; i++) {
       const segment = parts[i];
-      // Match common locale patterns: 2-5 chars, possibly with hyphen (en, es, en-US, zh-CN)
-      if (/^[a-z]{2}(-[A-Z]{2})?$/.test(segment)) {
+      if (localeSet.has(segment)) {
         // Found a locale directory, capture up to and including this segment
         const localeDir = parts.slice(0, i + 1).join(path.sep);
         localeDirs.add(localeDir);
@@ -32,12 +35,14 @@ function extractLocaleDirectories(filePaths: Set<string>): Set<string> {
 /**
  * Clears translated files before writing new translations
  * @param filePaths - Set of translated file paths to clear
+ * @param locales - Array of locale codes to match against
  */
 export async function clearLocaleFolders(
-  filePaths: Set<string>
+  filePaths: Set<string>,
+  locales: string[]
 ): Promise<void> {
   // Extract locale directories and delete them recursively
-  const localeDirs = extractLocaleDirectories(filePaths);
+  const localeDirs = extractLocaleDirectories(filePaths, locales);
 
   for (const dir of localeDirs) {
     try {
