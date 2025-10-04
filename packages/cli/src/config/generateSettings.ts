@@ -190,6 +190,9 @@ export async function generateSettings(
     experimentalClearLocaleFolders:
       gtConfig.options?.experimentalClearLocaleFolders ||
       options.experimentalClearLocaleFolders,
+    clearLocaleFoldersExclude:
+      gtConfig.options?.clearLocaleFoldersExclude ||
+      options.clearLocaleFoldersExclude,
   };
 
   // Add additional options if provided

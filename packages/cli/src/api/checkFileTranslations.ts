@@ -6,6 +6,7 @@ import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
 import { clearLocaleFolders } from '../fs/clearLocaleFolders.js';
+import path from 'node:path';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -64,7 +65,16 @@ export async function checkFileTranslations(
         })
         .filter((path): path is string => path !== null)
     );
-    await clearLocaleFolders(translatedFiles, locales);
+
+    // Derive cwd from config path
+    const cwd = path.dirname(options.config);
+
+    await clearLocaleFolders(
+      translatedFiles,
+      locales,
+      options.options?.clearLocaleFoldersExclude,
+      cwd
+    );
   }
 
   const downloadStatus = {

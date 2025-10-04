@@ -191,6 +191,7 @@ export type AdditionalOptions = {
   docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
   copyFiles?: string[]; // array of files to copy to the target locale
   experimentalClearLocaleFolders?: boolean; // if true, clear locale folders before writing translations (default: false)
+  clearLocaleFoldersExclude?: string[]; // array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., "./snippets/[locale]/preserved/**" or "./[locales]/static/**")
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
   experimentalAddHeaderAnchorIds?: 'mintlify'; // Format for anchor IDs when experimentalLocalizeStaticUrls is enabled: 'mintlify' for div wrapping, undefined for inline {#id}
