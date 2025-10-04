@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.7
+
+### Patch Changes
+
+- [#710](https://github.com/generaltranslation/gt/pull/710) [`8325bae`](https://github.com/generaltranslation/gt/commit/8325bae9a8661a0b269131ac6dadefab327c5b2c) Thanks [@SamEggert](https://github.com/SamEggert)! - add clearLocaleFolders option
+
 ## 2.3.6
 
 ### Patch Changes
