@@ -4,7 +4,7 @@ import path from 'node:path';
 import { clearLocaleFolders } from '../clearLocaleFolders.js';
 import os from 'os';
 
-describe('clearTranslatedFiles', () => {
+describe('clearLocaleFolders', () => {
   let testDir: string;
 
   beforeEach(async () => {
