@@ -472,9 +472,22 @@
       },
       "baseDomain": {
         "type": "string",
-        "format": "uri", 
+        "format": "uri",
         "description": "The base http:// url where the project is hosted",
         "examples": ["https://example.com", "https://docs.example.com"]
+      },
+      "experimentalClearLocaleFolders": {
+        "type": "boolean",
+        "description": "If true, clear locale folders before writing translations",
+        "default": false
+      },
+      "clearLocaleFoldersExclude": {
+        "type": "array",
+        "description": "Array of glob patterns with [locale] or [locales] placeholder to exclude from clearing",
+        "items": {
+          "type": "string"
+        },
+        "examples": [["./snippets/[locale]/preserved/**", "./[locales]/static/**"]]
       }
     },
     "additionalProperties": false
