@@ -1,0 +1,667 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 186,
+    "end": 451,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 32,
+        "index": 186
+      },
+      "end": {
+        "line": 14,
+        "column": 10,
+        "index": 451
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 186,
+      "end": 190,
+      "loc": {
+        "start": {
+          "line": 5,
+          "column": 32,
+          "index": 186
+        },
+        "end": {
+          "line": 5,
+          "column": 36,
+          "index": 190
+        },
+        "identifierName": "_jsx"
+      },
+      "name": "_jsx"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 191,
+        "end": 197,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 37,
+            "index": 191
+          },
+          "end": {
+            "line": 5,
+            "column": 43,
+            "index": 197
+          },
+          "identifierName": "Branch"
+        },
+        "name": "Branch"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 199,
+        "end": 450,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 45,
+            "index": 199
+          },
+          "end": {
+            "line": 14,
+            "column": 9,
+            "index": 450
+          }
+        },
+        "properties": [
+          {
+            "type": "ObjectProperty",
+            "start": 213,
+            "end": 227,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 12,
+                "index": 213
+              },
+              "end": {
+                "line": 6,
+                "column": 26,
+                "index": 227
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 213,
+              "end": 219,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 12,
+                  "index": 213
+                },
+                "end": {
+                  "line": 6,
+                  "column": 18,
+                  "index": 219
+                },
+                "identifierName": "branch"
+              },
+              "name": "branch"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 221,
+              "end": 227,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 20,
+                  "index": 221
+                },
+                "end": {
+                  "line": 6,
+                  "column": 26,
+                  "index": 227
+                }
+              },
+              "extra": {
+                "rawValue": "type",
+                "raw": "\"type\""
+              },
+              "value": "type"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 241,
+            "end": 251,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 241
+              },
+              "end": {
+                "line": 7,
+                "column": 22,
+                "index": 251
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 241,
+              "end": 247,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 12,
+                  "index": 241
+                },
+                "end": {
+                  "line": 7,
+                  "column": 18,
+                  "index": 247
+                },
+                "identifierName": "number"
+              },
+              "name": "number"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 249,
+              "end": 251,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 20,
+                  "index": 249
+                },
+                "end": {
+                  "line": 7,
+                  "column": 22,
+                  "index": 251
+                }
+              },
+              "extra": {
+                "rawValue": 42,
+                "raw": "42"
+              },
+              "value": 42
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 265,
+            "end": 292,
+            "loc": {
+              "start": {
+                "line": 8,
+                "column": 12,
+                "index": 265
+              },
+              "end": {
+                "line": 8,
+                "column": 39,
+                "index": 292
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 265,
+              "end": 274,
+              "loc": {
+                "start": {
+                  "line": 8,
+                  "column": 12,
+                  "index": 265
+                },
+                "end": {
+                  "line": 8,
+                  "column": 21,
+                  "index": 274
+                },
+                "identifierName": "bigNumber"
+              },
+              "name": "bigNumber"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 276,
+              "end": 292,
+              "loc": {
+                "start": {
+                  "line": 8,
+                  "column": 23,
+                  "index": 276
+                },
+                "end": {
+                  "line": 8,
+                  "column": 39,
+                  "index": 292
+                }
+              },
+              "extra": {
+                "rawValue": 9007199254740991,
+                "raw": "9007199254740991"
+              },
+              "value": 9007199254740991
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 306,
+            "end": 323,
+            "loc": {
+              "start": {
+                "line": 9,
+                "column": 12,
+                "index": 306
+              },
+              "end": {
+                "line": 9,
+                "column": 29,
+                "index": 323
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 306,
+              "end": 316,
+              "loc": {
+                "start": {
+                  "line": 9,
+                  "column": 12,
+                  "index": 306
+                },
+                "end": {
+                  "line": 9,
+                  "column": 22,
+                  "index": 316
+                },
+                "identifierName": "scientific"
+              },
+              "name": "scientific"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 318,
+              "end": 323,
+              "loc": {
+                "start": {
+                  "line": 9,
+                  "column": 24,
+                  "index": 318
+                },
+                "end": {
+                  "line": 9,
+                  "column": 29,
+                  "index": 323
+                }
+              },
+              "extra": {
+                "rawValue": 1e-20,
+                "raw": "1e-20"
+              },
+              "value": 1e-20
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 337,
+            "end": 362,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 12,
+                "index": 337
+              },
+              "end": {
+                "line": 10,
+                "column": 37,
+                "index": 362
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 337,
+              "end": 355,
+              "loc": {
+                "start": {
+                  "line": 10,
+                  "column": 12,
+                  "index": 337
+                },
+                "end": {
+                  "line": 10,
+                  "column": 30,
+                  "index": 355
+                },
+                "identifierName": "negativeScientific"
+              },
+              "name": "negativeScientific"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "UnaryExpression",
+              "start": 357,
+              "end": 362,
+              "loc": {
+                "start": {
+                  "line": 10,
+                  "column": 32,
+                  "index": 357
+                },
+                "end": {
+                  "line": 10,
+                  "column": 37,
+                  "index": 362
+                }
+              },
+              "operator": "-",
+              "prefix": true,
+              "argument": {
+                "type": "NumericLiteral",
+                "start": 358,
+                "end": 362,
+                "loc": {
+                  "start": {
+                    "line": 10,
+                    "column": 33,
+                    "index": 358
+                  },
+                  "end": {
+                    "line": 10,
+                    "column": 37,
+                    "index": 362
+                  }
+                },
+                "extra": {
+                  "rawValue": 100000000000000000000,
+                  "raw": "1e20"
+                },
+                "value": 100000000000000000000
+              }
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 376,
+            "end": 391,
+            "loc": {
+              "start": {
+                "line": 11,
+                "column": 12,
+                "index": 376
+              },
+              "end": {
+                "line": 11,
+                "column": 27,
+                "index": 391
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 376,
+              "end": 379,
+              "loc": {
+                "start": {
+                  "line": 11,
+                  "column": 12,
+                  "index": 376
+                },
+                "end": {
+                  "line": 11,
+                  "column": 15,
+                  "index": 379
+                },
+                "identifierName": "hex"
+              },
+              "name": "hex"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 381,
+              "end": 391,
+              "loc": {
+                "start": {
+                  "line": 11,
+                  "column": 17,
+                  "index": 381
+                },
+                "end": {
+                  "line": 11,
+                  "column": 27,
+                  "index": 391
+                }
+              },
+              "extra": {
+                "rawValue": 3735928559,
+                "raw": "0xdeadbeef"
+              },
+              "value": 3735928559
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 405,
+            "end": 415,
+            "loc": {
+              "start": {
+                "line": 12,
+                "column": 12,
+                "index": 405
+              },
+              "end": {
+                "line": 12,
+                "column": 22,
+                "index": 415
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 405,
+              "end": 410,
+              "loc": {
+                "start": {
+                  "line": 12,
+                  "column": 12,
+                  "index": 405
+                },
+                "end": {
+                  "line": 12,
+                  "column": 17,
+                  "index": 410
+                },
+                "identifierName": "octal"
+              },
+              "name": "octal"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 412,
+              "end": 415,
+              "loc": {
+                "start": {
+                  "line": 12,
+                  "column": 19,
+                  "index": 412
+                },
+                "end": {
+                  "line": 12,
+                  "column": 22,
+                  "index": 415
+                }
+              },
+              "extra": {
+                "rawValue": 493,
+                "raw": "493"
+              },
+              "value": 493
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 429,
+            "end": 440,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 12,
+                "index": 429
+              },
+              "end": {
+                "line": 13,
+                "column": 23,
+                "index": 440
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 429,
+              "end": 435,
+              "loc": {
+                "start": {
+                  "line": 13,
+                  "column": 12,
+                  "index": 429
+                },
+                "end": {
+                  "line": 13,
+                  "column": 18,
+                  "index": 435
+                },
+                "identifierName": "binary"
+              },
+              "name": "binary"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 437,
+              "end": 440,
+              "loc": {
+                "start": {
+                  "line": 13,
+                  "column": 20,
+                  "index": 437
+                },
+                "end": {
+                  "line": 13,
+                  "column": 23,
+                  "index": 440
+                }
+              },
+              "extra": {
+                "rawValue": 255,
+                "raw": "255"
+              },
+              "value": 255
+            }
+          }
+        ]
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 172,
+        "end": 185,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 18,
+            "index": 172
+          },
+          "end": {
+            "line": 5,
+            "column": 31,
+            "index": 185
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "aggregators": [],
+      "globalCallCounter": 0
+    },
+    "importTracker": {
+      "scopeTracker": {
+        "nextScopeId": 3,
+        "currentScope": 2,
+        "scopeStack": [
+          0,
+          1
+        ],
+        "scopeInfo": {
+          "1": {
+            "id": 1,
+            "parentId": 0,
+            "depth": 0
+          },
+          "2": {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2
+          }
+        },
+        "scopedVariables": {
+          "_jsx": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsx",
+              "aliasName": "_jsx",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "T": [
+            {
+              "scopeId": 0,
+              "canonicalName": "T",
+              "aliasName": "T",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ],
+          "Branch": [
+            {
+              "scopeId": 0,
+              "canonicalName": "Branch",
+              "aliasName": "Branch",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ]
+        },
+        "namespaceImports": []
+      },
+      "namespaceImports": []
+    }
+  }
+}

@@ -1,0 +1,706 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 207,
+    "end": 514,
+    "loc": {
+      "start": {
+        "line": 6,
+        "column": 32,
+        "index": 207
+      },
+      "end": {
+        "line": 16,
+        "column": 10,
+        "index": 514
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 207,
+      "end": 211,
+      "loc": {
+        "start": {
+          "line": 6,
+          "column": 32,
+          "index": 207
+        },
+        "end": {
+          "line": 6,
+          "column": 36,
+          "index": 211
+        },
+        "identifierName": "_jsx"
+      },
+      "name": "_jsx"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 212,
+        "end": 218,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 37,
+            "index": 212
+          },
+          "end": {
+            "line": 6,
+            "column": 43,
+            "index": 218
+          },
+          "identifierName": "Plural"
+        },
+        "name": "Plural"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 220,
+        "end": 513,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 45,
+            "index": 220
+          },
+          "end": {
+            "line": 16,
+            "column": 9,
+            "index": 513
+          }
+        },
+        "properties": [
+          {
+            "type": "ObjectProperty",
+            "start": 234,
+            "end": 242,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 234
+              },
+              "end": {
+                "line": 7,
+                "column": 20,
+                "index": 242
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 234,
+              "end": 235,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 12,
+                  "index": 234
+                },
+                "end": {
+                  "line": 7,
+                  "column": 13,
+                  "index": 235
+                },
+                "identifierName": "n"
+              },
+              "name": "n"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "Identifier",
+              "start": 237,
+              "end": 242,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 15,
+                  "index": 237
+                },
+                "end": {
+                  "line": 7,
+                  "column": 20,
+                  "index": 242
+                },
+                "identifierName": "count"
+              },
+              "name": "count"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 256,
+            "end": 274,
+            "loc": {
+              "start": {
+                "line": 8,
+                "column": 12,
+                "index": 256
+              },
+              "end": {
+                "line": 8,
+                "column": 30,
+                "index": 274
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 256,
+              "end": 260,
+              "loc": {
+                "start": {
+                  "line": 8,
+                  "column": 12,
+                  "index": 256
+                },
+                "end": {
+                  "line": 8,
+                  "column": 16,
+                  "index": 260
+                },
+                "identifierName": "zero"
+              },
+              "name": "zero"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 262,
+              "end": 274,
+              "loc": {
+                "start": {
+                  "line": 8,
+                  "column": 18,
+                  "index": 262
+                },
+                "end": {
+                  "line": 8,
+                  "column": 30,
+                  "index": 274
+                }
+              },
+              "extra": {
+                "rawValue": "zero items",
+                "raw": "\"zero items\""
+              },
+              "value": "zero items"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 288,
+            "end": 303,
+            "loc": {
+              "start": {
+                "line": 9,
+                "column": 12,
+                "index": 288
+              },
+              "end": {
+                "line": 9,
+                "column": 27,
+                "index": 303
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 288,
+              "end": 291,
+              "loc": {
+                "start": {
+                  "line": 9,
+                  "column": 12,
+                  "index": 288
+                },
+                "end": {
+                  "line": 9,
+                  "column": 15,
+                  "index": 291
+                },
+                "identifierName": "one"
+              },
+              "name": "one"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 293,
+              "end": 303,
+              "loc": {
+                "start": {
+                  "line": 9,
+                  "column": 17,
+                  "index": 293
+                },
+                "end": {
+                  "line": 9,
+                  "column": 27,
+                  "index": 303
+                }
+              },
+              "extra": {
+                "rawValue": "one item",
+                "raw": "\"one item\""
+              },
+              "value": "one item"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 317,
+            "end": 333,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 12,
+                "index": 317
+              },
+              "end": {
+                "line": 10,
+                "column": 28,
+                "index": 333
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 317,
+              "end": 320,
+              "loc": {
+                "start": {
+                  "line": 10,
+                  "column": 12,
+                  "index": 317
+                },
+                "end": {
+                  "line": 10,
+                  "column": 15,
+                  "index": 320
+                },
+                "identifierName": "two"
+              },
+              "name": "two"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 322,
+              "end": 333,
+              "loc": {
+                "start": {
+                  "line": 10,
+                  "column": 17,
+                  "index": 322
+                },
+                "end": {
+                  "line": 10,
+                  "column": 28,
+                  "index": 333
+                }
+              },
+              "extra": {
+                "rawValue": "two items",
+                "raw": "\"two items\""
+              },
+              "value": "two items"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 347,
+            "end": 363,
+            "loc": {
+              "start": {
+                "line": 11,
+                "column": 12,
+                "index": 347
+              },
+              "end": {
+                "line": 11,
+                "column": 28,
+                "index": 363
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 347,
+              "end": 350,
+              "loc": {
+                "start": {
+                  "line": 11,
+                  "column": 12,
+                  "index": 347
+                },
+                "end": {
+                  "line": 11,
+                  "column": 15,
+                  "index": 350
+                },
+                "identifierName": "few"
+              },
+              "name": "few"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 352,
+              "end": 363,
+              "loc": {
+                "start": {
+                  "line": 11,
+                  "column": 17,
+                  "index": 352
+                },
+                "end": {
+                  "line": 11,
+                  "column": 28,
+                  "index": 363
+                }
+              },
+              "extra": {
+                "rawValue": "few items",
+                "raw": "\"few items\""
+              },
+              "value": "few items"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 377,
+            "end": 395,
+            "loc": {
+              "start": {
+                "line": 12,
+                "column": 12,
+                "index": 377
+              },
+              "end": {
+                "line": 12,
+                "column": 30,
+                "index": 395
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 377,
+              "end": 381,
+              "loc": {
+                "start": {
+                  "line": 12,
+                  "column": 12,
+                  "index": 377
+                },
+                "end": {
+                  "line": 12,
+                  "column": 16,
+                  "index": 381
+                },
+                "identifierName": "many"
+              },
+              "name": "many"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 383,
+              "end": 395,
+              "loc": {
+                "start": {
+                  "line": 12,
+                  "column": 18,
+                  "index": 383
+                },
+                "end": {
+                  "line": 12,
+                  "column": 30,
+                  "index": 395
+                }
+              },
+              "extra": {
+                "rawValue": "many items",
+                "raw": "\"many items\""
+              },
+              "value": "many items"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 409,
+            "end": 429,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 12,
+                "index": 409
+              },
+              "end": {
+                "line": 13,
+                "column": 32,
+                "index": 429
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 409,
+              "end": 414,
+              "loc": {
+                "start": {
+                  "line": 13,
+                  "column": 12,
+                  "index": 409
+                },
+                "end": {
+                  "line": 13,
+                  "column": 17,
+                  "index": 414
+                },
+                "identifierName": "other"
+              },
+              "name": "other"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 416,
+              "end": 429,
+              "loc": {
+                "start": {
+                  "line": 13,
+                  "column": 19,
+                  "index": 416
+                },
+                "end": {
+                  "line": 13,
+                  "column": 32,
+                  "index": 429
+                }
+              },
+              "extra": {
+                "rawValue": "other items",
+                "raw": "\"other items\""
+              },
+              "value": "other items"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 443,
+            "end": 468,
+            "loc": {
+              "start": {
+                "line": 14,
+                "column": 12,
+                "index": 443
+              },
+              "end": {
+                "line": 14,
+                "column": 37,
+                "index": 468
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 443,
+              "end": 451,
+              "loc": {
+                "start": {
+                  "line": 14,
+                  "column": 12,
+                  "index": 443
+                },
+                "end": {
+                  "line": 14,
+                  "column": 20,
+                  "index": 451
+                },
+                "identifierName": "singular"
+              },
+              "name": "singular"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 453,
+              "end": 468,
+              "loc": {
+                "start": {
+                  "line": 14,
+                  "column": 22,
+                  "index": 453
+                },
+                "end": {
+                  "line": 14,
+                  "column": 37,
+                  "index": 468
+                }
+              },
+              "extra": {
+                "rawValue": "singular form",
+                "raw": "\"singular form\""
+              },
+              "value": "singular form"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 482,
+            "end": 503,
+            "loc": {
+              "start": {
+                "line": 15,
+                "column": 12,
+                "index": 482
+              },
+              "end": {
+                "line": 15,
+                "column": 33,
+                "index": 503
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 482,
+              "end": 488,
+              "loc": {
+                "start": {
+                  "line": 15,
+                  "column": 12,
+                  "index": 482
+                },
+                "end": {
+                  "line": 15,
+                  "column": 18,
+                  "index": 488
+                },
+                "identifierName": "plural"
+              },
+              "name": "plural"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 490,
+              "end": 503,
+              "loc": {
+                "start": {
+                  "line": 15,
+                  "column": 20,
+                  "index": 490
+                },
+                "end": {
+                  "line": 15,
+                  "column": 33,
+                  "index": 503
+                }
+              },
+              "extra": {
+                "rawValue": "plural form",
+                "raw": "\"plural form\""
+              },
+              "value": "plural form"
+            }
+          }
+        ]
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 193,
+        "end": 206,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 18,
+            "index": 193
+          },
+          "end": {
+            "line": 6,
+            "column": 31,
+            "index": 206
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "aggregators": [],
+      "globalCallCounter": 0
+    },
+    "importTracker": {
+      "scopeTracker": {
+        "nextScopeId": 3,
+        "currentScope": 2,
+        "scopeStack": [
+          0,
+          1
+        ],
+        "scopeInfo": {
+          "1": {
+            "id": 1,
+            "parentId": 0,
+            "depth": 0
+          },
+          "2": {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2
+          }
+        },
+        "scopedVariables": {
+          "_jsx": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsx",
+              "aliasName": "_jsx",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "Plural": [
+            {
+              "scopeId": 0,
+              "canonicalName": "Plural",
+              "aliasName": "Plural",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ],
+          "T": [
+            {
+              "scopeId": 0,
+              "canonicalName": "T",
+              "aliasName": "T",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ]
+        },
+        "namespaceImports": []
+      },
+      "namespaceImports": []
+    }
+  }
+}

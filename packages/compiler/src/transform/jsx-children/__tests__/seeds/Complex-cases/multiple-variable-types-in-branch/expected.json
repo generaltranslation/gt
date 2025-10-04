@@ -1,0 +1,65 @@
+{
+  "t": "i",
+  "i": 1,
+  "d": {
+    "b": {
+      "singular": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "Transaction: ",
+          {
+            "i": 3,
+            "k": "_gt_cost_3",
+            "v": "c"
+          },
+          " on",
+          " ",
+          {
+            "i": 4,
+            "k": "_gt_date_4",
+            "v": "d"
+          },
+          " for ",
+          {
+            "i": 5,
+            "k": "_gt_n_5",
+            "v": "n"
+          },
+          " tax with",
+          " ",
+          {
+            "i": 6,
+            "k": "reference",
+            "v": "v"
+          }
+        ]
+      },
+      "plural": {
+        "t": "div",
+        "i": 2,
+        "c": [
+          {
+            "i": 3,
+            "k": "_gt_cost_3",
+            "v": "c"
+          },
+          " total from",
+          " ",
+          {
+            "i": 4,
+            "k": "_gt_n_4",
+            "v": "n"
+          },
+          " transactions on ",
+          {
+            "i": 5,
+            "k": "_gt_date_5",
+            "v": "d"
+          }
+        ]
+      }
+    },
+    "t": "p"
+  }
+}

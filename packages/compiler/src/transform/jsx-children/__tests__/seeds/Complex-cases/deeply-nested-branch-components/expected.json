@@ -1,0 +1,45 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "home": {
+        "t": "f",
+        "i": 2,
+        "d": {
+          "b": {
+            "morning": "Good morning at home",
+            "evening": {
+              "t": "C3",
+              "i": 3,
+              "c": [
+                "Good evening at ",
+                {
+                  "i": 4,
+                  "k": "_gt_value_4",
+                  "v": "v"
+                },
+                " with",
+                " ",
+                {
+                  "t": "f",
+                  "i": 5,
+                  "d": {
+                    "b": {
+                      "sunny": "sunny skies",
+                      "rainy": "rainy weather"
+                    },
+                    "t": "b"
+                  }
+                }
+              ]
+            }
+          },
+          "t": "b"
+        }
+      },
+      "work": "At the office"
+    },
+    "t": "b"
+  }
+}

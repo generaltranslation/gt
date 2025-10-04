@@ -1,0 +1,34 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "input": {
+        "t": "input",
+        "i": 2,
+        "d": {
+          "pl": "Branch placeholder",
+          "ti": "Branch title"
+        }
+      },
+      "image": {
+        "t": "img",
+        "i": 2,
+        "d": {
+          "ti": "Branch image title",
+          "alt": "Branch image"
+        }
+      },
+      "link": {
+        "t": "a",
+        "i": 2,
+        "d": {
+          "arl": "Branch link",
+          "ard": "desc"
+        },
+        "c": "Link"
+      }
+    },
+    "t": "b"
+  }
+}

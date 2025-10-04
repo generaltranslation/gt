@@ -1,0 +1,74 @@
+{
+  "t": "i",
+  "i": 1,
+  "d": {
+    "b": {
+      "singular": {
+        "t": "C2",
+        "i": 2,
+        "c": [
+          "Outer fragment",
+          {
+            "t": "C3",
+            "i": 3,
+            "c": [
+              "Nested fragment with ",
+              {
+                "i": 4,
+                "k": "_gt_value_4",
+                "v": "v"
+              },
+              {
+                "t": "C5",
+                "i": 5,
+                "c": [
+                  "Deep nested with ",
+                  {
+                    "i": 6,
+                    "k": "_gt_n_6",
+                    "v": "n"
+                  },
+                  {
+                    "t": "C7",
+                    "i": 7,
+                    "c": "More nesting"
+                  }
+                ]
+              }
+            ]
+          },
+          "Back to outer"
+        ]
+      },
+      "plural": {
+        "t": "div",
+        "i": 2,
+        "c": [
+          {
+            "t": "C3",
+            "i": 3,
+            "c": "Fragment in div"
+          },
+          {
+            "t": "span",
+            "i": 4,
+            "c": {
+              "t": "C5",
+              "i": 5,
+              "c": [
+                "Fragment in span with",
+                " ",
+                {
+                  "i": 6,
+                  "k": "_gt_cost_6",
+                  "v": "c"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "t": "p"
+  }
+}

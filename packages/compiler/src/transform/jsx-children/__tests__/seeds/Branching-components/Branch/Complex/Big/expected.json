@@ -1,0 +1,368 @@
+[
+  {
+    "t": "i",
+    "i": 1,
+    "d": {
+      "b": {
+        "singular": "File",
+        "plural": "Files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 2,
+    "d": {
+      "b": {
+        "file": "file.svg",
+        "directory": "public"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 3,
+    "d": {
+      "b": {
+        "singular": "File",
+        "plural": "42"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 4,
+    "d": {
+      "b": {
+        "singular": true,
+        "plural": false
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 5,
+    "d": {
+      "b": {
+        "singular": null,
+        "plural": "Files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 6,
+    "d": {
+      "b": {
+        "singular": "File",
+        "plural": "Files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 7,
+    "d": {
+      "b": {
+        "singular": "File",
+        "plural": "42"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 8,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "C9",
+          "i": 9,
+          "c": "Single file"
+        },
+        "plural": {
+          "t": "C9",
+          "i": 9,
+          "c": "Multiple files"
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 9,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "span",
+          "i": 10,
+          "c": "Single file"
+        },
+        "plural": {
+          "t": "span",
+          "i": 10,
+          "c": "Multiple files"
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 10,
+    "d": {
+      "b": {
+        "singular": {
+          "i": 11,
+          "k": "_gt_value_11",
+          "v": "v"
+        },
+        "plural": {
+          "t": "C11",
+          "i": 11,
+          "c": [
+            "Multiple ",
+            {
+              "i": 12,
+              "k": "_gt_value_12",
+              "v": "v"
+            },
+            "s"
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "div",
+    "i": 11,
+    "c": [
+      {
+        "t": "C12",
+        "i": 12,
+        "c": "Yo"
+      },
+      {
+        "i": 13,
+        "k": "_gt_value_13",
+        "v": "v"
+      }
+    ]
+  },
+  {
+    "t": "i",
+    "i": 14,
+    "d": {
+      "b": {
+        "singular": {
+          "i": 15,
+          "k": "_gt_value_15",
+          "v": "v"
+        },
+        "plural": {
+          "t": "div",
+          "i": 15,
+          "c": {
+            "t": "C16",
+            "i": 16,
+            "c": [
+              "Multiple ",
+              {
+                "i": 17,
+                "k": "_gt_value_17",
+                "v": "v"
+              },
+              "s"
+            ]
+          }
+        }
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 15,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "f",
+          "i": 16,
+          "d": {
+            "b": {
+              "file": {
+                "t": "i",
+                "i": 17,
+                "d": {
+                  "b": {
+                    "singular": {
+                      "t": "C18",
+                      "i": 18,
+                      "c": "Single nested file"
+                    },
+                    "plural": "Multiple nested files"
+                  },
+                  "t": "p"
+                }
+              },
+              "directory": {
+                "t": "C17",
+                "i": 17,
+                "c": "Public directory"
+              }
+            },
+            "t": "b"
+          }
+        },
+        "plural": "Multiple top-level items"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 16,
+    "d": {
+      "b": {
+        "singular": "",
+        "plural": "Files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 17,
+    "d": {
+      "b": {
+        "singular": "File",
+        "plural": ""
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 18,
+    "d": {
+      "b": {
+        "singular": "   File   ",
+        "plural": "   Files   "
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 19,
+    "d": {
+      "b": {
+        "singular": "\n            Multiline\n            File\n          ",
+        "plural": "Files"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "i",
+    "i": 20,
+    "d": {
+      "b": {
+        "singular": "File with emoji 📁",
+        "plural": "Files with emoji 📁📂"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 21,
+    "d": {
+      "b": {
+        "file": "special-chars!@#$%^&*().svg",
+        "directory": "unicode-path-ñáéíóú"
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "div",
+    "i": 22,
+    "c": "hello"
+  },
+  {
+    "t": "f",
+    "i": 23,
+    "d": {
+      "b": {
+        "option1": {
+          "t": "f",
+          "i": 24,
+          "d": {
+            "b": {
+              "option1": {
+                "t": "i",
+                "i": 25,
+                "d": {
+                  "b": {
+                    "singular": {
+                      "t": "f",
+                      "i": 26,
+                      "d": {
+                        "b": {
+                          "option1": {
+                            "t": "C27",
+                            "i": 27,
+                            "c": "Deep option 1"
+                          },
+                          "option2": {
+                            "i": 27,
+                            "k": "_gt_value_27",
+                            "v": "v"
+                          }
+                        },
+                        "t": "b"
+                      }
+                    },
+                    "plural": {
+                      "t": "f",
+                      "i": 26,
+                      "d": {
+                        "b": {
+                          "option1": {
+                            "i": 27,
+                            "k": "_gt_cost_27",
+                            "v": "c"
+                          },
+                          "option2": {
+                            "i": 27,
+                            "k": "_gt_date_27",
+                            "v": "d"
+                          }
+                        },
+                        "t": "b"
+                      }
+                    }
+                  },
+                  "t": "p"
+                }
+              },
+              "option2": "Level 2 option 2"
+            },
+            "t": "b"
+          }
+        },
+        "option2": "Level 1 option 2"
+      },
+      "t": "b"
+    }
+  }
+]

@@ -13,6 +13,7 @@ import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
 import { useable } from '../../promises/dangerouslyUsable';
+import fs from 'fs';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.

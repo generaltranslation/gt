@@ -1,0 +1,767 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 180,
+    "end": 630,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 18,
+        "index": 180
+      },
+      "end": {
+        "line": 20,
+        "column": 9,
+        "index": 630
+      }
+    },
+    "elements": [
+      {
+        "type": "CallExpression",
+        "start": 208,
+        "end": 271,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 26,
+            "index": 208
+          },
+          "end": {
+            "line": 8,
+            "column": 14,
+            "index": 271
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 208,
+          "end": 212,
+          "loc": {
+            "start": {
+              "line": 6,
+              "column": 26,
+              "index": 208
+            },
+            "end": {
+              "line": 6,
+              "column": 30,
+              "index": 212
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "StringLiteral",
+            "start": 213,
+            "end": 218,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 31,
+                "index": 213
+              },
+              "end": {
+                "line": 6,
+                "column": 36,
+                "index": 218
+              }
+            },
+            "extra": {
+              "rawValue": "div",
+              "raw": "\"div\""
+            },
+            "value": "div"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 220,
+            "end": 270,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 38,
+                "index": 220
+              },
+              "end": {
+                "line": 8,
+                "column": 13,
+                "index": 270
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 238,
+                "end": 256,
+                "loc": {
+                  "start": {
+                    "line": 7,
+                    "column": 16,
+                    "index": 238
+                  },
+                  "end": {
+                    "line": 7,
+                    "column": 34,
+                    "index": 256
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 238,
+                  "end": 246,
+                  "loc": {
+                    "start": {
+                      "line": 7,
+                      "column": 16,
+                      "index": 238
+                    },
+                    "end": {
+                      "line": 7,
+                      "column": 24,
+                      "index": 246
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 248,
+                  "end": 256,
+                  "loc": {
+                    "start": {
+                      "line": 7,
+                      "column": 26,
+                      "index": 248
+                    },
+                    "end": {
+                      "line": 7,
+                      "column": 34,
+                      "index": 256
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "before",
+                    "raw": "\"before\""
+                  },
+                  "value": "before"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 194,
+            "end": 207,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 12,
+                "index": 194
+              },
+              "end": {
+                "line": 6,
+                "column": 25,
+                "index": 207
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "StringLiteral",
+        "start": 285,
+        "end": 321,
+        "loc": {
+          "start": {
+            "line": 9,
+            "column": 12,
+            "index": 285
+          },
+          "end": {
+            "line": 9,
+            "column": 48,
+            "index": 321
+          }
+        },
+        "extra": {
+          "rawValue": " space after div space before div ",
+          "raw": "\" space after div space before div \""
+        },
+        "value": " space after div space before div "
+      },
+      {
+        "type": "CallExpression",
+        "start": 349,
+        "end": 411,
+        "loc": {
+          "start": {
+            "line": 10,
+            "column": 26,
+            "index": 349
+          },
+          "end": {
+            "line": 12,
+            "column": 14,
+            "index": 411
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 349,
+          "end": 353,
+          "loc": {
+            "start": {
+              "line": 10,
+              "column": 26,
+              "index": 349
+            },
+            "end": {
+              "line": 10,
+              "column": 30,
+              "index": 353
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "StringLiteral",
+            "start": 354,
+            "end": 359,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 31,
+                "index": 354
+              },
+              "end": {
+                "line": 10,
+                "column": 36,
+                "index": 359
+              }
+            },
+            "extra": {
+              "rawValue": "div",
+              "raw": "\"div\""
+            },
+            "value": "div"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 361,
+            "end": 410,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 38,
+                "index": 361
+              },
+              "end": {
+                "line": 12,
+                "column": 13,
+                "index": 410
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 379,
+                "end": 396,
+                "loc": {
+                  "start": {
+                    "line": 11,
+                    "column": 16,
+                    "index": 379
+                  },
+                  "end": {
+                    "line": 11,
+                    "column": 33,
+                    "index": 396
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 379,
+                  "end": 387,
+                  "loc": {
+                    "start": {
+                      "line": 11,
+                      "column": 16,
+                      "index": 379
+                    },
+                    "end": {
+                      "line": 11,
+                      "column": 24,
+                      "index": 387
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 389,
+                  "end": 396,
+                  "loc": {
+                    "start": {
+                      "line": 11,
+                      "column": 26,
+                      "index": 389
+                    },
+                    "end": {
+                      "line": 11,
+                      "column": 33,
+                      "index": 396
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "after",
+                    "raw": "\"after\""
+                  },
+                  "value": "after"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 335,
+            "end": 348,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 12,
+                "index": 335
+              },
+              "end": {
+                "line": 10,
+                "column": 25,
+                "index": 348
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 439,
+        "end": 501,
+        "loc": {
+          "start": {
+            "line": 13,
+            "column": 26,
+            "index": 439
+          },
+          "end": {
+            "line": 15,
+            "column": 14,
+            "index": 501
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 439,
+          "end": 443,
+          "loc": {
+            "start": {
+              "line": 13,
+              "column": 26,
+              "index": 439
+            },
+            "end": {
+              "line": 13,
+              "column": 30,
+              "index": 443
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "StringLiteral",
+            "start": 444,
+            "end": 449,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 31,
+                "index": 444
+              },
+              "end": {
+                "line": 13,
+                "column": 36,
+                "index": 449
+              }
+            },
+            "extra": {
+              "rawValue": "div",
+              "raw": "\"div\""
+            },
+            "value": "div"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 451,
+            "end": 500,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 38,
+                "index": 451
+              },
+              "end": {
+                "line": 15,
+                "column": 13,
+                "index": 500
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 469,
+                "end": 486,
+                "loc": {
+                  "start": {
+                    "line": 14,
+                    "column": 16,
+                    "index": 469
+                  },
+                  "end": {
+                    "line": 14,
+                    "column": 33,
+                    "index": 486
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 469,
+                  "end": 477,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 16,
+                      "index": 469
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 24,
+                      "index": 477
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 479,
+                  "end": 486,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 26,
+                      "index": 479
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 33,
+                      "index": 486
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "first",
+                    "raw": "\"first\""
+                  },
+                  "value": "first"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 425,
+            "end": 438,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 12,
+                "index": 425
+              },
+              "end": {
+                "line": 13,
+                "column": 25,
+                "index": 438
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "StringLiteral",
+        "start": 515,
+        "end": 531,
+        "loc": {
+          "start": {
+            "line": 16,
+            "column": 12,
+            "index": 515
+          },
+          "end": {
+            "line": 16,
+            "column": 28,
+            "index": 531
+          }
+        },
+        "extra": {
+          "rawValue": " middle space ",
+          "raw": "\" middle space \""
+        },
+        "value": " middle space "
+      },
+      {
+        "type": "CallExpression",
+        "start": 559,
+        "end": 620,
+        "loc": {
+          "start": {
+            "line": 17,
+            "column": 26,
+            "index": 559
+          },
+          "end": {
+            "line": 19,
+            "column": 14,
+            "index": 620
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 559,
+          "end": 563,
+          "loc": {
+            "start": {
+              "line": 17,
+              "column": 26,
+              "index": 559
+            },
+            "end": {
+              "line": 17,
+              "column": 30,
+              "index": 563
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "StringLiteral",
+            "start": 564,
+            "end": 569,
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 31,
+                "index": 564
+              },
+              "end": {
+                "line": 17,
+                "column": 36,
+                "index": 569
+              }
+            },
+            "extra": {
+              "rawValue": "div",
+              "raw": "\"div\""
+            },
+            "value": "div"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 571,
+            "end": 619,
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 38,
+                "index": 571
+              },
+              "end": {
+                "line": 19,
+                "column": 13,
+                "index": 619
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 589,
+                "end": 605,
+                "loc": {
+                  "start": {
+                    "line": 18,
+                    "column": 16,
+                    "index": 589
+                  },
+                  "end": {
+                    "line": 18,
+                    "column": 32,
+                    "index": 605
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 589,
+                  "end": 597,
+                  "loc": {
+                    "start": {
+                      "line": 18,
+                      "column": 16,
+                      "index": 589
+                    },
+                    "end": {
+                      "line": 18,
+                      "column": 24,
+                      "index": 597
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 599,
+                  "end": 605,
+                  "loc": {
+                    "start": {
+                      "line": 18,
+                      "column": 26,
+                      "index": 599
+                    },
+                    "end": {
+                      "line": 18,
+                      "column": 32,
+                      "index": 605
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "last",
+                    "raw": "\"last\""
+                  },
+                  "value": "last"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 545,
+            "end": 558,
+            "loc": {
+              "start": {
+                "line": 17,
+                "column": 12,
+                "index": 545
+              },
+              "end": {
+                "line": 17,
+                "column": 25,
+                "index": 558
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "aggregators": [],
+      "globalCallCounter": 0
+    },
+    "importTracker": {
+      "scopeTracker": {
+        "nextScopeId": 3,
+        "currentScope": 2,
+        "scopeStack": [
+          0,
+          1
+        ],
+        "scopeInfo": {
+          "1": {
+            "id": 1,
+            "parentId": 0,
+            "depth": 0
+          },
+          "2": {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2
+          }
+        },
+        "scopedVariables": {
+          "_jsx": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsx",
+              "aliasName": "_jsx",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "_jsxs": [
+            {
+              "scopeId": 0,
+              "canonicalName": "jsxs",
+              "aliasName": "_jsxs",
+              "isTranslationFunction": false,
+              "type": "react",
+              "identifier": 0
+            }
+          ],
+          "T": [
+            {
+              "scopeId": 0,
+              "canonicalName": "T",
+              "aliasName": "T",
+              "isTranslationFunction": true,
+              "type": "generaltranslation",
+              "identifier": 0
+            }
+          ]
+        },
+        "namespaceImports": []
+      },
+      "namespaceImports": []
+    }
+  }
+}

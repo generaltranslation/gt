@@ -1,0 +1,13 @@
+[
+  "Let's see some custom components",
+  {
+    "t": "a",
+    "i": 1,
+    "c": "Google"
+  },
+  {
+    "t": "h",
+    "i": 2,
+    "c": "Click me"
+  }
+]

@@ -1,0 +1,57 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "nested": {
+        "t": "div",
+        "i": 2,
+        "c": {
+          "t": "i",
+          "i": 3,
+          "d": {
+            "b": {
+              "singular": {
+                "t": "span",
+                "i": 4,
+                "c": [
+                  "Nested plural: ",
+                  {
+                    "i": 5,
+                    "k": "_gt_value_5",
+                    "v": "v"
+                  }
+                ]
+              },
+              "plural": {
+                "t": "f",
+                "i": 4,
+                "d": {
+                  "b": {
+                    "option1": "Double nested!",
+                    "option2": {
+                      "t": "C5",
+                      "i": 5,
+                      "c": [
+                        "With ",
+                        {
+                          "i": 6,
+                          "k": "_gt_cost_6",
+                          "v": "c"
+                        }
+                      ]
+                    }
+                  },
+                  "t": "b"
+                }
+              }
+            },
+            "t": "p"
+          }
+        }
+      },
+      "flat": "Simple flat content"
+    },
+    "t": "b"
+  }
+}

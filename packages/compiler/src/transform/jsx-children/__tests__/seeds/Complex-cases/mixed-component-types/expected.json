@@ -1,0 +1,79 @@
+{
+  "t": "div",
+  "i": 1,
+  "c": {
+    "t": "i",
+    "i": 2,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "div",
+          "i": 3,
+          "c": [
+            "You have ",
+            {
+              "i": 4,
+              "k": "_gt_n_4",
+              "v": "n"
+            },
+            " item costing",
+            " ",
+            {
+              "i": 5,
+              "k": "_gt_cost_5",
+              "v": "c"
+            },
+            "on ",
+            {
+              "i": 6,
+              "k": "_gt_date_6",
+              "v": "d"
+            },
+            " in the",
+            {
+              "t": "f",
+              "i": 7,
+              "d": {
+                "b": {
+                  "home": "home folder",
+                  "work": {
+                    "t": "C8",
+                    "i": 8,
+                    "c": "work directory"
+                  }
+                },
+                "t": "b"
+              }
+            }
+          ]
+        },
+        "plural": {
+          "t": "div",
+          "i": 3,
+          "c": [
+            "You have ",
+            {
+              "i": 4,
+              "k": "_gt_n_4",
+              "v": "n"
+            },
+            " items costing",
+            " ",
+            {
+              "i": 5,
+              "k": "_gt_cost_5",
+              "v": "c"
+            },
+            {
+              "t": "C6",
+              "i": 6,
+              "c": "fragments mixed"
+            },
+            " with elements"
+          ]
+        }
+      },
+      "t": "p"
+    }
+  }
+}
