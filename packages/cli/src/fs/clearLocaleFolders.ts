@@ -34,16 +34,20 @@ function extractLocaleDirectories(
   return localeDirs;
 }
 
+async function getAllFiles(dirPath: string): Promise<string[]> {
+  return await fg(path.join(dirPath, '**/*'), {
+    absolute: true,
+    onlyFiles: true,
+  });
+}
+
 async function getFilesToDelete(
   dirPath: string,
   excludePatterns: string[],
   currentLocale: string,
   cwd: string
 ): Promise<string[]> {
-  const allFiles = await fg(path.join(dirPath, '**/*'), {
-    absolute: true,
-    onlyFiles: true,
-  });
+  const allFiles = await getAllFiles(dirPath);
 
   const absoluteCwd = path.resolve(cwd);
   const expandedExcludePatterns = excludePatterns.map((p) => {
@@ -103,10 +107,7 @@ export async function clearLocaleFolders(
       );
 
       // Get all files for count comparison
-      const allFiles = fg.sync(path.join(dir, '**/*'), {
-        absolute: true,
-        onlyFiles: true,
-      });
+      const allFiles = await getAllFiles(dir);
 
       for (const file of filesToDelete) {
         try {
