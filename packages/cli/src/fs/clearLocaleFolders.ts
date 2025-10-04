@@ -40,7 +40,7 @@ async function getFilesToDelete(
   currentLocale: string,
   cwd: string
 ): Promise<string[]> {
-  const allFiles = fg.sync(path.join(dirPath, '**/*'), {
+  const allFiles = await fg(path.join(dirPath, '**/*'), {
     absolute: true,
     onlyFiles: true,
   });
