@@ -275,7 +275,9 @@
                 "type": "string"
               },
               "minItems": 1,
-              "examples": [["config/[locale]/**/*.yaml", "data/[locale]/**/*.yml"]]
+              "examples": [
+                ["config/[locale]/**/*.yaml", "data/[locale]/**/*.yml"]
+              ]
             },
             "exclude": {
               "type": "array",
@@ -433,7 +435,7 @@
         "examples": ["/docs/[locale]", "/[locale]"]
       },
       "docsImportPattern": {
-        "type": "string", 
+        "type": "string",
         "description": "Pattern for localizing static imports in markdown files (e.g., '/docs/[locale]/foo.md' or '/[locale]/foo.md')",
         "examples": ["/docs/[locale]/foo.md", "/[locale]/foo.md"]
       },
@@ -456,7 +458,7 @@
         "default": false
       },
       "experimentalLocalizeStaticUrls": {
-        "type": "boolean", 
+        "type": "boolean",
         "description": "Inserts locale in static url paths in md/mdx files",
         "default": false
       },
@@ -472,9 +474,24 @@
       },
       "baseDomain": {
         "type": "string",
-        "format": "uri", 
+        "format": "uri",
         "description": "The base http:// url where the project is hosted",
         "examples": ["https://example.com", "https://docs.example.com"]
+      },
+      "experimentalClearLocaleDirs": {
+        "type": "boolean",
+        "description": "If true, clear locale directories before writing translations (default: false)",
+        "default": false
+      },
+      "clearLocaleDirsExclude": {
+        "type": "array",
+        "description": "Array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., './snippets/[locale]/preserved/**' or './[locales]/static/**')",
+        "items": {
+          "type": "string"
+        },
+        "examples": [
+          ["./snippets/[locale]/preserved/**", "./[locales]/static/**"]
+        ]
       }
     },
     "additionalProperties": false
