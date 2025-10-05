@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'node:path';
-import { clearLocaleFolders } from '../clearLocaleFolders.js';
+import { clearLocaleDirs } from '../clearLocaleDirs.js';
 import os from 'os';
 
-describe('clearLocaleFolders', () => {
+describe('clearLocaleDirs', () => {
   let testDir: string;
 
   beforeEach(async () => {
@@ -27,7 +27,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'snippets', 'es', 'file.mdx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['es']);
+    await clearLocaleDirs(filePaths, ['es']);
 
     // Verify the es directory was deleted
     await expect(fs.access(esDir)).rejects.toThrow();
@@ -47,7 +47,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'snippets', 'es', 'api-test', 'introduction.mdx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['es']);
+    await clearLocaleDirs(filePaths, ['es']);
 
     // Verify the es directory (and all contents) was deleted
     await expect(
@@ -75,7 +75,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'docs', 'de', 'file3.mdx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['es', 'fr', 'de']);
+    await clearLocaleDirs(filePaths, ['es', 'fr', 'de']);
 
     // Verify all locale directories were deleted
     await expect(fs.access(esDir)).rejects.toThrow();
@@ -99,7 +99,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'content', 'zh-CN', 'file.mdx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['en-US', 'zh-CN']);
+    await clearLocaleDirs(filePaths, ['en-US', 'zh-CN']);
 
     // Verify locale directories were deleted
     await expect(fs.access(enUSDir)).rejects.toThrow();
@@ -116,7 +116,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'components', 'button', 'file.tsx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['es', 'fr']);
+    await clearLocaleDirs(filePaths, ['es', 'fr']);
 
     // Verify the directory was NOT deleted (no locale pattern found)
     await expect(fs.access(notLocaleDir)).resolves.toBeUndefined();
@@ -130,9 +130,7 @@ describe('clearLocaleFolders', () => {
     ]);
 
     // Should not throw an error
-    await expect(
-      clearLocaleFolders(filePaths, ['es'])
-    ).resolves.toBeUndefined();
+    await expect(clearLocaleDirs(filePaths, ['es'])).resolves.toBeUndefined();
   });
 
   it('should handle multiple files in the same locale directory', async () => {
@@ -148,7 +146,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'snippets', 'es', 'file3.mdx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['es']);
+    await clearLocaleDirs(filePaths, ['es']);
 
     // Should only delete the directory once
     await expect(fs.access(esDir)).rejects.toThrow();
@@ -170,7 +168,7 @@ describe('clearLocaleFolders', () => {
 
     const filePaths = new Set([deepPath]);
 
-    await clearLocaleFolders(filePaths, ['es']);
+    await clearLocaleDirs(filePaths, ['es']);
 
     // Should delete docs/v2/es and everything inside it
     const esDir = path.join(testDir, 'docs', 'v2', 'es');
@@ -191,7 +189,7 @@ describe('clearLocaleFolders', () => {
       path.join(testDir, 'content', 'pt-BR', 'file.mdx'),
     ]);
 
-    await clearLocaleFolders(filePaths, ['pt-BR']);
+    await clearLocaleDirs(filePaths, ['pt-BR']);
 
     // Verify pt-BR directory was deleted
     await expect(fs.access(ptBRDir)).rejects.toThrow();
@@ -218,7 +216,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'snippets', '[locale]', 'preserved', '**'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es'], excludePatterns);
 
       // Regular files should be deleted
       await expect(fs.access(path.join(esDir, 'file1.mdx'))).rejects.toThrow();
@@ -248,7 +246,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'docs', '[locale]', 'keep-me.mdx'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es'], excludePatterns);
 
       // Regular files should be deleted
       await expect(fs.access(path.join(esDir, 'intro.mdx'))).rejects.toThrow();
@@ -283,7 +281,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'content', '[locale]', 'static', '**'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es'], excludePatterns);
 
       // Regular file should be deleted
       await expect(fs.access(path.join(esDir, 'file1.mdx'))).rejects.toThrow();
@@ -328,7 +326,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'snippets', '[locale]', 'preserved', '**'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es', 'fr'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es', 'fr'], excludePatterns);
 
       // Regular files should be deleted
       await expect(fs.access(path.join(esDir, 'file1.mdx'))).rejects.toThrow();
@@ -357,7 +355,7 @@ describe('clearLocaleFolders', () => {
       ]);
 
       // No exclude patterns - should delete everything
-      await clearLocaleFolders(filePaths, ['es']);
+      await clearLocaleDirs(filePaths, ['es']);
 
       // Entire directory should be gone
       await expect(fs.access(esDir)).rejects.toThrow();
@@ -383,7 +381,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'content', '[locale]', 'preserved', '**'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es'], excludePatterns);
 
       // Empty directory should be cleaned up
       await expect(fs.access(emptyAfterDir)).rejects.toThrow();
@@ -415,7 +413,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'docs', '[locale]', 'keep-*.mdx'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es'], excludePatterns);
 
       // Regular files should be deleted
       await expect(fs.access(path.join(esDir, 'intro.mdx'))).rejects.toThrow();
@@ -456,7 +454,7 @@ describe('clearLocaleFolders', () => {
         path.join(testDir, 'content', '[locales]', 'static', '**'),
       ];
 
-      await clearLocaleFolders(filePaths, ['es', 'fr'], excludePatterns);
+      await clearLocaleDirs(filePaths, ['es', 'fr'], excludePatterns);
 
       // Regular files should be deleted
       await expect(fs.access(path.join(esDir, 'file1.mdx'))).rejects.toThrow();
