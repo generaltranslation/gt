@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.8
+
+### Patch Changes
+
+- [#713](https://github.com/generaltranslation/gt/pull/713) [`b8feb26`](https://github.com/generaltranslation/gt/commit/b8feb2638613f54b76b5f3768edc6039db512c53) Thanks [@SamEggert](https://github.com/SamEggert)! - rename clearLocaleFolders to clearLocaleDirs
+
 ## 2.3.7
 
 ### Patch Changes
