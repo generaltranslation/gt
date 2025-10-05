@@ -68,8 +68,8 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option(
-      '--experimental-clear-locale-folders',
-      'Clear locale folders before downloading new translations',
+      '--experimental-clear-locale-dirs',
+      'Clear locale directories before downloading new translations',
       false
     );
   return command;

@@ -72,7 +72,7 @@ async function getFilesToDelete(
  * @param excludePatterns - Optional array of glob patterns to exclude from clearing (supports [locale] and [locales])
  * @param cwd - Current working directory for resolving relative exclude patterns (defaults to process.cwd())
  */
-export async function clearLocaleFolders(
+export async function clearLocaleDirs(
   filePaths: Set<string>,
   locales: string[],
   excludePatterns?: string[],
