@@ -23,6 +23,7 @@ import { processClassDeclaration } from './processing/processClassDeclaration';
 import { processForInStatement } from './processing/processForInStatement';
 import { processForOfStatement } from './processing/processForOfStatement';
 import { processAssignmentExpression } from './processing/processAssignmentExpression';
+import { processCatchClause } from './processing/processCatchClause';
 
 /**
  * TODO:
@@ -209,7 +210,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             CatchClause: {
               enter(path) {
                 state.importTracker.enterScope();
-                // processCatchClause(path, state);
+                processCatchClause(path, state);
               },
               exit(_path) {
                 state.importTracker.exitScope();
