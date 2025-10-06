@@ -10,6 +10,7 @@
     "build:watch": "tsc --watch",
     "test": "vitest run",
     "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write src"
   },
   "keywords": [

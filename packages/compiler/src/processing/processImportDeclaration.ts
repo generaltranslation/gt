@@ -10,9 +10,5 @@ export function processImportDeclaration(
   path: NodePath<t.ImportDeclaration>,
   state: TransformState
 ): void {
-  trackImportDeclaration(
-    state.importTracker.scopeTracker,
-    path.node.source.value,
-    path.node
-  );
+  trackImportDeclaration(state.importTracker.scopeTracker, path.node);
 }

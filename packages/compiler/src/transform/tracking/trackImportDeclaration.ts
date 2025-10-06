@@ -7,21 +7,27 @@ import { isReactImportSource } from '../../utils/constants/react/helpers';
 /**
  * Track import declarations for GT and React e.g. import { T, Var, useGT } from 'gt-next'
  * @param scopeTracker - Scope tracker to track variables
- * @param importSource - Import source e.g. 'gt-next' or 'react/jsx-dev-runtime'
  * @param importDecl - Import declaration to track
  */
 export function trackImportDeclaration(
   scopeTracker: ScopeTracker,
-  importSource: string,
   importDecl: t.ImportDeclaration
 ): void {
   for (const specifier of importDecl.specifiers) {
     if (t.isImportSpecifier(specifier)) {
-      handleImportSpecifier(scopeTracker, specifier, importSource);
+      handleImportSpecifier(scopeTracker, specifier, importDecl.source.value);
     } else if (t.isImportDefaultSpecifier(specifier)) {
-      handleImportDefaultSpecifier(scopeTracker, specifier, importSource);
+      handleImportDefaultSpecifier(
+        scopeTracker,
+        specifier,
+        importDecl.source.value
+      );
     } else {
-      handleImportNamespaceSpecifier(scopeTracker, specifier, importSource);
+      handleImportNamespaceSpecifier(
+        scopeTracker,
+        specifier,
+        importDecl.source.value
+      );
     }
   }
 }

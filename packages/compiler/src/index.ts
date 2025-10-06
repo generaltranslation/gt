@@ -26,6 +26,9 @@ import { processVariableAssignment } from './processing/processVariableDeclarato
  * - Add override tracking for parameter declarations
  * - Add override tracking for forLoop declaration (specifically: let gt of items; let gt in obj)
  * - Add override tracking for catch clause declaration
+ * - Add override tracking for method declarations
+ * - Add override tracking for classes
+ * - Add override tracking for labels T: while (true) { break T; }
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
  * - Whitespace handling
  * - For errors log the location of the error
@@ -145,14 +148,69 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               },
             },
 
-            // Collection phase visitors
+            /* ----------------------------- */
+            /* Shadowing tracking */
+            /* ----------------------------- */
+
+            // import T from '...'
             ImportDeclaration(path) {
               processImportDeclaration(path, state);
             },
 
+            // let T = ...
             VariableDeclarator(path) {
               processVariableAssignment(path, state);
             },
+
+            // // T = ...
+            // AssignmentExpression(path) {
+            //   processAssignmentExpression(path, state);
+            // },
+
+            // // class T { ... }
+            // ClassDeclaration(path) {
+            //   processClassDeclaration(path, state);
+            // },
+
+            // // for(let T in obj) { ... }
+            // ForInStatement(path) {
+            //   processForInStatement(path, state);
+            // },
+
+            // // for(let T of items) { ... }
+            // ForOfStatement(path) {
+            //   processForOfStatement(path, state);
+            // },
+
+            // catch(T) { ... }
+            CatchClause: {
+              enter(path) {
+                state.importTracker.enterScope();
+                // processCatchClause(path, state);
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
+
+            // // T: while (true) { break T; }
+            // LabeledStatement(path) {
+            //   processLabeledStatement(path, state);
+            // },
+
+            // // { T() {} } in objects
+            // ObjectMethod(path) {
+            //   processObjectMethod(path, state);
+            // },
+
+            // // Class GT { T() { ... } } in classes
+            // ClassMethod(path) {
+            //   processClassMethod(path, state);
+            // },
+
+            /* ----------------------------- */
+            /* Invocation tracking */
+            /* ----------------------------- */
 
             CallExpression(path) {
               processCallExpression(path, state); // Collection only, returns boolean but we ignore it
@@ -244,15 +302,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             },
 
             ForOfStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            CatchClause: {
               enter(_path) {
                 state.importTracker.enterScope();
               },

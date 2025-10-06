@@ -139,7 +139,11 @@ export function isJsxFunction(name: string): boolean {
  * Check if it's a GT import source
  */
 export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
-  return Object.values(GT_IMPORT_SOURCES).includes(name as GT_IMPORT_SOURCES);
+  return Object.values([
+    GT_IMPORT_SOURCES.GT_NEXT,
+    GT_IMPORT_SOURCES.GT_NEXT_CLIENT,
+    GT_IMPORT_SOURCES.GT_NEXT_SERVER,
+  ]).includes(name as GT_IMPORT_SOURCES);
 }
 
 /**
