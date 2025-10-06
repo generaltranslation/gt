@@ -13,7 +13,7 @@ import { validateIdentifier } from './validation/validateIdentifier';
 import { validateTemplateLiteral } from './validation/validateTemplateLiteral';
 import { validateChildrenElement } from './validation/validateChildrenElement';
 import { getCalleeNameFromJsxExpressionParam } from './utils/getCalleeNameFromJsxExpressionParam';
-import { getCanonicalFunctionName } from '../getCanonicalFunctionName';
+import { getTrackedVariable } from '../getTrackedVariable';
 import { isReactComponent } from '../../utils/constants/react/helpers';
 import { REACT_COMPONENTS } from '../../utils/constants/react/constants';
 import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs';
@@ -193,7 +193,7 @@ function constructJsxElement(
   }
 
   // Get the canonical function name
-  const { canonicalName, type } = getCanonicalFunctionName(
+  const { canonicalName, type } = getTrackedVariable(
     state.importTracker,
     namespaceName,
     functionName

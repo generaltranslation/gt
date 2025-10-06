@@ -2,7 +2,7 @@
 import { StringCollector } from './StringCollector';
 import { ImportTracker } from './ImportTracker';
 import { PluginSettings } from './config';
-import { Logger } from './logging';
+import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
 /**
  * Plugin state for processing files

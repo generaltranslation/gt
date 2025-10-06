@@ -19,7 +19,7 @@ import {
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { regsiterUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
 import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
-import { getCanonicalFunctionName } from '../../transform/getCanonicalFunctionName';
+import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { validateTranslationComponentArgs } from '../../transform/validation/validateTranslationComponentArgs';
 import { hashSource } from 'generaltranslation/id';
@@ -48,7 +48,7 @@ export function processCallExpression(
     }
 
     // Get the canonical function name
-    const { canonicalName, identifier, type } = getCanonicalFunctionName(
+    const { canonicalName, identifier, type } = getTrackedVariable(
       state.importTracker,
       namespaceName,
       functionName
@@ -216,7 +216,7 @@ function handleReactInvocation(
     return;
   }
   // Get the canonical function name
-  const { canonicalName, type } = getCanonicalFunctionName(
+  const { canonicalName, type } = getTrackedVariable(
     state.importTracker,
     namespaceName,
     functionName

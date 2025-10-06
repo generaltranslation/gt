@@ -11,9 +11,6 @@ export function registerTranslationComponent(
   // Increment counter
   const identifier = state.stringCollector.incrementCounter();
 
-  // Initialize aggregator
-  state.stringCollector.initializeAggregator(identifier);
-
   // Add the translation content to the string collector
   state.stringCollector.setTranslationJsx(identifier, {
     hash,

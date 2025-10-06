@@ -1,7 +1,7 @@
-import { TransformState } from '../state/types';
+import { TransformState } from '../../state/types';
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
-import { trackVariableDeclarator } from '../transform/tracking/trackVariableDeclarator';
+import { trackVariableDeclarator } from '../../transform/tracking/trackVariableDeclarator';
 
 /**
  * Process variable assignments.
@@ -19,6 +19,6 @@ export function processVariableDeclarator(
   state: TransformState
 ): VisitNode<t.Node, t.VariableDeclarator> {
   return (path) => {
-    trackVariableDeclarator(path, state);
+    trackVariableDeclarator(path.node, state);
   };
 }

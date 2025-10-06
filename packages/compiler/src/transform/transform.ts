@@ -9,13 +9,10 @@ import {
 } from '../utils/constants/gt/helpers';
 // Types
 import { TransformState } from '../state/types';
-import { determineComponentType } from './determineComponentType';
-import { processImportDeclaration } from '../processing/processImportDeclaration';
-import { trackParameterOverrides } from '../processing/trackParameterOverrides';
-import { processArrowFunctionExpression } from '../processing/processArrowFunctionExpression';
 import { createDynamicFunctionWarning } from '../utils/errors';
-import { processVariableAssignment } from '../processing/processVariableDeclarator';
-
+import { basePass } from '../passes/basePass';
+import { processVariableDeclarator } from '../processing/second-pass/processVariableDeclarator';
+import { processCallExpression } from '../processing/second-pass/processCallExpression';
 /**
  * Helper function to get callee function name
  * Ported from Rust: get_callee_expr_function_name
@@ -177,221 +174,91 @@ export function createTranslationHash(hash: string): any {
 export function performSecondPassTransformation(
   ast: t.File,
   state: TransformState
-): boolean {
+): void {
   if (state.settings.filename?.endsWith('page.tsx')) {
-    // console.log('[GT_PLUGIN] ===============================');
-    // console.log('[GT_PLUGIN]         PASS 2');
-    // console.log('[GT_PLUGIN] ===============================');
+    console.log('[GT_PLUGIN] ===============================');
+    console.log('[GT_PLUGIN]         PASS 2');
+    console.log('[GT_PLUGIN] ===============================');
   }
   // Reset counter for second pass - matches Rust TransformVisitor::new()
   state.stringCollector.resetCounter();
 
-  let hasTransformations = false;
-
   // Complete second-pass traversal matching Rust Fold trait
   traverse(ast, {
-    // Process import declarations to track GT-Next imports (fold_import_decl)
-    ImportDeclaration(path) {
-      processImportDeclaration(path, state);
-    },
+    ...basePass(state),
+    // const gt = useGT();
+    CallExpression: processCallExpression(state),
+    // let T = ...
+    VariableDeclarator: processVariableDeclarator(state),
 
-    // Process variable declarations to track assignments (fold_var_declarator)
-    VariableDeclarator(path) {
-      processVariableAssignment(path, state);
-    },
+    // // Process function calls - inject content arrays and hashes (fold_call_expr)
+    // CallExpression(callPath: NodePath<t.CallExpression>) {
+    //   const callExpr = callPath.node;
 
-    // Process function calls - inject content arrays and hashes (fold_call_expr)
-    CallExpression(callPath: NodePath<t.CallExpression>) {
-      const callExpr = callPath.node;
+    //   const functionName = getCalleeExprFunctionName(callExpr);
+    //   if (functionName) {
+    //     const translationVariable =
+    //       state.importTracker.scopeTracker.getTranslationVariable(functionName);
 
-      const functionName = getCalleeExprFunctionName(callExpr);
-      if (functionName) {
-        const translationVariable =
-          state.importTracker.scopeTracker.getTranslationVariable(functionName);
+    //     if (translationVariable) {
+    //       const originalName = translationVariable.canonicalName;
 
-        if (translationVariable) {
-          const originalName = translationVariable.canonicalName;
+    //       // Detect useGT/getGT calls - inject content arrays
+    //       if (isTranslationFunction(originalName)) {
+    //         const modifiedCallExpr = injectContentArrayOnTranslationFunction(
+    //           callExpr,
+    //           state
+    //         );
+    //         if (modifiedCallExpr) {
+    //           callPath.replaceWith(modifiedCallExpr);
+    //           hasTransformations = true;
+    //           return;
+    //         }
+    //       }
+    //       // Detect t() calls - inject hash attributes
+    //       else if (isTranslationFunctionCallback(originalName)) {
+    //         const modifiedCallExpr = injectHashOnTranslationFunction(
+    //           callExpr,
+    //           state
+    //         );
+    //         if (modifiedCallExpr) {
+    //           callPath.replaceWith(modifiedCallExpr);
+    //           hasTransformations = true;
+    //           return;
+    //         }
+    //       }
+    //     }
+    //   }
+    // },
 
-          // Detect useGT/getGT calls - inject content arrays
-          if (isTranslationFunction(originalName)) {
-            const modifiedCallExpr = injectContentArrayOnTranslationFunction(
-              callExpr,
-              state
-            );
-            if (modifiedCallExpr) {
-              callPath.replaceWith(modifiedCallExpr);
-              hasTransformations = true;
-              return;
-            }
-          }
-          // Detect t() calls - inject hash attributes
-          else if (isTranslationFunctionCallback(originalName)) {
-            const modifiedCallExpr = injectHashOnTranslationFunction(
-              callExpr,
-              state
-            );
-            if (modifiedCallExpr) {
-              callPath.replaceWith(modifiedCallExpr);
-              hasTransformations = true;
-              return;
-            }
-          }
-        }
-      }
-    },
+    // // Process JSX attributes - matches Rust fold_jsx_attr
+    // JSXAttribute(jsxPath) {
+    //   // TODO: Implement JSX attribute traversal state management
+    //   // This should track in_jsx_attribute state like Rust version
+    // },
 
-    // Process JSX attributes - matches Rust fold_jsx_attr
-    JSXAttribute(jsxPath) {
-      // TODO: Implement JSX attribute traversal state management
-      // This should track in_jsx_attribute state like Rust version
-    },
+    // // Process JSX elements - inject hash attributes (fold_jsx_element)
+    // JSXElement(jsxPath: NodePath<t.JSXElement>) {
+    //   const element = jsxPath.node;
+    //   state.statistics.jsxElementCount += 1;
 
-    // Process JSX elements - inject hash attributes (fold_jsx_element)
-    JSXElement(jsxPath: NodePath<t.JSXElement>) {
-      const element = jsxPath.node;
-      state.statistics.jsxElementCount += 1;
+    //   // TODO: Implement full traversal state management like Rust
+    //   // Save state, determine context, inject attributes, restore state
+    //   const componentType = determineComponentType(
+    //     element,
+    //     state.importTracker
+    //   );
 
-      // TODO: Implement full traversal state management like Rust
-      // Save state, determine context, inject attributes, restore state
-      const componentType = determineComponentType(
-        element,
-        state.importTracker
-      );
-
-      // Inject hash attributes on translation components
-      if (state.settings.compileTimeHash && componentType.isTranslation) {
-        const modifiedElement = injectHashAttributes(element, state);
-        if (modifiedElement) {
-          jsxPath.replaceWith(modifiedElement);
-          hasTransformations = true;
-        }
-      }
-    },
-
-    // Scope management - matches Rust fold_* methods
-    BlockStatement: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    Function: {
-      enter(path) {
-        state.importTracker.enterScope();
-        trackParameterOverrides(path, state.importTracker.scopeTracker);
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    ArrowFunctionExpression: {
-      enter(path) {
-        state.importTracker.enterScope();
-        processArrowFunctionExpression(path, state.importTracker.scopeTracker);
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    // Missing from Rust Fold - function expressions
-    FunctionExpression: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    // Additional scope-creating constructs from Rust
-    ClassDeclaration: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    // Missing from Rust Fold - method definitions
-    ClassMethod: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    ObjectMethod: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    ForStatement: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    ForInStatement: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    ForOfStatement: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    CatchClause: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    WhileStatement: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
-
-    SwitchStatement: {
-      enter(_path) {
-        state.importTracker.enterScope();
-      },
-      exit(_path) {
-        state.importTracker.exitScope();
-      },
-    },
+    //   // Inject hash attributes on translation components
+    //   if (state.settings.compileTimeHash && componentType.isTranslation) {
+    //     const modifiedElement = injectHashAttributes(element, state);
+    //     if (modifiedElement) {
+    //       jsxPath.replaceWith(modifiedElement);
+    //       hasTransformations = true;
+    //     }
+    //   }
+    // },
   });
-  return hasTransformations;
 }
 
 /**

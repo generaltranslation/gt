@@ -1,5 +1,4 @@
 import { ImportTracker } from '../state/ImportTracker';
-import { StringCollector } from '../state/StringCollector';
 import { TransformState } from '../state/types';
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
@@ -15,7 +14,6 @@ export function processProgram(
     enter() {
       // Initialize trackers for this program
       state.importTracker = new ImportTracker();
-      state.stringCollector = new StringCollector();
     },
   };
 }

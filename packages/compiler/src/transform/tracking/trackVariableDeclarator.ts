@@ -1,12 +1,11 @@
 import { TransformState } from '../../state/types';
-import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { getCalleeNameFromExpression as _getCalleeNameFromExpression } from '../../utils/jsx/getCalleeNameFromExpression';
 import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFromLVal';
 import { trackOverridingVariable } from '../../transform/tracking/trackOverridingVariable';
 import { GT_FUNCTIONS_TO_CALLBACKS } from '../../utils/constants/gt/constants';
 import { isGTFunctionWithCallbacks } from '../../utils/constants/gt/helpers';
-import { getCanonicalFunctionName } from '../../transform/getCanonicalFunctionName';
+import { getTrackedVariable } from '../getTrackedVariable';
+import { getCalleeNameFromExpressionWrapper } from '../../utils/getCalleeNameFromExpressionWrapper';
 
 /**
  * Track variable assignments.
@@ -21,18 +20,16 @@ import { getCanonicalFunctionName } from '../../transform/getCanonicalFunctionNa
  * - const gt = "Hello"
  */
 export function trackVariableDeclarator(
-  path: NodePath<t.VariableDeclarator>,
+  varDeclarator: t.VariableDeclarator,
   state: TransformState
 ): void {
-  const varDeclarator = path.node;
-
   // Ignore non-LVal assignments
   if (!t.isLVal(varDeclarator.id)) {
     return;
   }
 
   // Get function name from callee
-  const { namespaceName, functionName } = getCalleeNameFromExpression(
+  const { namespaceName, functionName } = getCalleeNameFromExpressionWrapper(
     varDeclarator.init
   );
   if (!functionName) {
@@ -40,7 +37,7 @@ export function trackVariableDeclarator(
   }
 
   // Get the canonical function name
-  const { canonicalName, type } = getCanonicalFunctionName(
+  const { canonicalName, type } = getTrackedVariable(
     state.importTracker,
     namespaceName,
     functionName
@@ -79,21 +76,4 @@ export function trackVariableDeclarator(
       trackOverridingVariable(identifier, state.importTracker.scopeTracker);
     }
   }
-}
-
-/* =============================== */
-/* Handlers */
-/* =============================== */
-
-/**
- * Get the callee name from an expression: ... = useGT();
- */
-function getCalleeNameFromExpression(expr: t.Expression | null | undefined): {
-  namespaceName: string | null;
-  functionName: string | null;
-} {
-  if (!expr) {
-    return { namespaceName: null, functionName: null };
-  }
-  return _getCalleeNameFromExpression(expr);
 }

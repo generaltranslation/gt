@@ -41,8 +41,6 @@ export function basePass(state: TransformState): TraverseOptions {
     ClassPrivateMethod: p.processClassPrivateMethod(state),
 
     // --- Other Processing --- //
-    // let T = ...
-    VariableDeclarator: p.processVariableDeclarator(state),
     // import T from '...'
     ImportDeclaration: p.processImportDeclaration(state),
     // let t = useGT(); t = undefined;

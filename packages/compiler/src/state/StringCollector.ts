@@ -36,29 +36,19 @@ export interface TranslationHash {
 }
 
 /**
- * Collection of all translation data for a single useGT/getGT call
- */
-export interface TranslationData {
-  /** Multiple content items from t() function calls */
-  content: TranslationContent[];
-  /** Single JSX component data (if any) */
-  jsx?: TranslationJsx;
-  /** Single hash value (if any) */
-  hash?: TranslationHash;
-}
-
-/**
  * String collector for two-pass transformation system
  */
 export class StringCollector {
   /** Vector of translation calls indexed by counter ID */
-  private aggregators: TranslationData[] = [];
+  private contentAggregators: Map<number, TranslationContent[]> = new Map();
+  private jsxAggregators: Map<number, TranslationJsx> = new Map();
+  private hashAggregators: Map<number, TranslationHash> = new Map();
   /** Global counter incremented for each useGT/getGT call encountered */
   private globalCallCounter: number = 0;
 
   /**
    * Increment counter and return the current counter ID for a useGT/getGT call
-   * These IDs are deterministic, stable, unique, and simple
+   * These IDs are deterministic
    */
   incrementCounter(): number {
     this.globalCallCounter += 1;
@@ -73,16 +63,6 @@ export class StringCollector {
   }
 
   /**
-   * Pass 1: Initialize a useGT/getGT call for later content injection
-   */
-  initializeAggregator(counterId: number): void {
-    // Ensure the array is large enough to hold this index
-    while (this.aggregators.length <= counterId) {
-      this.aggregators.push({ content: [], jsx: undefined, hash: undefined });
-    }
-  }
-
-  /**
    * Pass 1: Add translation content from a t() call to a specific useGT/getGT
    * Multiple content items can be added to the same call
    */
@@ -92,13 +72,13 @@ export class StringCollector {
         'Cannot have a counterId of -1. You are likely trying to register content from a namespace method invocation.'
       );
     }
-    const call = this.aggregators[counterId];
-    if (call) {
-      call.content.push(content);
+    // Get the agreggator
+    let aggregator = this.contentAggregators.get(counterId);
+    if (!aggregator) {
+      aggregator = [content];
+      this.contentAggregators.set(counterId, aggregator);
     } else {
-      console.warn(
-        `Warning: Trying to add content to uninitialized call ID: ${counterId}`
-      );
+      aggregator.push(content);
     }
   }
 
@@ -107,14 +87,7 @@ export class StringCollector {
    * Only one JSX item can be set per call (overwrites if called multiple times)
    */
   setTranslationJsx(counterId: number, jsx: TranslationJsx): void {
-    const call = this.aggregators[counterId];
-    if (call) {
-      call.jsx = jsx;
-    } else {
-      console.warn(
-        `Warning: Trying to set JSX for uninitialized call ID: ${counterId}`
-      );
-    }
+    this.jsxAggregators.set(counterId, jsx);
   }
 
   /**
@@ -122,99 +95,58 @@ export class StringCollector {
    * Only one hash can be set per call (overwrites if called multiple times)
    */
   setTranslationHash(counterId: number, hash: TranslationHash): void {
-    const call = this.aggregators[counterId];
-    if (call) {
-      call.hash = hash;
-    } else {
-      console.warn(
-        `Warning: Trying to set hash for uninitialized call ID: ${counterId}`
-      );
-    }
+    this.hashAggregators.set(counterId, hash);
   }
 
   /**
    * Pass 2: Get translation call data for injection into a specific useGT/getGT call
    */
-  getTranslationData(counterId: number): TranslationData | null {
-    return this.aggregators[counterId] || null;
+  getTranslationData(counterId: number):
+    | {
+        type: 'content' | 'jsx' | 'hash';
+        value: TranslationContent[] | TranslationJsx | TranslationHash;
+      }
+    | undefined {
+    if (this.contentAggregators.has(counterId)) {
+      return {
+        type: 'content',
+        value: this.contentAggregators.get(counterId)!,
+      };
+    } else if (this.jsxAggregators.has(counterId)) {
+      return { type: 'jsx', value: this.jsxAggregators.get(counterId)! };
+    } else if (this.hashAggregators.has(counterId)) {
+      return { type: 'hash', value: this.hashAggregators.get(counterId)! };
+    }
   }
 
   /**
-   * Get the translation JSX for a specific useGT/getGT call
+   * Get the translation content for a specific useGT/getGT call
    */
-  getTranslationJsx(counterId: number): TranslationJsx | null {
-    const data = this.aggregators[counterId];
-    return data?.jsx || null;
+  getTranslationContent(counterId: number): TranslationContent[] | undefined {
+    return this.contentAggregators.get(counterId);
   }
 
   /**
-   * Get the translation hash for a specific useGT/getGT call
+   * Get the translation JSX for a specific <T> component
    */
-  getTranslationHash(counterId: number): TranslationHash | null {
-    const data = this.aggregators[counterId];
-    return data?.hash || null;
+  getTranslationJsx(counterId: number): TranslationJsx | undefined {
+    return this.jsxAggregators.get(counterId);
   }
 
   /**
-   * Pass 2: Check if a call has any content to inject
+   * Get the translation hash for a specific other call
    */
-  hasContentForInjection(counterId: number): boolean {
-    const data = this.aggregators[counterId];
-    if (!data) return false;
-
-    return (
-      data.content.length > 0 ||
-      data.jsx !== undefined ||
-      data.hash !== undefined
-    );
-  }
-
-  /**
-   * Create an array literal for injection from TranslationContent
-   * Ported from Rust: create_content_array (lines 198-214)
-   */
-  createContentArray(contents: TranslationContent[], span?: any): any[] {
-    // Return a structure that can be converted to Babel AST later
-    // The span parameter maintains source location information like in Rust
-    return contents.map((content) => ({
-      message: content.message,
-      $_hash: content.hash,
-      ...(content.id && { $id: content.id }),
-      ...(content.context && { $context: content.context }),
-    }));
-  }
-
-  /**
-   * Helper: Create a TranslationContent from t() call components
-   */
-  static createTranslationContent(
-    message: string,
-    hash: string,
-    id?: string,
-    context?: string
-  ): TranslationContent {
-    return { message, hash, id, context };
-  }
-
-  /**
-   * Helper: Create a TranslationJsx from JSX component props
-   */
-  static createTranslationJsx(hash: string): TranslationJsx {
-    return { hash };
-  }
-
-  /**
-   * Helper: Create a TranslationHash for simple hash injection
-   */
-  static createTranslationHash(hash: string): TranslationHash {
-    return { hash };
+  getTranslationHash(counterId: number): TranslationHash | undefined {
+    return this.hashAggregators.get(counterId);
   }
 
   /**
    * Reset all state (useful for testing)
    */
   clear(): void {
-    this.aggregators = [];
+    this.contentAggregators.clear();
+    this.jsxAggregators.clear();
+    this.hashAggregators.clear();
     this.globalCallCounter = 0;
   }
 
@@ -230,7 +162,9 @@ export class StringCollector {
    */
   serialize(): any {
     const output = {
-      aggregators: this.aggregators,
+      contentAggregators: this.contentAggregators,
+      jsxAggregators: this.jsxAggregators,
+      hashAggregators: this.hashAggregators,
       globalCallCounter: this.globalCallCounter,
     };
     return output;
@@ -240,7 +174,9 @@ export class StringCollector {
    * Helper to repopulate
    */
   unserialize(input: any): void {
-    this.aggregators = input.aggregators;
+    this.contentAggregators = input.contentAggregators;
+    this.jsxAggregators = input.jsxAggregators;
+    this.hashAggregators = input.hashAggregators;
     this.globalCallCounter = input.globalCallCounter;
   }
 }

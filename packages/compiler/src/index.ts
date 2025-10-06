@@ -7,30 +7,16 @@ import traverse from '@babel/traverse';
 import { StringCollector } from './state/StringCollector';
 import { ImportTracker } from './state/ImportTracker';
 import { PluginConfig, PluginSettings } from './state/config';
-import { Logger } from './state/logging';
+import { Logger } from './state/Logger';
 
 // Import transformation functions
 import { performSecondPassTransformation } from './transform/transform';
-import { processImportDeclaration } from './processing/processImportDeclaration';
 import { TransformState } from './state/types';
-import { processArrowFunctionExpression } from './processing/processArrowFunctionExpression';
 import { processCallExpression } from './processing/first-pass/processCallExpression';
-import { processJSXElement } from './processing/first-pass/processJSXElement';
 import { ErrorTracker } from './state/ErrorTracker';
-import { processVariableAssignment as processVariableDeclarator } from './processing/processVariableDeclarator';
-import { processClassDeclaration } from './processing/processClassDeclaration';
-import { processForInStatement } from './processing/processForInStatement';
-import { processForOfStatement } from './processing/processForOfStatement';
-import { processAssignmentExpression } from './processing/processAssignmentExpression';
-import { processCatchClause } from './processing/processCatchClause';
-import { processObjectMethod } from './processing/processObjectMethod';
-import { processClassMethod } from './processing/processClassMethod';
-import { processFunctionDeclaration } from './processing/processFunctionDeclaration';
-import { processFunctionExpression } from './processing/processFunctionExpression';
-import { processClassPrivateMethod } from './processing/processClassPrivateMethod';
-import { processScopeChange } from './processing/processScopeChange';
-import { processProgram } from './processing/processProgram';
 import { basePass } from './passes/basePass';
+import { checkForErrors } from './passes/checkForErrors';
+import { processVariableDeclarator } from './processing/first-pass/processVariableDeclarator';
 
 /**
  * TODO:
@@ -137,11 +123,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          // if (id.endsWith('page.tsx')) {
-          //   console.log('[GT_PLUGIN] ===============================');
-          //   console.log('[GT_PLUGIN]         PASS 1');
-          //   console.log('[GT_PLUGIN] ===============================');
-          // }
+          if (id.endsWith('page.tsx')) {
+            console.log('[GT_PLUGIN] ===============================');
+            console.log('[GT_PLUGIN]         PASS 1');
+            console.log('[GT_PLUGIN] ===============================');
+          }
 
           // Parse the code into AST
           const ast = parser.parse(code, {
@@ -151,32 +137,25 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowReturnOutsideFunction: true,
           });
 
-          // Two-pass transformation system
           // PASS 1: Collection phase - collect translation data without transforming
-
           traverse(ast, {
+            // Base configuration
             ...basePass(state),
-
             // const gt = useGT();
             CallExpression: processCallExpression(state),
+            // let T = ...
+            VariableDeclarator: processVariableDeclarator(state),
           });
 
           // Check for errors
-          if (state.errorTracker.getErrors().length > 0) {
-            for (const error of state.errorTracker.getErrors()) {
-              state.logger.logError(error);
-            }
-
-            throw new Error(
-              `[GT Unplugin] Encountered ${state.errorTracker.getErrors().length} errors while processing ${id}.`
-            );
-          }
+          checkForErrors(state);
 
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
-          let hasTransformations = false;
+          let hasTransformations = false; // TODO: calculate this
           if (state.settings.compileTimeHash) {
-            hasTransformations = performSecondPassTransformation(ast, state);
+            performSecondPassTransformation(ast, state);
           }
+          console.log('[GT_PLUGIN] hasTransformations:', hasTransformations);
 
           // Generate code if transformations were made
           if (hasTransformations) {

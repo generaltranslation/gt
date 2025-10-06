@@ -22,15 +22,4 @@ export function registerUseGTCallback(
     id,
     context,
   });
-
-  // This is incorrect here and should be moved to when we want to track useGT() and getGT() invocations
-  // // Store the t() function call
-  // const counterId = state.stringCollector.incrementCounter();
-  // state.stringCollector.initializeAggregator(counterId);
-
-  // // Add the message to the string collector for the gt() function
-  // state.stringCollector.setTranslationHash(
-  //   counterId,
-  //   createTranslationHash(hash)
-  // );
 }

@@ -2,9 +2,12 @@ import { ImportTracker } from '../state/ImportTracker';
 import { VariableType } from '../state/ScopeTracker';
 
 /**
- * Given state, namespace, and functionname, return the canonical function name
+ * Given state, namespace, and functionname, return:
+ * - canonicalName
+ * - identifier
+ * - type
  */
-export function getCanonicalFunctionName(
+export function getTrackedVariable(
   importTracker: ImportTracker,
   namespaceName: string | null,
   functionName: string | null

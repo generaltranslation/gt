@@ -8,6 +8,7 @@ import { TranslationJsx } from '../../state/StringCollector';
 
 /**
  * Record the hash for a JSX element
+ * @deprecated
  */
 export function registerHash(
   nodePath: NodePath<t.JSXElement>,
@@ -27,7 +28,7 @@ export function registerHash(
 
   // Store the translation JSX
   const counterId = state.stringCollector.incrementCounter();
-  state.stringCollector.initializeAggregator(counterId);
+  // state.stringCollector.initializeAggregator(counterId);
 
   // Add the message to the string collector for the JSX element
   state.stringCollector.setTranslationJsx(counterId, {
