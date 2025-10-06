@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - examples/*
   - test-apps/**/*
 
 minimumReleaseAge: 1440
