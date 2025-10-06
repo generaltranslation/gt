@@ -103,35 +103,38 @@ export class ScopeTracker {
    * Exit the current scope and return to parent (with aggressive cleanup)
    */
   exitScope(): void {
-    if (this.currentScope !== 0) {
-      // Remove all variables from the exiting scope immediately
-      for (const [varName, variables] of this.scopedVariables.entries()) {
-        // Filter out variables from the current scope
-        const filteredVars = variables.filter(
-          (variable) => variable.scopeId !== this.currentScope
-        );
+    if (this.currentScope === 0) {
+      return;
+    }
 
-        if (filteredVars.length === 0) {
-          // Remove empty variable name entries
-          this.scopedVariables.delete(varName);
-        } else {
-          this.scopedVariables.set(varName, filteredVars);
-        }
+    // Remove all variables from the exiting scope immediately
+    for (const [varName, variables] of this.scopedVariables.entries()) {
+      // Filter out variables from the current scope
+      // TODO: there is definitely an O(1) solution here rather than iterating over each entire list
+      const filteredVars = variables.filter(
+        (variable) => variable.scopeId !== this.currentScope
+      );
+
+      if (filteredVars.length === 0) {
+        // Remove empty variable name entries
+        this.scopedVariables.delete(varName);
+      } else {
+        this.scopedVariables.set(varName, filteredVars);
       }
+    }
 
-      // Get parent scope from the scope info before removing it
-      const parentId = this.scopeInfo.get(this.currentScope)?.parentId || 0;
+    // Get parent scope from the scope info before removing it
+    const parentId = this.scopeInfo.get(this.currentScope)?.parentId || 0;
 
-      // Remove scope info for the exiting scope
-      this.scopeInfo.delete(this.currentScope);
+    // Remove scope info for the exiting scope
+    this.scopeInfo.delete(this.currentScope);
 
-      // Update current scope to parent
-      this.currentScope = parentId;
+    // Update current scope to parent
+    this.currentScope = parentId;
 
-      // Pop from stack if there are items
-      if (this.scopeStack.length > 0) {
-        this.scopeStack.pop();
-      }
+    // Pop from stack if there are items
+    if (this.scopeStack.length > 0) {
+      this.scopeStack.pop();
     }
   }
 

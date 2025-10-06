@@ -19,21 +19,25 @@ import { processCallExpression } from './processing/first-pass/processCallExpres
 import { processJSXElement } from './processing/first-pass/processJSXElement';
 import { ErrorTracker } from './state/ErrorTracker';
 import { processVariableAssignment } from './processing/processVariableDeclarator';
+import { processClassDeclaration } from './processing/processClassDeclaration';
+import { processForInStatement } from './processing/processForInStatement';
+import { processForOfStatement } from './processing/processForOfStatement';
 
 /**
  * TODO:
  * - Add tracking for special identifiers: undefined, Nan, etc.
+ * - Add override tracking for assignment expressions let t = useGT(); t = undefined;
  * - Add override tracking for parameter declarations
  * - Add override tracking for forLoop declaration (specifically: let gt of items; let gt in obj)
  * - Add override tracking for catch clause declaration
  * - Add override tracking for method declarations
- * - Add override tracking for classes
  * - Add override tracking for labels T: while (true) { break T; }
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
  * - Whitespace handling
  * - For errors log the location of the error
  *
  * DONE:
+ * - Add override tracking for classes
  * - Add tracking for Fragment component
  *
  * First Pass:
@@ -162,25 +166,43 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               processVariableAssignment(path, state);
             },
 
-            // // T = ...
+            // let t = useGT(); t = undefined;
             // AssignmentExpression(path) {
             //   processAssignmentExpression(path, state);
             // },
 
-            // // class T { ... }
-            // ClassDeclaration(path) {
-            //   processClassDeclaration(path, state);
-            // },
+            // class T { ... }
+            ClassDeclaration: {
+              enter(path) {
+                state.importTracker.enterScope();
+                processClassDeclaration(path, state);
+              },
+              exit() {
+                state.importTracker.exitScope();
+              },
+            },
 
-            // // for(let T in obj) { ... }
-            // ForInStatement(path) {
-            //   processForInStatement(path, state);
-            // },
+            // for(let T in obj) { ... }
+            ForInStatement: {
+              enter(path) {
+                state.importTracker.enterScope();
+                processForInStatement(path, state);
+              },
+              exit() {
+                state.importTracker.exitScope();
+              },
+            },
 
-            // // for(let T of items) { ... }
-            // ForOfStatement(path) {
-            //   processForOfStatement(path, state);
-            // },
+            // for(let T of items) { ... }
+            ForOfStatement: {
+              enter(path) {
+                state.importTracker.enterScope();
+                processForOfStatement(path, state);
+              },
+              exit(_path) {
+                state.importTracker.exitScope();
+              },
+            },
 
             // catch(T) { ... }
             CatchClause: {
@@ -274,34 +296,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               },
             },
 
-            ClassDeclaration: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
             ForStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            ForInStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            ForOfStatement: {
               enter(_path) {
                 state.importTracker.enterScope();
               },
