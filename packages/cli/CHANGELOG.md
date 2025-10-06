@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.9
+
+### Patch Changes
+
+- [#715](https://github.com/generaltranslation/gt/pull/715) [`cc6c06a`](https://github.com/generaltranslation/gt/commit/cc6c06abf0ad0f00f55825e85d59d199ffbec263) Thanks [@brian-lou](https://github.com/brian-lou)! - Instead of throwing errors, CLI will now call process.exit
+
 ## 2.3.8
 
 ### Patch Changes
