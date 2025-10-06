@@ -1,15 +1,24 @@
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import * as t from '@babel/types';
-import { trackObjectMethod } from '../transform/tracking/trackObjectMethod';
+import { trackFunctionParams } from '../transform/tracking/trackFunctionParams';
 
 /**
  * Process object method:
  * - { T() {} } in objects
+ *
  */
 export function processObjectMethod(
-  path: NodePath<t.ObjectMethod>,
   state: TransformState
-): void {
-  trackObjectMethod(state.importTracker.scopeTracker, path.node);
+): VisitNode<t.Node, t.ObjectMethod> {
+  return {
+    enter(path) {
+      // Function name is not relevant for object methods
+      state.importTracker.enterScope();
+      trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
+    },
+    exit() {
+      state.importTracker.exitScope();
+    },
+  };
 }

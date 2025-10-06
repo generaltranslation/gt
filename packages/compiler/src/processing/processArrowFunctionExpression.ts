@@ -1,17 +1,17 @@
-import { TransformState } from '../state/types';
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { trackFunctionParams } from '../transform/tracking/trackFunctionParams';
+import { TransformState } from '../state/types';
+
 /**
- * Process class method:
- * - class T { T() { ... } }
+ * Track arrow function parameter overrides
+ * (useGT, useMessages) => {...}
  */
-export function processClassMethod(
+export function processArrowFunctionExpression(
   state: TransformState
-): VisitNode<t.Node, t.ClassMethod> {
+): VisitNode<t.Node, t.ArrowFunctionExpression> {
   return {
     enter(path) {
-      // Function name is not relevant for class methods
       state.importTracker.enterScope();
       trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
     },

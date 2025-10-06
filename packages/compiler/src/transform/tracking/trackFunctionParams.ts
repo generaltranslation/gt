@@ -8,10 +8,8 @@ import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFr
  * function (useGT, useMessages) {...}
  * (useGT, useMessages) => {...}
  */
-export function trackOverridingFunctionParameters(
-  params:
-    | t.FunctionParameter[]
-    | (t.FunctionParameter | t.TSParameterProperty)[],
+export function trackFunctionParams(
+  params: (t.FunctionParameter | t.TSParameterProperty)[],
   scopeTracker: ScopeTracker
 ): void {
   for (const param of params) {

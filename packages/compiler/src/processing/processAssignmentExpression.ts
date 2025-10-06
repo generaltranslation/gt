@@ -1,4 +1,4 @@
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import * as t from '@babel/types';
 import { trackAssignmentExpression } from '../transform/tracking/trackAssignmentExpression';
@@ -8,8 +8,9 @@ import { trackAssignmentExpression } from '../transform/tracking/trackAssignment
  * - let t = useGT(); t = undefined;
  */
 export function processAssignmentExpression(
-  path: NodePath<t.AssignmentExpression>,
   state: TransformState
-): void {
-  trackAssignmentExpression(state.importTracker.scopeTracker, path.node);
+): VisitNode<t.Node, t.AssignmentExpression> {
+  return (path) => {
+    trackAssignmentExpression(state.importTracker.scopeTracker, path.node);
+  };
 }

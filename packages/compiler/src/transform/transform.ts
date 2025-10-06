@@ -11,8 +11,8 @@ import {
 import { TransformState } from '../state/types';
 import { determineComponentType } from './determineComponentType';
 import { processImportDeclaration } from '../processing/processImportDeclaration';
-import { trackParameterOverrides } from './tracking/trackParameterOverrides';
-import { trackArrowParameterOverrides } from './tracking/trackArrowParameterOverrides';
+import { trackParameterOverrides } from '../processing/trackParameterOverrides';
+import { processArrowFunctionExpression } from '../processing/processArrowFunctionExpression';
 import { createDynamicFunctionWarning } from '../utils/errors';
 import { processVariableAssignment } from '../processing/processVariableDeclarator';
 
@@ -291,7 +291,7 @@ export function performSecondPassTransformation(
     ArrowFunctionExpression: {
       enter(path) {
         state.importTracker.enterScope();
-        trackArrowParameterOverrides(path, state.importTracker.scopeTracker);
+        processArrowFunctionExpression(path, state.importTracker.scopeTracker);
       },
       exit(_path) {
         state.importTracker.exitScope();

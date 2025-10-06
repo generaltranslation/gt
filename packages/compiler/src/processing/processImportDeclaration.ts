@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import { trackImportDeclaration } from '../transform/tracking/trackImportDeclaration';
 
@@ -7,8 +7,9 @@ import { trackImportDeclaration } from '../transform/tracking/trackImportDeclara
  * Process import declarations to track GT imports
  */
 export function processImportDeclaration(
-  path: NodePath<t.ImportDeclaration>,
   state: TransformState
-): void {
-  trackImportDeclaration(state.importTracker.scopeTracker, path.node);
+): VisitNode<t.Node, t.ImportDeclaration> {
+  return (path) => {
+    trackImportDeclaration(state.importTracker.scopeTracker, path.node);
+  };
 }

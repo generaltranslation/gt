@@ -13,26 +13,28 @@ import { Logger } from './state/logging';
 import { performSecondPassTransformation } from './transform/transform';
 import { processImportDeclaration } from './processing/processImportDeclaration';
 import { TransformState } from './state/types';
-import { trackArrowParameterOverrides } from './transform/tracking/trackArrowParameterOverrides';
-import { trackParameterOverrides } from './transform/tracking/trackParameterOverrides';
+import { processArrowFunctionExpression } from './processing/processArrowFunctionExpression';
 import { processCallExpression } from './processing/first-pass/processCallExpression';
 import { processJSXElement } from './processing/first-pass/processJSXElement';
 import { ErrorTracker } from './state/ErrorTracker';
-import { processVariableAssignment } from './processing/processVariableDeclarator';
+import { processVariableAssignment as processVariableDeclarator } from './processing/processVariableDeclarator';
 import { processClassDeclaration } from './processing/processClassDeclaration';
 import { processForInStatement } from './processing/processForInStatement';
 import { processForOfStatement } from './processing/processForOfStatement';
 import { processAssignmentExpression } from './processing/processAssignmentExpression';
 import { processCatchClause } from './processing/processCatchClause';
-import { processLabeledStatement } from './processing/processLabeledStatement';
 import { processObjectMethod } from './processing/processObjectMethod';
 import { processClassMethod } from './processing/processClassMethod';
 import { processFunctionDeclaration } from './processing/processFunctionDeclaration';
+import { processFunctionExpression } from './processing/processFunctionExpression';
+import { processClassPrivateMethod } from './processing/processClassPrivateMethod';
+import { processScopeChange } from './processing/processScopeChange';
+import { processProgram } from './processing/processProgram';
+import { basePass } from './passes/basePass';
 
 /**
  * TODO:
  * - Add tracking for special identifiers: undefined, Nan, etc.
- * - Add override tracking for parameter declarations
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
  * - Whitespace handling
  * - For errors log the location of the error
@@ -44,7 +46,7 @@ import { processFunctionDeclaration } from './processing/processFunctionDeclarat
  * - Add override tracking for forLoop declaration (specifically: let gt of items; let gt in obj)
  * - Add override tracking for catch clause declaration
  * - Add override tracking for method declarations
- * - Add override tracking for labels T: while (true) { break T; }
+ * - Add override tracking for parameter declarations
  *
  * First Pass:
  * - Collect + calculate all data
@@ -88,6 +90,9 @@ import { processFunctionDeclaration } from './processing/processFunctionDeclarat
  *
  * State:
  * - Includes classes for tracking state
+ *
+ * Currently no support for:
+ * - namespaces and and modules
  */
 
 /**
@@ -150,189 +155,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // PASS 1: Collection phase - collect translation data without transforming
 
           traverse(ast, {
-            Program: {
-              enter(path) {
-                // Initialize trackers for this program
-                state.importTracker = new ImportTracker();
-                state.stringCollector = new StringCollector();
-              },
-            },
+            ...basePass(state),
 
-            /* ----------------------------- */
-            /* Shadowing tracking */
-            /* ----------------------------- */
-
-            // import T from '...'
-            ImportDeclaration(path) {
-              processImportDeclaration(path, state);
-            },
-
-            // let T = ...
-            VariableDeclarator(path) {
-              processVariableAssignment(path, state);
-            },
-
-            // let t = useGT(); t = undefined;
-            AssignmentExpression(path) {
-              processAssignmentExpression(path, state);
-            },
-
-            // class T { ... }
-            ClassDeclaration: {
-              enter(path) {
-                state.importTracker.enterScope();
-                processClassDeclaration(path, state);
-              },
-              exit() {
-                state.importTracker.exitScope();
-              },
-            },
-
-            // for(let T in obj) { ... }
-            ForInStatement: {
-              enter(path) {
-                state.importTracker.enterScope();
-                processForInStatement(path, state);
-              },
-              exit() {
-                state.importTracker.exitScope();
-              },
-            },
-
-            // for(let T of items) { ... }
-            ForOfStatement: {
-              enter(path) {
-                state.importTracker.enterScope();
-                processForOfStatement(path, state);
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            // catch(T) { ... }
-            CatchClause: {
-              enter(path) {
-                state.importTracker.enterScope();
-                processCatchClause(path, state);
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            // T: while (true) { break T; }
-            LabeledStatement(path) {
-              processLabeledStatement(path, state);
-            },
-
-            // { T() {} } in objects
-            ObjectMethod(path) {
-              processObjectMethod(path, state);
-            },
-
-            // Class GT { T() { ... } } in classes
-            ClassMethod(path) {
-              processClassMethod(path, state);
-            },
-
-            // function T() { ... }
-            FunctionDeclaration(path) {
-              processFunctionDeclaration(path, state);
-            },
-
-            /* ----------------------------- */
-            /* Invocation tracking */
-            /* ----------------------------- */
-
-            CallExpression(path) {
-              processCallExpression(path, state); // Collection only, returns boolean but we ignore it
-            },
-
-            // JSX processing - matches Rust VisitMut
-            JSXElement(path) {
-              processJSXElement(path, state); // Collection only, returns boolean but we ignore it
-            },
-
-            // Missing JSX visitors from Rust VisitMut
-            JSXExpressionContainer(path) {
-              // TODO: Implement jsx expression container validation
-              // This should check for dynamic content violations in translation components
-            },
-
-            JSXAttribute(path) {
-              // TODO: Implement jsx attribute context tracking
-              // This should track in_jsx_attribute state to avoid false violations
-            },
-
-            // Scope management - must match second pass exactly
-            BlockStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            Function: {
-              enter(path) {
-                state.importTracker.enterScope();
-                trackParameterOverrides(path, state.importTracker.scopeTracker);
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            ArrowFunctionExpression: {
-              enter(path) {
-                state.importTracker.enterScope();
-                trackArrowParameterOverrides(
-                  path,
-                  state.importTracker.scopeTracker
-                );
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            FunctionExpression: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            ForStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            WhileStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
-
-            SwitchStatement: {
-              enter(_path) {
-                state.importTracker.enterScope();
-              },
-              exit(_path) {
-                state.importTracker.exitScope();
-              },
-            },
+            // const gt = useGT();
+            CallExpression: processCallExpression(state),
           });
 
           // Check for errors

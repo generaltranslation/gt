@@ -2,16 +2,17 @@ import { TransformState } from '../state/types';
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { trackFunctionParams } from '../transform/tracking/trackFunctionParams';
+
 /**
- * Process class method:
- * - class T { T() { ... } }
+ * Process class private method:
+ * - class GT { #T() {...} }
  */
-export function processClassMethod(
+export function processClassPrivateMethod(
   state: TransformState
-): VisitNode<t.Node, t.ClassMethod> {
+): VisitNode<t.Node, t.ClassPrivateMethod> {
   return {
     enter(path) {
-      // Function name is not relevant for class methods
+      // Function name is not relevant for class private methods
       state.importTracker.enterScope();
       trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
     },

@@ -1,4 +1,4 @@
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import * as t from '@babel/types';
 import { trackClassDeclaration } from '../transform/tracking/trackClassDeclaration';
@@ -8,8 +8,15 @@ import { trackClassDeclaration } from '../transform/tracking/trackClassDeclarati
  * - class T { ... }
  */
 export function processClassDeclaration(
-  path: NodePath<t.ClassDeclaration>,
   state: TransformState
-): void {
-  trackClassDeclaration(state.importTracker.scopeTracker, path.node);
+): VisitNode<t.Node, t.ClassDeclaration> {
+  return {
+    enter(path) {
+      trackClassDeclaration(state.importTracker.scopeTracker, path.node);
+      state.importTracker.enterScope();
+    },
+    exit() {
+      state.importTracker.exitScope();
+    },
+  };
 }

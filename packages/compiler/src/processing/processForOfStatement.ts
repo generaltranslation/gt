@@ -1,5 +1,5 @@
 import { TransformState } from '../state/types';
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { trackForDeclaration } from '../transform/tracking/trackForDeclaration';
 
@@ -8,8 +8,15 @@ import { trackForDeclaration } from '../transform/tracking/trackForDeclaration';
  * - for(let T of items) { ... }
  */
 export function processForOfStatement(
-  path: NodePath<t.ForOfStatement>,
   state: TransformState
-): void {
-  trackForDeclaration(state.importTracker.scopeTracker, path.node);
+): VisitNode<t.Node, t.ForOfStatement> {
+  return {
+    enter(path) {
+      state.importTracker.enterScope();
+      trackForDeclaration(state.importTracker.scopeTracker, path.node);
+    },
+    exit() {
+      state.importTracker.exitScope();
+    },
+  };
 }

@@ -1,15 +1,24 @@
 import { TransformState } from '../state/types';
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
-import { trackFunctionDeclaration } from '../transform/tracking/trackFunctionDeclaration';
+import { trackFunctionName } from '../transform/tracking/trackFunctionName';
+import { trackFunctionParams } from '../transform/tracking/trackFunctionParams';
 
 /**
  * Process function declaration:
  * - function T() { ... }
  */
 export function processFunctionDeclaration(
-  path: NodePath<t.FunctionDeclaration>,
   state: TransformState
-): void {
-  trackFunctionDeclaration(state.importTracker.scopeTracker, path.node);
+): VisitNode<t.Node, t.FunctionDeclaration> {
+  return {
+    enter(path) {
+      trackFunctionName(state.importTracker.scopeTracker, path.node);
+      state.importTracker.enterScope();
+      trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
+    },
+    exit() {
+      state.importTracker.exitScope();
+    },
+  };
 }

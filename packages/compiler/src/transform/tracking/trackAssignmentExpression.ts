@@ -20,6 +20,7 @@ export function trackAssignmentExpression(
 
 /**
  * Handle optional member expressions
+ * import GT from 'gt-next';
  * GT.T = undefined;
  * TODO: track overwritten variable when handling namespace imports is refactored
  */

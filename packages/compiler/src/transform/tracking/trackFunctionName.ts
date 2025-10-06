@@ -6,9 +6,17 @@ import { trackOverridingVariable } from './trackOverridingVariable';
  * Track function declaration:
  * - function T() { ... }
  */
-export function trackFunctionDeclaration(
+export function trackFunctionName(
+  scopeTracker: ScopeTracker,
+  functionDeclaration: t.FunctionExpression
+): void;
+export function trackFunctionName(
   scopeTracker: ScopeTracker,
   functionDeclaration: t.FunctionDeclaration
+): void;
+export function trackFunctionName(
+  scopeTracker: ScopeTracker,
+  functionDeclaration: t.FunctionDeclaration | t.FunctionExpression
 ): void {
   const functionName = functionDeclaration.id?.name;
   if (functionName === undefined) {

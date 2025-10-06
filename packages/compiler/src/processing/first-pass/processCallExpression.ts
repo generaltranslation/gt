@@ -1,4 +1,4 @@
-import { NodePath } from '@babel/traverse';
+import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import {
@@ -34,50 +34,52 @@ import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-childre
  * - generally validate content
  */
 export function processCallExpression(
-  path: NodePath<t.CallExpression>,
   state: TransformState
-) {
-  // Get the call expression
-  const callExpr = path.node;
+): VisitNode<t.Node, t.CallExpression> {
+  return (path) => {
+    // Get the call expression
+    const callExpr = path.node;
 
-  // Get function name from callee
-  const { namespaceName, functionName } = getCalleeNameFromExpression(callExpr);
-  if (!functionName) {
-    return;
-  }
+    // Get function name from callee
+    const { namespaceName, functionName } =
+      getCalleeNameFromExpression(callExpr);
+    if (!functionName) {
+      return;
+    }
 
-  // Get the canonical function name
-  const { canonicalName, identifier, type } = getCanonicalFunctionName(
-    state.importTracker,
-    namespaceName,
-    functionName
-  );
-  if (!canonicalName) {
-    return;
-  }
-
-  // Handle each respective case
-  if (
-    type === 'generaltranslation' &&
-    isTranslationFunctionCallback(canonicalName)
-  ) {
-    // Handle translation function callbacks (useGT_callback, etc.)
-    handleTranslationCallbackInvocation(
-      callExpr,
-      state,
-      canonicalName,
-      identifier!
+    // Get the canonical function name
+    const { canonicalName, identifier, type } = getCanonicalFunctionName(
+      state.importTracker,
+      namespaceName,
+      functionName
     );
-  } else if (type === 'react' && isReactFunction(canonicalName)) {
-    // Handle react variables (jsxDEV, etc.)
-    handleReactInvocation(callExpr, state);
-  } else if (
-    type === 'generaltranslation' &&
-    canonicalName === GT_OTHER_FUNCTIONS.msg
-  ) {
-    // TODO: Handle msg() function
-    // handleMsgFunction(callExpr, state);
-  }
+    if (!canonicalName) {
+      return;
+    }
+
+    // Handle each respective case
+    if (
+      type === 'generaltranslation' &&
+      isTranslationFunctionCallback(canonicalName)
+    ) {
+      // Handle translation function callbacks (useGT_callback, etc.)
+      handleTranslationCallbackInvocation(
+        callExpr,
+        state,
+        canonicalName,
+        identifier!
+      );
+    } else if (type === 'react' && isReactFunction(canonicalName)) {
+      // Handle react variables (jsxDEV, etc.)
+      handleReactInvocation(callExpr, state);
+    } else if (
+      type === 'generaltranslation' &&
+      canonicalName === GT_OTHER_FUNCTIONS.msg
+    ) {
+      // TODO: Handle msg() function
+      // handleMsgFunction(callExpr, state);
+    }
+  };
 }
 
 /* =============================== */
