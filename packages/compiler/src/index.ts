@@ -25,13 +25,14 @@ import { processForOfStatement } from './processing/processForOfStatement';
 import { processAssignmentExpression } from './processing/processAssignmentExpression';
 import { processCatchClause } from './processing/processCatchClause';
 import { processLabeledStatement } from './processing/processLabeledStatement';
+import { processObjectMethod } from './processing/processObjectMethod';
+import { processClassMethod } from './processing/processClassMethod';
+import { processFunctionDeclaration } from './processing/processFunctionDeclaration';
 
 /**
  * TODO:
  * - Add tracking for special identifiers: undefined, Nan, etc.
  * - Add override tracking for parameter declarations
- * - Add override tracking for method declarations
- * - Add override tracking for labels T: while (true) { break T; }
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
  * - Whitespace handling
  * - For errors log the location of the error
@@ -42,6 +43,8 @@ import { processLabeledStatement } from './processing/processLabeledStatement';
  * - Add override tracking for assignment expressions let t = useGT(); t = undefined;
  * - Add override tracking for forLoop declaration (specifically: let gt of items; let gt in obj)
  * - Add override tracking for catch clause declaration
+ * - Add override tracking for method declarations
+ * - Add override tracking for labels T: while (true) { break T; }
  *
  * First Pass:
  * - Collect + calculate all data
@@ -223,15 +226,20 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               processLabeledStatement(path, state);
             },
 
-            // // { T() {} } in objects
-            // ObjectMethod(path) {
-            //   processObjectMethod(path, state);
-            // },
+            // { T() {} } in objects
+            ObjectMethod(path) {
+              processObjectMethod(path, state);
+            },
 
-            // // Class GT { T() { ... } } in classes
-            // ClassMethod(path) {
-            //   processClassMethod(path, state);
-            // },
+            // Class GT { T() { ... } } in classes
+            ClassMethod(path) {
+              processClassMethod(path, state);
+            },
+
+            // function T() { ... }
+            FunctionDeclaration(path) {
+              processFunctionDeclaration(path, state);
+            },
 
             /* ----------------------------- */
             /* Invocation tracking */
