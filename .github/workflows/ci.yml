@@ -37,19 +37,19 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Rebuild packages
-        run: pnpm rebuild
+        run: pnpm exec turbo rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Run lint
-        run: pnpm run lint
+        run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Build packages
-        run: pnpm run build
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Run tests
-        run: pnpm run test
+        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]'
 
   test-builds:
     strategy:
@@ -73,15 +73,26 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: "pnpm"
 
+      - name: Check if gt-next changed
+        id: gt_next_changed
+        run: |
+          if pnpm exec turbo build --filter='gt-next...[origin/${{ github.base_ref }}]' --dry=json | jq -e '.packages | length > 0' > /dev/null; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
       - name: Setup Rust
+        if: steps.gt_next_changed.outputs.changed == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: pnpm install
+        if: steps.gt_next_changed.outputs.changed == 'true'
+        run: pnpm install --filter='gt-next...[origin/${{ github.base_ref }}]'
 
       - name: Test Builds
+        if: steps.gt_next_changed.outputs.changed == 'true'
         run: |
           pnpm exec turbo build --filter=base...
           pnpm exec turbo build:turbopack --filter=base...
