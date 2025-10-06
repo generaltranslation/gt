@@ -37,7 +37,7 @@ jobs:
           targets: wasm32-wasip1
 
       - name: Install dependencies
-        run: pnpm install --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm install
 
       - name: Rebuild packages
         run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
