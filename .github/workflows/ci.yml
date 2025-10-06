@@ -40,7 +40,7 @@ jobs:
         run: pnpm install --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Rebuild packages
-        run: pnpm rebuild
+        run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Run lint
         run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
