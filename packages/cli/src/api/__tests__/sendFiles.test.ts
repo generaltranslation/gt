@@ -22,6 +22,9 @@ vi.mock('../../console/logging.js', () => ({
   logMessage: vi.fn(),
   logSuccess: vi.fn(),
   logError: vi.fn(),
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
 }));
 
 describe('sendFiles', () => {
@@ -68,7 +71,7 @@ describe('sendFiles', () => {
     publish: true,
     apiKey: '1234567890',
     projectId: '1234567890',
-    timeout: '10000',
+    timeout: 10000,
     dryRun: false,
     ...overrides,
   });
@@ -122,9 +125,17 @@ describe('sendFiles', () => {
           fileId: 'file-123',
           versionId: 'version-456',
           fileName: 'component.json',
+          fileFormat: 'JSON' as const,
         },
-        { fileId: 'file-789', versionId: 'version-012', fileName: 'page.json' },
+        {
+          fileId: 'file-789',
+          versionId: 'version-012',
+          fileName: 'page.json',
+          fileFormat: 'JSON' as const,
+        },
       ],
+      count: 2,
+      message: 'Files uploaded successfully',
     };
 
     const mockEnqueueResponse = createMockEnqueueResponse({
@@ -191,8 +202,11 @@ describe('sendFiles', () => {
           fileId: 'file-123',
           versionId: 'version-456',
           fileName: 'component.json',
+          fileFormat: 'JSON' as const,
         },
       ],
+      count: 1,
+      message: 'Files uploaded successfully',
     };
 
     const mockEnqueueResponse = createMockEnqueueResponse({
@@ -242,7 +256,7 @@ describe('sendFiles', () => {
       },
     ];
 
-    const mockFlags = createMockFlags({ timeout: '30' });
+    const mockFlags = createMockFlags({ timeout: 30 });
     const mockSettings = createMockSettings();
 
     const mockUploadResponse = {
@@ -251,8 +265,11 @@ describe('sendFiles', () => {
           fileId: 'file-123',
           versionId: 'version-456',
           fileName: 'component.json',
+          fileFormat: 'JSON' as const,
         },
       ],
+      count: 1,
+      message: 'Files uploaded successfully',
     };
 
     const mockSetupResponse = {
@@ -312,7 +329,7 @@ describe('sendFiles', () => {
       },
     ];
 
-    const mockFlags = createMockFlags({ timeout: '1' }); // Very short timeout
+    const mockFlags = createMockFlags({ timeout: 1 }); // Very short timeout
     const mockSettings = createMockSettings();
 
     const mockUploadResponse = {
@@ -321,8 +338,11 @@ describe('sendFiles', () => {
           fileId: 'file-123',
           versionId: 'version-456',
           fileName: 'component.json',
+          fileFormat: 'JSON' as const,
         },
       ],
+      count: 1,
+      message: 'Files uploaded successfully',
     };
 
     const mockSetupResponse = {
@@ -365,13 +385,11 @@ describe('sendFiles', () => {
     vi.mocked(gt.uploadSourceFiles).mockRejectedValue(error);
 
     await expect(
-      sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)
-    ).rejects.toThrow('API Error');
+      sendFiles(mockFiles, { timeout: 10000, dryRun: false }, mockOptions)
+    ).rejects.toThrow('Failed to send files for translation');
 
     expect(mockSpinner.start).toHaveBeenCalled();
-    expect(mockSpinner.stop).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to send files for translation')
-    );
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle empty files array', async () => {
@@ -382,12 +400,16 @@ describe('sendFiles', () => {
       message: 'No files to upload',
       locales: ['es'],
     });
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ uploadedFiles: [] });
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({
+      uploadedFiles: [],
+      count: 0,
+      message: 'No files to upload',
+    });
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
       mockFiles,
-      { timeout: '10000', dryRun: false },
+      { timeout: 10000, dryRun: false },
       mockOptions
     );
 
@@ -427,7 +449,7 @@ describe('sendFiles', () => {
 
     const result = await sendFiles(
       mockFiles,
-      { timeout: '10000', dryRun: false },
+      { timeout: 10000, dryRun: false },
       mockOptions
     );
 
@@ -457,16 +479,18 @@ describe('sendFiles', () => {
     const mockOptions = createMockSettings({ locales: ['es'] });
 
     const timeoutError = new Error('Network timeout');
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ uploadedFiles: [] });
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({
+      uploadedFiles: [],
+      count: 0,
+      message: 'No files to upload',
+    });
     vi.mocked(gt.enqueueFiles).mockRejectedValue(timeoutError);
 
     await expect(
-      sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)
-    ).rejects.toThrow('Network timeout');
+      sendFiles(mockFiles, { timeout: 10000, dryRun: false }, mockOptions)
+    ).rejects.toThrow('Failed to send files for translation');
 
-    expect(mockSpinner.stop).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to send files for translation')
-    );
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle authentication errors', async () => {
@@ -477,16 +501,18 @@ describe('sendFiles', () => {
     const mockOptions = createMockSettings({ locales: ['es'] });
 
     const authError = new Error('Unauthorized');
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ uploadedFiles: [] });
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({
+      uploadedFiles: [],
+      count: 0,
+      message: 'No files to upload',
+    });
     vi.mocked(gt.enqueueFiles).mockRejectedValue(authError);
 
     await expect(
-      sendFiles(mockFiles, { timeout: '10000', dryRun: false }, mockOptions)
-    ).rejects.toThrow('Unauthorized');
+      sendFiles(mockFiles, { timeout: 10000, dryRun: false }, mockOptions)
+    ).rejects.toThrow('Failed to send files for translation');
 
-    expect(mockSpinner.stop).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to send files for translation')
-    );
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle different file formats', async () => {
@@ -519,6 +545,7 @@ describe('sendFiles', () => {
         fileId: `file-${i}`,
         versionId: 'version-456',
         fileName: f.fileName,
+        fileFormat: 'JSON' as const,
       })),
     };
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
@@ -528,7 +555,7 @@ describe('sendFiles', () => {
 
     const result = await sendFiles(
       mockFiles,
-      { timeout: '10000', dryRun: false },
+      { timeout: 10000, dryRun: false },
       mockOptions
     );
 
@@ -579,7 +606,7 @@ describe('sendFiles', () => {
 
     const result = await sendFiles(
       mockFiles,
-      { timeout: '10000', dryRun: false },
+      { timeout: 10000, dryRun: false },
       mockOptions
     );
 
@@ -654,7 +681,7 @@ describe('sendFiles', () => {
 
     const result = await sendFiles(
       mockFiles,
-      { timeout: '10000', dryRun: false },
+      { timeout: 10000, dryRun: false },
       mockOptions
     );
 

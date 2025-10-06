@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import {
   createSpinner,
   logError,
+  logErrorAndExit,
   logMessage,
   logSuccess,
   logWarning,
@@ -60,7 +61,7 @@ export async function sendFiles(
     const sourceLocale = settings.defaultLocale;
     if (!sourceLocale) {
       uploadSpinner.stop(chalk.red('Missing default source locale'));
-      throw new Error(
+      logErrorAndExit(
         'sendFiles: settings.defaultLocale is required to upload source files'
       );
     }
@@ -162,11 +163,10 @@ export async function sendFiles(
     logSuccess(message);
 
     return { data, locales, translations };
-  } catch (error) {
+  } catch {
     if (currentSpinner) {
-      currentSpinner.stop(chalk.red('Failed to send files for translation'));
+      currentSpinner.stop();
     }
-    logError('Failed to send files for translation');
-    throw error;
+    logErrorAndExit('Failed to send files for translation');
   }
 }

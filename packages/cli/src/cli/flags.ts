@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import findFilepath from '../fs/findFilepath.js';
+import { logErrorAndExit } from '../console/logging.js';
 
 const DEFAULT_TIMEOUT = 600;
 
@@ -32,10 +33,10 @@ export function attachTranslateFlags(command: Command) {
       (value) => {
         const parsedValue = parseInt(value, 10);
         if (isNaN(parsedValue)) {
-          throw new Error('Not a number.');
+          logErrorAndExit('Not a number.');
         }
         if (parsedValue < 0) {
-          throw new Error('Timeout must be a positive number.');
+          logErrorAndExit('Timeout must be a positive number.');
         }
         return parsedValue;
       },
