@@ -67,12 +67,6 @@ jobs:
       - uses: pnpm/action-setup@v4
         name: Install pnpm
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-          cache: "pnpm"
-
       - name: Check if gt-next changed
         id: gt_next_changed
         run: |
@@ -81,6 +75,12 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
+      - name: Setup Node.js
+        if: steps.gt_next_changed.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "pnpm"
       - name: Setup Rust
         if: steps.gt_next_changed.outputs.changed == 'true'
         uses: dtolnay/rust-toolchain@stable
