@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ignore": ["examples/**"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
