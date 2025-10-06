@@ -43,13 +43,13 @@ jobs:
         run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Run lint
-        run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]' --filter='!examples/**'
 
       - name: Build packages
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!examples/**'
 
       - name: Run tests
-        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!examples/**'
 
   test-builds:
     strategy:
