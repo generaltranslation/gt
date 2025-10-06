@@ -22,6 +22,7 @@ import { processVariableAssignment } from './processing/processVariableDeclarato
 import { processClassDeclaration } from './processing/processClassDeclaration';
 import { processForInStatement } from './processing/processForInStatement';
 import { processForOfStatement } from './processing/processForOfStatement';
+import { processAssignmentExpression } from './processing/processAssignmentExpression';
 
 /**
  * TODO:
@@ -167,9 +168,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             },
 
             // let t = useGT(); t = undefined;
-            // AssignmentExpression(path) {
-            //   processAssignmentExpression(path, state);
-            // },
+            AssignmentExpression(path) {
+              processAssignmentExpression(path, state);
+            },
 
             // class T { ... }
             ClassDeclaration: {
