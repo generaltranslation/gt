@@ -11,7 +11,7 @@ import { trackOverridingVariable } from '../tracking/trackOverridingVariable';
  * inject parameters into invocation of translation function
  * - useGT(messages=[{hash, message, id, context}])
  */
-export function injectCalleeParameters(
+export function injectCallbackFunctionParameters(
   varDeclarator: t.VariableDeclarator,
   state: TransformState
 ): void {

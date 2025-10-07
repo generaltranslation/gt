@@ -58,6 +58,7 @@ async function T({
   [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
+  console.log('[GT-NEXT] <T> _hash', _hash);
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
