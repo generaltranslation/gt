@@ -23,7 +23,6 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   }
 
   // Validate first argument
-  let content: string | undefined;
   if (!t.isExpression(callExpr.arguments[0])) {
     errors.push(
       'useGT_callback / getGT_callback must have a string literal as the first argument'
@@ -36,7 +35,7 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
     callExpr.arguments[0]
   );
   errors.push(...validatedContent.errors);
-  content = validatedContent.value;
+  const content = validatedContent.value;
   if (content === undefined) {
     errors.push(
       'useGT_callback / getGT_callback must have a string literal as the first argument'
@@ -47,7 +46,7 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   // Validate second argument
   let context: string | undefined;
   let id: string | undefined;
-  if (callExpr.arguments.length === 1) return { errors };
+  if (callExpr.arguments.length === 1) return { errors, content };
   if (t.isObjectExpression(callExpr.arguments[1])) {
     const contextProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],

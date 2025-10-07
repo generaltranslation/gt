@@ -4,6 +4,8 @@ import { getTrackedVariable } from '../getTrackedVariable';
 import { getCalleeNameFromExpressionWrapper } from '../../utils/getCalleeNameFromExpressionWrapper';
 import { isGTFunctionWithCallbacks } from '../../utils/constants/gt/helpers';
 import { GT_FUNCTIONS_WITH_CALLBACKS } from '../../utils/constants/gt/constants';
+import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFromLVal';
+import { trackOverridingVariable } from '../tracking/trackOverridingVariable';
 
 /**
  * inject parameters into invocation of translation function
@@ -27,7 +29,7 @@ export function injectCalleeParameters(
   }
 
   // Get the canonical function name
-  const { canonicalName, type, identifier } = getTrackedVariable(
+  const { canonicalName, type } = getTrackedVariable(
     state.importTracker,
     namespaceName,
     functionName
@@ -36,14 +38,28 @@ export function injectCalleeParameters(
     return;
   }
 
+  // Extract identifiers from the LVal
+  const identifiers = extractIdentifiersFromLVal(varDeclarator.id);
+
   // Validate the type
   if (
     type !== 'generaltranslation' ||
-    !isGTFunctionWithCallbacks(canonicalName) ||
-    identifier === undefined
+    !isGTFunctionWithCallbacks(canonicalName)
   ) {
+    // Track as an overriding variable
+    for (const identifier of identifiers) {
+      trackOverridingVariable(identifier, state.importTracker.scopeTracker);
+    }
     return;
   }
+
+  // There can only be one callback defined for const gt = useGT()
+  if (identifiers.length !== 1) {
+    throw new Error(
+      `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}`
+    );
+  }
+  const identifier = identifiers[0];
 
   // Inject the parameters into the call expression
   const expression = getFunctionInvocation(varDeclarator);
@@ -52,11 +68,19 @@ export function injectCalleeParameters(
     return;
   }
 
+  // Look up identifier
+  const id =
+    state.importTracker.scopeTracker.getVariable(identifier)?.identifier;
+  if (!id) {
+    throw new Error(
+      `[GT_PLUGIN] No translation callback variable found for ${identifier}`
+    );
+  }
   // Inject into the callees
   switch (canonicalName) {
     case GT_FUNCTIONS_WITH_CALLBACKS.useGT:
     case GT_FUNCTIONS_WITH_CALLBACKS.getGT:
-      injectUseGTParameters(expression, state, identifier);
+      injectUseGTParameters(expression, state, id);
       break;
     default:
       return;
@@ -73,15 +97,12 @@ export function injectCalleeParameters(
 function injectUseGTParameters(
   expression: t.CallExpression,
   state: TransformState,
-  identifier: number
+  id: number
 ) {
   // Get the corresponding callback injection data
-  const translationContent =
-    state.stringCollector.getTranslationContent(identifier);
+  const translationContent = state.stringCollector.getTranslationContent(id);
   if (!translationContent) {
-    throw new Error(
-      `[GT_PLUGIN] No translation content found for useGT/getGT call with identifier: ${identifier}`
-    );
+    return;
   }
 
   // Inject the parameters into the call expression

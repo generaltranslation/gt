@@ -59,17 +59,23 @@ export function trackVariableDeclarator(
     // Track GT functions with callbacks (useGT, useTranslations, useMessages, etc.)
     const callbackFunctionName = GT_FUNCTIONS_TO_CALLBACKS[canonicalName];
 
+    // There can only be one callback defined for const gt = useGT()
+    if (identifiers.length !== 1) {
+      throw new Error(
+        `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}`
+      );
+    }
+    const identifier = identifiers[0];
+
     // Increment the counter
     const counterId = state.stringCollector.incrementCounter();
 
     // Track as a callback variables
-    for (const identifier of identifiers) {
-      state.importTracker.scopeTracker.trackTranslationCallbackVariable(
-        identifier,
-        callbackFunctionName,
-        counterId
-      );
-    }
+    state.importTracker.scopeTracker.trackTranslationCallbackVariable(
+      identifier,
+      callbackFunctionName,
+      counterId
+    );
   } else {
     // Track as an overriding variable
     for (const identifier of identifiers) {

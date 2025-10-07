@@ -372,6 +372,7 @@ export async function getGT(
  * Hook wrapper for getGT
  */
 export function useGT(_messages?: _Messages) {
+  console.log('[GT_NEXT] _messages:', _messages);
   return use(getGT(_messages));
 }
 

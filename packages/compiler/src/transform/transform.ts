@@ -265,52 +265,52 @@ export function performSecondPassTransformation(
  * Inject content array on translation function calls (useGT/getGT)
  * Ported from Rust: inject_content_array_on_translation_function_call (lines 95-112)
  */
-export function injectContentArrayOnTranslationFunction(
-  callExpr: t.CallExpression,
-  state: TransformState
-): t.CallExpression | null {
-  const counterId = state.stringCollector.getCounter();
-  const content = state.stringCollector.getTranslationData(counterId);
+// export function injectContentArrayOnTranslationFunction(
+//   callExpr: t.CallExpression,
+//   state: TransformState
+// ): t.CallExpression | null {
+//   const counterId = state.stringCollector.getCounter();
+//   const content = state.stringCollector.getTranslationData(counterId);
 
-  if (content && content.content.length > 0) {
-    // Create the content array using Babel types
-    const contentArrayElements = content.content.map((item) => {
-      const properties: t.ObjectProperty[] = [
-        t.objectProperty(
-          t.identifier('message'),
-          t.stringLiteral(item.message)
-        ),
-        t.objectProperty(t.identifier('$_hash'), t.stringLiteral(item.hash)),
-      ];
+//   if (content && content.content.length > 0) {
+//     // Create the content array using Babel types
+//     const contentArrayElements = content.content.map((item) => {
+//       const properties: t.ObjectProperty[] = [
+//         t.objectProperty(
+//           t.identifier('message'),
+//           t.stringLiteral(item.message)
+//         ),
+//         t.objectProperty(t.identifier('$_hash'), t.stringLiteral(item.hash)),
+//       ];
 
-      if (item.id) {
-        properties.push(
-          t.objectProperty(t.identifier('$id'), t.stringLiteral(item.id))
-        );
-      }
-      if (item.context) {
-        properties.push(
-          t.objectProperty(
-            t.identifier('$context'),
-            t.stringLiteral(item.context)
-          )
-        );
-      }
+//       if (item.id) {
+//         properties.push(
+//           t.objectProperty(t.identifier('$id'), t.stringLiteral(item.id))
+//         );
+//       }
+//       if (item.context) {
+//         properties.push(
+//           t.objectProperty(
+//             t.identifier('$context'),
+//             t.stringLiteral(item.context)
+//           )
+//         );
+//       }
 
-      return t.objectExpression(properties);
-    });
+//       return t.objectExpression(properties);
+//     });
 
-    const contentArray = t.arrayExpression(contentArrayElements);
+//     const contentArray = t.arrayExpression(contentArrayElements);
 
-    // Check for existing content
-    if (!callExpr.arguments || callExpr.arguments.length === 0) {
-      // Create new call expression with content array as first argument
-      return t.callExpression(t.cloneNode(callExpr.callee), [contentArray]);
-    }
-  }
+//     // Check for existing content
+//     if (!callExpr.arguments || callExpr.arguments.length === 0) {
+//       // Create new call expression with content array as first argument
+//       return t.callExpression(t.cloneNode(callExpr.callee), [contentArray]);
+//     }
+//   }
 
-  return null;
-}
+//   return null;
+// }
 
 /**
  * Inject hash on translation function calls (t() calls)

@@ -151,11 +151,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           checkForErrors(state);
 
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
-          let hasTransformations = false; // TODO: calculate this
+          const hasTransformations = true; // TODO: calculate this
           if (state.settings.compileTimeHash) {
             performSecondPassTransformation(ast, state);
           }
-          console.log('[GT_PLUGIN] hasTransformations:', hasTransformations);
 
           // Generate code if transformations were made
           if (hasTransformations) {

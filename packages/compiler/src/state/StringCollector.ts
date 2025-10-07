@@ -162,9 +162,9 @@ export class StringCollector {
    */
   serialize(): any {
     const output = {
-      contentAggregators: this.contentAggregators,
-      jsxAggregators: this.jsxAggregators,
-      hashAggregators: this.hashAggregators,
+      contentAggregators: Object.fromEntries(this.contentAggregators),
+      jsxAggregators: Object.fromEntries(this.jsxAggregators),
+      hashAggregators: Object.fromEntries(this.hashAggregators),
       globalCallCounter: this.globalCallCounter,
     };
     return output;
@@ -174,9 +174,24 @@ export class StringCollector {
    * Helper to repopulate
    */
   unserialize(input: any): void {
-    this.contentAggregators = input.contentAggregators;
-    this.jsxAggregators = input.jsxAggregators;
-    this.hashAggregators = input.hashAggregators;
+    this.contentAggregators = Object.entries(
+      input.contentAggregators as Record<number, TranslationContent[]>
+    ).reduce((acc, [key, value]) => {
+      acc.set(Number(key), value);
+      return acc;
+    }, new Map<number, TranslationContent[]>());
+    this.jsxAggregators = Object.entries(
+      input.jsxAggregators as Record<number, TranslationJsx>
+    ).reduce((acc, [key, value]) => {
+      acc.set(Number(key), value);
+      return acc;
+    }, new Map<number, TranslationJsx>());
+    this.hashAggregators = Object.entries(
+      input.hashAggregators as Record<number, TranslationHash>
+    ).reduce((acc, [key, value]) => {
+      acc.set(Number(key), value);
+      return acc;
+    }, new Map<number, TranslationHash>());
     this.globalCallCounter = input.globalCallCounter;
   }
 }
