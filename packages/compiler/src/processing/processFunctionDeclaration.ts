@@ -13,12 +13,12 @@ export function processFunctionDeclaration(
 ): VisitNode<t.Node, t.FunctionDeclaration> {
   return {
     enter(path) {
-      trackFunctionName(state.importTracker.scopeTracker, path.node);
-      state.importTracker.enterScope();
-      trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
+      trackFunctionName(state.scopeTracker, path.node);
+      state.scopeTracker.enterScope();
+      trackFunctionParams(path.node.params, state.scopeTracker);
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

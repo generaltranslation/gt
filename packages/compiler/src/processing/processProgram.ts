@@ -1,7 +1,7 @@
-import { ImportTracker } from '../state/ImportTracker';
 import { TransformState } from '../state/types';
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
+import { ScopeTracker } from '../state/ScopeTracker';
 
 /**
  * Process program:
@@ -12,8 +12,7 @@ export function processProgram(
 ): VisitNode<t.Node, t.Program> {
   return {
     enter() {
-      // Initialize trackers for this program
-      state.importTracker = new ImportTracker();
+      state.scopeTracker = new ScopeTracker();
     },
   };
 }

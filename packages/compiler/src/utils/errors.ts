@@ -1,3 +1,5 @@
+import * as t from '@babel/types';
+
 /**
  * Error creation utilities for the GT Babel plugin
  */
@@ -29,4 +31,18 @@ export function createDynamicFunctionWarning(
   } else {
     return `gt-next in : ${functionName}() function call uses ${violationType} which prevents proper translation key generation. Use string literals instead.`;
   }
+}
+
+/**
+ * Create error location with filename and line number
+ * @param node
+ */
+export function createErrorLocation(node: t.Node) {
+  if (node.loc?.start.line) {
+    if (node.loc?.start.column) {
+      return `{filename}:${node.loc.start.line}:${node.loc.start.column}`;
+    }
+    return `{filename}:${node.loc.start.line}`;
+  }
+  return `{filename}`;
 }

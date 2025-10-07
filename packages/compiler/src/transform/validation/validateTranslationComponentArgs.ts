@@ -212,7 +212,7 @@ function recordInputs(children: any, state: TransformState) {
     children,
     state: {
       stringCollector: state.stringCollector.serialize(),
-      importTracker: state.importTracker.serialize(),
+      scopeTracker: state.scopeTracker.serialize(),
     },
   };
   const stringifiedOutput = JSON.stringify(output, null, 2);

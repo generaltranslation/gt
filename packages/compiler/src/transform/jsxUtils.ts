@@ -79,7 +79,7 @@ export function getOriginalNameFromExpression(
 
   // Map it back to an original name
   const translationVariable =
-    state.importTracker.scopeTracker.getTranslationVariable(localName);
+    state.scopeTracker.getTranslationVariable(localName);
 
   if (!translationVariable) {
     return null;
@@ -101,7 +101,7 @@ export function getTranslationVariableFromExpression(
 
   // Map it back to an original name
   const translationVariable =
-    state.importTracker.scopeTracker.getTranslationVariable(localName);
+    state.scopeTracker.getTranslationVariable(localName);
 
   if (!translationVariable) {
     return null;

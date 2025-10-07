@@ -5,7 +5,6 @@ import traverse from '@babel/traverse';
 
 // Core modules
 import { StringCollector } from './state/StringCollector';
-import { ImportTracker } from './state/ImportTracker';
 import { PluginConfig, PluginSettings } from './state/config';
 import { Logger } from './state/Logger';
 
@@ -17,6 +16,7 @@ import { ErrorTracker } from './state/ErrorTracker';
 import { basePass } from './passes/basePass';
 import { checkForErrors } from './passes/checkForErrors';
 import { processVariableDeclarator } from './processing/first-pass/processVariableDeclarator';
+import { ScopeTracker } from './state/ScopeTracker';
 
 /**
  * TODO:
@@ -211,7 +211,7 @@ function initializeState(
   return {
     settings,
     stringCollector: new StringCollector(),
-    importTracker: new ImportTracker(),
+    scopeTracker: new ScopeTracker(),
     logger: new Logger(settings.logLevel),
     errorTracker: new ErrorTracker(),
     statistics: {

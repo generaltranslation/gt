@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import { createErrorLocation } from '../../../utils/errors';
 /**
  * Given a UnaryExpression, validates the operator
  * @returns {errors: string[]; value?: string}
@@ -22,7 +23,8 @@ export function validateUnaryExpression(unaryExpression: t.UnaryExpression): {
     }
   } else {
     errors.push(
-      `Failed to construct JsxChild! Unary expression argument must be a numeric literal`
+      `Failed to construct JsxChild! Unary expression argument must be a numeric literal` +
+        createErrorLocation(unaryExpression.argument)
     );
     return { errors };
   }

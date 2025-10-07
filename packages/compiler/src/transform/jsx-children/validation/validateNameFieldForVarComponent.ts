@@ -1,6 +1,7 @@
 import * as t from '@babel/types';
 import { getObjectPropertyFromObjectExpression } from '../../../utils/jsx/getObjectPropertyFromObjectExpression';
 import { getStringLiteralFromExpression } from '../../../utils/jsx/getStringLiteralFromExpression';
+import { createErrorLocation } from '../../../utils/errors';
 
 /**
  * Extracts name field for var component
@@ -24,7 +25,8 @@ export function validateNameFieldForVarComponent(
     !t.isExpression(nameProperty.value)
   ) {
     errors.push(
-      'Failed to construct Variable! Name field must be an expression'
+      'Failed to construct Variable! Name field must be an expression' +
+        createErrorLocation(nameProperty)
     );
     return { errors };
   }
@@ -33,7 +35,8 @@ export function validateNameFieldForVarComponent(
     !t.isTemplateLiteral(nameProperty.value)
   ) {
     errors.push(
-      'Failed to construct Variable! Name field must be a string literal'
+      'Failed to construct Variable! Name field must be a string literal' +
+        createErrorLocation(nameProperty.value)
     );
     return { errors };
   }

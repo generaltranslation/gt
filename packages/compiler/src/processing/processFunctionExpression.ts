@@ -17,14 +17,14 @@ export function processFunctionExpression(
 ): VisitNode<t.Node, t.FunctionExpression> {
   return {
     enter(path) {
-      state.importTracker.enterScope();
-      trackFunctionName(state.importTracker.scopeTracker, path.node);
-      state.importTracker.enterScope();
-      trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
+      state.scopeTracker.enterScope();
+      trackFunctionName(state.scopeTracker, path.node);
+      state.scopeTracker.enterScope();
+      trackFunctionParams(path.node.params, state.scopeTracker);
     },
     exit() {
-      state.importTracker.exitScope();
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

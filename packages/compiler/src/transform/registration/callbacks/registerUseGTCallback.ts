@@ -22,11 +22,4 @@ export function registerUseGTCallback(
     id,
     context,
   });
-
-  console.log(
-    '[GT_PLUGIN] registerUseGTCallback: added translated content id:',
-    identifier,
-    ', message:',
-    content
-  );
 }

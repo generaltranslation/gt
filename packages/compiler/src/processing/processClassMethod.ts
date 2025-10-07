@@ -12,11 +12,11 @@ export function processClassMethod(
   return {
     enter(path) {
       // Function name is not relevant for class methods
-      state.importTracker.enterScope();
-      trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
+      state.scopeTracker.enterScope();
+      trackFunctionParams(path.node.params, state.scopeTracker);
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

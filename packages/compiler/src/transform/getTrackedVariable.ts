@@ -1,4 +1,4 @@
-import { ImportTracker } from '../state/ImportTracker';
+import { ScopeTracker } from '../state/ScopeTracker';
 import { VariableType } from '../state/ScopeTracker';
 
 /**
@@ -8,7 +8,7 @@ import { VariableType } from '../state/ScopeTracker';
  * - type
  */
 export function getTrackedVariable(
-  importTracker: ImportTracker,
+  scopeTracker: ScopeTracker,
   namespaceName: string | null,
   functionName: string | null
 ): {
@@ -26,7 +26,7 @@ export function getTrackedVariable(
 
   // If namespace, no alias resolution needed
   if (namespaceName) {
-    if (!importTracker.scopeTracker.hasNamespaceImport(namespaceName)) {
+    if (!scopeTracker.hasNamespaceImport(namespaceName)) {
       return {
         canonicalName: undefined,
         identifier: undefined,
@@ -41,7 +41,7 @@ export function getTrackedVariable(
   }
 
   // Resolve aliased function name
-  const variable = importTracker.scopeTracker.getVariable(functionName);
+  const variable = scopeTracker.getVariable(functionName);
   return {
     canonicalName: variable?.canonicalName ?? undefined,
     identifier: variable?.identifier ?? undefined,

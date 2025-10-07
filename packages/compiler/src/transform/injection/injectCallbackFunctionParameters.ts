@@ -6,6 +6,7 @@ import { isGTFunctionWithCallbacks } from '../../utils/constants/gt/helpers';
 import { GT_FUNCTIONS_WITH_CALLBACKS } from '../../utils/constants/gt/constants';
 import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFromLVal';
 import { trackOverridingVariable } from '../tracking/trackOverridingVariable';
+import { createErrorLocation } from '../../utils/errors';
 
 /**
  * inject parameters into invocation of translation function
@@ -30,7 +31,7 @@ export function injectCallbackFunctionParameters(
 
   // Get the canonical function name
   const { canonicalName, type } = getTrackedVariable(
-    state.importTracker,
+    state.scopeTracker,
     namespaceName,
     functionName
   );
@@ -48,7 +49,7 @@ export function injectCallbackFunctionParameters(
   ) {
     // Track as an overriding variable
     for (const identifier of identifiers) {
-      trackOverridingVariable(identifier, state.importTracker.scopeTracker);
+      trackOverridingVariable(identifier, state.scopeTracker);
     }
     return;
   }
@@ -56,7 +57,8 @@ export function injectCallbackFunctionParameters(
   // There can only be one callback defined for const gt = useGT()
   if (identifiers.length !== 1) {
     throw new Error(
-      `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}`
+      `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}` +
+        createErrorLocation(varDeclarator.id)
     );
   }
   const identifier = identifiers[0];
@@ -69,11 +71,11 @@ export function injectCallbackFunctionParameters(
   }
 
   // Look up identifier
-  const id =
-    state.importTracker.scopeTracker.getVariable(identifier)?.identifier;
+  const id = state.scopeTracker.getVariable(identifier)?.identifier;
   if (!id) {
     throw new Error(
-      `[GT_PLUGIN] No translation callback variable found for ${identifier}`
+      `[GT_PLUGIN] No translation callback variable found for ${identifier}` +
+        createErrorLocation(varDeclarator.id)
     );
   }
   // Inject into the callees

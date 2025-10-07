@@ -12,11 +12,11 @@ export function processCatchClause(
 ): VisitNode<t.Node, t.CatchClause> {
   return {
     enter(path) {
-      state.importTracker.enterScope();
-      trackCatchClause(state.importTracker.scopeTracker, path.node);
+      state.scopeTracker.enterScope();
+      trackCatchClause(state.scopeTracker, path.node);
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

@@ -6,9 +6,12 @@ import { TransformState } from '../state/types';
 export function checkForErrors(state: TransformState): void {
   if (state.errorTracker.getErrors().length > 0) {
     for (const error of state.errorTracker.getErrors()) {
-      state.logger.logError(error);
+      state.logger.logError(
+        state.settings.filename
+          ? error.replace('{filename}', state.settings.filename)
+          : error
+      );
     }
-
     throw new Error(
       `[GT Unplugin] Encountered ${state.errorTracker.getErrors().length} errors while processing ${state.settings.filename}.`
     );

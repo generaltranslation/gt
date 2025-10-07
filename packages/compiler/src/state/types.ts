@@ -1,9 +1,9 @@
 // Core modules
 import { StringCollector } from './StringCollector';
-import { ImportTracker } from './ImportTracker';
 import { PluginSettings } from './config';
 import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
+import { ScopeTracker } from './ScopeTracker';
 /**
  * Plugin state for processing files
  * Matches the Rust TransformVisitor structure
@@ -11,7 +11,7 @@ import { ErrorTracker } from './ErrorTracker';
 export interface TransformState {
   settings: PluginSettings;
   stringCollector: StringCollector;
-  importTracker: ImportTracker;
+  scopeTracker: ScopeTracker;
   logger: Logger;
   errorTracker: ErrorTracker;
   statistics: {

@@ -12,11 +12,11 @@ export function processForOfStatement(
 ): VisitNode<t.Node, t.ForOfStatement> {
   return {
     enter(path) {
-      state.importTracker.enterScope();
-      trackForDeclaration(state.importTracker.scopeTracker, path.node);
+      state.scopeTracker.enterScope();
+      trackForDeclaration(state.scopeTracker, path.node);
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

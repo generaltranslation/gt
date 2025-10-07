@@ -6,6 +6,7 @@ import { GT_FUNCTIONS_TO_CALLBACKS } from '../../utils/constants/gt/constants';
 import { isGTFunctionWithCallbacks } from '../../utils/constants/gt/helpers';
 import { getTrackedVariable } from '../getTrackedVariable';
 import { getCalleeNameFromExpressionWrapper } from '../../utils/getCalleeNameFromExpressionWrapper';
+import { createErrorLocation } from '../../utils/errors';
 
 /**
  * Track variable assignments.
@@ -38,7 +39,7 @@ export function trackVariableDeclarator(
 
   // Get the canonical function name
   const { canonicalName, type } = getTrackedVariable(
-    state.importTracker,
+    state.scopeTracker,
     namespaceName,
     functionName
   );
@@ -62,7 +63,8 @@ export function trackVariableDeclarator(
     // There can only be one callback defined for const gt = useGT()
     if (identifiers.length !== 1) {
       throw new Error(
-        `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}`
+        `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}` +
+          createErrorLocation(varDeclarator.id)
       );
     }
     const identifier = identifiers[0];
@@ -71,7 +73,7 @@ export function trackVariableDeclarator(
     const counterId = state.stringCollector.incrementCounter();
 
     // Track as a callback variables
-    state.importTracker.scopeTracker.trackTranslationCallbackVariable(
+    state.scopeTracker.trackTranslationCallbackVariable(
       identifier,
       callbackFunctionName,
       counterId
@@ -79,7 +81,7 @@ export function trackVariableDeclarator(
   } else {
     // Track as an overriding variable
     for (const identifier of identifiers) {
-      trackOverridingVariable(identifier, state.importTracker.scopeTracker);
+      trackOverridingVariable(identifier, state.scopeTracker);
     }
   }
 }

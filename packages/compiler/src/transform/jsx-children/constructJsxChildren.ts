@@ -32,6 +32,7 @@ import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import { getBranchComponentParameters } from './utils/getBranchComponentParameters';
 import { validateNameFieldForVarComponent } from './validation/validateNameFieldForVarComponent';
 import { validateUnaryExpression } from './validation/validateUnaryExpression';
+import { createErrorLocation } from '../../utils/errors';
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object
@@ -67,7 +68,8 @@ export function _constructJsxChildren(
       // Validate child
       if (!validateChildrenElement(child)) {
         errors.push(
-          `Failed to construct JsxChildren! Child must be an expression`
+          `Failed to construct JsxChildren! Child must be an expression` +
+            (child && createErrorLocation(child))
         );
         return { errors };
       }
@@ -148,7 +150,8 @@ function constructJsxChild(
   } else {
     // Other cases fail
     errors.push(
-      `Failed to construct JsxChild! Child must be a valid JSX child`
+      `Failed to construct JsxChild! Child must be a valid JSX child` +
+        createErrorLocation(child)
     );
     return { errors };
   }
@@ -177,7 +180,8 @@ function constructJsxElement(
   const firstArg = callExpr.arguments[0];
   if (!t.isExpression(firstArg)) {
     errors.push(
-      `Failed to construct JsxElement! First argument must be an expression`
+      `Failed to construct JsxElement! First argument must be an expression` +
+        createErrorLocation(callExpr.arguments[0])
     );
     return { errors };
   }
@@ -187,14 +191,15 @@ function constructJsxElement(
     getCalleeNameFromJsxExpressionParam(firstArg);
   if (!functionName) {
     errors.push(
-      `Failed to construct JsxElement! First argument must be a valid function`
+      `Failed to construct JsxElement! First argument must be a valid function` +
+        createErrorLocation(callExpr.arguments[0])
     );
     return { errors };
   }
 
   // Get the canonical function name
   const { canonicalName, type } = getTrackedVariable(
-    state.importTracker,
+    state.scopeTracker,
     namespaceName,
     functionName
   );
@@ -227,7 +232,8 @@ function constructJsxElement(
     // Check that this is a gt component
     if (!isGTComponent(canonicalName)) {
       errors.push(
-        `Failed to construct JsxElement! ${canonicalName} is not a valid GT component`
+        `Failed to construct JsxElement! ${canonicalName} is not a valid GT component` +
+          createErrorLocation(callExpr.arguments[0])
       );
       return { errors };
     }
@@ -237,7 +243,8 @@ function constructJsxElement(
     // Handle fragment + special react components
     if (!isReactComponent(canonicalName)) {
       errors.push(
-        `Failed to construct JsxElement! ${canonicalName} is not a valid React component`
+        `Failed to construct JsxElement! ${canonicalName} is not a valid React component` +
+          createErrorLocation(callExpr.arguments[0])
       );
       return { errors };
     }
@@ -310,13 +317,17 @@ function constructGTProp(
 
   // Validate Parameters
   if (args.length < 2) {
-    errors.push('Failed to construct GTProp! Missing parameters');
+    errors.push(
+      'Failed to construct GTProp! Missing parameters' +
+        createErrorLocation(args[0])
+    );
     return { errors };
   }
   const parameters = args[1];
   if (!t.isObjectExpression(parameters)) {
     errors.push(
-      'Failed to construct GTProp! Parameter field must be an object expression'
+      'Failed to construct GTProp! Parameter field must be an object expression' +
+        createErrorLocation(args[1])
     );
     return { errors };
   }
@@ -389,13 +400,17 @@ function constructVariable(
   const errors: string[] = [];
   // Validate Parameters
   if (args.length < 2) {
-    errors.push('Failed to construct GTProp! Missing parameters');
+    errors.push(
+      'Failed to construct GTProp! Missing parameters' +
+        createErrorLocation(args[0])
+    );
     return { errors };
   }
   const parameters = args[1];
   if (!t.isObjectExpression(parameters)) {
     errors.push(
-      'Failed to construct GTProp! Parameter field must be an object expression'
+      'Failed to construct GTProp! Parameter field must be an object expression' +
+        createErrorLocation(args[1])
     );
     return { errors };
   }

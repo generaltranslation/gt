@@ -10,10 +10,10 @@ export function processScopeChange(
 ): VisitNode<t.Node, t.Node> {
   return {
     enter() {
-      state.importTracker.enterScope();
+      state.scopeTracker.enterScope();
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

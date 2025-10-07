@@ -11,6 +11,6 @@ export function processAssignmentExpression(
   state: TransformState
 ): VisitNode<t.Node, t.AssignmentExpression> {
   return (path) => {
-    trackAssignmentExpression(state.importTracker.scopeTracker, path.node);
+    trackAssignmentExpression(state.scopeTracker, path.node);
   };
 }

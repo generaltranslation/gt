@@ -12,11 +12,11 @@ export function processArrowFunctionExpression(
 ): VisitNode<t.Node, t.ArrowFunctionExpression> {
   return {
     enter(path) {
-      state.importTracker.enterScope();
-      trackFunctionParams(path.node.params, state.importTracker.scopeTracker);
+      state.scopeTracker.enterScope();
+      trackFunctionParams(path.node.params, state.scopeTracker);
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

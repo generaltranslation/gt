@@ -12,11 +12,11 @@ export function processClassDeclaration(
 ): VisitNode<t.Node, t.ClassDeclaration> {
   return {
     enter(path) {
-      trackClassDeclaration(state.importTracker.scopeTracker, path.node);
-      state.importTracker.enterScope();
+      trackClassDeclaration(state.scopeTracker, path.node);
+      state.scopeTracker.enterScope();
     },
     exit() {
-      state.importTracker.exitScope();
+      state.scopeTracker.exitScope();
     },
   };
 }

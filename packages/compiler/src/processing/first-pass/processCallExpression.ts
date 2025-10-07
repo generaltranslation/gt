@@ -25,6 +25,7 @@ import { validateTranslationComponentArgs } from '../../transform/validation/val
 import { hashSource } from 'generaltranslation/id';
 import { registerTranslationComponent } from '../../transform/registration/registerTranslationComponent';
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
+import { createErrorLocation } from '../../utils/errors';
 
 /**
  * Process call expressions
@@ -49,7 +50,7 @@ export function processCallExpression(
 
     // Get the canonical function name
     const { canonicalName, identifier, type } = getTrackedVariable(
-      state.importTracker,
+      state.scopeTracker,
       namespaceName,
       functionName
     );
@@ -194,14 +195,16 @@ function handleReactInvocation(
   // Check if it contains a GT component (first argument)
   if (callExpr.arguments.length === 0) {
     state.errorTracker.addError(
-      'React invocation must have at least one argument'
+      'React invocation must have at least one argument' +
+        createErrorLocation(callExpr)
     );
     return;
   }
   const firstArg = callExpr.arguments[0];
   if (!t.isExpression(firstArg)) {
     state.errorTracker.addError(
-      'React invocation first argument must be an expression'
+      'React invocation first argument must be an expression' +
+        createErrorLocation(callExpr)
     );
     return;
   }
@@ -211,13 +214,14 @@ function handleReactInvocation(
     getCalleeNameFromJsxExpressionParam(firstArg);
   if (!functionName) {
     state.errorTracker.addError(
-      'React invocation first argument must be a function'
+      'React invocation first argument must be a function' +
+        createErrorLocation(callExpr)
     );
     return;
   }
   // Get the canonical function name
   const { canonicalName, type } = getTrackedVariable(
-    state.importTracker,
+    state.scopeTracker,
     namespaceName,
     functionName
   );

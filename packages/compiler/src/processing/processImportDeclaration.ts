@@ -10,6 +10,6 @@ export function processImportDeclaration(
   state: TransformState
 ): VisitNode<t.Node, t.ImportDeclaration> {
   return (path) => {
-    trackImportDeclaration(state.importTracker.scopeTracker, path.node);
+    trackImportDeclaration(state.scopeTracker, path.node);
   };
 }

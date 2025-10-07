@@ -8,6 +8,7 @@ import { isTranslationComponent } from '../../utils/constants/gt/helpers';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { injectTComponentParameters } from '../../transform/injection/injectTComponentParameters';
+import { createErrorLocation } from '../../utils/errors';
 /**
  * Process call expression:
  */
@@ -27,7 +28,7 @@ export function processCallExpression(
 
     // Get the canonical function name
     const { canonicalName, type } = getTrackedVariable(
-      state.importTracker,
+      state.scopeTracker,
       namespaceName,
       functionName
     );
@@ -66,14 +67,16 @@ function handleReactInvocation(
   // Check if it contains a GT component (first argument)
   if (callExpr.arguments.length === 0) {
     state.errorTracker.addError(
-      'React invocation must have at least one argument'
+      'React invocation must have at least one argument' +
+        createErrorLocation(callExpr)
     );
     return;
   }
   const firstArg = callExpr.arguments[0];
   if (!t.isExpression(firstArg)) {
     state.errorTracker.addError(
-      'React invocation first argument must be an expression'
+      'React invocation first argument must be an expression' +
+        createErrorLocation(callExpr)
     );
     return;
   }
@@ -83,13 +86,14 @@ function handleReactInvocation(
     getCalleeNameFromJsxExpressionParam(firstArg);
   if (!functionName) {
     state.errorTracker.addError(
-      'React invocation first argument must be a function'
+      'React invocation first argument must be a function' +
+        createErrorLocation(callExpr)
     );
     return;
   }
   // Get the canonical function name
   const { canonicalName, type } = getTrackedVariable(
-    state.importTracker,
+    state.scopeTracker,
     namespaceName,
     functionName
   );
