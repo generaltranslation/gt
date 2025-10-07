@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
-import { getObjectPropertyFromObjectExpression } from '../../../utils/jsx/getObjectPropertyFromObjectExpression';
-import { getStringLiteralFromExpression } from '../../../utils/jsx/getStringLiteralFromExpression';
+import { getObjectPropertyFromObjectExpression } from '../../../utils/parsing/getObjectPropertyFromObjectExpression';
+import { getStringLiteralFromExpression } from '../../../utils/parsing/getStringLiteralFromExpression';
 import { createErrorLocation } from '../../../utils/errors';
 
 /**

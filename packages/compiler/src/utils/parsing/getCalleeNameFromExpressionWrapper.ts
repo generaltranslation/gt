@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { getCalleeNameFromExpression } from './jsx/getCalleeNameFromExpression';
+import { getCalleeNameFromExpression } from './getCalleeNameFromExpression';
 /**
  * Get the callee name from an expression: ... = useGT();
  */

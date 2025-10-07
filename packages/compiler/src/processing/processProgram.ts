@@ -13,6 +13,7 @@ export function processProgram(
   return {
     enter() {
       state.scopeTracker = new ScopeTracker();
+      state.stringCollector.resetCounter();
     },
   };
 }

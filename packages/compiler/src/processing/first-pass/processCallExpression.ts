@@ -5,7 +5,7 @@ import {
   isTranslationComponent,
   isTranslationFunctionCallback,
 } from '../../utils/constants/gt/helpers';
-import { getCalleeNameFromExpression } from '../../utils/jsx/getCalleeNameFromExpression';
+import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import {
   GT_ALL_FUNCTIONS,
   GT_CALLBACK_FUNCTIONS,

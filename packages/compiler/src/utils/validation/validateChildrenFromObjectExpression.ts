@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
 import { GT_COMPONENT_TYPES } from '../constants/gt/constants';
-import { getObjectPropertyFromObjectExpression } from '../jsx/getObjectPropertyFromObjectExpression';
+import { getObjectPropertyFromObjectExpression } from '../parsing/getObjectPropertyFromObjectExpression';
 
 /**
  * Given an object expression validates and extracts children property

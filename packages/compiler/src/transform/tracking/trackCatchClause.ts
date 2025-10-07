@@ -1,6 +1,6 @@
 import { ScopeTracker } from '../../state/ScopeTracker';
 import * as t from '@babel/types';
-import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFromLVal';
+import { extractIdentifiersFromLVal } from '../../utils/parsing/extractIdentifiersFromLVal';
 import { trackOverridingVariable } from './trackOverridingVariable';
 
 /**

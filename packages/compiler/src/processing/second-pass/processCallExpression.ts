@@ -2,7 +2,7 @@ import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
-import { getCalleeNameFromExpression } from '../../utils/jsx/getCalleeNameFromExpression';
+import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isTranslationComponent } from '../../utils/constants/gt/helpers';
 import { isReactFunction } from '../../utils/constants/react/helpers';

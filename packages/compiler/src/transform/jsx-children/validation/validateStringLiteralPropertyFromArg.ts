@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { getObjectPropertyFromObjectExpression } from '../../../utils/jsx/getObjectPropertyFromObjectExpression';
+import { getObjectPropertyFromObjectExpression } from '../../../utils/parsing/getObjectPropertyFromObjectExpression';
 
 /**
  * Given (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[] extracts property and validates

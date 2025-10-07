@@ -29,7 +29,7 @@ export function validateIdentifier(
   // Check that this is a valid special identifier (undefined, Nan, etc.)
   if (!isOtherIdentifier(identifier.name)) {
     errors.push(
-      `Cannot construct JsxChildren with a variable. Got: ${identifier.name}.` +
+      `Cannot construct JsxChildren with a variable. Got: ${identifier.name}. ` +
         createErrorLocation(identifier)
     );
     return { errors };

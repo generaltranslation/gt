@@ -1,6 +1,6 @@
 // Core modules
 import { StringCollector } from './StringCollector';
-import { PluginSettings } from './config';
+import { PluginSettings } from '../config';
 import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
 import { ScopeTracker } from './ScopeTracker';

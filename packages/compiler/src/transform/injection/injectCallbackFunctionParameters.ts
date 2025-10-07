@@ -1,10 +1,10 @@
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import { getTrackedVariable } from '../getTrackedVariable';
-import { getCalleeNameFromExpressionWrapper } from '../../utils/getCalleeNameFromExpressionWrapper';
+import { getCalleeNameFromExpressionWrapper } from '../../utils/parsing/getCalleeNameFromExpressionWrapper';
 import { isGTFunctionWithCallbacks } from '../../utils/constants/gt/helpers';
 import { GT_FUNCTIONS_WITH_CALLBACKS } from '../../utils/constants/gt/constants';
-import { extractIdentifiersFromLVal } from '../../utils/jsx/extractIdentifiersFromLVal';
+import { extractIdentifiersFromLVal } from '../../utils/parsing/extractIdentifiersFromLVal';
 import { trackOverridingVariable } from '../tracking/trackOverridingVariable';
 import { createErrorLocation } from '../../utils/errors';
 

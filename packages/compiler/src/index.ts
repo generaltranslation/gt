@@ -4,19 +4,17 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { StringCollector } from './state/StringCollector';
-import { PluginConfig, PluginSettings } from './state/config';
-import { Logger } from './state/Logger';
+import { PluginConfig } from './config';
 
 // Import transformation functions
-import { performSecondPassTransformation } from './transform/transform';
-import { TransformState } from './state/types';
-import { processCallExpression } from './processing/first-pass/processCallExpression';
-import { ErrorTracker } from './state/ErrorTracker';
+import { processCallExpression as processCallExpressionFirstPass } from './processing/first-pass/processCallExpression';
+import { processCallExpression as processCallExpressionSecondPass } from './processing/second-pass/processCallExpression';
 import { basePass } from './passes/basePass';
-import { checkForErrors } from './passes/checkForErrors';
-import { processVariableDeclarator } from './processing/first-pass/processVariableDeclarator';
-import { ScopeTracker } from './state/ScopeTracker';
+import { handleErrors } from './passes/handleErrors';
+import { processVariableDeclarator as processVariableDeclaratorFirstPass } from './processing/first-pass/processVariableDeclarator';
+import { processVariableDeclarator as processVariableDeclaratorSecondPass } from './processing/second-pass/processVariableDeclarator';
+import { InvalidLibraryUsageError } from './passes/handleErrors';
+import { initializeState } from './state/utils/initializeState';
 
 /**
  * TODO:
@@ -111,10 +109,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         );
       },
       transform(code: string, id: string) {
+        // Initialize processing state
+        const state = initializeState(options, id);
         try {
-          // Initialize processing state
-          const state = initializeState(options, id);
-
           // Skip transformation if not needed
           if (
             state.settings.disableBuildChecks &&
@@ -127,6 +124,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             console.log('[GT_PLUGIN] ===============================');
             console.log('[GT_PLUGIN]         PASS 1');
             console.log('[GT_PLUGIN] ===============================');
+            console.log(code);
           }
 
           // Parse the code into AST
@@ -142,84 +140,61 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             // Base configuration
             ...basePass(state),
             // const gt = useGT();
-            CallExpression: processCallExpression(state),
+            CallExpression: processCallExpressionFirstPass(state),
             // let T = ...
-            VariableDeclarator: processVariableDeclarator(state),
+            VariableDeclarator: processVariableDeclaratorFirstPass(state),
           });
 
-          // Check for errors
-          checkForErrors(state);
+          // Handle errors
+          if (handleErrors(state)) {
+            return null;
+          }
 
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
-          const hasTransformations = true; // TODO: calculate this
-          if (state.settings.compileTimeHash) {
-            performSecondPassTransformation(ast, state);
+          const hasTransformations = state.stringCollector.hasContent();
+          if (!state.settings.compileTimeHash) {
+            return null;
           }
+
+          if (state.settings.filename?.endsWith('page.tsx')) {
+            console.log('[GT_PLUGIN] ===============================');
+            console.log('[GT_PLUGIN]         PASS 2');
+            console.log('[GT_PLUGIN] ===============================');
+          }
+
+          // Complete second-pass traversal matching Rust Fold trait
+          traverse(ast, {
+            ...basePass(state),
+            // const gt = useGT();
+            CallExpression: processCallExpressionSecondPass(state),
+            // let T = ...
+            VariableDeclarator: processVariableDeclaratorSecondPass(state),
+          });
 
           // Generate code if transformations were made
-          if (hasTransformations) {
-            // Validate AST before generation
-            try {
-              const result = generate(ast, {
-                retainLines: true,
-                compact: false,
-              });
-              return {
-                code: result.code,
-                map: result.map,
-              };
-            } catch (generateError) {
-              if (id.endsWith('page.tsx')) {
-                console.error(
-                  '[GT Unplugin] Code generation error:',
-                  generateError
-                );
-              }
-              // Return original code on generation error
-              return null;
-            }
+          if (!hasTransformations) {
+            return null;
           }
 
-          // No transformations needed
-          return null;
+          // Generate code
+          return generate(ast, {
+            retainLines: true,
+            compact: false,
+          });
         } catch (error) {
-          if (id.endsWith('page.tsx')) {
-            console.error(`[GT Unplugin] Error processing ${id}:`, error);
+          // If the error is an instance of InvalidLibraryUsageError, throw it
+          if (error instanceof InvalidLibraryUsageError) {
+            throw error;
           }
-          // Return original code on error
+
+          // Otherwise, log the error
+          state.logger.logError(`[GT_PLUGIN] Error processing ${id}: ${error}`);
           return null;
         }
       },
     };
   }
 );
-
-/**
- * Initialize processing state for a file
- */
-function initializeState(
-  options: GTUnpluginOptions,
-  filename: string
-): TransformState {
-  const settings: PluginSettings = {
-    logLevel: options.logLevel || 'warn',
-    compileTimeHash: options.compileTimeHash || false,
-    disableBuildChecks: options.disableBuildChecks || false,
-    filename: filename,
-  };
-
-  return {
-    settings,
-    stringCollector: new StringCollector(),
-    scopeTracker: new ScopeTracker(),
-    logger: new Logger(settings.logLevel),
-    errorTracker: new ErrorTracker(),
-    statistics: {
-      jsxElementCount: 0,
-      dynamicContentViolations: 0,
-    },
-  };
-}
 
 // Export the unplugin with different bundler integrations
 export default gtUnplugin;

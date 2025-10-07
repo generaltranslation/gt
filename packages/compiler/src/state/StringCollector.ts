@@ -158,6 +158,18 @@ export class StringCollector {
   }
 
   /**
+   * Has content
+   */
+  hasContent(): boolean {
+    return (
+      this.contentAggregators.size +
+        this.jsxAggregators.size +
+        this.hashAggregators.size >
+      0
+    );
+  }
+
+  /**
    * Helper convert to string
    */
   serialize(): any {

@@ -1,8 +1,8 @@
 import * as t from '@babel/types';
 import { isGTImportSource } from '../../utils/constants/gt/helpers';
-import { ScopeTracker } from '../../state/ScopeTracker';
 import { GT_ALL_FUNCTIONS } from '../../utils/constants/gt/constants';
 import { isReactImportSource } from '../../utils/constants/react/helpers';
+import { TransformState } from '../../state/types';
 
 /**
  * Track import declarations for GT and React e.g. import { T, Var, useGT } from 'gt-next'
@@ -10,24 +10,16 @@ import { isReactImportSource } from '../../utils/constants/react/helpers';
  * @param importDecl - Import declaration to track
  */
 export function trackImportDeclaration(
-  scopeTracker: ScopeTracker,
+  state: TransformState,
   importDecl: t.ImportDeclaration
 ): void {
   for (const specifier of importDecl.specifiers) {
     if (t.isImportSpecifier(specifier)) {
-      handleImportSpecifier(scopeTracker, specifier, importDecl.source.value);
+      handleImportSpecifier(state, specifier, importDecl.source.value);
     } else if (t.isImportDefaultSpecifier(specifier)) {
-      handleImportDefaultSpecifier(
-        scopeTracker,
-        specifier,
-        importDecl.source.value
-      );
+      handleImportDefaultSpecifier(state, specifier, importDecl.source.value);
     } else {
-      handleImportNamespaceSpecifier(
-        scopeTracker,
-        specifier,
-        importDecl.source.value
-      );
+      handleImportNamespaceSpecifier(state, specifier, importDecl.source.value);
     }
   }
 }
@@ -37,7 +29,7 @@ export function trackImportDeclaration(
  * import { T, Var, useGT } from 'gt-next'
  */
 function handleImportSpecifier(
-  scopeTracker: ScopeTracker,
+  state: TransformState,
   importSpecifier: t.ImportSpecifier,
   importSource: string
 ): void {
@@ -46,13 +38,13 @@ function handleImportSpecifier(
     ? importSpecifier.imported.name
     : importSpecifier.imported.value;
   if (isGTImportSource(importSource)) {
-    scopeTracker.trackTranslationVariable(
+    state.scopeTracker.trackTranslationVariable(
       alias,
       originalName as GT_ALL_FUNCTIONS,
       0
     );
   } else if (isReactImportSource(importSource)) {
-    scopeTracker.trackReactVariable(alias, originalName, 0);
+    state.scopeTracker.trackReactVariable(alias, originalName, 0);
   }
 }
 
@@ -61,13 +53,13 @@ function handleImportSpecifier(
  * import GT from 'gt-next'
  */
 function handleImportDefaultSpecifier(
-  scopeTracker: ScopeTracker,
+  state: TransformState,
   importNamespaceSpecifier: t.ImportDefaultSpecifier,
   importSource: string
 ): void {
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {
-    scopeTracker.addNamespaceImport(namespace);
+    state.scopeTracker.addNamespaceImport(namespace);
   } else if (isReactImportSource(importSource)) {
     // TODO: track React import default
     // scopeTracker.addNamespaceImport(namespace);
@@ -79,13 +71,13 @@ function handleImportDefaultSpecifier(
  * import * as GT from 'gt-next'
  */
 function handleImportNamespaceSpecifier(
-  scopeTracker: ScopeTracker,
+  state: TransformState,
   importNamespaceSpecifier: t.ImportNamespaceSpecifier,
   importSource: string
 ): void {
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {
-    scopeTracker.addNamespaceImport(namespace);
+    state.scopeTracker.addNamespaceImport(namespace);
   } else if (isReactImportSource(importSource)) {
     // TODO: track React import namespace
     // scopeTracker.addNamespaceImport(namespace);

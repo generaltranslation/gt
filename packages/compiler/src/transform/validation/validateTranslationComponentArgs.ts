@@ -1,7 +1,7 @@
 import { TransformState } from '../../state/types';
 import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import * as t from '@babel/types';
-import { getObjectPropertyFromObjectExpression } from '../../utils/jsx/getObjectPropertyFromObjectExpression';
+import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { validateExpressionIsStringLiteral } from '../../utils/validation/validateExpressionIsStringLiteral';
 import { JsxChildren } from 'generaltranslation/types';
 import { constructJsxChildren } from '../jsx-children';

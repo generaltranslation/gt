@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { LogLevel as LogLevelType } from './config';
+import { LogLevel as LogLevelType } from '../config';
 
 export const LogLevel = {
   Silent: 'silent' as const,
