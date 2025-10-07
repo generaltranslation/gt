@@ -26,12 +26,13 @@ export function getTrackedVariable(
 
   // If namespace, no alias resolution needed
   if (namespaceName) {
-    if (!importTracker.namespaceImports.has(namespaceName))
+    if (!importTracker.scopeTracker.hasNamespaceImport(namespaceName)) {
       return {
         canonicalName: undefined,
         identifier: undefined,
         type: undefined,
       };
+    }
     return {
       canonicalName: functionName,
       identifier: undefined,
