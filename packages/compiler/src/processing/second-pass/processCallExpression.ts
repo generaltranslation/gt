@@ -1,14 +1,24 @@
 import { VisitNode } from '@babel/traverse';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
-import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import {
+  GT_ALL_FUNCTIONS,
+  GT_CALLBACK_FUNCTIONS,
+  GT_OTHER_FUNCTIONS,
+} from '../../utils/constants/gt/constants';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
-import { isTranslationComponent } from '../../utils/constants/gt/helpers';
+import {
+  isTranslationComponent,
+  isTranslationFunctionCallback,
+} from '../../utils/constants/gt/helpers';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { injectTComponentParameters } from '../../transform/injection/injectTComponentParameters';
 import { createErrorLocation } from '../../utils/errors';
+import { injectUseGTCallbackParameters } from '../../transform/injection/callbacks/injectUseGTCallbackParameters';
+import { injectUseTranslationsCallbackParameters } from '../../transform/injection/callbacks/injectUseTranslationsCallbackParameters';
+import { injectUseMessagesCallbackParameters } from '../../transform/injection/callbacks/injectUseMessagesCallbackParameters';
 /**
  * Process call expression:
  */
@@ -37,7 +47,13 @@ export function processCallExpression(
     }
 
     // Handle each respective case
-    if (type === 'react' && isReactFunction(canonicalName)) {
+    if (
+      type === 'generaltranslation' &&
+      isTranslationFunctionCallback(canonicalName)
+    ) {
+      // Handle translation function callbacks (useGT_callback, etc.)
+      handleTranslationCallbackInvocation(callExpr, state, canonicalName);
+    } else if (type === 'react' && isReactFunction(canonicalName)) {
       // Handle react variables (jsxDEV, etc.)
       handleReactInvocation(callExpr, state);
     } else if (
@@ -53,6 +69,34 @@ export function processCallExpression(
 /* =============================== */
 /* Handlers */
 /* =============================== */
+
+/**
+ * Handle general translation variables
+ * useGTCallback(), useTranslationsCallback(), useMessagesCallback(), etc.
+ */
+function handleTranslationCallbackInvocation(
+  callExpr: t.CallExpression,
+  state: TransformState,
+  canonicalName: GT_ALL_FUNCTIONS
+) {
+  // Handle translation function callbacks ()
+  switch (canonicalName) {
+    case GT_CALLBACK_FUNCTIONS.useGT_callback:
+    case GT_CALLBACK_FUNCTIONS.getGT_callback:
+      injectUseGTCallbackParameters(callExpr, state);
+      break;
+    case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
+    case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
+      injectUseTranslationsCallbackParameters(callExpr, state);
+      break;
+    case GT_CALLBACK_FUNCTIONS.useMessages_callback:
+    case GT_CALLBACK_FUNCTIONS.getMessages_callback:
+      injectUseMessagesCallbackParameters(callExpr, state);
+      break;
+    default:
+      return;
+  }
+}
 
 /**
  * Handle react function invocations

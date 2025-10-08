@@ -137,7 +137,8 @@ function handleUseGTCallback(
     state,
     useGTCallbackParams.content!,
     useGTCallbackParams.context,
-    useGTCallbackParams.id
+    useGTCallbackParams.id,
+    useGTCallbackParams.hash
   );
 }
 

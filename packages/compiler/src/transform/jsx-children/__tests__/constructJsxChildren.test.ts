@@ -3,13 +3,13 @@ import * as path from 'path';
 import { constructJsxChildren } from '../index';
 import { TransformState } from '../../../state/types';
 import { StringCollector } from '../../../state/StringCollector';
-import { ImportTracker } from '../../../state/ImportTracker';
-import { Logger } from '../../../state/logging';
+import { Logger } from '../../../state/Logger';
 import { ErrorTracker } from '../../../state/ErrorTracker';
-import { PluginSettings } from '../../../state/config';
 import { stripTField } from './stripTField';
 import { hashSource } from 'generaltranslation/id';
 import { JsxChildren } from 'generaltranslation/types';
+import { ScopeTracker } from '../../../state/ScopeTracker';
+import { PluginSettings } from '../../../config';
 
 // TODO: ignore error if its just keys out of order
 
@@ -32,9 +32,9 @@ function createTest(dirPath: string) {
     test(testName, () => {
       // Set up state
       const stringCollector = new StringCollector();
-      const importTracker = new ImportTracker();
       const logger = new Logger('silent');
       const errorTracker = new ErrorTracker();
+      const scopeTracker = new ScopeTracker();
       const settings: PluginSettings = {
         logLevel: 'silent',
         compileTimeHash: false,
@@ -44,7 +44,7 @@ function createTest(dirPath: string) {
       const state: TransformState = {
         settings,
         stringCollector,
-        importTracker,
+        scopeTracker,
         logger,
         errorTracker,
         statistics: {
@@ -54,7 +54,7 @@ function createTest(dirPath: string) {
       };
 
       stringCollector.unserialize(stateSeed.state.stringCollector);
-      importTracker.unserialize(stateSeed.state.importTracker);
+      scopeTracker.unserialize(stateSeed.state.scopeTracker);
 
       // Construct JsxChildren
       const result = constructJsxChildren(stateSeed.children, state);

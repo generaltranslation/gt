@@ -10,16 +10,25 @@ export function registerUseGTCallback(
   state: TransformState,
   content: string,
   context?: string,
-  id?: string
+  id?: string,
+  hash?: string
 ): void {
   // Calculate hash for the call expression
-  const hash = hashSource({ source: content, id, context, dataFormat: 'ICU' });
+  hash ||= hashSource({ source: content, id, context, dataFormat: 'ICU' });
 
-  // Add the translation content to the string collector
+  // Add the translation content to the string collector (under identifier mapping to useGT call)
   state.stringCollector.setTranslationContent(identifier, {
     message: content,
     hash,
     id,
     context,
+  });
+
+  // Increment counter so we can revisit this same invocation on second pass
+  const counterId = state.stringCollector.incrementCounter();
+
+  // Register the hash under this counter
+  state.stringCollector.setTranslationHash(counterId, {
+    hash,
   });
 }

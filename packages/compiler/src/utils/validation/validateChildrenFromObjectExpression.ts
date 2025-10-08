@@ -15,25 +15,25 @@ export function validateChildrenPropertyFromObjectExpression(
   const errors: string[] = [];
 
   // Get the children property
-  const childrenObjExpression = getObjectPropertyFromObjectExpression(
+  const childrenObjectProperty = getObjectPropertyFromObjectExpression(
     args,
     'children'
   );
-  if (!childrenObjExpression) {
+  if (!childrenObjectProperty) {
     return { errors, value: undefined };
   }
-  if (!t.isObjectProperty(childrenObjExpression)) {
+  if (!t.isObjectProperty(childrenObjectProperty)) {
     errors.push(
       `The children property of the <${GT_COMPONENT_TYPES.T}> component must be an object property`
     );
     return { errors };
   }
-  if (!t.isExpression(childrenObjExpression.value)) {
+  if (!t.isExpression(childrenObjectProperty.value)) {
     errors.push(
       `The children properties of the <${GT_COMPONENT_TYPES.T}> component must be an expression`
     );
     return { errors };
   }
 
-  return { errors, value: childrenObjExpression.value };
+  return { errors, value: childrenObjectProperty.value };
 }

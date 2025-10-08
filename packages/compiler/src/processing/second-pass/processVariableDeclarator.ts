@@ -2,7 +2,7 @@ import { TransformState } from '../../state/types';
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { trackVariableDeclarator } from '../../transform/tracking/trackVariableDeclarator';
-import { injectCallbackFunctionParameters } from '../../transform/injection/injectCallbackFunctionParameters';
+import { injectCallbackDeclaratorFunctionParameters } from '../../transform/injection/injectCallbackDeclaratorFunctionParameters';
 
 /**
  * Process variable assignments.
@@ -21,6 +21,6 @@ export function processVariableDeclarator(
 ): VisitNode<t.Node, t.VariableDeclarator> {
   return (path) => {
     trackVariableDeclarator(path.node, state);
-    injectCallbackFunctionParameters(path.node, state);
+    injectCallbackDeclaratorFunctionParameters(path.node, state);
   };
 }

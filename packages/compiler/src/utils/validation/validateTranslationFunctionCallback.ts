@@ -10,6 +10,7 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   errors: string[];
   content?: string;
   context?: string;
+  hash?: string;
   id?: string;
 } {
   const errors: string[] = [];
@@ -46,6 +47,7 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   // Validate second argument
   let context: string | undefined;
   let id: string | undefined;
+  let hash: string | undefined;
   if (callExpr.arguments.length === 1) return { errors, content };
   if (t.isObjectExpression(callExpr.arguments[1])) {
     const contextProperty = validatePropertyFromObjectExpression(
@@ -60,9 +62,15 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
     );
     errors.push(...idProperty.errors);
     id = idProperty.value;
+    const hashProperty = validatePropertyFromObjectExpression(
+      callExpr.arguments[1],
+      USEGT_CALLBACK_OPTIONS.$_hash
+    );
+    errors.push(...hashProperty.errors);
+    hash = hashProperty.value;
   }
 
-  return { errors, content, context, id };
+  return { errors, content, context, id, hash };
 }
 
 /**

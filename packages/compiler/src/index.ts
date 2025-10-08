@@ -20,8 +20,7 @@ import { initializeState } from './state/utils/initializeState';
  * TODO:
  * - Add tracking for special identifiers: undefined, Nan, etc.
  * - Add tracking for multiple namespaces (Required for handling React.Fragment)
- * - Whitespace handling
- * - For errors log the location of the error
+ * - Better error logging
  *
  * DONE:
  * - Add override tracking for classes
@@ -124,7 +123,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             console.log('[GT_PLUGIN] ===============================');
             console.log('[GT_PLUGIN]         PASS 1');
             console.log('[GT_PLUGIN] ===============================');
-            console.log(code);
           }
 
           // Parse the code into AST

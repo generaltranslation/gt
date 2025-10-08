@@ -17,7 +17,6 @@ export function injectTComponentParameters(
   if (!translationJsx) {
     return;
   }
-  console.log(`[GT_PLUGIN] inject <T> hash`, identifier);
 
   // Get second arg
   if (callExpr.arguments.length < 2 || !callExpr.arguments[1]) {

@@ -1807,102 +1807,101 @@
   },
   "state": {
     "stringCollector": {
-      "aggregators": [],
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
       "globalCallCounter": 0
     },
-    "importTracker": {
-      "scopeTracker": {
-        "nextScopeId": 3,
-        "currentScope": 2,
-        "scopeStack": [
-          0,
-          1
-        ],
-        "scopeInfo": {
-          "1": {
-            "id": 1,
-            "parentId": 0,
-            "depth": 0
-          },
-          "2": {
-            "id": 2,
-            "parentId": 1,
-            "depth": 2
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
           }
-        },
-        "scopedVariables": {
-          "_jsx": [
-            {
-              "scopeId": 0,
-              "canonicalName": "jsx",
-              "aliasName": "_jsx",
-              "isTranslationFunction": false,
-              "type": "react",
-              "identifier": 0
-            }
-          ],
-          "_jsxs": [
-            {
-              "scopeId": 0,
-              "canonicalName": "jsxs",
-              "aliasName": "_jsxs",
-              "isTranslationFunction": false,
-              "type": "react",
-              "identifier": 0
-            }
-          ],
-          "_Fragment": [
-            {
-              "scopeId": 0,
-              "canonicalName": "Fragment",
-              "aliasName": "_Fragment",
-              "isTranslationFunction": false,
-              "type": "react",
-              "identifier": 0
-            }
-          ],
-          "T": [
-            {
-              "scopeId": 0,
-              "canonicalName": "T",
-              "aliasName": "T",
-              "isTranslationFunction": true,
-              "type": "generaltranslation",
-              "identifier": 0
-            }
-          ],
-          "Plural": [
-            {
-              "scopeId": 0,
-              "canonicalName": "Plural",
-              "aliasName": "Plural",
-              "isTranslationFunction": true,
-              "type": "generaltranslation",
-              "identifier": 0
-            }
-          ],
-          "Branch": [
-            {
-              "scopeId": 0,
-              "canonicalName": "Branch",
-              "aliasName": "Branch",
-              "isTranslationFunction": true,
-              "type": "generaltranslation",
-              "identifier": 0
-            }
-          ],
-          "Var": [
-            {
-              "scopeId": 0,
-              "canonicalName": "Var",
-              "aliasName": "Var",
-              "isTranslationFunction": true,
-              "type": "generaltranslation",
-              "identifier": 0
-            }
-          ]
-        },
-        "namespaceImports": []
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_Fragment": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Fragment",
+            "aliasName": "_Fragment",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Plural": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Plural",
+            "aliasName": "Plural",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Branch": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Branch",
+            "aliasName": "Branch",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Var": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Var",
+            "aliasName": "Var",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
       },
       "namespaceImports": []
     }

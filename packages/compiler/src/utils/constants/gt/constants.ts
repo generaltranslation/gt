@@ -114,11 +114,8 @@ export const PLURAL_FORMS = new Set([
 export enum USEGT_CALLBACK_OPTIONS {
   $id = '$id',
   $context = '$context',
+  $_hash = '$_hash',
 }
-export const USEGT_CALLBACK_OPTION_NAMES = {
-  [USEGT_CALLBACK_OPTIONS.$id]: 'id',
-  [USEGT_CALLBACK_OPTIONS.$context]: 'context',
-};
 
 /**
  * Maps GT Component Types to their minified names

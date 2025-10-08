@@ -417,62 +417,61 @@
   },
   "state": {
     "stringCollector": {
-      "aggregators": [],
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
       "globalCallCounter": 0
     },
-    "importTracker": {
-      "scopeTracker": {
-        "nextScopeId": 6,
-        "currentScope": 5,
-        "scopeStack": [
-          0,
-          4
-        ],
-        "scopeInfo": {
-          "4": {
-            "id": 4,
-            "parentId": 0,
-            "depth": 0
-          },
-          "5": {
-            "id": 5,
-            "parentId": 4,
-            "depth": 2
+    "scopeTracker": {
+      "nextScopeId": 5,
+      "currentScope": 4,
+      "scopeStack": [
+        0,
+        3
+      ],
+      "scopeInfo": {
+        "3": {
+          "id": 3,
+          "parentId": 0,
+          "depth": 0
+        },
+        "4": {
+          "id": 4,
+          "parentId": 3,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
           }
-        },
-        "scopedVariables": {
-          "_jsx": [
-            {
-              "scopeId": 0,
-              "canonicalName": "jsx",
-              "aliasName": "_jsx",
-              "isTranslationFunction": false,
-              "type": "react",
-              "identifier": 0
-            }
-          ],
-          "_jsxs": [
-            {
-              "scopeId": 0,
-              "canonicalName": "jsxs",
-              "aliasName": "_jsxs",
-              "isTranslationFunction": false,
-              "type": "react",
-              "identifier": 0
-            }
-          ],
-          "T": [
-            {
-              "scopeId": 0,
-              "canonicalName": "T",
-              "aliasName": "T",
-              "isTranslationFunction": true,
-              "type": "generaltranslation",
-              "identifier": 0
-            }
-          ]
-        },
-        "namespaceImports": []
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
       },
       "namespaceImports": []
     }

@@ -107,7 +107,7 @@ export function validateChildrenProperty(
     return { errors };
   }
   const children = childrenValidation.value;
-  if (!children) {
+  if (children === undefined) {
     errors.push(`The <${GT_COMPONENT_TYPES.T}> component must have children`);
     return { errors };
   }
@@ -121,12 +121,12 @@ export function validateChildrenProperty(
   const value = validation.value;
 
   // Validate that the children are valid jsx children
-  if (!value) {
-    errors.push(
-      `The <${GT_COMPONENT_TYPES.T}> component must have jsx children`
-    );
-    return { errors };
-  }
+  // if (value === undefined) {
+  //   errors.push(
+  //     `The <${GT_COMPONENT_TYPES.T}> component must have jsx children`
+  //   );
+  //   return { errors };
+  // }
 
   return { errors, value };
 }

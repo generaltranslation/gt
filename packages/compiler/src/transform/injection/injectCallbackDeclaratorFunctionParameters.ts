@@ -12,7 +12,7 @@ import { createErrorLocation } from '../../utils/errors';
  * inject parameters into invocation of translation function
  * - useGT(messages=[{hash, message, id, context}])
  */
-export function injectCallbackFunctionParameters(
+export function injectCallbackDeclaratorFunctionParameters(
   varDeclarator: t.VariableDeclarator,
   state: TransformState
 ): void {
