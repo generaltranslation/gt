@@ -14,7 +14,10 @@ import { validateTemplateLiteral } from './validation/validateTemplateLiteral';
 import { validateChildrenElement } from './validation/validateChildrenElement';
 import { getCalleeNameFromJsxExpressionParam } from './utils/getCalleeNameFromJsxExpressionParam';
 import { getTrackedVariable } from '../getTrackedVariable';
-import { isReactComponent } from '../../utils/constants/react/helpers';
+import {
+  isReactComponent,
+  isReactFunction,
+} from '../../utils/constants/react/helpers';
 import { REACT_COMPONENTS } from '../../utils/constants/react/constants';
 import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs';
 import { IdObject } from './utils/id';
@@ -32,7 +35,11 @@ import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import { getBranchComponentParameters } from './utils/getBranchComponentParameters';
 import { validateNameFieldForVarComponent } from './validation/validateNameFieldForVarComponent';
 import { validateUnaryExpression } from './validation/validateUnaryExpression';
-import { createErrorLocation } from '../../utils/errors';
+import {
+  createErrorLocation,
+  generateDynamicContentErrorMessage,
+} from '../../utils/errors';
+import { validateJsxCall } from './validation/validateJsxCall';
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object
@@ -63,7 +70,7 @@ export function _constructJsxChildren(
       // Validate child
       if (!validateChildrenElement(child)) {
         errors.push(
-          `Failed to construct JsxChildren! Child must be an expression` +
+          generateDynamicContentErrorMessage() +
             (child && createErrorLocation(child))
         );
         return { errors };
@@ -150,8 +157,7 @@ function constructJsxChild(
   } else {
     // Other cases fail
     errors.push(
-      `Failed to construct JsxChild! Child must be a valid JSX child` +
-        createErrorLocation(child)
+      generateDynamicContentErrorMessage() + createErrorLocation(child)
     );
     return { errors };
   }
@@ -169,6 +175,13 @@ function constructJsxElement(
   id: IdObject
 ): { errors: string[]; value?: JsxElement | Variable } {
   const errors: string[] = [];
+
+  // Validate that this is a jsx call
+  const jsxValidation = validateJsxCall(callExpr, state);
+  errors.push(...jsxValidation);
+  if (jsxValidation.length > 0) {
+    return { errors };
+  }
 
   // Increment id
   id.increment();

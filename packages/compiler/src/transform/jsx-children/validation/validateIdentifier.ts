@@ -5,8 +5,10 @@ import {
   isOtherIdentifier,
 } from '../../../utils/constants/other/helpers';
 import { OTHER_IDENTIFIERS_ENUM } from '../../../utils/constants/other/constants';
-import { createErrorLocation } from '../../../utils/errors';
-
+import {
+  createErrorLocation,
+  generateDynamicContentErrorMessage,
+} from '../../../utils/errors';
 /**
  * Given an Identifier, stringifies it
  * @returns {string} - The stringified identifier
@@ -20,7 +22,7 @@ export function validateIdentifier(
   const overridingVariable = state.scopeTracker.getVariable(identifier.name);
   if (overridingVariable) {
     errors.push(
-      `Cannot construct JsxChildren with a variable. Got: ${identifier.name}. This variable is being overridden!` +
+      generateDynamicContentErrorMessage(identifier.name) +
         createErrorLocation(identifier)
     );
     return { errors };
@@ -29,7 +31,7 @@ export function validateIdentifier(
   // Check that this is a valid special identifier (undefined, Nan, etc.)
   if (!isOtherIdentifier(identifier.name)) {
     errors.push(
-      `Cannot construct JsxChildren with a variable. Got: ${identifier.name}. ` +
+      generateDynamicContentErrorMessage(identifier.name) +
         createErrorLocation(identifier)
     );
     return { errors };
@@ -38,7 +40,7 @@ export function validateIdentifier(
   // Check for invalid identifiers
   if (isInvalidIdentifier(identifier.name)) {
     errors.push(
-      `Cannot construct JsxChildren with a variable. Got: ${identifier.name}. This variable is an invalid identifier!` +
+      generateDynamicContentErrorMessage(identifier.name) +
         createErrorLocation(identifier)
     );
     return { errors };
