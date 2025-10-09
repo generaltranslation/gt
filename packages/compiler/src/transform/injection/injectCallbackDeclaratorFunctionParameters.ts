@@ -56,15 +56,23 @@ export function injectCallbackDeclaratorFunctionParameters(
 
   // There can only be one callback defined for const gt = useGT()
   if (identifiers.length !== 1) {
-    throw new Error(
-      `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}` +
+    state.logger.logError(
+      `Multiple identifiers found for GT function with callbacks: ${canonicalName}. Parameter injection failed.` +
         createErrorLocation(varDeclarator.id)
     );
+    return;
   }
   const identifier = identifiers[0];
 
   // Inject the parameters into the call expression
   const expression = getFunctionInvocation(varDeclarator);
+  if (!expression) {
+    state.logger.logError(
+      `No valid function invocation found for ${functionName}. Parameter injection failed.` +
+        createErrorLocation(varDeclarator.id)
+    );
+    return;
+  }
   if (expression.arguments.length > 0) {
     // Found existing arguments, skip injection
     return;
@@ -73,10 +81,11 @@ export function injectCallbackDeclaratorFunctionParameters(
   // Look up identifier
   const id = state.scopeTracker.getVariable(identifier)?.identifier;
   if (!id) {
-    throw new Error(
-      `[GT_PLUGIN] No translation callback variable found for ${identifier}` +
+    state.logger.logError(
+      `No translation callback variable found for ${identifier}. Parameter injection failed.` +
         createErrorLocation(varDeclarator.id)
     );
+    return;
   }
   // Inject into the callees
   switch (canonicalName) {
@@ -145,12 +154,11 @@ function injectUseGTParameters(
  */
 function getFunctionInvocation(
   varDeclarator: t.VariableDeclarator
-): t.CallExpression {
+): t.CallExpression | undefined {
   const expression = varDeclarator.init;
   if (!expression) {
-    throw new Error(
-      `[GT_PLUGIN] Expected expression, but no expression was found`
-    );
+    // failed
+    return;
   }
   if (t.isCallExpression(expression)) {
     return expression;
@@ -161,7 +169,4 @@ function getFunctionInvocation(
   ) {
     return expression.argument;
   }
-  throw new Error(
-    `[GT_PLUGIN] Expected call expression, got: ${expression.type}`
-  );
 }

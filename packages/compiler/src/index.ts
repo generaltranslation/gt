@@ -17,19 +17,6 @@ import { InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 
 /**
- * TODO:
- * - Add tracking for special identifiers: undefined, Nan, etc.
- * - Add tracking for multiple namespaces (Required for handling React.Fragment)
- * - Better error logging
- *
- * DONE:
- * - Add override tracking for classes
- * - Add tracking for Fragment component
- * - Add override tracking for assignment expressions let t = useGT(); t = undefined;
- * - Add override tracking for forLoop declaration (specifically: let gt of items; let gt in obj)
- * - Add override tracking for catch clause declaration
- * - Add override tracking for method declarations
- * - Add override tracking for parameter declarations
  *
  * First Pass:
  * - Collect + calculate all data
@@ -58,8 +45,6 @@ import { initializeState } from './state/utils/initializeState';
  * | | firstPassProcessingFunction.ts
  * | + second-pass
  * | | secondPassProcessingFunction.ts
- *
- *
  *
  * Transformation functions:
  * - Are AGNOSTIC to pass number
@@ -119,12 +104,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          if (id.endsWith('page.tsx')) {
-            console.log('[GT_PLUGIN] ===============================');
-            console.log('[GT_PLUGIN]         PASS 1');
-            console.log('[GT_PLUGIN] ===============================');
-          }
-
           // Parse the code into AST
           const ast = parser.parse(code, {
             sourceType: 'module',
@@ -149,15 +128,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
-          const hasTransformations = state.stringCollector.hasContent();
-          if (!state.settings.compileTimeHash) {
+          if (state.stringCollector.hasContent()) {
             return null;
-          }
-
-          if (state.settings.filename?.endsWith('page.tsx')) {
-            console.log('[GT_PLUGIN] ===============================');
-            console.log('[GT_PLUGIN]         PASS 2');
-            console.log('[GT_PLUGIN] ===============================');
           }
 
           // Complete second-pass traversal matching Rust Fold trait
@@ -168,11 +140,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             // let T = ...
             VariableDeclarator: processVariableDeclaratorSecondPass(state),
           });
-
-          // Generate code if transformations were made
-          if (!hasTransformations) {
-            return null;
-          }
 
           // Generate code
           return generate(ast, {
@@ -186,7 +153,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // Otherwise, log the error
-          state.logger.logError(`[GT_PLUGIN] Error processing ${id}: ${error}`);
+          state.logger.logError(`Error processing ${id}: ${error}`);
           return null;
         }
       },

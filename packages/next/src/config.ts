@@ -9,7 +9,7 @@ import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
   createBadFilepathWarning,
-  createUnsupportedLocalesWarning,
+  createGTCompilerUnresolvedWarning,
   deprecatedLocaleMappingWarning,
   devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
@@ -19,9 +19,7 @@ import {
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
-  unsupportedGetLocalePathBuildError,
 } from './errors/createErrors';
-import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import {
   getLocaleProperties,
   isValidLocale,
@@ -29,9 +27,9 @@ import {
 } from 'generaltranslation';
 import {
   rootParamStability,
-  swcPluginCompatible,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
+import { validateCompiler } from './config-dir/validateCompiler';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -174,9 +172,10 @@ export function withGTConfig(
   };
 
   // Merge experimentalSwcPluginOptions
-  const mergedExperimentalSwcPluginOptions = {
-    ...defaultWithGTConfigProps.experimentalSwcPluginOptions,
+  const mergedExperimentalCompilerOptions = {
+    ...defaultWithGTConfigProps.experimentalCompilerOptions,
     ...props.experimentalSwcPluginOptions,
+    ...props.experimentalCompilerOptions,
   };
 
   // precedence: input > env > config file > defaults
@@ -186,9 +185,12 @@ export function withGTConfig(
     ...envConfig,
     ...props,
     headersAndCookies: mergedHeadersAndCookies,
-    experimentalSwcPluginOptions: mergedExperimentalSwcPluginOptions,
+    experimentalCompilerOptions: mergedExperimentalCompilerOptions,
     _usingPlugin: true, // flag to indicate plugin usage
   };
+
+  // clear up any issues with the compiler options
+  validateCompiler(mergedConfig);
 
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
@@ -196,8 +198,9 @@ export function withGTConfig(
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
   if (
-    mergedConfig.experimentalSwcPluginOptions?.compileTimeHash &&
-    swcPluginCompatible
+    mergedConfig.experimentalCompilerOptions?.type === 'swc' &&
+    // Backwards compatibility, remove this condition in the future
+    mergedConfig.experimentalCompilerOptions?.compileTimeHash !== false
   ) {
     try {
       if (turboPackEnabled) {
@@ -208,8 +211,13 @@ export function withGTConfig(
         resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
       }
     } catch (error) {
-      console.error('Error resolving wasm filepath:', error);
+      console.error(
+        createGTCompilerUnresolvedWarning('swc'),
+        'Error message:',
+        error
+      );
       resolvedWasmFilePath = '';
+      mergedConfig.experimentalCompilerOptions.type = 'none';
     }
   }
 
@@ -485,18 +493,20 @@ export function withGTConfig(
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
 
-  const swcPluginEntry = resolvedWasmFilePath
-    ? [resolvedWasmFilePath, { ...mergedConfig.experimentalSwcPluginOptions }]
-    : null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars , no-unused-vars
+  const { type, ...compilerOptions } =
+    mergedConfig.experimentalCompilerOptions || {};
+
+  const swcPluginEntry =
+    mergedConfig.experimentalCompilerOptions?.type === 'swc'
+      ? [resolvedWasmFilePath, compilerOptions]
+      : null;
 
   const turboAliases = {
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
     'gt-next/_request': customGetLocalePath || '',
-    // ...(rootParamStability !== 'experimental' && {
-    //   'next/root-params': './_root-params',
-    // }),
   };
 
   // experimental.turbo is deprecated in next@15.3.0.
@@ -550,12 +560,10 @@ export function withGTConfig(
       ...(rootParamStability === 'experimental' && {
         rootParams: true,
       }),
-      // TODO: uncomment
-      // // SWC Plugin
-      // swcPlugins: [
-      //   ...(nextConfig.experimental?.swcPlugins || []),
-      //   ...(swcPluginEntry ? swcPluginEntry : []),
-      // ],
+      swcPlugins: [
+        ...(nextConfig.experimental?.swcPlugins || []),
+        ...(swcPluginEntry ? swcPluginEntry : []),
+      ],
       ...(turboPackEnabled &&
         experimentalTurbopack && {
           turbo: {
@@ -575,17 +583,28 @@ export function withGTConfig(
       // Only apply webpack aliases if we're using webpack (not Turbopack)
       if (!turboPackEnabled) {
         // Try to load GT compiler if available
-        try {
-          const {
-            webpack: gtUnplugin,
-          } = require('@generaltranslation/compiler');
-          webpackConfig.plugins.unshift(
-            gtUnplugin(mergedConfig.experimentalSwcPluginOptions || {})
-          );
-          console.log('GT Compiler loaded successfully');
-        } catch (e) {
-          console.warn('GT Compiler not available:', e);
+        if (
+          mergedConfig.experimentalCompilerOptions?.type === 'babel' &&
+          // Backwards compatibility, remove this condition in the future
+          mergedConfig.experimentalCompilerOptions?.compileTimeHash !== false
+        ) {
+          try {
+            const {
+              webpack: gtUnplugin,
+            } = require('@generaltranslation/compiler');
+            webpackConfig.plugins.unshift(
+              gtUnplugin(mergedConfig.experimentalCompilerOptions || {})
+            );
+          } catch (e) {
+            mergedConfig.experimentalCompilerOptions.type = 'none';
+            console.warn(
+              createGTCompilerUnresolvedWarning('babel'),
+              'Error message:',
+              e
+            );
+          }
         }
+
         // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
@@ -610,12 +629,6 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
-        // if (rootParamStability !== 'experimental') {
-        //   webpackConfig.resolve.alias['next/root-params'] = path.resolve(
-        //     webpackConfig.context,
-        //     './_root-params'
-        //   );
-        // }
       }
       if (typeof nextConfig?.webpack === 'function') {
         return nextConfig.webpack(webpackConfig, options);

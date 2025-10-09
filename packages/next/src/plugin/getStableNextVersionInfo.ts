@@ -1,4 +1,7 @@
-import { createUnresolvedNextVersionError } from '../errors/createErrors';
+import {
+  createUnresolvedNextVersionError,
+  createUnresolvedReactVersionError,
+} from '../errors/createErrors';
 
 /**
  * Get the next version of the package.
@@ -9,6 +12,19 @@ function getNextVersion(): string {
     return pkg.version;
   } catch (error) {
     throw new Error(createUnresolvedNextVersionError(error as Error));
+  }
+}
+
+/**
+ * Get the react version of the package.
+ * I am wary of dynamic imports
+ */
+function getReactVersion(): string {
+  try {
+    const pkg = require('react/package.json');
+    return pkg.version;
+  } catch (error) {
+    throw new Error(createUnresolvedReactVersionError(error as Error));
   }
 }
 
@@ -72,10 +88,15 @@ export const rootParamStability: RootParam = (() => {
   return 'unsupported';
 })();
 
-const SWC_PLUGIN_SUPPORT = '15.2.0';
+export const SWC_PLUGIN_SUPPORT = '15.2.0';
 export const swcPluginCompatible = comparePackageVersion(
   getNextVersion(),
   SWC_PLUGIN_SUPPORT
 );
 
-// TODO: disable babel plugin if using react <= 16
+// disable babel plugin if using react <= 16
+export const BABEL_PLUGIN_SUPPORT = '17.0.0';
+export const babelPluginCompatible = comparePackageVersion(
+  getReactVersion(),
+  BABEL_PLUGIN_SUPPORT
+);

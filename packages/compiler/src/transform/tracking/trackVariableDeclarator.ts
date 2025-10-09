@@ -77,10 +77,11 @@ export function trackVariableDeclarator(
 
   // There can only be one callback defined for const gt = useGT()
   if (identifiers.length !== 1) {
-    throw new Error(
-      `[GT_PLUGIN] Multiple identifiers found for GT function with callbacks: ${canonicalName}` +
+    state.errorTracker.addError(
+      'Multiple identifiers found for GT function with callbacks: ${canonicalName}. Variable tracking failed.' +
         createErrorLocation(varDeclarator.id)
     );
+    return;
   }
   const identifier = identifiers[0];
 

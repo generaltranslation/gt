@@ -1,6 +1,7 @@
 import * as t from '@babel/types';
 import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { TransformState } from '../../state/types';
+import { createErrorLocation } from '../../utils/errors';
 
 /**
  * Inject parameters into a T component
@@ -20,14 +21,18 @@ export function injectTComponentParameters(
 
   // Get second arg
   if (callExpr.arguments.length < 2 || !callExpr.arguments[1]) {
-    throw new Error(
-      `[GT_PLUGIN] T component jsx invocation is missing its second argument`
+    state.logger.logError(
+      'T component jsx invocation is missing its second argument. Parameter injection failed.' +
+        createErrorLocation(callExpr)
     );
+    return;
   }
   if (!t.isObjectExpression(callExpr.arguments[1])) {
-    throw new Error(
-      `[GT_PLUGIN] T component jsx invocation's second argument is not an object expression`
+    state.logger.logError(
+      "T component jsx invocation's second argument is not an object expression. Parameter injection failed." +
+        createErrorLocation(callExpr)
     );
+    return;
   }
 
   // If already has hash set then skip

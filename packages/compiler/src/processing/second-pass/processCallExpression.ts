@@ -110,16 +110,16 @@ function handleReactInvocation(
 ) {
   // Check if it contains a GT component (first argument)
   if (callExpr.arguments.length === 0) {
-    state.errorTracker.addError(
-      'React invocation must have at least one argument' +
+    state.logger.logError(
+      'React invocation must have at least one argument. Parameter injection failed.' +
         createErrorLocation(callExpr)
     );
     return;
   }
   const firstArg = callExpr.arguments[0];
   if (!t.isExpression(firstArg)) {
-    state.errorTracker.addError(
-      'React invocation first argument must be an expression' +
+    state.logger.logError(
+      'React invocation first argument must be an expression. Parameter injection failed.' +
         createErrorLocation(callExpr)
     );
     return;
@@ -129,8 +129,8 @@ function handleReactInvocation(
   const { namespaceName, functionName } =
     getCalleeNameFromJsxExpressionParam(firstArg);
   if (!functionName) {
-    state.errorTracker.addError(
-      'React invocation first argument must be a function' +
+    state.logger.logError(
+      'React invocation first argument must be a function. Parameter injection failed.' +
         createErrorLocation(callExpr)
     );
     return;
