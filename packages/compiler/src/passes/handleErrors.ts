@@ -29,7 +29,7 @@ export function handleErrors(state: TransformState): boolean {
   // Throw error if enabled
   if (!state.settings.disableBuildChecks) {
     throw new InvalidLibraryUsageError(
-      `[GT_PLUGIN] Encountered invalid library usage.`
+      `[gt-compiler] Encountered invalid library usage.`
     );
   }
 

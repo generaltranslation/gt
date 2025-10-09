@@ -30,25 +30,25 @@ export class Logger {
 
   logError(message: string): void {
     if (this.shouldLog('error')) {
-      console.error(`[gt-babel-plugin] ERROR: ${message}`);
+      console.error(`[gt-compiler] ERROR: ${message}`);
     }
   }
 
   logWarning(message: string): void {
     if (this.shouldLog('warn')) {
-      console.warn(`[gt-babel-plugin] WARN: ${message}`);
+      console.warn(`[gt-compiler] WARN: ${message}`);
     }
   }
 
   logInfo(message: string): void {
     if (this.shouldLog('info')) {
-      console.info(`[gt-babel-plugin] INFO: ${message}`);
+      console.info(`[gt-compiler] INFO: ${message}`);
     }
   }
 
   logDebug(message: string): void {
     if (this.shouldLog('debug')) {
-      console.log(`[gt-babel-plugin] DEBUG: ${message}`);
+      console.log(`[gt-compiler] DEBUG: ${message}`);
     }
   }
 

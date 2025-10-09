@@ -100,6 +100,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     }
     if (!translationEntry) {
       hash = calculateHash();
+      // TODO: remove
+      if (_hash !== hash) {
+        throw new Error('[GT-NEXT] _hash mismatch');
+      }
       translationEntry = translations?.[hash];
     }
     return { translationEntry, hash };
@@ -192,6 +196,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $_hash?: string;
     } = {}
   ): string => {
+    // TODO: remove
+    if (!options.$_hash) {
+      throw new Error('[GT-NEXT] t() $_hash is required');
+    }
     const init = initializeT(message, options);
     if (!init) return '';
     const { id, context, _hash, calculateHash, renderMessage } = init;
@@ -364,6 +372,10 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
+  // TODO: remove
+  if (_messages && !_messages.length) {
+    throw new Error('[GT-NEXT] getGT() messages is required');
+  }
   const { t } = await createTranslator(_messages);
   return t;
 }
@@ -372,6 +384,10 @@ export async function getGT(
  * Hook wrapper for getGT
  */
 export function useGT(_messages?: _Messages) {
+  // TODO: remove
+  if (_messages && !_messages.length) {
+    throw new Error('[GT-NEXT] useGT() messages is required');
+  }
   return use(getGT(_messages));
 }
 

@@ -13,7 +13,6 @@ import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
 import { useable } from '../../promises/dangerouslyUsable';
-import fs from 'fs';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -57,6 +56,10 @@ function T({
   _hash?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
+  console.log('T', _hash, children);
+  if (!_hash) {
+    throw new Error('[GT-REACT] <T> _hash is required');
+  }
   if (!children) return undefined;
 
   // Compatibility with different options
@@ -108,6 +111,12 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+
+    // TODO: remove
+    if (_hash !== hash) {
+      throw new Error('[GT-REACT] <T> _hash mismatch');
+    }
+
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);
 

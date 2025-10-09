@@ -22,13 +22,16 @@
     "translation",
     "i18n"
   ],
+  "peerDependencies": {
+    "vite": ">=3"
+  },
   "dependencies": {
     "@babel/generator": "^7.23.0",
     "@babel/parser": "^7.23.0",
     "@babel/traverse": "^7.23.0",
     "@babel/types": "^7.23.0",
     "generaltranslation": "workspace:*",
-    "unplugin": "^1.0.0"
+    "unplugin": "^2.3.10"
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.0",

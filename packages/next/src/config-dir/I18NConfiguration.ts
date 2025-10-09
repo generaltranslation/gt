@@ -1,4 +1,4 @@
-import { requiresTranslation, GT, isSameLanguage } from 'generaltranslation';
+import { GT, isSameLanguage } from 'generaltranslation';
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
   RenderMethod,

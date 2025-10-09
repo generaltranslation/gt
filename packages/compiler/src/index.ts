@@ -15,6 +15,8 @@ import { processVariableDeclarator as processVariableDeclaratorFirstPass } from 
 import { processVariableDeclarator as processVariableDeclaratorSecondPass } from './processing/second-pass/processVariableDeclarator';
 import { InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import path from 'path';
+import fs from 'fs';
 
 /**
  *
@@ -128,7 +130,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
-          if (state.stringCollector.hasContent()) {
+          if (!state.stringCollector.hasContent()) {
             return null;
           }
 

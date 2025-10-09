@@ -91,6 +91,8 @@ export enum GT_IMPORT_SOURCES {
   GT_NEXT = 'gt-next',
   GT_NEXT_CLIENT = 'gt-next/client',
   GT_NEXT_SERVER = 'gt-next/server',
+  GT_REACT = 'gt-react',
+  GT_REACT_CLIENT = 'gt-react/client',
 }
 
 /**

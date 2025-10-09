@@ -54,6 +54,9 @@ async function T({
   _hash?: string;
   [key: string]: any;
 }): Promise<any> {
+  if (!_hash) {
+    throw new Error('[GT-NEXT] <T> _hash is required');
+  }
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
