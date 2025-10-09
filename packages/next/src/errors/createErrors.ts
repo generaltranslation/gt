@@ -135,7 +135,7 @@ export const noInitGTWarn =
   `For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart`;
 
 export const APIKeyMissingWarn =
-  `gt-next: A Development API key is required for runtime translation!  ` +
+  `gt-next (plugin): A Development API key is required for runtime translation!  ` +
   `Find your Development API key: generaltranslation.com/dashboard.  ` +
   `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
 
@@ -173,3 +173,5 @@ export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'
     ? `gt-next (plugin): The GT swc compiler is compatible with < next@${SWC_PLUGIN_SUPPORT}. Skipping compiler optimizations.`
     : `gt-next (plugin): The GT babel compiler is compatible with turbopack or < react@${BABEL_PLUGIN_SUPPORT}. Skipping compiler optimizations.`;
+
+export const disablingCompileTimeHashWarning = `gt-next (plugin): You are disabling compile time hash. This will disable the compiler optimizations.`;

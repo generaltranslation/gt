@@ -197,11 +197,7 @@ export function withGTConfig(
   // Resolve wasm filepath
   const turboPackEnabled = process.env.TURBOPACK === '1';
   let resolvedWasmFilePath = '';
-  if (
-    mergedConfig.experimentalCompilerOptions?.type === 'swc' &&
-    // Backwards compatibility, remove this condition in the future
-    mergedConfig.experimentalCompilerOptions?.compileTimeHash !== false
-  ) {
+  if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
         const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
@@ -583,11 +579,7 @@ export function withGTConfig(
       // Only apply webpack aliases if we're using webpack (not Turbopack)
       if (!turboPackEnabled) {
         // Try to load GT compiler if available
-        if (
-          mergedConfig.experimentalCompilerOptions?.type === 'babel' &&
-          // Backwards compatibility, remove this condition in the future
-          mergedConfig.experimentalCompilerOptions?.compileTimeHash !== false
-        ) {
+        if (mergedConfig.experimentalCompilerOptions?.type === 'babel') {
           try {
             const {
               webpack: gtUnplugin,

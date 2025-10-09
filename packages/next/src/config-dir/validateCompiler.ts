@@ -19,4 +19,9 @@ export function validateCompiler(mergedConfig: withGTConfigProps) {
     console.warn(createGTCompilerUnavailableWarning('babel'));
     mergedConfig.experimentalCompilerOptions.type = 'none';
   }
+  // Backwards compatibility, remove this condition in the future
+  if (mergedConfig.experimentalCompilerOptions.compileTimeHash !== false) {
+    console.warn(createGTCompilerUnavailableWarning('babel'));
+    mergedConfig.experimentalCompilerOptions.type = 'none';
+  }
 }
