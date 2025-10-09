@@ -17,7 +17,7 @@ export function registerUseGTCallback(
   hash ||= hashSource({ source: content, id, context, dataFormat: 'ICU' });
 
   // Add the translation content to the string collector (under identifier mapping to useGT call)
-  state.stringCollector.setTranslationContent(identifier, {
+  state.stringCollector.pushTranslationContent(identifier, {
     message: content,
     hash,
     id,

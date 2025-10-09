@@ -58,7 +58,9 @@ async function T({
   [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
-  console.log('[GT-NEXT] <T> _hash', _hash);
+  if (!_hash) {
+    throw new Error('[GT-NEXT] <T> _hash is required');
+  }
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
@@ -105,9 +107,10 @@ async function T({
   let translationEntry = translations?.[id || ''];
 
   let hash;
-  if (_hash && typeof translationEntry === 'undefined') {
-    translationEntry = translations?.[_hash];
-  }
+  // TODO: uncomment
+  // if (_hash && typeof translationEntry === 'undefined') {
+  //   translationEntry = translations?.[_hash];
+  // }
 
   let childrenAsObjects;
 
@@ -116,14 +119,15 @@ async function T({
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
     // recordJsxChildren(childrenAsObjects); // TODO: REMOVE
-    hash =
-      _hash ||
-      hashSource({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
+    hash = hashSource({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
+    if (_hash !== hash) {
+      throw new Error(`[GT-NEXT] <T> _hash mismatch ${_hash} !== ${hash}`);
+    }
     translationEntry = translations?.[hash];
   }
 

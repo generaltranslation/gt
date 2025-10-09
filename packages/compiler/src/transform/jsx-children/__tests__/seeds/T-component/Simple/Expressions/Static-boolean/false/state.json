@@ -1,62 +1,21 @@
 {
   "children": {
-    "type": "ArrayExpression",
-    "start": 167,
-    "end": 214,
+    "type": "BooleanLiteral",
+    "start": 164,
+    "end": 169,
     "loc": {
       "start": {
         "line": 5,
         "column": 18,
-        "index": 167
+        "index": 164
       },
       "end": {
-        "line": 8,
-        "column": 9,
-        "index": 214
+        "line": 5,
+        "column": 23,
+        "index": 169
       }
     },
-    "elements": [
-      {
-        "type": "StringLiteral",
-        "start": 181,
-        "end": 185,
-        "loc": {
-          "start": {
-            "line": 6,
-            "column": 12,
-            "index": 181
-          },
-          "end": {
-            "line": 6,
-            "column": 16,
-            "index": 185
-          }
-        },
-        "extra": {
-          "rawValue": "yo",
-          "raw": "\"yo\""
-        },
-        "value": "yo"
-      },
-      {
-        "type": "BooleanLiteral",
-        "start": 199,
-        "end": 204,
-        "loc": {
-          "start": {
-            "line": 7,
-            "column": 12,
-            "index": 199
-          },
-          "end": {
-            "line": 7,
-            "column": 17,
-            "index": 204
-          }
-        },
-        "value": false
-      }
-    ]
+    "value": false
   },
   "state": {
     "stringCollector": {
@@ -85,11 +44,11 @@
         }
       },
       "scopedVariables": {
-        "_jsxs": [
+        "_jsx": [
           {
             "scopeId": 0,
-            "canonicalName": "jsxs",
-            "aliasName": "_jsxs",
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
             "isTranslationFunction": false,
             "type": "react",
             "identifier": 0

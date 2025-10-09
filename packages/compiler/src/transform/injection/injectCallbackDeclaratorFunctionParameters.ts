@@ -108,26 +108,35 @@ function injectUseGTParameters(
   }
 
   // Inject the parameters into the call expression
-  expression.arguments = translationContent.map((content) =>
-    t.objectExpression([
-      t.objectProperty(t.identifier('hash'), t.stringLiteral(content.hash)),
-      t.objectProperty(
-        t.identifier('message'),
-        t.stringLiteral(content.message)
-      ),
-      ...(content.id
-        ? [t.objectProperty(t.identifier('id'), t.stringLiteral(content.id))]
-        : []),
-      ...(content.context
-        ? [
-            t.objectProperty(
-              t.identifier('context'),
-              t.stringLiteral(content.context)
-            ),
-          ]
-        : []),
-    ])
-  );
+  expression.arguments = [
+    t.arrayExpression(
+      translationContent.map((content) =>
+        t.objectExpression([
+          t.objectProperty(t.identifier('hash'), t.stringLiteral(content.hash)),
+          t.objectProperty(
+            t.identifier('message'),
+            t.stringLiteral(content.message)
+          ),
+          ...(content.id
+            ? [
+                t.objectProperty(
+                  t.identifier('id'),
+                  t.stringLiteral(content.id)
+                ),
+              ]
+            : []),
+          ...(content.context
+            ? [
+                t.objectProperty(
+                  t.identifier('context'),
+                  t.stringLiteral(content.context)
+                ),
+              ]
+            : []),
+        ])
+      )
+    ),
+  ];
 }
 
 /**

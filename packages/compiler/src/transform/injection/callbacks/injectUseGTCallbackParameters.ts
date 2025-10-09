@@ -29,12 +29,26 @@ export function injectUseGTCallbackParameters(
   }
 
   // Inject parameters into invocation
-  callExpr.arguments.push(
-    t.objectExpression([
-      t.objectProperty(
-        t.stringLiteral('$_hash'),
-        t.stringLiteral(translationHash.hash)
-      ),
-    ])
+  const newEntry = t.objectProperty(
+    t.stringLiteral('$_hash'),
+    t.stringLiteral(translationHash.hash)
   );
+  if (callExpr.arguments.length === 1) {
+    // add a new object to arguments
+    callExpr.arguments.push(t.objectExpression([newEntry]));
+  } else if (callExpr.arguments.length === 2) {
+    if (t.isObjectExpression(callExpr.arguments[1])) {
+      // add a new object to second argument
+      callExpr.arguments[1].properties.push(newEntry);
+    } else if (t.isExpression(callExpr.arguments[1])) {
+      // convert identifier to object expression with spread
+      callExpr.arguments[1] = t.objectExpression([
+        t.spreadElement(callExpr.arguments[1]),
+        newEntry,
+      ]);
+    } else if (t.isArgumentPlaceholder(callExpr.arguments[1])) {
+      // add a new object to second argument
+      callExpr.arguments[1] = t.objectExpression([newEntry]);
+    }
+  }
 }

@@ -54,11 +54,6 @@ export function _constructJsxChildren(
     return { errors, value: children };
   }
 
-  // Edge case: true booleanLiteral
-  if (t.isBooleanLiteral(children) && children.value) {
-    return { errors, value: children.value as unknown as JsxChildren };
-  }
-
   let value: JsxChildren | undefined;
   if (t.isArrayExpression(children)) {
     // Handle ArrayExpression
@@ -72,6 +67,11 @@ export function _constructJsxChildren(
             (child && createErrorLocation(child))
         );
         return { errors };
+      }
+
+      // Special children edge cases: nullLiteral, booleanLiteral
+      if (t.isBooleanLiteral(child) || t.isNullLiteral(child)) {
+        continue;
       }
 
       // Construct JsxChild
@@ -129,9 +129,9 @@ function constructJsxChild(
   } else if (t.isNumericLiteral(child)) {
     value = child.value.toString();
   } else if (t.isBooleanLiteral(child)) {
-    value = undefined;
+    value = child.value as unknown as JsxChild;
   } else if (t.isNullLiteral(child)) {
-    value = undefined;
+    value = null as unknown as JsxChild;
   } else if (t.isUnaryExpression(child)) {
     const validation = validateUnaryExpression(child);
     errors.push(...validation.errors);
@@ -267,7 +267,7 @@ function constructJsxElement(
   }
 
   // Construct JsxChildren
-  const jsxChildrenValidation = _constructJsxChildren(
+  const jsxChildrenValidation = constructJsxChildrenForJsxElement(
     childrenValidation.value,
     state,
     id
@@ -300,6 +300,32 @@ function constructJsxElement(
     ...(children !== undefined && { c: children }),
   };
   return { errors, value };
+}
+
+/**
+ * Construct JsxChildren for a JsxElement
+ * This is slightly different from _constructJsxChildren in how it handles nullLiteral and booleanLiteral
+ */
+function constructJsxChildrenForJsxElement(
+  children: t.Expression | undefined,
+  state: TransformState,
+  id: IdObject
+): { errors: string[]; value?: JsxChildren } {
+  const errors: string[] = [];
+
+  // Special children edge cases: nullLiteral, booleanLiteral
+  if (t.isNullLiteral(children)) {
+    return { errors, value: undefined as unknown as JsxChildren };
+  }
+  if (t.isBooleanLiteral(children)) {
+    return {
+      errors,
+      value: (children.value || undefined) as unknown as JsxChildren,
+    };
+  }
+
+  // Construct JsxChildren
+  return _constructJsxChildren(children, state, id);
 }
 
 /**

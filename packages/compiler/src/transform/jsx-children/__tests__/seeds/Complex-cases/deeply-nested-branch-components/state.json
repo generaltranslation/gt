@@ -1252,6 +1252,16 @@
             "type": "generaltranslation",
             "identifier": 0
           }
+        ],
+        "location": [
+          {
+            "scopeId": 2,
+            "canonicalName": "other",
+            "aliasName": "location",
+            "isTranslationFunction": false,
+            "type": "other",
+            "identifier": 0
+          }
         ]
       },
       "namespaceImports": []

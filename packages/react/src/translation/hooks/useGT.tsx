@@ -30,6 +30,11 @@ export default function useGT(_messages?: _Messages) {
     `useGT(): No context provided. You're trying to get the gt() function from the useGT() hook, which can be called within a <GTProvider>.`
   );
 
+  // TODO: remove
+  if (_messages && !_messages.length) {
+    throw new Error('[GT-REACT] useGT() _messages is required');
+  }
+
   let preloadedTranslations: Translations | undefined;
   if (
     _messages &&
@@ -60,6 +65,10 @@ export default function useGT(_messages?: _Messages) {
       $_hash?: string;
     } = {}
   ): string {
+    // TODO: remove
+    if (!options.$_hash) {
+      throw new Error('[GT-REACT] useGT() _hash is required');
+    }
     return _tFunction(string, options, preloadedTranslations);
   }
 

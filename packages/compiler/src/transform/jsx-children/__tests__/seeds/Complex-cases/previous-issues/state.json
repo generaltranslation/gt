@@ -1901,6 +1901,26 @@
             "type": "generaltranslation",
             "identifier": 0
           }
+        ],
+        "count": [
+          {
+            "scopeId": 2,
+            "canonicalName": "other",
+            "aliasName": "count",
+            "isTranslationFunction": false,
+            "type": "other",
+            "identifier": 0
+          }
+        ],
+        "variable": [
+          {
+            "scopeId": 2,
+            "canonicalName": "other",
+            "aliasName": "variable",
+            "isTranslationFunction": false,
+            "type": "other",
+            "identifier": 0
+          }
         ]
       },
       "namespaceImports": []

@@ -1,6 +1,6 @@
 {
   "children": {
-    "type": "BooleanLiteral",
+    "type": "NullLiteral",
     "start": 164,
     "end": 168,
     "loc": {
@@ -14,8 +14,7 @@
         "column": 22,
         "index": 168
       }
-    },
-    "value": true
+    }
   },
   "state": {
     "stringCollector": {

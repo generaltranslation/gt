@@ -786,6 +786,16 @@
             "type": "generaltranslation",
             "identifier": 0
           }
+        ],
+        "test": [
+          {
+            "scopeId": 2,
+            "canonicalName": "other",
+            "aliasName": "test",
+            "isTranslationFunction": false,
+            "type": "other",
+            "identifier": 0
+          }
         ]
       },
       "namespaceImports": []

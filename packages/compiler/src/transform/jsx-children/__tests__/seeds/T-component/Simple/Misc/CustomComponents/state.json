@@ -471,6 +471,16 @@
             "type": "generaltranslation",
             "identifier": 0
           }
+        ],
+        "Button": [
+          {
+            "scopeId": 0,
+            "canonicalName": "other",
+            "aliasName": "Button",
+            "isTranslationFunction": false,
+            "type": "other",
+            "identifier": 0
+          }
         ]
       },
       "namespaceImports": []

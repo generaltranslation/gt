@@ -120,14 +120,6 @@ export function validateChildrenProperty(
   errors.push(...validation.errors);
   const value = validation.value;
 
-  // Validate that the children are valid jsx children
-  // if (value === undefined) {
-  //   errors.push(
-  //     `The <${GT_COMPONENT_TYPES.T}> component must have jsx children`
-  //   );
-  //   return { errors };
-  // }
-
   return { errors, value };
 }
 
