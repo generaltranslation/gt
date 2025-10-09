@@ -58,9 +58,6 @@ async function T({
   [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
-  if (!_hash) {
-    throw new Error('[GT-NEXT] <T> _hash is required');
-  }
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
@@ -107,10 +104,9 @@ async function T({
   let translationEntry = translations?.[id || ''];
 
   let hash;
-  // TODO: uncomment
-  // if (_hash && typeof translationEntry === 'undefined') {
-  //   translationEntry = translations?.[_hash];
-  // }
+  if (_hash && typeof translationEntry === 'undefined') {
+    translationEntry = translations?.[_hash];
+  }
 
   let childrenAsObjects;
 
@@ -118,16 +114,12 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    // recordJsxChildren(childrenAsObjects); // TODO: REMOVE
     hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (_hash !== hash) {
-      throw new Error(`[GT-NEXT] <T> _hash mismatch ${_hash} !== ${hash}`);
-    }
     translationEntry = translations?.[hash];
   }
 
@@ -219,27 +211,3 @@ async function T({
 T._gtt = 'translate-server';
 
 export default T;
-
-// TODO: remove
-async function recordJsxChildren(children: any) {
-  // console.log(`[GT-NEXT] Recording JsxChildren`);
-  const fs = require('fs');
-  const path = require('path');
-
-  const headerList = await headers();
-  const pathname = headerList.get('x-current-path');
-  if (!pathname) {
-    throw new Error('Pathname not found');
-  }
-
-  const outputDir = path.join(process.cwd(), 'app', pathname || '');
-  const filePath = path.join(outputDir, 'expected.json');
-
-  if (!fs.existsSync(filePath)) {
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-  }
-  // console.log('[GT-NEXT] Writing to', filePath);
-  fs.writeFileSync(filePath, JSON.stringify(children, null, 2));
-}

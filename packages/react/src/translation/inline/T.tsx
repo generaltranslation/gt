@@ -58,10 +58,6 @@ function T({
   [key: string]: any;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
-  // TODO: remove
-  if (!_hash) {
-    throw new Error('[GT-REACT] <T> _hash is required');
-  }
 
   // Compatibility with different options
   id = id ?? options?.$id;
@@ -112,9 +108,6 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (_hash !== hash) {
-      throw new Error('[GT-REACT] <T> _hash mismatch');
-    }
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);
 

@@ -94,19 +94,13 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     let translationEntry;
     let hash = ''; // lazily computed if needed
     if (id) translationEntry = translations?.[id];
-    // TODO: uncomment
-    // if (!translationEntry && _hash && translations?.[_hash] !== undefined) {
-    //   hash = _hash;
-    //   translationEntry = translations?.[_hash];
-    // }
+    if (!translationEntry && _hash && translations?.[_hash] !== undefined) {
+      hash = _hash;
+      translationEntry = translations?.[_hash];
+    }
     if (!translationEntry) {
       hash = calculateHash();
       translationEntry = translations?.[hash];
-      if (_hash !== hash) {
-        throw new Error(
-          `[GT-NEXT] useGT() _hash mismatch ${_hash} !== ${hash}`
-        );
-      }
     }
     return { translationEntry, hash };
   }
@@ -198,10 +192,6 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $_hash?: string;
     } = {}
   ): string => {
-    // TODO: remove
-    if (!options.$_hash) {
-      throw new Error('[GT-NEXT] t() _hash is required');
-    }
     const init = initializeT(message, options);
     if (!init) return '';
     const { id, context, _hash, calculateHash, renderMessage } = init;
@@ -374,11 +364,6 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
-  // TODO: remove
-  if (_messages && !_messages.length) {
-    console.error('[GT-NEXT] getGT() _messages:', _messages);
-    throw new Error('[GT-NEXT] getGT() _messages is required');
-  }
   const { t } = await createTranslator(_messages);
   return t;
 }
