@@ -12,9 +12,6 @@ import {
 import renderVariable from '../variables/renderVariable';
 import { hashSource } from 'generaltranslation/id';
 
-// TODO: remove
-import { headers } from 'next/headers';
-
 /**
  * Build-time translation component that renders its children in the user's given locale.
  *
