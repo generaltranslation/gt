@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "10.6.4",
+  "version": "10.6.5-alpha.0",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -14,6 +14,7 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
+    "@generaltranslation/compiler": "0.0.0-alpha.0",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*"
   },
@@ -76,6 +77,11 @@
       "types": "./dist/client.d.ts",
       "require": "./dist/client.cjs.min.cjs",
       "import": "./dist/client.esm.min.mjs"
+    },
+    "./compiler": {
+      "types": "./dist/compiler.d.ts",
+      "require": "./dist/compiler.cjs.min.cjs",
+      "import": "./dist/compiler.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -85,6 +91,9 @@
       ],
       "internal": [
         "./dist/internal.d.ts"
+      ],
+      "compiler": [
+        "./dist/compiler.d.ts"
       ]
     }
   },
@@ -96,6 +105,9 @@
       ],
       "gt-react/internal": [
         "./dist/internal"
+      ],
+      "gt-react/compiler": [
+        "./dist/compiler"
       ]
     }
   },
