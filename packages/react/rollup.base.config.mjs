@@ -31,7 +31,6 @@ export default {
   ],
   external: [
     'react',
-    'react-dom',
     'generaltranslation',
     '@generaltranslation/supported-locales',
   ],

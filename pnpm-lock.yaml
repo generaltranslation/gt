@@ -596,9 +596,6 @@ importers:
       react:
         specifier: '>=16.8.0'
         version: 19.1.1
-      react-dom:
-        specifier: '>=16.8.0'
-        version: 19.1.1(react@19.1.1)
     devDependencies:
       '@babel/preset-react':
         specifier: ^7.26.3
@@ -627,9 +624,6 @@ importers:
       '@types/react':
         specifier: '>=18.0.0 <20.0.0'
         version: 19.1.15
-      '@types/react-dom':
-        specifier: '>=18.0.0 <20.0.0'
-        version: 19.1.9(@types/react@19.1.15)
       rollup:
         specifier: ^4.32.1
         version: 4.52.3
