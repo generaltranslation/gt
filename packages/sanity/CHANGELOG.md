@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 1.0.3
+
+### Patch Changes
+
+- [#725](https://github.com/generaltranslation/gt/pull/725) [`8f540fc`](https://github.com/generaltranslation/gt/commit/8f540fc0420716d0c5159811900eeeef017a8f57) Thanks [@brian-lou](https://github.com/brian-lou)! - Improve translations tab UX
+
 ## 1.0.2
 
 ### Patch Changes
