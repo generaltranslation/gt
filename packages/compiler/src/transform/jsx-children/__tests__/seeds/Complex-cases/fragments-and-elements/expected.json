@@ -1,0 +1,17 @@
+[
+  {
+    "t": "C1",
+    "i": 1,
+    "c": "text before"
+  },
+  {
+    "t": "div",
+    "i": 2,
+    "c": "element"
+  },
+  {
+    "t": "C3",
+    "i": 3,
+    "c": "text after"
+  }
+]

@@ -1,0 +1,263 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 216,
+    "end": 327,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 32,
+        "index": 216
+      },
+      "end": {
+        "line": 10,
+        "column": 10,
+        "index": 327
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 216,
+      "end": 221,
+      "loc": {
+        "start": {
+          "line": 5,
+          "column": 32,
+          "index": 216
+        },
+        "end": {
+          "line": 5,
+          "column": 37,
+          "index": 221
+        },
+        "identifierName": "_jsxs"
+      },
+      "name": "_jsxs"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 222,
+        "end": 231,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 38,
+            "index": 222
+          },
+          "end": {
+            "line": 5,
+            "column": 47,
+            "index": 231
+          },
+          "identifierName": "_Fragment"
+        },
+        "name": "_Fragment"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 233,
+        "end": 326,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 49,
+            "index": 233
+          },
+          "end": {
+            "line": 10,
+            "column": 9,
+            "index": 326
+          }
+        },
+        "properties": [
+          {
+            "type": "ObjectProperty",
+            "start": 247,
+            "end": 316,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 12,
+                "index": 247
+              },
+              "end": {
+                "line": 9,
+                "column": 13,
+                "index": 316
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 247,
+              "end": 255,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 12,
+                  "index": 247
+                },
+                "end": {
+                  "line": 6,
+                  "column": 20,
+                  "index": 255
+                },
+                "identifierName": "children"
+              },
+              "name": "children"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "ArrayExpression",
+              "start": 257,
+              "end": 316,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 22,
+                  "index": 257
+                },
+                "end": {
+                  "line": 9,
+                  "column": 13,
+                  "index": 316
+                }
+              },
+              "elements": [
+                {
+                  "type": "BooleanLiteral",
+                  "start": 275,
+                  "end": 280,
+                  "loc": {
+                    "start": {
+                      "line": 7,
+                      "column": 16,
+                      "index": 275
+                    },
+                    "end": {
+                      "line": 7,
+                      "column": 21,
+                      "index": 280
+                    }
+                  },
+                  "value": false
+                },
+                {
+                  "type": "BooleanLiteral",
+                  "start": 298,
+                  "end": 302,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 16,
+                      "index": 298
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 20,
+                      "index": 302
+                    }
+                  },
+                  "value": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 202,
+        "end": 215,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 18,
+            "index": 202
+          },
+          "end": {
+            "line": 5,
+            "column": 31,
+            "index": 215
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_Fragment": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Fragment",
+            "aliasName": "_Fragment",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

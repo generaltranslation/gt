@@ -1,0 +1,60 @@
+{
+  "name": "@generaltranslation/compiler",
+  "version": "0.0.0",
+  "description": "Universal plugin for compile-time optimization of GT translation components",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "General Translation, Inc.",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "format": "prettier --write src",
+    "patch": "pnpm version patch",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "unplugin",
+    "webpack",
+    "vite",
+    "rollup",
+    "gt-next",
+    "translation",
+    "i18n"
+  ],
+  "peerDependencies": {
+    "vite": ">=3"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.23.0",
+    "@babel/parser": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "@babel/types": "^7.23.0",
+    "generaltranslation": "workspace:*",
+    "unplugin": "^2.3.10"
+  },
+  "devDependencies": {
+    "@types/babel__core": "^7.20.0",
+    "@types/babel__generator": "^7.6.0",
+    "@types/babel__traverse": "^7.20.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

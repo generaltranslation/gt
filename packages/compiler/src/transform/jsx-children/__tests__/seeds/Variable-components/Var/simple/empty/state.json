@@ -1,0 +1,158 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 183,
+    "end": 196,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 32,
+        "index": 183
+      },
+      "end": {
+        "line": 5,
+        "column": 45,
+        "index": 196
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 183,
+      "end": 187,
+      "loc": {
+        "start": {
+          "line": 5,
+          "column": 32,
+          "index": 183
+        },
+        "end": {
+          "line": 5,
+          "column": 36,
+          "index": 187
+        },
+        "identifierName": "_jsx"
+      },
+      "name": "_jsx"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 188,
+        "end": 191,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 37,
+            "index": 188
+          },
+          "end": {
+            "line": 5,
+            "column": 40,
+            "index": 191
+          },
+          "identifierName": "Var"
+        },
+        "name": "Var"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 193,
+        "end": 195,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 42,
+            "index": 193
+          },
+          "end": {
+            "line": 5,
+            "column": 44,
+            "index": 195
+          }
+        },
+        "properties": []
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 169,
+        "end": 182,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 18,
+            "index": 169
+          },
+          "end": {
+            "line": 5,
+            "column": 31,
+            "index": 182
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Var": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Var",
+            "aliasName": "Var",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

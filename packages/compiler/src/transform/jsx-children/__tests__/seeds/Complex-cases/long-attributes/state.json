@@ -1,0 +1,362 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 186,
+    "end": 703,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 32,
+        "index": 186
+      },
+      "end": {
+        "line": 9,
+        "column": 10,
+        "index": 703
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 186,
+      "end": 190,
+      "loc": {
+        "start": {
+          "line": 5,
+          "column": 32,
+          "index": 186
+        },
+        "end": {
+          "line": 5,
+          "column": 36,
+          "index": 190
+        },
+        "identifierName": "_jsx"
+      },
+      "name": "_jsx"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 191,
+        "end": 197,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 37,
+            "index": 191
+          },
+          "end": {
+            "line": 5,
+            "column": 43,
+            "index": 197
+          },
+          "identifierName": "Plural"
+        },
+        "name": "Plural"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 199,
+        "end": 702,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 45,
+            "index": 199
+          },
+          "end": {
+            "line": 9,
+            "column": 9,
+            "index": 702
+          }
+        },
+        "properties": [
+          {
+            "type": "ObjectProperty",
+            "start": 213,
+            "end": 217,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 12,
+                "index": 213
+              },
+              "end": {
+                "line": 6,
+                "column": 16,
+                "index": 217
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 213,
+              "end": 214,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 12,
+                  "index": 213
+                },
+                "end": {
+                  "line": 6,
+                  "column": 13,
+                  "index": 214
+                },
+                "identifierName": "n"
+              },
+              "name": "n"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "NumericLiteral",
+              "start": 216,
+              "end": 217,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 15,
+                  "index": 216
+                },
+                "end": {
+                  "line": 6,
+                  "column": 16,
+                  "index": 217
+                }
+              },
+              "extra": {
+                "rawValue": 1,
+                "raw": "1"
+              },
+              "value": 1
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 231,
+            "end": 495,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 231
+              },
+              "end": {
+                "line": 7,
+                "column": 276,
+                "index": 495
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 231,
+              "end": 239,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 12,
+                  "index": 231
+                },
+                "end": {
+                  "line": 7,
+                  "column": 20,
+                  "index": 239
+                },
+                "identifierName": "singular"
+              },
+              "name": "singular"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 241,
+              "end": 495,
+              "loc": {
+                "start": {
+                  "line": 7,
+                  "column": 22,
+                  "index": 241
+                },
+                "end": {
+                  "line": 7,
+                  "column": 276,
+                  "index": 495
+                }
+              },
+              "extra": {
+                "rawValue": "This is an extremely long string value that tests how the plugin handles very long attribute content that might span multiple lines and contain various characters including unicode ñáéíóú and emoji 📁📂🎉",
+                "raw": "\"This is an extremely long string value that tests how the plugin handles very long attribute content that might span multiple lines and contain various characters including unicode \\xf1\\xe1\\xe9\\xed\\xf3\\xfa and emoji \\uD83D\\uDCC1\\uD83D\\uDCC2\\uD83C\\uDF89\""
+              },
+              "value": "This is an extremely long string value that tests how the plugin handles very long attribute content that might span multiple lines and contain various characters including unicode ñáéíóú and emoji 📁📂🎉"
+            }
+          },
+          {
+            "type": "ObjectProperty",
+            "start": 509,
+            "end": 692,
+            "loc": {
+              "start": {
+                "line": 8,
+                "column": 12,
+                "index": 509
+              },
+              "end": {
+                "line": 8,
+                "column": 195,
+                "index": 692
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 509,
+              "end": 515,
+              "loc": {
+                "start": {
+                  "line": 8,
+                  "column": 12,
+                  "index": 509
+                },
+                "end": {
+                  "line": 8,
+                  "column": 18,
+                  "index": 515
+                },
+                "identifierName": "plural"
+              },
+              "name": "plural"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "TemplateLiteral",
+              "start": 517,
+              "end": 692,
+              "loc": {
+                "start": {
+                  "line": 8,
+                  "column": 20,
+                  "index": 517
+                },
+                "end": {
+                  "line": 8,
+                  "column": 195,
+                  "index": 692
+                }
+              },
+              "expressions": [],
+              "quasis": [
+                {
+                  "type": "TemplateElement",
+                  "start": 518,
+                  "end": 691,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 21,
+                      "index": 518
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 194,
+                      "index": 691
+                    }
+                  },
+                  "value": {
+                    "raw": "This is an extremely long template literal that tests how the plugin handles very long template content with potential whitespace normalization issues and various characters",
+                    "cooked": "This is an extremely long template literal that tests how the plugin handles very long template content with potential whitespace normalization issues and various characters"
+                  },
+                  "tail": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 172,
+        "end": 185,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 18,
+            "index": 172
+          },
+          "end": {
+            "line": 5,
+            "column": 31,
+            "index": 185
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Plural": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Plural",
+            "aliasName": "Plural",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

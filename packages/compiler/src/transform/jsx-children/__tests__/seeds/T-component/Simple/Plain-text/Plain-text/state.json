@@ -1,0 +1,75 @@
+{
+  "children": {
+    "type": "StringLiteral",
+    "start": 164,
+    "end": 176,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 18,
+        "index": 164
+      },
+      "end": {
+        "line": 5,
+        "column": 30,
+        "index": 176
+      }
+    },
+    "extra": {
+      "rawValue": "Plain text",
+      "raw": "\"Plain text\""
+    },
+    "value": "Plain text"
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

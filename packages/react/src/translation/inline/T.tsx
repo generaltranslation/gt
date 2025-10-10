@@ -106,6 +106,7 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);
 

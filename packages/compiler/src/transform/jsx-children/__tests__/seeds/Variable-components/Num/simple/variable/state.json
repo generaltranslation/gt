@@ -1,0 +1,804 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 207,
+    "end": 566,
+    "loc": {
+      "start": {
+        "line": 6,
+        "column": 18,
+        "index": 207
+      },
+      "end": {
+        "line": 19,
+        "column": 9,
+        "index": 566
+      }
+    },
+    "elements": [
+      {
+        "type": "CallExpression",
+        "start": 235,
+        "end": 292,
+        "loc": {
+          "start": {
+            "line": 7,
+            "column": 26,
+            "index": 235
+          },
+          "end": {
+            "line": 9,
+            "column": 14,
+            "index": 292
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 235,
+          "end": 239,
+          "loc": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "index": 235
+            },
+            "end": {
+              "line": 7,
+              "column": 30,
+              "index": 239
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 240,
+            "end": 243,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 31,
+                "index": 240
+              },
+              "end": {
+                "line": 7,
+                "column": 34,
+                "index": 243
+              },
+              "identifierName": "Num"
+            },
+            "name": "Num"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 245,
+            "end": 291,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 36,
+                "index": 245
+              },
+              "end": {
+                "line": 9,
+                "column": 13,
+                "index": 291
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 263,
+                "end": 277,
+                "loc": {
+                  "start": {
+                    "line": 8,
+                    "column": 16,
+                    "index": 263
+                  },
+                  "end": {
+                    "line": 8,
+                    "column": 30,
+                    "index": 277
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 263,
+                  "end": 271,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 16,
+                      "index": 263
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 24,
+                      "index": 271
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Identifier",
+                  "start": 273,
+                  "end": 277,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 26,
+                      "index": 273
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 30,
+                      "index": 277
+                    },
+                    "identifierName": "test"
+                  },
+                  "name": "test"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 221,
+            "end": 234,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 221
+              },
+              "end": {
+                "line": 7,
+                "column": 25,
+                "index": 234
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 320,
+        "end": 385,
+        "loc": {
+          "start": {
+            "line": 10,
+            "column": 26,
+            "index": 320
+          },
+          "end": {
+            "line": 12,
+            "column": 14,
+            "index": 385
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 320,
+          "end": 324,
+          "loc": {
+            "start": {
+              "line": 10,
+              "column": 26,
+              "index": 320
+            },
+            "end": {
+              "line": 10,
+              "column": 30,
+              "index": 324
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 325,
+            "end": 328,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 31,
+                "index": 325
+              },
+              "end": {
+                "line": 10,
+                "column": 34,
+                "index": 328
+              },
+              "identifierName": "Num"
+            },
+            "name": "Num"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 330,
+            "end": 384,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 36,
+                "index": 330
+              },
+              "end": {
+                "line": 12,
+                "column": 13,
+                "index": 384
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 348,
+                "end": 370,
+                "loc": {
+                  "start": {
+                    "line": 11,
+                    "column": 16,
+                    "index": 348
+                  },
+                  "end": {
+                    "line": 11,
+                    "column": 38,
+                    "index": 370
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 348,
+                  "end": 356,
+                  "loc": {
+                    "start": {
+                      "line": 11,
+                      "column": 16,
+                      "index": 348
+                    },
+                    "end": {
+                      "line": 11,
+                      "column": 24,
+                      "index": 356
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "CallExpression",
+                  "start": 358,
+                  "end": 370,
+                  "loc": {
+                    "start": {
+                      "line": 11,
+                      "column": 26,
+                      "index": 358
+                    },
+                    "end": {
+                      "line": 11,
+                      "column": 38,
+                      "index": 370
+                    }
+                  },
+                  "callee": {
+                    "type": "ArrowFunctionExpression",
+                    "start": 359,
+                    "end": 367,
+                    "loc": {
+                      "start": {
+                        "line": 11,
+                        "column": 27,
+                        "index": 359
+                      },
+                      "end": {
+                        "line": 11,
+                        "column": 35,
+                        "index": 367
+                      }
+                    },
+                    "id": null,
+                    "generator": false,
+                    "async": false,
+                    "params": [],
+                    "body": {
+                      "type": "Identifier",
+                      "start": 363,
+                      "end": 367,
+                      "loc": {
+                        "start": {
+                          "line": 11,
+                          "column": 31,
+                          "index": 363
+                        },
+                        "end": {
+                          "line": 11,
+                          "column": 35,
+                          "index": 367
+                        },
+                        "identifierName": "test"
+                      },
+                      "name": "test"
+                    },
+                    "extra": {
+                      "parenthesized": true,
+                      "parenStart": 358
+                    }
+                  },
+                  "arguments": []
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 306,
+            "end": 319,
+            "loc": {
+              "start": {
+                "line": 10,
+                "column": 12,
+                "index": 306
+              },
+              "end": {
+                "line": 10,
+                "column": 25,
+                "index": 319
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 413,
+        "end": 474,
+        "loc": {
+          "start": {
+            "line": 13,
+            "column": 26,
+            "index": 413
+          },
+          "end": {
+            "line": 15,
+            "column": 14,
+            "index": 474
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 413,
+          "end": 417,
+          "loc": {
+            "start": {
+              "line": 13,
+              "column": 26,
+              "index": 413
+            },
+            "end": {
+              "line": 13,
+              "column": 30,
+              "index": 417
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 418,
+            "end": 421,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 31,
+                "index": 418
+              },
+              "end": {
+                "line": 13,
+                "column": 34,
+                "index": 421
+              },
+              "identifierName": "Num"
+            },
+            "name": "Num"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 423,
+            "end": 473,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 36,
+                "index": 423
+              },
+              "end": {
+                "line": 15,
+                "column": 13,
+                "index": 473
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 441,
+                "end": 459,
+                "loc": {
+                  "start": {
+                    "line": 14,
+                    "column": 16,
+                    "index": 441
+                  },
+                  "end": {
+                    "line": 14,
+                    "column": 34,
+                    "index": 459
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 441,
+                  "end": 449,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 16,
+                      "index": 441
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 24,
+                      "index": 449
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "BinaryExpression",
+                  "start": 451,
+                  "end": 459,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 26,
+                      "index": 451
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 34,
+                      "index": 459
+                    }
+                  },
+                  "left": {
+                    "type": "Identifier",
+                    "start": 451,
+                    "end": 455,
+                    "loc": {
+                      "start": {
+                        "line": 14,
+                        "column": 26,
+                        "index": 451
+                      },
+                      "end": {
+                        "line": 14,
+                        "column": 30,
+                        "index": 455
+                      },
+                      "identifierName": "test"
+                    },
+                    "name": "test"
+                  },
+                  "operator": "+",
+                  "right": {
+                    "type": "NumericLiteral",
+                    "start": 458,
+                    "end": 459,
+                    "loc": {
+                      "start": {
+                        "line": 14,
+                        "column": 33,
+                        "index": 458
+                      },
+                      "end": {
+                        "line": 14,
+                        "column": 34,
+                        "index": 459
+                      }
+                    },
+                    "extra": {
+                      "rawValue": 1,
+                      "raw": "1"
+                    },
+                    "value": 1
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 399,
+            "end": 412,
+            "loc": {
+              "start": {
+                "line": 13,
+                "column": 12,
+                "index": 399
+              },
+              "end": {
+                "line": 13,
+                "column": 25,
+                "index": 412
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 502,
+        "end": 556,
+        "loc": {
+          "start": {
+            "line": 16,
+            "column": 26,
+            "index": 502
+          },
+          "end": {
+            "line": 18,
+            "column": 14,
+            "index": 556
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 502,
+          "end": 506,
+          "loc": {
+            "start": {
+              "line": 16,
+              "column": 26,
+              "index": 502
+            },
+            "end": {
+              "line": 16,
+              "column": 30,
+              "index": 506
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 507,
+            "end": 510,
+            "loc": {
+              "start": {
+                "line": 16,
+                "column": 31,
+                "index": 507
+              },
+              "end": {
+                "line": 16,
+                "column": 34,
+                "index": 510
+              },
+              "identifierName": "Num"
+            },
+            "name": "Num"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 512,
+            "end": 555,
+            "loc": {
+              "start": {
+                "line": 16,
+                "column": 36,
+                "index": 512
+              },
+              "end": {
+                "line": 18,
+                "column": 13,
+                "index": 555
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 530,
+                "end": 541,
+                "loc": {
+                  "start": {
+                    "line": 17,
+                    "column": 16,
+                    "index": 530
+                  },
+                  "end": {
+                    "line": 17,
+                    "column": 27,
+                    "index": 541
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 530,
+                  "end": 538,
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 16,
+                      "index": 530
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 24,
+                      "index": 538
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "NumericLiteral",
+                  "start": 540,
+                  "end": 541,
+                  "loc": {
+                    "start": {
+                      "line": 17,
+                      "column": 26,
+                      "index": 540
+                    },
+                    "end": {
+                      "line": 17,
+                      "column": 27,
+                      "index": 541
+                    }
+                  },
+                  "extra": {
+                    "rawValue": 0,
+                    "raw": "0"
+                  },
+                  "value": 0
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 488,
+            "end": 501,
+            "loc": {
+              "start": {
+                "line": 16,
+                "column": 12,
+                "index": 488
+              },
+              "end": {
+                "line": 16,
+                "column": 25,
+                "index": 501
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Num": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Num",
+            "aliasName": "Num",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "test": [
+          {
+            "scopeId": 2,
+            "canonicalName": "other",
+            "aliasName": "test",
+            "isTranslationFunction": false,
+            "type": "other",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "empty": "",
+      "space": " ",
+      "newline": "\n",
+      "tab": "\t",
+      "minimal": {
+        "t": "span",
+        "i": 2
+      },
+      "singleChar": "x"
+    },
+    "t": "b"
+  }
+}

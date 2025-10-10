@@ -1,0 +1,209 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 196,
+    "end": 299,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 18,
+        "index": 196
+      },
+      "end": {
+        "line": 8,
+        "column": 9,
+        "index": 299
+      }
+    },
+    "elements": [
+      {
+        "type": "StringLiteral",
+        "start": 210,
+        "end": 237,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 12,
+            "index": 210
+          },
+          "end": {
+            "line": 6,
+            "column": 39,
+            "index": 237
+          }
+        },
+        "extra": {
+          "rawValue": "Let's select some locales",
+          "raw": "\"Let's select some locales\""
+        },
+        "value": "Let's select some locales"
+      },
+      {
+        "type": "CallExpression",
+        "start": 265,
+        "end": 289,
+        "loc": {
+          "start": {
+            "line": 7,
+            "column": 26,
+            "index": 265
+          },
+          "end": {
+            "line": 7,
+            "column": 50,
+            "index": 289
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 265,
+          "end": 269,
+          "loc": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "index": 265
+            },
+            "end": {
+              "line": 7,
+              "column": 30,
+              "index": 269
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 270,
+            "end": 284,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 31,
+                "index": 270
+              },
+              "end": {
+                "line": 7,
+                "column": 45,
+                "index": 284
+              },
+              "identifierName": "LocaleSelector"
+            },
+            "name": "LocaleSelector"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 286,
+            "end": 288,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 47,
+                "index": 286
+              },
+              "end": {
+                "line": 7,
+                "column": 49,
+                "index": 288
+              }
+            },
+            "properties": []
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 251,
+            "end": 264,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 251
+              },
+              "end": {
+                "line": 7,
+                "column": 25,
+                "index": 264
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "LocaleSelector": [
+          {
+            "scopeId": 0,
+            "canonicalName": "LocaleSelector",
+            "aliasName": "LocaleSelector",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

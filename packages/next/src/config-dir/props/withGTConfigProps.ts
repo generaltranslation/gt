@@ -9,9 +9,26 @@ export type HeadersAndCookies = {
   resetLocaleCookieName?: string;
 };
 
-export type SwcPluginOptions = {
+type CompilerOptions = {
+  /**
+   * Which compiler plugin to use: babel, swc, or none
+   * @default 'babel'
+   */
+  type: 'babel' | 'swc' | 'none';
+  /**
+   * Log level for the compiler plugin.
+   * @default 'warn'
+   */
   logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
+  /**
+   * Whether to compile the translations at build time.
+   * @default true
+   */
   compileTimeHash?: boolean;
+  /**
+   * Whether to disable build checks.
+   * @default false
+   */
   disableBuildChecks?: boolean;
 };
 
@@ -51,7 +68,11 @@ type withGTConfigProps = {
   eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
   overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
   // Other
-  experimentalSwcPluginOptions?: SwcPluginOptions;
+  /**
+   * @deprecated use experimentalCompilerOptions instead
+   */
+  experimentalSwcPluginOptions?: Omit<CompilerOptions, 'type'>;
+  experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
   [key: string]: any;

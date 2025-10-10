@@ -29,5 +29,10 @@ export default {
     postcss(), // Process CSS files
     preserveDirectives(), // Preserve directives in the output (i.e., "use client")
   ],
-  external: ['react', 'react-dom', 'generaltranslation', '@generaltranslation/supported-locales'],
+  external: [
+    'react',
+    'react-dom',
+    'generaltranslation',
+    '@generaltranslation/supported-locales',
+  ],
 };

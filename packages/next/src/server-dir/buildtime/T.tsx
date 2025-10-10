@@ -111,14 +111,12 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    hash =
-      _hash ||
-      hashSource({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
+    hash = hashSource({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
     translationEntry = translations?.[hash];
   }
 

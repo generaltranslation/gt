@@ -1,0 +1,16 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "option1": "",
+      "option2": null,
+      "option3": {
+        "t": "C2",
+        "i": 2
+      },
+      "option4": false
+    },
+    "t": "b"
+  }
+}

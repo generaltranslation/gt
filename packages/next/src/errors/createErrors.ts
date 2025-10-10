@@ -1,6 +1,10 @@
 // ---- ERRORS ---- //
 
 import { getLocaleProperties } from 'generaltranslation';
+import {
+  BABEL_PLUGIN_SUPPORT,
+  SWC_PLUGIN_SUPPORT,
+} from '../plugin/getStableNextVersionInfo';
 
 export const noLocalesCouldBeDeterminedError =
   'gt-next: Error: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
@@ -16,6 +20,9 @@ export const customLoadDictionaryWarning = (locale: string = '') =>
 
 export const createUnresolvedNextVersionError = (error: Error) =>
   `gt-next Error: Unable to resolve next version. ${error.message}`;
+
+export const createUnresolvedReactVersionError = (error: Error) =>
+  `gt-next Error: Unable to resolve react version. ${error.message}`;
 
 export const createStringTranslationError = (
   string: string,
@@ -58,9 +65,6 @@ export const conflictingConfigurationBuildError = (conflicts: string[]) =>
   } detected. Please resolve the following conflicts before building your app:\n${conflicts.join(
     '\n'
   )}`;
-
-export const unsupportedGetLocalePathBuildError =
-  'gt-next Error: custom getLocale() function is not currently supported.';
 
 export const typesFileError = `gt-next Error: There is no scenario in which you should be seeing this error.`;
 
@@ -131,7 +135,7 @@ export const noInitGTWarn =
   `For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart`;
 
 export const APIKeyMissingWarn =
-  `gt-next: A Development API key is required for runtime translation!  ` +
+  `gt-next (plugin): A Development API key is required for runtime translation!  ` +
   `Find your Development API key: generaltranslation.com/dashboard.  ` +
   `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
 
@@ -161,3 +165,13 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: You are using The following canonical locales were standardized: ${locales.join(', ')}.`;
 
 export const deprecatedLocaleMappingWarning = `gt-next: You are using the deprecated localeMapping configuration. Please move "customMapping" to your gt.config.json file.`;
+
+export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
+  `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
+
+export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
+  type === 'swc'
+    ? `gt-next (plugin): The GT swc compiler is compatible with < next@${SWC_PLUGIN_SUPPORT}. Skipping compiler optimizations.`
+    : `gt-next (plugin): The GT babel compiler is compatible with turbopack or < react@${BABEL_PLUGIN_SUPPORT}. Skipping compiler optimizations.`;
+
+export const disablingCompileTimeHashWarning = `gt-next (plugin): You are disabling compile time hash. This will disable the compiler optimizations.`;

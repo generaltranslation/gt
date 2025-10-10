@@ -1,0 +1,354 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 237,
+    "end": 390,
+    "loc": {
+      "start": {
+        "line": 6,
+        "column": 18,
+        "index": 237
+      },
+      "end": {
+        "line": 11,
+        "column": 9,
+        "index": 390
+      }
+    },
+    "elements": [
+      {
+        "type": "CallExpression",
+        "start": 265,
+        "end": 284,
+        "loc": {
+          "start": {
+            "line": 7,
+            "column": 26,
+            "index": 265
+          },
+          "end": {
+            "line": 7,
+            "column": 45,
+            "index": 284
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 265,
+          "end": 269,
+          "loc": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "index": 265
+            },
+            "end": {
+              "line": 7,
+              "column": 30,
+              "index": 269
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 270,
+            "end": 279,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 31,
+                "index": 270
+              },
+              "end": {
+                "line": 7,
+                "column": 40,
+                "index": 279
+              },
+              "identifierName": "_Fragment"
+            },
+            "name": "_Fragment"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 281,
+            "end": 283,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 42,
+                "index": 281
+              },
+              "end": {
+                "line": 7,
+                "column": 44,
+                "index": 283
+              }
+            },
+            "properties": []
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 251,
+            "end": 264,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 251
+              },
+              "end": {
+                "line": 7,
+                "column": 25,
+                "index": 264
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "CallExpression",
+        "start": 312,
+        "end": 380,
+        "loc": {
+          "start": {
+            "line": 8,
+            "column": 26,
+            "index": 312
+          },
+          "end": {
+            "line": 10,
+            "column": 14,
+            "index": 380
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 312,
+          "end": 316,
+          "loc": {
+            "start": {
+              "line": 8,
+              "column": 26,
+              "index": 312
+            },
+            "end": {
+              "line": 8,
+              "column": 30,
+              "index": 316
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 317,
+            "end": 325,
+            "loc": {
+              "start": {
+                "line": 8,
+                "column": 31,
+                "index": 317
+              },
+              "end": {
+                "line": 8,
+                "column": 39,
+                "index": 325
+              },
+              "identifierName": "Suspense"
+            },
+            "name": "Suspense"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 327,
+            "end": 379,
+            "loc": {
+              "start": {
+                "line": 8,
+                "column": 41,
+                "index": 327
+              },
+              "end": {
+                "line": 10,
+                "column": 13,
+                "index": 379
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 345,
+                "end": 365,
+                "loc": {
+                  "start": {
+                    "line": 9,
+                    "column": 16,
+                    "index": 345
+                  },
+                  "end": {
+                    "line": 9,
+                    "column": 36,
+                    "index": 365
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 345,
+                  "end": 353,
+                  "loc": {
+                    "start": {
+                      "line": 9,
+                      "column": 16,
+                      "index": 345
+                    },
+                    "end": {
+                      "line": 9,
+                      "column": 24,
+                      "index": 353
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 355,
+                  "end": 365,
+                  "loc": {
+                    "start": {
+                      "line": 9,
+                      "column": 26,
+                      "index": 355
+                    },
+                    "end": {
+                      "line": 9,
+                      "column": 36,
+                      "index": 365
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "Suspense",
+                    "raw": "\"Suspense\""
+                  },
+                  "value": "Suspense"
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 298,
+            "end": 311,
+            "loc": {
+              "start": {
+                "line": 8,
+                "column": 12,
+                "index": 298
+              },
+              "end": {
+                "line": 8,
+                "column": 25,
+                "index": 311
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_Fragment": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Fragment",
+            "aliasName": "_Fragment",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "Suspense": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Suspense",
+            "aliasName": "Suspense",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

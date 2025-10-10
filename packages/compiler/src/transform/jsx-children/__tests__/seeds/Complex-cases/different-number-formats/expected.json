@@ -1,0 +1,42 @@
+[
+  {
+    "t": "i",
+    "i": 1,
+    "d": {
+      "b": {
+        "zero": "0",
+        "one": "1",
+        "two": "-1",
+        "few": "3.14159",
+        "many": "1000000",
+        "other": "255"
+      },
+      "t": "p"
+    }
+  },
+  {
+    "t": "f",
+    "i": 2,
+    "d": {
+      "b": {
+        "active": true,
+        "inactive": false,
+        "unknown": null,
+        "pending": ""
+      },
+      "t": "b"
+    }
+  },
+  {
+    "t": "i",
+    "i": 3,
+    "d": {
+      "b": {
+        "singular": "Single 'quotes' inside",
+        "plural": "Double \"quotes\" inside",
+        "other": "Template with 'both' \"types\""
+      },
+      "t": "p"
+    }
+  }
+]

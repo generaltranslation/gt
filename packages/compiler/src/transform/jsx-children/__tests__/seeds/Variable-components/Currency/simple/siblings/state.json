@@ -1,0 +1,332 @@
+{
+  "children": {
+    "type": "ArrayExpression",
+    "start": 190,
+    "end": 351,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 18,
+        "index": 190
+      },
+      "end": {
+        "line": 11,
+        "column": 9,
+        "index": 351
+      }
+    },
+    "elements": [
+      {
+        "type": "StringLiteral",
+        "start": 204,
+        "end": 219,
+        "loc": {
+          "start": {
+            "line": 6,
+            "column": 12,
+            "index": 204
+          },
+          "end": {
+            "line": 6,
+            "column": 27,
+            "index": 219
+          }
+        },
+        "extra": {
+          "rawValue": "First sibling",
+          "raw": "\"First sibling\""
+        },
+        "value": "First sibling"
+      },
+      {
+        "type": "CallExpression",
+        "start": 247,
+        "end": 341,
+        "loc": {
+          "start": {
+            "line": 7,
+            "column": 26,
+            "index": 247
+          },
+          "end": {
+            "line": 10,
+            "column": 14,
+            "index": 341
+          }
+        },
+        "callee": {
+          "type": "Identifier",
+          "start": 247,
+          "end": 251,
+          "loc": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "index": 247
+            },
+            "end": {
+              "line": 7,
+              "column": 30,
+              "index": 251
+            },
+            "identifierName": "_jsx"
+          },
+          "name": "_jsx"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 252,
+            "end": 260,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 31,
+                "index": 252
+              },
+              "end": {
+                "line": 7,
+                "column": 39,
+                "index": 260
+              },
+              "identifierName": "Currency"
+            },
+            "name": "Currency"
+          },
+          {
+            "type": "ObjectExpression",
+            "start": 262,
+            "end": 340,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 41,
+                "index": 262
+              },
+              "end": {
+                "line": 10,
+                "column": 13,
+                "index": 340
+              }
+            },
+            "properties": [
+              {
+                "type": "ObjectProperty",
+                "start": 280,
+                "end": 295,
+                "loc": {
+                  "start": {
+                    "line": 8,
+                    "column": 16,
+                    "index": 280
+                  },
+                  "end": {
+                    "line": 8,
+                    "column": 31,
+                    "index": 295
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 280,
+                  "end": 288,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 16,
+                      "index": 280
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 24,
+                      "index": 288
+                    },
+                    "identifierName": "currency"
+                  },
+                  "name": "currency"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "StringLiteral",
+                  "start": 290,
+                  "end": 295,
+                  "loc": {
+                    "start": {
+                      "line": 8,
+                      "column": 26,
+                      "index": 290
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 31,
+                      "index": 295
+                    }
+                  },
+                  "extra": {
+                    "rawValue": "USD",
+                    "raw": "\"USD\""
+                  },
+                  "value": "USD"
+                }
+              },
+              {
+                "type": "ObjectProperty",
+                "start": 313,
+                "end": 326,
+                "loc": {
+                  "start": {
+                    "line": 9,
+                    "column": 16,
+                    "index": 313
+                  },
+                  "end": {
+                    "line": 9,
+                    "column": 29,
+                    "index": 326
+                  }
+                },
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 313,
+                  "end": 321,
+                  "loc": {
+                    "start": {
+                      "line": 9,
+                      "column": 16,
+                      "index": 313
+                    },
+                    "end": {
+                      "line": 9,
+                      "column": 24,
+                      "index": 321
+                    },
+                    "identifierName": "children"
+                  },
+                  "name": "children"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "NumericLiteral",
+                  "start": 323,
+                  "end": 326,
+                  "loc": {
+                    "start": {
+                      "line": 9,
+                      "column": 26,
+                      "index": 323
+                    },
+                    "end": {
+                      "line": 9,
+                      "column": 29,
+                      "index": 326
+                    }
+                  },
+                  "extra": {
+                    "rawValue": 100,
+                    "raw": "100"
+                  },
+                  "value": 100
+                }
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "#__PURE__",
+            "start": 233,
+            "end": 246,
+            "loc": {
+              "start": {
+                "line": 7,
+                "column": 12,
+                "index": 233
+              },
+              "end": {
+                "line": 7,
+                "column": 25,
+                "index": 246
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_jsxs": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsxs",
+            "aliasName": "_jsxs",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "Currency": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Currency",
+            "aliasName": "Currency",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

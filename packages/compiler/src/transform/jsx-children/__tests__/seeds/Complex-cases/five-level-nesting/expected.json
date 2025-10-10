@@ -1,0 +1,65 @@
+{
+  "t": "f",
+  "i": 1,
+  "d": {
+    "b": {
+      "option1": {
+        "t": "i",
+        "i": 2,
+        "d": {
+          "b": {
+            "singular": {
+              "t": "f",
+              "i": 3,
+              "d": {
+                "b": {
+                  "option1": {
+                    "t": "i",
+                    "i": 4,
+                    "d": {
+                      "b": {
+                        "singular": {
+                          "t": "f",
+                          "i": 5,
+                          "d": {
+                            "b": {
+                              "option1": {
+                                "t": "i",
+                                "i": 6,
+                                "d": {
+                                  "b": {
+                                    "singular": {
+                                      "i": 7,
+                                      "k": "deep_var",
+                                      "v": "v"
+                                    },
+                                    "plural": "deep files"
+                                  },
+                                  "t": "p"
+                                }
+                              },
+                              "option2": "level3 option2"
+                            },
+                            "t": "b"
+                          }
+                        },
+                        "plural": "level2 plurals"
+                      },
+                      "t": "p"
+                    }
+                  },
+                  "option2": "level2 option2"
+                },
+                "t": "b"
+              }
+            },
+            "plural": "level1 plurals"
+          },
+          "t": "p"
+        }
+      },
+      "option2": "level1 option2"
+    },
+    "t": "b"
+  }
+}

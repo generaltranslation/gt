@@ -1,0 +1,220 @@
+{
+  "children": {
+    "type": "CallExpression",
+    "start": 201,
+    "end": 264,
+    "loc": {
+      "start": {
+        "line": 5,
+        "column": 32,
+        "index": 201
+      },
+      "end": {
+        "line": 7,
+        "column": 10,
+        "index": 264
+      }
+    },
+    "callee": {
+      "type": "Identifier",
+      "start": 201,
+      "end": 205,
+      "loc": {
+        "start": {
+          "line": 5,
+          "column": 32,
+          "index": 201
+        },
+        "end": {
+          "line": 5,
+          "column": 36,
+          "index": 205
+        },
+        "identifierName": "_jsx"
+      },
+      "name": "_jsx"
+    },
+    "arguments": [
+      {
+        "type": "Identifier",
+        "start": 206,
+        "end": 215,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 37,
+            "index": 206
+          },
+          "end": {
+            "line": 5,
+            "column": 46,
+            "index": 215
+          },
+          "identifierName": "_Fragment"
+        },
+        "name": "_Fragment"
+      },
+      {
+        "type": "ObjectExpression",
+        "start": 217,
+        "end": 263,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 48,
+            "index": 217
+          },
+          "end": {
+            "line": 7,
+            "column": 9,
+            "index": 263
+          }
+        },
+        "properties": [
+          {
+            "type": "ObjectProperty",
+            "start": 231,
+            "end": 253,
+            "loc": {
+              "start": {
+                "line": 6,
+                "column": 12,
+                "index": 231
+              },
+              "end": {
+                "line": 6,
+                "column": 34,
+                "index": 253
+              }
+            },
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 231,
+              "end": 239,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 12,
+                  "index": 231
+                },
+                "end": {
+                  "line": 6,
+                  "column": 20,
+                  "index": 239
+                },
+                "identifierName": "children"
+              },
+              "name": "children"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "StringLiteral",
+              "start": 241,
+              "end": 253,
+              "loc": {
+                "start": {
+                  "line": 6,
+                  "column": 22,
+                  "index": 241
+                },
+                "end": {
+                  "line": 6,
+                  "column": 34,
+                  "index": 253
+                }
+              },
+              "extra": {
+                "rawValue": "Plain text",
+                "raw": "\"Plain text\""
+              },
+              "value": "Plain text"
+            }
+          }
+        ]
+      }
+    ],
+    "leadingComments": [
+      {
+        "type": "CommentBlock",
+        "value": "#__PURE__",
+        "start": 187,
+        "end": 200,
+        "loc": {
+          "start": {
+            "line": 5,
+            "column": 18,
+            "index": 187
+          },
+          "end": {
+            "line": 5,
+            "column": 31,
+            "index": 200
+          }
+        }
+      }
+    ]
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 2,
+      "scopeStack": [
+        0,
+        1
+      ],
+      "scopeInfo": {
+        "1": {
+          "id": 1,
+          "parentId": 0,
+          "depth": 0
+        },
+        "2": {
+          "id": 2,
+          "parentId": 1,
+          "depth": 2
+        }
+      },
+      "scopedVariables": {
+        "_jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "_jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "_Fragment": [
+          {
+            "scopeId": 0,
+            "canonicalName": "Fragment",
+            "aliasName": "_Fragment",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}
