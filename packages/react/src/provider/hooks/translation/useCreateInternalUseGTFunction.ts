@@ -96,17 +96,13 @@ export default function useCreateInternalUseGTFunction({
     if (id) {
       translationEntry = translations?.[id];
     }
-    // TODO: uncomment
-    // if (_hash && typeof translationEntry === 'undefined') {
-    //   hash = _hash;
-    //   translationEntry = translations?.[_hash];
-    // }
+    if (_hash && typeof translationEntry === 'undefined') {
+      hash = _hash;
+      translationEntry = translations?.[_hash];
+    }
     // Use calculated hash to index
     if (typeof translationEntry === 'undefined') {
       hash = calculateHash();
-      if (_hash !== hash) {
-        throw new Error('[GT-REACT] gt() _hash mismatch');
-      }
       translationEntry = translations?.[hash];
     }
     return {

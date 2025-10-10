@@ -56,10 +56,6 @@ function T({
   _hash?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
-  console.log('T', _hash, children);
-  if (!_hash) {
-    throw new Error('[GT-REACT] <T> _hash is required');
-  }
   if (!children) return undefined;
 
   // Compatibility with different options
@@ -89,10 +85,9 @@ function T({
     translationEntry = translations?.[id];
   }
 
-  // TODO: uncomment
-  // if (typeof translationEntry === 'undefined' && _hash) {
-  //   translationEntry = translations?.[_hash];
-  // }
+  if (typeof translationEntry === 'undefined' && _hash) {
+    translationEntry = translations?.[_hash];
+  }
 
   // Calculate necessary info for fetching translation / generating translation
   const [childrenAsObjects, hash] = useMemo(() => {
@@ -111,11 +106,6 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-
-    // TODO: remove
-    if (_hash !== hash) {
-      throw new Error('[GT-REACT] <T> _hash mismatch');
-    }
 
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);
