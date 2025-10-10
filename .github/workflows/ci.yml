@@ -90,7 +90,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.gt_next_changed.outputs.changed == 'true'
-        run: pnpm install --filter='gt-next...[origin/${{ github.base_ref }}]'
+        run: pnpm install
 
       - name: Test Builds
         if: steps.gt_next_changed.outputs.changed == 'true'
