@@ -394,7 +394,7 @@ export const TranslationView = () => {
                   }}
                   text={isBusy ? 'Patching...' : 'Patch References'}
                   icon={isBusy ? null : LinkIcon}
-                  disabled={isBusy}
+                  disabled={isBusy || isImporting}
                   style={{ minWidth: '180px' }}
                 />
               </Tooltip>
@@ -402,7 +402,7 @@ export const TranslationView = () => {
                 <Switch
                   checked={autoPatchReferences}
                   onChange={() => setAutoPatchReferences(!autoPatchReferences)}
-                  disabled={isImporting}
+                  disabled={isImporting || isBusy}
                 />
                 <Text size={1}>Auto-patch after import</Text>
               </Flex>
@@ -411,7 +411,7 @@ export const TranslationView = () => {
             <Flex gap={2} align='center' justify='flex-start'>
               <Tooltip
                 placement='top'
-                content='Publishes all imported translation documents'
+                content='Publishes all translations (if the source document is published)'
               >
                 <Button
                   mode='ghost'
@@ -433,7 +433,7 @@ export const TranslationView = () => {
                   }}
                   text={isPublishing ? 'Publishing...' : 'Publish Translations'}
                   icon={isPublishing ? null : PublishIcon}
-                  disabled={isBusy || isPublishing}
+                  disabled={isBusy || isPublishing || isImporting}
                   style={{ minWidth: '180px' }}
                 />
               </Tooltip>
@@ -441,7 +441,7 @@ export const TranslationView = () => {
                 <Switch
                   checked={autoPublish}
                   onChange={() => setAutoPublish(!autoPublish)}
-                  disabled={isPublishing}
+                  disabled={isPublishing || isImporting || isBusy}
                 />
                 <Text size={1}>Auto-publish after import</Text>
               </Flex>

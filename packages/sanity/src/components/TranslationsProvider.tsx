@@ -594,32 +594,32 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     async (documentId: string, localeId: string) => {
       if (!secrets) return;
 
+      const key = `${documentId}:${localeId}`;
+      const status = translationStatuses.get(key);
+
+      if (!status?.isReady || !status.translationId) {
+        toast.push({
+          title: `Translation not ready for ${documentId} (${localeId})`,
+          status: 'warning',
+          closable: true,
+        });
+        return;
+      }
+
+      const document = documents.find(
+        (doc) => (doc._id?.replace('drafts.', '') || doc._id) === documentId
+      );
+
+      if (!document) {
+        toast.push({
+          title: `Document ${documentId} not found`,
+          status: 'error',
+          closable: true,
+        });
+        return;
+      }
+
       try {
-        const key = `${documentId}:${localeId}`;
-        const status = translationStatuses.get(key);
-
-        if (!status?.isReady || !status.translationId) {
-          toast.push({
-            title: `Translation not ready for ${documentId} (${localeId})`,
-            status: 'warning',
-            closable: true,
-          });
-          return;
-        }
-
-        const document = documents.find(
-          (doc) => (doc._id?.replace('drafts.', '') || doc._id) === documentId
-        );
-
-        if (!document) {
-          toast.push({
-            title: `Document ${documentId} not found`,
-            status: 'error',
-            closable: true,
-          });
-          return;
-        }
-
         const downloadedFiles = await downloadTranslations(
           [
             {
@@ -682,7 +682,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       }
     },
-    [secrets, documents, translationContext]
+    [secrets, documents, translationContext, translationStatuses]
   );
 
   const handlePatchDocumentReferences = useCallback(async () => {
