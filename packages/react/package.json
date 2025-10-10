@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "10.6.4",
+  "version": "10.7.0-alpha.1",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -14,7 +14,7 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
-    "@generaltranslation/compiler": "workspace:*",
+    "@generaltranslation/compiler": "1.0.0-alpha.0",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*"
   },
@@ -48,6 +48,7 @@
     "@babel/preset-typescript": "^7.26.0",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
@@ -78,10 +79,10 @@
       "require": "./dist/client.cjs.min.cjs",
       "import": "./dist/client.esm.min.mjs"
     },
-    "./compiler": {
-      "types": "./dist/compiler.d.ts",
-      "require": "./dist/compiler.cjs.min.cjs",
-      "import": "./dist/compiler.esm.min.mjs"
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "require": "./dist/config.cjs.min.cjs",
+      "import": "./dist/config.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -92,8 +93,8 @@
       "internal": [
         "./dist/internal.d.ts"
       ],
-      "compiler": [
-        "./dist/compiler.d.ts"
+      "config": [
+        "./dist/config.d.ts"
       ]
     }
   },
@@ -106,8 +107,8 @@
       "gt-react/internal": [
         "./dist/internal"
       ],
-      "gt-react/compiler": [
-        "./dist/compiler"
+      "gt-react/config": [
+        "./dist/config"
       ]
     }
   },
