@@ -112,26 +112,12 @@ export const TranslationView = () => {
 
         // Auto patch document references if enabled
         if (autoPatchReferences) {
-          const patchCount = await handlePatchDocumentReferences();
-          if (patchCount > 0) {
-            toast.push({
-              title: `Successfully patched references in ${patchCount} ${patchCount === 1 ? 'document' : 'documents'}`,
-              status: 'success',
-              closable: true,
-            });
-          }
+          await handlePatchDocumentReferences();
         }
 
         // Auto publish translations if enabled
         if (autoPublish) {
-          const publishCount = await handlePublishAllTranslations();
-          if (publishCount > 0) {
-            toast.push({
-              title: `Successfully published ${publishCount} translation ${publishCount === 1 ? 'document' : 'documents'}`,
-              status: 'success',
-              closable: true,
-            });
-          }
+          await handlePublishAllTranslations();
         }
       } finally {
         setIsImporting(false);
@@ -383,14 +369,7 @@ export const TranslationView = () => {
                   mode='ghost'
                   tone='caution'
                   onClick={async () => {
-                    const count = await handlePatchDocumentReferences();
-                    if (count > 0) {
-                      toast.push({
-                        title: `Successfully patched references in ${count} ${count === 1 ? 'document' : 'documents'}`,
-                        status: 'success',
-                        closable: true,
-                      });
-                    }
+                    await handlePatchDocumentReferences();
                   }}
                   text={isBusy ? 'Patching...' : 'Patch References'}
                   icon={isBusy ? null : LinkIcon}
@@ -419,14 +398,7 @@ export const TranslationView = () => {
                   onClick={async () => {
                     setIsPublishing(true);
                     try {
-                      const count = await handlePublishAllTranslations();
-                      if (count > 0) {
-                        toast.push({
-                          title: `Successfully published ${count} translation ${count === 1 ? 'document' : 'documents'}`,
-                          status: 'success',
-                          closable: true,
-                        });
-                      }
+                      await handlePublishAllTranslations();
                     } finally {
                       setIsPublishing(false);
                     }
