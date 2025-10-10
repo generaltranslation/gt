@@ -558,7 +558,7 @@ export function withGTConfig(
       }),
       swcPlugins: [
         ...(nextConfig.experimental?.swcPlugins || []),
-        ...(swcPluginEntry ? swcPluginEntry : []),
+        ...(swcPluginEntry ? [swcPluginEntry] : []),
       ],
       ...(turboPackEnabled &&
         experimentalTurbopack && {

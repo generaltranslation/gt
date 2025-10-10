@@ -3,4 +3,4 @@
 'gt-next': minor
 ---
 
-feat: babel compiler for react
+feat: babel compiler
