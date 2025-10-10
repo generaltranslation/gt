@@ -5,12 +5,10 @@ import postcss from 'rollup-plugin-postcss';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import { babel } from '@rollup/plugin-babel';
 import preserveDirectives from 'rollup-preserve-directives';
-import json from '@rollup/plugin-json';
 
 export default {
   plugins: [
     peerDepsExternal(), // Exclude peer dependencies from the bundle
-    json(), // Handle JSON imports
     resolve({
       // Locates and bundles dependencies in node_modules
       browser: true,
@@ -31,5 +29,10 @@ export default {
     postcss(), // Process CSS files
     preserveDirectives(), // Preserve directives in the output (i.e., "use client")
   ],
-  external: ['react', 'react-dom', 'generaltranslation', '@generaltranslation/supported-locales'],
+  external: [
+    'react',
+    'react-dom',
+    'generaltranslation',
+    '@generaltranslation/supported-locales',
+  ],
 };

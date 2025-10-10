@@ -74,41 +74,6 @@ export default [
   },
 
   /* ---------------------------------------- */
-  // Bundling for the config library (config.ts)
-  {
-    input: './src/config.ts',
-    output: [
-      {
-        file: './dist/config.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto', // 'auto' ensures compatibility with both default and named exports in CommonJS
-        sourcemap: false,
-      },
-      {
-        file: './dist/config.esm.min.mjs',
-        format: 'esm',
-        exports: 'named', // Named exports for ES modules
-        sourcemap: false,
-      },
-    ],
-    plugins: [
-      ...baseConfig.plugins,
-      terser(), // Minification
-    ],
-    external: baseConfig.external,
-  },
-
-  // TypeScript declarations for the config library (config.ts)
-  {
-    input: './src/config.ts',
-    output: {
-      file: './dist/config.d.ts',
-      format: 'esm',
-    },
-    plugins: [dts()],
-  },
-
-  /* ---------------------------------------- */
   // Bundling for the client library (client.ts)
   {
     input: 'src/client.ts',
