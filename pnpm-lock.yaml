@@ -109,8 +109,8 @@ importers:
         specifier: ^7.6.3
         version: 7.6.3
       gt-next:
-        specifier: ^6.6.3
-        version: 6.6.3(next@15.5.4(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        specifier: ^6.6.0
+        version: 6.6.3(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       gtx-cli:
         specifier: ^2.3.5
         version: 2.3.5(@babel/core@7.28.4)
@@ -560,8 +560,8 @@ importers:
   packages/next-lint:
     dependencies:
       gt-next:
-        specifier: ^6.6.3
-        version: 6.6.3(next@15.5.4(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        specifier: 6.6.6
+        version: 6.6.6(next@15.5.4(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
     devDependencies:
       '@types/eslint':
         specifier: ^8.56.0
@@ -2269,6 +2269,9 @@ packages:
 
   '@generaltranslation/supported-locales@2.0.13':
     resolution: {integrity: sha512-qNoaABy9VSuWgOVDjy7jSq8wA5vTmIeJl5ntG8RgXk6ARuAhlozDpxXm0VAmq3np/ocao/+Y9uqcbQT/Fofm+Q==}
+
+  '@generaltranslation/supported-locales@2.0.14':
+    resolution: {integrity: sha512-xsc2TFR5SwM5KTN/yKNH1DJQArTo5cWrJs9SnOpyNP6w0r4gffU/9HnxOx1U5/CLpAnVUABkEefTLlKOo6vI6Q==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -6622,6 +6625,9 @@ packages:
   generaltranslation@7.6.3:
     resolution: {integrity: sha512-e9lt/Nuz8qgzCgFCHhjuiuEvlyTkJymqZ+byzt7Y1fSBmiVEtGNqjU7iVd7u5ikwm7TCFq0rhTjEx/i3dtvvkw==}
 
+  generaltranslation@7.6.4:
+    resolution: {integrity: sha512-G/+OWeEVJZkUvnReBbqY7kRbP4U7WuTWLi1Gos8C3nr8Sqey1vi1wYFGbcYmr3zvSK6TFDy4S0OG9BZ1YgepMg==}
+
   generic-names@4.0.0:
     resolution: {integrity: sha512-ySFolZQfw9FoDb3ed9d80Cm9f0+r7qj+HJkWjeD9RBfpxEVTlVhol+gvaQB/78WbwYfbnNh8nWHHBSlg072y6A==}
 
@@ -6828,8 +6834,21 @@ packages:
       react: '>=16.8.0 <20.0.0'
       react-dom: '>=16.8.0 <20.0.0'
 
+  gt-next@6.6.6:
+    resolution: {integrity: sha512-D8wZw33xGYbWm3eaTphDYJrPOm0qrf6HsoZdVvmlaTJhqNnVWy5exBIwR606UUfyWbV2d2aWN38OEotNhufxlw==}
+    peerDependencies:
+      next: '>=13.0.0 <15.2.1 || >15.2.2'
+      react: '>=16.8.0 <20.0.0'
+      react-dom: '>=16.8.0 <20.0.0'
+
   gt-react@10.6.1:
     resolution: {integrity: sha512-V6lS+czyy7G9KUP2pTV2kJXw/CBYdiWrDSCffLYd3uUPUFmZtT6euaDapS68Z8bztODAKo7ho/j8pAXJ1GBrug==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  gt-react@10.6.4:
+    resolution: {integrity: sha512-Go7OsuuyF+OuEPVxZAI8MyuNpc4SbJ6AvwpjG54UGCJSGVvrcl5drwh0S/bPiBVvMBQZyV3MbYtfpLFiQLzIUg==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -12752,6 +12771,10 @@ snapshots:
     dependencies:
       generaltranslation: 7.6.3
 
+  '@generaltranslation/supported-locales@2.0.14':
+    dependencies:
+      generaltranslation: 7.6.4
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -18402,6 +18425,12 @@ snapshots:
       fast-json-stable-stringify: 2.1.0
       intl-messageformat: 10.7.16
 
+  generaltranslation@7.6.4:
+    dependencies:
+      crypto-js: 4.2.0
+      fast-json-stable-stringify: 2.1.0
+      intl-messageformat: 10.7.16
+
   generic-names@4.0.0:
     dependencies:
       loader-utils: 3.3.1
@@ -18649,7 +18678,7 @@ snapshots:
 
   groq@4.10.1: {}
 
-  gt-next@6.6.3(next@15.5.4(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  gt-next@6.6.3(next@15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       '@generaltranslation/supported-locales': 2.0.13
       generaltranslation: 7.6.3
@@ -18658,10 +18687,26 @@ snapshots:
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
 
+  gt-next@6.6.6(next@15.5.4(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      '@generaltranslation/supported-locales': 2.0.14
+      generaltranslation: 7.6.4
+      gt-react: 10.6.4(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      next: 15.5.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+
   gt-react@10.6.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       '@generaltranslation/supported-locales': 2.0.13
       generaltranslation: 7.6.3
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+
+  gt-react@10.6.4(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      '@generaltranslation/supported-locales': 2.0.14
+      generaltranslation: 7.6.4
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
 
