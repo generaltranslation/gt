@@ -319,6 +319,7 @@ export const TranslationView = () => {
               <Flex gap={2} align='center'>
                 <Button
                   mode='ghost'
+                  tone='primary'
                   onClick={() => handleImportTranslations()}
                   text={isImporting ? 'Importing...' : 'Import All'}
                   icon={DownloadIcon}
@@ -394,7 +395,7 @@ export const TranslationView = () => {
               >
                 <Button
                   mode='ghost'
-                  tone='primary'
+                  tone='positive'
                   onClick={async () => {
                     setIsPublishing(true);
                     try {
