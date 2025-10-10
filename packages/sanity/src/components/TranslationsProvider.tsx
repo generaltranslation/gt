@@ -77,8 +77,8 @@ interface TranslationsContextType {
   handleImportMissing: () => Promise<void>;
   handleRefreshAll: () => Promise<void>;
   handleImportDocument: (documentId: string, localeId: string) => Promise<void>;
-  handlePatchDocumentReferences: () => Promise<void>;
-  handlePublishAllTranslations: () => Promise<void>;
+  handlePatchDocumentReferences: () => Promise<number>;
+  handlePublishAllTranslations: () => Promise<number>;
 }
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
@@ -594,32 +594,32 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     async (documentId: string, localeId: string) => {
       if (!secrets) return;
 
+      const key = `${documentId}:${localeId}`;
+      const status = translationStatuses.get(key);
+
+      if (!status?.isReady || !status.translationId) {
+        toast.push({
+          title: `Translation not ready for ${documentId} (${localeId})`,
+          status: 'warning',
+          closable: true,
+        });
+        return;
+      }
+
+      const document = documents.find(
+        (doc) => (doc._id?.replace('drafts.', '') || doc._id) === documentId
+      );
+
+      if (!document) {
+        toast.push({
+          title: `Document ${documentId} not found`,
+          status: 'error',
+          closable: true,
+        });
+        return;
+      }
+
       try {
-        const key = `${documentId}:${localeId}`;
-        const status = translationStatuses.get(key);
-
-        if (!status?.isReady || !status.translationId) {
-          toast.push({
-            title: `Translation not ready for ${documentId} (${localeId})`,
-            status: 'warning',
-            closable: true,
-          });
-          return;
-        }
-
-        const document = documents.find(
-          (doc) => (doc._id?.replace('drafts.', '') || doc._id) === documentId
-        );
-
-        if (!document) {
-          toast.push({
-            title: `Document ${documentId} not found`,
-            status: 'error',
-            closable: true,
-          });
-          return;
-        }
-
         const downloadedFiles = await downloadTranslations(
           [
             {
@@ -682,11 +682,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       }
     },
-    [secrets, documents, translationContext]
+    [secrets, documents, translationContext, translationStatuses]
   );
 
   const handlePatchDocumentReferences = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
+    if (!secrets || documents.length === 0) return 0;
 
     setIsBusy(true);
 
@@ -775,6 +775,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           patchedCount > 0 || result.failureCount === 0 ? 'success' : 'error',
         closable: true,
       });
+
+      return patchedCount;
     } catch (error) {
       console.error('Error patching document references:', error);
       toast.push({
@@ -782,6 +784,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         status: 'error',
         closable: true,
       });
+      return 0;
     } finally {
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
@@ -789,7 +792,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   }, [secrets, documents, locales, client]);
 
   const handlePublishAllTranslations = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
+    if (!secrets || documents.length === 0) return 0;
 
     setIsBusy(true);
 
@@ -806,7 +809,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           status: 'warning',
           closable: true,
         });
-        return;
+        return 0;
       }
 
       const query = `*[
@@ -840,7 +843,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           status: 'warning',
           closable: true,
         });
-        return;
+        return 0;
       }
 
       const translatedDocumentIds = await publishTranslations(
@@ -853,6 +856,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         status: 'success',
         closable: true,
       });
+
+      return translatedDocumentIds.length;
     } catch (error) {
       console.error('Error publishing translations:', error);
       toast.push({
@@ -860,6 +865,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         status: 'error',
         closable: true,
       });
+      return 0;
     } finally {
       setIsBusy(false);
     }

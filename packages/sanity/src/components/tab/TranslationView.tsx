@@ -15,12 +15,13 @@ import {
   Flex,
   Switch,
   Tooltip,
+  useToast,
 } from '@sanity/ui';
 import { pluginConfig } from '../../adapter/core';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
-import { DownloadIcon, LinkIcon } from '@sanity/icons';
+import { DownloadIcon, LinkIcon, PublishIcon } from '@sanity/icons';
 
 export const TranslationView = () => {
   const {
@@ -35,11 +36,17 @@ export const TranslationView = () => {
     importedTranslations,
     setLocales,
     handlePatchDocumentReferences,
+    handlePublishAllTranslations,
   } = useTranslations();
 
   const [autoImport, setAutoImport] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoPatchReferences, setAutoPatchReferences] = useState(true);
+  const [autoPublish, setAutoPublish] = useState(true);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  const toast = useToast();
 
   // Get the single document (first document in single document mode)
   const document = documents[0];
@@ -76,70 +83,66 @@ export const TranslationView = () => {
     return document._id?.replace('drafts.', '') || document._id;
   }, [document]);
 
-  // Auto import functionality
-  const checkAndImportCompletedTranslations = useCallback(async () => {
-    if (!autoImport || isImporting || !documentId) return;
+  // Unified import functionality
+  const handleImportTranslations = useCallback(
+    async (options: { autoOnly?: boolean } = {}) => {
+      const { autoOnly = false } = options;
 
-    const completedTranslations = availableLocales.filter((locale) => {
-      const key = `${documentId}:${locale.localeId}`;
-      const status = translationStatuses.get(key);
-      return (
-        (status?.progress || 0) >= 100 &&
-        status?.isReady &&
-        !importedTranslations.has(key)
-      );
-    });
+      // Check preconditions
+      if (isImporting || !documentId) return;
+      if (autoOnly && !autoImport) return;
 
-    if (completedTranslations.length === 0) return;
-
-    setIsImporting(true);
-    try {
-      for (const locale of completedTranslations) {
-        await handleImportDocument(documentId, locale.localeId);
-      }
-    } finally {
-      setIsImporting(false);
-    }
-  }, [
-    autoImport,
-    isImporting,
-    documentId,
-    availableLocales,
-    translationStatuses,
-    importedTranslations,
-    handleImportDocument,
-  ]);
-
-  const handleImportAll = useCallback(async () => {
-    if (isImporting || !documentId) return;
-
-    setIsImporting(true);
-    try {
+      // Find translations ready to import
       const readyTranslations = availableLocales.filter((locale) => {
         const key = `${documentId}:${locale.localeId}`;
         const status = translationStatuses.get(key);
         return status?.isReady && !importedTranslations.has(key);
       });
 
-      for (const locale of readyTranslations) {
-        await handleImportDocument(documentId, locale.localeId);
-      }
-    } finally {
-      setIsImporting(false);
-    }
-  }, [
-    isImporting,
-    documentId,
-    availableLocales,
-    translationStatuses,
-    importedTranslations,
-    handleImportDocument,
-  ]);
+      if (readyTranslations.length === 0) return;
 
-  // Check for completed translations on status updates
+      setIsImporting(true);
+      try {
+        // Import all ready translations
+        await Promise.all(
+          readyTranslations.map((locale) =>
+            handleImportDocument(documentId, locale.localeId)
+          )
+        );
+
+        // Auto patch document references if enabled
+        if (autoPatchReferences) {
+          await handlePatchDocumentReferences();
+        }
+
+        // Auto publish translations if enabled
+        if (autoPublish) {
+          await handlePublishAllTranslations();
+        }
+      } finally {
+        setIsImporting(false);
+      }
+    },
+    [
+      autoImport,
+      isImporting,
+      documentId,
+      availableLocales,
+      translationStatuses,
+      importedTranslations,
+      handleImportDocument,
+      autoPatchReferences,
+      handlePatchDocumentReferences,
+      autoPublish,
+      handlePublishAllTranslations,
+      toast,
+    ]
+  );
+
+  // Check for completed translations on status updates (auto-import)
   useEffect(() => {
-    checkAndImportCompletedTranslations();
-  }, [checkAndImportCompletedTranslations]);
+    handleImportTranslations({ autoOnly: true });
+  }, [handleImportTranslations]);
 
   // Auto refresh functionality
   useEffect(() => {
@@ -147,7 +150,7 @@ export const TranslationView = () => {
 
     const interval = setInterval(async () => {
       await handleRefreshAll();
-      await checkAndImportCompletedTranslations();
+      await handleImportTranslations({ autoOnly: true });
     }, 10000);
 
     return () => clearInterval(interval);
@@ -156,13 +159,13 @@ export const TranslationView = () => {
     documentId,
     availableLocales.length,
     handleRefreshAll,
-    checkAndImportCompletedTranslations,
+    handleImportTranslations,
   ]);
 
   useEffect(() => {
     const initialRefresh = async () => {
       await handleRefreshAll();
-      await checkAndImportCompletedTranslations();
+      await handleImportTranslations({ autoOnly: true });
     };
     initialRefresh();
   }, []);
@@ -316,7 +319,8 @@ export const TranslationView = () => {
               <Flex gap={2} align='center'>
                 <Button
                   mode='ghost'
-                  onClick={handleImportAll}
+                  tone='primary'
+                  onClick={() => handleImportTranslations()}
                   text={isImporting ? 'Importing...' : 'Import All'}
                   icon={DownloadIcon}
                   disabled={
@@ -327,36 +331,37 @@ export const TranslationView = () => {
                       return !status?.isReady || importedTranslations.has(key);
                     })
                   }
+                  style={{ minWidth: '180px' }}
                 />
-                <Text size={1} muted>
-                  Imported{' '}
-                  {
-                    availableLocales.filter((locale) => {
-                      const key = `${documentId}:${locale.localeId}`;
-                      return importedTranslations.has(key);
-                    }).length
-                  }
-                  /
-                  {
-                    availableLocales.filter((locale) => {
-                      const key = `${documentId}:${locale.localeId}`;
-                      const status = translationStatuses.get(key);
-                      return status?.isReady;
-                    }).length
-                  }
-                </Text>
+                <Flex gap={2} align='center'>
+                  <Switch
+                    checked={autoImport}
+                    onChange={() => setAutoImport(!autoImport)}
+                    disabled={isImporting}
+                  />
+                  <Text size={1}>Auto-import when complete</Text>
+                </Flex>
               </Flex>
-              <Flex gap={2} align='center' style={{ whiteSpace: 'nowrap' }}>
-                <Text size={1}>Auto-import when complete</Text>
-                <Switch
-                  checked={autoImport}
-                  onChange={() => setAutoImport(!autoImport)}
-                  disabled={isImporting}
-                />
-              </Flex>
+              <Text size={1} muted>
+                Imported{' '}
+                {
+                  availableLocales.filter((locale) => {
+                    const key = `${documentId}:${locale.localeId}`;
+                    return importedTranslations.has(key);
+                  }).length
+                }
+                /
+                {
+                  availableLocales.filter((locale) => {
+                    const key = `${documentId}:${locale.localeId}`;
+                    const status = translationStatuses.get(key);
+                    return status?.isReady;
+                  }).length
+                }
+              </Text>
             </Flex>
 
-            <Flex justify='flex-start'>
+            <Flex gap={2} align='center' justify='flex-start'>
               <Tooltip
                 placement='top'
                 content={`Replaces references to ${pluginConfig.getSourceLocale()} documents in this document with the corresponding translated document reference`}
@@ -364,12 +369,55 @@ export const TranslationView = () => {
                 <Button
                   mode='ghost'
                   tone='caution'
-                  onClick={handlePatchDocumentReferences}
-                  text={isBusy ? 'Patching...' : 'Patch Document References'}
+                  onClick={async () => {
+                    await handlePatchDocumentReferences();
+                  }}
+                  text={isBusy ? 'Patching...' : 'Patch References'}
                   icon={isBusy ? null : LinkIcon}
-                  disabled={isBusy}
+                  disabled={isBusy || isImporting}
+                  style={{ minWidth: '180px' }}
                 />
               </Tooltip>
+              <Flex gap={2} align='center'>
+                <Switch
+                  checked={autoPatchReferences}
+                  onChange={() => setAutoPatchReferences(!autoPatchReferences)}
+                  disabled={isImporting || isBusy}
+                />
+                <Text size={1}>Auto-patch after import</Text>
+              </Flex>
+            </Flex>
+
+            <Flex gap={2} align='center' justify='flex-start'>
+              <Tooltip
+                placement='top'
+                content='Publishes all translations (if the source document is published)'
+              >
+                <Button
+                  mode='ghost'
+                  tone='positive'
+                  onClick={async () => {
+                    setIsPublishing(true);
+                    try {
+                      await handlePublishAllTranslations();
+                    } finally {
+                      setIsPublishing(false);
+                    }
+                  }}
+                  text={isPublishing ? 'Publishing...' : 'Publish Translations'}
+                  icon={isPublishing ? null : PublishIcon}
+                  disabled={isBusy || isPublishing || isImporting}
+                  style={{ minWidth: '180px' }}
+                />
+              </Tooltip>
+              <Flex gap={2} align='center'>
+                <Switch
+                  checked={autoPublish}
+                  onChange={() => setAutoPublish(!autoPublish)}
+                  disabled={isPublishing || isImporting || isBusy}
+                />
+                <Text size={1}>Auto-publish after import</Text>
+              </Flex>
             </Flex>
           </Stack>
         </Stack>
