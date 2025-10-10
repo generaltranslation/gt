@@ -1,5 +1,23 @@
 # gtx-cli
 
+## 2.3.9
+
+### Patch Changes
+
+- [#715](https://github.com/generaltranslation/gt/pull/715) [`cc6c06a`](https://github.com/generaltranslation/gt/commit/cc6c06abf0ad0f00f55825e85d59d199ffbec263) Thanks [@brian-lou](https://github.com/brian-lou)! - Instead of throwing errors, CLI will now call process.exit
+
+## 2.3.8
+
+### Patch Changes
+
+- [#713](https://github.com/generaltranslation/gt/pull/713) [`b8feb26`](https://github.com/generaltranslation/gt/commit/b8feb2638613f54b76b5f3768edc6039db512c53) Thanks [@SamEggert](https://github.com/SamEggert)! - rename clearLocaleFolders to clearLocaleDirs
+
+## 2.3.7
+
+### Patch Changes
+
+- [#710](https://github.com/generaltranslation/gt/pull/710) [`8325bae`](https://github.com/generaltranslation/gt/commit/8325bae9a8661a0b269131ac6dadefab327c5b2c) Thanks [@SamEggert](https://github.com/SamEggert)! - add clearLocaleFolders option
+
 ## 2.3.6
 
 ### Patch Changes

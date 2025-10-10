@@ -3,6 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "cache": true,
       "outputs": ["dist/**"]
     },
     "transpile": {
@@ -25,14 +26,17 @@
     },
     "build:clean": {
       "dependsOn": ["^build:clean"],
+      "cache": true,
       "outputs": ["dist/**"]
     },
     "build:turbopack": {
       "dependsOn": ["^build:turbopack"],
+      "cache": true,
       "outputs": ["dist/**"]
     },
     "build:release": {
       "dependsOn": ["^build:release"],
+      "cache": true,
       "outputs": ["dist/**"],
       "env": ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN"]
     }

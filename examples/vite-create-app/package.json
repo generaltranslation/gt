@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "gt-react": "workspace:*",
-    "gtx-cli": "workspace:*",
+    "gt-react": "latest",
+    "gtx-cli": "latest",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

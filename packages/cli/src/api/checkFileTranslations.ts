@@ -5,6 +5,8 @@ import { BatchedFiles, downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
+import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
+import path from 'node:path';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -46,6 +48,34 @@ export async function checkFileTranslations(
 
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
+
+  // Clear translated files before any downloads (if enabled)
+  if (
+    options.options?.experimentalClearLocaleDirs === true &&
+    fileQueryData.length > 0
+  ) {
+    const translatedFiles = new Set(
+      fileQueryData
+        .map((file) => {
+          const outputPath = resolveOutputPath(file.fileName, file.locale);
+          // Only clear if the output path is different from the source (i.e., there's a transform)
+          return outputPath !== null && outputPath !== file.fileName
+            ? outputPath
+            : null;
+        })
+        .filter((path): path is string => path !== null)
+    );
+
+    // Derive cwd from config path
+    const cwd = path.dirname(options.config);
+
+    await clearLocaleDirs(
+      translatedFiles,
+      locales,
+      options.options?.clearLocaleDirsExclude,
+      cwd
+    );
+  }
 
   const downloadStatus = {
     downloaded: new Set<string>(),
