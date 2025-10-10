@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { SupportedLibraries } from '../types/index.js';
-import { logError } from '../console/logging.js';
+import { logWarning, logError } from '../console/logging.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
@@ -17,8 +17,8 @@ export function determineLibrary(): {
 
     // Check if package.json exists
     if (!fs.existsSync(packageJsonPath)) {
-      logError(
-        chalk.red(
+      logWarning(
+        chalk.yellow(
           'No package.json found in the current directory. Please run this command from the root of your project.'
         )
       );
