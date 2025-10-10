@@ -1,6 +1,9 @@
 import withGTConfigProps from './props/withGTConfigProps';
 import { babelPluginCompatible } from '../plugin/getStableNextVersionInfo';
-import { createGTCompilerUnavailableWarning } from '../errors/createErrors';
+import {
+  createGTCompilerUnavailableWarning,
+  disablingCompileTimeHashWarning,
+} from '../errors/createErrors';
 import { swcPluginCompatible } from '../plugin/getStableNextVersionInfo';
 
 /**
@@ -20,8 +23,8 @@ export function validateCompiler(mergedConfig: withGTConfigProps) {
     mergedConfig.experimentalCompilerOptions.type = 'none';
   }
   // Backwards compatibility, remove this condition in the future
-  if (mergedConfig.experimentalCompilerOptions.compileTimeHash !== false) {
-    console.warn(createGTCompilerUnavailableWarning('babel'));
+  if (mergedConfig.experimentalCompilerOptions.compileTimeHash === false) {
+    console.warn(disablingCompileTimeHashWarning);
     mergedConfig.experimentalCompilerOptions.type = 'none';
   }
 }
