@@ -16,6 +16,7 @@ import {
   customSerializers,
   SerializedDocument,
 } from './serialization';
+import { translateAction } from './actions/translateAction';
 
 export type {
   Secrets,
@@ -28,6 +29,7 @@ export type {
 };
 export {
   TranslationsTab,
+  translateAction,
   //helpers for end developers who may need to customize serialization
   findLatestDraft,
   BaseDocumentSerializer,
@@ -139,6 +141,19 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
           router: route.create('/*'),
         },
       ],
+      document: {
+        views: [
+          {
+            id: 'general-translation',
+            title: 'Translations',
+            component: TranslationsTab,
+          },
+        ],
+        actions: (prev) => {
+          // Move translateAction to the beginning so it appears as a prominent button
+          return [...prev, translateAction];
+        },
+      },
     };
   }
 );
