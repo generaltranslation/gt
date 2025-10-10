@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/compiler",
-  "version": "0.0.0-alpha.0",
+  "version": "0.0.0",
   "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

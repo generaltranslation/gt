@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "10.7.0-alpha.0",
+  "version": "10.6.4",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -14,7 +14,7 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
-    "@generaltranslation/compiler": "0.0.0-alpha.0",
+    "@generaltranslation/compiler": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*"
   },
