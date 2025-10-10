@@ -20,10 +20,10 @@ export function TranslateButton() {
   return (
     <Button
       icon={TranslateIcon}
-      text="Translate"
+      text='Translate'
       onClick={handleClick}
-      mode="ghost"
-      tone="primary"
+      mode='ghost'
+      tone='primary'
     />
   );
 }
