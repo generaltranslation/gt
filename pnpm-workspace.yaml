@@ -1,5 +1,4 @@
 packages:
-  - apps/*
   - packages/*
   - test-apps/**/*
 

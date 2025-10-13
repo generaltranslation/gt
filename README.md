@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://generaltranslation.com" target="_blank">
-    <img src="./apps/docs/public/gt-logo-light.svg" alt="General Translation, Inc." width="64" height="64">
+    <img src="./assets/gt-logo-light.svg" alt="General Translation, Inc." width="64" height="64">
   </a>
 </div>
 
@@ -33,7 +33,7 @@ This open-source repo contains internationalization libraries for React framewor
 
 ## Add the `<T>` component and see translations as you code:
 
-![Demo](./apps/docs/public/live_translations.gif)
+![Demo](./assets/live_translations.gif)
 
 ## Features
 
