@@ -2,6 +2,7 @@ import {
   createUnresolvedNextVersionError,
   createUnresolvedReactVersionError,
 } from '../errors/createErrors';
+import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from './constants';
 
 /**
  * Get the next version of the package.
@@ -88,14 +89,12 @@ export const rootParamStability: RootParam = (() => {
   return 'unsupported';
 })();
 
-export const SWC_PLUGIN_SUPPORT = '15.2.0';
 export const swcPluginCompatible = comparePackageVersion(
   getNextVersion(),
   SWC_PLUGIN_SUPPORT
 );
 
 // disable babel plugin if using react <= 16
-export const BABEL_PLUGIN_SUPPORT = '17.0.0';
 export const babelPluginCompatible = comparePackageVersion(
   getReactVersion(),
   BABEL_PLUGIN_SUPPORT

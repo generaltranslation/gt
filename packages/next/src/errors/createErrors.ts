@@ -1,10 +1,7 @@
 // ---- ERRORS ---- //
 
 import { getLocaleProperties } from 'generaltranslation';
-import {
-  BABEL_PLUGIN_SUPPORT,
-  SWC_PLUGIN_SUPPORT,
-} from '../plugin/getStableNextVersionInfo';
+import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
 export const noLocalesCouldBeDeterminedError =
   'gt-next: Error: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
