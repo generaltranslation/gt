@@ -4,7 +4,7 @@
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
-    "next": ">=13.0.0 <15.2.1 || >15.2.2",
+    "next": ">=13.0.0 <15.2.1 || >15.2.2 || ^16.0.0-beta",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
