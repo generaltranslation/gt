@@ -1,7 +1,0 @@
-{
-  "title": "Core",
-  "description": "generaltranslation",
-  "icon": "Network",
-  "root": true,
-  "pages": ["index"]
-}
