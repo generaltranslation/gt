@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.7.2
+
+### Patch Changes
+
+- [#729](https://github.com/generaltranslation/gt/pull/729) [`718299b`](https://github.com/generaltranslation/gt/commit/718299b6827e02725103d6bd6f0fce4d39024110) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: react module resolution for client runtime error
+
 ## 6.7.1
 
 ### Patch Changes
