@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- [#732](https://github.com/generaltranslation/gt/pull/732) [`bcd8272`](https://github.com/generaltranslation/gt/commit/bcd8272576ff02432e39cf1887a48b4f566eb752) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Added freezing when fetching translations for unmodified source files. This will keep any local changes until retrasnaltion is triggered or --force-download is used
+- [#732](https://github.com/generaltranslation/gt/pull/732) [`bcd8272`](https://github.com/generaltranslation/gt/commit/bcd8272576ff02432e39cf1887a48b4f566eb752) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Added freezing when fetching translations for unmodified source files. This will keep any local changes until retranslation is triggered or --force-download is used
 
 ## 2.3.10
 
