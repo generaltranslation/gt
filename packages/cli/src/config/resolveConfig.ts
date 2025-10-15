@@ -19,5 +19,11 @@ export function resolveConfig(cwd: string): {
       config: loadConfig(path.join(cwd, 'src/gt.config.json')),
     };
   }
+  if (fs.existsSync(path.join(cwd, '.locadex/gt.config.json'))) {
+    return {
+      path: path.join(cwd, '.locadex/gt.config.json'),
+      config: loadConfig(path.join(cwd, '.locadex/gt.config.json')),
+    };
+  }
   return null;
 }
