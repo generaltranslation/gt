@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.12
+
+### Patch Changes
+
+- [#735](https://github.com/generaltranslation/gt/pull/735) [`8e4612e`](https://github.com/generaltranslation/gt/commit/8e4612e0b2c426d64153b6ca460e619fa29cb8e8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: auto enable gt compiler in default config
+
 ## 2.3.11
 
 ### Patch Changes
