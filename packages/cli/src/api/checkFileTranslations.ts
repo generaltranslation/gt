@@ -36,7 +36,8 @@ export async function checkFileTranslations(
   timeoutDuration: number,
   resolveOutputPath: (sourcePath: string, locale: string) => string | null,
   options: Settings,
-  forceRetranslation?: boolean
+  forceRetranslation?: boolean,
+  forceDownload?: boolean
 ) {
   const startTime = Date.now();
   console.log();
@@ -89,7 +90,8 @@ export async function checkFileTranslations(
       downloadStatus,
       spinner,
       resolveOutputPath,
-      options
+      options,
+      forceDownload
     );
 
     if (initialCheck) {
@@ -114,7 +116,8 @@ export async function checkFileTranslations(
           downloadStatus,
           spinner,
           resolveOutputPath,
-          options
+          options,
+          forceDownload
         );
         const elapsed = Date.now() - startTime;
 
@@ -299,7 +302,8 @@ async function checkTranslationDeployment(
   },
   spinner: Awaited<ReturnType<typeof createOraSpinner>>,
   resolveOutputPath: (sourcePath: string, locale: string) => string | null,
-  options: Settings
+  options: Settings,
+  forceDownload?: boolean
 ): Promise<boolean> {
   try {
     // Only query for files that haven't been downloaded yet
@@ -325,6 +329,13 @@ async function checkTranslationDeployment(
     );
 
     if (readyTranslations.length > 0) {
+      // Build version map by fileName:locale for this batch
+      const versionMap = new Map(
+        fileQueryData.map((item) => [
+          `${item.fileName}:${gt.resolveAliasLocale(item.locale)}`,
+          item.versionId,
+        ])
+      );
       // Prepare batch download data
       const batchFiles: BatchedFiles = readyTranslations
         .map((translation) => {
@@ -344,11 +355,18 @@ async function checkTranslationDeployment(
             outputPath,
             locale,
             fileLocale: `${fileName}:${locale}`,
+            versionId: versionMap.get(`${fileName}:${locale}`),
           };
         })
         .filter((file) => file !== null) as BatchedFiles;
 
-      const batchResult = await downloadFileBatch(batchFiles, options);
+      const batchResult = await downloadFileBatch(
+        batchFiles,
+        options,
+        3,
+        1000,
+        Boolean(forceDownload)
+      );
 
       // Process results
       batchFiles.forEach((file) => {

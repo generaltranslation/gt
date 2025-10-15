@@ -30,14 +30,15 @@ export async function handleTranslate(
     );
     const { data } = filesTranslationResponse;
     // Check for remaining translations
-    await checkFileTranslations(
-      data,
-      settings.locales,
-      options.timeout,
-      (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-      settings,
-      options.force
-    );
+  await checkFileTranslations(
+    data,
+    settings.locales,
+    options.timeout,
+    (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
+    settings,
+    options.force,
+    options.forceDownload
+  );
   }
 }
 
@@ -71,7 +72,8 @@ export async function handleDownload(
     options.timeout,
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
     settings,
-    false // force is not applicable for downloading staged translations
+    false, // force is not applicable for downloading staged translations
+    options.forceDownload
   );
 }
 

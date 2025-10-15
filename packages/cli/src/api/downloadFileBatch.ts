@@ -7,6 +7,10 @@ import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
+import {
+  getDownloadedVersions,
+  saveDownloadedVersions,
+} from '../fs/config/downloadedVersions.js';
 
 export type BatchedFiles = Array<{
   translationId: string;
@@ -14,6 +18,7 @@ export type BatchedFiles = Array<{
   inputPath: string;
   locale: string;
   fileLocale: string; // key for a translated file
+  versionId?: string; // source content version id
 }>;
 
 export type DownloadFileBatchResult = {
@@ -31,8 +36,12 @@ export async function downloadFileBatch(
   files: BatchedFiles,
   options: Settings,
   maxRetries = 3,
-  retryDelay = 1000
+  retryDelay = 1000,
+  forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
+  // Local record of what version was last downloaded for each fileName:locale
+  const downloadedMap = getDownloadedVersions(options.configDirectory);
+  let didUpdateDownloadedMap = false;
   let retries = 0;
   const fileIds = files.map((file) => file.translationId);
   const result = { successful: [] as string[], failed: [] as string[] };
@@ -50,6 +59,9 @@ export async function downloadFileBatch(
       gt.resolveAliasLocale(file.locale),
     ])
   );
+  const versionMap = new Map(
+    files.map((file) => [file.translationId, file.versionId])
+  );
 
   while (retries <= maxRetries) {
     try {
@@ -64,6 +76,7 @@ export async function downloadFileBatch(
           const outputPath = outputPathMap.get(translationId);
           const inputPath = inputPathMap.get(translationId);
           const locale = localeMap.get(translationId);
+          const versionId = versionMap.get(translationId);
 
           if (!outputPath || !inputPath) {
             logWarning(`No input/output path found for file: ${translationId}`);
@@ -75,6 +88,19 @@ export async function downloadFileBatch(
           const dir = path.dirname(outputPath);
           if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
+          }
+          // If a local translation already exists for the same source version, skip overwrite
+          const downloadedKey = `${inputPath}:${locale}`;
+          const alreadyDownloadedVersion = downloadedMap[downloadedKey];
+          const fileExists = fs.existsSync(outputPath);
+          if (
+            !forceDownload &&
+            fileExists &&
+            versionId &&
+            alreadyDownloadedVersion === versionId
+          ) {
+            result.successful.push(translationId);
+            continue;
           }
           let data = file.data;
           if (options.options?.jsonSchema && locale) {
@@ -117,6 +143,10 @@ export async function downloadFileBatch(
           await fs.promises.writeFile(outputPath, data);
 
           result.successful.push(translationId);
+          if (versionId) {
+            downloadedMap[downloadedKey] = versionId;
+            didUpdateDownloadedMap = true;
+          }
         } catch (error) {
           logError(`Error saving file ${file.id}: ` + error);
           result.failed.push(file.id);
@@ -133,6 +163,11 @@ export async function downloadFileBatch(
         }
       }
 
+      // Persist any updates to the downloaded map at the end of a successful cycle
+      if (didUpdateDownloadedMap) {
+        saveDownloadedVersions(options.configDirectory, downloadedMap);
+        didUpdateDownloadedMap = false;
+      }
       return result;
     } catch (error) {
       // If we've retried too many times, log an error and return false
@@ -143,6 +178,9 @@ export async function downloadFileBatch(
         );
         // Mark all files as failed
         result.failed = [...fileIds];
+        if (didUpdateDownloadedMap) {
+          saveDownloadedVersions(options.configDirectory, downloadedMap);
+        }
         return result;
       }
 
@@ -154,5 +192,8 @@ export async function downloadFileBatch(
 
   // Mark all files as failed if we get here
   result.failed = [...fileIds];
+  if (didUpdateDownloadedMap) {
+    saveDownloadedVersions(options.configDirectory, downloadedMap);
+  }
   return result;
 }
