@@ -18,6 +18,7 @@ export type BatchedFiles = Array<{
   inputPath: string;
   locale: string;
   fileLocale: string; // key for a translated file
+  fileId?: string; // stable id from API; preferred key
   versionId?: string; // source content version id
 }>;
 
@@ -40,8 +41,8 @@ export async function downloadFileBatch(
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const downloadedMap = getDownloadedVersions(options.configDirectory);
-  let didUpdateDownloadedMap = false;
+  const downloadedVersions = getDownloadedVersions(options.configDirectory);
+  let didUpdateDownloadedLock = false;
   let retries = 0;
   const fileIds = files.map((file) => file.translationId);
   const result = { successful: [] as string[], failed: [] as string[] };
@@ -52,6 +53,9 @@ export async function downloadFileBatch(
   );
   const inputPathMap = new Map(
     files.map((file) => [file.translationId, file.inputPath])
+  );
+  const fileIdMap = new Map(
+    files.map((file) => [file.translationId, file.fileId])
   );
   const localeMap = new Map(
     files.map((file) => [
@@ -76,6 +80,7 @@ export async function downloadFileBatch(
           const outputPath = outputPathMap.get(translationId);
           const inputPath = inputPathMap.get(translationId);
           const locale = localeMap.get(translationId);
+          const fileId = fileIdMap.get(translationId);
           const versionId = versionMap.get(translationId);
 
           if (!outputPath || !inputPath) {
@@ -90,8 +95,10 @@ export async function downloadFileBatch(
             fs.mkdirSync(dir, { recursive: true });
           }
           // If a local translation already exists for the same source version, skip overwrite
-          const downloadedKey = `${inputPath}:${locale}`;
-          const alreadyDownloadedVersion = downloadedMap[downloadedKey];
+          const keyId = fileId || inputPath;
+          const downloadedKey = `${keyId}:${locale}`;
+          const alreadyDownloadedVersion =
+            downloadedVersions.entries[downloadedKey]?.versionId;
           const fileExists = fs.existsSync(outputPath);
           if (
             !forceDownload &&
@@ -144,8 +151,13 @@ export async function downloadFileBatch(
 
           result.successful.push(translationId);
           if (versionId) {
-            downloadedMap[downloadedKey] = versionId;
-            didUpdateDownloadedMap = true;
+            downloadedVersions.entries[downloadedKey] = {
+              versionId,
+              fileId: fileId || undefined,
+              fileName: inputPath,
+              updatedAt: new Date().toISOString(),
+            };
+            didUpdateDownloadedLock = true;
           }
         } catch (error) {
           logError(`Error saving file ${file.id}: ` + error);
@@ -164,9 +176,9 @@ export async function downloadFileBatch(
       }
 
       // Persist any updates to the downloaded map at the end of a successful cycle
-      if (didUpdateDownloadedMap) {
-        saveDownloadedVersions(options.configDirectory, downloadedMap);
-        didUpdateDownloadedMap = false;
+      if (didUpdateDownloadedLock) {
+        saveDownloadedVersions(options.configDirectory, downloadedVersions);
+        didUpdateDownloadedLock = false;
       }
       return result;
     } catch (error) {
@@ -178,8 +190,8 @@ export async function downloadFileBatch(
         );
         // Mark all files as failed
         result.failed = [...fileIds];
-        if (didUpdateDownloadedMap) {
-          saveDownloadedVersions(options.configDirectory, downloadedMap);
+        if (didUpdateDownloadedLock) {
+          saveDownloadedVersions(options.configDirectory, downloadedVersions);
         }
         return result;
       }
@@ -192,8 +204,8 @@ export async function downloadFileBatch(
 
   // Mark all files as failed if we get here
   result.failed = [...fileIds];
-  if (didUpdateDownloadedMap) {
-    saveDownloadedVersions(options.configDirectory, downloadedMap);
+  if (didUpdateDownloadedLock) {
+    saveDownloadedVersions(options.configDirectory, downloadedVersions);
   }
   return result;
 }
