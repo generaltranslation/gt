@@ -13,6 +13,7 @@ import { getPackageManager } from '../utils/packageManager.js';
 import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
+import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -98,6 +99,10 @@ Please let us know what you would like to see supported at https://github.com/ge
   const warnings: string[] = [];
   let filesUpdated: string[] = [];
 
+  // Read tsconfig.json if it exists
+  const tsconfigPath = findFilepath(['tsconfig.json']);
+  const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
+
   if (frameworkType === 'next-app') {
     // Check if they have a next.config.js file
     const nextConfigPath = findFilepath([
@@ -135,10 +140,6 @@ Please let us know what you would like to see supported at https://github.com/ge
       ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
 
-    // Read tsconfig.json if it exists
-    const tsconfigPath = findFilepath(['tsconfig.json']);
-    const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
-
     // Add the withGTConfig() function to the next.config.js file
     await handleInitGT(
       nextConfigPath,
@@ -151,6 +152,17 @@ Please let us know what you would like to see supported at https://github.com/ge
     logStep(
       chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
     );
+  }
+
+  // Add gt compiler plugin
+  if (frameworkType === 'vite') {
+    await addVitePlugin({
+      errors,
+      warnings,
+      filesUpdated,
+      packageJson,
+      tsconfigJson,
+    });
   }
 
   if (errors.length > 0) {
