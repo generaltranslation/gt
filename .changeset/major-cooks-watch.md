@@ -1,4 +1,5 @@
 ---
+'gt-next': patch
 'gtx-cli': patch
 ---
 
