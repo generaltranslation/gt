@@ -69,6 +69,11 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option(
+      '--force-download',
+      'Force download and overwrite local files, bypassing downloaded-versions checks.',
+      false
+    )
+    .option(
       '--experimental-clear-locale-dirs',
       'Clear locale directories before downloading new translations',
       false

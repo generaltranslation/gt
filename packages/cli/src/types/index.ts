@@ -44,6 +44,7 @@ export type TranslateFlags = {
   stageTranslations?: boolean;
   publish?: boolean;
   force?: boolean;
+  forceDownload?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
