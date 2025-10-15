@@ -30,15 +30,15 @@ export async function handleTranslate(
     );
     const { data } = filesTranslationResponse;
     // Check for remaining translations
-  await checkFileTranslations(
-    data,
-    settings.locales,
-    options.timeout,
-    (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-    settings,
-    options.force,
-    options.forceDownload
-  );
+    await checkFileTranslations(
+      data,
+      settings.locales,
+      options.timeout,
+      (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
+      settings,
+      options.force,
+      options.forceDownload
+    );
   }
 }
 
