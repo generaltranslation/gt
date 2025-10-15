@@ -11,6 +11,7 @@ import { _Content, JsxChild, JsxChildren, JsxElement } from './types';
 import { LocaleProperties } from './types';
 import isVariable from './utils/isVariable';
 import { minifyVariableType } from './utils/minify';
+import { encode, decode } from './utils/base64';
 
 export {
   _getPluralForm as getPluralForm,
@@ -22,6 +23,8 @@ export {
   isVariable,
   minifyVariableType,
   maxTimeout,
+  encode,
+  decode,
 };
 
 // backwards compatability
