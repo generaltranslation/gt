@@ -1,5 +1,15 @@
 # gt-react
 
+## 10.6.5
+
+### Patch Changes
+
+- [#737](https://github.com/generaltranslation/gt/pull/737) [`ed93e41`](https://github.com/generaltranslation/gt/commit/ed93e419e9547e6f2353d99f896702016f8ba751) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: buffer not available on browser for react
+
+- Updated dependencies [[`ed93e41`](https://github.com/generaltranslation/gt/commit/ed93e419e9547e6f2353d99f896702016f8ba751)]:
+  - generaltranslation@7.6.5
+  - @generaltranslation/supported-locales@2.0.15
+
 ## 10.6.4
 
 ### Patch Changes
