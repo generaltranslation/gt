@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.7.3
+
+### Patch Changes
+
+- [#731](https://github.com/generaltranslation/gt/pull/731) [`6896570`](https://github.com/generaltranslation/gt/commit/68965708f43f1bdd0315aa96ce69b6ef6d68260d) Thanks [@SamEggert](https://github.com/SamEggert)! - check for gt.config.json in the .locadex directory
+
 ## 6.7.2
 
 ### Patch Changes
