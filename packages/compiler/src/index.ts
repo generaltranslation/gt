@@ -15,8 +15,6 @@ import { processVariableDeclarator as processVariableDeclaratorFirstPass } from 
 import { processVariableDeclarator as processVariableDeclaratorSecondPass } from './processing/second-pass/processVariableDeclarator';
 import { InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
-import path from 'path';
-import fs from 'fs';
 
 /**
  *
