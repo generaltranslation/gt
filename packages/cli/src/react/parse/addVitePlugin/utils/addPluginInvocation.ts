@@ -39,8 +39,8 @@ export function addPluginInvocation({
         return;
       }
       for (const property of path.node.arguments[0].properties) {
-        if (!t.isObjectProperty(property)) continue;
-        if (!isPluginsProperty(property)) return;
+        if (!t.isObjectProperty(property) || !isPluginsProperty(property))
+          continue;
         if (t.isArrayExpression(property.value)) {
           // Add to array: [react()] -> [react(), gtCompiler()]
           property.value.elements.push(pluginInvocation);
