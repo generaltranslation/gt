@@ -77,8 +77,15 @@ export function withGTConfig(
 ) {
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<withGTConfigProps> = {};
-  const configPath = props.config || defaultWithGTConfigProps.config;
   try {
+    let configPath: string | undefined;
+    if (props.config) {
+      configPath = props.config;
+    } else if (fs.existsSync(defaultWithGTConfigProps.config)) {
+      configPath = defaultWithGTConfigProps.config;
+    } else if (fs.existsSync('./.locadex/gt.config.json')) {
+      configPath = './.locadex/gt.config.json';
+    }
     if (typeof configPath === 'string' && fs.existsSync(configPath)) {
       const fileContent = fs.readFileSync(configPath, 'utf-8');
       loadedConfig = JSON.parse(fileContent);
