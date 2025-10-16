@@ -26,7 +26,10 @@ const { isMatch } = micromatch;
  * - Support more file types
  * - Support more complex paths
  */
-export default async function localizeStaticImports(settings: Settings) {
+export default async function localizeStaticImports(
+  settings: Settings,
+  includeFiles?: Set<string>
+) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
@@ -49,7 +52,7 @@ export default async function localizeStaticImports(settings: Settings) {
 
   // First, process default locale files (from source files)
   // This is needed because they might not be in the fileMapping if they're not being translated
-  if (!fileMapping[settings.defaultLocale]) {
+  if (!fileMapping[settings.defaultLocale] && !includeFiles) {
     const defaultLocaleFiles: string[] = [];
 
     // Collect all .md and .mdx files from sourceFiles
@@ -91,8 +94,8 @@ export default async function localizeStaticImports(settings: Settings) {
   const mappingPromises = Object.entries(fileMapping).map(
     async ([locale, filesMap]) => {
       // Get all files that are md or mdx
-      const targetFiles = Object.values(filesMap).filter(
-        (path) => path.endsWith('.md') || path.endsWith('.mdx')
+      const targetFiles = Object.values(filesMap).filter((p) =>
+        (p.endsWith('.md') || p.endsWith('.mdx')) && (!includeFiles || includeFiles.has(p))
       );
 
       // Replace the placeholder path with the target path

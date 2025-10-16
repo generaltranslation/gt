@@ -29,7 +29,8 @@ const { isMatch } = micromatch;
  */
 export default async function localizeStaticUrls(
   settings: Settings,
-  targetLocales?: string[]
+  targetLocales?: string[],
+  includeFiles?: Set<string>
 ) {
   if (
     !settings.files ||
@@ -59,7 +60,8 @@ export default async function localizeStaticUrls(
   // Only process default locale if it's in the target locales filter
   if (
     !fileMapping[settings.defaultLocale] &&
-    locales.includes(settings.defaultLocale)
+    locales.includes(settings.defaultLocale) &&
+    !includeFiles // when filtering, skip default-locale pass
   ) {
     const defaultLocaleFiles: string[] = [];
 
@@ -106,7 +108,9 @@ export default async function localizeStaticUrls(
     .map(async ([locale, filesMap]) => {
       // Get all files that are md or mdx
       const targetFiles = Object.values(filesMap).filter(
-        (path) => path.endsWith('.md') || path.endsWith('.mdx')
+        (p) =>
+          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          (!includeFiles || includeFiles.has(p))
       );
 
       // Replace the placeholder path with the target path

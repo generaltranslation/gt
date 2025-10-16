@@ -46,6 +46,7 @@ import {
   handleTranslate,
   postProcessTranslations,
 } from './commands/translate.js';
+import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 
@@ -148,7 +149,15 @@ export class BaseCLI {
     } else {
       await handleDownload(initOptions, settings);
     }
-    await postProcessTranslations(settings);
+    // Only postprocess files downloaded in this run
+    const include = getDownloaded();
+    logWarning(
+      `Postprocessing ${include.size} files: ${Array.from(include).join(', ')}`
+    );
+    if (include.size > 0) {
+      await postProcessTranslations(settings, include);
+    }
+    clearDownloaded();
   }
 
   protected setupUploadCommand(): void {

@@ -2,7 +2,10 @@ import { createFileMapping } from '../formats/files/fileMapping.js';
 import fs from 'node:fs';
 import { Settings } from '../types/index.js';
 
-export default async function flattenJsonFiles(settings: Settings) {
+export default async function flattenJsonFiles(
+  settings: Settings,
+  includeFiles?: Set<string>
+) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
@@ -22,8 +25,8 @@ export default async function flattenJsonFiles(settings: Settings) {
 
   await Promise.all(
     Object.values(fileMapping).map(async (filesMap) => {
-      const targetFiles = Object.values(filesMap).filter((path) =>
-        path.endsWith('.json')
+      const targetFiles = Object.values(filesMap).filter((p) =>
+        p.endsWith('.json') && (!includeFiles || includeFiles.has(p))
       );
 
       await Promise.all(
