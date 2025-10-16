@@ -25,8 +25,8 @@ export default async function flattenJsonFiles(
 
   await Promise.all(
     Object.values(fileMapping).map(async (filesMap) => {
-      const targetFiles = Object.values(filesMap).filter((p) =>
-        p.endsWith('.json') && (!includeFiles || includeFiles.has(p))
+      const targetFiles = Object.values(filesMap).filter(
+        (p) => p.endsWith('.json') && (!includeFiles || includeFiles.has(p))
       );
 
       await Promise.all(

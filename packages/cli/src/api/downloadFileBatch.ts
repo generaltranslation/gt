@@ -7,7 +7,10 @@ import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
-import { getDownloadedVersions, saveDownloadedVersions } from '../fs/config/downloadedVersions.js';
+import {
+  getDownloadedVersions,
+  saveDownloadedVersions,
+} from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
 
 export type BatchedFiles = Array<{

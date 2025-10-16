@@ -94,8 +94,10 @@ export default async function localizeStaticImports(
   const mappingPromises = Object.entries(fileMapping).map(
     async ([locale, filesMap]) => {
       // Get all files that are md or mdx
-      const targetFiles = Object.values(filesMap).filter((p) =>
-        (p.endsWith('.md') || p.endsWith('.mdx')) && (!includeFiles || includeFiles.has(p))
+      const targetFiles = Object.values(filesMap).filter(
+        (p) =>
+          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          (!includeFiles || includeFiles.has(p))
       );
 
       // Replace the placeholder path with the target path

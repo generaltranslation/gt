@@ -31,8 +31,11 @@ export default async function processAnchorIds(
     .filter(([locale, filesMap]) => locale !== settings.defaultLocale) // Skip default locale
     .map(async ([locale, filesMap]) => {
       // Get all translated files that are md or mdx
-      const translatedFiles = Object.values(filesMap).filter((p) =>
-        p && (p.endsWith('.md') || p.endsWith('.mdx')) && (!includeFiles || includeFiles.has(p))
+      const translatedFiles = Object.values(filesMap).filter(
+        (p) =>
+          p &&
+          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          (!includeFiles || includeFiles.has(p))
       );
 
       for (const translatedPath of translatedFiles) {

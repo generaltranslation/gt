@@ -11,4 +11,3 @@ export function getDownloaded(): Set<string> {
 export function clearDownloaded() {
   recent.clear();
 }
-
