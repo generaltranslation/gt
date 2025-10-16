@@ -49,4 +49,3 @@ export default async function _submitUserEditDiffs(
   await validateResponse(response);
   return { success: true };
 }
-
