@@ -38,9 +38,7 @@ export async function sendUserEditDiffs(
     try {
       await (
         gt as unknown as {
-          submitUserEditDiffs: (
-            payload: SendUserEditsPayload
-          ) => Promise<void>;
+          submitUserEditDiffs: (payload: SendUserEditsPayload) => Promise<void>;
         }
       ).submitUserEditDiffs(payload);
     } catch {

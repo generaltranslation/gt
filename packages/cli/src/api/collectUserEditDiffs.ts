@@ -97,5 +97,4 @@ export async function collectAndSendUserEditDiffs(
       }
     }
   }
-
 }

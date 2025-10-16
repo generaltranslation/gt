@@ -125,9 +125,15 @@ export class BaseCLI {
       .description(
         'Send a unified diff between an original/downloaded translation and the local edited version'
       )
-      .requiredOption('--file-name <path>', 'Logical source file name used by GT')
+      .requiredOption(
+        '--file-name <path>',
+        'Logical source file name used by GT'
+      )
       .requiredOption('--locale <code>', 'Locale code (e.g., es, fr)')
-      .requiredOption('--old <path>', 'Path to downloaded/original translation file')
+      .requiredOption(
+        '--old <path>',
+        'Path to downloaded/original translation file'
+      )
       .requiredOption('--next <path>', 'Path to local/edited translation file')
       .action(async (flags: any) => {
         const { generateSettings } = await import(
