@@ -78,6 +78,7 @@ export class BaseCLI {
     this.setupSetupCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
+    this.setupSendDiffsCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -116,6 +117,34 @@ export class BaseCLI {
       await this.handleTranslate(initOptions);
       endCommand('Done!');
     });
+  }
+
+  protected setupSendDiffsCommand(): void {
+    this.program
+      .command('send-diffs')
+      .description(
+        'Send a unified diff between an original/downloaded translation and the local edited version'
+      )
+      .requiredOption('--file-name <path>', 'Logical source file name used by GT')
+      .requiredOption('--locale <code>', 'Locale code (e.g., es, fr)')
+      .requiredOption('--old <path>', 'Path to downloaded/original translation file')
+      .requiredOption('--next <path>', 'Path to local/edited translation file')
+      .action(async (flags: any) => {
+        const { generateSettings } = await import(
+          '../config/generateSettings.js'
+        );
+        const { handleSendDiffs } = await import('./commands/edits.js');
+        const settings = await generateSettings({} as any);
+        await handleSendDiffs(
+          {
+            fileName: flags.fileName,
+            locale: flags.locale,
+            old: flags.old,
+            next: flags.next,
+          },
+          settings
+        );
+      });
   }
 
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
