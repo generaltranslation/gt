@@ -151,9 +151,6 @@ export class BaseCLI {
     }
     // Only postprocess files downloaded in this run
     const include = getDownloaded();
-    logWarning(
-      `Postprocessing ${include.size} files: ${Array.from(include).join(', ')}`
-    );
     if (include.size > 0) {
       await postProcessTranslations(settings, include);
     }
