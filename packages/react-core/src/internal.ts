@@ -56,6 +56,12 @@ import { injectTranslations } from './dictionaries/injectTranslations';
 import { injectFallbacks } from './dictionaries/injectFallbacks';
 import { injectAndMerge } from './dictionaries/injectAndMerge';
 import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
+import {
+  UseDetermineLocaleProps,
+  UseDetermineLocaleReturn,
+  UseLocaleStateProps,
+  UseLocaleStateReturn,
+} from './provider/hooks/locales/types';
 
 export {
   addGTIdentifier,
@@ -113,4 +119,8 @@ export {
   injectFallbacks,
   injectAndMerge,
   collectUntranslatedEntries,
+  UseDetermineLocaleProps,
+  UseDetermineLocaleReturn,
+  UseLocaleStateProps,
+  UseLocaleStateReturn,
 };

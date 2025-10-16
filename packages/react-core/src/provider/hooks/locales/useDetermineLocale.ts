@@ -3,6 +3,7 @@ import { determineLocale, resolveAliasLocale } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '../../../errors/createErrors';
 import { defaultLocaleCookieName } from '../../../utils/cookies';
+import { UseDetermineLocaleProps, UseDetermineLocaleReturn } from './types';
 import { CustomMapping } from 'generaltranslation/types';
 
 export function useDetermineLocale({
@@ -12,14 +13,7 @@ export function useDetermineLocale({
   localeCookieName = defaultLocaleCookieName,
   ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
   customMapping,
-}: {
-  defaultLocale: string;
-  locales: string[];
-  locale?: string;
-  localeCookieName?: string;
-  ssr?: boolean;
-  customMapping?: CustomMapping;
-}): [string, (locale: string) => void] {
+}: UseDetermineLocaleProps): UseDetermineLocaleReturn {
   // resolve alias locale
   _locale = resolveAliasLocale(_locale, customMapping);
   locales = locales.map((locale) => resolveAliasLocale(locale, customMapping));
