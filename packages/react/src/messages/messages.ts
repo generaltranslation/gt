@@ -2,6 +2,7 @@ import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import { InlineTranslationOptions } from '../types/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { encode, decode } from 'generaltranslation/internal';
 
 export function icuMessageContainsVariables(message: string): boolean {
   // ICU uses apostrophes as escape characters
@@ -99,9 +100,7 @@ export function msg(
   }
 
   // get the options encoding
-  const optionsEncoding = Buffer.from(JSON.stringify(options)).toString(
-    'base64'
-  );
+  const optionsEncoding = encode(JSON.stringify(options));
 
   // Interpolated string
   let interpolatedString = message;
@@ -158,9 +157,7 @@ export function decodeOptions(encodedMsg: string):
 
   try {
     // Parse options
-    const options = JSON.parse(
-      Buffer.from(optionsEncoding, 'base64').toString()
-    );
+    const options = JSON.parse(decode(optionsEncoding));
     return options;
   } catch {
     return null;

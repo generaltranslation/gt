@@ -1,5 +1,15 @@
 # gt-next
 
+## 6.7.4
+
+### Patch Changes
+
+- Updated dependencies [[`ed93e41`](https://github.com/generaltranslation/gt/commit/ed93e419e9547e6f2353d99f896702016f8ba751)]:
+  - gt-react@10.6.5
+  - generaltranslation@7.6.5
+  - @generaltranslation/compiler@1.0.2
+  - @generaltranslation/supported-locales@2.0.15
+
 ## 6.7.3
 
 ### Patch Changes

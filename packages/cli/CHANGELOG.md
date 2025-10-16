@@ -1,5 +1,24 @@
 # gtx-cli
 
+## 2.3.14
+
+### Patch Changes
+
+- [#739](https://github.com/generaltranslation/gt/pull/739) [`7afed0b`](https://github.com/generaltranslation/gt/commit/7afed0bda5be08d83bbe75cca9fb657ff5a50dae) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Only post-process files downloaded by gtx-cli on current run
+
+## 2.3.13
+
+### Patch Changes
+
+- Updated dependencies [[`ed93e41`](https://github.com/generaltranslation/gt/commit/ed93e419e9547e6f2353d99f896702016f8ba751)]:
+  - generaltranslation@7.6.5
+
+## 2.3.12
+
+### Patch Changes
+
+- [#735](https://github.com/generaltranslation/gt/pull/735) [`8e4612e`](https://github.com/generaltranslation/gt/commit/8e4612e0b2c426d64153b6ca460e619fa29cb8e8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: auto enable gt compiler in default config
+
 ## 2.3.11
 
 ### Patch Changes
