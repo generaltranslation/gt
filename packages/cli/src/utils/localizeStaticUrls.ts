@@ -421,7 +421,7 @@ function transformMdxUrls(
       return transformedPath ? baseDomain + transformedPath : null;
     }
 
-    // Exclude colon-prefixed URLs (http://, https://, //, mailto:, etc.)
+    // Exclude colon-prefixed URLs (http://, https://, //, etc.)
     if (originalUrl.split('?')[0].includes(':')) {
       return null;
     }
