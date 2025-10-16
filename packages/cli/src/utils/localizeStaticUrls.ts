@@ -373,6 +373,18 @@ function transformMdxUrls(
     originalUrl: string,
     linkType: 'markdown' | 'href'
   ): string | null => {
+    // For Markdown links [text](path), only process absolute-root paths starting with '/'
+    // Relative markdown links should remain relative to the current page and not be localized.
+    if (linkType === 'markdown') {
+      const isFragment = /^\s*#/.test(originalUrl);
+      const isAbsoluteRoot = originalUrl.startsWith('/');
+      const looksAbsoluteWithDomain = baseDomain
+        ? shouldProcessAbsoluteUrl(originalUrl, baseDomain)
+        : false;
+      if (!isAbsoluteRoot && !looksAbsoluteWithDomain && !isFragment) {
+        return null;
+      }
+    }
     // Check if URL should be processed
     if (
       !shouldProcessUrl(

@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.3.15
+
+### Patch Changes
+
+- [#741](https://github.com/generaltranslation/gt/pull/741) [`559c0bf`](https://github.com/generaltranslation/gt/commit/559c0bfa7ff9e6664f65317eddbab419682a3c95) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Avoid localizing relative MDX links
+
 ## 2.3.14
 
 ### Patch Changes
