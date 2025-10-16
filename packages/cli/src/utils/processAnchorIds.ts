@@ -11,7 +11,10 @@ import * as fs from 'fs';
  * Processes all translated MD/MDX files to add explicit anchor IDs
  * This preserves navigation links when headings are translated
  */
-export default async function processAnchorIds(settings: Settings) {
+export default async function processAnchorIds(
+  settings: Settings,
+  includeFiles?: Set<string>
+) {
   if (!settings.files) return;
 
   const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
@@ -29,7 +32,10 @@ export default async function processAnchorIds(settings: Settings) {
     .map(async ([locale, filesMap]) => {
       // Get all translated files that are md or mdx
       const translatedFiles = Object.values(filesMap).filter(
-        (path) => path && (path.endsWith('.md') || path.endsWith('.mdx'))
+        (p) =>
+          p &&
+          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          (!includeFiles || includeFiles.has(p))
       );
 
       for (const translatedPath of translatedFiles) {

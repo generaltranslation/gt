@@ -77,7 +77,10 @@ export async function handleDownload(
   );
 }
 
-export async function postProcessTranslations(settings: Settings) {
+export async function postProcessTranslations(
+  settings: Settings,
+  includeFiles?: Set<string>
+) {
   // Localize static urls (/docs -> /[locale]/docs) and preserve anchor IDs for non-default locales
   // Default locale is processed earlier in the flow in base.ts
   if (settings.options?.experimentalLocalizeStaticUrls) {
@@ -85,22 +88,22 @@ export async function postProcessTranslations(settings: Settings) {
       (locale) => locale !== settings.defaultLocale
     );
     if (nonDefaultLocales.length > 0) {
-      await localizeStaticUrls(settings, nonDefaultLocales);
+      await localizeStaticUrls(settings, nonDefaultLocales, includeFiles);
     }
 
     // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
     // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
-    await processAnchorIds(settings);
+    await processAnchorIds(settings, includeFiles);
   }
 
   // Localize static imports (import Snippet from /snippets/file.mdx -> import Snippet from /snippets/[locale]/file.mdx)
   if (settings.options?.experimentalLocalizeStaticImports) {
-    await localizeStaticImports(settings);
+    await localizeStaticImports(settings, includeFiles);
   }
 
   // Flatten json files into a single file
   if (settings.options?.experimentalFlattenJsonFiles) {
-    await flattenJsonFiles(settings);
+    await flattenJsonFiles(settings, includeFiles);
   }
 
   // Copy files to the target locale
