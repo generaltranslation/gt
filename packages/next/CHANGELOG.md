@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.7.5
+
+### Patch Changes
+
+- [#743](https://github.com/generaltranslation/gt/pull/743) [`562b80f`](https://github.com/generaltranslation/gt/commit/562b80f3a57c72e9776d9d8392586cb11db128c9) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add support for next@16 beta
+
 ## 6.7.4
 
 ### Patch Changes
