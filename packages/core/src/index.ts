@@ -488,7 +488,15 @@ export class GT {
     payload: SubmitUserEditDiffsPayload
   ): Promise<void> {
     this._validateAuth('submitUserEditDiffs');
-    await _submitUserEditDiffs(payload, this._getTranslationConfig());
+    // Normalize locales to canonical form before submission
+    const normalized: SubmitUserEditDiffsPayload = {
+      ...payload,
+      diffs: (payload.diffs || []).map((d) => ({
+        ...d,
+        locale: this.resolveCanonicalLocale(d.locale),
+      })),
+    };
+    await _submitUserEditDiffs(normalized, this._getTranslationConfig());
   }
 
   /**
