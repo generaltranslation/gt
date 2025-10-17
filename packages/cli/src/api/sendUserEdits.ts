@@ -31,6 +31,5 @@ export async function sendUserEditDiffs(
     projectId: settings.projectId,
     diffs,
   };
-  logWarning(`payload is: ${JSON.stringify(payload)}`);
   await gt.submitUserEditDiffs(payload);
 }

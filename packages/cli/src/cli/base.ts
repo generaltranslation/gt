@@ -49,6 +49,8 @@ import {
 import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
+import type { SendDiffsFlags } from './commands/edits.js';
+import { saveLocalEdits } from '../api/saveLocalEdits.js';
 
 export type UploadOptions = {
   config?: string;
@@ -122,35 +124,15 @@ export class BaseCLI {
 
   protected setupSendDiffsCommand(): void {
     this.program
-      .command('send-diffs')
+      .command('save-local')
       .description(
-        'Send a unified diff between an original/downloaded translation and the local edited version'
+        'Save local edits for all configured files by sending diffs (no translation enqueued)'
       )
-      .requiredOption(
-        '--file-name <path>',
-        'Logical source file name used by GT'
-      )
-      .requiredOption('--locale <code>', 'Locale code (e.g., es, fr)')
-      .requiredOption(
-        '--old <path>',
-        'Path to downloaded/original translation file'
-      )
-      .requiredOption('--next <path>', 'Path to local/edited translation file')
-      .action(async (flags: any) => {
-        const { generateSettings } = await import(
-          '../config/generateSettings.js'
-        );
-        const { handleSendDiffs } = await import('./commands/edits.js');
-        const settings = await generateSettings({} as any);
-        await handleSendDiffs(
-          {
-            fileName: flags.fileName,
-            locale: flags.locale,
-            old: flags.old,
-            next: flags.next,
-          },
-          settings
-        );
+      .action(async () => {
+        const config = findFilepath(['gt.config.json']);
+        const settings = await generateSettings({ config });
+        await saveLocalEdits(settings);
+        endCommand('Saved local edits');
       });
   }
 

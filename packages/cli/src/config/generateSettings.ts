@@ -4,7 +4,13 @@ import {
   warnApiKeyInConfig,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
-import { FilesOptions, Settings, SupportedFrameworks } from '../types/index.js';
+import {
+  AdditionalOptions,
+  FilesOptions,
+  Settings,
+  SupportedFrameworks,
+  TranslateFlags,
+} from '../types/index.js';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
@@ -29,27 +35,47 @@ export const DEFAULT_SRC_PATTERNS = [
 ];
 
 /**
- * Generates settings from any
+ * Input options accepted by generateSettings
+ */
+export type GenerateSettingsInput = Partial<TranslateFlags> & {
+  options?: AdditionalOptions;
+  experimentalClearLocaleDirs?: boolean;
+  clearLocaleDirsExclude?: string[];
+};
+
+/**
+ * Generates Settings from CLI options and config
  * @param options - The options to generate settings from
  * @param cwd - The current working directory
  * @returns The generated settings
  */
 export async function generateSettings(
-  options: any,
+  options: GenerateSettingsInput,
   cwd: string = process.cwd()
 ): Promise<Settings> {
   // Load config file
-  let gtConfig: Record<string, any> = {};
+  type GTConfigFile = {
+    projectId?: string;
+    defaultLocale?: string;
+    locales?: string[];
+    files?: FilesOptions;
+    framework?: SupportedFrameworks;
+    baseUrl?: string;
+    publish?: boolean;
+    options?: AdditionalOptions;
+    apiKey?: string;
+  };
+  let gtConfig: GTConfigFile = {};
 
   if (options.config && !options.config.endsWith('.json')) {
     options.config = `${options.config}.json`;
   }
   if (options.config) {
-    gtConfig = loadConfig(options.config);
+    gtConfig = (loadConfig(options.config) as GTConfigFile) || {};
   } else {
     const config = resolveConfig(cwd);
     if (config) {
-      gtConfig = config.config;
+      gtConfig = (config.config as GTConfigFile) || {};
       options.config = config.path;
     } else {
       gtConfig = {};
@@ -58,7 +84,7 @@ export async function generateSettings(
 
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
-    warnApiKeyInConfig(options.config);
+    warnApiKeyInConfig(options.config as string);
     process.exit(1);
   }
   const projectIdEnv = resolveProjectId();
@@ -110,7 +136,14 @@ export async function generateSettings(
   }
 
   // merge options
-  const mergedOptions: Settings = { ...gtConfig, ...options };
+  type PartialSettingsWritable = Partial<
+    Omit<Settings, 'files' | 'configDirectory' | 'dashboardUrl'>
+  > & {
+    files?: FilesOptions | Settings['files'];
+    configDirectory?: string;
+    dashboardUrl?: string;
+  };
+  const mergedOptions: PartialSettingsWritable = { ...gtConfig, ...options };
 
   // Add defaultLocale if not provided
   mergedOptions.defaultLocale =
@@ -235,7 +268,7 @@ export async function generateSettings(
 
   mergedOptions.configDirectory = path.join(cwd, '.gt');
 
-  validateSettings(mergedOptions);
+  validateSettings(mergedOptions as Settings);
 
   // Set up GT instance
   gt.setConfig({
@@ -246,5 +279,5 @@ export async function generateSettings(
     customMapping: mergedOptions.customMapping,
   });
 
-  return mergedOptions;
+  return mergedOptions as Settings;
 }
