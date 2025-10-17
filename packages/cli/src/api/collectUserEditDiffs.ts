@@ -73,6 +73,8 @@ export async function collectAndSendUserEditDiffs(
 
         const diff = await getGitUnifiedDiff(tmpFile, outputPath);
         if (diff && diff.trim().length > 0) {
+          // Read local file contents to send alongside the diff
+          const localContent = await fs.promises.readFile(outputPath, 'utf8');
           await sendUserEditDiffs(
             [
               {
@@ -81,6 +83,7 @@ export async function collectAndSendUserEditDiffs(
                 diff,
                 versionId,
                 fileId: f.fileId,
+                localContent,
               },
             ],
             settings

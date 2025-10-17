@@ -1,14 +1,16 @@
+import { logWarning } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 
+// Single payload type used by CLI, includes optional localContent
 export type UserEditDiff = {
   fileName: string;
   locale: string;
   diff: string; // unified diff string
-  versionId?: string; // optional for server-side correlation
+  versionId?: string;
   fileId?: string; // GT file id if available
+  localContent?: string;
 };
-
 export type SendUserEditsPayload = {
   projectId?: string;
   diffs: UserEditDiff[];
@@ -25,24 +27,10 @@ export async function sendUserEditDiffs(
 ): Promise<void> {
   if (!diffs.length) return;
 
-  // Prefer SDK method if present; do not hit HTTP directly from CLI
   const payload: SendUserEditsPayload = {
     projectId: settings.projectId,
     diffs,
   };
-  // Prefer SDK method if available on current GT version
-  const hasSubmitMethod =
-    typeof (gt as unknown as Record<string, unknown>)['submitUserEditDiffs'] ===
-    'function';
-  if (hasSubmitMethod) {
-    try {
-      await (
-        gt as unknown as {
-          submitUserEditDiffs: (payload: SendUserEditsPayload) => Promise<void>;
-        }
-      ).submitUserEditDiffs(payload);
-    } catch {
-      // Non-fatal and intentionally silent
-    }
-  }
+  logWarning(`payload is: ${JSON.stringify(payload)}`);
+  await gt.submitUserEditDiffs(payload);
 }

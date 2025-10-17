@@ -12,6 +12,7 @@ export type SubmitUserEditDiff = {
   diff: string;
   versionId?: string;
   fileId?: string;
+  localContent?: string;
 };
 
 export type SubmitUserEditDiffsPayload = {
