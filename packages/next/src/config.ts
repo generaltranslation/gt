@@ -202,7 +202,7 @@ export function withGTConfig(
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve wasm filepath
-  const turboPackEnabled = process.env.TURBOPACK === '1';
+  const turboPackEnabled = !!process.env.TURBOPACK;
   let resolvedWasmFilePath = '';
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
