@@ -17,15 +17,17 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const files = await aggregateFiles(settings);
   if (!files.length) return;
 
-  const uploads: SourceUpload[] = files.map(({ content, fileName, fileFormat, dataFormat }) => ({
-    source: {
-      content,
-      fileName,
-      fileFormat,
-      dataFormat,
-      locale: settings.defaultLocale,
-    },
-  }));
+  const uploads: SourceUpload[] = files.map(
+    ({ content, fileName, fileFormat, dataFormat }) => ({
+      source: {
+        content,
+        fileName,
+        fileFormat,
+        dataFormat,
+        locale: settings.defaultLocale,
+      },
+    })
+  );
 
   // Upload sources only to get file references, then compute diffs
   const upload = await gt.uploadSourceFiles(uploads, {
