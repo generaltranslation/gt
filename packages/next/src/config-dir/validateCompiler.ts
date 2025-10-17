@@ -12,7 +12,7 @@ import { swcPluginCompatible } from '../plugin/getStableNextVersionInfo';
  * @description If the compiler is not compatible, set the type to 'none'
  */
 export function validateCompiler(mergedConfig: withGTConfigProps) {
-  const turboPackEnabled = process.env.TURBOPACK === '1';
+  const turboPackEnabled = !!process.env.TURBOPACK;
   if (!mergedConfig.experimentalCompilerOptions) return;
   const type = mergedConfig.experimentalCompilerOptions.type;
   if (type === 'swc' && !swcPluginCompatible) {
