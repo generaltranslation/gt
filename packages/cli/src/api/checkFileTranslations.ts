@@ -355,6 +355,7 @@ async function checkTranslationDeployment(
             outputPath,
             locale,
             fileLocale: `${fileName}:${locale}`,
+            fileId: translation.fileId,
             versionId: versionMap.get(`${fileName}:${locale}`),
           };
         })

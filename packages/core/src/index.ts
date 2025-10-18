@@ -83,6 +83,9 @@ import {
   TranslationStatusResult,
 } from './types-dir/translationStatus';
 import _checkTranslationStatus from './translate/checkTranslationStatus';
+import _submitUserEditDiffs, {
+  SubmitUserEditDiffsPayload,
+} from './translate/submitUserEditDiffs';
 import {
   _getRegionProperties,
   CustomRegionMapping,
@@ -473,6 +476,27 @@ export class GT {
       mergedOptions,
       this._getTranslationConfig()
     );
+  }
+
+  /**
+   * Submits user edit diffs for existing translations so future generations preserve user intent.
+   *
+   * @param {SubmitUserEditDiffsPayload} payload - Project-scoped diff payload.
+   * @returns {Promise<void>} Resolves when submission succeeds.
+   */
+  async submitUserEditDiffs(
+    payload: SubmitUserEditDiffsPayload
+  ): Promise<void> {
+    this._validateAuth('submitUserEditDiffs');
+    // Normalize locales to canonical form before submission
+    const normalized: SubmitUserEditDiffsPayload = {
+      ...payload,
+      diffs: (payload.diffs || []).map((d) => ({
+        ...d,
+        locale: this.resolveCanonicalLocale(d.locale),
+      })),
+    };
+    await _submitUserEditDiffs(normalized, this._getTranslationConfig());
   }
 
   /**

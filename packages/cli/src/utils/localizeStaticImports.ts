@@ -261,6 +261,14 @@ function transformNonDefaultLocaleImportPath(
   targetLocale: string,
   defaultLocale: string
 ): string | null {
+  // If already localized to target, skip
+  const expectedPathWithTarget = `${patternHead}${targetLocale}`;
+  if (
+    fullPath.startsWith(`${expectedPathWithTarget}/`) ||
+    fullPath === expectedPathWithTarget
+  ) {
+    return null;
+  }
   const expectedPathWithLocale = `${patternHead}${defaultLocale}`;
 
   if (
