@@ -42,9 +42,7 @@ function extractHeadingText(heading: Heading): string {
 function hasExplicitId(heading: Heading, ast: Root): boolean {
   const lastChild = heading.children[heading.children.length - 1];
   if (lastChild?.type === 'text') {
-    return /(\{#[^}]+\}|\\\{#[^}]+\\\}|\[[^\]]+\])\s*$/.test(
-      lastChild.value
-    );
+    return /(\{#[^}]+\}|\\\{#[^}]+\\\}|\[[^\]]+\])\s*$/.test(lastChild.value);
   }
   return false;
 }
