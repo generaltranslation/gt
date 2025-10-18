@@ -145,13 +145,13 @@ export async function sendFiles(
     // Step 3: Prior to enqueue, detect and submit user edit diffs (minimal UX)
     const prepSpinner = createSpinner('dots');
     currentSpinner = prepSpinner;
-    prepSpinner.start('Preparing translations...');
+    prepSpinner.start('Updating translations...');
     try {
       await collectAndSendUserEditDiffs(upload.uploadedFiles as any, settings);
-      prepSpinner.stop('Prepared translations');
+      prepSpinner.stop('Updated translations');
     } catch {
       // Non-fatal; still stop the spinner to keep UX tidy
-      prepSpinner.stop('Prepared translations');
+      prepSpinner.stop('Updated translations');
     }
 
     // Step 4: Enqueue translations by reference
