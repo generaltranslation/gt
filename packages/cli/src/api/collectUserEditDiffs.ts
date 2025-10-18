@@ -66,7 +66,9 @@ export async function collectAndSendUserEditDiffs(
             { fileId: uploadedFile.fileId, locale: resolvedLocale, versionId },
             { timeout: 30_000 }
           );
-          const safeName = Buffer.from(`${uploadedFile.fileName}:${resolvedLocale}`)
+          const safeName = Buffer.from(
+            `${uploadedFile.fileName}:${resolvedLocale}`
+          )
             .toString('base64')
             .replace(/=+$/g, '');
           const tempServerFile = path.join(tempDir, `${safeName}.server`);
@@ -94,9 +96,14 @@ export async function collectAndSendUserEditDiffs(
     }
   }
 
-  const diffTaskResults = await Promise.allSettled(diffTaskFunctions.map((fn) => fn()));
+  const diffTaskResults = await Promise.allSettled(
+    diffTaskFunctions.map((fn) => fn())
+  );
   const collectedDiffs: UserEditDiff[] = diffTaskResults
-    .filter((r): r is PromiseFulfilledResult<UserEditDiff | null> => r.status === 'fulfilled')
+    .filter(
+      (r): r is PromiseFulfilledResult<UserEditDiff | null> =>
+        r.status === 'fulfilled'
+    )
     .map((r) => r.value)
     .filter((v): v is UserEditDiff => Boolean(v));
 
