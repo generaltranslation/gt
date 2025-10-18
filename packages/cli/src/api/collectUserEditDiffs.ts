@@ -17,7 +17,7 @@ type UploadedFileRef = {
  * Collects local user edits by diffing the latest downloaded server translation version
  * against the current local translation file, and submits the diffs upstream.
  *
- * Must run BEFORE enqueueing new translations so rules are available to the generator.
+ * Must run before enqueueing new translations so rules are available to the generator.
  */
 export async function collectAndSendUserEditDiffs(
   uploadedFiles: UploadedFileRef[],
@@ -91,12 +91,11 @@ export async function collectAndSendUserEditDiffs(
           sentCount++;
         }
 
-        // cleanup best-effort
         try {
           await fs.promises.unlink(tmpFile);
         } catch {}
-      } catch (e) {
-        // non-fatal; skip this file/locale
+      } catch (error) {
+        // Skip this file/locale
       }
     }
   }
