@@ -42,7 +42,9 @@ function extractHeadingText(heading: Heading): string {
 function hasExplicitId(heading: Heading, ast: Root): boolean {
   const lastChild = heading.children[heading.children.length - 1];
   if (lastChild?.type === 'text') {
-    return /(\{#[^}]+\}|\[[^\]]+\])$/.test(lastChild.value);
+    return /(\{#[^}]+\}|\\\{#[^}]+\\\}|\[[^\]]+\])\s*$/.test(
+      lastChild.value
+    );
   }
   return false;
 }
@@ -325,6 +327,10 @@ function applyDivWrappedIds(
     );
 
     for (const heading of sortedHeadings) {
+      // If already wrapped with this id, skip (idempotent)
+      if (content.includes(`<div id="${heading.id}">`)) {
+        continue;
+      }
       // Escape the original line for use in regex
       const escapedLine = heading.originalLine.replace(
         /[.*+?^${}()|[\]\\]/g,

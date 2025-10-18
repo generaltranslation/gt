@@ -265,6 +265,10 @@ export function transformUrlPath(
       result = newPathArray.join('/');
     }
   } else if (hideDefaultLocale) {
+    // Avoid duplicating target locale if already present
+    if (originalPathArray?.[patternHeadArray.length] === targetLocale) {
+      return null;
+    }
     const newPathArray = [
       ...originalPathArray.slice(0, patternHeadArray.length),
       targetLocale,
