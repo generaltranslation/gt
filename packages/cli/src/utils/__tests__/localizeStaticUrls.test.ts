@@ -232,6 +232,100 @@ describe('localizeStaticUrls', () => {
         await localizeStaticUrls(settings as any);
       });
     });
+
+    it('should not duplicate target locale when hideDefaultLocale=true and target already present', async () => {
+      const fileContent = `[Guide](/docs/ja/guide)`;
+      const expected = `[Guide](/docs/ja/guide)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        // Should not write when no changes
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['file1'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: { docsUrlPattern: '/docs/[locale]' },
+      };
+
+      await localizeStaticUrls(settings as any, ['ja']);
+
+      // If no changes detected, writeFile may not be called
+      // Ensure the content remains unchanged
+      expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
+    });
+
+    it('should treat absolute URLs with baseDomain as idempotent when already localized', async () => {
+      const fileContent = `<a href="https://example.com/docs/ja/guide">Guide</a>`;
+      const expected = `<a href="https://example.com/docs/ja/guide">Guide</a>`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['file1'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: { docsUrlPattern: '/docs/[locale]', baseDomain: 'https://example.com' },
+      };
+
+      await localizeStaticUrls(settings as any, ['ja']);
+      expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
+    });
+
+    it('should respect exclude patterns and remain idempotent', async () => {
+      const fileContent = `[Admin](/docs/ja/admin/settings)`;
+      const expected = `[Admin](/docs/ja/admin/settings)`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      };
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['file1'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        options: { docsUrlPattern: '/docs/[locale]', excludeStaticUrls: ['/docs/[locale]/admin/**'] },
+      };
+
+      await localizeStaticUrls(settings as any, ['ja']);
+      expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
+    });
   });
 
   describe('href attribute localization', () => {

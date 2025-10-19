@@ -572,6 +572,28 @@ More content.
     });
   });
 
+  describe('Idempotency', () => {
+    it('does not duplicate inline IDs when already present (escaped form)', () => {
+      const input = `## Sub Heading \\{#sub-heading\\}`;
+      const sourceHeadingMap = extractHeadingInfo('## Sub Heading');
+      const result = addExplicitAnchorIds(input, sourceHeadingMap);
+      expect(result.hasChanges).toBe(false);
+      expect(result.content).toContain('## Sub Heading \\{#sub-heading\\}');
+    });
+
+    it('Mintlify wrapping remains stable on repeated runs', () => {
+      const input = `## Real Heading`;
+      const sourceHeadingMap = extractHeadingInfo(input);
+      const settings = { options: { experimentalAddHeaderAnchorIds: 'mintlify' as const } };
+      const first = addExplicitAnchorIds(input, sourceHeadingMap, settings as any);
+      const second = addExplicitAnchorIds(first.content, sourceHeadingMap, settings as any);
+
+      expect(first.hasChanges).toBe(true);
+      expect(second.hasChanges).toBe(false);
+      expect(second.content).toBe(first.content);
+    });
+  });
+
   describe('Header Count Validation', () => {
     it('should work when source and translated files have same header count', () => {
       const sourceContent = `## Header 1
