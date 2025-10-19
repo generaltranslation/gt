@@ -63,10 +63,14 @@ describe('collectAndSendUserEditDiffs', () => {
     vi.mocked(createFileMapping as any).mockReturnValue({
       es: { 'fileA.mdx': '/path/out/fileA.es.mdx' },
     });
-    vi.mocked(getGitUnifiedDiff as any).mockResolvedValue('--- a\n+++ b\n-foo\n+bar\n');
+    vi.mocked(getGitUnifiedDiff as any).mockResolvedValue(
+      '--- a\n+++ b\n-foo\n+bar\n'
+    );
     vi.mocked((gt as any).downloadTranslatedFile).mockResolvedValue('server');
 
-    const uploadedFiles = [{ fileId: 'fid', versionId: 'v1', fileName: 'fileA.mdx' }];
+    const uploadedFiles = [
+      { fileId: 'fid', versionId: 'v1', fileName: 'fileA.mdx' },
+    ];
     const settings: any = {
       configDirectory: '/tmp/.gt',
       files: {
@@ -87,4 +91,3 @@ describe('collectAndSendUserEditDiffs', () => {
     expect(diffs[0]).toMatchObject({ fileName: 'fileA.mdx', locale: 'es' });
   });
 });
-

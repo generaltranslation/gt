@@ -584,9 +584,19 @@ More content.
     it('Mintlify wrapping remains stable on repeated runs', () => {
       const input = `## Real Heading`;
       const sourceHeadingMap = extractHeadingInfo(input);
-      const settings = { options: { experimentalAddHeaderAnchorIds: 'mintlify' as const } };
-      const first = addExplicitAnchorIds(input, sourceHeadingMap, settings as any);
-      const second = addExplicitAnchorIds(first.content, sourceHeadingMap, settings as any);
+      const settings = {
+        options: { experimentalAddHeaderAnchorIds: 'mintlify' as const },
+      };
+      const first = addExplicitAnchorIds(
+        input,
+        sourceHeadingMap,
+        settings as any
+      );
+      const second = addExplicitAnchorIds(
+        first.content,
+        sourceHeadingMap,
+        settings as any
+      );
 
       expect(first.hasChanges).toBe(true);
       expect(second.hasChanges).toBe(false);

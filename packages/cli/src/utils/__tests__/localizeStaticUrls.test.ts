@@ -290,7 +290,10 @@ describe('localizeStaticUrls', () => {
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        options: { docsUrlPattern: '/docs/[locale]', baseDomain: 'https://example.com' },
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          baseDomain: 'https://example.com',
+        },
       };
 
       await localizeStaticUrls(settings as any, ['ja']);
@@ -320,7 +323,10 @@ describe('localizeStaticUrls', () => {
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        options: { docsUrlPattern: '/docs/[locale]', excludeStaticUrls: ['/docs/[locale]/admin/**'] },
+        options: {
+          docsUrlPattern: '/docs/[locale]',
+          excludeStaticUrls: ['/docs/[locale]/admin/**'],
+        },
       };
 
       await localizeStaticUrls(settings as any, ['ja']);
