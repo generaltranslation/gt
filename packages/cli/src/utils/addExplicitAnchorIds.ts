@@ -202,7 +202,7 @@ function applyInlineIds(
   // Apply IDs to headings based on position
   let headingIndex = 0;
   let actuallyModifiedContent = false;
-  
+
   visit(processedAst, 'heading', (heading: Heading) => {
     const id = idMappings.get(headingIndex);
     if (id) {
