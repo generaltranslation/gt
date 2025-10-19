@@ -170,7 +170,7 @@ export function addExplicitAnchorIds(
 
   return {
     content,
-    hasChanges: addedIds.length > 0,
+    hasChanges: content !== translatedContent,
     addedIds,
   };
 }
@@ -201,6 +201,8 @@ function applyInlineIds(
 
   // Apply IDs to headings based on position
   let headingIndex = 0;
+  let actuallyModifiedContent = false;
+  
   visit(processedAst, 'heading', (heading: Heading) => {
     const id = idMappings.get(headingIndex);
     if (id) {
@@ -221,9 +223,15 @@ function applyInlineIds(
           value: ` \\{#${id}\\}`,
         });
       }
+      actuallyModifiedContent = true;
     }
     headingIndex++;
   });
+
+  // If we didn't modify any headings, return original content
+  if (!actuallyModifiedContent) {
+    return translatedContent;
+  }
 
   // Convert the modified AST back to MDX string
   try {
