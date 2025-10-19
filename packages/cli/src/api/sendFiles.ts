@@ -148,9 +148,9 @@ export async function sendFiles(
     prepSpinner.start('Updating translations...');
     try {
       await collectAndSendUserEditDiffs(upload.uploadedFiles as any, settings);
-      prepSpinner.stop('Updated translations');
     } catch {
-      // Non-fatal; still stop the spinner to keep UX tidy
+      // Non-fatal; keep going to enqueue
+    } finally {
       prepSpinner.stop('Updated translations');
     }
 
