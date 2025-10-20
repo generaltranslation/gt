@@ -19,7 +19,8 @@ vi.mock('../../api/sendUserEdits.js', () => ({
 vi.mock('../../utils/gt.js', () => ({
   gt: {
     resolveAliasLocale: (l: string) => l,
-    downloadTranslatedFile: vi.fn(),
+    checkFileTranslations: vi.fn(),
+    downloadFileBatch: vi.fn(),
   },
 }));
 
@@ -66,7 +67,29 @@ describe('collectAndSendUserEditDiffs', () => {
     vi.mocked(getGitUnifiedDiff as any).mockResolvedValue(
       '--- a\n+++ b\n-foo\n+bar\n'
     );
-    vi.mocked((gt as any).downloadTranslatedFile).mockResolvedValue('server');
+    vi.mocked((gt as any).checkFileTranslations).mockResolvedValue({
+      translations: [
+        {
+          id: 'tid1',
+          isReady: true,
+          fileName: 'fileA.mdx',
+          locale: 'es',
+          fileId: 'fid',
+        },
+      ],
+      count: 1,
+    });
+    vi.mocked((gt as any).downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'tid1',
+          data: 'server',
+          fileName: 'fileA.mdx',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
 
     const uploadedFiles = [
       { fileId: 'fid', versionId: 'v1', fileName: 'fileA.mdx' },
