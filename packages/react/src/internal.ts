@@ -27,6 +27,9 @@ import {
   injectFallbacks,
   injectAndMerge,
   collectUntranslatedEntries,
+  msg,
+  decodeMsg,
+  decodeOptions,
 } from '@generaltranslation/react-core/internal';
 
 import {
@@ -57,16 +60,6 @@ import {
 import { ClientProviderProps } from './types/config';
 
 import { GTProp } from 'generaltranslation/types';
-
-// Exports to move to gt-react/index
-export {
-  /** @deprecated use 'gt-react' instead */
-  msg,
-  /** @deprecated use 'gt-react' instead */
-  decodeMsg,
-  /** @deprecated use 'gt-react' instead */
-  decodeOptions,
-} from '@generaltranslation/react-core';
 
 // Type exports
 export type {
@@ -102,6 +95,9 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   reactHasUse,
+  msg,
+  decodeMsg,
+  decodeOptions,
 };
 
 // Function exports

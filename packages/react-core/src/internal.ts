@@ -34,6 +34,7 @@ import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './provider/hooks/translation/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './provider/hooks/translation/useCreateInternalUseTranslationsFunction';
 import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
+import { msg, decodeMsg, decodeOptions } from './messages/messages';
 export {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -68,4 +69,7 @@ export {
   useCreateInternalUseGTFunction,
   useCreateInternalUseTranslationsFunction,
   useCreateInternalUseTranslationsObjFunction,
+  msg,
+  decodeMsg,
+  decodeOptions,
 };
