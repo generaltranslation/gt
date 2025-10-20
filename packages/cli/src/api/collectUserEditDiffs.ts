@@ -8,8 +8,8 @@ import { sendUserEditDiffs } from './sendUserEdits.js';
 import type { UserEditDiff } from './sendUserEdits.js';
 import { gt } from '../utils/gt.js';
 
-const MAX_CONCURRENT_DIFF_REQUESTS = 30;
 const MAX_DIFF_BATCH_BYTES = 1_500_000;
+const MAX_DOWNLOAD_BATCH = 100;
 
 type UploadedFileRef = {
   fileId: string;
@@ -43,82 +43,132 @@ export async function collectAndSendUserEditDiffs(
   const tempDir = path.join(settings.configDirectory, 'tmp');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-  // Prepare concurrent tasks
-  const diffTaskFunctions: Array<() => Promise<UserEditDiff | null>> = [];
+  // Build candidates for diff and batch-fetch server contents
+  type DiffCandidate = {
+    fileName: string;
+    fileId: string;
+    versionId: string;
+    locale: string; // resolved
+    outputPath: string;
+  };
+  const candidates: DiffCandidate[] = [];
 
   for (const uploadedFile of uploadedFiles) {
     for (const locale of settings.locales) {
-      diffTaskFunctions.push(async () => {
-        const resolvedLocale = gt.resolveAliasLocale(locale);
-        const outputPath = fileMapping[locale]?.[uploadedFile.fileName] ?? null;
-        if (!outputPath) return null;
-        if (!fs.existsSync(outputPath)) return null;
+      const resolvedLocale = gt.resolveAliasLocale(locale);
+      const outputPath = fileMapping[locale]?.[uploadedFile.fileName] ?? null;
+      if (!outputPath) continue;
+      if (!fs.existsSync(outputPath)) continue;
 
-        const lockKeyById = uploadedFile.fileId
-          ? `${uploadedFile.fileId}:${resolvedLocale}`
-          : null;
-        const lockKeyByName = `${uploadedFile.fileName}:${resolvedLocale}`;
-        const lockEntry =
-          (lockKeyById && downloadedVersions.entries[lockKeyById]) ||
-          downloadedVersions.entries[lockKeyByName];
-        const versionId = lockEntry?.versionId;
-        if (!versionId) return null;
+      const lockKeyById = uploadedFile.fileId
+        ? `${uploadedFile.fileId}:${resolvedLocale}`
+        : null;
+      const lockKeyByName = `${uploadedFile.fileName}:${resolvedLocale}`;
+      const lockEntry =
+        (lockKeyById && downloadedVersions.entries[lockKeyById]) ||
+        downloadedVersions.entries[lockKeyByName];
+      const versionId = lockEntry?.versionId;
+      if (!versionId) continue;
 
-        try {
-          const serverContent = await gt.downloadTranslatedFile(
-            { fileId: uploadedFile.fileId, locale: resolvedLocale, versionId },
-            { timeout: 30_000 }
-          );
-          const safeName = Buffer.from(
-            `${uploadedFile.fileName}:${resolvedLocale}`
-          )
-            .toString('base64')
-            .replace(/=+$/g, '');
-          const tempServerFile = path.join(tempDir, `${safeName}.server`);
-          await fs.promises.writeFile(tempServerFile, serverContent, 'utf8');
-
-          const diff = await getGitUnifiedDiff(tempServerFile, outputPath);
-          try {
-            await fs.promises.unlink(tempServerFile);
-          } catch {}
-
-          if (diff && diff.trim().length > 0) {
-            const localContent = await fs.promises.readFile(outputPath, 'utf8');
-            return {
-              fileName: uploadedFile.fileName,
-              locale: resolvedLocale,
-              diff,
-              versionId,
-              fileId: uploadedFile.fileId,
-              localContent,
-            } as UserEditDiff;
-          }
-        } catch {}
-        return null;
+      candidates.push({
+        fileName: uploadedFile.fileName,
+        fileId: uploadedFile.fileId,
+        versionId,
+        locale: resolvedLocale,
+        outputPath,
       });
     }
   }
 
-  const maxConcurrentRequests = MAX_CONCURRENT_DIFF_REQUESTS;
   const collectedDiffs: UserEditDiff[] = [];
-  let nextIndex = 0;
-  async function runWorker() {
-    while (nextIndex < diffTaskFunctions.length) {
-      const i = nextIndex++;
+
+  if (candidates.length > 0) {
+    const fileQueryData = candidates.map((c) => ({
+      versionId: c.versionId,
+      fileName: c.fileName,
+      locale: c.locale,
+    }));
+
+    // Single batched check to obtain translation IDs
+    const checkResponse = await gt.checkFileTranslations(fileQueryData);
+    const translations = (checkResponse?.translations || []).filter(
+      (t: any) => t && t.isReady && t.id && t.fileName && t.locale
+    );
+
+    // Map fileName:resolvedLocale -> translationId
+    const idByKey = new Map<string, string>();
+    for (const t of translations) {
+      const resolved = gt.resolveAliasLocale(t.locale);
+      idByKey.set(`${t.fileName}:${resolved}`, t.id);
+    }
+
+    // Collect translation IDs in batches and download contents
+    const ids: string[] = [];
+    for (const c of candidates) {
+      const id = idByKey.get(`${c.fileName}:${c.locale}`);
+      if (id) ids.push(id);
+    }
+
+    // Helper to chunk array
+    function chunk<T>(arr: T[], size: number): T[][] {
+      const res: T[][] = [];
+      for (let i = 0; i < arr.length; i += size) res.push(arr.slice(i, i + size));
+      return res;
+    }
+
+    const serverContentByKey = new Map<string, string>();
+    for (const idChunk of chunk(ids, MAX_DOWNLOAD_BATCH)) {
       try {
-        const res = await diffTaskFunctions[i]!();
-        if (res) collectedDiffs.push(res);
+        const resp = await gt.downloadFileBatch(idChunk);
+        const files = resp?.files || [];
+        for (const f of files) {
+          // Find corresponding candidate key via idByKey reverse lookup
+          for (const [key, id] of idByKey.entries()) {
+            if (id === f.id) {
+              serverContentByKey.set(key, f.data);
+              break;
+            }
+          }
+        }
       } catch {
-        // Ignore individual task failures
+        // Ignore chunk failures; proceed with what we have
+      }
+    }
+
+    // Compute diffs using fetched server contents
+    for (const c of candidates) {
+      const key = `${c.fileName}:${c.locale}`;
+      const serverContent = serverContentByKey.get(key);
+      if (!serverContent) continue;
+
+      try {
+        const safeName = Buffer.from(`${c.fileName}:${c.locale}`)
+          .toString('base64')
+          .replace(/=+$/g, '');
+        const tempServerFile = path.join(tempDir, `${safeName}.server`);
+        await fs.promises.writeFile(tempServerFile, serverContent, 'utf8');
+
+        const diff = await getGitUnifiedDiff(tempServerFile, c.outputPath);
+        try {
+          await fs.promises.unlink(tempServerFile);
+        } catch {}
+
+        if (diff && diff.trim().length > 0) {
+          const localContent = await fs.promises.readFile(c.outputPath, 'utf8');
+          collectedDiffs.push({
+            fileName: c.fileName,
+            locale: c.locale,
+            diff,
+            versionId: c.versionId,
+            fileId: c.fileId,
+            localContent,
+          } as UserEditDiff);
+        }
+      } catch {
+        // Ignore failures for this file
       }
     }
   }
-  await Promise.all(
-    Array.from(
-      { length: Math.min(maxConcurrentRequests, diffTaskFunctions.length) },
-      () => runWorker()
-    )
-  );
 
   if (collectedDiffs.length > 0) {
     // Batch by payload size
