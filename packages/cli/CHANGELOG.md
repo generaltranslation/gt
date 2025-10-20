@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.3.15
+
+### Patch Changes
+
+- [#741](https://github.com/generaltranslation/gt/pull/741) [`559c0bf`](https://github.com/generaltranslation/gt/commit/559c0bfa7ff9e6664f65317eddbab419682a3c95) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Avoid localizing relative MDX links
+
+## 2.3.14
+
+### Patch Changes
+
+- [#739](https://github.com/generaltranslation/gt/pull/739) [`7afed0b`](https://github.com/generaltranslation/gt/commit/7afed0bda5be08d83bbe75cca9fb657ff5a50dae) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Only post-process files downloaded by gtx-cli on current run
+
 ## 2.3.13
 
 ### Patch Changes

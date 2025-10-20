@@ -11,6 +11,7 @@ import {
   getDownloadedVersions,
   saveDownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
+import { recordDownloaded } from '../state/recentDownloads.js';
 
 export type BatchedFiles = Array<{
   translationId: string;
@@ -148,6 +149,8 @@ export async function downloadFileBatch(
 
           // Write the file to disk
           await fs.promises.writeFile(outputPath, data);
+          // Track as downloaded
+          recordDownloaded(outputPath);
 
           result.successful.push(translationId);
           if (versionId) {
