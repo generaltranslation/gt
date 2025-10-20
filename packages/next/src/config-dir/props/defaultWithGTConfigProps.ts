@@ -6,6 +6,7 @@ import {
 import {
   defaultLocaleCookieName,
   defaultRenderSettings,
+  RenderMethod,
 } from 'gt-react/internal';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import {
@@ -13,8 +14,35 @@ import {
   defaultReferrerLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '../../utils/cookies';
+import { CompilerOptions } from './withGTConfigProps';
 
-const defaultWithGTConfigProps = {
+type DefaultGTConfigProps = {
+  config: string;
+  runtimeUrl: string;
+  cacheUrl: string;
+  defaultLocale: string;
+  getLocale: () => Promise<string>;
+  locales: string[];
+  maxConcurrentRequests: number;
+  maxBatchSize: number;
+  batchInterval: number;
+  renderSettings: {
+    method: RenderMethod;
+    timeout: number;
+  };
+  _usingPlugin: boolean;
+  ignoreBrowserLocales: boolean;
+  headersAndCookies: {
+    localeHeaderName: string;
+    localeCookieName: string;
+    referrerLocaleCookieName: string;
+    localeRoutingEnabledCookieName: string;
+    resetLocaleCookieName: string;
+  };
+  experimentalCompilerOptions: CompilerOptions;
+};
+
+const defaultWithGTConfigProps: DefaultGTConfigProps = {
   config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
