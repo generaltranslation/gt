@@ -6,7 +6,7 @@ import {
   TaggedChildren,
   TaggedElement,
   TaggedElementProps,
-} from '../types/types';
+} from '../types-dir/types';
 import {
   Transformation,
   TransformationPrefix,

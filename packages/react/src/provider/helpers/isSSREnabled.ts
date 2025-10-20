@@ -4,7 +4,10 @@ export function isSSREnabled() {
     return true;
   }
   // Check for Next.js specific window properties (client-side)
-  if ((globalThis as any)?.__NEXT_DATA__ !== undefined) {
+  if (
+    (globalThis as unknown as { __NEXT_DATA__: unknown })?.__NEXT_DATA__ !==
+    undefined
+  ) {
     return true;
   }
   return false;

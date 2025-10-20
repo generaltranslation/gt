@@ -1,4 +1,4 @@
-import { Dictionary, DictionaryEntry } from '../types/types';
+import { Dictionary, DictionaryEntry } from '../types-dir/types';
 import { get, set } from './indexDict';
 
 export function getSubtree<T extends Dictionary>({

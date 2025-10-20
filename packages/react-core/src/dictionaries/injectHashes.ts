@@ -1,6 +1,6 @@
 import { hashSource } from 'generaltranslation/id';
 import { isDictionaryEntry } from './isDictionaryEntry';
-import { Dictionary } from '../types/types';
+import { Dictionary } from '../types-dir/types';
 import getEntryAndMetadata from './getEntryAndMetadata';
 import { set } from './indexDict';
 

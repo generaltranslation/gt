@@ -1,15 +1,15 @@
 import { useCallback } from 'react';
-import { TranslateIcuCallback } from '../../../types/runtime';
+import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import {
   Dictionary,
   DictionaryTranslationOptions,
   TranslatedChildren,
   Translations,
-} from '../../../types/types';
+} from '../../../types-dir/types';
 import {
   createEmptyIdError,
   createNoEntryFoundWarning,
-} from '../../../errors/createErrors';
+} from '../../../errors-dir/createErrors';
 import {
   getSubtree,
   getSubtreeWithCreation,

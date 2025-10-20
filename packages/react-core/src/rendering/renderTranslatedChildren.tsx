@@ -5,7 +5,7 @@ import {
   TranslatedChildren,
   RenderVariable,
   TranslatedElement,
-} from '../types/types';
+} from '../types-dir/types';
 import getVariableProps, {
   isVariableElementProps,
 } from '../variables/_getVariableProps';

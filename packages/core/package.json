@@ -48,7 +48,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.1",
     "@types/crypto-js": "^4.2.2",
-    "@types/node": "^20.14.9",
+    "@types/node": "^20.19.17",
     "rollup": "^4.24.0",
     "rollup-plugin-dts": "^6.1.1",
     "tslib": "^2.8.0",

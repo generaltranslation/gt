@@ -1,4 +1,4 @@
-import { Dictionary } from '../types/types';
+import { Dictionary } from '../types-dir/types';
 import { getDictionaryEntry } from './getDictionaryEntry';
 import getEntryAndMetadata from './getEntryAndMetadata';
 import { injectEntry } from './injectEntry';

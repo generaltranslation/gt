@@ -1,4 +1,4 @@
-import { Dictionary, DictionaryEntry } from '../types/types';
+import { Dictionary, DictionaryEntry } from '../types-dir/types';
 
 /**
  * Type guard function that checks if a value is a DictionaryEntry

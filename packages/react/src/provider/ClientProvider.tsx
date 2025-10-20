@@ -3,17 +3,19 @@
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
-import { GTContext } from './GTContext';
+import {
+  GTContext,
+  useRuntimeTranslation,
+  useCreateInternalUseGTFunction,
+  useCreateInternalUseTranslationsFunction,
+  useCreateInternalUseTranslationsObjFunction,
+} from '@generaltranslation/react-core/internal';
+import { Dictionary, Translations } from '@generaltranslation/react-core/types';
 import { ClientProviderProps } from '../types/config';
-import { Dictionary, Translations } from '../types/types';
-import useRuntimeTranslation from './hooks/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from '../utils/cookies';
-import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
+} from '@generaltranslation/react-core/internal';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({

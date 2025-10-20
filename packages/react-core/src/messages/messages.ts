@@ -1,6 +1,6 @@
 import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
-import { InlineTranslationOptions } from '../types/types';
+import { InlineTranslationOptions } from '../types-dir/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { encode, decode } from 'generaltranslation/internal';
 

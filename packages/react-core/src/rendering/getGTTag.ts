@@ -1,4 +1,4 @@
-import { TaggedElement, GTTag } from '../types/types';
+import { TaggedElement, GTTag } from '../types-dir/types';
 
 export default function getGTTag(child: TaggedElement): GTTag | null {
   if (child && child.props && child.props['data-_gt']) {

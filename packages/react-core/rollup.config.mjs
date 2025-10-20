@@ -74,18 +74,18 @@ export default [
   },
 
   /* ---------------------------------------- */
-  // Bundling for the client library (client.ts)
+  // Bundling for the errors library (errors.ts)
   {
-    input: 'src/client.ts',
+    input: './src/internal.ts',
     output: [
       {
-        file: './dist/client.cjs.min.cjs',
+        file: './dist/errors.cjs.min.cjs',
         format: 'cjs',
         exports: 'auto', // 'auto' ensures compatibility with both default and named exports in CommonJS
         sourcemap: false,
       },
       {
-        file: './dist/client.esm.min.mjs',
+        file: './dist/errors.esm.min.mjs',
         format: 'esm',
         exports: 'named', // Named exports for ES modules
         sourcemap: false,
@@ -98,11 +98,22 @@ export default [
     external: baseConfig.external,
   },
 
-  // TypeScript declarations for the client library (client.ts)
+  // TypeScript declarations for the internal library (internal.ts)
   {
-    input: './src/client.ts',
+    input: './src/errors.ts',
     output: {
-      file: './dist/client.d.ts',
+      file: './dist/errors.d.ts',
+      format: 'esm',
+    },
+    plugins: [dts()],
+  },
+
+  /* ---------------------------------------- */
+  // TypeScript declarations for the internal library (internal.ts)
+  {
+    input: './src/types.ts',
+    output: {
+      file: './dist/types.d.ts',
       format: 'esm',
     },
     plugins: [dts()],

@@ -1,4 +1,4 @@
-import { Dictionary, DictionaryEntry } from '../types/types';
+import { Dictionary, DictionaryEntry } from '../types-dir/types';
 /**
  * @description A function that gets a value from a dictionary, only one level
  * @param dictionary - dictionary to get the value from

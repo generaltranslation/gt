@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CustomLoader } from '../../types/types';
-import { Dictionary } from '../../types/types';
+import { CustomLoader } from '../../types-dir/types';
+import { Dictionary } from '../../types-dir/types';
 import loadDictionaryHelper from '../../dictionaries/loadDictionaryHelper';
 
 export function useLoadDictionary({

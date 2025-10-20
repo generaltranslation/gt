@@ -1,4 +1,4 @@
-import { Dictionary, DictionaryEntry } from '../types/types';
+import { Dictionary, DictionaryEntry } from '../types-dir/types';
 import { getDictionaryEntry } from './getDictionaryEntry';
 import { getSubtree } from './getSubtree';
 import { get, set } from './indexDict';
@@ -8,7 +8,7 @@ import {
   createDictionaryEntryError,
   createCannotInjectDictionaryEntryError,
   createSubtreeNotFoundError,
-} from '../errors/createErrors';
+} from '../errors-dir/createErrors';
 
 /**
  * @description Given a subtree and a dictionary, injects the subtree into the dictionary at the given id

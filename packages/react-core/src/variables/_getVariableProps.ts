@@ -1,5 +1,5 @@
 import { VariableTransformationSuffix } from 'generaltranslation/types';
-import { GTTag, VariableProps } from '../types/types';
+import { GTTag, VariableProps } from '../types-dir/types';
 import getVariableName from './getVariableName';
 import { minifyVariableType } from 'generaltranslation/internal';
 

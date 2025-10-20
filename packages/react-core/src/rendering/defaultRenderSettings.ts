@@ -1,4 +1,4 @@
-import { RenderMethod } from '../types/types';
+import { RenderMethod } from '../types-dir/types';
 
 function shouldApplyTimeout() {
   return (

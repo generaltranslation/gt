@@ -20,7 +20,7 @@ import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from './types/types';
+} from './types-dir/types';
 import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 import { useRegionSelector } from './hooks/useRegionSelector';
 import { useLocaleDirection } from './hooks/useLocaleDirection';

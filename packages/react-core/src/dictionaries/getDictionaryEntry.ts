@@ -1,4 +1,4 @@
-import { Dictionary, DictionaryEntry } from '../types/types';
+import { Dictionary, DictionaryEntry } from '../types-dir/types';
 import { get } from './indexDict';
 
 export function isValidDictionaryEntry(

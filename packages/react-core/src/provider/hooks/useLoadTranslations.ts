@@ -1,6 +1,6 @@
-import { customLoadTranslationsError } from '../../errors/createErrors';
+import { customLoadTranslationsError } from '../../errors-dir/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
-import { CustomLoader, Translations } from '../../types/types';
+import { CustomLoader, Translations } from '../../types-dir/types';
 import { useEffect, useState } from 'react';
 import { GT } from 'generaltranslation';
 
@@ -32,10 +32,12 @@ export function useLoadTranslations({
    */
 
   const [translations, setTranslations] = useState<Translations | null>(
-    _translations ||
-      (translationRequired && loadTranslationsType !== 'disabled')
-      ? null
-      : {}
+    (() => {
+      return _translations ||
+        (translationRequired && loadTranslationsType !== 'disabled')
+        ? null
+        : {};
+    })()
   );
 
   // Reset translations if locale changes (null to trigger a new cache fetch)

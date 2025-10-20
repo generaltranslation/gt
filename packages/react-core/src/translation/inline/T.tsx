@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import renderVariable from '../../rendering/renderVariable';
 import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
-import { TranslatedChildren } from '../../types/types';
+import { TranslatedChildren } from '../../types-dir/types';
 import { useable } from '../../promises/dangerouslyUsable';
 
 /**

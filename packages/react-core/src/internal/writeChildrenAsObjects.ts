@@ -1,5 +1,5 @@
 import getVariableName from '../variables/getVariableName';
-import { TaggedChild, TaggedChildren, TaggedElement } from '../types/types';
+import { TaggedChild, TaggedChildren, TaggedElement } from '../types-dir/types';
 import { isValidTaggedElement } from '../utils/utils';
 import {
   JsxChild,

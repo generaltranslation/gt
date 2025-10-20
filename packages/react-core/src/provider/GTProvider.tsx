@@ -7,22 +7,33 @@ import {
 } from 'generaltranslation/internal';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
-import { readAuthFromEnv } from '../utils/utils';
 import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
-import { isSSREnabled } from './helpers/isSSREnabled';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from '../utils/cookies';
-import { GTProviderProps } from '../types/config';
+import { GTProviderProps } from '../types-dir/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT, resolveAliasLocale } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
-import { useRegionState } from './hooks/useRegionState';
 import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
+
+// Special overriden function types
+import { AuthFromEnvParams, AuthFromEnvReturn } from '../utils/types';
+import {
+  UseDetermineLocaleParams,
+  UseDetermineLocaleReturn,
+} from './hooks/locales/types';
+import { UseRegionStateParams, UseRegionStateReturn } from './hooks/types';
+
+// Deprecated functions, will be removed in a future version
+import { readAuthFromEnv as _readAuthFromEnv } from '../utils/utils';
+import { isSSREnabled } from './helpers/isSSREnabled';
+import { useDetermineLocale as _useDetermineLocale } from './hooks/locales/useDetermineLocale';
+import { useRegionState as _useRegionState } from './hooks/useRegionState';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -66,15 +77,27 @@ export default function GTProvider({
   translations: _translations = null,
   _versionId,
   customMapping = config?.customMapping,
+  readAuthFromEnv = _readAuthFromEnv,
+  useDetermineLocale = _useDetermineLocale,
+  useRegionState = _useRegionState,
   ...metadata
-}: GTProviderProps) {
+}: GTProviderProps & {
+  readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
+  useDetermineLocale: (
+    params: UseDetermineLocaleParams
+  ) => UseDetermineLocaleReturn;
+  useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
+}) {
   // ---------- PROPS ---------- //
   if (_locale) {
     _locale = resolveAliasLocale(_locale, customMapping);
   }
 
   // Read env to get projectId and API key
-  const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
+  const { projectId, devApiKey } = readAuthFromEnv({
+    projectId: _projectId,
+    devApiKey: _devApiKey,
+  });
 
   // Get locale data including
   // locale - the user's locale
@@ -95,6 +118,7 @@ export default function GTProvider({
     ssr,
     localeCookieName,
     customMapping,
+    useDetermineLocale,
   });
 
   // Define the region instance

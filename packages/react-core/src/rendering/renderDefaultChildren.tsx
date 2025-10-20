@@ -9,7 +9,7 @@ import {
   TaggedChild,
   TaggedChildren,
   TaggedElement,
-} from '../types/types';
+} from '../types-dir/types';
 import getGTTag from './getGTTag';
 
 export default function renderDefaultChildren({

@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { getPluralBranch } from '../../internal';
-import { createPluralMissingError } from '../../errors/createErrors';
+import { createPluralMissingError } from '../../errors-dir/createErrors';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GTContext } from '../../provider/GTContext';
 

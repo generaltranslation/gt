@@ -4,14 +4,14 @@ import {
   Translations,
   _Messages,
   _Message,
-} from '../../../types/types';
-import { TranslateIcuCallback } from '../../../types/runtime';
+} from '../../../types-dir/types';
+import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import { GT } from 'generaltranslation';
 import {
   createStringRenderError,
   createStringTranslationError,
-} from '../../../errors/createErrors';
-import { decodeMsg, decodeOptions } from '../../../internal';
+} from '../../../errors-dir/createErrors';
+import { decodeMsg, decodeOptions } from '../../../messages/messages';
 
 type MReturnType<T> = T extends string ? string : T;
 

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { useRegionSelector } from '../hooks/useRegionSelector';
+import { useRegionSelector } from '@generaltranslation/react-core';
 
 /**
  * A dropdown component that allows users to select a region.

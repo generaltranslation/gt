@@ -2,7 +2,7 @@ import {
   Dictionary,
   DictionaryEntry,
   TranslatedChildren,
-} from '../types/types';
+} from '../types-dir/types';
 import { get, set } from './indexDict';
 import { isDictionaryEntry } from './isDictionaryEntry';
 

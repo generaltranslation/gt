@@ -1,5 +1,5 @@
 import React from 'react';
-import useLocaleSelector from '../hooks/useLocaleSelector';
+import { useLocaleSelector } from '@generaltranslation/react-core';
 import { CustomMapping } from 'generaltranslation/types';
 
 /**

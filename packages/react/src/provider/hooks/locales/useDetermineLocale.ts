@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { determineLocale, resolveAliasLocale } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { createUnsupportedLocaleWarning } from '../../../errors/createErrors';
-import { defaultLocaleCookieName } from '../../../utils/cookies';
+import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
 import { CustomMapping } from 'generaltranslation/types';
+import {
+  UseDetermineLocaleParams,
+  UseDetermineLocaleReturn,
+} from '@generaltranslation/react-core/types';
 
 export function useDetermineLocale({
   locale: _locale = '',
@@ -12,21 +16,13 @@ export function useDetermineLocale({
   localeCookieName = defaultLocaleCookieName,
   ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
   customMapping,
-}: {
-  defaultLocale: string;
-  locales: string[];
-  locale?: string;
-  localeCookieName?: string;
-  ssr?: boolean;
-  customMapping?: CustomMapping;
-}): [string, (locale: string) => void] {
+}: UseDetermineLocaleParams): UseDetermineLocaleReturn {
   // resolve alias locale
   _locale = resolveAliasLocale(_locale, customMapping);
   locales = locales.map((locale) => resolveAliasLocale(locale, customMapping));
 
-  // maintaining the state of locale
-  const [locale, _setLocale] = useState<string>(
-    resolveAliasLocale(
+  const initializeLocale = () => {
+    const result = resolveAliasLocale(
       ssr
         ? _locale
           ? determineLocale(_locale, locales, customMapping) || ''
@@ -40,9 +36,14 @@ export function useDetermineLocale({
             customMapping,
           }),
       customMapping
-    )
-  );
+    );
+    return result;
+  };
 
+  // maintaining the state of locale
+  const [locale, _setLocale] = useState<string>(initializeLocale());
+
+  // Functions for setting internal locale state
   const [setLocale, setLocaleWithoutSettingCookie] = createSetLocale({
     locale,
     locales,
@@ -70,6 +71,14 @@ export function useDetermineLocale({
 
 // ----- HELPER FUNCTIONS ---- //
 
+/**
+ * Choose a locale to use
+ * (1) use provided locale
+ * (2) use cookie locale
+ * (3) use preferred locale
+ * (5) fallback to defaultLocale
+ * Update the cookie locale to be correct
+ */
 function getNewLocale({
   _locale,
   locale,
@@ -85,24 +94,14 @@ function getNewLocale({
   localeCookieName: string;
   customMapping?: CustomMapping;
 }): string {
+  // No change, return
   if (
     _locale &&
     _locale === locale &&
     determineLocale(_locale, locales, customMapping) === locale
-  )
+  ) {
     return resolveAliasLocale(_locale, customMapping);
-
-  // check user's configured locales
-  let browserLocales = (() => {
-    if (navigator?.languages) return navigator.languages;
-    if (navigator?.language) return [navigator.language];
-    if ((navigator as any)?.userLanguage)
-      return [(navigator as any)?.userLanguage];
-    return [defaultLocale];
-  })() as string[];
-  browserLocales = browserLocales.map((locale) =>
-    resolveAliasLocale(locale, customMapping)
-  );
+  }
 
   // Check for locale in cookie
   let cookieLocale =
@@ -115,6 +114,21 @@ function getNewLocale({
   if (cookieLocale) {
     cookieLocale = resolveAliasLocale(cookieLocale, customMapping);
   }
+
+  // check user's configured locales
+  let browserLocales = (() => {
+    if (typeof navigator === 'undefined') {
+      return [defaultLocale];
+    }
+    if (navigator?.languages) return navigator.languages;
+    if (navigator?.language) return [navigator.language];
+    if ((navigator as any)?.userLanguage)
+      return [(navigator as any)?.userLanguage];
+    return [defaultLocale];
+  })() as string[];
+  browserLocales = browserLocales.map((locale) =>
+    resolveAliasLocale(locale, customMapping)
+  );
 
   // determine locale
   let newLocale =

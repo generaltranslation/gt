@@ -4,16 +4,16 @@ import {
   dynamicTranslationError,
   createGenericRuntimeTranslationError,
   runtimeTranslationTimeoutWarning,
-} from '../../errors/createErrors';
+} from '../../errors-dir/createErrors';
 import {
   RenderMethod,
   TranslatedChildren,
   Translations,
-} from '../../types/types';
+} from '../../types-dir/types';
 import {
   TranslateIcuCallback,
   TranslateChildrenCallback,
-} from '../../types/runtime';
+} from '../../types-dir/runtime';
 import { JsxChildren } from 'generaltranslation/internal';
 import {
   maxConcurrentRequests,
@@ -75,6 +75,7 @@ export default function useRuntimeTranslation({
     !!gt.projectId &&
     !!runtimeUrl &&
     !!gt.devApiKey &&
+    typeof process !== 'undefined' &&
     process.env.NODE_ENV === 'development';
 
   if (!developmentApiEnabled) {

@@ -3,7 +3,7 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   Translations,
-} from '../../../types/types';
+} from '../../../types-dir/types';
 import {
   getDictionaryEntry,
   isValidDictionaryEntry,
@@ -12,10 +12,10 @@ import getEntryAndMetadata from '../../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-} from '../../../errors/createErrors';
+} from '../../../errors-dir/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
-import { TranslateIcuCallback } from '../../../types/runtime';
+import { TranslateIcuCallback } from '../../../types-dir/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import useGTContext from '../../provider/GTContext';
-import { _Messages, Translations } from '../../types/types';
+import { _Messages, Translations } from '../../types-dir/types';
 import { useable } from '../../promises/dangerouslyUsable';
 import { reactHasUse } from '../../promises/reactHasUse';
 import { useCallback } from 'react';

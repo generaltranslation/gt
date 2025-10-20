@@ -1,13 +1,9 @@
 // Type definition for the params extracted from gt.config.json
 
-import {
-  RenderMethod,
-  Dictionary,
-  Translations,
-  CustomLoader,
-} from '@generaltranslation/react-core/types';
-import { CustomMapping } from 'generaltranslation/types';
 import React from 'react';
+import { RenderMethod } from './types';
+import { Translations, CustomLoader } from './types';
+import { CustomMapping } from 'generaltranslation/types';
 
 export type GTConfig = {
   projectId?: string;
@@ -54,32 +50,4 @@ export type GTProviderProps = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   [key: string]: any;
-};
-
-export type ClientProviderProps = {
-  children: any;
-  dictionary: Dictionary;
-  dictionaryTranslations: Dictionary;
-  translations: Translations;
-  locale: string;
-  locales: string[];
-  region?: string; // should be made mandatory if we ever make region a server-side variable
-  _versionId?: string;
-  dictionaryEnabled?: boolean;
-  defaultLocale: string;
-  translationRequired: boolean;
-  dialectTranslationRequired: boolean;
-  renderSettings: {
-    method: RenderMethod;
-    timeout?: number;
-  };
-  developmentApiEnabled: boolean;
-  projectId?: string;
-  devApiKey?: string;
-  runtimeUrl?: string | null;
-  gtServicesEnabled?: boolean;
-  localeCookieName?: string;
-  resetLocaleCookieName: string;
-  regionCookieName?: string;
-  customMapping?: CustomMapping;
 };

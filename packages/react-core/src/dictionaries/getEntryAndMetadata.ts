@@ -1,4 +1,4 @@
-import { DictionaryEntry, MetaEntry } from '../types/types';
+import { DictionaryEntry, MetaEntry } from '../types-dir/types';
 
 export default function getEntryAndMetadata(value: DictionaryEntry): {
   entry: string;

@@ -3,7 +3,7 @@ import {
   Dictionary,
   DictionaryEntry,
   FlattenedDictionary,
-} from '../types/types';
+} from '../types-dir/types';
 
 const createDuplicateKeyError = (key: string) =>
   `Duplicate key found in dictionary: "${key}"`;

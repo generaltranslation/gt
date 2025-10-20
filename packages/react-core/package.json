@@ -49,9 +49,8 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
-    "@types/node": "^22.13.5",
+    "@types/node": "^24.8.0",
     "@types/react": ">=18.0.0 <20.0.0",
-    "@types/react-dom": ">=18.0.0 <20.0.0",
     "rollup": "^4.32.1",
     "rollup-plugin-dts": "^6.2.3",
     "rollup-plugin-peer-deps-external": "^2.2.4",
@@ -71,19 +70,25 @@
       "require": "./dist/internal.cjs.min.cjs",
       "import": "./dist/internal.esm.min.mjs"
     },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "require": "./dist/client.cjs.min.cjs",
-      "import": "./dist/client.esm.min.mjs"
+    "./types": {
+      "types": "./dist/types.d.ts"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "require": "./dist/errors.cjs.min.cjs",
+      "import": "./dist/errors.esm.min.mjs"
     }
   },
   "typesVersions": {
     "*": {
-      "client": [
-        "./dist/client.d.ts"
+      "types": [
+        "./dist/types.d.ts"
       ],
       "internal": [
         "./dist/internal.d.ts"
+      ],
+      "errors": [
+        "./dist/errors.d.ts"
       ]
     }
   },
@@ -95,6 +100,12 @@
       ],
       "@generaltranslation/react-core/internal": [
         "./dist/internal"
+      ],
+      "@generaltranslation/react-core/types": [
+        "./dist/types.d.ts"
+      ],
+      "@generaltranslation/react-core/errors": [
+        "./dist/errors.d.ts"
       ]
     }
   },

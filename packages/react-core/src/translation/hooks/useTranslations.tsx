@@ -1,4 +1,3 @@
-import { Dictionary, DictionaryEntry } from '../../internal';
 import useGTContext from '../../provider/GTContext';
 
 /**
