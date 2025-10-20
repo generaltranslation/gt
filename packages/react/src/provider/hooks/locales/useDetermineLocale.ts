@@ -8,6 +8,7 @@ import {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
+import { PACKAGE_NAME } from '../../../errors-dir/constants';
 
 export function useDetermineLocale({
   locale: _locale = '',
@@ -183,7 +184,9 @@ function createSetLocale({
       customMapping
     );
     if (validatedLocale !== newLocale) {
-      console.warn(createUnsupportedLocaleWarning(validatedLocale, newLocale));
+      console.warn(
+        createUnsupportedLocaleWarning(validatedLocale, newLocale, PACKAGE_NAME)
+      );
     }
     // persist locale
     _setLocale(validatedLocale);

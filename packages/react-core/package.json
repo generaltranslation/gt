@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "10.6.5",
+  "version": "0.0.1-alpha.0",
   "description": "A pure React library for internationalization",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -70,13 +70,13 @@
       "require": "./dist/internal.cjs.min.cjs",
       "import": "./dist/internal.esm.min.mjs"
     },
-    "./types": {
-      "types": "./dist/types.d.ts"
-    },
     "./errors": {
       "types": "./dist/errors.d.ts",
       "require": "./dist/errors.cjs.min.cjs",
       "import": "./dist/errors.esm.min.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts"
     }
   },
   "typesVersions": {

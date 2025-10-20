@@ -76,7 +76,7 @@ export default [
   /* ---------------------------------------- */
   // Bundling for the errors library (errors.ts)
   {
-    input: './src/internal.ts',
+    input: './src/errors.ts',
     output: [
       {
         file: './dist/errors.cjs.min.cjs',
@@ -98,7 +98,7 @@ export default [
     external: baseConfig.external,
   },
 
-  // TypeScript declarations for the internal library (internal.ts)
+  // TypeScript declarations for the errors library (errors.ts)
   {
     input: './src/errors.ts',
     output: {
