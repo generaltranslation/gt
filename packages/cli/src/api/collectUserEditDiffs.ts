@@ -8,6 +8,9 @@ import { sendUserEditDiffs } from './sendUserEdits.js';
 import type { UserEditDiff } from './sendUserEdits.js';
 import { gt } from '../utils/gt.js';
 
+const MAX_CONCURRENT_DIFF_REQUESTS = 30;
+const MAX_DIFF_BATCH_BYTES = 1_500_000;
+
 type UploadedFileRef = {
   fileId: string;
   versionId: string;
@@ -96,18 +99,49 @@ export async function collectAndSendUserEditDiffs(
     }
   }
 
-  const diffTaskResults = await Promise.allSettled(
-    diffTaskFunctions.map((fn) => fn())
-  );
-  const collectedDiffs: UserEditDiff[] = diffTaskResults
-    .filter(
-      (r): r is PromiseFulfilledResult<UserEditDiff | null> =>
-        r.status === 'fulfilled'
+  const maxConcurrentRequests = MAX_CONCURRENT_DIFF_REQUESTS;
+  const collectedDiffs: UserEditDiff[] = [];
+  let nextIndex = 0;
+  async function runWorker() {
+    while (nextIndex < diffTaskFunctions.length) {
+      const i = nextIndex++;
+      try {
+        const res = await diffTaskFunctions[i]!();
+        if (res) collectedDiffs.push(res);
+      } catch {
+        // Ignore individual task failures
+      }
+    }
+  }
+  await Promise.all(
+    Array.from(
+      { length: Math.min(maxConcurrentRequests, diffTaskFunctions.length) },
+      () => runWorker()
     )
-    .map((r) => r.value)
-    .filter((v): v is UserEditDiff => Boolean(v));
+  );
 
   if (collectedDiffs.length > 0) {
-    await sendUserEditDiffs(collectedDiffs, settings);
+    // Batch by payload size
+    const maxBatchBytes = MAX_DIFF_BATCH_BYTES;
+    const batches: UserEditDiff[][] = [];
+    let currentBatch: UserEditDiff[] = [];
+    for (const d of collectedDiffs) {
+      const tentative = [...currentBatch, d];
+      const bytes = Buffer.byteLength(
+        JSON.stringify({ projectId: settings.projectId, diffs: tentative }),
+        'utf8'
+      );
+      if (bytes > maxBatchBytes && currentBatch.length > 0) {
+        batches.push(currentBatch);
+        currentBatch = [d];
+      } else {
+        currentBatch = tentative;
+      }
+    }
+    if (currentBatch.length > 0) batches.push(currentBatch);
+
+    for (const batch of batches) {
+      await sendUserEditDiffs(batch, settings);
+    }
   }
 }
