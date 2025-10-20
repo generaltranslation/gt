@@ -1,6 +1,3 @@
-import LocaleSelector from './ui/LocaleSelector';
-import RegionSelector from './ui/RegionSelector';
-
 import {
   T,
   useGT,
@@ -8,7 +5,6 @@ import {
   useDefaultLocale,
   useLocale,
   useRegion,
-  GTProvider,
   Var,
   Num,
   Currency,
@@ -32,6 +28,9 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from '@generaltranslation/react-core/types';
+import { GTProvider } from './provider/GTProvider';
+import LocaleSelector from './ui/LocaleSelector';
+import RegionSelector from './ui/RegionSelector';
 
 export {
   Var,
