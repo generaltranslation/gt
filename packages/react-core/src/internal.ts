@@ -1,3 +1,5 @@
+// No useContext related exports should go through here!
+
 import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
@@ -12,7 +14,7 @@ import isVariableObject from './rendering/isVariableObject';
 import getVariableName from './variables/getVariableName';
 import renderDefaultChildren from './rendering/renderDefaultChildren';
 import renderTranslatedChildren from './rendering/renderTranslatedChildren';
-import { defaultRenderSettings } from './rendering/defaultRenderSettings';
+import { getDefaultRenderSettings } from './rendering/getDefaultRenderSettings';
 import renderSkeleton from './rendering/renderSkeleton';
 import {
   defaultLocaleCookieName,
@@ -29,12 +31,8 @@ import { injectTranslations } from './dictionaries/injectTranslations';
 import { injectFallbacks } from './dictionaries/injectFallbacks';
 import { injectAndMerge } from './dictionaries/injectAndMerge';
 import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
-import { GTContext } from './provider/GTContext';
-import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from './provider/hooks/translation/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './provider/hooks/translation/useCreateInternalUseTranslationsFunction';
-import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
+
 export {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -49,7 +47,7 @@ export {
   renderDefaultChildren,
   renderTranslatedChildren,
   renderSkeleton,
-  defaultRenderSettings,
+  getDefaultRenderSettings,
   defaultLocaleCookieName,
   defaultRegionCookieName,
   mergeDictionaries,
@@ -64,11 +62,6 @@ export {
   injectFallbacks,
   injectAndMerge,
   collectUntranslatedEntries,
-  GTContext,
-  useRuntimeTranslation,
-  useCreateInternalUseGTFunction,
-  useCreateInternalUseTranslationsFunction,
-  useCreateInternalUseTranslationsObjFunction,
   msg,
   decodeMsg,
   decodeOptions,

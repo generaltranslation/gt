@@ -49,5 +49,6 @@ export type GTProviderProps = {
   fallback?: React.ReactNode;
   customMapping?: CustomMapping;
   modelProvider?: string;
+  environment: 'development' | 'production' | 'test';
   [key: string]: any;
 };

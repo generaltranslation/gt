@@ -14,6 +14,9 @@ export function GTProvider(props: GTProviderProps): React.JSX.Element {
       readAuthFromEnv={readAuthFromEnv}
       useDetermineLocale={useDetermineLocale}
       useRegionState={useRegionState}
+      environment={
+        process.env.NODE_ENV as 'development' | 'production' | 'test'
+      }
     />
   );
 }

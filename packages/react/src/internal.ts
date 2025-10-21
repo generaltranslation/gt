@@ -1,3 +1,5 @@
+// No useContext related exports should go through here!
+
 import {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -12,7 +14,7 @@ import {
   renderDefaultChildren,
   renderTranslatedChildren,
   renderSkeleton,
-  defaultRenderSettings,
+  getDefaultRenderSettings,
   defaultLocaleCookieName,
   defaultRegionCookieName,
   mergeDictionaries,
@@ -91,7 +93,7 @@ export type {
 
 // Constant exports
 export {
-  defaultRenderSettings,
+  getDefaultRenderSettings,
   defaultLocaleCookieName,
   defaultRegionCookieName,
   reactHasUse,

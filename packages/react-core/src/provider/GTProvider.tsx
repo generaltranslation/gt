@@ -6,7 +6,7 @@ import {
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
-import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
+import { getDefaultRenderSettings } from '../rendering/getDefaultRenderSettings';
 import useCreateInternalUseGTFunction from './hooks/translation/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/translation/useCreateInternalUseTranslationsFunction';
 import {
@@ -59,6 +59,7 @@ import { useRegionState as _useRegionState } from './hooks/useRegionState';
 export default function GTProvider({
   children,
   config,
+  environment = 'production',
   projectId: _projectId = config?.projectId || '',
   devApiKey: _devApiKey = config?.devApiKey || '',
   dictionary: _dictionary = config?.dictionary || {},
@@ -66,7 +67,8 @@ export default function GTProvider({
   defaultLocale = config?.defaultLocale || libraryDefaultLocale,
   cacheUrl = config?.cacheUrl || defaultCacheUrl,
   runtimeUrl = config?.runtimeUrl || defaultRuntimeApiUrl,
-  renderSettings = config?.renderSettings || defaultRenderSettings,
+  renderSettings = config?.renderSettings ||
+    getDefaultRenderSettings(environment),
   ssr = config?.ssr || isSSREnabled(),
   localeCookieName = config?.localeCookieName || defaultLocaleCookieName,
   locale: _locale = '',
@@ -176,6 +178,7 @@ export default function GTProvider({
     loadTranslationsType,
     cacheUrl,
     locales,
+    environment,
   });
 
   // ---------- TRANSLATION STATE ---------- //
@@ -206,6 +209,7 @@ export default function GTProvider({
     runtimeUrl,
     renderSettings,
     setTranslations,
+    environment,
     ...metadata,
   });
 

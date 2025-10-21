@@ -4,8 +4,6 @@ import {
   InlineTranslationOptions,
   DictionaryTranslationOptions,
   _Messages,
-  TFunctionType,
-  MFunctionType,
   Dictionary,
   DictionaryEntry,
 } from './types';

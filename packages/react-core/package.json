@@ -75,12 +75,20 @@
       "require": "./dist/errors.cjs.min.cjs",
       "import": "./dist/errors.esm.min.mjs"
     },
+    "./internal-client": {
+      "types": "./dist/internal-client.d.ts",
+      "require": "./dist/internal-client.cjs.min.cjs",
+      "import": "./dist/internal-client.esm.min.mjs"
+    },
     "./types": {
       "types": "./dist/types.d.ts"
     }
   },
   "typesVersions": {
     "*": {
+      "internal-client": [
+        "./dist/internal-client.d.ts"
+      ],
       "types": [
         "./dist/types.d.ts"
       ],
@@ -95,8 +103,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@generaltranslation/react-core/client": [
-        "./dist/client"
+      "@generaltranslation/react-core/internal-client": [
+        "./dist/internal-client"
       ],
       "@generaltranslation/react-core/internal": [
         "./dist/internal"

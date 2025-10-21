@@ -4,18 +4,18 @@ import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import {
-  GTContext,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from '@generaltranslation/react-core/internal';
+import {
   useRuntimeTranslation,
   useCreateInternalUseGTFunction,
   useCreateInternalUseTranslationsFunction,
   useCreateInternalUseTranslationsObjFunction,
-} from '@generaltranslation/react-core/internal';
+} from '@generaltranslation/react-core/internal-client';
+import { GTContext } from '@generaltranslation/react-core';
 import { Dictionary, Translations } from '@generaltranslation/react-core/types';
 import { ClientProviderProps } from '../types/config';
-import {
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-} from '@generaltranslation/react-core/internal';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -39,6 +39,7 @@ export default function ClientProvider({
   localeCookieName = defaultLocaleCookieName,
   regionCookieName = defaultRegionCookieName,
   customMapping,
+  environment,
 }: ClientProviderProps): React.JSX.Element {
   // ----- TRANSLATIONS STATE ----- //
 
@@ -144,6 +145,7 @@ export default function ClientProvider({
       defaultLocale,
       renderSettings,
       developmentApiEnabled,
+      environment,
     });
 
   // ---------- USE GT() TRANSLATION ---------- //

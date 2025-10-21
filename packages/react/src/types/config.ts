@@ -33,4 +33,5 @@ export type ClientProviderProps = {
   resetLocaleCookieName: string;
   regionCookieName?: string;
   customMapping?: CustomMapping;
+  environment: 'development' | 'production' | 'test';
 };

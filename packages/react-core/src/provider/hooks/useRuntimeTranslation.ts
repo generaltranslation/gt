@@ -52,6 +52,7 @@ export default function useRuntimeTranslation({
   runtimeUrl,
   renderSettings,
   setTranslations,
+  environment,
   ...additionalMetadata
 }: {
   gt: GT;
@@ -63,6 +64,7 @@ export default function useRuntimeTranslation({
     method: RenderMethod;
     timeout?: number;
   };
+  environment: 'development' | 'production' | 'test';
   setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
   [key: string]: any;
 }): {
@@ -75,8 +77,7 @@ export default function useRuntimeTranslation({
     !!gt.projectId &&
     !!runtimeUrl &&
     !!gt.devApiKey &&
-    typeof process !== 'undefined' &&
-    process.env.NODE_ENV === 'development';
+    environment === 'development';
 
   if (!developmentApiEnabled) {
     const disabledError = (fn: string) =>

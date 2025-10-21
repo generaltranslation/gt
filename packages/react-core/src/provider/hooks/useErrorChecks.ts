@@ -18,6 +18,7 @@ export function useErrorChecks({
   loadTranslationsType,
   cacheUrl,
   locales,
+  environment,
 }: {
   devApiKey?: string;
   projectId: string;
@@ -25,14 +26,11 @@ export function useErrorChecks({
   loadTranslationsType: string;
   cacheUrl: string;
   locales: string[];
+  environment: 'development' | 'production' | 'test';
 }) {
   useEffect(() => {
     // Check: no devApiKey in production
-    if (
-      typeof process !== 'undefined' &&
-      process.env.NODE_ENV === 'production' &&
-      devApiKey
-    ) {
+    if (environment === 'production' && devApiKey) {
       throw new Error(apiKeyInProductionError);
     }
 
@@ -41,8 +39,7 @@ export function useErrorChecks({
       loadTranslationsType !== 'custom' &&
       (cacheUrl || runtimeUrl) &&
       !projectId &&
-      typeof process !== 'undefined' &&
-      process.env.NODE_ENV === 'development'
+      environment === 'development'
     ) {
       console.warn(projectIdMissingWarning);
     }
@@ -53,8 +50,7 @@ export function useErrorChecks({
       runtimeUrl &&
       loadTranslationsType !== 'custom' && // this usually conincides with not using runtime tx
       !devApiKey &&
-      typeof process !== 'undefined' &&
-      process.env.NODE_ENV === 'development'
+      environment === 'development'
     ) {
       console.warn(APIKeyMissingWarn);
     }

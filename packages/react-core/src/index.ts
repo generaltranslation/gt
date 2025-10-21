@@ -26,7 +26,7 @@ import { useRegionSelector } from './hooks/useRegionSelector';
 import { useLocaleDirection } from './hooks/useLocaleDirection';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
 import useMessages from './translation/hooks/useMessages';
-
+import { GTContext } from './provider/GTContext';
 export {
   Var,
   Num,
@@ -57,4 +57,5 @@ export {
   decodeMsg,
   decodeOptions,
   useMessages,
+  GTContext,
 };

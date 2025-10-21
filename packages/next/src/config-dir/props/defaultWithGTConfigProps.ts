@@ -5,7 +5,7 @@ import {
 } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName,
-  defaultRenderSettings,
+  getDefaultRenderSettings,
   RenderMethod,
 } from 'gt-react/internal';
 import { defaultLocaleHeaderName } from '../../utils/headers';
@@ -52,7 +52,7 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
   maxConcurrentRequests: 100,
   maxBatchSize: 25,
   batchInterval: 50,
-  renderSettings: defaultRenderSettings,
+  renderSettings: getDefaultRenderSettings(process.env.NODE_ENV),
   _usingPlugin: false,
   ignoreBrowserLocales: false,
   headersAndCookies: {

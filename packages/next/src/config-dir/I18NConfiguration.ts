@@ -3,7 +3,7 @@ import translationManager, { TranslationManager } from './TranslationManager';
 import {
   RenderMethod,
   TranslatedChildren,
-  defaultRenderSettings,
+  getDefaultRenderSettings,
   defaultLocaleCookieName,
   Dictionary,
 } from 'gt-react/internal';
@@ -186,8 +186,11 @@ export default class I18NConfiguration {
     this.renderSettings = {
       method: renderSettings.method,
       ...((renderSettings.timeout !== undefined ||
-        defaultRenderSettings.timeout !== undefined) && {
-        timeout: renderSettings.timeout || defaultRenderSettings.timeout,
+        getDefaultRenderSettings(process.env.NODE_ENV).timeout !==
+          undefined) && {
+        timeout:
+          renderSettings.timeout ||
+          getDefaultRenderSettings(process.env.NODE_ENV).timeout,
       }),
     };
     // Other metadata
