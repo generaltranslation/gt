@@ -1,6 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import { noLocalesCouldBeDeterminedError } from '../errors/createErrors';
+import { noLocalesCouldBeDeterminedWarning } from '../errors/createErrors';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -61,7 +61,7 @@ export async function getNextLocale(
       preferredLocales.length === 0 &&
       process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
     ) {
-      throw new Error(noLocalesCouldBeDeterminedError);
+      console.warn(noLocalesCouldBeDeterminedWarning);
     }
 
     // add defaultLocale just in case there are no matches

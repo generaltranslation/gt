@@ -3,9 +3,6 @@
 import { getLocaleProperties } from 'generaltranslation';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
-export const noLocalesCouldBeDeterminedError =
-  'gt-next: Error: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
-
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
@@ -162,6 +159,10 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: You are using The following canonical locales were standardized: ${locales.join(', ')}.`;
 
 export const deprecatedLocaleMappingWarning = `gt-next: You are using the deprecated localeMapping configuration. Please move "customMapping" to your gt.config.json file.`;
+
+// This was (1) triggered by SSG without running middleware, or (2) triggered by a request with no locale headers (also no middleware).
+export const noLocalesCouldBeDeterminedWarning =
+  'gt-next: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
