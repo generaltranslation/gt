@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.7.0
+
+### Minor Changes
+
+- [#745](https://github.com/generaltranslation/gt/pull/745) [`5208937`](https://github.com/generaltranslation/gt/commit/520893719480b40774ccd749fe73727cf490f46c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding local translation editing. Local user edits to translation will now be saved and used to inform future translations of the same file.
+
 ## 7.6.5
 
 ### Patch Changes
