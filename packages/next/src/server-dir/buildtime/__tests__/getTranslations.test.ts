@@ -70,7 +70,7 @@ vi.mock('gt-react/internal', () => ({
   injectAndMerge: mockInjectAndMerge,
   mergeDictionaries: mockMergeDictionaries,
   // Add other commonly needed exports to prevent missing export errors
-  defaultRenderSettings: { method: 'replace' },
+  getDefaultRenderSettings: vi.fn(() => ({ method: 'replace' })),
   defaultLocaleCookieName: 'gt-locale',
   defaultLocaleHeaderName: 'gt-locale',
   defaultReferrerLocaleCookieName: 'gt-referrer-locale',

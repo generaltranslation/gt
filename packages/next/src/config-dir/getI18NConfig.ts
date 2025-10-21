@@ -5,7 +5,7 @@ import {
   noInitGTWarn,
   usingDefaultsWarning,
 } from '../errors/createErrors';
-import { defaultRenderSettings } from 'gt-react/internal';
+import { getDefaultRenderSettings } from 'gt-react/internal';
 
 export default function getI18NConfig(): I18NConfiguration {
   // Return the singleton instance
@@ -59,7 +59,7 @@ export default function getI18NConfig(): I18NConfiguration {
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
       ...defaultWithGTConfigProps,
       locales: [defaultLocale],
-      renderSettings: defaultRenderSettings,
+      renderSettings: getDefaultRenderSettings(process.env.NODE_ENV),
       apiKey,
       projectId,
       devApiKey,

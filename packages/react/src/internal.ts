@@ -1,22 +1,42 @@
-import flattenDictionary from './internal/flattenDictionary';
-import addGTIdentifier from './internal/addGTIdentifier';
-import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
-import getPluralBranch from './branches/plurals/getPluralBranch';
+// No useContext related exports should go through here!
+
 import {
+  addGTIdentifier,
+  writeChildrenAsObjects,
+  isVariableObject,
+  flattenDictionary,
   getDictionaryEntry,
   isValidDictionaryEntry,
-} from './dictionaries/getDictionaryEntry';
-import getEntryAndMetadata from './dictionaries/getEntryAndMetadata';
-import getVariableProps from './variables/_getVariableProps';
-import isVariableObject from './rendering/isVariableObject';
-import getVariableName from './variables/getVariableName';
-import renderDefaultChildren from './rendering/renderDefaultChildren';
-import renderTranslatedChildren from './rendering/renderTranslatedChildren';
-import { defaultRenderSettings } from './rendering/defaultRenderSettings';
-import renderSkeleton from './rendering/renderSkeleton';
-import { msg, decodeMsg, decodeOptions } from './messages/messages';
-import { MFunctionType, TFunctionType } from './types/types';
+  getVariableProps,
+  getPluralBranch,
+  getEntryAndMetadata,
+  getVariableName,
+  renderDefaultChildren,
+  renderTranslatedChildren,
+  renderSkeleton,
+  getDefaultRenderSettings,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+  mergeDictionaries,
+  reactHasUse,
+  getSubtree,
+  getSubtreeWithCreation,
+  injectEntry,
+  isDictionaryEntry,
+  stripMetadataFromEntries,
+  injectHashes,
+  injectTranslations,
+  injectFallbacks,
+  injectAndMerge,
+  collectUntranslatedEntries,
+  msg,
+  decodeMsg,
+  decodeOptions,
+} from '@generaltranslation/react-core/internal';
+
 import {
+  MFunctionType,
+  TFunctionType,
   Dictionary,
   RenderMethod,
   TranslatedChildren,
@@ -25,7 +45,7 @@ import {
   VariableProps,
   DictionaryEntry,
   FlattenedDictionary,
-  MetaEntry,
+  Metadata,
   Entry,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
@@ -36,47 +56,19 @@ import {
   CustomLoader,
   _Message,
   _Messages,
-} from './types/types';
+  GTContextType,
+  GTProp,
+} from '@generaltranslation/react-core/types';
 
-import { GTContextType } from './types/context';
 import { ClientProviderProps } from './types/config';
-import {
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-} from './utils/cookies';
-import mergeDictionaries from './dictionaries/mergeDictionaries';
-import { GTProp } from 'generaltranslation/types';
-import { reactHasUse } from './promises/reactHasUse';
-import { getSubtree, getSubtreeWithCreation } from './dictionaries/getSubtree';
-import { injectEntry } from './dictionaries/injectEntry';
-import { isDictionaryEntry } from './dictionaries/isDictionaryEntry';
-import { stripMetadataFromEntries } from './dictionaries/stripMetadataFromEntries';
-import { injectHashes } from './dictionaries/injectHashes';
-import { injectTranslations } from './dictionaries/injectTranslations';
-import { injectFallbacks } from './dictionaries/injectFallbacks';
-import { injectAndMerge } from './dictionaries/injectAndMerge';
-import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 
-export {
-  addGTIdentifier,
-  writeChildrenAsObjects,
-  isVariableObject,
+// Type exports
+export type {
+  RenderMethod,
   Dictionary,
-  flattenDictionary,
-  getDictionaryEntry,
-  isValidDictionaryEntry,
-  getVariableProps,
   DictionaryEntry,
   FlattenedDictionary,
-  MetaEntry as Metadata,
-  getPluralBranch,
-  getEntryAndMetadata,
-  getVariableName,
-  renderDefaultChildren,
-  renderTranslatedChildren,
-  renderSkeleton,
-  RenderMethod,
-  defaultRenderSettings,
+  Metadata,
   GTProp,
   Entry,
   TranslatedChildren,
@@ -92,17 +84,39 @@ export {
   CustomLoader,
   RenderVariable,
   VariableProps,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-  mergeDictionaries,
+  MFunctionType,
+  TFunctionType,
   _Message,
   _Messages,
+};
+
+// Constant exports
+export {
+  getDefaultRenderSettings,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
   reactHasUse,
   msg,
   decodeMsg,
   decodeOptions,
-  MFunctionType,
-  TFunctionType,
+};
+
+// Function exports
+export {
+  addGTIdentifier,
+  writeChildrenAsObjects,
+  isVariableObject,
+  flattenDictionary,
+  getDictionaryEntry,
+  isValidDictionaryEntry,
+  getVariableProps,
+  getPluralBranch,
+  getEntryAndMetadata,
+  getVariableName,
+  renderDefaultChildren,
+  renderTranslatedChildren,
+  renderSkeleton,
+  mergeDictionaries,
   getSubtree,
   getSubtreeWithCreation,
   injectEntry,

@@ -9,7 +9,7 @@ export type HeadersAndCookies = {
   resetLocaleCookieName?: string;
 };
 
-type CompilerOptions = {
+export type CompilerOptions = {
   /**
    * Which compiler plugin to use: babel, swc, or none
    * @default 'babel'

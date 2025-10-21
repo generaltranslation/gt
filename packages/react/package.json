@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
-    "generaltranslation": "workspace:*"
+    "generaltranslation": "workspace:*",
+    "@generaltranslation/react-core": "workspace:*"
   },
   "scripts": {
     "patch": "pnpm version patch",

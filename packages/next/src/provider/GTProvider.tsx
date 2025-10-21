@@ -84,6 +84,9 @@ export default async function GTProvider({
       translationRequired={translationRequired}
       dialectTranslationRequired={dialectTranslationRequired}
       region={_region || (await getRegion())}
+      environment={
+        process.env.NODE_ENV as 'development' | 'production' | 'test'
+      }
       gtServicesEnabled={
         process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
       }

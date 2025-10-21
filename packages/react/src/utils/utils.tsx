@@ -1,17 +1,12 @@
-import React from 'react';
-import { TaggedElement, TaggedElementProps } from '../types/types';
+import {
+  AuthFromEnvParams,
+  AuthFromEnvReturn,
+} from '@generaltranslation/react-core/types';
 
-export function isValidTaggedElement(target: unknown): target is TaggedElement {
-  return React.isValidElement<TaggedElementProps>(target);
-}
-
-export function readAuthFromEnv(
-  projectId?: string,
-  devApiKey?: string
-): {
-  projectId: string;
-  devApiKey?: string;
-} {
+export function readAuthFromEnv({
+  projectId,
+  devApiKey,
+}: AuthFromEnvParams): AuthFromEnvReturn {
   // vite, redwood (which uses vite)
   try {
     return {
@@ -27,7 +22,9 @@ export function readAuthFromEnv(
         import.meta.env.REDWOOD_ENV_GT_DEV_API_KEY ||
         import.meta.env.REDWOOD_ENV_GT_API_KEY,
     };
-  } catch {}
+  } catch {
+    /* emptys */
+  }
   // everything else
   try {
     return {

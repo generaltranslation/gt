@@ -19,8 +19,10 @@ import {
   useLocaleProperties,
   useLocaleDirection,
   useMessages,
+  msg,
+  decodeMsg,
+  decodeOptions,
 } from 'gt-react/client';
-import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
 import {
   gtProviderUseClientError,
   txUseClientError,
