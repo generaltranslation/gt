@@ -289,7 +289,7 @@ importers:
         specifier: ^4.2.2
         version: 4.2.2
       '@types/node':
-        specifier: ^20.19.17
+        specifier: ^20.14.9
         version: 20.19.17
       rollup:
         specifier: ^4.24.0
