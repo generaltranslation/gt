@@ -46,6 +46,9 @@ export function useDefaultLocale() {
 export {
   GTProvider,
   T,
+  /**
+   * @deprecated import from 'gt-next/server' instead
+   */
   Tx,
   Var,
   Num,

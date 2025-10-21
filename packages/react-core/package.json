@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.2",
   "description": "A pure React library for internationalization",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -75,20 +75,12 @@
       "require": "./dist/errors.cjs.min.cjs",
       "import": "./dist/errors.esm.min.mjs"
     },
-    "./internal-client": {
-      "types": "./dist/internal-client.d.ts",
-      "require": "./dist/internal-client.cjs.min.cjs",
-      "import": "./dist/internal-client.esm.min.mjs"
-    },
     "./types": {
       "types": "./dist/types.d.ts"
     }
   },
   "typesVersions": {
     "*": {
-      "internal-client": [
-        "./dist/internal-client.d.ts"
-      ],
       "types": [
         "./dist/types.d.ts"
       ],
@@ -103,9 +95,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@generaltranslation/react-core/internal-client": [
-        "./dist/internal-client"
-      ],
       "@generaltranslation/react-core/internal": [
         "./dist/internal"
       ],

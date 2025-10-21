@@ -8,12 +8,12 @@ import {
   defaultRegionCookieName,
 } from '@generaltranslation/react-core/internal';
 import {
+  GTContext,
   useRuntimeTranslation,
   useCreateInternalUseGTFunction,
   useCreateInternalUseTranslationsFunction,
   useCreateInternalUseTranslationsObjFunction,
-} from '@generaltranslation/react-core/internal-client';
-import { GTContext } from '@generaltranslation/react-core';
+} from '@generaltranslation/react-core';
 import { Dictionary, Translations } from '@generaltranslation/react-core/types';
 import { ClientProviderProps } from '../types/config';
 

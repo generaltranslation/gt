@@ -57,11 +57,10 @@ import {
   _Message,
   _Messages,
   GTContextType,
+  GTProp,
 } from '@generaltranslation/react-core/types';
 
 import { ClientProviderProps } from './types/config';
-
-import { GTProp } from 'generaltranslation/types';
 
 // Type exports
 export type {
