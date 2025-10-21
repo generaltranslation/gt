@@ -1285,6 +1285,104 @@ import Fence from '/components/en/fence.mdx'
     });
   });
 
+  describe('idempotency cases', () => {
+    it('removing default locale (hide=true) is idempotent across runs', async () => {
+      const fileContent = `import Comp from '/components/en/demo.mdx'`;
+      const expected = `import Comp from '/components/demo.mdx'`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+        expect(content).toBe(expected);
+        return Promise.resolve();
+      });
+
+      const mockFileMapping = {
+        en: { 'test.mdx': '/path/test.mdx' },
+      } as any;
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['en'],
+        options: {
+          docsHideDefaultLocaleImport: true,
+          docsImportPattern: '/components/[locale]',
+        },
+      } as any;
+
+      await localizeStaticImports(settings);
+
+      // Second run with already-processed content
+      vi.mocked(fs.promises.readFile).mockResolvedValue(expected);
+      await localizeStaticImports(settings);
+      expect(fs.promises.readFile).toHaveBeenCalled();
+    });
+
+    it('skips transformation when target file does not exist (and remains stable)', async () => {
+      const content = `import Comp from '/components/en/demo.mdx'`;
+      vi.mocked(fs.promises.readFile).mockResolvedValue(content);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      // Simulate file existence check failing for resolved path
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+
+      const mockFileMapping = {
+        ja: { 'test.mdx': '/path/test.mdx' },
+      } as any;
+      vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+      const settings = {
+        files: {
+          placeholderPaths: { docs: '/docs' },
+          resolvedPaths: ['test'],
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['ja'],
+        options: {
+          docsHideDefaultLocaleImport: false,
+          docsImportPattern: '/components/[locale]',
+        },
+      } as any;
+
+      await localizeStaticImports(settings);
+      // Ensure re-run is also stable
+      await localizeStaticImports(settings);
+      expect(fs.promises.writeFile).not.toHaveBeenCalled();
+    });
+  });
+
+  it('does not re-localize an already localized target path (idempotent)', async () => {
+    const mdx = `import Snip from "/components/ja/special-component.mdx"\n\nexport default function Page() { return null }`;
+    vi.mocked(fs.promises.readFile).mockResolvedValue(mdx);
+    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+    const mockFileMapping = {
+      ja: { 'test.mdx': '/path/test.mdx' },
+    } as any;
+    vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+    const settings = {
+      files: {
+        placeholderPaths: { docs: '/docs' },
+        resolvedPaths: ['test'],
+        transformPaths: {},
+      },
+      defaultLocale: 'en',
+      locales: ['en', 'ja'],
+      options: { docsImportPattern: '/components/[locale]' },
+    } as any;
+
+    await localizeStaticImports(settings);
+
+    expect(fs.promises.readFile).toHaveBeenCalled();
+  });
+
   describe('default locale import adjustments', () => {
     describe('with hideDefaultLocale = false (default locale has its own directory)', () => {
       describe('when processing default locale files', () => {
