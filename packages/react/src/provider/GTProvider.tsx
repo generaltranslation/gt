@@ -10,13 +10,13 @@ export function GTProvider(props: GTProviderProps): React.JSX.Element {
   return (
     <_GTProvider
       ssr={isSSREnabled()}
+      environment={
+        process.env.NODE_ENV as 'development' | 'production' | 'test'
+      }
       {...props}
       readAuthFromEnv={readAuthFromEnv}
       useDetermineLocale={useDetermineLocale}
       useRegionState={useRegionState}
-      environment={
-        process.env.NODE_ENV as 'development' | 'production' | 'test'
-      }
     />
   );
 }

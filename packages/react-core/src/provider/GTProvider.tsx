@@ -84,6 +84,7 @@ export default function GTProvider({
   useRegionState = _useRegionState,
   ...metadata
 }: GTProviderProps & {
+  environment: 'development' | 'production' | 'test';
   readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
   useDetermineLocale: (
     params: UseDetermineLocaleParams
