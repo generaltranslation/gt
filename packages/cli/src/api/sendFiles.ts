@@ -1,11 +1,9 @@
 import chalk from 'chalk';
 import {
   createSpinner,
-  logError,
   logErrorAndExit,
   logMessage,
   logSuccess,
-  logWarning,
 } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
@@ -15,6 +13,7 @@ import {
 } from 'generaltranslation/types';
 import { FileUpload } from './uploadFiles.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
+import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
 
 type SourceUpload = { source: FileUpload };
 
@@ -143,7 +142,19 @@ export async function sendFiles(
       }
     }
 
-    // Step 3: Enqueue translations by reference
+    // Step 3: Prior to enqueue, detect and submit user edit diffs (minimal UX)
+    const prepSpinner = createSpinner('dots');
+    currentSpinner = prepSpinner;
+    prepSpinner.start('Updating translations...');
+    try {
+      await collectAndSendUserEditDiffs(upload.uploadedFiles as any, settings);
+    } catch {
+      // Non-fatal; keep going to enqueue
+    } finally {
+      prepSpinner.stop('Updated translations');
+    }
+
+    // Step 4: Enqueue translations by reference
     const enqueueSpinner = createSpinner('dots');
     currentSpinner = enqueueSpinner;
     enqueueSpinner.start('Enqueuing translations...');

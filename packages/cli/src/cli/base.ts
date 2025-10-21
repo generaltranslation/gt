@@ -49,6 +49,8 @@ import {
 import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
+import type { SendDiffsFlags } from './commands/edits.js';
+import { saveLocalEdits } from '../api/saveLocalEdits.js';
 
 export type UploadOptions = {
   config?: string;
@@ -79,6 +81,7 @@ export class BaseCLI {
     this.setupSetupCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
+    this.setupSendDiffsCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -117,6 +120,20 @@ export class BaseCLI {
       await this.handleTranslate(initOptions);
       endCommand('Done!');
     });
+  }
+
+  protected setupSendDiffsCommand(): void {
+    this.program
+      .command('save-local')
+      .description(
+        'Save local edits for all configured files by sending diffs (no translation enqueued)'
+      )
+      .action(async () => {
+        const config = findFilepath(['gt.config.json']);
+        const settings = await generateSettings({ config });
+        await saveLocalEdits(settings);
+        endCommand('Saved local edits');
+      });
   }
 
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
