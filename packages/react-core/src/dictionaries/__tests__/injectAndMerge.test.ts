@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { injectAndMerge } from '../injectAndMerge';
-import { Dictionary } from '../../types/types';
+import { Dictionary } from '../../types-dir/types';
 
 describe('injectAndMerge', () => {
   describe('should successfully inject and merge dictionaries', () => {
@@ -232,7 +232,7 @@ describe('injectAndMerge', () => {
       };
 
       expect(() => injectAndMerge(dictionary, subtree, 'nonexistent')).toThrow(
-        'gt-react Error: Dictionary subtree not found for id: "nonexistent"'
+        '@generaltranslation/react-core Error: Dictionary subtree not found for id: "nonexistent"'
       );
     });
 
@@ -275,7 +275,7 @@ describe('injectAndMerge', () => {
       expect(() =>
         injectAndMerge(dictionary, subtree, 'level1.level2.level3')
       ).toThrow(
-        'gt-react Error: Dictionary subtree not found for id: "level1.level2.level3"'
+        '@generaltranslation/react-core Error: Dictionary subtree not found for id: "level1.level2.level3"'
       );
     });
 
@@ -292,7 +292,7 @@ describe('injectAndMerge', () => {
       expect(() =>
         injectAndMerge(dictionary, subtree, 'messages.greeting.invalid')
       ).toThrow(
-        'gt-react Error: Dictionary subtree not found for id: "messages.greeting.invalid"'
+        '@generaltranslation/react-core Error: Dictionary subtree not found for id: "messages.greeting.invalid"'
       );
     });
   });
