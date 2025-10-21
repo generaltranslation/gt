@@ -13,21 +13,13 @@ import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from '../utils/cookies';
-import { GTProviderProps } from '../types-dir/config';
+import { InternalGTProviderProps } from '../types-dir/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
 import { GT, resolveAliasLocale } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
-
-// Special overriden function types
-import { AuthFromEnvParams, AuthFromEnvReturn } from '../utils/types';
-import {
-  UseDetermineLocaleParams,
-  UseDetermineLocaleReturn,
-} from './hooks/locales/types';
-import { UseRegionStateParams, UseRegionStateReturn } from './hooks/types';
 
 // Deprecated functions, will be removed in a future version
 import { readAuthFromEnv as _readAuthFromEnv } from '../utils/utils';
@@ -83,14 +75,7 @@ export default function GTProvider({
   useDetermineLocale = _useDetermineLocale,
   useRegionState = _useRegionState,
   ...metadata
-}: GTProviderProps & {
-  environment: 'development' | 'production' | 'test';
-  readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
-  useDetermineLocale: (
-    params: UseDetermineLocaleParams
-  ) => UseDetermineLocaleReturn;
-  useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
-}) {
+}: InternalGTProviderProps) {
   // ---------- PROPS ---------- //
   if (_locale) {
     _locale = resolveAliasLocale(_locale, customMapping);

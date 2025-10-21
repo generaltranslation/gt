@@ -35,7 +35,7 @@ import { LocaleSelectorProps, RegionSelectorProps } from './ui/types';
 
 import { GTProp } from 'generaltranslation/types';
 
-import { GTProviderProps } from './types-dir/config';
+import { InternalGTProviderProps, GTConfig } from './types-dir/config';
 
 export {
   Dictionary,
@@ -63,11 +63,12 @@ export {
   TFunctionType,
   LocaleSelectorProps,
   RegionSelectorProps,
-  GTProviderProps,
+  InternalGTProviderProps,
   AuthFromEnvParams,
   AuthFromEnvReturn,
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
   UseRegionStateParams,
   UseRegionStateReturn,
+  GTConfig,
 };

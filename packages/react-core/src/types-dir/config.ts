@@ -1,10 +1,20 @@
-// Type definition for the params extracted from gt.config.json
-
 import React from 'react';
 import { RenderMethod } from './types';
 import { Translations, CustomLoader } from './types';
 import { CustomMapping } from 'generaltranslation/types';
 
+// Special overriden function types
+import { AuthFromEnvParams, AuthFromEnvReturn } from '../utils/types';
+import {
+  UseDetermineLocaleParams,
+  UseDetermineLocaleReturn,
+} from '../provider/hooks/locales/types';
+import {
+  UseRegionStateParams,
+  UseRegionStateReturn,
+} from '../provider/hooks/types';
+
+// Type definition for the config object passed to the GTProvider
 export type GTConfig = {
   projectId?: string;
   devApiKey?: string;
@@ -24,7 +34,7 @@ export type GTConfig = {
   modelProvider?: string;
 };
 
-export type GTProviderProps = {
+export type InternalGTProviderProps = {
   children?: React.ReactNode;
   projectId?: string;
   devApiKey?: string;
@@ -50,5 +60,10 @@ export type GTProviderProps = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   environment: 'development' | 'production' | 'test';
+  readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
+  useDetermineLocale: (
+    params: UseDetermineLocaleParams
+  ) => UseDetermineLocaleReturn;
+  useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
   [key: string]: any;
 };
