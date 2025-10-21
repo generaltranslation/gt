@@ -1,5 +1,12 @@
 # gt-next
 
+## 6.7.8
+
+### Patch Changes
+
+- [#749](https://github.com/generaltranslation/gt/pull/749) [`29d202f`](https://github.com/generaltranslation/gt/commit/29d202f3b674c77310df687deb8e9d8778499c3e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: erroring when no locale headers were provided
+  Thank you to [@bgub](https://github.com/bgub) for pointing this out!
+
 ## 6.7.7
 
 ### Patch Changes
