@@ -137,12 +137,18 @@ export async function downloadFileBatch(
             if (yamlSchema) {
               const originalContent = fs.readFileSync(inputPath, 'utf8');
               if (originalContent) {
-                data = mergeYaml(originalContent, inputPath, options.options, [
-                  {
-                    translatedContent: file.data,
-                    targetLocale: locale,
-                  },
-                ])[0];
+                data = mergeYaml(
+                  originalContent,
+                  inputPath,
+                  options.options,
+                  [
+                    {
+                      translatedContent: file.data,
+                      targetLocale: locale,
+                    },
+                  ],
+                  options.defaultLocale
+                )[0];
               }
             }
           }

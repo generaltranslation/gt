@@ -422,6 +422,29 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "transform": {
+                "type": "object",
+                "description": "Optional config for transforming specific fields",
+                "patternProperties": {
+                  ".*": {
+                    "type": "object",
+                    "description": "Transform configuration for this YAMLPath",
+                    "properties": {
+                      "match": {
+                        "type": "string",
+                        "description": "Regex to match strings to replace"
+                      },
+                      "replace": {
+                        "type": "string",
+                        "description": "String or regex pattern to replace the match with"
+                      }
+                    },
+                    "required": ["replace"],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": false

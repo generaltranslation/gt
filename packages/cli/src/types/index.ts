@@ -224,6 +224,7 @@ export type JsonSchema = {
 export type YamlSchema = {
   preset?: 'mintlify';
   include?: string[];
+  transform?: TransformOptions;
 };
 
 export type SourceObjectOptions = {
