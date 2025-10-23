@@ -361,23 +361,25 @@ async function checkTranslationDeployment(
         })
         .filter((file) => file !== null) as BatchedFiles;
 
-      const batchResult = await downloadFileBatch(
-        batchFiles,
-        options,
-        3,
-        1000,
-        Boolean(forceDownload)
-      );
+      if (batchFiles.length > 0) {
+        const batchResult = await downloadFileBatch(
+          batchFiles,
+          options,
+          3,
+          1000,
+          Boolean(forceDownload)
+        );
 
-      // Process results
-      batchFiles.forEach((file) => {
-        const { translationId, fileLocale } = file;
-        if (batchResult.successful.includes(translationId)) {
-          downloadStatus.downloaded.add(fileLocale);
-        } else if (batchResult.failed.includes(translationId)) {
-          downloadStatus.failed.add(fileLocale);
-        }
-      });
+        // Process results
+        batchFiles.forEach((file) => {
+          const { translationId, fileLocale } = file;
+          if (batchResult.successful.includes(translationId)) {
+            downloadStatus.downloaded.add(fileLocale);
+          } else if (batchResult.failed.includes(translationId)) {
+            downloadStatus.failed.add(fileLocale);
+          }
+        });
+      }
     }
 
     // Force a refresh of the spinner display
