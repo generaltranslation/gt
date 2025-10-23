@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.2
+
+### Patch Changes
+
+- [#753](https://github.com/generaltranslation/gt/pull/753) [`bd0bc26`](https://github.com/generaltranslation/gt/commit/bd0bc265192d5b51618a537a92122cd6eeae6e4d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: avoid downloading files when using --publish flag
+
 ## 2.4.1
 
 ### Patch Changes
