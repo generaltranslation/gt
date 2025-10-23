@@ -13,11 +13,22 @@ export type BatchDownloadResult = {
   error?: string;
 };
 
+export type FileFormat =
+  | 'GTJSON'
+  | 'JSON'
+  | 'YAML'
+  | 'MD'
+  | 'MDX'
+  | 'TS'
+  | 'JS'
+  | 'HTML';
+
 type File = {
   id: string;
   fileName: string;
   data: string;
   metadata: any;
+  fileFormat: FileFormat;
 };
 
 export type DownloadFileBatchResult = {

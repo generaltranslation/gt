@@ -12,6 +12,7 @@ import {
   saveDownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
+import stringify from 'fast-json-stable-stringify';
 
 export type BatchedFiles = Array<{
   translationId: string;
@@ -151,6 +152,14 @@ export async function downloadFileBatch(
                 )[0];
               }
             }
+          }
+
+          // If the file is a GTJSON file, stable sort the order and format the data
+          if (file.fileFormat === 'GTJSON') {
+            const jsonData = JSON.parse(data);
+            const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
+            const sortedJsonData = JSON.parse(sortedData);
+            data = JSON.stringify(sortedJsonData, null, 2); // format the data
           }
 
           // Write the file to disk
