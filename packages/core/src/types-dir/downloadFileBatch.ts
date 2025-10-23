@@ -1,3 +1,4 @@
+import { FileFormat } from './file';
 // Types for the downloadFileBatch function
 
 export type DownloadFileBatchOptions = {
@@ -12,16 +13,6 @@ export type BatchDownloadResult = {
   contentType?: string;
   error?: string;
 };
-
-export type FileFormat =
-  | 'GTJSON'
-  | 'JSON'
-  | 'YAML'
-  | 'MD'
-  | 'MDX'
-  | 'TS'
-  | 'JS'
-  | 'HTML';
 
 type File = {
   id: string;
