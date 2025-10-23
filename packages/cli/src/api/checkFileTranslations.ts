@@ -175,14 +175,20 @@ function prepareFileQueryData(
  * @returns Formatted status text
  */
 function generateStatusSuffixText(
-  downloadStatus: { downloaded: Set<string>; failed: Set<string> },
+  downloadStatus: {
+    downloaded: Set<string>;
+    failed: Set<string>;
+    skipped: Set<string>;
+  },
   fileQueryData: { versionId: string; fileName: string; locale: string }[]
 ): string {
   // Simple progress indicator
   const progressText =
     chalk.green(
       `[${
-        downloadStatus.downloaded.size + downloadStatus.failed.size
+        downloadStatus.downloaded.size +
+        downloadStatus.failed.size +
+        downloadStatus.skipped.size
       }/${fileQueryData.length}]`
     ) + ` translations completed`;
 
@@ -199,7 +205,12 @@ function generateStatusSuffixText(
   // Organize data by filename
   const fileStatus = new Map<
     string,
-    { completed: Set<string>; pending: Set<string>; failed: Set<string> }
+    {
+      completed: Set<string>;
+      pending: Set<string>;
+      failed: Set<string>;
+      skipped: Set<string>;
+    }
   >();
 
   // Initialize with all files and locales from fileQueryData
@@ -209,6 +220,7 @@ function generateStatusSuffixText(
         completed: new Set(),
         pending: new Set([item.locale]),
         failed: new Set(),
+        skipped: new Set(),
       });
     } else {
       fileStatus.get(item.fileName)?.pending.add(item.locale);
@@ -233,6 +245,14 @@ function generateStatusSuffixText(
       status.failed.add(locale);
     }
   }
+  for (const fileLocale of downloadStatus.skipped) {
+    const [fileName, locale] = fileLocale.split(':');
+    const status = fileStatus.get(fileName);
+    if (status) {
+      status.pending.delete(locale);
+      status.skipped.add(locale);
+    }
+  }
 
   // Calculate how many files we can show based on terminal height
   const filesArray = Array.from(fileStatus.entries());
@@ -254,6 +274,13 @@ function generateStatusSuffixText(
         .map((locale) => getLocaleProperties(locale).code)
         .join(', ');
       localeStatuses.push(chalk.green(`${completedCodes}`));
+    }
+    // Add (translated but not downloaded) skipped locales
+    if (status.skipped.size > 0) {
+      const skippedCodes = Array.from(status.skipped)
+        .map((locale) => getLocaleProperties(locale).code)
+        .join(', ');
+      localeStatuses.push(chalk.green(`${skippedCodes}`));
     }
 
     // Add failed locales
