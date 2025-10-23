@@ -30,27 +30,27 @@ export const DEFAULT_SRC_PATTERNS = [
 
 /**
  * Generates settings from any
- * @param options - The options to generate settings from
+ * @param flags - The CLI flags to generate settings from
  * @param cwd - The current working directory
  * @returns The generated settings
  */
 export async function generateSettings(
-  options: any,
+  flags: Record<string, any>,
   cwd: string = process.cwd()
 ): Promise<Settings> {
   // Load config file
   let gtConfig: Record<string, any> = {};
 
-  if (options.config && !options.config.endsWith('.json')) {
-    options.config = `${options.config}.json`;
+  if (flags.config && !flags.config.endsWith('.json')) {
+    flags.config = `${flags.config}.json`;
   }
-  if (options.config) {
-    gtConfig = loadConfig(options.config);
+  if (flags.config) {
+    gtConfig = loadConfig(flags.config);
   } else {
     const config = resolveConfig(cwd);
     if (config) {
       gtConfig = config.config;
-      options.config = config.path;
+      flags.config = config.path;
     } else {
       gtConfig = {};
     }
@@ -58,18 +58,18 @@ export async function generateSettings(
 
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
-    warnApiKeyInConfig(options.config);
+    warnApiKeyInConfig(flags.config);
     process.exit(1);
   }
   const projectIdEnv = resolveProjectId();
   // Resolve mismatched projectIds
   if (
     gtConfig.projectId &&
-    options.projectId &&
-    gtConfig.projectId !== options.projectId
+    flags.projectId &&
+    gtConfig.projectId !== flags.projectId
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(options.projectId)}! Please use the same projectId in all configs.`
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(flags.projectId)}! Please use the same projectId in all configs.`
     );
   } else if (
     gtConfig.projectId &&
@@ -82,8 +82,8 @@ export async function generateSettings(
   }
 
   if (
-    options.options?.docsUrlPattern &&
-    !options.options?.docsUrlPattern.includes('[locale]')
+    flags.options?.docsUrlPattern &&
+    !flags.options?.docsUrlPattern.includes('[locale]')
   ) {
     logErrorAndExit(
       'Failed to localize static urls: URL pattern must include "[locale]" to denote the location of the locale'
@@ -91,16 +91,16 @@ export async function generateSettings(
   }
 
   if (
-    options.options?.docsImportPattern &&
-    !options.options?.docsImportPattern.includes('[locale]')
+    flags.options?.docsImportPattern &&
+    !flags.options?.docsImportPattern.includes('[locale]')
   ) {
     logErrorAndExit(
       'Failed to localize static imports: Import pattern must include "[locale]" to denote the location of the locale'
     );
   }
 
-  if (options.options?.copyFiles) {
-    for (const file of options.options.copyFiles) {
+  if (flags.options?.copyFiles) {
+    for (const file of flags.options.copyFiles) {
       if (!file.includes('[locale]')) {
         logErrorAndExit(
           'Failed to copy files: File path must include "[locale]" to denote the location of the locale'
@@ -110,7 +110,7 @@ export async function generateSettings(
   }
 
   // merge options
-  const mergedOptions: Settings = { ...gtConfig, ...options };
+  const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
   // Add defaultLocale if not provided
   mergedOptions.defaultLocale =
@@ -118,7 +118,7 @@ export async function generateSettings(
 
   // merge locales
   mergedOptions.locales = Array.from(
-    new Set([...(gtConfig.locales || []), ...(options.locales || [])])
+    new Set([...(gtConfig.locales || []), ...(flags.locales || [])])
   );
   // Separate defaultLocale from locales
   mergedOptions.locales = mergedOptions.locales.filter(
@@ -152,7 +152,7 @@ export async function generateSettings(
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
   // Add publish if not provided
-  mergedOptions.publish = (gtConfig.publish || options.publish) ?? false;
+  mergedOptions.publish = (gtConfig.publish || flags.publish) ?? false;
 
   // Populate src if not provided
   mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
@@ -171,28 +171,27 @@ export async function generateSettings(
         cwd,
         compositePatterns
       )
-    : undefined;
+    : { resolvedPaths: {}, placeholderPaths: {}, transformPaths: {} };
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),
     experimentalLocalizeStaticImports:
       gtConfig.options?.experimentalLocalizeStaticImports ||
-      options.experimentalLocalizeStaticImports,
+      flags.experimentalLocalizeStaticImports,
     experimentalLocalizeStaticUrls:
       gtConfig.options?.experimentalLocalizeStaticUrls ||
-      options.experimentalLocalizeStaticUrls,
+      flags.experimentalLocalizeStaticUrls,
     experimentalHideDefaultLocale:
       gtConfig.options?.experimentalHideDefaultLocale ||
-      options.experimentalHideDefaultLocale,
+      flags.experimentalHideDefaultLocale,
     experimentalFlattenJsonFiles:
       gtConfig.options?.experimentalFlattenJsonFiles ||
-      options.experimentalFlattenJsonFiles,
+      flags.experimentalFlattenJsonFiles,
     experimentalClearLocaleDirs:
       gtConfig.options?.experimentalClearLocaleDirs ||
-      options.experimentalClearLocaleDirs,
+      flags.experimentalClearLocaleDirs,
     clearLocaleDirsExclude:
-      gtConfig.options?.clearLocaleDirsExclude ||
-      options.clearLocaleDirsExclude,
+      gtConfig.options?.clearLocaleDirsExclude || flags.clearLocaleDirsExclude,
   };
 
   // Add additional options if provided

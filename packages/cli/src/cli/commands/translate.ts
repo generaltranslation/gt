@@ -18,7 +18,7 @@ export async function handleTranslate(
   settings: Settings,
   filesTranslationResponse: SendFilesResult | undefined
 ) {
-  if (filesTranslationResponse && settings.files) {
+  if (filesTranslationResponse) {
     const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
 
     const fileMapping = createFileMapping(
@@ -34,7 +34,7 @@ export async function handleTranslate(
       data,
       settings.locales,
       options.timeout,
-      (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
+      (sourcePath, locale) => fileMapping[locale]?.[sourcePath] ?? null,
       settings,
       options.force,
       options.forceDownload

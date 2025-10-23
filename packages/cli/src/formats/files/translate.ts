@@ -148,7 +148,7 @@ export async function aggregateFiles(
     }
   }
 
-  if (allFiles.length === 0) {
+  if (allFiles.length === 0 && !settings.publish) {
     logError(
       'No files to translate were found. Please check your configuration and try again.'
     );
