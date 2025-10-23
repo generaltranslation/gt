@@ -12,6 +12,7 @@ import {
   saveDownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
+import stringify from 'fast-json-stable-stringify';
 
 export type BatchedFiles = Array<{
   translationId: string;
@@ -137,13 +138,31 @@ export async function downloadFileBatch(
             if (yamlSchema) {
               const originalContent = fs.readFileSync(inputPath, 'utf8');
               if (originalContent) {
-                data = mergeYaml(originalContent, inputPath, options.options, [
-                  {
-                    translatedContent: file.data,
-                    targetLocale: locale,
-                  },
-                ])[0];
+                data = mergeYaml(
+                  originalContent,
+                  inputPath,
+                  options.options,
+                  [
+                    {
+                      translatedContent: file.data,
+                      targetLocale: locale,
+                    },
+                  ],
+                  options.defaultLocale
+                )[0];
               }
+            }
+          }
+
+          // If the file is a GTJSON file, stable sort the order and format the data
+          if (file.fileFormat === 'GTJSON') {
+            try {
+              const jsonData = JSON.parse(data);
+              const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
+              const sortedJsonData = JSON.parse(sortedData);
+              data = JSON.stringify(sortedJsonData, null, 2); // format the data
+            } catch (error) {
+              logWarning(`Failed to sort GTJson file: ${file.id}: ` + error);
             }
           }
 

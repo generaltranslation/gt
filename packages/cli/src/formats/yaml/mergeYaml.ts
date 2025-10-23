@@ -3,6 +3,7 @@ import { exit, logError } from '../../console/logging.js';
 import { AdditionalOptions } from '../../types/index.js';
 import { validateYamlSchema } from './utils.js';
 import YAML from 'yaml';
+import { applyTransformations } from '../json/mergeJson.js';
 
 export default function mergeYaml(
   originalContent: string,
@@ -11,7 +12,8 @@ export default function mergeYaml(
   targets: {
     translatedContent: string;
     targetLocale: string;
-  }[]
+  }[],
+  defaultLocale: string
 ): string[] {
   const yamlSchema = validateYamlSchema(options, inputPath);
   if (!yamlSchema) {
@@ -59,6 +61,17 @@ export default function mergeYaml(
         // Silently ignore invalid or non-existent JSON pointers
       }
     }
+
+    // Apply transformations if they exist
+    if (yamlSchema.transform) {
+      applyTransformations(
+        mergedYaml,
+        yamlSchema.transform,
+        target.targetLocale,
+        defaultLocale
+      );
+    }
+
     output.push(YAML.stringify(mergedYaml));
   }
 

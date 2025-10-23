@@ -1,3 +1,4 @@
+import { FileFormat } from './file';
 // Types for the downloadFileBatch function
 
 export type DownloadFileBatchOptions = {
@@ -18,6 +19,7 @@ type File = {
   fileName: string;
   data: string;
   metadata: any;
+  fileFormat: FileFormat;
 };
 
 export type DownloadFileBatchResult = {
