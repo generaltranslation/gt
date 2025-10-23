@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A pure React library for internationalization",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
