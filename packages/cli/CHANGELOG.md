@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.4.1
+
+### Patch Changes
+
+- [#751](https://github.com/generaltranslation/gt/pull/751) [`7114780`](https://github.com/generaltranslation/gt/commit/71147803bf3e4cf21556ffb9b5f77756e283a32a) Thanks [@SamEggert](https://github.com/SamEggert)! - transform for yaml files -- retrieve file format in downloadFileBatch
+
+- Updated dependencies [[`7114780`](https://github.com/generaltranslation/gt/commit/71147803bf3e4cf21556ffb9b5f77756e283a32a)]:
+  - generaltranslation@7.7.1
+
 ## 2.4.0
 
 ### Minor Changes
