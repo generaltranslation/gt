@@ -156,10 +156,14 @@ export async function downloadFileBatch(
 
           // If the file is a GTJSON file, stable sort the order and format the data
           if (file.fileFormat === 'GTJSON') {
-            const jsonData = JSON.parse(data);
-            const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
-            const sortedJsonData = JSON.parse(sortedData);
-            data = JSON.stringify(sortedJsonData, null, 2); // format the data
+            try {
+              const jsonData = JSON.parse(data);
+              const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
+              const sortedJsonData = JSON.parse(sortedData);
+              data = JSON.stringify(sortedJsonData, null, 2); // format the data
+            } catch (error) {
+              logWarning(`Failed to sort GTJson file: ${file.id}: ` + error);
+            }
           }
 
           // Write the file to disk
