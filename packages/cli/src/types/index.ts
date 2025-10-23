@@ -158,13 +158,11 @@ export type Settings = {
   defaultLocale: string;
   locales: string[];
   customMapping?: CustomMapping;
-  files:
-    | {
-        resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
-        placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
-        transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
-      }
-    | undefined;
+  files: {
+    resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
+    placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
+    transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
+  };
   stageTranslations: boolean; // if true, always stage the project during translate command
   publish: boolean; // if true, publish the translations to the CDN
   _versionId?: string; // internal use only
