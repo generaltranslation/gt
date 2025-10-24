@@ -100,7 +100,7 @@ export async function sendFiles(
 
       const setupSpinner = createSpinner('dots');
       currentSpinner = setupSpinner;
-      setupSpinner.start('Setting up...');
+      setupSpinner.start('Setting up project...');
 
       const start = Date.now();
       const pollInterval = 2000;

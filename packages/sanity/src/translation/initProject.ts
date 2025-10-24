@@ -1,4 +1,4 @@
-import { gt, overrideConfig } from '../adapter/core';
+import { gt, overrideConfig, pluginConfig } from '../adapter/core';
 import type { Secrets } from '../types';
 
 export async function initProject(
@@ -7,22 +7,17 @@ export async function initProject(
   secrets: Secrets
 ): Promise<boolean> {
   overrideConfig(secrets);
-  const setupDecision = await Promise.resolve(gt.shouldSetupProject?.())
-    .then((v: any) => v)
-    .catch(() => ({ shouldSetupProject: false }));
-  const shouldSetupProject = Boolean(setupDecision?.shouldSetupProject);
+  // Calculate timeout once for setup fetching
+  // Accept number or numeric string, default to 600s
+  const timeoutVal = options?.timeout !== undefined ? Number(options.timeout) : 600;
+  const setupTimeoutMs = (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
 
-  // Step 2: Setup if needed and poll until complete
-  if (shouldSetupProject) {
-    // Calculate timeout once for setup fetching
-    // Accept number or numeric string, default to 600s
-    const timeoutVal =
-      options?.timeout !== undefined ? Number(options.timeout) : 600;
-    const setupTimeoutMs =
-      (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+  const setupResult = await gt.setupProject(uploadResult.uploadedFiles, {
+    locales: pluginConfig.getLocales(),
+  });
 
-    const { setupJobId } = await gt.setupProject(uploadResult.uploadedFiles);
-
+  if (setupResult?.status === 'queued') {
+    const { setupJobId } = setupResult;
     const start = Date.now();
     const pollInterval = 2000;
 
@@ -49,13 +44,14 @@ export async function initProject(
 
     if (setupCompleted) {
       console.log('Setup successfully completed');
-      return true;
     } else {
-      console.log(`Setup ${setupFailedMessage ? 'failed' : 'timed out'} `);
-      return false;
+      console.log(
+        `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
+          setupFailedMessage ? ` (${setupFailedMessage})` : ''
+        }`
+      );
     }
-  } else {
-    console.log('Setup not needed');
   }
+
   return true;
 }
