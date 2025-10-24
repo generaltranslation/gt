@@ -27,6 +27,10 @@ vi.mock('../../console/logging.js', () => ({
   }),
 }));
 
+vi.mock('../collectUserEditDiffs.js', () => ({
+  collectAndSendUserEditDiffs: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('sendFiles', () => {
   const mockSpinner = {
     start: vi.fn(),
@@ -96,10 +100,8 @@ describe('sendFiles', () => {
     vi.mocked(createSpinner).mockReturnValue(
       mockSpinner as unknown as SpinnerResult
     );
-    // By default, do not require setup unless a test overrides it
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
-      shouldSetupProject: false,
-    });
+    // By default, setup returns null (no setup needed)
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
   });
 
   it('should send files successfully', async () => {
@@ -149,9 +151,7 @@ describe('sendFiles', () => {
     });
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
-      shouldSetupProject: false,
-    });
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
@@ -161,7 +161,7 @@ describe('sendFiles', () => {
     );
 
     expect(gt.uploadSourceFiles).toHaveBeenCalled();
-    expect(gt.shouldSetupProject).toHaveBeenCalled();
+    expect(gt.setupProject).toHaveBeenCalled();
     expect(gt.enqueueFiles).toHaveBeenCalled();
 
     expect(mockSpinner.stop).toHaveBeenCalledWith(
@@ -220,9 +220,7 @@ describe('sendFiles', () => {
     });
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
-      shouldSetupProject: false,
-    });
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
@@ -232,7 +230,7 @@ describe('sendFiles', () => {
     );
 
     expect(gt.uploadSourceFiles).toHaveBeenCalled();
-    expect(gt.shouldSetupProject).toHaveBeenCalled();
+    expect(gt.setupProject).toHaveBeenCalled();
     expect(gt.enqueueFiles).toHaveBeenCalled();
 
     expect(result).toEqual<SendFilesResult>({
@@ -292,18 +290,15 @@ describe('sendFiles', () => {
     });
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
-      shouldSetupProject: true,
-    });
     vi.mocked(gt.setupProject).mockResolvedValue(mockSetupResponse);
     vi.mocked(gt.checkSetupStatus).mockResolvedValue(mockSetupStatusResponse);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
 
     const result = await sendFiles(mockFiles, mockFlags, mockSettings);
 
-    expect(gt.shouldSetupProject).toHaveBeenCalled();
     expect(gt.setupProject).toHaveBeenCalledWith(
-      mockUploadResponse.uploadedFiles
+      mockUploadResponse.uploadedFiles,
+      expect.objectContaining({ locales: ['es', 'fr'] })
     );
     expect(gt.checkSetupStatus).toHaveBeenCalledWith('setup-job-789');
     expect(gt.enqueueFiles).toHaveBeenCalled();
@@ -358,9 +353,6 @@ describe('sendFiles', () => {
     const mockEnqueueResponse = createMockEnqueueResponse();
 
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(mockUploadResponse);
-    vi.mocked(gt.shouldSetupProject).mockResolvedValue({
-      shouldSetupProject: true,
-    });
     vi.mocked(gt.setupProject).mockResolvedValue(mockSetupResponse);
     vi.mocked(gt.checkSetupStatus).mockResolvedValue(mockSetupStatusResponse);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockEnqueueResponse);
@@ -405,6 +397,7 @@ describe('sendFiles', () => {
       count: 0,
       message: 'No files to upload',
     });
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -445,6 +438,7 @@ describe('sendFiles', () => {
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
       mockUploadResponse as any
     );
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -484,6 +478,7 @@ describe('sendFiles', () => {
       count: 0,
       message: 'No files to upload',
     });
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockRejectedValue(timeoutError);
 
     await expect(
@@ -506,6 +501,7 @@ describe('sendFiles', () => {
       count: 0,
       message: 'No files to upload',
     });
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockRejectedValue(authError);
 
     await expect(
@@ -551,6 +547,7 @@ describe('sendFiles', () => {
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
       mockUploadResponse as any
     );
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -602,6 +599,7 @@ describe('sendFiles', () => {
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
       mockUploadResponse as any
     );
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
@@ -677,6 +675,7 @@ describe('sendFiles', () => {
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue(
       mockUploadResponse as any
     );
+    vi.mocked(gt.setupProject).mockResolvedValue(null);
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(
