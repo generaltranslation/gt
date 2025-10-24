@@ -7,10 +7,9 @@ import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { FileUploadRef } from 'src/types-dir/uploadFiles';
 
-export type SetupProjectResult = {
-  setupJobId: string;
-  status: 'queued';
-};
+export type SetupProjectResult =
+  | { setupJobId: string; status: 'queued' }
+  | { status: 'completed' };
 
 export type SetupProjectOptions = {
   locales?: string[];
