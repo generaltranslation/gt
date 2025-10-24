@@ -262,6 +262,47 @@ describe('_setupProject', () => {
     );
   });
 
+  it('should include locales in request body when provided', async () => {
+    const mockFiles = [createMockFile()];
+    const mockResponse: SetupProjectResult = {
+      setupJobId: 'setup-job-locales',
+      status: 'queued',
+    };
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const locales = ['es', 'fr-CA'];
+    await _setupProject(mockFiles, mockConfig, undefined, locales);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v2/project/setup/generate',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-gt-api-key': 'test-api-key',
+          'x-gt-project-id': 'test-project',
+        },
+        body: JSON.stringify({
+          files: [
+            {
+              fileId: 'file-123',
+              versionId: 'version-456',
+              fileName: 'test.json',
+              fileFormat: 'JSON',
+            },
+          ],
+          locales,
+        }),
+      },
+      60000
+    );
+  });
+
   it('should handle different file formats', async () => {
     const mockFiles = [
       createMockFile({ fileName: 'component.js', fileFormat: 'JS' }),

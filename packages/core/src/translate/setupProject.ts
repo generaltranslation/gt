@@ -12,6 +12,11 @@ export type SetupProjectResult = {
   status: 'queued';
 };
 
+export type SetupProjectOptions = {
+  locales?: string[];
+  timeoutMs?: number;
+};
+
 /**
  * @internal
  * Enqueues files for project setup the General Translation API.
@@ -23,9 +28,9 @@ export type SetupProjectResult = {
 export default async function _setupProject(
   files: FileUploadRef[],
   config: TranslationRequestConfig,
-  timeoutMs?: number
+  options?: SetupProjectOptions
 ): Promise<SetupProjectResult> {
-  const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
+  const timeout = Math.min(options?.timeoutMs ?? maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/generate`;
 
   const body = {
@@ -36,6 +41,7 @@ export default async function _setupProject(
       fileFormat: f.fileFormat,
       ...(f.dataFormat && { dataFormat: f.dataFormat }),
     })),
+    locales: options?.locales,
   };
 
   let response;

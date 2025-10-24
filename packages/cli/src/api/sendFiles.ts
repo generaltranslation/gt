@@ -84,62 +84,55 @@ export async function sendFiles(
     });
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
-    // Check if setup is needed
-    const setupDecision = await Promise.resolve(gt.shouldSetupProject?.())
-      .then((v: any) => v)
-      .catch(() => ({ shouldSetupProject: false }));
-    const shouldSetupProject = Boolean(setupDecision?.shouldSetupProject);
+    // Calculate timeout once for setup fetching
+    // Accept number or numeric string, default to 600s
+    const timeoutVal =
+      options?.timeout !== undefined ? Number(options.timeout) : 600;
+    const setupTimeoutMs =
+      (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
 
-    // Step 2: Setup if needed and poll until complete
-    if (shouldSetupProject) {
-      // Calculate timeout once for setup fetching
-      // Accept number or numeric string, default to 600s
-      const timeoutVal =
-        options?.timeout !== undefined ? Number(options.timeout) : 600;
-      const setupTimeoutMs =
-        (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+    const { setupJobId } = await gt.setupProject(upload.uploadedFiles, {
+      locales: settings.locales,
+    });
 
-      const { setupJobId } = await gt.setupProject(upload.uploadedFiles);
+    const setupSpinner = createSpinner('dots');
+    currentSpinner = setupSpinner;
+    setupSpinner.start('Setting up...');
 
-      const setupSpinner = createSpinner('dots');
-      currentSpinner = setupSpinner;
-      setupSpinner.start('Setting up project...');
+    const start = Date.now();
+    const pollInterval = 2000;
 
-      const start = Date.now();
-      const pollInterval = 2000;
+    let setupCompleted = false;
+    let setupFailedMessage: string | null = null;
 
-      let setupCompleted = false;
-      let setupFailedMessage: string | null = null;
+    while (true) {
+      const status = await gt.checkSetupStatus(setupJobId);
 
-      while (true) {
-        const status = await gt.checkSetupStatus(setupJobId);
-
-        if (status.status === 'completed') {
-          setupCompleted = true;
-          break;
-        }
-        if (status.status === 'failed') {
-          setupFailedMessage = status.error?.message || 'Unknown error';
-          break;
-        }
-        if (Date.now() - start > setupTimeoutMs) {
-          setupFailedMessage = 'Timed out while waiting for setup generation';
-          break;
-        }
-        await new Promise((r) => setTimeout(r, pollInterval));
+      if (status.status === 'completed') {
+        setupCompleted = true;
+        break;
       }
-
-      if (setupCompleted) {
-        setupSpinner.stop(chalk.green('Setup successfully completed'));
-      } else {
-        setupSpinner.stop(
-          chalk.yellow(
-            `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
-              setupFailedMessage ? ` (${setupFailedMessage})` : ''
-            }`
-          )
-        );
+      if (status.status === 'failed') {
+        setupFailedMessage = status.error?.message || 'Unknown error';
+        break;
       }
+      if (Date.now() - start > setupTimeoutMs) {
+        setupFailedMessage = 'Timed out while waiting for setup generation';
+        break;
+      }
+      await new Promise((r) => setTimeout(r, pollInterval));
+    }
+
+    if (setupCompleted) {
+      setupSpinner.stop(chalk.green('Setup successfully completed'));
+    } else {
+      setupSpinner.stop(
+        chalk.yellow(
+          `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
+            setupFailedMessage ? ` (${setupFailedMessage})` : ''
+          }`
+        )
+      );
     }
 
     // Step 3: Prior to enqueue, detect and submit user edit diffs (minimal UX)
