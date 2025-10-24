@@ -9,8 +9,10 @@ export async function initProject(
   overrideConfig(secrets);
   // Calculate timeout once for setup fetching
   // Accept number or numeric string, default to 600s
-  const timeoutVal = options?.timeout !== undefined ? Number(options.timeout) : 600;
-  const setupTimeoutMs = (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+  const timeoutVal =
+    options?.timeout !== undefined ? Number(options.timeout) : 600;
+  const setupTimeoutMs =
+    (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
 
   const setupResult = await gt.setupProject(uploadResult.uploadedFiles, {
     locales: pluginConfig.getLocales(),
