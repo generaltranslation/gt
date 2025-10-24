@@ -87,6 +87,7 @@ describe('_setupProject', () => {
               fileFormat: 'JSON',
             },
           ],
+          locales: undefined,
         }),
       },
       60000
@@ -139,7 +140,7 @@ describe('_setupProject', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      45000
+      60000
     );
   });
 
@@ -219,6 +220,7 @@ describe('_setupProject', () => {
               dataFormat: 'nested',
             },
           ],
+          locales: undefined,
         }),
       },
       expect.any(Number)
@@ -256,6 +258,7 @@ describe('_setupProject', () => {
               fileFormat: 'JSON',
             },
           ],
+          locales: undefined,
         }),
       },
       expect.any(Number)
@@ -369,6 +372,7 @@ describe('_setupProject', () => {
               fileFormat: 'TSX',
             },
           ],
+          locales: undefined,
         }),
       },
       expect.any(Number)
@@ -399,6 +403,7 @@ describe('_setupProject', () => {
         headers: expect.any(Object),
         body: JSON.stringify({
           files: [],
+          locales: undefined,
         }),
       },
       expect.any(Number)
