@@ -134,7 +134,7 @@ describe('_setupProject', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    await _setupProject(mockFiles, mockConfig, 45000);
+    await _setupProject(mockFiles, mockConfig, { timeoutMs: 45000 });
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
@@ -158,7 +158,7 @@ describe('_setupProject', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    await _setupProject(mockFiles, mockConfig, 1000000); // Very large timeout
+    await _setupProject(mockFiles, mockConfig, { timeoutMs: 1000000 }); // Very large timeout
 
     // Should use maxTimeout (60000) instead of the large provided timeout
     expect(fetchWithTimeout).toHaveBeenCalledWith(
@@ -276,7 +276,7 @@ describe('_setupProject', () => {
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
     const locales = ['es', 'fr-CA'];
-    await _setupProject(mockFiles, mockConfig, undefined, locales);
+    await _setupProject(mockFiles, mockConfig, { locales });
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v2/project/setup/generate',
