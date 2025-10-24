@@ -95,8 +95,8 @@ export async function sendFiles(
       locales: settings.locales,
     });
 
-    if (setupResult?.status === 'queued' && (setupResult as any).setupJobId) {
-      const setupJobId = (setupResult as any).setupJobId as string;
+    if (setupResult?.status === 'queued') {
+      const { setupJobId } = setupResult;
 
       const setupSpinner = createSpinner('dots');
       currentSpinner = setupSpinner;
