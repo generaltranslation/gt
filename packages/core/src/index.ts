@@ -383,6 +383,12 @@ export class GT {
     options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
     this._validateAuth('setupProject');
+    options = {
+      ...options,
+      locales: options?.locales?.map((locale) =>
+        this.resolveCanonicalLocale(locale)
+      ),
+    };
     return await _setupProject(files, this._getTranslationConfig(), options);
   }
 
