@@ -59,7 +59,10 @@ import {
 import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _setupProject, { SetupProjectResult } from './translate/setupProject';
+import _setupProject, {
+  SetupProjectResult,
+  SetupProjectOptions,
+} from './translate/setupProject';
 import {
   _checkSetupStatus,
   CheckSetupStatusResult,
@@ -372,15 +375,15 @@ export class GT {
    * for processing and will generate a project setup based on the source files.
    *
    * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
-   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
+   * @param {SetupProjectOptions} [options] - Optional settings for target locales and timeout
    * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
    */
   async setupProject(
     files: FileUploadRef[],
-    timeoutMs?: number
+    options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
     this._validateAuth('setupProject');
-    return await _setupProject(files, this._getTranslationConfig(), timeoutMs);
+    return await _setupProject(files, this._getTranslationConfig(), options);
   }
 
   /**

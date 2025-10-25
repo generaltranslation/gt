@@ -84,22 +84,19 @@ export async function sendFiles(
     });
     uploadSpinner.stop(chalk.green('Files uploaded successfully'));
 
-    // Check if setup is needed
-    const setupDecision = await Promise.resolve(gt.shouldSetupProject?.())
-      .then((v: any) => v)
-      .catch(() => ({ shouldSetupProject: false }));
-    const shouldSetupProject = Boolean(setupDecision?.shouldSetupProject);
+    // Calculate timeout once for setup fetching
+    // Accept number or numeric string, default to 600s
+    const timeoutVal =
+      options?.timeout !== undefined ? Number(options.timeout) : 600;
+    const setupTimeoutMs =
+      (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
 
-    // Step 2: Setup if needed and poll until complete
-    if (shouldSetupProject) {
-      // Calculate timeout once for setup fetching
-      // Accept number or numeric string, default to 600s
-      const timeoutVal =
-        options?.timeout !== undefined ? Number(options.timeout) : 600;
-      const setupTimeoutMs =
-        (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+    const setupResult = await gt.setupProject(upload.uploadedFiles, {
+      locales: settings.locales,
+    });
 
-      const { setupJobId } = await gt.setupProject(upload.uploadedFiles);
+    if (setupResult?.status === 'queued') {
+      const { setupJobId } = setupResult;
 
       const setupSpinner = createSpinner('dots');
       currentSpinner = setupSpinner;

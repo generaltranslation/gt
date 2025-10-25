@@ -87,6 +87,7 @@ describe('_setupProject', () => {
               fileFormat: 'JSON',
             },
           ],
+          locales: undefined,
         }),
       },
       60000
@@ -134,12 +135,12 @@ describe('_setupProject', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    await _setupProject(mockFiles, mockConfig, 45000);
+    await _setupProject(mockFiles, mockConfig, { timeoutMs: 45000 });
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      45000
+      60000
     );
   });
 
@@ -158,7 +159,7 @@ describe('_setupProject', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    await _setupProject(mockFiles, mockConfig, 1000000); // Very large timeout
+    await _setupProject(mockFiles, mockConfig, { timeoutMs: 1000000 }); // Very large timeout
 
     // Should use maxTimeout (60000) instead of the large provided timeout
     expect(fetchWithTimeout).toHaveBeenCalledWith(
@@ -219,6 +220,7 @@ describe('_setupProject', () => {
               dataFormat: 'nested',
             },
           ],
+          locales: undefined,
         }),
       },
       expect.any(Number)
@@ -256,9 +258,51 @@ describe('_setupProject', () => {
               fileFormat: 'JSON',
             },
           ],
+          locales: undefined,
         }),
       },
       expect.any(Number)
+    );
+  });
+
+  it('should include locales in request body when provided', async () => {
+    const mockFiles = [createMockFile()];
+    const mockResponse: SetupProjectResult = {
+      setupJobId: 'setup-job-locales',
+      status: 'queued',
+    };
+    const mockFetchResponse = {
+      json: vi.fn().mockResolvedValue(mockResponse),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const locales = ['es', 'fr-CA'];
+    await _setupProject(mockFiles, mockConfig, { locales });
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v2/project/setup/generate',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-gt-api-key': 'test-api-key',
+          'x-gt-project-id': 'test-project',
+        },
+        body: JSON.stringify({
+          files: [
+            {
+              fileId: 'file-123',
+              versionId: 'version-456',
+              fileName: 'test.json',
+              fileFormat: 'JSON',
+            },
+          ],
+          locales,
+        }),
+      },
+      60000
     );
   });
 
@@ -328,6 +372,7 @@ describe('_setupProject', () => {
               fileFormat: 'TSX',
             },
           ],
+          locales: undefined,
         }),
       },
       expect.any(Number)
@@ -358,6 +403,7 @@ describe('_setupProject', () => {
         headers: expect.any(Object),
         body: JSON.stringify({
           files: [],
+          locales: undefined,
         }),
       },
       expect.any(Number)
