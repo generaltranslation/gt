@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.4.3
+
+### Patch Changes
+
+- [#755](https://github.com/generaltranslation/gt/pull/755) [`20ec920`](https://github.com/generaltranslation/gt/commit/20ec920ecf3fb04e464f281400429c68f3c1a701) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Passing project locales as part of translation setup process
+
+- Updated dependencies [[`20ec920`](https://github.com/generaltranslation/gt/commit/20ec920ecf3fb04e464f281400429c68f3c1a701)]:
+  - generaltranslation@7.7.2
+
 ## 2.4.2
 
 ### Patch Changes

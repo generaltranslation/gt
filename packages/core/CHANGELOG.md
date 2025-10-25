@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.7.2
+
+### Patch Changes
+
+- [#755](https://github.com/generaltranslation/gt/pull/755) [`20ec920`](https://github.com/generaltranslation/gt/commit/20ec920ecf3fb04e464f281400429c68f3c1a701) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Passing project locales as part of translation setup process
+
 ## 7.7.1
 
 ### Patch Changes
