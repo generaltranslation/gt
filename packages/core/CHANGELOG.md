@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.7.3
+
+### Patch Changes
+
+- [#757](https://github.com/generaltranslation/gt/pull/757) [`7ba2e84`](https://github.com/generaltranslation/gt/commit/7ba2e8412b608aa3415f4865dc26adbbd3daa236) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Resolving canonical locales in setup job
+
 ## 7.7.2
 
 ### Patch Changes
