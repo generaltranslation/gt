@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.7.12
+
+### Patch Changes
+
+- [#759](https://github.com/generaltranslation/gt/pull/759) [`cf04026`](https://github.com/generaltranslation/gt/commit/cf04026df7072af60999f281ba342a1baa58f7ff) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Migrating downloaded-versions.json to gt-lock.json, make .gt and .locadex interchangable
+
 ## 6.7.11
 
 ### Patch Changes
