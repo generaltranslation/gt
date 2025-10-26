@@ -70,7 +70,7 @@ export function attachTranslateFlags(command: Command) {
     )
     .option(
       '--force-download',
-      'Force download and overwrite local files, bypassing downloaded-versions checks.',
+      'Force download and overwrite local files, bypassing gt-lock.json checks.',
       false
     )
     .option(

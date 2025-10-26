@@ -83,7 +83,11 @@ export function withGTConfig(
       configPath = props.config;
     } else if (fs.existsSync(defaultWithGTConfigProps.config)) {
       configPath = defaultWithGTConfigProps.config;
+    } else if (fs.existsSync('./.gt/gt.config.json')) {
+      // Support config under .gt for parity with .locadex
+      configPath = './.gt/gt.config.json';
     } else if (fs.existsSync('./.locadex/gt.config.json')) {
+      // Backward compatibility: support legacy .locadex directory
       configPath = './.locadex/gt.config.json';
     }
     if (typeof configPath === 'string' && fs.existsSync(configPath)) {

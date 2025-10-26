@@ -19,6 +19,14 @@ export function resolveConfig(cwd: string): {
       config: loadConfig(path.join(cwd, 'src/gt.config.json')),
     };
   }
+  // Support config under .gt for parity with .locadex
+  if (fs.existsSync(path.join(cwd, '.gt/gt.config.json'))) {
+    return {
+      path: path.join(cwd, '.gt/gt.config.json'),
+      config: loadConfig(path.join(cwd, '.gt/gt.config.json')),
+    };
+  }
+  // Backward compatibility: support legacy .locadex directory
   if (fs.existsSync(path.join(cwd, '.locadex/gt.config.json'))) {
     return {
       path: path.join(cwd, '.locadex/gt.config.json'),
