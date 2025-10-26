@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logError } from '../../console/logging.js';
 
-const DOWNLOADED_VERSIONS_FILE = 'downloaded-versions.json';
+// New lock file name, use old name for deletion of legacy lock file
+const GT_LOCK_FILE = 'gt-lock.json';
+const LEGACY_DOWNLOADED_VERSIONS_FILE = 'downloaded-versions.json';
 
 export type DownloadedVersionEntry = {
   versionId: string;
@@ -20,8 +22,21 @@ export function getDownloadedVersions(
   configDirectory: string
 ): DownloadedVersions {
   try {
-    const filepath = path.join(configDirectory, DOWNLOADED_VERSIONS_FILE);
-    if (!fs.existsSync(filepath)) return { version: 1, entries: {} };
+    // Clean up legacy lock files inside the config directory
+    const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
+    const legacyPath = path.join(
+      configDirectory,
+      LEGACY_DOWNLOADED_VERSIONS_FILE
+    );
+
+    try {
+      if (fs.existsSync(legacyPath)) {
+        fs.unlinkSync(legacyPath);
+      }
+    } catch {}
+
+    const filepath = fs.existsSync(rootPath) ? rootPath : null;
+    if (!filepath) return { version: 1, entries: {} };
     const raw = JSON.parse(fs.readFileSync(filepath, 'utf8'));
     if (raw && typeof raw === 'object' && raw.version && raw.entries) {
       return raw as DownloadedVersions;
@@ -38,12 +53,11 @@ export function saveDownloadedVersions(
   lock: DownloadedVersions
 ): void {
   try {
-    const filepath = path.join(configDirectory, DOWNLOADED_VERSIONS_FILE);
-    fs.mkdirSync(configDirectory, { recursive: true });
+    // Write the lock file to the repo root
+    const filepath = path.join(process.cwd(), GT_LOCK_FILE);
+    fs.mkdirSync(path.dirname(filepath), { recursive: true });
     fs.writeFileSync(filepath, JSON.stringify(lock, null, 2));
   } catch (error) {
-    logError(
-      `An error occurred while updating ${DOWNLOADED_VERSIONS_FILE}: ${error}`
-    );
+    logError(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);
   }
 }
