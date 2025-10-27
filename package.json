@@ -57,6 +57,7 @@
   },
   "packageManager": "pnpm@10.17.1",
   "dependencies": {
+    "@tanstack/react-start": "link:../playground/tanstack-quickstart/node_modules/@tanstack/react-start",
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
   }

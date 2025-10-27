@@ -3,10 +3,15 @@ packages:
   - test-apps/**/*
 
 minimumReleaseAge: 1440
+
 minimumReleaseAgeExclude:
   - '@generaltranslation/*'
   - gt-next
   - gt-react
   - gt-sanity
+  - gt-tanstack-start
   - gtx-cli
   - generaltranslation
+
+overrides:
+  '@tanstack/react-start': link:../playground/tanstack-quickstart/node_modules/@tanstack/react-start
