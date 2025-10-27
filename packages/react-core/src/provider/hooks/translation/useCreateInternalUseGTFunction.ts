@@ -239,13 +239,16 @@ export default function useCreateInternalUseGTFunction({
     options: Record<string, any> = {},
     preloadedTranslations: Translations | undefined
   ): T extends string ? string : T => {
-
     // Return if message is not a string
     if (!encodedMsg) return encodedMsg as MReturnType<T>;
 
     const decodedOptions = decodeOptions(encodedMsg);
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return _tFunction(encodedMsg, options, preloadedTranslations) as MReturnType<T>;
+      return _tFunction(
+        encodedMsg,
+        options,
+        preloadedTranslations
+      ) as MReturnType<T>;
     }
 
     // Disaggregate options and construct render function

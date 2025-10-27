@@ -250,9 +250,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     encodedMsg: T,
     options?: Record<string, any>
   ): T extends string ? string : T => {
-    
     if (!encodedMsg) return encodedMsg as T extends string ? string : T;
-    
+
     // Try to decode first
     const decodedOptions = decodeOptions(encodedMsg);
 
