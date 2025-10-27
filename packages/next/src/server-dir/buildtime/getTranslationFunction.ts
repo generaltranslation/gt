@@ -250,14 +250,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     encodedMsg: T,
     options?: Record<string, any>
   ): T extends string ? string : T => {
+    
     if (!encodedMsg) return encodedMsg as T extends string ? string : T;
+    
     // Try to decode first
     const decodedOptions = decodeOptions(encodedMsg);
 
     // Fallback to t() if not an encoded message
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return encodedMsg as T extends string ? string : T;
-      // return t(encodedMsg, options); (moved to compiler based solution instead)
+      return t(encodedMsg, options) as T extends string ? string : T;
     }
 
     const { $_hash, $_source, $context, $id, ...decodedVariables } =

@@ -95,7 +95,7 @@ export function icuMessageContainsVariables(message: string): boolean {
  * const message = msg('Hello, {name}!');
  * console.log(message); // "Hello, {name}!"
  * ```
- * 
+ *
  * @example - Usage with options
  *
  * ```jsx
@@ -116,7 +116,6 @@ export function msg<T extends string>(
   message: T,
   options?: InlineTranslationOptions
 ): T | string {
-
   if (!options) {
     return message;
   }
@@ -125,13 +124,12 @@ export function msg<T extends string>(
   options.$_source = message;
 
   // Add hash to options
-  options.$_hash ||=
-    hashSource({
-      source: message,
-      ...(options?.$context && { context: options.$context }),
-      ...(options?.$id && { id: options.$id }),
-      dataFormat: 'ICU',
-    });
+  options.$_hash ||= hashSource({
+    source: message,
+    ...(options?.$context && { context: options.$context }),
+    ...(options?.$id && { id: options.$id }),
+    dataFormat: 'ICU',
+  });
 
   // Interpolated string
   let interpolatedString: string = message;

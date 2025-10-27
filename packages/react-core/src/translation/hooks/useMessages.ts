@@ -22,6 +22,7 @@ import { useCallback } from 'react';
  * m(encodedMessage) // returns "My name is Brian" translated
  */
 export default function useMessages(_messages?: _Messages): MFunctionType {
+  
   const {
     developmentApiEnabled,
     translationRequired,
