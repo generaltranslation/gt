@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.7.13
+
+### Patch Changes
+
+- [#761](https://github.com/generaltranslation/gt/pull/761) [`1499720`](https://github.com/generaltranslation/gt/commit/149972082ec9ce02953cdbb3290e9a0364e58a33) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - refactor: msg() function now returns plain text
+
+- Updated dependencies [[`1499720`](https://github.com/generaltranslation/gt/commit/149972082ec9ce02953cdbb3290e9a0364e58a33)]:
+  - gt-react@10.6.11
+
 ## 6.7.12
 
 ### Patch Changes
