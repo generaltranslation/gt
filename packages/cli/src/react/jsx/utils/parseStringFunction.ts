@@ -29,6 +29,9 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import { createMatchPath, loadConfig } from 'tsconfig-paths';
 import resolve from 'resolve';
+import enhancedResolve from 'enhanced-resolve';
+import type { ParsingConfigOptions } from '../../../types/parsing.js';
+const { ResolverFactory, CachedInputFileSystem } = enhancedResolve;
 
 /**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
@@ -125,11 +128,15 @@ function processTranslationCall(
 }
 
 /**
- * Extracts the parameter name from a function parameter node, handling TypeScript annotations.
+ * Extracts the parameter name from a function parameter node, handling TypeScript annotations and default values.
  */
 function extractParameterName(param: t.Node): string | null {
   if (t.isIdentifier(param)) {
     return param.name;
+  }
+  // Handle parameters with default values: (gt = () => {})
+  if (t.isAssignmentPattern(param) && t.isIdentifier(param.left)) {
+    return param.left.name;
   }
   return null;
 }
@@ -231,7 +238,8 @@ function handleFunctionCall(
   file: string,
   importMap: Map<string, string>,
   ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean
+  ignoreDynamicContent: boolean,
+  parsingOptions: ParsingConfigOptions
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -269,7 +277,8 @@ function handleFunctionCall(
           errors,
           file,
           ignoreAdditionalData,
-          ignoreDynamicContent
+          ignoreDynamicContent,
+          parsingOptions
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -290,13 +299,18 @@ function handleFunctionCall(
           errors,
           file,
           ignoreAdditionalData,
-          ignoreDynamicContent
+          ignoreDynamicContent,
+          parsingOptions
         );
       }
       // If not found locally, check if it's an imported function
       else if (importMap.has(callee.name)) {
         const importPath = importMap.get(callee.name)!;
-        const resolvedPath = resolveImportPath(file, importPath);
+        const resolvedPath = resolveImportPath(
+          file,
+          importPath,
+          parsingOptions
+        );
 
         if (resolvedPath) {
           findFunctionInFile(
@@ -306,7 +320,8 @@ function handleFunctionCall(
             updates,
             errors,
             ignoreAdditionalData,
-            ignoreDynamicContent
+            ignoreDynamicContent,
+            parsingOptions
           );
         }
       }
@@ -328,7 +343,8 @@ function processFunctionIfMatches(
   errors: string[],
   filePath: string,
   ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean
+  ignoreDynamicContent: boolean,
+  parsingOptions: ParsingConfigOptions
 ): void {
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
@@ -342,7 +358,8 @@ function processFunctionIfMatches(
         errors,
         filePath,
         ignoreAdditionalData,
-        ignoreDynamicContent
+        ignoreDynamicContent,
+        parsingOptions
       );
     }
   }
@@ -363,7 +380,8 @@ function findFunctionParameterUsage(
   errors: string[],
   file: string,
   ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean
+  ignoreDynamicContent: boolean,
+  parsingOptions: ParsingConfigOptions
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -392,7 +410,8 @@ function findFunctionParameterUsage(
             file,
             importMap,
             ignoreAdditionalData,
-            ignoreDynamicContent
+            ignoreDynamicContent,
+            parsingOptions
           );
         });
       }
@@ -411,10 +430,12 @@ function findFunctionParameterUsage(
  */
 function resolveImportPath(
   currentFile: string,
-  importPath: string
+  importPath: string,
+  parsingOptions: ParsingConfigOptions
 ): string | null {
   const basedir = path.dirname(currentFile);
   const extensions = ['.tsx', '.ts', '.jsx', '.js'];
+  const mainFields = ['module', 'main'];
 
   // 1. Try tsconfig-paths resolution first (handles TypeScript path mapping)
   const tsConfigResult = loadConfig(basedir);
@@ -422,7 +443,7 @@ function resolveImportPath(
     const matchPath = createMatchPath(
       tsConfigResult.absoluteBaseUrl,
       tsConfigResult.paths,
-      ['main', 'module', 'browser']
+      mainFields
     );
 
     // First try without any extension
@@ -448,7 +469,28 @@ function resolveImportPath(
       }
     }
   }
-  // 2. Fallback to Node.js resolution (handles relative paths and node_modules)
+
+  // 2. Try enhanced-resolve (handles package.json exports field and modern resolution)
+  try {
+    const resolver = ResolverFactory.createResolver({
+      useSyncFileSystemCalls: true,
+      fileSystem: fs as any,
+      extensions,
+      // Include 'development' condition to resolve to source files in monorepos
+      conditionNames: parsingOptions.conditionNames,
+      exportsFields: ['exports'],
+      mainFields,
+    });
+
+    const resolved = resolver.resolveSync({}, basedir, importPath);
+    if (resolved) {
+      return resolved;
+    }
+  } catch {
+    // Fall through to next resolution strategy
+  }
+
+  // 3. Fallback to Node.js resolution (handles relative paths and node_modules)
   try {
     return resolve.sync(importPath, { basedir, extensions });
   } catch {
@@ -480,6 +522,8 @@ function resolveImportPath(
  * - function getInfo(t) { ... }
  * - export function getInfo(t) { ... }
  * - const getInfo = (t) => { ... }
+ *
+ * If the function is not found in the file, follows re-exports (export * from './other')
  */
 function findFunctionInFile(
   filePath: string,
@@ -488,18 +532,31 @@ function findFunctionInFile(
   updates: Updates,
   errors: string[],
   ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean
+  ignoreDynamicContent: boolean,
+  parsingOptions: ParsingConfigOptions,
+  visited: Set<string> = new Set()
 ): void {
+  // Prevent infinite loops from circular re-exports
+  if (visited.has(filePath)) {
+    return;
+  }
+  visited.add(filePath);
+
   try {
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
+
+    let found = false;
+    const reExports: string[] = [];
+
     traverse(ast, {
       // Handle function declarations: function getInfo(t) { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName) {
+          found = true;
           processFunctionIfMatches(
             functionName,
             argIndex,
@@ -509,7 +566,8 @@ function findFunctionInFile(
             errors,
             filePath,
             ignoreAdditionalData,
-            ignoreDynamicContent
+            ignoreDynamicContent,
+            parsingOptions
           );
         }
       },
@@ -522,6 +580,7 @@ function findFunctionInFile(
           (t.isArrowFunctionExpression(path.node.init) ||
             t.isFunctionExpression(path.node.init))
         ) {
+          found = true;
           const initPath = path.get('init') as NodePath;
           processFunctionIfMatches(
             functionName,
@@ -532,11 +591,60 @@ function findFunctionInFile(
             errors,
             filePath,
             ignoreAdditionalData,
-            ignoreDynamicContent
+            ignoreDynamicContent,
+            parsingOptions
           );
         }
       },
+      // Collect re-exports: export * from './other'
+      ExportAllDeclaration(path) {
+        if (t.isStringLiteral(path.node.source)) {
+          reExports.push(path.node.source.value);
+        }
+      },
+      // Collect named re-exports: export { foo } from './other'
+      ExportNamedDeclaration(path) {
+        if (path.node.source && t.isStringLiteral(path.node.source)) {
+          // Check if this export includes our function
+          const exportsFunction = path.node.specifiers.some((spec) => {
+            if (t.isExportSpecifier(spec)) {
+              const exportedName = t.isIdentifier(spec.exported)
+                ? spec.exported.name
+                : spec.exported.value;
+              return exportedName === functionName;
+            }
+            return false;
+          });
+          if (exportsFunction) {
+            reExports.push(path.node.source.value);
+          }
+        }
+      },
     });
+
+    // If function not found, follow re-exports
+    if (!found && reExports.length > 0) {
+      for (const reExportPath of reExports) {
+        const resolvedPath = resolveImportPath(
+          filePath,
+          reExportPath,
+          parsingOptions
+        );
+        if (resolvedPath) {
+          findFunctionInFile(
+            resolvedPath,
+            functionName,
+            argIndex,
+            updates,
+            errors,
+            ignoreAdditionalData,
+            ignoreDynamicContent,
+            parsingOptions,
+            visited
+          );
+        }
+      }
+    }
   } catch {
     // Silently skip files that can't be parsed or accessed
   }
@@ -561,7 +669,8 @@ export function parseStrings(
   path: NodePath,
   updates: Updates,
   errors: string[],
-  file: string
+  file: string,
+  parsingOptions: ParsingConfigOptions
 ): void {
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
@@ -664,7 +773,8 @@ export function parseStrings(
               file,
               importMap,
               ignoreAdditionalData,
-              ignoreDynamicContent
+              ignoreDynamicContent,
+              parsingOptions
             );
           }
         });

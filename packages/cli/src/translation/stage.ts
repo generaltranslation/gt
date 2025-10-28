@@ -29,7 +29,8 @@ export async function aggregateReactTranslations(
     settings.src,
     options.dictionary,
     library,
-    false
+    false,
+    settings.parsingOptions
   );
 
   if (warnings.length > 0) {

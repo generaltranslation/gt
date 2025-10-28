@@ -23,11 +23,13 @@ import {
 } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
+import type { ParsingConfigOptions } from '../../types/parsing.js';
 
 export async function createInlineUpdates(
   pkg: 'gt-react' | 'gt-next',
   validate: boolean,
-  filePatterns: string[] | undefined
+  filePatterns: string[] | undefined,
+  parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
@@ -132,7 +134,15 @@ export async function createInlineUpdates(
 
     // Process translation functions asynchronously
     for (const { localName: name, originalName, path } of translationPaths) {
-      parseStrings(name, originalName, path, updates, errors, file);
+      parseStrings(
+        name,
+        originalName,
+        path,
+        updates,
+        errors,
+        file,
+        parsingOptions
+      );
     }
 
     // Parse <T> components
