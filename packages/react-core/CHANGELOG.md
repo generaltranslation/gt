@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 1.0.4
+
+### Patch Changes
+
+- [#761](https://github.com/generaltranslation/gt/pull/761) [`1499720`](https://github.com/generaltranslation/gt/commit/149972082ec9ce02953cdbb3290e9a0364e58a33) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - refactor: msg() function now returns plain text
+
 ## 1.0.3
 
 ### Patch Changes

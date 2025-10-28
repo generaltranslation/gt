@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.6
+
+### Patch Changes
+
+- [#763](https://github.com/generaltranslation/gt/pull/763) [`b6a79a8`](https://github.com/generaltranslation/gt/commit/b6a79a868630725eb1106faaa2c385c305891e9c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Allow lists for overrides in gt.config.json
+
 ## 2.4.5
 
 ### Patch Changes
