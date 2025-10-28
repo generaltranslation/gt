@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.7
+
+### Patch Changes
+
+- [#767](https://github.com/generaltranslation/gt/pull/767) [`b27a947`](https://github.com/generaltranslation/gt/commit/b27a947a46d2ad802278d79d45d25cdccd7193d5) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix monorepo in-line string resolution
+
 ## 2.4.6
 
 ### Patch Changes
