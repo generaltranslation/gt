@@ -131,7 +131,7 @@ export type TransformOption = {
 };
 
 export type TransformFiles = {
-  [K in SupportedFileExtension]?: TransformOption | string; // if a string, only transform the file name
+  [K in SupportedFileExtension]?: TransformOption | string | TransformOption[]; // if a string, only transform the file name
 };
 
 // Update FilesOptions to fix the error
@@ -139,7 +139,7 @@ export type FilesOptions = {
   [K in SupportedFileExtension]?: {
     include: string[];
     exclude?: string[];
-    transform?: string | TransformOption;
+    transform?: string | TransformOption | TransformOption[];
   };
 } & {
   gt?: {
