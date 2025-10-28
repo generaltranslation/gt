@@ -69,8 +69,9 @@ export function resolveFiles(
     const transform = files[fileType]?.transform;
     if (
       transform &&
-      !Array.isArray(transform) &&
-      (typeof transform === 'string' || typeof transform === 'object')
+      (typeof transform === 'string' || 
+       typeof transform === 'object' || 
+       Array.isArray(transform))
     ) {
       transformPaths[fileType] = transform;
     }
@@ -104,7 +105,7 @@ export function expandGlobPatterns(
   excludePatterns: string[],
   locale: string,
   locales: string[],
-  transformPatterns?: TransformOption | string,
+  transformPatterns?: TransformOption | string | TransformOption[],
   compositePatterns?: string[]
 ): {
   resolvedPaths: string[];

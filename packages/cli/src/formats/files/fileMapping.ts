@@ -57,6 +57,52 @@ export function createFileMapping(
               .replace('[locale]', locale);
             return path.join(directory, transformedFileName);
           });
+        } else if (Array.isArray(transformPath)) {
+          // transformPath is an array of TransformOption objects
+          const targetLocaleProperties = getLocaleProperties(locale);
+          const defaultLocaleProperties = getLocaleProperties(defaultLocale);
+
+          translatedFiles = translatedFiles.map((filePath) => {
+            const relativePath = getRelative(filePath);
+
+            // Try each transform in order until one matches
+            for (const transform of transformPath) {
+              if (!transform.replace || typeof transform.replace !== 'string') {
+                continue;
+              }
+
+              // Replace all locale property placeholders in the replace string
+              const replaceString = replaceLocalePlaceholders(
+                transform.replace,
+                targetLocaleProperties
+              );
+
+              if (transform.match && typeof transform.match === 'string') {
+                // Replace locale placeholders in the match string using defaultLocale properties
+                let matchString = transform.match;
+                matchString = replaceLocalePlaceholders(
+                  matchString,
+                  defaultLocaleProperties
+                );
+
+                const regex = new RegExp(matchString);
+                if (regex.test(relativePath)) {
+                  // This transform matches, apply it and break
+                  const transformedPath = relativePath.replace(
+                    new RegExp(matchString, 'g'),
+                    replaceString
+                  );
+                  return path.resolve(transformedPath);
+                }
+              } else {
+                // No match provided: treat as a direct replacement (override)
+                return path.resolve(replaceString);
+              }
+            }
+
+            // If no transforms matched, return the original path
+            return filePath;
+          });
         } else {
           // transformPath is an object
           const targetLocaleProperties = getLocaleProperties(locale);
