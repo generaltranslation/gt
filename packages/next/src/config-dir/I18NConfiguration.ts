@@ -183,14 +183,14 @@ export default class I18NConfiguration {
     this.defaultLocale = defaultLocale;
     this.locales = locales;
     // Render method
+    const defaultRenderSettings = getDefaultRenderSettings(
+      process.env.NODE_ENV
+    );
     this.renderSettings = {
-      method: renderSettings.method,
-      ...((renderSettings.timeout !== undefined ||
-        getDefaultRenderSettings(process.env.NODE_ENV).timeout !==
-          undefined) && {
-        timeout:
-          renderSettings.timeout ||
-          getDefaultRenderSettings(process.env.NODE_ENV).timeout,
+      method: renderSettings?.method || defaultRenderSettings.method,
+      ...((renderSettings?.timeout !== undefined ||
+        defaultRenderSettings.timeout !== undefined) && {
+        timeout: renderSettings?.timeout || defaultRenderSettings.timeout,
       }),
     };
     // Other metadata
@@ -202,7 +202,7 @@ export default class I18NConfiguration {
       projectId: this.projectId,
       publish: true,
       fast: true,
-      ...metadata,
+      ...(metadata || {}),
     };
     // Custom mapping
     this.customMapping = customMapping;
@@ -235,17 +235,17 @@ export default class I18NConfiguration {
     this._startBatching();
     // Headers and cookies
     this.localeHeaderName =
-      headersAndCookies.localeHeaderName || defaultLocaleHeaderName;
+      headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
     this.localeCookieName =
-      headersAndCookies.localeCookieName || defaultLocaleCookieName;
+      headersAndCookies?.localeCookieName || defaultLocaleCookieName;
     this.referrerLocaleCookieName =
-      headersAndCookies.referrerLocaleCookieName ||
+      headersAndCookies?.referrerLocaleCookieName ||
       defaultReferrerLocaleCookieName;
     this.localeRoutingEnabledCookieName =
-      headersAndCookies.localeRoutingEnabledCookieName ||
+      headersAndCookies?.localeRoutingEnabledCookieName ||
       defaultLocaleRoutingEnabledCookieName;
     this.resetLocaleCookieName =
-      headersAndCookies.resetLocaleCookieName || defaultResetLocaleCookieName;
+      headersAndCookies?.resetLocaleCookieName || defaultResetLocaleCookieName;
   }
 
   // ------ CONFIG ----- //
