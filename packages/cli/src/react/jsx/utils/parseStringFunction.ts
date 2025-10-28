@@ -31,7 +31,29 @@ import { createMatchPath, loadConfig } from 'tsconfig-paths';
 import resolve from 'resolve';
 import enhancedResolve from 'enhanced-resolve';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
-const { ResolverFactory, CachedInputFileSystem } = enhancedResolve;
+const { ResolverFactory } = enhancedResolve;
+
+/**
+ * Cache for resolved import paths to avoid redundant I/O operations.
+ * Key: `${currentFile}::${importPath}`
+ * Value: resolved absolute path or null
+ */
+const resolveImportPathCache = new Map<string, string | null>();
+
+/**
+ * Cache for processed functions to avoid re-parsing the same files.
+ * Key: `${filePath}::${functionName}::${argIndex}`
+ * Value: boolean indicating whether the function was found and processed
+ */
+const processFunctionCache = new Map<string, boolean>();
+
+/**
+ * Clears all caches. Useful for testing or when file system changes.
+ */
+export function clearParsingCaches(): void {
+  resolveImportPathCache.clear();
+  processFunctionCache.clear();
+}
 
 /**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
@@ -313,7 +335,7 @@ function handleFunctionCall(
         );
 
         if (resolvedPath) {
-          findFunctionInFile(
+          processFunctionInFile(
             resolvedPath,
             callee.name,
             argIndex,
@@ -433,9 +455,17 @@ function resolveImportPath(
   importPath: string,
   parsingOptions: ParsingConfigOptions
 ): string | null {
+  // Check cache first
+  const cacheKey = `${currentFile}::${importPath}`;
+  if (resolveImportPathCache.has(cacheKey)) {
+    return resolveImportPathCache.get(cacheKey)!;
+  }
+
   const basedir = path.dirname(currentFile);
   const extensions = ['.tsx', '.ts', '.jsx', '.js'];
   const mainFields = ['module', 'main'];
+
+  let result: string | null = null;
 
   // 1. Try tsconfig-paths resolution first (handles TypeScript path mapping)
   const tsConfigResult = loadConfig(basedir);
@@ -449,14 +479,18 @@ function resolveImportPath(
     // First try without any extension
     let tsResolved = matchPath(importPath);
     if (tsResolved && fs.existsSync(tsResolved)) {
-      return tsResolved;
+      result = tsResolved;
+      resolveImportPathCache.set(cacheKey, result);
+      return result;
     }
 
     // Then try with each extension
     for (const ext of extensions) {
       tsResolved = matchPath(importPath + ext);
       if (tsResolved && fs.existsSync(tsResolved)) {
-        return tsResolved;
+        result = tsResolved;
+        resolveImportPathCache.set(cacheKey, result);
+        return result;
       }
 
       // Also try the resolved path with extension
@@ -464,7 +498,9 @@ function resolveImportPath(
       if (tsResolved) {
         const resolvedWithExt = tsResolved + ext;
         if (fs.existsSync(resolvedWithExt)) {
-          return resolvedWithExt;
+          result = resolvedWithExt;
+          resolveImportPathCache.set(cacheKey, result);
+          return result;
         }
       }
     }
@@ -477,14 +513,16 @@ function resolveImportPath(
       fileSystem: fs as any,
       extensions,
       // Include 'development' condition to resolve to source files in monorepos
-      conditionNames: parsingOptions.conditionNames,
+      conditionNames: parsingOptions.conditionNames, // defaults to ['browser', 'module', 'import', 'require', 'default']. See generateSettings.ts for more details
       exportsFields: ['exports'],
       mainFields,
     });
 
     const resolved = resolver.resolveSync({}, basedir, importPath);
     if (resolved) {
-      return resolved;
+      result = resolved;
+      resolveImportPathCache.set(cacheKey, result);
+      return result;
     }
   } catch {
     // Fall through to next resolution strategy
@@ -492,24 +530,31 @@ function resolveImportPath(
 
   // 3. Fallback to Node.js resolution (handles relative paths and node_modules)
   try {
-    return resolve.sync(importPath, { basedir, extensions });
+    result = resolve.sync(importPath, { basedir, extensions });
+    resolveImportPathCache.set(cacheKey, result);
+    return result;
   } catch {
     // If resolution fails, try to manually replace .js/.jsx with .ts/.tsx for source files
     if (importPath.endsWith('.js')) {
       const tsPath = importPath.replace(/\.js$/, '.ts');
       try {
-        return resolve.sync(tsPath, { basedir, extensions });
+        result = resolve.sync(tsPath, { basedir, extensions });
+        resolveImportPathCache.set(cacheKey, result);
+        return result;
       } catch {
         // Continue to return null
       }
     } else if (importPath.endsWith('.jsx')) {
       const tsxPath = importPath.replace(/\.jsx$/, '.tsx');
       try {
-        return resolve.sync(tsxPath, { basedir, extensions });
+        result = resolve.sync(tsxPath, { basedir, extensions });
+        resolveImportPathCache.set(cacheKey, result);
+        return result;
       } catch {
         // Continue to return null
       }
     }
+    resolveImportPathCache.set(cacheKey, null);
     return null;
   }
 }
@@ -525,7 +570,7 @@ function resolveImportPath(
  *
  * If the function is not found in the file, follows re-exports (export * from './other')
  */
-function findFunctionInFile(
+function processFunctionInFile(
   filePath: string,
   functionName: string,
   argIndex: number,
@@ -536,6 +581,12 @@ function findFunctionInFile(
   parsingOptions: ParsingConfigOptions,
   visited: Set<string> = new Set()
 ): void {
+  // Check cache first to avoid redundant parsing
+  const cacheKey = `${filePath}::${functionName}::${argIndex}`;
+  if (processFunctionCache.has(cacheKey)) {
+    return;
+  }
+
   // Prevent infinite loops from circular re-exports
   if (visited.has(filePath)) {
     return;
@@ -631,7 +682,7 @@ function findFunctionInFile(
           parsingOptions
         );
         if (resolvedPath) {
-          findFunctionInFile(
+          processFunctionInFile(
             resolvedPath,
             functionName,
             argIndex,
@@ -645,8 +696,13 @@ function findFunctionInFile(
         }
       }
     }
+
+    // Mark this function search as processed in the cache
+    processFunctionCache.set(cacheKey, found);
   } catch {
     // Silently skip files that can't be parsed or accessed
+    // Still mark as processed to avoid retrying failed parses
+    processFunctionCache.set(cacheKey, false);
   }
 }
 
