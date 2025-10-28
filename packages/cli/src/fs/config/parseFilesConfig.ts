@@ -69,9 +69,9 @@ export function resolveFiles(
     const transform = files[fileType]?.transform;
     if (
       transform &&
-      (typeof transform === 'string' || 
-       typeof transform === 'object' || 
-       Array.isArray(transform))
+      (typeof transform === 'string' ||
+        typeof transform === 'object' ||
+        Array.isArray(transform))
     ) {
       transformPaths[fileType] = transform;
     }
