@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.7.14
+
+### Patch Changes
+
+- [#765](https://github.com/generaltranslation/gt/pull/765) [`624a48c`](https://github.com/generaltranslation/gt/commit/624a48ccaacda9d416cb134802e6f1c14ac37936) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: undefined rendersettings error
+
 ## 6.7.13
 
 ### Patch Changes
