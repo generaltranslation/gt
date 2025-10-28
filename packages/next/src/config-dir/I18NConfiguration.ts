@@ -183,14 +183,14 @@ export default class I18NConfiguration {
     this.defaultLocale = defaultLocale;
     this.locales = locales;
     // Render method
+    const defaultRenderSettings = getDefaultRenderSettings(
+      process.env.NODE_ENV
+    );
     this.renderSettings = {
-      method: renderSettings.method,
-      ...((renderSettings.timeout !== undefined ||
-        getDefaultRenderSettings(process.env.NODE_ENV).timeout !==
-          undefined) && {
-        timeout:
-          renderSettings.timeout ||
-          getDefaultRenderSettings(process.env.NODE_ENV).timeout,
+      method: renderSettings?.method || defaultRenderSettings.method,
+      ...((renderSettings?.timeout !== undefined ||
+        defaultRenderSettings.timeout !== undefined) && {
+        timeout: renderSettings?.timeout || defaultRenderSettings.timeout,
       }),
     };
     // Other metadata
