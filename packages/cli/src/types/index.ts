@@ -1,5 +1,6 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
+import { ParsingConfigOptions } from './parsing.js';
 
 export type { Updates } from 'generaltranslation/types';
 
@@ -172,6 +173,7 @@ export type Settings = {
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
   modelProvider?: string;
+  parsingOptions: ParsingConfigOptions;
 };
 
 export type AdditionalOptions = {

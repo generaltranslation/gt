@@ -220,6 +220,11 @@ export async function generateSettings(
     }
   }
 
+  // Add parsing options if not provided
+  mergedOptions.parsingOptions = mergedOptions.parsingOptions || {};
+  mergedOptions.parsingOptions.conditionNames = mergedOptions.parsingOptions
+    .conditionNames || ['browser', 'module', 'import', 'require', 'default'];
+
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it
   if (!fs.existsSync(mergedOptions.config)) {

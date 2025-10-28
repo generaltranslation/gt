@@ -11,6 +11,7 @@ import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
+import type { ParsingConfigOptions } from '../types/parsing.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -26,7 +27,8 @@ export async function createUpdates(
   src: string[] | undefined,
   sourceDictionary: string | undefined,
   pkg: 'gt-react' | 'gt-next',
-  validate: boolean
+  validate: boolean,
+  parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
@@ -68,7 +70,7 @@ export async function createUpdates(
     updates: newUpdates,
     errors: newErrors,
     warnings: newWarnings,
-  } = await createInlineUpdates(pkg, validate, src);
+  } = await createInlineUpdates(pkg, validate, src, parsingOptions);
 
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];

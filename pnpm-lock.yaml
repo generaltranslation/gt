@@ -90,6 +90,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      enhanced-resolve:
+        specifier: ^5.18.3
+        version: 5.18.3
       esbuild:
         specifier: ^0.25.4
         version: 0.25.10

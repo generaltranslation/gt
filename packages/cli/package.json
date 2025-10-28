@@ -84,6 +84,7 @@
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
+    "enhanced-resolve": "^5.18.3",
     "esbuild": "^0.25.4",
     "fast-glob": "^3.3.3",
     "fast-json-stable-stringify": "^2.1.0",
