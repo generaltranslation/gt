@@ -2,8 +2,8 @@ import * as React from 'react';
 import useGTContext from '../../provider/GTContext';
 import { _Messages, Translations } from '../../types-dir/types';
 import { useable } from '../../promises/dangerouslyUsable';
-import { reactHasUse } from '../../promises/reactHasUse';
 import { useCallback } from 'react';
+import reactUse from '../../utils/use';
 
 /**
  * Gets the translation function `gt` provided by `<GTProvider>`.
@@ -31,15 +31,10 @@ export default function useGT(_messages?: _Messages) {
   );
 
   let preloadedTranslations: Translations | undefined;
-  if (
-    _messages &&
-    reactHasUse &&
-    developmentApiEnabled &&
-    translationRequired
-  ) {
+  if (_messages && reactUse && developmentApiEnabled && translationRequired) {
     const untranslatedMessages = _filterMessagesForPreload(_messages);
     if (untranslatedMessages.length > 0) {
-      preloadedTranslations = React.use(
+      preloadedTranslations = reactUse(
         useable(
           [
             '_preloadMessages', // prefix key

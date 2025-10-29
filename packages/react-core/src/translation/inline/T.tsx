@@ -1,10 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
-import {
-  addGTIdentifier,
-  reactHasUse,
-  writeChildrenAsObjects,
-} from '../../internal';
+import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
 import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
@@ -13,6 +9,7 @@ import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types-dir/types';
 import { useable } from '../../promises/dangerouslyUsable';
+import reactUse from '../../utils/use';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -181,8 +178,8 @@ function T({
     }
   };
 
-  if (reactHasUse) {
-    const resolvedTranslation = React.use(
+  if (reactUse) {
+    const resolvedTranslation = reactUse(
       useable(
         [
           'getTranslationPromise', // prefix key
