@@ -34,12 +34,7 @@ export default function useMessages(_messages?: _Messages): MFunctionType {
   );
 
   let preloadedTranslations: Translations | undefined;
-  if (
-    _messages &&
-    reactUse &&
-    developmentApiEnabled &&
-    translationRequired
-  ) {
+  if (_messages && reactUse && developmentApiEnabled && translationRequired) {
     const untranslatedMessages = _filterMessagesForPreload(_messages);
     if (untranslatedMessages.length > 0) {
       preloadedTranslations = reactUse(
