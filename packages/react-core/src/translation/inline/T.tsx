@@ -1,10 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
-import {
-  addGTIdentifier,
-  reactHasUse,
-  writeChildrenAsObjects,
-} from '../../internal';
+import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
 import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
@@ -182,8 +178,8 @@ function T({
     }
   };
 
-  if (reactHasUse) {
-    const resolvedTranslation = reactUse!(
+  if (reactUse) {
+    const resolvedTranslation = reactUse(
       useable(
         [
           'getTranslationPromise', // prefix key
