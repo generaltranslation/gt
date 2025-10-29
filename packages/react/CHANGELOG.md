@@ -1,5 +1,12 @@
 # gt-react
 
+## 10.6.12
+
+### Patch Changes
+
+- Updated dependencies [[`08dc642`](https://github.com/generaltranslation/gt/commit/08dc642bcbcc46d83b8ee6312200bc64a1fb84e3)]:
+  - @generaltranslation/react-core@1.0.5
+
 ## 10.6.11
 
 ### Patch Changes

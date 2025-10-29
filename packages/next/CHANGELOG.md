@@ -1,5 +1,12 @@
 # gt-next
 
+## 6.7.15
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.6.12
+
 ## 6.7.14
 
 ### Patch Changes

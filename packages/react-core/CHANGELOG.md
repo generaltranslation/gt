@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 1.0.5
+
+### Patch Changes
+
+- [#769](https://github.com/generaltranslation/gt/pull/769) [`08dc642`](https://github.com/generaltranslation/gt/commit/08dc642bcbcc46d83b8ee6312200bc64a1fb84e3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling of React.use mismatch between 18 and 19
+
 ## 1.0.4
 
 ### Patch Changes
