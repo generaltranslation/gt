@@ -5,6 +5,7 @@ import { useable } from '../../promises/dangerouslyUsable';
 import { reactHasUse } from '../../promises/reactHasUse';
 import { MFunctionType } from '../../types-dir/types';
 import { useCallback } from 'react';
+import reactUse from '../../utils/use';
 
 /**
  * Gets the message decoding and translation function `m` provided by `<GTProvider>`.
@@ -42,7 +43,7 @@ export default function useMessages(_messages?: _Messages): MFunctionType {
   ) {
     const untranslatedMessages = _filterMessagesForPreload(_messages);
     if (untranslatedMessages.length > 0) {
-      preloadedTranslations = React.use(
+      preloadedTranslations = reactUse!(
         useable(
           [
             '_preloadMessages', // prefix key

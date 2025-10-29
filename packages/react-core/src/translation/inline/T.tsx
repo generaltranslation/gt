@@ -13,6 +13,7 @@ import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types-dir/types';
 import { useable } from '../../promises/dangerouslyUsable';
+import reactUse from '../../utils/use';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -182,7 +183,7 @@ function T({
   };
 
   if (reactHasUse) {
-    const resolvedTranslation = React.use(
+    const resolvedTranslation = reactUse!(
       useable(
         [
           'getTranslationPromise', // prefix key
