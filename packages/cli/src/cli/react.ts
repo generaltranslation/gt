@@ -41,7 +41,7 @@ const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: 'gt-react' | 'gt-next',
+    library: 'gt-react' | 'gt-next' | 'gt-react-native',
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -157,7 +157,11 @@ export class ReactCLI extends BaseCLI {
     const updates = await aggregateReactTranslations(
       initOptions,
       settings,
-      this.library === 'gt-next' ? 'gt-next' : 'gt-react'
+      this.library === 'gt-next'
+        ? 'gt-next'
+        : this.library === 'gt-react-native'
+          ? 'gt-react-native'
+          : 'gt-react'
     );
 
     // Convert updates to the proper data format

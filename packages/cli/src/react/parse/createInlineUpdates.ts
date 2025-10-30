@@ -26,7 +26,7 @@ import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
 
 export async function createInlineUpdates(
-  pkg: 'gt-react' | 'gt-next',
+  pkg: 'gt-react' | 'gt-next' | 'gt-react-native',
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingOptions: ParsingConfigOptions

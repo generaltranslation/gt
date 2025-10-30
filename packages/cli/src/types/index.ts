@@ -88,7 +88,8 @@ export type SupportedFrameworks =
   | 'vite'
   | 'gatsby'
   | 'react'
-  | 'redwood';
+  | 'redwood'
+  | 'react-native';
 
 export type SupportedLibraries =
   | 'gt-next'
@@ -98,6 +99,7 @@ export type SupportedLibraries =
   | 'next-i18next'
   | 'i18next'
   | 'i18next-icu'
+  | 'gt-react-native'
   | 'base';
 
 export interface ContentScanner {

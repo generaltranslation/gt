@@ -11,6 +11,8 @@ export function main(program: Command) {
     cli = new NextCLI(program, library, additionalModules);
   } else if (library === 'gt-react') {
     cli = new ReactCLI(program, library, additionalModules);
+  } else if (library === 'gt-react-native') {
+    cli = new ReactCLI(program, library, additionalModules);
   } else {
     cli = new BaseCLI(program, library, additionalModules);
   }
