@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.8.0
+
+### Minor Changes
+
+- [#771](https://github.com/generaltranslation/gt/pull/771) [`7434c15`](https://github.com/generaltranslation/gt/commit/7434c1503c2a62bdb90d4058f903a56331276365) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add list formatting
+
 ## 7.7.3
 
 ### Patch Changes
