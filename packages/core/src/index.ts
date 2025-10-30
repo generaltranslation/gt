@@ -1279,7 +1279,7 @@ export class GT {
    *
    * @example
    * gt.formatListToParts(['apple', 42, { foo: 'bar' }], { type: 'conjunction', style: 'short', locales: ['en'] });
-   * // Returns: ['apple', ', ', '42', ' and ', '{ foo: "bar" }']
+   * // Returns: ['apple', ', ', 42, ' and ', '{ foo: "bar" }']
    */
   formatListToParts<T>(
     array: Array<T>,
