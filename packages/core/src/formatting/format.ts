@@ -171,7 +171,7 @@ export function _formatListToParts<T>({
       style: 'long', // Default style, can be overridden via options
       ...options,
     })
-    .formatToParts(value.map(() => ''));
+    .formatToParts(value.map(() => '1'));
   let partIndex = 0;
   return formatListParts.map((part) => {
     if (part.type === 'element') return value[partIndex++];
