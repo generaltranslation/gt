@@ -148,6 +148,38 @@ export function _formatList({
 }
 
 /**
+ * Formats a list of items according to the specified locales and options.
+ * @param {Object} params - The parameters for the list formatting.
+ * @param {Array<T>} params.value - The list of items to format.
+ * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
+ * @returns {Array<T | string>} The formatted list parts.
+ * @internal
+ */
+export function _formatListToParts<T>({
+  value,
+  locales = [libraryDefaultLocale],
+  options = {},
+}: {
+  value: Array<T>;
+  locales?: string | string[];
+  options?: Intl.ListFormatOptions;
+}) {
+  const formatListParts = intlCache
+    .get('ListFormat', locales, {
+      type: 'conjunction', // Default type, can be overridden via options
+      style: 'long', // Default style, can be overridden via options
+      ...options,
+    })
+    .formatToParts(value.map(() => '1'));
+  let partIndex = 0;
+  return formatListParts.map((part) => {
+    if (part.type === 'element') return value[partIndex++];
+    return part.value;
+  });
+}
+
+/**
  * Formats a relative time value according to the specified locales and options.
  *
  * @param {Object} params - The parameters for the relative time formatting.

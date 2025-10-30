@@ -12,6 +12,7 @@ import {
   _formatRelativeTime,
   _formatDateTime,
   _formatMessage,
+  _formatListToParts,
 } from './formatting/format';
 import {
   Content,
@@ -1269,6 +1270,31 @@ export class GT {
   }
 
   /**
+   * Formats a list of items according to the specified locales and options.
+   * @param {Array<T>} array - The list of items to format
+   * @param {Object} [options] - Additional options for list formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
+   * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options
+   * @returns {Array<T | string>} The formatted list parts
+   *
+   * @example
+   * gt.formatListToParts(['apple', 42, { foo: 'bar' }], { type: 'conjunction', style: 'short', locales: ['en'] });
+   * // Returns: ['apple', ', ', 42, ' and ', '{ foo: "bar" }']
+   */
+  formatListToParts<T>(
+    array: Array<T>,
+    options?: {
+      locales?: string | string[];
+    } & Intl.ListFormatOptions
+  ): Array<T | string> {
+    return _formatListToParts<T>({
+      value: array,
+      locales: options?.locales || this._renderingLocales,
+      options: options,
+    });
+  }
+
+  /**
    * Formats a relative time value according to the specified locales and options.
    *
    * @param {number} value - The relative time value to format
@@ -1743,6 +1769,27 @@ export function formatList(
     value: array,
     locales: options.locales,
     options,
+  });
+}
+
+/**
+ * Formats a list of items according to the specified locales and options.
+ * @param {Array<T>} array - The list of items to format
+ * @param {Object} [options] - Additional options for list formatting
+ * @param {string | string[]} [options.locales] - The locales to use for formatting
+ * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options
+ * @returns {Array<T | string>} The formatted list parts
+ */
+export function formatListToParts<T>(
+  array: Array<T>,
+  options?: {
+    locales?: string | string[];
+  } & Intl.ListFormatOptions
+): Array<T | string> {
+  return _formatListToParts<T>({
+    value: array,
+    locales: options?.locales,
+    options: options,
   });
 }
 
