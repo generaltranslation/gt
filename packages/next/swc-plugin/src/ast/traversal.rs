@@ -710,7 +710,7 @@ impl Default for HtmlContentProps {
   fn default() -> Self {
     Self {
       pl: None,
-      ti: None,
+      // ti: None,
       alt: None,
       arl: None,
       arb: None,
