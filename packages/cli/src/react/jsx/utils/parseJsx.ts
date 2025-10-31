@@ -19,7 +19,7 @@ import {
   mapAttributeName,
   VARIABLE_COMPONENTS,
 } from './constants.js';
-import { Metadata } from 'generaltranslation/types';
+import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
 
 /**
  * Builds a JSX tree from a given node, recursively handling children.
@@ -129,28 +129,46 @@ export function buildJSXTree(
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
           } else if (t.isJSXExpressionContainer(attr.value)) {
-            if (
-              (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
-              (elementIsBranch && attrName !== 'branch')
-            ) {
-              // Make sure that variable strings like {`I have ${count} book`} are invalid!
+            // Check if this is an HTML content prop (title, placeholder, alt, etc.)
+            const isHtmlContentProp = Object.values(
+              HTML_CONTENT_PROPS
+            ).includes(attrName as any);
+
+            if (isHtmlContentProp) {
+              // For HTML content props, only accept static string expressions
+              const staticAnalysis = isStaticExpression(attr.value.expression);
               if (
-                t.isTemplateLiteral(attr.value.expression) &&
-                !isStaticExpression(attr.value.expression).isStatic
+                staticAnalysis.isStatic &&
+                staticAnalysis.value !== undefined
               ) {
-                unwrappedExpressions.push(generate(attr.value).code);
+                attrValue = staticAnalysis.value;
               }
+              // Otherwise attrValue stays null and won't be included
+            } else {
+              // For non-HTML-content props, validate plural/branch then build tree
+              if (
+                (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
+                (elementIsBranch && attrName !== 'branch')
+              ) {
+                // Make sure that variable strings like {`I have ${count} book`} are invalid!
+                if (
+                  t.isTemplateLiteral(attr.value.expression) &&
+                  !isStaticExpression(attr.value.expression).isStatic
+                ) {
+                  unwrappedExpressions.push(generate(attr.value).code);
+                }
+              }
+              attrValue = buildJSXTree(
+                importAliases,
+                attr.value.expression,
+                unwrappedExpressions,
+                updates,
+                errors,
+                warnings,
+                file,
+                true
+              );
             }
-            attrValue = buildJSXTree(
-              importAliases,
-              attr.value.expression,
-              unwrappedExpressions,
-              updates,
-              errors,
-              warnings,
-              file,
-              true
-            );
           }
         }
         props[attrName as any] = attrValue;

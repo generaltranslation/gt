@@ -191,6 +191,130 @@ describe('parseJSXElement', () => {
     });
   });
 
+  describe('HTML content props (title, placeholder, alt, etc.)', () => {
+    it('should include static title attribute in translations', () => {
+      const code = `const el = <T><input title="Static tooltip" /></T>;`;
+      const ast = parseCode(code);
+      const params = {
+        ...createMockParams(),
+        importAliases: { T: 'T' },
+      };
+
+      traverse(ast, {
+        JSXElement(path: NodePath<t.JSXElement>) {
+          parseJSXElement(
+            params.importAliases,
+            path.node,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        },
+      });
+
+      expect(params.errors).toHaveLength(0);
+      expect(params.updates).toHaveLength(1);
+      // The source should contain the static title in the GTData
+      expect(JSON.stringify(params.updates[0].source)).toContain(
+        'Static tooltip'
+      );
+    });
+
+    it('should exclude function call as title attribute from translations', () => {
+      const code = `
+        const getTooltip = () => 'Dynamic tooltip';
+        const el = <T><input title={getTooltip()} /></T>;
+      `;
+      const ast = parseCode(code);
+      const params = {
+        ...createMockParams(),
+        importAliases: { T: 'T' },
+      };
+
+      traverse(ast, {
+        JSXElement(path: NodePath<t.JSXElement>) {
+          parseJSXElement(
+            params.importAliases,
+            path.node,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        },
+      });
+
+      expect(params.errors).toHaveLength(0);
+      expect(params.updates).toHaveLength(1);
+      // The source should NOT contain the function call as a title
+      expect(JSON.stringify(params.updates[0].source)).not.toContain(
+        'getTooltip()'
+      );
+    });
+
+    it('should exclude variable reference as title attribute from translations', () => {
+      const code = `
+        const t = getGT();
+        const el = <T><input title={t} placeholder={t} /></T>;
+      `;
+      const ast = parseCode(code);
+      const params = {
+        ...createMockParams(),
+        importAliases: { T: 'T' },
+      };
+
+      traverse(ast, {
+        JSXElement(path: NodePath<t.JSXElement>) {
+          parseJSXElement(
+            params.importAliases,
+            path.node,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        },
+      });
+
+      expect(params.errors).toHaveLength(0);
+      expect(params.updates).toHaveLength(1);
+      // The source should NOT contain the variable reference as title or placeholder
+      const sourceStr = JSON.stringify(params.updates[0].source);
+      expect(sourceStr).not.toContain('ti');
+      expect(sourceStr).not.toContain('pl');
+    });
+
+    it('should include static template literal as title attribute from translations', () => {
+      const code = 'const el = <T><input title={`Static template`} /></T>;';
+      const ast = parseCode(code);
+      const params = {
+        ...createMockParams(),
+        importAliases: { T: 'T' },
+      };
+
+      traverse(ast, {
+        JSXElement(path: NodePath<t.JSXElement>) {
+          parseJSXElement(
+            params.importAliases,
+            path.node,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        },
+      });
+
+      expect(params.errors).toHaveLength(0);
+      expect(params.updates).toHaveLength(1);
+      // The source should contain the static template literal in the GTData
+      expect(JSON.stringify(params.updates[0].source)).toContain(
+        'Static template'
+      );
+    });
+  });
+
   describe('integration with Plural and Branch components', () => {
     it('should handle template literals in Plural component attributes', () => {
       const code = `const el = <T><Plural count={count} one={\`I have \${count} book\`}>Books</Plural></T>;`;
