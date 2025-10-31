@@ -1,5 +1,17 @@
 # gt-next
 
+## 6.7.17
+
+### Patch Changes
+
+- [#773](https://github.com/generaltranslation/gt/pull/773) [`c0fdcee`](https://github.com/generaltranslation/gt/commit/c0fdceef888fc76dea6edd17e2c488c8ac61a20c) Thanks [@SamEggert](https://github.com/SamEggert)! - remove title and placeholder from props it handles differently
+
+- Updated dependencies [[`c0fdcee`](https://github.com/generaltranslation/gt/commit/c0fdceef888fc76dea6edd17e2c488c8ac61a20c)]:
+  - @generaltranslation/compiler@1.0.8
+  - generaltranslation@7.8.1
+  - gt-react@10.6.14
+  - @generaltranslation/supported-locales@2.0.21
+
 ## 6.7.16
 
 ### Patch Changes

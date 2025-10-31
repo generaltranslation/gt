@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.8.1
+
+### Patch Changes
+
+- [#773](https://github.com/generaltranslation/gt/pull/773) [`c0fdcee`](https://github.com/generaltranslation/gt/commit/c0fdceef888fc76dea6edd17e2c488c8ac61a20c) Thanks [@SamEggert](https://github.com/SamEggert)! - remove title and placeholder from props it handles differently
+
 ## 7.8.0
 
 ### Minor Changes
