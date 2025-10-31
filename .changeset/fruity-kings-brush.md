@@ -2,4 +2,4 @@
 'gtx-cli': patch
 ---
 
-Hiding saving local transaltions behind the --save-local flag
+Hiding saving local translations behind the --save-local flag
