@@ -135,39 +135,29 @@ export function buildJSXTree(
             ).includes(attrName as any);
 
             if (isHtmlContentProp) {
-              // For HTML content props, only accept static string expressions (like template strings without variables)
-              // Skip dynamic expressions like {someFunction()} or {variable}
+              // For HTML content props, only accept static string expressions
               const staticAnalysis = isStaticExpression(attr.value.expression);
               if (
                 staticAnalysis.isStatic &&
                 staticAnalysis.value !== undefined
               ) {
                 attrValue = staticAnalysis.value;
-              } else {
-                attrValue = null;
               }
-            } else if (
-              (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
-              (elementIsBranch && attrName !== 'branch')
-            ) {
-              // Make sure that variable strings like {`I have ${count} book`} are invalid!
-              if (
-                t.isTemplateLiteral(attr.value.expression) &&
-                !isStaticExpression(attr.value.expression).isStatic
-              ) {
-                unwrappedExpressions.push(generate(attr.value).code);
-              }
-              attrValue = buildJSXTree(
-                importAliases,
-                attr.value.expression,
-                unwrappedExpressions,
-                updates,
-                errors,
-                warnings,
-                file,
-                true
-              );
+              // Otherwise attrValue stays null and won't be included
             } else {
+              // For non-HTML-content props, validate plural/branch then build tree
+              if (
+                (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
+                (elementIsBranch && attrName !== 'branch')
+              ) {
+                // Make sure that variable strings like {`I have ${count} book`} are invalid!
+                if (
+                  t.isTemplateLiteral(attr.value.expression) &&
+                  !isStaticExpression(attr.value.expression).isStatic
+                ) {
+                  unwrappedExpressions.push(generate(attr.value).code);
+                }
+              }
               attrValue = buildJSXTree(
                 importAliases,
                 attr.value.expression,
