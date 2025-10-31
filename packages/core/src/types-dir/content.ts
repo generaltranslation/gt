@@ -4,8 +4,8 @@ import { Variable } from './variables';
  * Map of data-_gt properties to their corresponding React props
  */
 export const HTML_CONTENT_PROPS = {
-  // pl: 'placeholder',
-  // ti: 'title',
+  pl: 'placeholder',
+  ti: 'title',
   alt: 'alt',
   arl: 'aria-label',
   arb: 'aria-labelledby',
