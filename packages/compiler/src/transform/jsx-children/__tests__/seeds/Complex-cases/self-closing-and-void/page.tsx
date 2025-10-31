@@ -1,10 +1,10 @@
-import { T, Branch, Var, Num } from 'gt-next';
+import { T, Branch, Var, Num } from "gt-next";
 export default function Home() {
   const count = 5;
   return (
     <T>
       <Branch
-        branch='type'
+        branch="type"
         line={
           <>
             <hr />
@@ -15,13 +15,13 @@ export default function Home() {
         }
         image={
           <>
-            <img src='test.jpg' alt='Test' />
+            <img src="test.jpg" alt="Test" />
             Image with <Var>caption</Var>
           </>
         }
         input={
           <>
-            <input type='text' />
+            <input type="text" placeholder="Input" />
             Field with <Num>{count}</Num>
           </>
         }
