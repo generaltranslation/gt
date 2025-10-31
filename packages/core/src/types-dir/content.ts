@@ -5,7 +5,6 @@ import { Variable } from './variables';
  */
 export const HTML_CONTENT_PROPS = {
   pl: 'placeholder',
-  ti: 'title',
   alt: 'alt',
   arl: 'aria-label',
   arb: 'aria-labelledby',
