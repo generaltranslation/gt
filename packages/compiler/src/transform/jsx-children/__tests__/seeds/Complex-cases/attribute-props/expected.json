@@ -5,10 +5,7 @@
     "b": {
       "input": {
         "t": "input",
-        "i": 2,
-        "d": {
-          "pl": "Branch placeholder"
-        }
+        "i": 2
       },
       "image": {
         "t": "img",

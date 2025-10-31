@@ -67,7 +67,7 @@ pub fn extract_html_content_props(attrs: &[JSXAttrOrSpread]) -> HtmlContentProps
           let value = str_lit.value.to_string();
 
           match prop_name {
-            "placeholder" => props.pl = Some(value),
+            // "placeholder" => props.pl = Some(value),
             // "title" => props.ti = Some(value),
             "alt" => props.alt = Some(value),
             "aria-label" => props.arl = Some(value),
@@ -384,12 +384,12 @@ mod tests {
       assert_eq!(props.alt, default_props.alt);
     }
 
-    #[test]
-    fn extracts_placeholder() {
-      let attrs = [create_string_attr("placeholder", "Enter text")];
-      let props = extract_html_content_props(&attrs);
-      assert_eq!(props.pl, Some("Enter text".to_string()));
-    }
+    // #[test]
+    // fn extracts_placeholder() {
+    //   let attrs = [create_string_attr("placeholder", "Enter text")];
+    //   let props = extract_html_content_props(&attrs);
+    //   assert_eq!(props.pl, Some("Enter text".to_string()));
+    // }
 
     // #[test]
     // fn extracts_title() {

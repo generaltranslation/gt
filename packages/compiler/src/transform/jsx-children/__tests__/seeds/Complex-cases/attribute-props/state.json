@@ -282,29 +282,7 @@
                         "name": "placeholder"
                       },
                       "computed": false,
-                      "shorthand": false,
-                      "value": {
-                        "type": "StringLiteral",
-                        "start": 401,
-                        "end": 421,
-                        "loc": {
-                          "start": {
-                            "line": 11,
-                            "column": 29,
-                            "index": 401
-                          },
-                          "end": {
-                            "line": 11,
-                            "column": 49,
-                            "index": 421
-                          }
-                        },
-                        "extra": {
-                          "rawValue": "Branch placeholder",
-                          "raw": "\"Branch placeholder\""
-                        },
-                        "value": "Branch placeholder"
-                      }
+                      "shorthand": false
                     }
                   ]
                 }

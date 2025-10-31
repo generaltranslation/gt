@@ -5,7 +5,7 @@ export default function Home() {
     <T placeholder='Enter text' alt='Alt text'>
       <Branch
         branch='element'
-        input={<input placeholder='Branch placeholder' />}
+        input={<input />}
         image={<img src='test.jpg' alt='Branch image' />}
         link={
           <a href='#' aria-label='Branch link' aria-describedby='desc'>

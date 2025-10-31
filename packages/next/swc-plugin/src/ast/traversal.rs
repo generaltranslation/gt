@@ -709,7 +709,7 @@ impl<'a> JsxTraversal<'a> {
 impl Default for HtmlContentProps {
   fn default() -> Self {
     Self {
-      pl: None,
+      // pl: None,
       // ti: None,
       alt: None,
       arl: None,
