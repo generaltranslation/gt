@@ -305,67 +305,6 @@
                         },
                         "value": "Branch placeholder"
                       }
-                    },
-                    {
-                      "type": "ObjectProperty",
-                      "start": 439,
-                      "end": 460,
-                      "loc": {
-                        "start": {
-                          "line": 12,
-                          "column": 16,
-                          "index": 439
-                        },
-                        "end": {
-                          "line": 12,
-                          "column": 37,
-                          "index": 460
-                        }
-                      },
-                      "method": false,
-                      "key": {
-                        "type": "Identifier",
-                        "start": 439,
-                        "end": 444,
-                        "loc": {
-                          "start": {
-                            "line": 12,
-                            "column": 16,
-                            "index": 439
-                          },
-                          "end": {
-                            "line": 12,
-                            "column": 21,
-                            "index": 444
-                          },
-                          "identifierName": "title"
-                        },
-                        "name": "title"
-                      },
-                      "computed": false,
-                      "shorthand": false,
-                      "value": {
-                        "type": "StringLiteral",
-                        "start": 446,
-                        "end": 460,
-                        "loc": {
-                          "start": {
-                            "line": 12,
-                            "column": 23,
-                            "index": 446
-                          },
-                          "end": {
-                            "line": 12,
-                            "column": 37,
-                            "index": 460
-                          }
-                        },
-                        "extra": {
-                          "rawValue": "Branch title",
-                          "raw": "\"Branch title\""
-                        },
-                        "value": "Branch title"
-                      }
                     }
                   ]
                 }
@@ -625,67 +564,6 @@
                           "raw": "\"Branch image\""
                         },
                         "value": "Branch image"
-                      }
-                    },
-                    {
-                      "type": "ObjectProperty",
-                      "start": 610,
-                      "end": 637,
-                      "loc": {
-                        "start": {
-                          "line": 17,
-                          "column": 16,
-                          "index": 610
-                        },
-                        "end": {
-                          "line": 17,
-                          "column": 43,
-                          "index": 637
-                        }
-                      },
-                      "method": false,
-                      "key": {
-                        "type": "Identifier",
-                        "start": 610,
-                        "end": 615,
-                        "loc": {
-                          "start": {
-                            "line": 17,
-                            "column": 16,
-                            "index": 610
-                          },
-                          "end": {
-                            "line": 17,
-                            "column": 21,
-                            "index": 615
-                          },
-                          "identifierName": "title"
-                        },
-                        "name": "title"
-                      },
-                      "computed": false,
-                      "shorthand": false,
-                      "value": {
-                        "type": "StringLiteral",
-                        "start": 617,
-                        "end": 637,
-                        "loc": {
-                          "start": {
-                            "line": 17,
-                            "column": 23,
-                            "index": 617
-                          },
-                          "end": {
-                            "line": 17,
-                            "column": 43,
-                            "index": 637
-                          }
-                        },
-                        "extra": {
-                          "rawValue": "Branch image title",
-                          "raw": "\"Branch image title\""
-                        },
-                        "value": "Branch image title"
                       }
                     }
                   ]
@@ -1135,10 +1013,7 @@
     "scopeTracker": {
       "nextScopeId": 3,
       "currentScope": 2,
-      "scopeStack": [
-        0,
-        1
-      ],
+      "scopeStack": [0, 1],
       "scopeInfo": {
         "1": {
           "id": 1,
