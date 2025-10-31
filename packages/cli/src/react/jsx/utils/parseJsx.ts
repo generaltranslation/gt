@@ -19,7 +19,7 @@ import {
   mapAttributeName,
   VARIABLE_COMPONENTS,
 } from './constants.js';
-import { Metadata } from 'generaltranslation/types';
+import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
 
 /**
  * Builds a JSX tree from a given node, recursively handling children.
@@ -129,7 +129,23 @@ export function buildJSXTree(
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
           } else if (t.isJSXExpressionContainer(attr.value)) {
-            if (
+            // Check if this is an HTML content prop (title, placeholder, alt, etc.)
+            const isHtmlContentProp =
+              Object.values(HTML_CONTENT_PROPS).includes(attrName as any);
+
+            if (isHtmlContentProp) {
+              // For HTML content props, only accept static string expressions (like template strings without variables)
+              // Skip dynamic expressions like {someFunction()} or {variable}
+              const staticAnalysis = isStaticExpression(attr.value.expression);
+              if (
+                staticAnalysis.isStatic &&
+                staticAnalysis.value !== undefined
+              ) {
+                attrValue = staticAnalysis.value;
+              } else {
+                attrValue = null;
+              }
+            } else if (
               (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
               (elementIsBranch && attrName !== 'branch')
             ) {
@@ -140,17 +156,28 @@ export function buildJSXTree(
               ) {
                 unwrappedExpressions.push(generate(attr.value).code);
               }
+              attrValue = buildJSXTree(
+                importAliases,
+                attr.value.expression,
+                unwrappedExpressions,
+                updates,
+                errors,
+                warnings,
+                file,
+                true
+              );
+            } else {
+              attrValue = buildJSXTree(
+                importAliases,
+                attr.value.expression,
+                unwrappedExpressions,
+                updates,
+                errors,
+                warnings,
+                file,
+                true
+              );
             }
-            attrValue = buildJSXTree(
-              importAliases,
-              attr.value.expression,
-              unwrappedExpressions,
-              updates,
-              errors,
-              warnings,
-              file,
-              true
-            );
           }
         }
         props[attrName as any] = attrValue;
