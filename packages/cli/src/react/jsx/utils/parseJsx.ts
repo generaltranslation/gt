@@ -130,8 +130,9 @@ export function buildJSXTree(
             attrValue = attr.value.value;
           } else if (t.isJSXExpressionContainer(attr.value)) {
             // Check if this is an HTML content prop (title, placeholder, alt, etc.)
-            const isHtmlContentProp =
-              Object.values(HTML_CONTENT_PROPS).includes(attrName as any);
+            const isHtmlContentProp = Object.values(
+              HTML_CONTENT_PROPS
+            ).includes(attrName as any);
 
             if (isHtmlContentProp) {
               // For HTML content props, only accept static string expressions (like template strings without variables)
