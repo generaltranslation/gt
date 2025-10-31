@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.9
+
+### Patch Changes
+
+- [#774](https://github.com/generaltranslation/gt/pull/774) [`87dab40`](https://github.com/generaltranslation/gt/commit/87dab40efc9469d6ba3b3dc143d7d7a27422f7b0) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Hiding saving local translations behind the --save-local flag
+
 ## 2.4.8
 
 ### Patch Changes

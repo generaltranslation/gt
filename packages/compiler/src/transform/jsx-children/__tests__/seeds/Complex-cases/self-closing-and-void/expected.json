@@ -44,10 +44,7 @@
         "c": [
           {
             "t": "input",
-            "i": 3,
-            "d": {
-              "pl": "Input"
-            }
+            "i": 3
           },
           "Field with ",
           {
