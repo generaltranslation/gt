@@ -67,8 +67,8 @@ pub fn extract_html_content_props(attrs: &[JSXAttrOrSpread]) -> HtmlContentProps
           let value = str_lit.value.to_string();
 
           match prop_name {
-            // "placeholder" => props.pl = Some(value),
-            // "title" => props.ti = Some(value),
+            "placeholder" => props.pl = Some(value),
+            "title" => props.ti = Some(value),
             "alt" => props.alt = Some(value),
             "aria-label" => props.arl = Some(value),
             "aria-labelledby" => props.arb = Some(value),
@@ -379,24 +379,24 @@ mod tests {
       let attrs = [];
       let props = extract_html_content_props(&attrs);
       let default_props = HtmlContentProps::default();
-      // assert_eq!(props.pl, default_props.pl);
-      // assert_eq!(props.ti, default_props.ti);
+      assert_eq!(props.pl, default_props.pl);
+      assert_eq!(props.ti, default_props.ti);
       assert_eq!(props.alt, default_props.alt);
     }
 
-    // #[test]
-    // fn extracts_placeholder() {
-    //   let attrs = [create_string_attr("placeholder", "Enter text")];
-    //   let props = extract_html_content_props(&attrs);
-    //   assert_eq!(props.pl, Some("Enter text".to_string()));
-    // }
+    #[test]
+    fn extracts_placeholder() {
+      let attrs = [create_string_attr("placeholder", "Enter text")];
+      let props = extract_html_content_props(&attrs);
+      assert_eq!(props.pl, Some("Enter text".to_string()));
+    }
 
-    // #[test]
-    // fn extracts_title() {
-    //   let attrs = [create_string_attr("title", "Tooltip text")];
-    //   let props = extract_html_content_props(&attrs);
-    //   assert_eq!(props.ti, Some("Tooltip text".to_string()));
-    // }
+    #[test]
+    fn extracts_title() {
+      let attrs = [create_string_attr("title", "Tooltip text")];
+      let props = extract_html_content_props(&attrs);
+      assert_eq!(props.ti, Some("Tooltip text".to_string()));
+    }
 
     #[test]
     fn extracts_alt() {
@@ -423,7 +423,7 @@ mod tests {
       let attrs = [create_string_attr("className", "my-class")];
       let props = extract_html_content_props(&attrs);
       let default_props = HtmlContentProps::default();
-      // assert_eq!(props.pl, default_props.pl);
+      assert_eq!(props.pl, default_props.pl);
     }
   }
 
