@@ -42,6 +42,7 @@ export type TranslateFlags = {
   src?: string[];
   timeout: number;
   dryRun: boolean;
+  saveLocal?: boolean;
   stageTranslations?: boolean;
   publish?: boolean;
   force?: boolean;
