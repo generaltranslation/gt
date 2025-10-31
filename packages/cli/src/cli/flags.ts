@@ -42,6 +42,11 @@ export function attachTranslateFlags(command: Command) {
       },
       DEFAULT_TIMEOUT
     )
+    .option(
+      '--save-local',
+      'Detect and save local edits before enqueuing translations',
+      false
+    )
     .option('--publish', 'Publish translations to the CDN', false)
     .option(
       '--experimental-localize-static-urls',

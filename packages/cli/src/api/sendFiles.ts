@@ -139,16 +139,21 @@ export async function sendFiles(
       }
     }
 
-    // Step 3: Prior to enqueue, detect and submit user edit diffs (minimal UX)
-    const prepSpinner = createSpinner('dots');
-    currentSpinner = prepSpinner;
-    prepSpinner.start('Updating translations...');
-    try {
-      await collectAndSendUserEditDiffs(upload.uploadedFiles as any, settings);
-    } catch {
-      // Non-fatal; keep going to enqueue
-    } finally {
-      prepSpinner.stop('Updated translations');
+    // Step 3 (optional): Prior to enqueue, detect and submit user edit diffs
+    if (options?.saveLocal) {
+      const prepSpinner = createSpinner('dots');
+      currentSpinner = prepSpinner;
+      prepSpinner.start('Updating translations...');
+      try {
+        await collectAndSendUserEditDiffs(
+          upload.uploadedFiles as any,
+          settings
+        );
+      } catch {
+        // Non-fatal; keep going to enqueue
+      } finally {
+        prepSpinner.stop('Updated translations');
+      }
     }
 
     // Step 4: Enqueue translations by reference
