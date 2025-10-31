@@ -1476,25 +1476,6 @@
                                       }
                                     },
                                     "method": false,
-                                    "key": {
-                                      "type": "Identifier",
-                                      "start": 1179,
-                                      "end": 1190,
-                                      "loc": {
-                                        "start": {
-                                          "line": 32,
-                                          "column": 24,
-                                          "index": 1179
-                                        },
-                                        "end": {
-                                          "line": 32,
-                                          "column": 35,
-                                          "index": 1190
-                                        },
-                                        "identifierName": "placeholder"
-                                      },
-                                      "name": "placeholder"
-                                    },
                                     "computed": false,
                                     "shorthand": false,
                                     "value": {
@@ -1782,10 +1763,7 @@
     "scopeTracker": {
       "nextScopeId": 3,
       "currentScope": 2,
-      "scopeStack": [
-        0,
-        1
-      ],
+      "scopeStack": [0, 1],
       "scopeInfo": {
         "1": {
           "id": 1,

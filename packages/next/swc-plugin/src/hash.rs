@@ -19,10 +19,10 @@ pub enum VariableType {
 /// Map of data-_gt properties to their corresponding React props
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct HtmlContentProps {
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub pl: Option<String>, // placeholder
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub ti: Option<String>, // title
+  // #[serde(skip_serializing_if = "Option::is_none")]
+  // pub pl: Option<String>, // placeholder
+  // #[serde(skip_serializing_if = "Option::is_none")]
+  // pub ti: Option<String>, // title
   #[serde(skip_serializing_if = "Option::is_none")]
   pub alt: Option<String>, // alt
   #[serde(skip_serializing_if = "Option::is_none")]
