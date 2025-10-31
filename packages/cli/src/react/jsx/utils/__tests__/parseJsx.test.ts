@@ -216,7 +216,9 @@ describe('parseJSXElement', () => {
       expect(params.errors).toHaveLength(0);
       expect(params.updates).toHaveLength(1);
       // The source should contain the static title in the GTData
-      expect(JSON.stringify(params.updates[0].source)).toContain('Static tooltip');
+      expect(JSON.stringify(params.updates[0].source)).toContain(
+        'Static tooltip'
+      );
     });
 
     it('should exclude function call as title attribute from translations', () => {
@@ -246,7 +248,9 @@ describe('parseJSXElement', () => {
       expect(params.errors).toHaveLength(0);
       expect(params.updates).toHaveLength(1);
       // The source should NOT contain the function call as a title
-      expect(JSON.stringify(params.updates[0].source)).not.toContain('getTooltip()');
+      expect(JSON.stringify(params.updates[0].source)).not.toContain(
+        'getTooltip()'
+      );
     });
 
     it('should exclude variable reference as title attribute from translations', () => {
@@ -305,7 +309,9 @@ describe('parseJSXElement', () => {
       expect(params.errors).toHaveLength(0);
       expect(params.updates).toHaveLength(1);
       // The source should contain the static template literal in the GTData
-      expect(JSON.stringify(params.updates[0].source)).toContain('Static template');
+      expect(JSON.stringify(params.updates[0].source)).toContain(
+        'Static template'
+      );
     });
   });
 
