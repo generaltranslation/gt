@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.11
+
+### Patch Changes
+
+- [#780](https://github.com/generaltranslation/gt/pull/780) [`c048320`](https://github.com/generaltranslation/gt/commit/c048320ae0daf91bebf65145aba6fb15c2f3612d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix CLI parsing for nbsp characters
+
 ## 2.4.10
 
 ### Patch Changes
