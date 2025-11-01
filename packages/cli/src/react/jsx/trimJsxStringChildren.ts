@@ -1,5 +1,40 @@
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 
+// JSX whitespace characters (space, tab, newline, carriage return)
+// Does NOT include non-breaking space (U+00A0) which should be preserved
+const isJsxWhitespace = (char: string) => {
+  return char === ' ' || char === '\t' || char === '\n' || char === '\r';
+};
+
+const trimJsxWhitespace = (
+  str: string,
+  side: 'start' | 'end' | 'both' = 'both'
+) => {
+  let start = 0;
+  let end = str.length;
+
+  if (side === 'start' || side === 'both') {
+    while (start < end && isJsxWhitespace(str[start])) {
+      start++;
+    }
+  }
+
+  if (side === 'end' || side === 'both') {
+    while (end > start && isJsxWhitespace(str[end - 1])) {
+      end--;
+    }
+  }
+
+  return str.slice(start, end);
+};
+
+const hasNonJsxWhitespace = (str: string) => {
+  for (const char of str) {
+    if (!isJsxWhitespace(char)) return true;
+  }
+  return false;
+};
+
 export function trimJsxStringChild(
   child: string,
   index: number,
@@ -8,14 +43,14 @@ export function trimJsxStringChild(
   // Normalize line endings to \n for consistency across platforms
   let result = child.replace(/\r\n|\r/g, '\n');
 
-  // Collapse multiple spaces/tabs into a single space
+  // Collapse multiple spaces/tabs into a single space (but not nbsp)
   result = result.replace(/[\t ]+/g, ' ');
 
   let newResult = '';
   let newline = false;
   for (const char of result) {
     if (char === '\n') {
-      if (newResult.trim()) newResult += ' ';
+      if (hasNonJsxWhitespace(newResult)) newResult += ' ';
       else newResult = '';
       newline = true;
       continue;
@@ -24,13 +59,13 @@ export function trimJsxStringChild(
       newResult += char;
       continue;
     }
-    if (char.trim() === '') continue;
+    if (isJsxWhitespace(char)) continue;
     newResult += char;
     newline = false;
   }
-  if (newline) newResult = newResult.trimEnd();
+  if (newline) newResult = trimJsxWhitespace(newResult, 'end');
   result = newResult;
-  // Collapse multiple spaces/tabs into a single space
+  // Collapse multiple spaces/tabs into a single space (but not nbsp)
   result = result.replace(/[\t ]+/g, ' ');
   return result;
 }
