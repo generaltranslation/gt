@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.10
+
+### Patch Changes
+
+- [#778](https://github.com/generaltranslation/gt/pull/778) [`0d8f414`](https://github.com/generaltranslation/gt/commit/0d8f4144696873b15f0aaa6744bdb7390d472279) Thanks [@SamEggert](https://github.com/SamEggert)! - skip dynamic expressions for HTML content props in parseJSX
+
 ## 2.4.9
 
 ### Patch Changes
