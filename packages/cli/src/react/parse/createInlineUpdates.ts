@@ -140,6 +140,7 @@ export async function createInlineUpdates(
         path,
         updates,
         errors,
+        warnings,
         file,
         parsingOptions
       );

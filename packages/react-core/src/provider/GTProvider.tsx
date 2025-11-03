@@ -214,11 +214,13 @@ export default function GTProvider({
     translationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
+    environment,
   });
 
   // ---------- USE DICT ---------- //
 
   const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
+    gt,
     dictionary,
     dictionaryTranslations,
     translations,
@@ -227,7 +229,8 @@ export default function GTProvider({
     translationRequired,
     dialectTranslationRequired,
     developmentApiEnabled,
-    registerIcuForTranslation
+    registerIcuForTranslation,
+    environment
   );
 
   const _dictionaryObjFunction = useCreateInternalUseTranslationsObjFunction(
