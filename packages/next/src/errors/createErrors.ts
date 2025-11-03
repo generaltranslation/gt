@@ -89,7 +89,13 @@ export const invalidLocalesError = (locales: string[]) =>
 export const invalidCanonicalLocalesError = (locales: string[]) =>
   `gt-next Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
 
+export const createInvalidIcuDictionaryEntryError = (id: string) =>
+  `gt-next Error: Invalid ICU string dictionary entry found for id: "${id}"`;
+
 // ---- WARNINGS ---- //
+
+export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
+  `gt-next: Invalid ICU string dictionary entry found for id: "${id}"`;
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>
   `gt-next: Found ${filename} in ${dir.join(' or ')} directory. This is not supported. Please move it to your root directory.`;
