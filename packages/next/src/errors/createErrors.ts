@@ -173,3 +173,9 @@ export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
     : `gt-next (plugin): The GT babel compiler is compatible with turbopack or < react@${BABEL_PLUGIN_SUPPORT}. Skipping compiler optimizations.`;
 
 export const disablingCompileTimeHashWarning = `gt-next (plugin): You are disabling compile time hash. This will disable the compiler optimizations.`;
+
+export const createStringRenderWarning = (
+  message: string,
+  id: string | undefined
+) =>
+  `gt-next: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;

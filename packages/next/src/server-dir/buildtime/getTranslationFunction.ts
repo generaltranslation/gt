@@ -5,6 +5,7 @@ import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
 import {
   createStringRenderError,
+  createStringRenderWarning,
   createStringTranslationError,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
@@ -18,7 +19,15 @@ import {
 } from 'gt-react/internal';
 import use from '../../utils/use';
 
-type RenderFn = (msg: string, locales: string[]) => string;
+type RenderFn = (msg: string, locales: string[], fallback?: string) => string;
+
+type RenderMessageParams = {
+  message: string;
+  variables: Record<string, any> | undefined;
+  locales: string[];
+  fallback?: string;
+  id?: string;
+};
 
 type InitResult = {
   id?: string;
@@ -57,6 +66,54 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     : undefined;
 
   // --------- HELPERS --------- //
+  /**
+   * @description Format message and fallback:
+   * (1) format message
+   * (2) format fallback
+   * (3)
+   *   - PRODUCTION: return fallback (unformatted)
+   *   - DEVELOPMENT: throw error
+   */
+  function renderMessageHelper({
+    message,
+    variables,
+    locales,
+    fallback,
+    id,
+  }: RenderMessageParams) {
+    try {
+      // (1) Try to format message
+      return gt.formatMessage(message, {
+        locales,
+        variables,
+      });
+    } catch (error) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(createStringRenderWarning(message, id), 'Error: ', error);
+      } else {
+        // (3) If no fallback, throw error (non-prod)
+        if (!fallback)
+          throw new Error(
+            `${createStringRenderError(message, id)} Error: ${error}`
+          );
+
+        console.error(createStringRenderError(message, id), 'Error: ', error);
+      }
+
+      // (2) If format fails, format fallback
+      if (fallback) {
+        return renderMessageHelper({
+          message: fallback,
+          locales,
+          variables,
+          id,
+        });
+      }
+
+      // (3) Fallback to original message (unformatted)
+      return message; // fallback to original message (unformatted)
+    }
+  }
   function initializeT(
     message: string,
     options: Record<string, any> & {
@@ -69,11 +126,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
 
-    const renderMessage: RenderFn = (msg, locales) =>
-      gt.formatMessage(msg, {
+    const renderMessage: RenderFn = (msg, locales, fallback) => {
+      return renderMessageHelper({
+        message: msg,
         locales,
         variables,
+        id,
+        fallback,
       });
+    };
 
     const calculateHash = () =>
       hashSource({
@@ -206,15 +267,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     );
 
     if (translationEntry) {
-      try {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]);
-      } catch (error) {
-        console.error(error);
-        return renderMessage(message, [defaultLocale]);
-      }
+      return renderMessage(
+        translationEntry as string,
+        [locale, defaultLocale],
+        message
+      );
     }
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
@@ -223,15 +280,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     }
 
     if (!translationEntry && preloadedTranslations?.[hash]) {
-      try {
-        return renderMessage(preloadedTranslations[hash], [
-          locale,
-          defaultLocale,
-        ]);
-      } catch (error) {
-        console.error(createStringRenderError(message, id), 'Error: ', error);
-        return renderMessage(message, [defaultLocale]);
-      }
+      return renderMessage(
+        preloadedTranslations[hash],
+        [locale, defaultLocale],
+        message
+      );
     }
 
     // On-demand translate
@@ -263,11 +316,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     const { $_hash, $_source, $context, $id, ...decodedVariables } =
       decodedOptions;
 
-    const renderMessage: RenderFn = (msg, locales) =>
-      gt.formatMessage(msg, {
+    const renderMessage: RenderFn = (msg, locales, fallback) => {
+      return renderMessageHelper({
+        message: msg,
         locales,
-        variables: { ...decodedVariables, ...options },
+        variables: decodedVariables,
+        fallback,
       });
+    };
 
     // Early: default locale only
     if (!translationRequired)
@@ -285,21 +341,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     }
 
     if (translationEntry) {
-      try {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]) as T extends string ? string : T;
-      } catch (error) {
-        console.error(
-          createStringRenderError($_source, decodeMsg(encodedMsg)),
-          'Error: ',
-          error
-        );
-        return renderMessage($_source, [defaultLocale]) as T extends string
-          ? string
-          : T;
-      }
+      return renderMessage(
+        translationEntry as string,
+        [locale, defaultLocale],
+        $_source
+      ) as T extends string ? string : T;
     }
 
     // Dev-only paths for loading or preloaded
@@ -314,18 +360,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
       if (preloadedTranslations?.[$_hash]) {
-        try {
-          return renderMessage(preloadedTranslations[$_hash] as string, [
-            locale,
-            defaultLocale,
-          ]) as T extends string ? string : T;
-        } catch (error) {
-          console.error(
-            createStringRenderError($_source, decodeMsg(encodedMsg)),
-            'Error: ',
-            error
-          );
-        }
+        return renderMessage(
+          preloadedTranslations[$_hash] as string,
+          [locale, defaultLocale],
+          $_source
+        ) as T extends string ? string : T;
       }
       return renderMessage($_source, [defaultLocale]) as T extends string
         ? string
