@@ -80,6 +80,9 @@ export const createDictionaryEntryError = () =>
 export const createCannotInjectDictionaryEntryError = () =>
   `${PACKAGE_NAME} Error: Cannot inject and merge a dictionary entry`;
 
+export const createInvalidIcuDictionaryEntryError = (id: string | undefined) =>
+  `${PACKAGE_NAME} Error: Invalid ICU string dictionary entry found for id: "${id}"`;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning = `${PACKAGE_NAME} Warning: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.`;
@@ -89,6 +92,9 @@ export const createNoEntryFoundWarning = (id: string) =>
 
 export const createInvalidDictionaryEntryWarning = (id: string) =>
   `${PACKAGE_NAME} Warning: Invalid dictionary entry found for id: "${id}"`;
+
+export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
+  `${PACKAGE_NAME} Warning: Invalid ICU string dictionary entry found for id: "${id}"`;
 
 export const createNoEntryTranslationWarning = (
   id: string,

@@ -169,6 +169,7 @@ export default function ClientProvider({
   // ---------- DICTIONARY FUNCTIONS ---------- //
 
   const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
+    gt,
     dictionary,
     dictionaryTranslations,
     translations,
@@ -177,7 +178,8 @@ export default function ClientProvider({
     translationRequired,
     dialectTranslationRequired,
     developmentApiEnabled,
-    registerIcuForTranslation
+    registerIcuForTranslation,
+    environment
   );
 
   const _dictionaryObjFunction = useCreateInternalUseTranslationsObjFunction(
