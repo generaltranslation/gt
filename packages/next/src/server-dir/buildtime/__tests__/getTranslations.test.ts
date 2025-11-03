@@ -89,7 +89,7 @@ vi.mock('generaltranslation', () => ({
     requiresTranslation: vi.fn(() => false),
     resolveAliasLocale: vi.fn((locale) => locale),
     isValidLocale: vi.fn(() => true),
-    formatMessage: vi.fn((message, _options) => message),
+    formatMessage: mockFormatMessage, // Use the same mock function
   })),
   getLocaleProperties: vi.fn(),
   determineLocale: vi.fn(
@@ -139,6 +139,15 @@ describe('getTranslations', () => {
       isDevelopmentApiEnabled: vi.fn(() => false),
       translateIcu: vi.fn(() => Promise.resolve()),
       setDictionaryTranslations: vi.fn(),
+      getGTClass: vi.fn(() => ({
+        formatMessage: mockFormatMessage,
+        determineLocale: vi.fn(
+          (preferred, available) => preferred[0] || available[0]
+        ),
+        requiresTranslation: vi.fn(() => false),
+        resolveAliasLocale: vi.fn((locale) => locale),
+        isValidLocale: vi.fn(() => true),
+      })),
     };
 
     mockGetI18NConfig.mockReturnValue(mockI18NConfig);
@@ -431,7 +440,7 @@ describe('getTranslations', () => {
 
       // The function should have been created successfully with mutable dictionaryTranslations
       expect(typeof t).toBe('function');
-      expect(typeof (t as any).obj).toBe('function');
+      expect(typeof (t as { obj: unknown }).obj).toBe('function');
     });
   });
 
