@@ -139,10 +139,11 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check translation successful
       if (translationEntry) {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]);
+        return renderMessage(
+          translationEntry as string,
+          [locale, defaultLocale],
+          entry
+        );
       }
 
       if (translationEntry === null) {
