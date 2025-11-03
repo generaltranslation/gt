@@ -163,6 +163,7 @@ export default function ClientProvider({
     translationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
+    environment,
   });
 
   // ---------- DICTIONARY FUNCTIONS ---------- //

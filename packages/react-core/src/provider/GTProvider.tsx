@@ -214,6 +214,7 @@ export default function GTProvider({
     translationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
+    environment,
   });
 
   // ---------- USE DICT ---------- //
