@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import { parse } from '@formatjs/icu-messageformat-parser';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -99,4 +100,19 @@ export function isStaticValue(
     return true;
   }
   return false;
+}
+
+export function isValidIcu(string: string): {
+  isValid: boolean;
+  error?: string;
+} {
+  try {
+    parse(string);
+  } catch (error) {
+    return {
+      isValid: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  return { isValid: true };
 }
