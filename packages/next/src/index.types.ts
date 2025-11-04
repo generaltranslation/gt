@@ -2,7 +2,6 @@ import { typesFileError } from './errors/createErrors';
 import _GTProvider from './provider/GTProvider';
 import _T from './server-dir/buildtime/T';
 import {
-  useGT as _useGT,
   useTranslations as _useTranslations,
   useLocale as _useLocale,
   useLocales as _useLocales,
@@ -18,7 +17,7 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
-  useMessages as _useMessages,
+  Static as _Static,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -161,6 +160,19 @@ export const Var: typeof _Var = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 Var._gtt = 'variable-variable';
+
+/**
+ * The `<Static>` component allows you to render the output of a function invocation. Such a function MUST return
+ * only static content. If the function returns non-static content, the CLI tool will throw an error.
+ *
+ * Currently, this feature does not yet support <Suspense>.
+ *
+ * @param {T extends React.ReactNode} children - Static content to render.
+ * @returns {T} The static content.
+ */
+export const Static: typeof _Static = () => {
+  throw new Error(typesFileError);
+};
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
