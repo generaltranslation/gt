@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.9.0
+
+### Minor Changes
+
+- [#784](https://github.com/generaltranslation/gt/pull/784) [`93881f1`](https://github.com/generaltranslation/gt/commit/93881f159455a9bbc13d14e7fec9befa60998ba3) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: support for <Static> component in core
+
 ## 7.8.0
 
 ### Minor Changes
