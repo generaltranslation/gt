@@ -18,6 +18,7 @@ export type CheckFileTranslationsResult = {
 
 export type FileQuery = {
   fileId: string;
+  branchId?: string;
   versionId?: string;
 };
 

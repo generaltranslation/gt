@@ -26,9 +26,18 @@ export default async function _querySourceFile(
 ): Promise<FileQueryResult> {
   const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
+  const branchId = query.branchId;
   const versionId = query.versionId;
   const fileId = query.fileId;
-  const url = `${baseUrl || defaultBaseUrl}/v2/project/translations/files/status/${encodeURIComponent(fileId)}${versionId ? `?versionId=${encodeURIComponent(versionId)}` : ''}`;
+
+  const searchParams = new URLSearchParams();
+  if (branchId) {
+    searchParams.set('branchId', branchId);
+  }
+  if (versionId) {
+    searchParams.set('versionId', versionId);
+  }
+  const url = `${baseUrl || defaultBaseUrl}/v2/project/translations/files/status/${encodeURIComponent(fileId)}?${searchParams.toString()}`;
 
   // Request the file download
   let response;

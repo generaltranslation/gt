@@ -265,7 +265,7 @@ describe.sequential('_querySourceFile', () => {
     const result = await _querySourceFile(query, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file-123',
+      'https://api.test.com/v2/project/translations/files/status/file-123?',
       expect.objectContaining({
         method: 'GET',
       }),
@@ -413,7 +413,7 @@ describe.sequential('_querySourceFile', () => {
     await _querySourceFile(query, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file-123',
+      'https://api.test.com/v2/project/translations/files/status/file-123?',
       expect.any(Object),
       expect.any(Number)
     );

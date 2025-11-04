@@ -63,8 +63,18 @@ export type RequiredEnqueueFilesOptions = EnqueueFilesOptions &
   Required<Pick<EnqueueFilesOptions, 'sourceLocale'>>;
 
 export type EnqueueFilesResult = {
-  translations: CompletedFileTranslationData[];
-  data: Record<string, { fileName: string; versionId: string }>;
+  jobData: {
+    [jobId: string]: {
+      sourceFileId: string;
+      fileId: string;
+      versionId: string;
+      branchId: string;
+      targetLocale: string;
+      projectId: string;
+      force: boolean;
+      modelProvider?: string;
+    };
+  };
   locales: string[];
   message: string;
 };

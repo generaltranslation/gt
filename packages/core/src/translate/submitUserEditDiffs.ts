@@ -10,8 +10,9 @@ export type SubmitUserEditDiff = {
   fileName: string;
   locale: string;
   diff: string;
-  versionId?: string;
-  fileId?: string;
+  branchId: string;
+  versionId: string;
+  fileId: string;
   localContent?: string;
 };
 

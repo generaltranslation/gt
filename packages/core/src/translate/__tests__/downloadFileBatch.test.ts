@@ -7,6 +7,7 @@ import generateRequestHeaders from '../utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../types';
 import {
   DownloadFileBatchOptions,
+  DownloadFileBatchRequest,
   DownloadFileBatchResult,
 } from '../../types-dir/downloadFileBatch';
 
@@ -26,12 +27,20 @@ describe.sequential('_downloadFileBatch', () => {
     files: [
       {
         id: 'translation-1',
+        branchId: 'branch-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        fileFormat: 'JSON',
         fileName: 'file1.json',
         data: 'file content 1',
         metadata: { contentType: 'application/json' },
       },
       {
         id: 'translation-2',
+        branchId: 'branch-2',
+        fileId: 'file-2',
+        versionId: 'version-2',
+        fileFormat: 'JSON',
         fileName: 'file2.json',
         data: '',
         metadata: { error: 'File not found' },
@@ -43,12 +52,20 @@ describe.sequential('_downloadFileBatch', () => {
     files: [
       {
         id: 'translation-1',
+        branchId: 'branch-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        fileFormat: 'JSON',
         fileName: 'file1.json',
         data: Buffer.from('file content 1').toString('base64'),
         metadata: { contentType: 'application/json' },
       },
       {
         id: 'translation-2',
+        branchId: 'branch-2',
+        fileId: 'file-2',
+        versionId: 'version-2',
+        fileFormat: 'JSON',
         fileName: 'file2.json',
         data: '',
         metadata: { error: 'File not found' },
@@ -74,7 +91,10 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = ['translation-1', 'translation-2'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+      { fileId: 'file-2', branchId: 'branch-2', versionId: 'version-2' },
+    ];
 
     const options: DownloadFileBatchOptions = {
       timeout: 5000,
@@ -83,7 +103,7 @@ describe.sequential('_downloadFileBatch', () => {
     const result = await _downloadFileBatch(files, options, mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/batch-download',
+      'https://api.test.com/v2/project/files/download',
       {
         method: 'POST',
         headers: {
@@ -91,9 +111,10 @@ describe.sequential('_downloadFileBatch', () => {
           'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
-        body: JSON.stringify({
-          fileIds: ['translation-1', 'translation-2'],
-        }),
+        body: JSON.stringify([
+          { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+          { fileId: 'file-2', branchId: 'branch-2', versionId: 'version-2' },
+        ]),
       },
       5000
     );
@@ -109,7 +130,9 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
@@ -118,9 +141,9 @@ describe.sequential('_downloadFileBatch', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        body: JSON.stringify({
-          fileIds: ['translation-1'],
-        }),
+        body: JSON.stringify([
+          { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+        ]),
       }),
       60000
     );
@@ -135,7 +158,9 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
@@ -156,7 +181,9 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {
       timeout: 99999,
@@ -184,16 +211,16 @@ describe.sequential('_downloadFileBatch', () => {
       apiKey: 'test-api-key',
     };
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
     await _downloadFileBatch(files, options, configWithoutUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'https://api2.gtx.dev/v2/project/translations/files/batch-download'
-      ),
+      expect.stringContaining('https://api2.gtx.dev/v2/project/files/download'),
       expect.any(Object),
       expect.any(Number)
     );
@@ -206,7 +233,9 @@ describe.sequential('_downloadFileBatch', () => {
       throw fetchError;
     });
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
@@ -226,7 +255,9 @@ describe.sequential('_downloadFileBatch', () => {
       throw new Error('Validation failed');
     });
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
@@ -249,22 +280,14 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = [];
+    const files: DownloadFileBatchRequest = [];
 
     const options: DownloadFileBatchOptions = {};
 
     const result = await _downloadFileBatch(files, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        body: JSON.stringify({
-          fileIds: [],
-        }),
-      }),
-      expect.any(Number)
-    );
     expect(result).toEqual(emptyResult);
+    expect(fetchWithTimeout).not.toHaveBeenCalled();
   });
 
   it('should include fileIds in request body', async () => {
@@ -275,7 +298,9 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = ['translation-1'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
@@ -284,7 +309,9 @@ describe.sequential('_downloadFileBatch', () => {
     const requestBody = JSON.parse(
       vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
     );
-    expect(requestBody.fileIds).toEqual(['translation-1']);
+    expect(requestBody).toEqual([
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+    ]);
   });
 
   it('should map fileIds correctly in request body', async () => {
@@ -295,7 +322,10 @@ describe.sequential('_downloadFileBatch', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: string[] = ['trans-id-1', 'trans-id-2'];
+    const files: DownloadFileBatchRequest = [
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+      { fileId: 'file-2', branchId: 'branch-2', versionId: 'version-2' },
+    ];
 
     const options: DownloadFileBatchOptions = {};
 
@@ -304,6 +334,9 @@ describe.sequential('_downloadFileBatch', () => {
     const requestBody = JSON.parse(
       vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
     );
-    expect(requestBody.fileIds).toEqual(['trans-id-1', 'trans-id-2']);
+    expect(requestBody).toEqual([
+      { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
+      { fileId: 'file-2', branchId: 'branch-2', versionId: 'version-2' },
+    ]);
   });
 });

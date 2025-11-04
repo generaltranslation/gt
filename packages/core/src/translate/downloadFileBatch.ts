@@ -28,6 +28,10 @@ export default async function _downloadFileBatch(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/download`;
 
+  if (requests.length === 0) {
+    return { files: [], count: 0 };
+  }
+
   // Request the batch download
   let response;
   try {

@@ -51,7 +51,7 @@ describe('_checkJobStatus', () => {
     const result = await _checkJobStatus(['job-123'], mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/jobs/status',
+      'https://api.test.com/v2/project/jobs/info',
       {
         method: 'POST',
         headers: {

@@ -1,4 +1,5 @@
 import { TranslationRequestConfig } from '../../types';
+import { API_VERSION } from '../api';
 
 export default function generateRequestHeaders(
   config: TranslationRequestConfig,
@@ -16,6 +17,8 @@ export default function generateRequestHeaders(
       authHeaders['x-gt-api-key'] = config.apiKey;
     }
   }
+
+  authHeaders['gt-api-version'] = API_VERSION;
 
   return authHeaders;
 }
