@@ -93,6 +93,8 @@ import {
   _checkJobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
+import { FileDataQuery, FileDataResult } from './translate/queryFileData';
+import _queryFileData from './translate/queryFileData';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -469,6 +471,54 @@ export class GT {
     result.translations = result.translations.map((item) => ({
       ...item,
       locale: this.resolveAliasLocale(item.locale),
+    }));
+    return result;
+  }
+  /**
+   * Checks the translation status of files.
+   *
+   * @param {Object} data - Object mapping source paths to file information.
+   * @param {CheckFileTranslationsOptions} options - Options for checking file translations.
+   * @returns {Promise<CheckFileTranslationsResult>} The file translation status information.
+   *
+   * @example
+   * const result = await gt.checkFileTranslations([
+   *   { sourcePath: 'src/components/Button.tsx', locale: 'es-ES' },
+   *   { sourcePath: 'src/components/Input.tsx', locale: 'fr-FR' },
+   * ], {
+   *   timeout: 10000,
+   * });
+   *
+   */
+  async queryFileData(
+    data: FileDataQuery,
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<FileDataResult> {
+    // Validation
+    this._validateAuth('queryFileData');
+
+    // Replace target locales with canonical locales
+    data.translatedFiles = data.translatedFiles?.map((item) => ({
+      ...item,
+      locale: this.resolveCanonicalLocale(item.locale),
+    }));
+
+    // Request the file translation status
+    const result = await _queryFileData(
+      data,
+      options,
+      this._getTranslationConfig()
+    );
+
+    // Resolve canonical locales
+    result.translatedFiles = result.translatedFiles?.map((item) => ({
+      ...item,
+      locale: this.resolveAliasLocale(item.locale),
+    }));
+    result.sourceFiles = result.sourceFiles?.map((item) => ({
+      ...item,
+      sourceLocale: this.resolveAliasLocale(item.sourceLocale),
+      locales: item.locales.map((locale) => this.resolveAliasLocale(locale)),
     }));
     return result;
   }
