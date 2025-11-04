@@ -4,10 +4,14 @@ import { DataFormat } from 'generaltranslation/types';
 
 // Mock the generaltranslation/id module
 vi.mock('generaltranslation/id', () => ({
-  hashSource: vi.fn(({ source, context, id, dataFormat }) => `mocked-hash-${dataFormat}`),
+  hashSource: vi.fn(
+    ({ source, context, id, dataFormat }) => `mocked-hash-${dataFormat}`
+  ),
 }));
 
-const mockHashSource = vi.mocked(await import('generaltranslation/id')).hashSource;
+const mockHashSource = vi.mocked(
+  await import('generaltranslation/id')
+).hashSource;
 
 describe('calculateHash', () => {
   beforeEach(() => {
