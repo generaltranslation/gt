@@ -67,11 +67,6 @@ import {
   FileQueryResult,
   FileTranslationQuery,
 } from './types-dir/api/checkFileTranslations';
-import {
-  CheckTranslationStatusOptions,
-  TranslationStatusResult,
-} from './types-dir/api/translationStatus';
-import _checkTranslationStatus from './translate/checkTranslationStatus';
 import _submitUserEditDiffs, {
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
@@ -93,11 +88,11 @@ import {
 import _querySourceFile from './translate/querySourceFile';
 import { ProjectData } from './types-dir/api/project';
 import _getProjectData from './projects/getProjectData';
-import { DownloadFileBatchRequest } from 'src/types-dir/downloadFileBatch';
+import { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
 import {
   _checkJobStatus,
   CheckJobStatusResult,
-} from 'src/translate/checkJobStatus';
+} from './translate/checkJobStatus';
 
 // ============================================================ //
 //                        Core Class                            //
