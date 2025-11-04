@@ -61,7 +61,6 @@ import _setupProject, {
 } from './translate/setupProject';
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
 import _checkFileTranslations from './translate/checkFileTranslations';
-import { _downloadFile } from './translate/downloadFile';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import {
   FileQuery,
@@ -580,9 +579,19 @@ export class GT {
     // Validation
     this._validateAuth('downloadTranslatedFile');
 
-    file.locale = this.resolveCanonicalLocale(file.locale);
-
-    return await _downloadFile(file, options, this._getTranslationConfig());
+    const result = await _downloadFileBatch(
+      [
+        {
+          fileId: file.fileId,
+          branchId: file.branchId,
+          locale: this.resolveCanonicalLocale(file.locale),
+          versionId: file.versionId,
+        },
+      ],
+      options,
+      this._getTranslationConfig()
+    );
+    return result.files[0].data;
   }
 
   /**
@@ -608,12 +617,23 @@ export class GT {
     // Validation
     this._validateAuth('downloadFileBatch');
 
+    requests = requests.map((request) => ({
+      ...request,
+      locale: this.resolveCanonicalLocale(request.locale),
+    }));
     // Request the batch download
-    return await _downloadFileBatch(
+    const result = await _downloadFileBatch(
       requests,
       options,
       this._getTranslationConfig()
     );
+    return {
+      ...result,
+      files: result.files.map((file) => ({
+        ...file,
+        ...(file.locale && { locale: this.resolveAliasLocale(file.locale) }),
+      })),
+    };
   }
 
   /**
