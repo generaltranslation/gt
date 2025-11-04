@@ -108,6 +108,7 @@ import {
 import _querySourceFile from './translate/querySourceFile';
 import { ProjectData } from './types-dir/project';
 import _getProjectData from './projects/getProjectData';
+import { DownloadFileBatchRequest } from 'src/types-dir/downloadFileBatch';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -749,7 +750,7 @@ export class GT {
   /**
    * Downloads multiple translation files in a batch.
    *
-   * @param {string[]} fileIds - Array of file IDs to download.
+   * @param {DownloadFileBatchRequest} requests - Array of file IDs to download.
    * @param {DownloadFileBatchOptions} options - Options for the batch download.
    * @returns {Promise<DownloadFileBatchResult>} The batch download results.
    *
@@ -760,12 +761,16 @@ export class GT {
    *   locales: ['en-US', 'es-ES', 'fr-FR']
    * });
    *
-   * const result = await gt.downloadFileBatch(['1234567890', '1234567891'], {
+   * const result = await gt.downloadFileBatch([{
+   *   fileId: '1234567890',
+   *   locale: 'es-ES',
+   *   versionId: '1234567890',
+   * }], {
    *   timeout: 10000,
    * });
    */
   async downloadFileBatch(
-    fileIds: string[],
+    requests: DownloadFileBatchRequest,
     options: DownloadFileBatchOptions = {}
   ): Promise<DownloadFileBatchResult> {
     // Validation
@@ -773,7 +778,7 @@ export class GT {
 
     // Request the batch download
     return await _downloadFileBatch(
-      fileIds,
+      requests,
       options,
       this._getTranslationConfig()
     );

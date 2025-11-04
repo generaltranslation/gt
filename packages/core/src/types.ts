@@ -67,6 +67,15 @@ export type {
   FileFormat,
   CompletedFileTranslationData,
 } from './types-dir/file';
+export type {
+  FileEntity,
+  NotYetUploadedFile,
+  UploadedFile,
+  FileUploadRef,
+  isUploaded,
+  assertUploaded,
+  toFileRefs,
+} from './types-dir/fileLifecycle';
 export type { TranslateManyResult } from './types-dir/translateMany';
 export type {
   TranslationResult,

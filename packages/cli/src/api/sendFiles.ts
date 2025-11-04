@@ -1,21 +1,20 @@
 import chalk from 'chalk';
-import {
-  createSpinner,
-  logErrorAndExit,
-  logMessage,
-  logSuccess,
-} from '../console/logging.js';
+import { logErrorAndExit, logMessage, logSuccess } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import {
   CompletedFileTranslationData,
   FileToTranslate,
+  NotYetUploadedFile,
+  EnqueueFilesResult,
 } from 'generaltranslation/types';
-import { FileUpload } from './uploadFiles.js';
 import { TEMPLATE_FILE_NAME } from '../cli/commands/stage.js';
-import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
-
-type SourceUpload = { source: FileUpload };
+import { Workflow } from '../workflow/Workflow.js';
+import {
+  UploadStep,
+  SetupStep,
+  EnqueueStep,
+} from '../workflow/WorkflowStep.js';
 
 export type SendFilesResult = {
   data: Record<string, { fileName: string; versionId: string }>;
@@ -24,18 +23,38 @@ export type SendFilesResult = {
 };
 
 /**
- * Sends multiple files for translation to the API
- * @param files - Array of file objects to translate
- * @param options - The options for the API call
- * @returns The translated content or version ID
+ * Helper: Convert FileToTranslate to NotYetUploadedFile entities
  */
-export async function sendFiles(
+function convertToFileEntities(
   files: FileToTranslate[],
-  options: TranslateFlags,
   settings: Settings
-): Promise<SendFilesResult> {
-  // Keep track of the most recent spinner so we can stop it on error
-  let currentSpinner: ReturnType<typeof createSpinner> | null = null;
+): NotYetUploadedFile[] {
+  if (!settings.defaultLocale) {
+    throw new Error('settings.defaultLocale is required');
+  }
+
+  return files.map((f) => ({
+    fileName: f.fileName,
+    fileFormat: f.fileFormat,
+    dataFormat: f.dataFormat,
+    content: f.content,
+    locale: settings.defaultLocale,
+    formatMetadata: f.formatMetadata,
+  }));
+}
+
+/**
+ * Helper: Calculate timeout with validation
+ */
+function calculateTimeout(timeout: string | number | undefined): number {
+  const value = timeout !== undefined ? Number(timeout) : 600;
+  return (Number.isFinite(value) ? value : 600) * 1000;
+}
+
+/**
+ * Helper: Log files to be translated
+ */
+function logFilesToTranslate(files: FileToTranslate[]): void {
   logMessage(
     chalk.cyan('Files to translate:') +
       '\n' +
@@ -48,138 +67,43 @@ export async function sendFiles(
         })
         .join('\n')
   );
+}
 
+/**
+ * Sends multiple files for translation to the API using a workflow pattern
+ * @param files - Array of file objects to translate
+ * @param options - The options for the API call
+ * @param settings - Settings configuration
+ * @returns The translated content or version ID
+ */
+export async function sendFiles(
+  files: FileToTranslate[],
+  options: TranslateFlags,
+  settings: Settings
+): Promise<SendFilesResult> {
   try {
-    // Step 1: Upload files (get references)
-    const uploadSpinner = createSpinner('dots');
-    currentSpinner = uploadSpinner;
-    uploadSpinner.start(
-      `Uploading ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation API...`
-    );
+    // Log files to be translated
+    logFilesToTranslate(files);
 
-    const sourceLocale = settings.defaultLocale;
-    if (!sourceLocale) {
-      uploadSpinner.stop(chalk.red('Missing default source locale'));
-      logErrorAndExit(
-        'sendFiles: settings.defaultLocale is required to upload source files'
-      );
-    }
+    // Convert to file entities
+    const fileEntities = convertToFileEntities(files, settings);
 
-    // Convert FileToTranslate[] -> { source: FileUpload }[]
-    const uploads: SourceUpload[] = files.map(
-      ({ content, fileName, fileFormat, dataFormat }) => ({
-        source: {
-          content,
-          fileName,
-          fileFormat,
-          dataFormat,
-          locale: sourceLocale,
-        },
-      })
-    );
+    // Calculate timeout for setup step
+    const timeoutMs = calculateTimeout(options.timeout);
 
-    const upload = await gt.uploadSourceFiles(uploads, {
-      sourceLocale,
-      modelProvider: settings.modelProvider,
-    });
-    uploadSpinner.stop(chalk.green('Files uploaded successfully'));
+    // Create workflow with steps
+    const workflow = new Workflow<NotYetUploadedFile[], EnqueueFilesResult>([
+      new UploadStep(gt, settings),
+      new SetupStep(gt, settings, timeoutMs),
+      new EnqueueStep(gt, settings, options.force),
+    ]);
 
-    // Calculate timeout once for setup fetching
-    // Accept number or numeric string, default to 600s
-    const timeoutVal =
-      options?.timeout !== undefined ? Number(options.timeout) : 600;
-    const setupTimeoutMs =
-      (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+    // Execute workflow
+    const result = await workflow.run(fileEntities);
 
-    const setupResult = await gt.setupProject(upload.uploadedFiles, {
-      locales: settings.locales,
-    });
-
-    if (setupResult?.status === 'queued') {
-      const { setupJobId } = setupResult;
-
-      const setupSpinner = createSpinner('dots');
-      currentSpinner = setupSpinner;
-      setupSpinner.start('Setting up project...');
-
-      const start = Date.now();
-      const pollInterval = 2000;
-
-      let setupCompleted = false;
-      let setupFailedMessage: string | null = null;
-
-      while (true) {
-        const status = await gt.checkSetupStatus(setupJobId);
-
-        if (status.status === 'completed') {
-          setupCompleted = true;
-          break;
-        }
-        if (status.status === 'failed') {
-          setupFailedMessage = status.error?.message || 'Unknown error';
-          break;
-        }
-        if (Date.now() - start > setupTimeoutMs) {
-          setupFailedMessage = 'Timed out while waiting for setup generation';
-          break;
-        }
-        await new Promise((r) => setTimeout(r, pollInterval));
-      }
-
-      if (setupCompleted) {
-        setupSpinner.stop(chalk.green('Setup successfully completed'));
-      } else {
-        setupSpinner.stop(
-          chalk.yellow(
-            `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
-              setupFailedMessage ? ` (${setupFailedMessage})` : ''
-            }`
-          )
-        );
-      }
-    }
-
-    // Step 3 (optional): Prior to enqueue, detect and submit user edit diffs
-    if (options?.saveLocal) {
-      const prepSpinner = createSpinner('dots');
-      currentSpinner = prepSpinner;
-      prepSpinner.start('Updating translations...');
-      try {
-        await collectAndSendUserEditDiffs(
-          upload.uploadedFiles as any,
-          settings
-        );
-      } catch {
-        // Non-fatal; keep going to enqueue
-      } finally {
-        prepSpinner.stop('Updated translations');
-      }
-    }
-
-    // Step 4: Enqueue translations by reference
-    const enqueueSpinner = createSpinner('dots');
-    currentSpinner = enqueueSpinner;
-    enqueueSpinner.start('Enqueuing translations...');
-    const enqueueResult = await gt.enqueueFiles(upload.uploadedFiles, {
-      sourceLocale: settings.defaultLocale,
-      targetLocales: settings.locales,
-      publish: settings.publish,
-      requireApproval: settings.stageTranslations,
-      modelProvider: settings.modelProvider,
-      force: options?.force,
-    });
-
-    const { data, message, locales, translations } = enqueueResult;
-    enqueueSpinner.stop(
-      chalk.green('Files for translation uploaded successfully')
-    );
-    logSuccess(message);
-
-    return { data, locales, translations };
-  } catch {
-    if (currentSpinner) {
-      currentSpinner.stop();
-    }
+    logSuccess(result.message);
+    return result;
+  } catch (error) {
     logErrorAndExit('Failed to send files for translation');
   }
 }

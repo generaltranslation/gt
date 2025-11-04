@@ -1,5 +1,6 @@
 import { DataFormat } from './content';
 import { FileFormat } from './file';
+import { FileUploadRef } from './fileLifecycle';
 
 export type FileUpload = {
   branchId?: string; // if not provided, will use the default branch
@@ -12,15 +13,7 @@ export type FileUpload = {
   fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
 
-export type FileUploadRef = {
-  branchId: string;
-  fileId: string;
-  versionId: string;
-  fileName: string;
-  fileFormat: FileFormat;
-  dataFormat?: DataFormat;
-  locale?: string;
-};
+export type { FileUploadRef };
 
 export type UploadData = {
   data: { source: FileUpload; translations: FileUpload[] }[];

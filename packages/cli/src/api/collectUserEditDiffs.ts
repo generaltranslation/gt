@@ -7,15 +7,10 @@ import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { sendUserEditDiffs } from './sendUserEdits.js';
 import type { UserEditDiff } from './sendUserEdits.js';
 import { gt } from '../utils/gt.js';
+import { UploadedFile } from 'generaltranslation/types';
 
 const MAX_DIFF_BATCH_BYTES = 1_500_000;
 const MAX_DOWNLOAD_BATCH = 100;
-
-type UploadedFileRef = {
-  fileId: string;
-  versionId: string;
-  fileName: string;
-};
 
 /**
  * Collects local user edits by diffing the latest downloaded server translation version
@@ -24,7 +19,7 @@ type UploadedFileRef = {
  * Must run before enqueueing new translations so rules are available to the generator.
  */
 export async function collectAndSendUserEditDiffs(
-  uploadedFiles: UploadedFileRef[],
+  uploadedFiles: UploadedFile[],
   settings: Settings
 ) {
   if (!settings.files) return;
@@ -45,6 +40,7 @@ export async function collectAndSendUserEditDiffs(
 
   // Build candidates for diff and batch-fetch server contents
   type DiffCandidate = {
+    branchId: string;
     fileName: string;
     fileId: string;
     versionId: string;
@@ -71,6 +67,7 @@ export async function collectAndSendUserEditDiffs(
       if (!versionId) continue;
 
       candidates.push({
+        branchId: uploadedFile.branchId,
         fileName: uploadedFile.fileName,
         fileId: uploadedFile.fileId,
         versionId,
@@ -102,11 +99,26 @@ export async function collectAndSendUserEditDiffs(
       idByKey.set(`${t.fileName}:${resolved}`, t.id);
     }
 
-    // Collect translation IDs in batches and download contents
-    const ids: string[] = [];
+    // Collect download requests for batch API
+    type DownloadRequest = {
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      locale: string;
+      key: string; // for mapping response back
+    };
+    const downloadRequests: DownloadRequest[] = [];
     for (const c of candidates) {
       const id = idByKey.get(`${c.fileName}:${c.locale}`);
-      if (id) ids.push(id);
+      if (id) {
+        downloadRequests.push({
+          branchId: c.branchId,
+          fileId: c.fileId,
+          versionId: c.versionId,
+          locale: c.locale,
+          key: `${c.fileName}:${c.locale}`,
+        });
+      }
     }
 
     // Helper to chunk array
@@ -118,17 +130,21 @@ export async function collectAndSendUserEditDiffs(
     }
 
     const serverContentByKey = new Map<string, string>();
-    for (const idChunk of chunk(ids, MAX_DOWNLOAD_BATCH)) {
+    for (const reqChunk of chunk(downloadRequests, MAX_DOWNLOAD_BATCH)) {
       try {
-        const resp = await gt.downloadFileBatch(idChunk);
+        const resp = await gt.downloadFileBatch(
+          reqChunk.map((r) => ({
+            fileId: r.fileId,
+            locale: r.locale,
+            versionId: r.versionId,
+          }))
+        );
         const files = resp?.files || [];
-        for (const f of files) {
-          // Find corresponding candidate key via idByKey reverse lookup
-          for (const [key, id] of idByKey.entries()) {
-            if (id === f.id) {
-              serverContentByKey.set(key, f.data);
-              break;
-            }
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i];
+          const req = reqChunk[i];
+          if (f && req) {
+            serverContentByKey.set(req.key, f.data);
           }
         }
       } catch {

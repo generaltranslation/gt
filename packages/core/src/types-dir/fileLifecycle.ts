@@ -30,7 +30,7 @@ export type FileEntity = {
  * A file that has not yet been uploaded to the server.
  * Server reference fields are explicitly undefined.
  */
-export type UnuploadedFile = Omit<
+export type NotYetUploadedFile = Omit<
   FileEntity,
   'branchId' | 'fileId' | 'versionId'
 > & {
