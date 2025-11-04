@@ -51,6 +51,9 @@ impl<'a> JsxTraversal<'a> {
         .or_else(|| extract_attribute_from_jsx_attr(element, "$context"));
 
       // Get the id from the element
+      // Check if sanitized children contain static components - if so, return empty hash
+      let has_static = JsxHasher::contains_static(&sanitized_children);
+      
       // Create the full SanitizedData structure to match TypeScript implementation
       use crate::hash::SanitizedData;
       let sanitized_data = SanitizedData {
@@ -63,7 +66,11 @@ impl<'a> JsxTraversal<'a> {
       let json_string =
         JsxHasher::stable_stringify(&sanitized_data).expect("Failed to serialize sanitized data");
 
-      let hash = JsxHasher::hash_string(&json_string);
+      let hash = if has_static {
+        String::new()
+      } else {
+        JsxHasher::hash_string(&json_string)
+      };
       (hash, json_string)
     } else {
       // Fallback to empty content hash with proper wrapper structure
@@ -77,6 +84,10 @@ impl<'a> JsxTraversal<'a> {
 
       let empty_children =
         SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(empty_element))));
+      
+      // Check if empty children contain static components - if so, return empty hash
+      let has_static = JsxHasher::contains_static(&empty_children);
+      
       let sanitized_data = SanitizedData {
         source: Some(Box::new(empty_children)),
         id: None,
@@ -87,7 +98,11 @@ impl<'a> JsxTraversal<'a> {
       let json_string =
         JsxHasher::stable_stringify(&sanitized_data).expect("Failed to serialize empty data");
 
-      let hash = JsxHasher::hash_string(&json_string);
+      let hash = if has_static {
+        String::new()
+      } else {
+        JsxHasher::hash_string(&json_string)
+      };
       (hash, json_string)
     }
   }
@@ -151,9 +166,6 @@ impl<'a> JsxTraversal<'a> {
   }
 
   fn build_sanitized_text(&mut self, text: &JSXText) -> Option<SanitizedChild> {
-    // Normalize whitespace like JS
-    
-
     // Return the normalized text
     build_sanitized_text_content(text)
   }
@@ -191,7 +203,7 @@ impl<'a> JsxTraversal<'a> {
         // Increment counter for each JSX element we encounter
         self.id_counter += 1;
 
-        // Check if this is a variable component first (Var, Num, Currency, DateTime)
+        // Check if this is a variable component first (Var, Num, Currency, DateTime, Static)
         if let Some(variable) = self.build_sanitized_variable(element) {
           Some(SanitizedChild::Variable(variable))
         } else {
@@ -365,6 +377,7 @@ impl<'a> JsxTraversal<'a> {
       VariableType::Currency => format!("_gt_cost_{}", self.id_counter),
       VariableType::Date => format!("_gt_date_{}", self.id_counter),
       VariableType::Variable => format!("_gt_value_{}", self.id_counter),
+      VariableType::Static => format!("_gt_static_{}", self.id_counter),
     }
   }
 
@@ -954,6 +967,9 @@ mod tests {
 
       let var_key = traversal.extract_variable_key(&element, &VariableType::Variable);
       assert!(var_key.starts_with("_gt_value_"));
+
+      let static_key = traversal.extract_variable_key(&element, &VariableType::Static);
+      assert!(static_key.starts_with("_gt_static_"));
     }
   }
 
@@ -1121,6 +1137,167 @@ mod tests {
 
       // Without proper imports set up, should not detect as GT component
       assert!(!info.is_gt_component);
+    }
+  }
+
+  mod calculate_element_hash_tests {
+    use super::*;
+
+    // Helper to create JSX element with children
+    fn create_jsx_element_with_children(tag_name: &str, children: Vec<JSXElementChild>) -> JSXElement {
+      JSXElement {
+        span: DUMMY_SP,
+        opening: JSXOpeningElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(tag_name),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }),
+          attrs: vec![],
+          self_closing: false,
+          type_args: None,
+        },
+        children,
+        closing: Some(JSXClosingElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(tag_name),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }),
+        }),
+      }
+    }
+
+    #[test]
+    fn test_calculate_element_hash_with_text_only() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+      
+      let element = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Hello world")
+      ]);
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+      
+      // Should have a non-empty hash since no static components
+      assert!(!hash.is_empty(), "Hash should not be empty for text-only content");
+      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert!(!json_string.is_empty(), "JSON string should not be empty");
+      assert!(json_string.contains("Hello world"), "JSON should contain the text content");
+    }
+
+    #[test]
+    fn test_calculate_element_hash_integration_with_contains_static() {
+      use crate::hash::{JsxHasher, SanitizedChildren, SanitizedChild, SanitizedVariable, VariableType};
+      
+      // Test the integration between calculate_element_hash and contains_static
+      // by directly testing the contains_static function with known structures
+      
+      // Create sanitized children with static variable
+      let static_children = SanitizedChildren::Single(Box::new(
+        SanitizedChild::Variable(SanitizedVariable {
+          k: Some("static_test".to_string()),
+          v: Some(VariableType::Static),
+          t: None,
+        })
+      ));
+      
+      assert!(JsxHasher::contains_static(&static_children), "Should detect static variable");
+      
+      // Create sanitized children with regular variable
+      let regular_children = SanitizedChildren::Single(Box::new(
+        SanitizedChild::Variable(SanitizedVariable {
+          k: Some("regular_test".to_string()),
+          v: Some(VariableType::Variable),
+          t: None,
+        })
+      ));
+      
+      assert!(!JsxHasher::contains_static(&regular_children), "Should not detect regular variable as static");
+    }
+
+    #[test]
+    fn test_calculate_element_hash_with_mixed_variables() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+      
+      // Create element with regular variable (should hash normally)
+      let element = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Count: "),
+        // Note: Without proper import setup, this won't be detected as a variable
+        // but it will still be processed as a regular element
+        JSXElementChild::JSXElement(Box::new(create_jsx_element("Var"))),
+      ]);
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+      
+      // Should have normal hash since no static components
+      assert!(!hash.is_empty(), "Hash should not be empty for regular variables");
+      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert!(!json_string.is_empty(), "JSON string should not be empty");
+    }
+
+    #[test]
+    fn test_calculate_element_hash_empty_children() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+      
+      let element = create_jsx_element_with_children("T", vec![]);
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+      
+      // Should use fallback path with empty element structure
+      assert!(!hash.is_empty(), "Hash should not be empty for empty children");
+      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert!(!json_string.is_empty(), "JSON string should not be empty");
+    }
+
+    #[test]
+    fn test_calculate_element_hash_with_nested_elements() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+      
+      // Create nested structure with regular elements
+      let nested_element = create_jsx_element_with_children("div", vec![
+        create_jsx_text_child("Nested content"),
+      ]);
+      
+      let element = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Outer "),
+        JSXElementChild::JSXElement(Box::new(nested_element)),
+        create_jsx_text_child(" content")
+      ]);
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+      
+      // Should have normal hash for nested regular elements
+      assert!(!hash.is_empty(), "Hash should not be empty for nested regular elements");
+      assert_eq!(hash.len(), 16, "Hash should be 16 characters long");
+      assert!(!json_string.is_empty(), "JSON string should still be generated");
+    }
+
+    #[test]
+    fn test_calculate_element_hash_consistency() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+      
+      let element1 = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Hello world")
+      ]);
+      let element2 = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Hello world")
+      ]);
+
+      let (hash1, _) = traversal.calculate_element_hash(&element1);
+      let (hash2, _) = traversal.calculate_element_hash(&element2);
+      
+      // Same content should produce same hash
+      assert_eq!(hash1, hash2, "Same content should produce same hash");
+      assert!(!hash1.is_empty(), "Hash should not be empty for identical content");
     }
   }
 }

@@ -14,6 +14,8 @@ pub enum VariableType {
   Date, // Date
   #[serde(rename = "c")]
   Currency, // Currency
+  #[serde(rename = "s")]
+  Static, // Static
 }
 
 /// Map of data-_gt properties to their corresponding React props
@@ -114,6 +116,71 @@ impl JsxHasher {
     hasher.update(input.as_bytes());
     let result = hasher.finalize();
     format!("{result:x}")[..16].to_string()
+  }
+
+  /// Check if the sanitized children contain any static components
+  /// Returns true if any Static variable is found, which means hash should be empty string
+  pub fn contains_static(children: &SanitizedChildren) -> bool {
+    Self::handle_children(children)
+  }
+
+  /// Handle children - check if any contain static variables
+  fn handle_children(children: &SanitizedChildren) -> bool {
+    match children {
+      SanitizedChildren::Single(child) => Self::handle_child(child.as_ref()),
+      SanitizedChildren::Multiple(children_vec) => {
+        children_vec.iter().any(|child| Self::handle_child(child))
+      }
+      SanitizedChildren::Wrapped { c } => Self::handle_children(c.as_ref()),
+    }
+  }
+
+  /// Handle individual child - check if it contains static variables
+  fn handle_child(child: &SanitizedChild) -> bool {
+    match child {
+      SanitizedChild::Text(_) => false,
+      SanitizedChild::Variable(variable) => Self::handle_variable(variable),
+      SanitizedChild::Element(element) => Self::handle_element(element.as_ref()),
+      SanitizedChild::Boolean(_) => false,
+      SanitizedChild::Null(_) => false,
+      SanitizedChild::Fragment(fragment_children) => Self::handle_children(fragment_children.as_ref()),
+    }
+  }
+
+  /// Handle variable - check if it's a static variable
+  fn handle_variable(variable: &SanitizedVariable) -> bool {
+    if let Some(VariableType::Static) = variable.v {
+      return true;
+    }
+    false
+  }
+
+  /// Handle element - check if it contains static variables in children or branches
+  fn handle_element(element: &SanitizedElement) -> bool {
+    // Check branches first (for Branch/Plural components)
+    if let Some(branches) = &element.b {
+      if branches.values().any(|branch| Self::handle_child(branch.as_ref())) {
+        return true;
+      }
+    }
+
+    // Check children
+    if let Some(children) = &element.c {
+      if Self::handle_children(children.as_ref()) {
+        return true;
+      }
+    }
+
+    // Check GT data branches
+    if let Some(gt_data) = &element.d {
+      if let Some(gt_branches) = &gt_data.b {
+        if gt_branches.values().any(|branch| Self::handle_child(branch.as_ref())) {
+          return true;
+        }
+      }
+    }
+
+    false
   }
 
   /// Stable stringify like fast-json-stable-stringify (sorts keys alphabetically)
@@ -460,5 +527,193 @@ mod tests {
       hash, hash2,
       "Same sanitized content should produce same hash"
     );
+  }
+
+  mod static_detection_tests {
+    use super::*;
+
+    #[test]
+    fn test_contains_static_with_text_only() {
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text("Hello world".to_string())));
+      assert!(!JsxHasher::contains_static(&children), "Text-only content should not contain static");
+    }
+
+    #[test]
+    fn test_contains_static_with_regular_variable() {
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
+        k: Some("name".to_string()),
+        v: Some(VariableType::Variable),
+        t: None,
+      })));
+      assert!(!JsxHasher::contains_static(&children), "Regular variable should not be static");
+    }
+
+    #[test]
+    fn test_contains_static_with_static_variable() {
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
+        k: Some("static_content".to_string()),
+        v: Some(VariableType::Static),
+        t: None,
+      })));
+      assert!(JsxHasher::contains_static(&children), "Static variable should be detected");
+    }
+
+    #[test]
+    fn test_contains_static_in_multiple_children() {
+      let children = SanitizedChildren::Multiple(vec![
+        SanitizedChild::Text("Hello ".to_string()),
+        SanitizedChild::Variable(SanitizedVariable {
+          k: Some("name".to_string()),
+          v: Some(VariableType::Variable),
+          t: None,
+        }),
+        SanitizedChild::Variable(SanitizedVariable {
+          k: Some("static_content".to_string()),
+          v: Some(VariableType::Static),
+          t: None,
+        }),
+        SanitizedChild::Text("!".to_string()),
+      ]);
+      assert!(JsxHasher::contains_static(&children), "Should detect static variable in multiple children");
+    }
+
+    #[test]
+    fn test_contains_static_in_element_children() {
+      let element = SanitizedElement {
+        b: None,
+        c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
+          k: Some("static_content".to_string()),
+          v: Some(VariableType::Static),
+          t: None,
+        }))))),
+        t: Some("div".to_string()),
+        d: None,
+      };
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));
+      assert!(JsxHasher::contains_static(&children), "Should detect static variable in nested element");
+    }
+
+    #[test]
+    fn test_contains_static_in_element_branches() {
+      let mut branches = BTreeMap::new();
+      branches.insert("case1".to_string(), Box::new(SanitizedChild::Variable(SanitizedVariable {
+        k: Some("static_content".to_string()),
+        v: Some(VariableType::Static),
+        t: None,
+      })));
+
+      let element = SanitizedElement {
+        b: Some(branches),
+        c: None,
+        t: Some("b".to_string()),
+        d: None,
+      };
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));
+      assert!(JsxHasher::contains_static(&children), "Should detect static variable in element branches");
+    }
+
+    #[test]
+    fn test_contains_static_in_gt_data_branches() {
+      let mut gt_branches = BTreeMap::new();
+      gt_branches.insert("option1".to_string(), Box::new(SanitizedChild::Variable(SanitizedVariable {
+        k: Some("static_content".to_string()),
+        v: Some(VariableType::Static),
+        t: None,
+      })));
+
+      let gt_prop = SanitizedGtProp {
+        b: Some(gt_branches),
+        t: Some("p".to_string()),
+        html_props: HtmlContentProps::default(),
+      };
+
+      let element = SanitizedElement {
+        b: None,
+        c: None,
+        t: Some("T".to_string()),
+        d: Some(gt_prop),
+      };
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));
+      assert!(JsxHasher::contains_static(&children), "Should detect static variable in GT data branches");
+    }
+
+    #[test]
+    fn test_contains_static_in_fragment() {
+      let fragment_children = SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
+        k: Some("static_content".to_string()),
+        v: Some(VariableType::Static),
+        t: None,
+      })));
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Fragment(Box::new(fragment_children))));
+      assert!(JsxHasher::contains_static(&children), "Should detect static variable in fragment");
+    }
+
+    #[test]
+    fn test_contains_static_in_wrapped_children() {
+      let wrapped_children = SanitizedChildren::Wrapped {
+        c: Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
+          k: Some("static_content".to_string()),
+          v: Some(VariableType::Static),
+          t: None,
+        })))),
+      };
+      assert!(JsxHasher::contains_static(&wrapped_children), "Should detect static variable in wrapped children");
+    }
+
+    #[test]
+    fn test_contains_static_complex_nested_structure() {
+      let mut branches = BTreeMap::new();
+      branches.insert("nested".to_string(), Box::new(SanitizedChild::Element(Box::new(SanitizedElement {
+        b: None,
+        c: Some(Box::new(SanitizedChildren::Multiple(vec![
+          SanitizedChild::Text("Some text ".to_string()),
+          SanitizedChild::Variable(SanitizedVariable {
+            k: Some("regular_var".to_string()),
+            v: Some(VariableType::Number),
+            t: None,
+          }),
+          SanitizedChild::Variable(SanitizedVariable {
+            k: Some("deep_static".to_string()),
+            v: Some(VariableType::Static),
+            t: None,
+          }),
+        ]))),
+        t: Some("span".to_string()),
+        d: None,
+      }))));
+
+      let element = SanitizedElement {
+        b: Some(branches),
+        c: None,
+        t: Some("b".to_string()),
+        d: None,
+      };
+      let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));
+      assert!(JsxHasher::contains_static(&children), "Should detect static variable in deeply nested structure");
+    }
+
+    #[test]
+    fn test_no_static_in_complex_structure() {
+      let children = SanitizedChildren::Multiple(vec![
+        SanitizedChild::Text("Hello ".to_string()),
+        SanitizedChild::Variable(SanitizedVariable {
+          k: Some("name".to_string()),
+          v: Some(VariableType::Variable),
+          t: None,
+        }),
+        SanitizedChild::Element(Box::new(SanitizedElement {
+          b: None,
+          c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
+            k: Some("count".to_string()),
+            v: Some(VariableType::Number),
+            t: None,
+          }))))),
+          t: Some("div".to_string()),
+          d: None,
+        })),
+        SanitizedChild::Text("!".to_string()),
+      ]);
+      assert!(!JsxHasher::contains_static(&children), "Complex structure without static should return false");
+    }
   }
 }

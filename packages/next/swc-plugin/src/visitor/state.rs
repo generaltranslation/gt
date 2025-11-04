@@ -13,7 +13,7 @@ pub struct Statistics {
 pub struct TraversalState {
   /// Track whether we're inside a translation component (T, Plural, etc.)
   pub in_translation_component: bool,
-  /// Track whether we're inside a variable component (Var, Num, Currency, etc.)
+  /// Track whether we're inside a variable component (Var, Num, Currency, DateTime, Static)
   pub in_variable_component: bool,
   /// Track whether we're inside a JSX attribute expression (to ignore them)
   pub in_jsx_attribute: bool,

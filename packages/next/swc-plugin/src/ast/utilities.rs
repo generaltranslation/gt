@@ -50,6 +50,7 @@ pub fn get_variable_type(component_name: &str) -> VariableType {
     "Num" => VariableType::Number,
     "Currency" => VariableType::Currency,
     "DateTime" => VariableType::Date,
+    "Static" => VariableType::Static,
     _ => VariableType::Variable,
   }
 }
@@ -333,6 +334,11 @@ mod tests {
     #[test]
     fn identifies_currency_variable() {
       assert_eq!(get_variable_type("Currency"), VariableType::Currency);
+    }
+
+    #[test]
+    fn identifies_static_variable() {
+      assert_eq!(get_variable_type("Static"), VariableType::Static);
     }
 
     #[test]
