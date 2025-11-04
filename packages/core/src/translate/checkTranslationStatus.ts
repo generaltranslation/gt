@@ -7,7 +7,7 @@ import { TranslationRequestConfig } from '../types';
 import {
   CheckTranslationStatusOptions,
   TranslationStatusResult,
-} from '../types-dir/translationStatus';
+} from '../types-dir/api/translationStatus';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**

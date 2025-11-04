@@ -7,8 +7,8 @@ import { TranslationRequestConfig } from '../types';
 import {
   CheckFileTranslationsOptions,
   FileQueryResult,
-} from '../types-dir/checkFileTranslations';
-import { FileQuery } from '../types-dir/checkFileTranslations';
+} from '../types-dir/api/checkFileTranslations';
+import { FileQuery } from '../types-dir/api/checkFileTranslations';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
