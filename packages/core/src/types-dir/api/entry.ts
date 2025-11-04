@@ -7,7 +7,7 @@ import {
   IcuMessage,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   I18nextMessage,
-} from '../types';
+} from '../../types';
 
 /**
  * ActionType is the type of action to perform on the request.

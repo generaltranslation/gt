@@ -2,7 +2,7 @@ import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
-import { Entry, EntryMetadata } from '../types-dir/entry';
+import { Entry, EntryMetadata } from '../types-dir/api/entry';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';

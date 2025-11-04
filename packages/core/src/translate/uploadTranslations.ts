@@ -10,7 +10,7 @@ import {
   FileUpload,
   UploadFilesResponse,
   RequiredUploadFilesOptions,
-} from '../types-dir/uploadFiles';
+} from '../types-dir/api/uploadFiles';
 import { encode } from '../utils/base64';
 
 /**

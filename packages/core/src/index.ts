@@ -81,11 +81,11 @@ import {
   FileQuery,
   FileQueryResult,
   FileTranslationQuery,
-} from './types-dir/checkFileTranslations';
+} from './types-dir/api/checkFileTranslations';
 import {
   CheckTranslationStatusOptions,
   TranslationStatusResult,
-} from './types-dir/translationStatus';
+} from './types-dir/api/translationStatus';
 import _checkTranslationStatus from './translate/checkTranslationStatus';
 import _submitUserEditDiffs, {
   SubmitUserEditDiffsPayload,
@@ -104,9 +104,9 @@ import {
   RequiredUploadFilesOptions,
   UploadFilesOptions,
   UploadFilesResponse,
-} from './types-dir/uploadFiles';
+} from './types-dir/api/uploadFiles';
 import _querySourceFile from './translate/querySourceFile';
-import { ProjectData } from './types-dir/project';
+import { ProjectData } from './types-dir/api/project';
 import _getProjectData from './projects/getProjectData';
 
 // ============================================================ //
