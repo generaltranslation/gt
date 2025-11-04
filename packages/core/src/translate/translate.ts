@@ -7,8 +7,8 @@ import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 
-import { Content } from '../types-dir/content';
-import { EntryMetadata } from '../types-dir/entry';
+import { Content } from '../types-dir/jsx/content';
+import { EntryMetadata } from '../types-dir/api/entry';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';

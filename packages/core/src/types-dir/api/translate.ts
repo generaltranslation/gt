@@ -1,4 +1,4 @@
-import { I18nextMessage, IcuMessage, JsxChildren } from './content';
+import { I18nextMessage, IcuMessage, JsxChildren } from '../jsx/content';
 
 /**
  * TranslationResultReference is used to store the reference for a translation result.

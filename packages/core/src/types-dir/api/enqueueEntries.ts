@@ -1,4 +1,4 @@
-import { DataFormat } from './content';
+import { DataFormat } from '../jsx/content';
 
 export type { Updates } from './enqueueFiles';
 

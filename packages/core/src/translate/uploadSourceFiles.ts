@@ -11,7 +11,7 @@ import {
   FileUpload,
   UploadFilesResponse,
   RequiredUploadFilesOptions,
-} from '../types-dir/uploadFiles';
+} from '../types-dir/api/uploadFiles';
 
 /**
  * @internal

@@ -2,7 +2,8 @@ export type VariableType =
   | 'v' // Variable
   | 'n' // Number
   | 'd' // Date
-  | 'c'; // Currency
+  | 'c' // Currency
+  | 's'; // Static
 
 /**
  * Variables are used to store the variable name and type.

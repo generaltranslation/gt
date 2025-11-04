@@ -8,7 +8,7 @@ import {
   DownloadFileBatchOptions,
   DownloadFileBatchRequest,
   DownloadFileBatchResult,
-} from '../types-dir/downloadFileBatch';
+} from '../types-dir/api/downloadFileBatch';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { decode } from '../utils/base64';
 
