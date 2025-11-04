@@ -1,5 +1,14 @@
 # gt-react
 
+## 10.6.14
+
+### Patch Changes
+
+- [#782](https://github.com/generaltranslation/gt/pull/782) [`155fc2c`](https://github.com/generaltranslation/gt/commit/155fc2c987078b2ffc12c55abb65bb7ff16eb09b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: only throw errors in development for invalid icu strings
+
+- Updated dependencies [[`155fc2c`](https://github.com/generaltranslation/gt/commit/155fc2c987078b2ffc12c55abb65bb7ff16eb09b)]:
+  - @generaltranslation/react-core@1.0.7
+
 ## 10.6.13
 
 ### Patch Changes
