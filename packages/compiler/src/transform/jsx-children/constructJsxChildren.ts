@@ -14,10 +14,7 @@ import { validateTemplateLiteral } from './validation/validateTemplateLiteral';
 import { validateChildrenElement } from './validation/validateChildrenElement';
 import { getCalleeNameFromJsxExpressionParam } from './utils/getCalleeNameFromJsxExpressionParam';
 import { getTrackedVariable } from '../getTrackedVariable';
-import {
-  isReactComponent,
-  isReactFunction,
-} from '../../utils/constants/react/helpers';
+import { isReactComponent } from '../../utils/constants/react/helpers';
 import { REACT_COMPONENTS } from '../../utils/constants/react/constants';
 import { validateChildrenFromArgs } from './validation/validateChildrenFromArgs';
 import { IdObject } from './utils/id';
