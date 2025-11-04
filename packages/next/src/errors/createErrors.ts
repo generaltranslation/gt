@@ -89,7 +89,13 @@ export const invalidLocalesError = (locales: string[]) =>
 export const invalidCanonicalLocalesError = (locales: string[]) =>
   `gt-next Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
 
+export const createInvalidIcuDictionaryEntryError = (id: string) =>
+  `gt-next Error: Invalid ICU string dictionary entry found for id: "${id}"`;
+
 // ---- WARNINGS ---- //
+
+export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
+  `gt-next: Invalid ICU string dictionary entry found for id: "${id}"`;
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>
   `gt-next: Found ${filename} in ${dir.join(' or ')} directory. This is not supported. Please move it to your root directory.`;
@@ -173,3 +179,9 @@ export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
     : `gt-next (plugin): The GT babel compiler is compatible with turbopack or < react@${BABEL_PLUGIN_SUPPORT}. Skipping compiler optimizations.`;
 
 export const disablingCompileTimeHashWarning = `gt-next (plugin): You are disabling compile time hash. This will disable the compiler optimizations.`;
+
+export const createStringRenderWarning = (
+  message: string,
+  id: string | undefined
+) =>
+  `gt-next: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;

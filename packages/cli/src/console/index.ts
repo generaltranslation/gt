@@ -65,6 +65,20 @@ export const warnNonStaticExpressionSync = (
     location
   );
 
+export const warnInvalidIcuSync = (
+  file: string,
+  value: string,
+  error: string,
+  location?: string
+): string =>
+  withWillErrorInNextVersion(
+    withLocation(
+      file,
+      `Found invalid ICU string: ${colorizeContent(value)}. Change the value to a valid ICU to ensure this content is translated. Error message: ${error}.`,
+      location
+    )
+  );
+
 export const warnTemplateLiteralSync = (
   file: string,
   value: string,
@@ -114,6 +128,9 @@ export const withLocation = (
   location?: string
 ): string =>
   `${colorizeFilepath(file)}${location ? ` (${colorizeLine(location)})` : ''}: ${message}`;
+
+const withWillErrorInNextVersion = (message: string): string =>
+  `${message} (This will become an error in the next major version of the CLI.)`;
 
 // Re-export error messages
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;

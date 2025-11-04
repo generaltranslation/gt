@@ -1,5 +1,27 @@
 # @generaltranslation/react-core
 
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [[`3da05a1`](https://github.com/generaltranslation/gt/commit/3da05a12a37a62ace3c7e321aa2fed5a4af52ad9)]:
+  - generaltranslation@7.9.1
+  - @generaltranslation/supported-locales@2.0.22
+
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies [[`93881f1`](https://github.com/generaltranslation/gt/commit/93881f159455a9bbc13d14e7fec9befa60998ba3)]:
+  - generaltranslation@7.9.0
+  - @generaltranslation/supported-locales@2.0.21
+
+## 1.0.7
+
+### Patch Changes
+
+- [#782](https://github.com/generaltranslation/gt/pull/782) [`155fc2c`](https://github.com/generaltranslation/gt/commit/155fc2c987078b2ffc12c55abb65bb7ff16eb09b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: only throw errors in development for invalid icu strings
+
 ## 1.0.6
 
 ### Patch Changes

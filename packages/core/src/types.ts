@@ -1,6 +1,6 @@
 import { LocaleProperties } from './locales/getLocaleProperties';
 
-import { Variable, VariableType } from './types-dir/variables';
+import { Variable, VariableType } from './types-dir/jsx/variables';
 
 import {
   IcuMessage,
@@ -14,9 +14,9 @@ import {
   HTML_CONTENT_PROPS,
   DataFormat,
   Content,
-} from './types-dir/content';
-import { ActionType, EntryMetadata, Entry } from './types-dir/entry';
-export type { TranslationStatusResult } from './types-dir/translationStatus';
+} from './types-dir/jsx/content';
+import { ActionType, EntryMetadata, Entry } from './types-dir/api/entry';
+export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 
 export {
   IcuMessage,
@@ -42,67 +42,48 @@ export type {
   FileTranslationQuery,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
-} from './types-dir/checkFileTranslations';
+} from './types-dir/api/checkFileTranslations';
 export type {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
-} from './types-dir/downloadFileBatch';
+} from './types-dir/api/downloadFileBatch';
 export type {
   FetchTranslationsOptions,
   FetchTranslationsResult,
   RetrievedTranslations,
-} from './types-dir/fetchTranslations';
+} from './types-dir/api/fetchTranslations';
 export type {
   EnqueueFilesOptions,
   EnqueueFilesResult,
   FileToTranslate,
   Updates,
-} from './types-dir/enqueueFiles';
+} from './types-dir/api/enqueueFiles';
 export type {
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-} from './types-dir/enqueueEntries';
-export type { DownloadFileOptions } from './types-dir/downloadFile';
+} from './types-dir/api/enqueueEntries';
+export type { DownloadFileOptions } from './types-dir/api/downloadFile';
 export type {
   FileFormat,
   CompletedFileTranslationData,
-} from './types-dir/file';
-export type { TranslateManyResult } from './types-dir/translateMany';
+} from './types-dir/api/file';
+export type { TranslateManyResult } from './types-dir/api/translateMany';
 export type {
   TranslationResult,
   TranslationError,
   TranslationResultReference,
-} from './types-dir/translate';
+} from './types-dir/api/translate';
 
 /**
  * @deprecated Use {@link Content} instead.
  */
 export type _Content = string | Array<string | Variable>;
 
-/**
- * Transformations are made from a prefix and a suffix.
- */
-export type Transformation =
-  | 'translate-client'
-  | 'translate-server'
-  | 'translate-runtime'
-  | 'variable-variable'
-  | 'variable-currency'
-  | 'variable-datetime'
-  | 'variable-number'
-  | 'plural'
-  | 'branch';
-export type TransformationPrefix =
-  | 'translate'
-  | 'variable'
-  | 'plural'
-  | 'branch'
-  | 'fragment';
-export type VariableTransformationSuffix =
-  | 'variable'
-  | 'number'
-  | 'datetime'
-  | 'currency';
+export type {
+  Transformation,
+  TransformationPrefix,
+  VariableTransformationSuffix,
+} from './types-dir/transformations';
 
 export type Metadata = {
   context?: string;

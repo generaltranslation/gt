@@ -8,7 +8,7 @@ import {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-} from '../types-dir/enqueueEntries';
+} from '../types-dir/api/enqueueEntries';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**

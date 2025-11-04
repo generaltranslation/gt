@@ -5,7 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
-import { FileUploadRef } from 'src/types-dir/uploadFiles';
+import { FileUploadRef } from 'src/types-dir/api/uploadFiles';
 
 export type SetupProjectResult =
   | { setupJobId: string; status: 'queued' }

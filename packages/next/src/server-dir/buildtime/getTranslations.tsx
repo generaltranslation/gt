@@ -22,6 +22,8 @@ import {
   createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
   createInvalidDictionaryTranslationEntryWarning,
+  createInvalidIcuDictionaryEntryError,
+  createInvalidIcuDictionaryEntryWarning,
   createNoEntryFoundWarning,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
@@ -63,6 +65,7 @@ export async function getTranslations(id?: string): Promise<
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
+  const gt = I18NConfig.getGTClass();
 
   let dictionaryTranslations = translationRequired
     ? await I18NConfig.getDictionaryTranslations(locale)
@@ -117,12 +120,47 @@ export async function getTranslations(id?: string): Promise<
     // Validate entry
     if (!entry || typeof entry !== 'string') return '';
 
-    // Render Method
-    const renderContent = (message: string, locales: string[]) => {
-      return formatMessage(message, {
-        locales,
-        variables: options,
-      });
+    // Render method
+    const renderContent = (
+      message: string,
+      locales: string[],
+      fallback?: string
+    ) => {
+      try {
+        // (1) Try to format message
+        return gt.formatMessage(message, {
+          locales,
+          variables: options,
+        });
+      } catch (error) {
+        if (process.env.NODE_ENV === 'production') {
+          console.warn(
+            createInvalidIcuDictionaryEntryWarning(id),
+            'Error: ',
+            error
+          );
+        } else {
+          // (3) If no fallback, throw error (non-prod)
+          if (!fallback)
+            throw new Error(
+              `${createInvalidIcuDictionaryEntryError(id)} Error: ${error}`
+            );
+
+          console.error(
+            createInvalidIcuDictionaryEntryError(id),
+            'Error: ',
+            error
+          );
+        }
+
+        // (2) If format fails, format fallback
+        if (fallback) {
+          return renderContent(fallback, locales);
+        }
+
+        // (3) Fallback to original message (unformatted)
+        return message; // fallback to original message (unformatted)}
+      }
     };
 
     // Check: translation required
@@ -147,10 +185,11 @@ export async function getTranslations(id?: string): Promise<
 
     // Render dictionaryTranslation
     if (dictionaryTranslation) {
-      return formatMessage(dictionaryTranslation, {
-        locales: [locale, defaultLocale],
-        variables: options,
-      });
+      return renderContent(
+        dictionaryTranslation,
+        [locale, defaultLocale],
+        entry
+      );
     }
 
     // ---------- TRANSLATION ---------- //
@@ -179,7 +218,11 @@ export async function getTranslations(id?: string): Promise<
 
     // If a translation already exists
     if (translationEntry)
-      return renderContent(translationEntry as string, [locale, defaultLocale]);
+      return renderContent(
+        translationEntry as string,
+        [locale, defaultLocale],
+        entry
+      );
 
     // If a translation errored
     if (translationEntry === null) return renderContent(entry, [defaultLocale]);

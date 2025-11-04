@@ -1,7 +1,7 @@
 import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
 import * as t from '@babel/types';
-import { isStaticExpression } from '../evaluateJsx.js';
+import { isStaticExpression, isValidIcu } from '../evaluateJsx.js';
 import {
   GT_ATTRIBUTES_WITH_SUGAR,
   MSG_TRANSLATION_HOOK,
@@ -17,6 +17,7 @@ import {
   warnTemplateLiteralSync,
   warnAsyncUseGT,
   warnSyncGetGT,
+  warnInvalidIcuSync,
 } from '../../../console/index.js';
 import generateModule from '@babel/generator';
 import traverseModule from '@babel/traverse';
@@ -69,9 +70,11 @@ function processTranslationCall(
   tPath: NodePath,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   file: string,
   ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean
+  ignoreDynamicContent: boolean,
+  ignoreInvalidIcu: boolean
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -84,6 +87,22 @@ function processTranslationCall(
     ) {
       const source =
         arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
+
+      // Validate is ICU
+      if (!ignoreInvalidIcu) {
+        const { isValid, error } = isValidIcu(source);
+        if (!isValid) {
+          warnings.add(
+            warnInvalidIcuSync(
+              file,
+              source,
+              error ?? 'Unknown error',
+              `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+            )
+          );
+          return;
+        }
+      }
 
       // get metadata and id from options
       const options = tPath.parent.arguments[1];
@@ -257,10 +276,12 @@ function handleFunctionCall(
   tPath: NodePath,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   file: string,
   importMap: Map<string, string>,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
+  ignoreInvalidIcu: boolean,
   parsingOptions: ParsingConfigOptions
 ): void {
   if (
@@ -272,9 +293,11 @@ function handleFunctionCall(
       tPath,
       updates,
       errors,
+      warnings,
       file,
       ignoreAdditionalData,
-      ignoreDynamicContent
+      ignoreDynamicContent,
+      ignoreInvalidIcu
     );
   } else if (
     tPath.parent.type === 'CallExpression' &&
@@ -297,9 +320,11 @@ function handleFunctionCall(
           functionPath,
           updates,
           errors,
+          warnings,
           file,
           ignoreAdditionalData,
           ignoreDynamicContent,
+          ignoreInvalidIcu,
           parsingOptions
         );
       }
@@ -319,9 +344,11 @@ function handleFunctionCall(
           initPath,
           updates,
           errors,
+          warnings,
           file,
           ignoreAdditionalData,
           ignoreDynamicContent,
+          ignoreInvalidIcu,
           parsingOptions
         );
       }
@@ -341,8 +368,10 @@ function handleFunctionCall(
             argIndex,
             updates,
             errors,
+            warnings,
             ignoreAdditionalData,
             ignoreDynamicContent,
+            ignoreInvalidIcu,
             parsingOptions
           );
         }
@@ -363,9 +392,11 @@ function processFunctionIfMatches(
   functionPath: NodePath,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   filePath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
+  ignoreInvalidIcu: boolean,
   parsingOptions: ParsingConfigOptions
 ): void {
   if (functionNode.params.length > argIndex) {
@@ -378,9 +409,11 @@ function processFunctionIfMatches(
         paramName,
         updates,
         errors,
+        warnings,
         filePath,
         ignoreAdditionalData,
         ignoreDynamicContent,
+        ignoreInvalidIcu,
         parsingOptions
       );
     }
@@ -400,9 +433,11 @@ function findFunctionParameterUsage(
   parameterName: string,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   file: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
+  ignoreInvalidIcu: boolean,
   parsingOptions: ParsingConfigOptions
 ): void {
   // Look for the function body and find all usages of the parameter
@@ -429,10 +464,12 @@ function findFunctionParameterUsage(
             refPath,
             updates,
             errors,
+            warnings,
             file,
             importMap,
             ignoreAdditionalData,
             ignoreDynamicContent,
+            ignoreInvalidIcu,
             parsingOptions
           );
         });
@@ -576,8 +613,10 @@ function processFunctionInFile(
   argIndex: number,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
+  ignoreInvalidIcu: boolean,
   parsingOptions: ParsingConfigOptions,
   visited: Set<string> = new Set()
 ): void {
@@ -615,9 +654,11 @@ function processFunctionInFile(
             path,
             updates,
             errors,
+            warnings,
             filePath,
             ignoreAdditionalData,
             ignoreDynamicContent,
+            ignoreInvalidIcu,
             parsingOptions
           );
         }
@@ -640,9 +681,11 @@ function processFunctionInFile(
             initPath,
             updates,
             errors,
+            warnings,
             filePath,
             ignoreAdditionalData,
             ignoreDynamicContent,
+            ignoreInvalidIcu,
             parsingOptions
           );
         }
@@ -688,8 +731,10 @@ function processFunctionInFile(
             argIndex,
             updates,
             errors,
+            warnings,
             ignoreAdditionalData,
             ignoreDynamicContent,
+            ignoreInvalidIcu,
             parsingOptions,
             visited
           );
@@ -725,6 +770,7 @@ export function parseStrings(
   path: NodePath,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   file: string,
   parsingOptions: ParsingConfigOptions
 ): void {
@@ -738,6 +784,7 @@ export function parseStrings(
     if (originalName === MSG_TRANSLATION_HOOK) {
       const ignoreAdditionalData = false;
       const ignoreDynamicContent = false;
+      const ignoreInvalidIcu = false;
 
       // Check if this is a direct call to msg('string')
       if (
@@ -748,9 +795,11 @@ export function parseStrings(
           refPath,
           updates,
           errors,
+          warnings,
           file,
           ignoreAdditionalData,
-          ignoreDynamicContent
+          ignoreDynamicContent,
+          ignoreInvalidIcu
         );
       }
       continue;
@@ -795,6 +844,7 @@ export function parseStrings(
         originalName === INLINE_MESSAGE_HOOK_ASYNC;
       const ignoreAdditionalData = isMessageHook;
       const ignoreDynamicContent = isMessageHook;
+      const ignoreInvalidIcu = isMessageHook;
 
       const effectiveParent =
         parentPath?.node.type === 'AwaitExpression'
@@ -826,10 +876,12 @@ export function parseStrings(
               tPath,
               updates,
               errors,
+              warnings,
               file,
               importMap,
               ignoreAdditionalData,
               ignoreDynamicContent,
+              ignoreInvalidIcu,
               parsingOptions
             );
           }

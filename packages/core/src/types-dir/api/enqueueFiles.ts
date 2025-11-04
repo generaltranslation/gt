@@ -1,4 +1,4 @@
-import { DataFormat, JsxChildren } from './content';
+import { DataFormat, JsxChildren } from '../jsx/content';
 import { CompletedFileTranslationData, FileFormat, FileMetadata } from './file';
 
 // Types for the enqueueTranslationEntries function

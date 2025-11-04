@@ -3,6 +3,7 @@ import { hashSource } from 'generaltranslation/id';
 import { InlineTranslationOptions } from '../types-dir/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { encode, decode } from 'generaltranslation/internal';
+import { msgStringFormatWarning } from '../errors-dir/createErrors';
 
 export function icuMessageContainsVariables(message: string): boolean {
   // ICU uses apostrophes as escape characters
@@ -137,10 +138,15 @@ export function msg<T extends string>(
     icuMessageContainsVariables(message) &&
     Object.keys(options || {}).length > 2 // $_hash and $_source are not variables
   ) {
-    interpolatedString = formatMessage(message, {
-      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
-      variables: options,
-    });
+    try {
+      interpolatedString = formatMessage(message, {
+        locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+        variables: options,
+      });
+    } catch (error) {
+      console.warn(msgStringFormatWarning(message), 'Error: ', error);
+      return message;
+    }
   }
 
   // get the options encoding

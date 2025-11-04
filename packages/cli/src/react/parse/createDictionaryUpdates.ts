@@ -9,9 +9,12 @@ import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
 import { logError } from '../../console/logging.js';
 import { randomUUID } from 'node:crypto';
+import { isValidIcu } from '../jsx/evaluateJsx.js';
+import { warnInvalidIcuSync } from '../../console/index.js';
 
 export async function createDictionaryUpdates(
   dictionaryPath: string,
+  warnings: string[],
   esbuildConfig?: BuildOptions
 ): Promise<Updates> {
   let dictionary;
@@ -60,6 +63,15 @@ export async function createDictionaryUpdates(
       entry,
       metadata: props, // context, etc.
     } = getEntryAndMetadata(dictionary[id]);
+
+    // Validate ICU
+    const { isValid, error } = isValidIcu(entry);
+    if (!isValid) {
+      warnings.push(
+        warnInvalidIcuSync(dictionaryPath, entry, error ?? 'Unknown error')
+      );
+      continue;
+    }
 
     // Map $context to context
     const context = props?.$context;

@@ -11,13 +11,16 @@ import {
 import getEntryAndMetadata from '../../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
+  createInvalidIcuDictionaryEntryError,
+  createInvalidIcuDictionaryEntryWarning,
   createNoEntryFoundWarning,
 } from '../../../errors-dir/createErrors';
 import { hashSource } from 'generaltranslation/id';
-import { formatMessage } from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
+  gt: GT,
   dictionary: Dictionary | undefined,
   dictionaryTranslations: Dictionary | undefined,
   translations: Translations | null,
@@ -26,7 +29,8 @@ export default function useCreateInternalUseTranslationsFunction(
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
   developmentApiEnabled: boolean,
-  registerIcuForTranslation: TranslateIcuCallback
+  registerIcuForTranslation: TranslateIcuCallback,
+  environment: 'development' | 'production' | 'test'
 ) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
@@ -59,11 +63,46 @@ export default function useCreateInternalUseTranslationsFunction(
       if (!entry || typeof entry !== 'string') return '';
 
       // Render method
-      const renderMessage = (message: string, locales: string[]) => {
-        return formatMessage(message, {
-          locales,
-          variables: options,
-        });
+      const renderMessage = (
+        message: string,
+        locales: string[],
+        fallback?: string
+      ) => {
+        try {
+          // (1) Try to format message
+          return gt.formatMessage(message, {
+            locales,
+            variables: options,
+          });
+        } catch (error) {
+          if (environment === 'production') {
+            console.warn(
+              createInvalidIcuDictionaryEntryWarning(id),
+              'Error: ',
+              error
+            );
+          } else {
+            // (3) If no fallback, throw error (non-prod)
+            if (!fallback)
+              throw new Error(
+                `${createInvalidIcuDictionaryEntryError(id)} Error: ${error}`
+              );
+
+            console.error(
+              createInvalidIcuDictionaryEntryError(id),
+              'Error: ',
+              error
+            );
+          }
+
+          // (2) If format fails, format fallback
+          if (fallback) {
+            return renderMessage(fallback, locales);
+          }
+
+          // (3) Fallback to original message (unformatted)
+          return message; // fallback to original message (unformatted)}
+        }
       };
 
       // Check: translation not required
@@ -100,10 +139,11 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check translation successful
       if (translationEntry) {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]);
+        return renderMessage(
+          translationEntry as string,
+          [locale, defaultLocale],
+          entry
+        );
       }
 
       if (translationEntry === null) {

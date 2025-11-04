@@ -5,7 +5,7 @@ import validateResponse from '../translate/utils/validateResponse';
 import handleFetchError from '../translate/utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import generateRequestHeaders from '../translate/utils/generateRequestHeaders';
-import { ProjectData } from '../types-dir/project';
+import { ProjectData } from '../types-dir/api/project';
 
 /**
  * @internal

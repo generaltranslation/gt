@@ -9,11 +9,20 @@ import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import { GT } from 'generaltranslation';
 import {
   createStringRenderError,
+  createStringRenderWarning,
   createStringTranslationError,
 } from '../../../errors-dir/createErrors';
 import { decodeMsg, decodeOptions } from '../../../messages/messages';
 
 type MReturnType<T> = T extends string ? string : T;
+
+type RenderMessageParams = {
+  message: string;
+  variables: Record<string, any> | undefined;
+  locales: string[];
+  fallback?: string;
+  id?: string;
+};
 
 export default function useCreateInternalUseGTFunction({
   gt,
@@ -23,6 +32,7 @@ export default function useCreateInternalUseGTFunction({
   translationRequired,
   developmentApiEnabled,
   registerIcuForTranslation,
+  environment,
 }: {
   gt: GT;
   translations: Translations | null;
@@ -31,6 +41,7 @@ export default function useCreateInternalUseGTFunction({
   translationRequired: boolean;
   developmentApiEnabled: boolean;
   registerIcuForTranslation: TranslateIcuCallback;
+  environment: 'development' | 'production' | 'test';
 }): {
   _tFunction: (
     message: string,
@@ -47,6 +58,55 @@ export default function useCreateInternalUseGTFunction({
 } {
   // --------- HELPER FUNCTIONS ------- //
 
+  /**
+   * @description Format message and fallback:
+   * (1) format message
+   * (2) format fallback
+   * (3)
+   *   - PRODUCTION: return fallback (unformatted)
+   *   - DEVELOPMENT: throw error
+   */
+  function renderMessageHelper({
+    message,
+    variables,
+    locales,
+    fallback,
+    id,
+  }: RenderMessageParams) {
+    try {
+      // (1) Try to format message
+      return gt.formatMessage(message, {
+        locales,
+        variables,
+      });
+    } catch (error) {
+      if (environment === 'production') {
+        console.warn(createStringRenderWarning(message, id), 'Error: ', error);
+      } else {
+        // (3) If no fallback, throw error (non-prod)
+        if (!fallback)
+          throw new Error(
+            `${createStringRenderError(message, id)} Error: ${error}`
+          );
+
+        console.error(createStringRenderError(message, id), 'Error: ', error);
+      }
+
+      // (2) If format fails, format fallback
+      if (fallback) {
+        return renderMessageHelper({
+          message: fallback,
+          locales,
+          variables,
+          id,
+        });
+      }
+
+      // (3) Fallback to original message (unformatted)
+      return message; // fallback to original message (unformatted)
+    }
+  }
+
   function initializeT(
     message: string,
     options: Record<string, any> & {
@@ -60,10 +120,17 @@ export default function useCreateInternalUseGTFunction({
     const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
 
     // Update renderContent to use actual variables
-    const renderMessage = (msg: string, locales: string[]) => {
-      return gt.formatMessage(msg, {
+    const renderMessage = (
+      msg: string,
+      locales: string[],
+      fallback?: string
+    ) => {
+      return renderMessageHelper({
+        message: msg,
         locales,
         variables,
+        id,
+        fallback,
       });
     };
 
@@ -191,27 +258,20 @@ export default function useCreateInternalUseGTFunction({
 
     // If a translation already exists
     if (translationEntry) {
-      try {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]);
-      } catch (error) {
-        console.error(createStringRenderError(message, id), 'Error: ', error);
-        return renderMessage(message, [defaultLocale]);
-      }
+      return renderMessage(
+        translationEntry as string,
+        [locale, defaultLocale],
+        message
+      );
     }
 
     if (typeof preloadedTranslations?.[hash] !== 'undefined') {
       if (preloadedTranslations?.[hash]) {
-        try {
-          return renderMessage(preloadedTranslations?.[hash] as string, [
-            locale,
-            defaultLocale,
-          ]);
-        } catch (error) {
-          console.error(createStringRenderError(message, id), 'Error: ', error);
-        }
+        return renderMessage(
+          preloadedTranslations?.[hash] as string,
+          [locale, defaultLocale],
+          message
+        );
       }
       return renderMessage(message, [defaultLocale]);
     }
@@ -253,23 +313,28 @@ export default function useCreateInternalUseGTFunction({
 
     // Disaggregate options and construct render function
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
     const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
       decodedOptions;
 
-    const renderMessage = (msg: string, locales: string[]) => {
-      return gt.formatMessage(msg, {
+    const renderMessage = (
+      msg: string,
+      locales: string[],
+      fallback?: string
+    ) => {
+      return renderMessageHelper({
+        message: msg,
         locales,
-        variables: { ...decodedVariables, ...options },
+        variables: decodedVariables,
+        fallback,
       });
     };
 
     // Return if default locale
-
     if (!translationRequired)
       return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
 
     // Check translation entry
-
     const translationEntry = translations?.[decodedOptions.$_hash];
 
     // Check translations
@@ -279,19 +344,11 @@ export default function useCreateInternalUseGTFunction({
 
     // If a translation already exists
     if (translationEntry) {
-      try {
-        return renderMessage(translationEntry as string, [
-          locale,
-          defaultLocale,
-        ]) as MReturnType<T>;
-      } catch (error) {
-        console.error(
-          createStringRenderError($_source, decodeMsg(encodedMsg)),
-          'Error: ',
-          error
-        );
-        return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
-      }
+      return renderMessage(
+        translationEntry as string,
+        [locale, defaultLocale],
+        $_source
+      ) as MReturnType<T>;
     }
 
     if (!developmentApiEnabled) {
@@ -303,18 +360,11 @@ export default function useCreateInternalUseGTFunction({
 
     if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
       if (preloadedTranslations?.[$_hash]) {
-        try {
-          return renderMessage(preloadedTranslations?.[$_hash] as string, [
-            locale,
-            defaultLocale,
-          ]) as MReturnType<T>;
-        } catch (error) {
-          console.error(
-            createStringRenderError($_source, decodeMsg(encodedMsg)),
-            'Error: ',
-            error
-          );
-        }
+        return renderMessage(
+          preloadedTranslations?.[$_hash] as string,
+          [locale, defaultLocale],
+          $_source
+        ) as MReturnType<T>;
       }
       return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }

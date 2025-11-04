@@ -163,11 +163,13 @@ export default function ClientProvider({
     translationRequired,
     developmentApiEnabled,
     registerIcuForTranslation,
+    environment,
   });
 
   // ---------- DICTIONARY FUNCTIONS ---------- //
 
   const _dictionaryFunction = useCreateInternalUseTranslationsFunction(
+    gt,
     dictionary,
     dictionaryTranslations,
     translations,
@@ -176,7 +178,8 @@ export default function ClientProvider({
     translationRequired,
     dialectTranslationRequired,
     developmentApiEnabled,
-    registerIcuForTranslation
+    registerIcuForTranslation,
+    environment
   );
 
   const _dictionaryObjFunction = useCreateInternalUseTranslationsObjFunction(
