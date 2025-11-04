@@ -35,6 +35,7 @@ export default async function _enqueueFiles(
 
   const body = {
     files: files.map((f) => ({
+      branchId: f.branchId,
       fileId: f.fileId,
       versionId: f.versionId,
       fileName: f.fileName,

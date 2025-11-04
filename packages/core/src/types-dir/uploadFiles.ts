@@ -2,6 +2,7 @@ import { DataFormat } from './content';
 import { FileFormat } from './file';
 
 export type FileUpload = {
+  branchId?: string; // if not provided, will use the default branch
   content: string;
   fileName: string;
   fileFormat: FileFormat;
@@ -12,6 +13,7 @@ export type FileUpload = {
 };
 
 export type FileUploadRef = {
+  branchId: string;
   fileId: string;
   versionId: string;
   fileName: string;
