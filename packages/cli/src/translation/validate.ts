@@ -9,7 +9,7 @@ import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 
 export async function validateProject(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next',
+  pkg: 'gt-react' | 'gt-next' | 'gt-react-native',
   files?: string[]
 ): Promise<void> {
   if (files && files.length > 0) {

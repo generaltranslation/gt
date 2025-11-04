@@ -285,7 +285,7 @@ export class ReactCLI extends BaseCLI {
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
 
-    const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
+    const pkg = this.library === 'gt-next' ? 'gt-next' : this.library === 'gt-react-native' ? 'gt-react-native' : 'gt-react';
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates
