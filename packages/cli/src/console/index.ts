@@ -38,6 +38,18 @@ export const warnInvalidReturnSync = (
     location
   );
 
+// TODO: this is temporary until we handle implicit returns
+export const warnMissingReturnSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does have an explicit return statement. Static functions must have an explicit return statment.`,
+    location
+  );
+
 export const warnHasUnwrappedExpressionSync = (
   file: string,
   unwrappedExpressions: string[],
@@ -151,6 +163,28 @@ export const warnInvalidStaticChildSync = (
   withLocation(
     file,
     'Found invalid <Static> invocation. Children must be an expression container with a function invocation. Callee must be a single identifier. (Example: <T> <Static> {getSubject()} </Static> </T>)',
+    location
+  );
+
+export const warnFunctionNotFoundSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} definition could not be resolved. This might affect translation resolution for this ${colorizeComponent('<T>')} component.`,
+    location
+  );
+
+export const warnDuplicateFunctionDefinitionSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} is defined multiple times. Only the first definition will be used.`,
     location
   );
 

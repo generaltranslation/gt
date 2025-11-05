@@ -3,7 +3,7 @@ import { Options, Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
 import { hashSource } from 'generaltranslation/id';
-import { parseTranslationComponent } from '../jsx/utils/parseJsx.js';
+import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logError } from '../../console/logging.js';

@@ -1,4 +1,4 @@
-import { Updates } from '../../../types/index.js';
+import { Updates } from '../../../../types/index.js';
 
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
@@ -7,38 +7,46 @@ const generate = generateModule.default || generateModule;
 import * as t from '@babel/types';
 import fs from 'node:fs';
 import { parse } from '@babel/parser';
-import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxTree.js';
+import addGTIdentifierToSyntaxTree from '../../../data-_gt/addGTIdentifierToSyntaxTree.js';
 import {
   warnHasUnwrappedExpressionSync,
-  warnVariablePropSync,
   warnNestedTComponent,
   warnInvalidStaticChildSync,
   warnInvalidReturnSync,
-} from '../../../console/index.js';
+  warnFunctionNotFoundSync,
+  warnMissingReturnSync,
+  warnDuplicateFunctionDefinitionSync,
+} from '../../../../console/index.js';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
-import { isStaticExpression } from '../evaluateJsx.js';
+import { handleChildrenWhitespace } from '../../trimJsxStringChildren.js';
+import { isStaticExpression } from '../../evaluateJsx.js';
 import {
-  GT_ATTRIBUTES,
-  mapAttributeName,
   STATIC_COMPONENT,
   TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
-} from './constants.js';
+} from '../constants.js';
 import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
 import { NodePath } from '@babel/traverse';
-import { ParsingConfigOptions } from '../../../types/parsing.js';
-import { resolveImportPath } from './resolveImportPath.js';
+import { ParsingConfigOptions } from '../../../../types/parsing.js';
+import { resolveImportPath } from '../resolveImportPath.js';
 
 // Handle CommonJS/ESM interop
 import traverseModule from '@babel/traverse';
-import { buildImportMap } from './buildImportMap.js';
-import { getPathsAndAliases } from './getPathsAndAliases.js';
+import { buildImportMap } from '../buildImportMap.js';
+import { getPathsAndAliases } from '../getPathsAndAliases.js';
+import { parseTProps } from './parseTProps.js';
 const traverse = traverseModule.default || traverseModule;
+
+// TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
+
+type MultiplicationNode = {
+  type: 'multiplication';
+  branches: JSXTreeResult[];
+};
 
 type JsxTree = {
   expression?: boolean;
-  result?: string;
+  result?: string | MultiplicationNode | null;
   type?: string;
   props?: {
     children?: any;
@@ -160,17 +168,7 @@ export function buildJSXTree({
   scopeNode: NodePath;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}):
-  | {
-      expression?: boolean;
-      result?: string;
-      type?: string;
-      props?: {
-        children?: any;
-      };
-    }
-  | string
-  | null {
+}): JSXTreeResult {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
@@ -228,7 +226,7 @@ export function buildJSXTree({
     // Convert from alias to original name
     const componentType = importAliases[typeName ?? ''];
 
-    if (componentType === 'T' && insideT) {
+    if (componentType === TRANSLATION_COMPONENT && insideT) {
       // Add warning: Nested <T> components are allowed, but they are advised against
       warnings.add(
         warnNestedTComponent(
@@ -307,7 +305,7 @@ export function buildJSXTree({
 
     if (elementIsVariable) {
       if (componentType === STATIC_COMPONENT) {
-        return resolveStaticChildren({
+        const staticComponentChildren = resolveStaticComponentChildren({
           importAliases,
           scopeNode,
           children: element.children,
@@ -321,6 +319,13 @@ export function buildJSXTree({
           importedFunctionsMap,
           pkg,
         });
+        return {
+          type: componentType,
+          props: {
+            ...props,
+            children: staticComponentChildren,
+          },
+        };
       }
 
       // I do not see why this is being called, i am disabling this for now:
@@ -459,14 +464,12 @@ export function parseJSXElement({
   const name = openingElement.name;
 
   // Only proceed if it's <T> ...
+  // TODO: i don't think this condition is needed anymore
   if (
     !(name.type === 'JSXIdentifier' && originalName === TRANSLATION_COMPONENT)
   ) {
     return;
   }
-  console.log(
-    `<${originalName}> component found at ${file}:${node.loc?.start?.line}:${node.loc?.start?.column}`
-  );
 
   const componentErrors: string[] = [];
   const componentWarnings: Set<string> = new Set();
@@ -499,6 +502,11 @@ export function parseJSXElement({
     parsingOptions,
     importedFunctionsMap,
   });
+
+  console.log('treeResult', JSON.stringify(treeResult, null, 2));
+  if (1 === 1) {
+    throw new Error('temp');
+  }
 
   let jsxTree = undefined;
   if (treeResult && typeof treeResult === 'object') {
@@ -549,62 +557,6 @@ export function parseJSXElement({
   });
 }
 
-// Parse the props of a <T> component
-function parseTProps({
-  openingElement,
-  metadata,
-  componentErrors,
-  file,
-}: {
-  openingElement: t.JSXOpeningElement;
-  metadata: Metadata;
-  componentErrors: string[];
-  file: string;
-}) {
-  openingElement.attributes.forEach((attr) => {
-    if (!t.isJSXAttribute(attr)) return;
-    const attrName = attr.name.name;
-    if (typeof attrName !== 'string') return;
-
-    if (attr.value) {
-      // If it's a plain string literal like id="hello"
-      if (t.isStringLiteral(attr.value)) {
-        metadata[attrName] = attr.value.value;
-      }
-      // If it's an expression container like id={"hello"}, id={someVar}, etc.
-      else if (t.isJSXExpressionContainer(attr.value)) {
-        const expr = attr.value.expression;
-        const code = generate(expr).code;
-
-        // Only check for static expressions on id and context props
-        if (GT_ATTRIBUTES.includes(attrName)) {
-          const staticAnalysis = isStaticExpression(expr);
-          if (!staticAnalysis.isStatic) {
-            componentErrors.push(
-              warnVariablePropSync(
-                file,
-                attrName,
-                code,
-                `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
-              )
-            );
-          }
-          // Use the static value if available
-          if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
-            metadata[mapAttributeName(attrName)] = staticAnalysis.value;
-          } else {
-            // Only store the code if we couldn't extract a static value
-            metadata[attrName] = code;
-          }
-        } else {
-          // For other attributes that aren't id or context
-          metadata[attrName] = code;
-        }
-      }
-    }
-  });
-}
-
 /**
  * Resolves an invocation inside of a <Static> component. It will resolve the function, and build
  * a jsx tree for each return inside of the function definition.
@@ -622,7 +574,7 @@ function parseTProps({
  *   {getSubject()}
  * </Static>
  */
-function resolveStaticChildren({
+function resolveStaticComponentChildren({
   importAliases,
   scopeNode,
   children,
@@ -661,9 +613,10 @@ function resolveStaticChildren({
       children: [],
     },
   };
+  let found = false;
 
   for (const child of children) {
-    // Ignore whitespace
+    // Ignore whitespace outside of jsx container
     if (t.isJSXText(child) && child.value.trim() === '') {
       result.props.children.push(child.value);
       continue;
@@ -677,7 +630,8 @@ function resolveStaticChildren({
         (t.isAwaitExpression(child.expression) &&
           t.isCallExpression(child.expression.argument) &&
           t.isIdentifier(child.expression.argument.callee))
-      )
+      ) ||
+      found // There can only be one invocation inside of a <Static> component
     ) {
       errors.push(
         warnInvalidStaticChildSync(
@@ -685,7 +639,7 @@ function resolveStaticChildren({
           `${child.loc?.start?.line}:${child.loc?.start?.column}`
         )
       );
-      return null;
+      continue;
     }
 
     // Get callee and binding from scope
@@ -696,9 +650,20 @@ function resolveStaticChildren({
     ) as t.Identifier;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
 
-    if (calleeBinding) {
-      // Function is found locally
-      resolveStaticInvocation({
+    if (!calleeBinding) {
+      warnFunctionNotFoundSync(
+        file,
+        callee.name,
+        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+      );
+      return null;
+    }
+    // Set found to true
+    found = true;
+
+    // Function is found locally, return wrapped in an expression
+    const staticFunctionInvocation = resolveStaticFunctionInvocationFromBinding(
+      {
         importAliases,
         calleeBinding,
         callee,
@@ -711,18 +676,18 @@ function resolveStaticChildren({
         pkg,
         parsingOptions,
         importedFunctionsMap,
-      });
-    } else {
-      console.log(
-        `[resolveStaticInvocation] function ${callee.name} is not found in the scope or imported`
-      );
-    }
+      }
+    );
+    return {
+      expression: true,
+      result: staticFunctionInvocation,
+    };
   }
 
   return null;
 }
 
-function resolveStaticInvocation({
+function resolveStaticFunctionInvocationFromBinding({
   importAliases,
   calleeBinding,
   callee,
@@ -748,13 +713,10 @@ function resolveStaticInvocation({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): void {
+}): MultiplicationNode | null {
   if (calleeBinding.path.isFunctionDeclaration()) {
     // Handle function declarations: function getSubject() { ... }
-    console.log(
-      `function ${callee.name} is a function declaration at ${file}:${calleeBinding.path.node.loc?.start?.line}:${calleeBinding.path.node.loc?.start?.column}`
-    );
-    processFunctionDeclarationNode({
+    return processFunctionDeclarationNodePath({
       importAliases,
       functionName: callee.name,
       path: calleeBinding.path,
@@ -775,10 +737,7 @@ function resolveStaticInvocation({
       t.isFunctionExpression(calleeBinding.path.node.init))
   ) {
     // Handle arrow functions assigned to variables: const getData = (t) => {...}
-    console.log(
-      `function ${callee.name} is a variable declaration at ${file}:${calleeBinding.path.node.loc?.start?.line}:${calleeBinding.path.node.loc?.start?.column}`
-    );
-    processVariableDeclarationNode({
+    return processVariableDeclarationNodePath({
       importAliases,
       functionName: callee.name,
       path: calleeBinding.path,
@@ -801,27 +760,29 @@ function resolveStaticInvocation({
       parsingOptions,
       resolveImportPathCache
     );
-    if (!resolvedPath) {
-      console.log(`function ${callee.name} could not be resolved`);
-      return;
+    if (resolvedPath) {
+      return processFunctionInFile({
+        filePath: resolvedPath,
+        functionName: callee.name,
+        visited,
+        unwrappedExpressions,
+        updates,
+        errors,
+        warnings,
+        file,
+        parsingOptions,
+        pkg,
+      });
     }
-    processFunctionInFile({
-      filePath: resolvedPath,
-      functionName: callee.name,
-      visited,
-      unwrappedExpressions,
-      updates,
-      errors,
-      warnings,
-      file,
-      parsingOptions,
-      pkg,
-    });
-  } else {
-    console.log(
-      `function ${callee.name} is not found in the scope or imported at ${file}:${callee.loc?.start?.line}:${callee.loc?.start?.column}`
-    );
   }
+  warnings.add(
+    warnFunctionNotFoundSync(
+      file,
+      callee.name,
+      `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+    )
+  );
+  return null;
 }
 
 /**
@@ -857,19 +818,18 @@ function processFunctionInFile({
   file: string;
   unwrappedExpressions: string[];
   pkg: 'gt-react' | 'gt-next';
-}): void {
+}): MultiplicationNode | null {
   // Check cache first to avoid redundant parsing
   const cacheKey = `${filePath}::${functionName}`;
   if (processFunctionCache.has(cacheKey)) {
-    return;
+    return null;
   }
 
   // Prevent infinite loops from circular re-exports
-  if (visited.has(filePath)) {
-    return;
-  }
+  if (visited.has(filePath)) return null;
   visited.add(filePath);
 
+  let result: MultiplicationNode | null | undefined = undefined;
   try {
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
@@ -887,15 +847,24 @@ function processFunctionInFile({
       },
     });
 
-    let found = false;
     const reExports: string[] = [];
+
+    const warnDuplicateFuncDef = (path: NodePath) => {
+      warnings.add(
+        warnDuplicateFunctionDefinitionSync(
+          file,
+          functionName,
+          `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
+        )
+      );
+    };
 
     traverse(ast, {
       // Handle function declarations: function getInfo() { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName) {
-          found = true;
-          processFunctionDeclarationNode({
+          if (result !== undefined) return warnDuplicateFuncDef(path);
+          result = processFunctionDeclarationNodePath({
             importAliases,
             functionName,
             path,
@@ -913,7 +882,6 @@ function processFunctionInFile({
       },
       // Handle variable declarations: const getInfo = () => { ... }
       VariableDeclarator(path) {
-        console.log('var declaration found');
         if (
           t.isIdentifier(path.node.id) &&
           path.node.id.name === functionName &&
@@ -921,8 +889,8 @@ function processFunctionInFile({
           (t.isArrowFunctionExpression(path.node.init) ||
             t.isFunctionExpression(path.node.init))
         ) {
-          found = true;
-          processVariableDeclarationNode({
+          if (result !== undefined) return warnDuplicateFuncDef(path);
+          result = processVariableDeclarationNodePath({
             importAliases,
             functionName,
             path,
@@ -940,14 +908,12 @@ function processFunctionInFile({
       },
       // Collect re-exports: export * from './other'
       ExportAllDeclaration(path) {
-        console.log('export * found');
         if (t.isStringLiteral(path.node.source)) {
           reExports.push(path.node.source.value);
         }
       },
       // Collect named re-exports: export { foo } from './other'
       ExportNamedDeclaration(path) {
-        console.log('export { foo } found');
         if (path.node.source && t.isStringLiteral(path.node.source)) {
           // Check if this export includes our function
           const exportsFunction = path.node.specifiers.some((spec) => {
@@ -967,7 +933,7 @@ function processFunctionInFile({
     });
 
     // If function not found, follow re-exports
-    if (!found && reExports.length > 0) {
+    if (result === undefined && reExports.length > 0) {
       for (const reExportPath of reExports) {
         const resolvedPath = resolveImportPath(
           filePath,
@@ -976,7 +942,7 @@ function processFunctionInFile({
           resolveImportPathCache
         );
         if (resolvedPath) {
-          processFunctionInFile({
+          result = processFunctionInFile({
             filePath: resolvedPath,
             functionName,
             unwrappedExpressions,
@@ -993,20 +959,21 @@ function processFunctionInFile({
     }
 
     // Mark this function search as processed in the cache
-    processFunctionCache.set(cacheKey, found);
+    processFunctionCache.set(cacheKey, result !== undefined);
   } catch {
     console.log(`function ${functionName} could not be parsed at ${filePath}`);
     // Silently skip files that can't be parsed or accessed
     // Still mark as processed to avoid retrying failed parses
     processFunctionCache.set(cacheKey, false);
   }
+  return result !== undefined ? result : null;
 }
 
 /**
  * Process a function declaration
  * function getInfo() { ... }
  */
-function processFunctionDeclarationNode({
+function processFunctionDeclarationNodePath({
   functionName,
   path,
   importAliases,
@@ -1032,8 +999,12 @@ function processFunctionDeclarationNode({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): void {
+}): MultiplicationNode | null {
   let functionDepth = 0;
+  const result: MultiplicationNode = {
+    type: 'multiplication',
+    branches: [],
+  };
   path.traverse({
     'FunctionDeclaration|FunctionExpression|ArrowFunctionExpression|Method|ObjectMethod':
       {
@@ -1047,31 +1018,38 @@ function processFunctionDeclarationNode({
     ReturnStatement(returnPath) {
       // Requires depth 0
       if (functionDepth !== 0) return;
-      console.log('Found return!');
-      processReturnStatement({
-        unwrappedExpressions,
-        functionName,
-        pkg,
-        scopeNode: returnPath,
-        node: returnPath.node.argument,
-        importAliases,
-        visited,
-        updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
-        importedFunctionsMap,
-      });
+      result.branches.push(
+        processReturnStatement({
+          unwrappedExpressions,
+          functionName,
+          pkg,
+          scopeNode: returnPath,
+          node: returnPath.node.argument,
+          importAliases,
+          visited,
+          updates,
+          errors,
+          warnings,
+          file,
+          parsingOptions,
+          importedFunctionsMap,
+        })
+      );
     },
   });
+  if (result.branches.length === 0) {
+    return null;
+  }
+  return result;
 }
 
 /**
  * Process a variable declaration of a function
  * const getInfo = () => { ... }
+ *
+ * TODO: handle no return eg const getInfo = () => "value"
  */
-function processVariableDeclarationNode({
+function processVariableDeclarationNodePath({
   functionName,
   path,
   importAliases,
@@ -1097,8 +1075,12 @@ function processVariableDeclarationNode({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): void {
+}): MultiplicationNode | null {
   let functionDepth = 0;
+  const result: MultiplicationNode = {
+    type: 'multiplication',
+    branches: [],
+  };
   path.traverse({
     'FunctionDeclaration|FunctionExpression|ArrowFunctionExpression|Method|ObjectMethod':
       {
@@ -1112,24 +1094,36 @@ function processVariableDeclarationNode({
     ReturnStatement(returnPath) {
       // Requires two entries
       if (functionDepth === 2) return;
-      console.log('Found return!');
-      processReturnStatement({
-        unwrappedExpressions,
-        functionName,
-        pkg,
-        scopeNode: returnPath,
-        node: returnPath.node.argument,
-        importAliases,
-        visited,
-        updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
-        importedFunctionsMap,
-      });
+      result.branches.push(
+        processReturnStatement({
+          unwrappedExpressions,
+          functionName,
+          pkg,
+          scopeNode: returnPath,
+          node: returnPath.node.argument,
+          importAliases,
+          visited,
+          updates,
+          errors,
+          warnings,
+          file,
+          parsingOptions,
+          importedFunctionsMap,
+        })
+      );
     },
   });
+  if (result.branches.length === 0) {
+    errors.push(
+      warnMissingReturnSync(
+        file,
+        functionName,
+        `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
+      )
+    );
+    return null;
+  }
+  return result;
 }
 
 /**
@@ -1163,16 +1157,14 @@ function processReturnStatement({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): void {
+}): JSXTreeResult {
   // If the node is null, return
-  if (node == null) return;
-
-  // TODO: multiplication here
+  if (node == null) return null;
 
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(node)) {
-    // return (value)
-    processReturnStatement({
+    // ex: return (value)
+    return processReturnStatement({
       unwrappedExpressions,
       importAliases,
       scopeNode,
@@ -1188,60 +1180,66 @@ function processReturnStatement({
       pkg,
     });
   } else if (t.isCallExpression(node) && t.isIdentifier(node.callee)) {
-    // return someFunc()
-    const calleeBinding = scopeNode.scope.getBinding(node.callee.name);
-    if (calleeBinding) {
-      // Function is found locally
-      resolveStaticInvocation({
-        importAliases,
-        calleeBinding,
-        callee: node.callee,
-        unwrappedExpressions,
-        visited,
+    // ex: return someFunc()
+    const callee = node.callee;
+    const calleeBinding = scopeNode.scope.getBinding(callee.name);
+    if (!calleeBinding) {
+      warnFunctionNotFoundSync(
         file,
-        updates,
-        errors,
-        warnings,
-        pkg,
-        parsingOptions,
-        importedFunctionsMap,
-      });
-    } else {
-      console.log(
-        `[processReturnStatement] function ${node.callee.name} is not found in the scope or imported`
+        callee.name,
+        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
       );
+      return null;
     }
+    // Function is found locally
+    return resolveStaticFunctionInvocationFromBinding({
+      importAliases,
+      calleeBinding,
+      callee,
+      unwrappedExpressions,
+      visited,
+      file,
+      updates,
+      errors,
+      warnings,
+      pkg,
+      parsingOptions,
+      importedFunctionsMap,
+    });
   } else if (
     t.isAwaitExpression(node) &&
     t.isCallExpression(node.argument) &&
     t.isIdentifier(node.argument.callee)
   ) {
-    // return await someFunc()
-    const calleeBinding = scopeNode.scope.getBinding(node.argument.callee.name);
-    if (calleeBinding) {
-      // Function is found locally
-      resolveStaticInvocation({
-        importAliases,
-        calleeBinding,
-        callee: node.argument.callee,
-        unwrappedExpressions,
-        visited,
+    // ex: return await someFunc()
+    const callee = node.argument.callee;
+    const calleeBinding = scopeNode.scope.getBinding(callee.name);
+    if (!calleeBinding) {
+      warnFunctionNotFoundSync(
         file,
-        updates,
-        errors,
-        warnings,
-        pkg,
-        parsingOptions,
-        importedFunctionsMap,
-      });
-    } else {
-      console.log(
-        `[processReturnStatement] function ${node.argument.callee.name} is not found in the scope or imported`
+        callee.name,
+        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
       );
+      return null;
     }
+    // Function is found locally
+    return resolveStaticFunctionInvocationFromBinding({
+      importAliases,
+      calleeBinding,
+      callee,
+      unwrappedExpressions,
+      visited,
+      file,
+      updates,
+      errors,
+      warnings,
+      pkg,
+      parsingOptions,
+      importedFunctionsMap,
+    });
   } else if (t.isJSXElement(node) || t.isJSXFragment(node)) {
-    // return <div>Jsx content</div>
-    buildJSXTree({
+    // ex: return <div>Jsx content</div>
+    return buildJSXTree({
       importAliases,
       node,
       unwrappedExpressions,
@@ -1256,19 +1254,13 @@ function processReturnStatement({
       importedFunctionsMap,
       pkg,
     });
-  } else if (t.isStringLiteral(node)) {
-    // string literal
-    if (!isStaticExpression(node).isStatic) {
-      errors.push(
-        warnInvalidReturnSync(
-          file,
-          functionName,
-          `${scopeNode.node.loc?.start?.line}:${scopeNode.node.loc?.start?.column}`
-        )
-      );
-    }
-    // TODO: add to updates
   } else {
+    // Handle static expressions (e.g. return 'static string')
+    const staticAnalysis = isStaticExpression(node);
+    if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
+      // Preserve the exact whitespace for static string expressions
+      return staticAnalysis.value;
+    }
     // reject
     errors.push(
       warnInvalidReturnSync(
@@ -1277,5 +1269,6 @@ function processReturnStatement({
         `${scopeNode.node.loc?.start?.line}:${scopeNode.node.loc?.start?.column}`
       )
     );
+    return null;
   }
 }
