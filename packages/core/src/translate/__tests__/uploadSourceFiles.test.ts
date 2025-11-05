@@ -4,7 +4,7 @@ import { TranslationRequestConfig } from '../../types';
 import {
   FileUpload,
   RequiredUploadFilesOptions,
-} from '../../types-dir/uploadFiles';
+} from '../../types-dir/api/uploadFiles';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
@@ -15,7 +15,7 @@ vi.mock('../utils/validateResponse');
 vi.mock('../utils/handleFetchError');
 vi.mock('../utils/generateRequestHeaders');
 
-describe('_uploadSourceFiles', () => {
+describe.sequential('_uploadSourceFiles', () => {
   const mockConfig: TranslationRequestConfig = {
     baseUrl: 'https://api.test.com',
     projectId: 'test-project',
@@ -42,10 +42,6 @@ describe('_uploadSourceFiles', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(fetchWithTimeout).mockReset();
-    vi.mocked(validateResponse).mockReset();
-    vi.mocked(handleFetchError).mockReset();
-    vi.mocked(generateRequestHeaders).mockReset();
 
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
@@ -125,7 +121,9 @@ describe('_uploadSourceFiles', () => {
     );
 
     expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-    expect(result).toEqual(mockResponse);
+    expect(result.data).toEqual(mockResponse.uploadedFiles);
+    expect(result.count).toBe(2);
+    expect(result.batchCount).toBe(1);
   });
 
   it('should handle single source file upload', async () => {
@@ -153,8 +151,8 @@ describe('_uploadSourceFiles', () => {
 
     const result = await _uploadSourceFiles(mockFiles, mockOptions, mockConfig);
 
-    expect(result.uploadedFiles).toHaveLength(1);
-    expect(result.uploadedFiles[0].fileName).toBe('test.json');
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].fileName).toBe('test.json');
   });
 
   it('should handle files with data format', async () => {
@@ -162,13 +160,11 @@ describe('_uploadSourceFiles', () => {
       {
         source: createMockFileUpload({
           fileName: 'flat.json',
-          dataFormat: 'flat',
         }),
       },
       {
         source: createMockFileUpload({
           fileName: 'nested.json',
-          dataFormat: 'nested',
         }),
       },
     ];
@@ -199,7 +195,6 @@ describe('_uploadSourceFiles', () => {
                 fileName: 'flat.json',
                 fileFormat: 'JSON',
                 locale: 'en',
-                dataFormat: 'flat',
               },
             },
             {
@@ -208,7 +203,6 @@ describe('_uploadSourceFiles', () => {
                 fileName: 'nested.json',
                 fileFormat: 'JSON',
                 locale: 'en',
-                dataFormat: 'nested',
               },
             },
           ],
@@ -352,7 +346,7 @@ describe('_uploadSourceFiles', () => {
     const mockFiles = [{ source: createMockFileUpload() }];
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true };
+    const mockResponse = { success: true, uploadedFiles: [] };
 
     const mockFetchResponse = {
       json: vi.fn().mockResolvedValue(mockResponse),
@@ -374,30 +368,13 @@ describe('_uploadSourceFiles', () => {
     const mockFiles: { source: FileUpload }[] = [];
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true, uploadedFiles: [] };
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
     const result = await _uploadSourceFiles(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
-          data: [],
-          sourceLocale: 'en',
-        }),
-      },
-      expect.any(Number)
-    );
-
-    expect(result.uploadedFiles).toEqual([]);
+    // With batching, empty array returns early without making any API calls
+    expect(fetchWithTimeout).not.toHaveBeenCalled();
+    expect(result.data).toEqual([]);
+    expect(result.count).toBe(0);
+    expect(result.batchCount).toBe(0);
   });
 
   it('should handle different source locales', async () => {
@@ -435,5 +412,65 @@ describe('_uploadSourceFiles', () => {
       },
       expect.any(Number)
     );
+  });
+
+  it('should batch files when uploading more than 100 files', async () => {
+    // Create 150 mock files
+    const mockFiles = Array.from({ length: 150 }, (_, i) => ({
+      source: createMockFileUpload({ fileName: `file-${i}.json` }),
+    }));
+
+    const mockOptions = createMockOptions();
+
+    const mockResponse1 = {
+      success: true,
+      uploadedFiles: Array.from({ length: 100 }, (_, i) => ({
+        fileId: `file-${i}`,
+        versionId: `version-${i}`,
+        fileName: `file-${i}.json`,
+      })),
+    };
+
+    const mockResponse2 = {
+      success: true,
+      uploadedFiles: Array.from({ length: 50 }, (_, i) => ({
+        fileId: `file-${i + 100}`,
+        versionId: `version-${i + 100}`,
+        fileName: `file-${i + 100}.json`,
+      })),
+    };
+
+    const mockFetchResponse1 = {
+      json: vi.fn().mockResolvedValue(mockResponse1),
+    } as unknown as Response;
+
+    const mockFetchResponse2 = {
+      json: vi.fn().mockResolvedValue(mockResponse2),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout)
+      .mockResolvedValueOnce(mockFetchResponse1)
+      .mockResolvedValueOnce(mockFetchResponse2);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const result = await _uploadSourceFiles(mockFiles, mockOptions, mockConfig);
+
+    // Should make 2 batch calls
+    expect(fetchWithTimeout).toHaveBeenCalledTimes(2);
+
+    // First call should have 100 files
+    const firstCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const firstBody = JSON.parse(firstCall[1]?.body as string);
+    expect(firstBody.data).toHaveLength(100);
+
+    // Second call should have 50 files
+    const secondCall = vi.mocked(fetchWithTimeout).mock.calls[1];
+    const secondBody = JSON.parse(secondCall[1]?.body as string);
+    expect(secondBody.data).toHaveLength(50);
+
+    // Result should contain all 150 files
+    expect(result.data).toHaveLength(150);
+    expect(result.count).toBe(150);
+    expect(result.batchCount).toBe(2);
   });
 });

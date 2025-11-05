@@ -11,52 +11,57 @@ import {
 } from '../types-dir/api/downloadFileBatch';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { decode } from '../utils/base64';
+import { processBatches } from './utils/batch';
 
 /**
  * @internal
- * Downloads multiple translation files in a single batch request.
+ * Downloads multiple translation files in batches.
  * @param files - Array of files to download
  * @param options - The options for the API call
  * @param config - The configuration for the request
- * @returns The batch download results with success/failure tracking
+ * @returns Promise resolving to a BatchList with all downloaded files
  */
 export default async function _downloadFileBatch(
   requests: DownloadFileBatchRequest,
   options: DownloadFileBatchOptions,
   config: TranslationRequestConfig
-): Promise<DownloadFileBatchResult> {
+) {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/download`;
 
-  if (requests.length === 0) {
-    return { files: [], count: 0 };
-  }
+  return processBatches(
+    requests,
+    async (batch) => {
+      // Request the batch download
+      let response;
+      try {
+        response = await fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            headers: generateRequestHeaders(config),
+            body: JSON.stringify(batch),
+          },
+          timeout
+        );
+      } catch (error) {
+        handleFetchError(error, timeout);
+      }
 
-  // Request the batch download
-  let response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify(requests),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
+      // Validate response
+      await validateResponse(response);
 
-  // Validate response
-  await validateResponse(response);
+      // Parse response
+      const result = (await response.json()) as DownloadFileBatchResult;
 
-  // Parse response
-  const result = (await response.json()) as DownloadFileBatchResult;
-  // convert from base64 to string
-  const files = result.files.map((file) => ({
-    ...file,
-    data: decode(file.data),
-  }));
-  return { ...result, files } as DownloadFileBatchResult;
+      // convert from base64 to string
+      const files = result.files.map((file) => ({
+        ...file,
+        data: decode(file.data),
+      }));
+
+      return files;
+    },
+    { batchSize: 100 }
+  );
 }

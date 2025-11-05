@@ -9,7 +9,7 @@ import {
   FileQuery,
   CheckFileTranslationsOptions,
   FileQueryResult,
-} from '../../types-dir/checkFileTranslations';
+} from '../../types-dir/api/checkFileTranslations';
 
 vi.mock('../utils/fetchWithTimeout');
 vi.mock('../utils/validateResponse');

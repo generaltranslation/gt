@@ -630,7 +630,7 @@ export class GT {
       options,
       this._getTranslationConfig()
     );
-    return result.files[0].data;
+    return result.data[0].data;
   }
 
   /**
@@ -660,18 +660,20 @@ export class GT {
       ...request,
       locale: this.resolveCanonicalLocale(request.locale),
     }));
+
     // Request the batch download
     const result = await _downloadFileBatch(
       requests,
       options,
       this._getTranslationConfig()
     );
+
     return {
-      ...result,
-      files: result.files.map((file) => ({
+      files: result.data.map((file) => ({
         ...file,
         ...(file.locale && { locale: this.resolveAliasLocale(file.locale) }),
       })),
+      count: result.count,
     };
   }
 
@@ -932,21 +934,32 @@ export class GT {
     // Merge instance settings with options
     const mergedOptions: UploadFilesOptions = {
       ...options,
-      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+      sourceLocale: this.resolveCanonicalLocale(
+        options.sourceLocale ?? this.sourceLocale ?? libraryDefaultLocale
+      ),
     };
 
-    // Require source locale
-    if (!mergedOptions.sourceLocale) {
-      const error = noSourceLocaleProvidedError('uploadSourceFiles');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
+    // resolve canonical locales
+    files = files.map((f) => ({
+      ...f,
+      source: {
+        ...f.source,
+        locale: this.resolveCanonicalLocale(f.source.locale),
+      },
+    }));
 
-    return await _uploadSourceFiles(
+    // Process files in batches and convert result to UploadFilesResponse
+    const result = await _uploadSourceFiles(
       files,
       mergedOptions as RequiredUploadFilesOptions,
       this._getTranslationConfig()
     );
+
+    return {
+      uploadedFiles: result.data,
+      count: result.count,
+      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+    };
   }
 
   /**
@@ -995,11 +1008,18 @@ export class GT {
       })),
     }));
 
-    return await _uploadTranslations(
+    // Process files in batches and convert result to UploadFilesResponse
+    const result = await _uploadTranslations(
       targetFiles,
       mergedOptions as RequiredUploadFilesOptions,
       this._getTranslationConfig()
     );
+
+    return {
+      uploadedFiles: result.data,
+      count: result.count,
+      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+    };
   }
 
   // -------------- Formatting -------------- //

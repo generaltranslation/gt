@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _setupProject, { SetupProjectResult } from '../setupProject';
 import { TranslationRequestConfig } from '../../types';
-import { FileUploadRef } from '../../types-dir/uploadFiles';
+import { FileReference } from '../../types-dir/api/file';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
@@ -20,8 +20,9 @@ describe('_setupProject', () => {
   };
 
   const createMockFile = (
-    overrides: Partial<FileUploadRef> = {}
-  ): FileUploadRef => ({
+    overrides: Partial<FileReference> = {}
+  ): FileReference => ({
+    branchId: 'branch-123',
     fileId: 'file-123',
     versionId: 'version-456',
     fileName: 'test.json',
@@ -75,12 +76,14 @@ describe('_setupProject', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'component.json',
               fileFormat: 'JSON',
             },
             {
+              branchId: 'branch-123',
               fileId: 'file-456',
               versionId: 'version-456',
               fileName: 'page.json',
@@ -96,6 +99,7 @@ describe('_setupProject', () => {
     expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
     expect(result).toEqual(mockResponse);
     expect(result.status).toBe('queued');
+    // @ts-expect-error - setupJobId is not defined in the type
     expect(result.setupJobId).toBe('setup-job-789');
   });
 
@@ -116,8 +120,9 @@ describe('_setupProject', () => {
 
     const result = await _setupProject(mockFiles, mockConfig);
 
-    expect(result.setupJobId).toBe('setup-job-123');
     expect(result.status).toBe('queued');
+    // @ts-expect-error - setupJobId is not defined in the type
+    expect(result.setupJobId).toBe('setup-job-123');
   });
 
   it('should use custom timeout when provided', async () => {
@@ -206,6 +211,7 @@ describe('_setupProject', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'data.json',
@@ -213,6 +219,7 @@ describe('_setupProject', () => {
               dataFormat: 'flat',
             },
             {
+              branchId: 'branch-123',
               fileId: 'file-456',
               versionId: 'version-456',
               fileName: 'nested.json',
@@ -252,6 +259,7 @@ describe('_setupProject', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'test.json',
@@ -293,6 +301,7 @@ describe('_setupProject', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'test.json',
@@ -311,7 +320,7 @@ describe('_setupProject', () => {
       createMockFile({ fileName: 'component.js', fileFormat: 'JS' }),
       createMockFile({
         fileName: 'styles.css',
-        fileFormat: 'CSS',
+        fileFormat: 'HTML',
         fileId: 'file-456',
       }),
       createMockFile({
@@ -321,7 +330,7 @@ describe('_setupProject', () => {
       }),
       createMockFile({
         fileName: 'template.tsx',
-        fileFormat: 'TSX',
+        fileFormat: 'TS',
         fileId: 'file-012',
       }),
     ];
@@ -348,28 +357,32 @@ describe('_setupProject', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'component.js',
               fileFormat: 'JS',
             },
             {
+              branchId: 'branch-123',
               fileId: 'file-456',
               versionId: 'version-456',
               fileName: 'styles.css',
-              fileFormat: 'CSS',
+              fileFormat: 'HTML',
             },
             {
+              branchId: 'branch-123',
               fileId: 'file-789',
               versionId: 'version-456',
               fileName: 'content.md',
               fileFormat: 'MD',
             },
             {
+              branchId: 'branch-123',
               fileId: 'file-012',
               versionId: 'version-456',
               fileName: 'template.tsx',
-              fileFormat: 'TSX',
+              fileFormat: 'TS',
             },
           ],
           locales: undefined,
@@ -380,7 +393,7 @@ describe('_setupProject', () => {
   });
 
   it('should handle empty files array', async () => {
-    const mockFiles: FileUploadRef[] = [];
+    const mockFiles: FileReference[] = [];
 
     const mockResponse: SetupProjectResult = {
       setupJobId: 'setup-job-empty',
@@ -409,6 +422,8 @@ describe('_setupProject', () => {
       expect.any(Number)
     );
 
+    expect(result.status).toBe('queued');
+    // @ts-expect-error - setupJobId is not defined in the type
     expect(result.setupJobId).toBe('setup-job-empty');
   });
 

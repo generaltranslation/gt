@@ -347,7 +347,7 @@ async function checkTranslationDeployment(
     }
 
     // Check for translations
-    const responseData = await gt.checkFileTranslations(currentQueryData);
+    const responseData = await gt.queryFileData(currentQueryData);
     const translations = responseData.translations || [];
 
     // Filter for ready translations
