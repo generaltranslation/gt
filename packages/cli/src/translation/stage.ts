@@ -10,7 +10,7 @@ import { createUpdates } from './parse.js';
 export async function aggregateReactTranslations(
   options: TranslateFlags,
   settings: Settings,
-  library: 'gt-react' | 'gt-next'
+  library: 'gt-react' | 'gt-next' | 'gt-react-native'
 ): Promise<Updates> {
   if (!options.dictionary) {
     options.dictionary = findFilepath([

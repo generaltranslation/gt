@@ -14,6 +14,9 @@ import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
+import { handleInitGT as handleInitGTReactNative } from '../react-native/parse/handleInitGT.js';
+import { wrapContentReactNative } from '../react-native/parse/wrapContent.js';
+import path from 'path';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -46,6 +49,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       { value: 'gatsby', label: chalk.magenta('Gatsby') },
       { value: 'react', label: chalk.yellow('React') },
       { value: 'redwood', label: chalk.red('RedwoodJS') },
+      { value: 'expo', label: chalk.magenta('Expo (React Native)') },
       { value: 'other', label: chalk.dim('Other') },
     ],
     defaultValue: 'next-app',
@@ -93,6 +97,15 @@ Please let us know what you would like to see supported at https://github.com/ge
     spinner.start(`Installing gt-react with ${packageManager.name}...`);
     await installPackage('gt-react', packageManager);
     spinner.stop(chalk.green('Automatically installed gt-react.'));
+  } else if (
+    frameworkType === 'expo' &&
+    !isPackageInstalled('gt-react-native', packageJson)
+  ) {
+    const packageManager = await getPackageManager();
+    const spinner = createSpinner('timer');
+    spinner.start(`Installing gt-react-native with ${packageManager.name}...`);
+    await installPackage('gt-react-native', packageManager);
+    spinner.stop(chalk.green('Automatically installed gt-react-native.'));
   }
 
   const errors: string[] = [];
@@ -151,6 +164,56 @@ Please let us know what you would like to see supported at https://github.com/ge
     );
     logStep(
       chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
+    );
+  }
+
+  // Handle Expo (React Native) setup
+  if (frameworkType === 'expo') {
+    const babelConfigPath = path.resolve(process.cwd(), 'babel.config.js');
+    const indexPath = path.resolve(process.cwd(), 'index.js');
+    const appRoot = process.cwd();
+
+    const mergeOptions = {
+      ...options,
+      disableIds: true,
+      disableFormatting: true,
+      skipTs: true,
+      addGTProvider: true,
+    };
+
+    const spinner = createSpinner();
+    spinner.start('Setting up Expo project for GT...');
+
+    // Initialize Expo setup (babel.config.js, index.js, package.json)
+    await handleInitGTReactNative(
+      babelConfigPath,
+      indexPath,
+      appRoot,
+      errors,
+      warnings,
+      filesUpdated
+    );
+
+    spinner.stop(
+      chalk.green('Configured babel.config.js and index.js for GT.')
+    );
+
+    // Wrap JSX content with <T> tags
+    const spinner2 = createSpinner();
+    spinner2.start('Wrapping JSX content with <T> tags...');
+    const { filesUpdated: filesUpdatedRN } = await wrapContentReactNative(
+      mergeOptions,
+      'gt-react-native',
+      'expo',
+      errors,
+      warnings
+    );
+    filesUpdated = [...filesUpdated, ...filesUpdatedRN];
+
+    spinner2.stop(
+      chalk.green(
+        `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
+      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
   }
 

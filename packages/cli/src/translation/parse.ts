@@ -26,7 +26,7 @@ export async function createUpdates(
   options: TranslateFlags,
   src: string[] | undefined,
   sourceDictionary: string | undefined,
-  pkg: 'gt-react' | 'gt-next',
+  pkg: 'gt-react' | 'gt-next' | 'gt-react-native',
   validate: boolean,
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
