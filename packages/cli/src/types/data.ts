@@ -23,7 +23,7 @@ export type FlattenedJSONDictionary = {
 export type {
   FileFormat,
   DataFormat,
-  FileToTranslate,
+  FileToUpload,
 } from 'generaltranslation/types';
 
 export type JsxChildren = string | string[] | any;

@@ -26,7 +26,6 @@ import {
   TranslationResult,
   EnqueueFilesResult,
   CheckFileTranslationsOptions,
-  CheckFileTranslationsResult,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
   DownloadFileOptions,
@@ -60,12 +59,10 @@ import _setupProject, {
   SetupProjectOptions,
 } from './translate/setupProject';
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
-import _checkFileTranslations from './translate/checkFileTranslations';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import {
   FileQuery,
   FileQueryResult,
-  FileTranslationQuery,
 } from './types-dir/api/checkFileTranslations';
 import _submitUserEditDiffs, {
   SubmitUserEditDiffsPayload,
@@ -80,7 +77,6 @@ import _uploadSourceFiles from './translate/uploadSourceFiles';
 import _uploadTranslations from './translate/uploadTranslations';
 import {
   FileUpload,
-  FileUploadRef,
   RequiredUploadFilesOptions,
   UploadFilesOptions,
   UploadFilesResponse,
@@ -93,8 +89,17 @@ import {
   _checkJobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
-import { FileDataQuery, FileDataResult } from './translate/queryFileData';
+import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
 import _queryFileData from './translate/queryFileData';
+import type { BranchQuery } from './translate/queryBranchData';
+import type { BranchDataResult } from './types-dir/api/branch';
+import _queryBranchData from './translate/queryBranchData';
+import type {
+  CreateBranchQuery,
+  CreateBranchResult,
+} from './translate/createBranch';
+import _createBranch from './translate/createBranch';
+import type { FileReference } from './types-dir/api/file';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -293,6 +298,29 @@ export class GT {
     }
   }
 
+  // -------------- Branch Methods -------------- //
+
+  /**
+   * Queries branch information from the API.
+   *
+   * @param {BranchQuery} query - Object mapping the current branch and incoming branches
+   * @returns {Promise<BranchDataResult>} The branch information
+   */
+  async queryBranchData(query: BranchQuery): Promise<BranchDataResult> {
+    this._validateAuth('queryBranchData');
+    return await _queryBranchData(query, this._getTranslationConfig());
+  }
+
+  /**
+   * Creates a new branch in the API.
+   *
+   * @param {CreateBranchQuery} query - Object mapping the branch name and default branch flag
+   * @returns {Promise<CreateBranchResult>} The created branch information
+   */
+  async createBranch(query: CreateBranchQuery): Promise<CreateBranchResult> {
+    this._validateAuth('createBranch');
+    return await _createBranch(query, this._getTranslationConfig());
+  }
   // -------------- Translation Methods -------------- //
 
   /**
@@ -303,12 +331,12 @@ export class GT {
    * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
    * for processing and will generate a project setup based on the source files.
    *
-   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {FileReference[]} files - Array of file references containing IDs of previously uploaded source files
    * @param {SetupProjectOptions} [options] - Optional settings for target locales and timeout
    * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
    */
   async setupProject(
-    files: FileUploadRef[],
+    files: FileReference[],
     options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
     this._validateAuth('setupProject');
@@ -360,12 +388,12 @@ export class GT {
    * uploadSourceFiles. The translation jobs are queued for processing and will
    * generate translated content based on the source files and target locales provided.
    *
-   * @param {FileUploadRef[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {FileReference[]} files - Array of file references containing IDs of previously uploaded source files
    * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
    * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
-    files: FileUploadRef[],
+    files: FileReference[],
     options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
@@ -432,60 +460,21 @@ export class GT {
   }
 
   /**
-   * Checks the translation status of files.
+   * Queries data about one or more source or translation files.
    *
-   * @param {Object} data - Object mapping source paths to file information.
-   * @param {CheckFileTranslationsOptions} options - Options for checking file translations.
-   * @returns {Promise<CheckFileTranslationsResult>} The file translation status information.
-   *
-   * @example
-   * const result = await gt.checkFileTranslations([
-   *   { sourcePath: 'src/components/Button.tsx', locale: 'es-ES' },
-   *   { sourcePath: 'src/components/Input.tsx', locale: 'fr-FR' },
-   * ], {
-   *   timeout: 10000,
-   * });
-   *
-   */
-  async checkFileTranslations(
-    data: FileTranslationQuery[],
-    options: CheckFileTranslationsOptions = {}
-  ): Promise<CheckFileTranslationsResult> {
-    // Validation
-    this._validateAuth('checkFileTranslations');
-
-    // Replace target locales with canonical locales
-    data = data.map((item) => ({
-      ...item,
-      locale: this.resolveCanonicalLocale(item.locale),
-    }));
-
-    // Request the file translation status
-    const result = await _checkFileTranslations(
-      data,
-      options,
-      this._getTranslationConfig()
-    );
-
-    // Resolve canonical locales
-    result.translations = result.translations.map((item) => ({
-      ...item,
-      locale: this.resolveAliasLocale(item.locale),
-    }));
-    return result;
-  }
-  /**
-   * Checks the translation status of files.
-   *
-   * @param {Object} data - Object mapping source paths to file information.
-   * @param {CheckFileTranslationsOptions} options - Options for checking file translations.
-   * @returns {Promise<CheckFileTranslationsResult>} The file translation status information.
+   * @param {FileDataQuery} data - Object mapping source and translation file information.
+   * @param {CheckFileTranslationsOptions} options - Options for the API call.
+   * @returns {Promise<FileDataResult>} The source and translation file data information.
    *
    * @example
-   * const result = await gt.checkFileTranslations([
-   *   { sourcePath: 'src/components/Button.tsx', locale: 'es-ES' },
-   *   { sourcePath: 'src/components/Input.tsx', locale: 'fr-FR' },
-   * ], {
+   * const result = await gt.queryFileData({
+   *   sourceFiles: [
+   *     { fileId: '1234567890', versionId: '1234567890', branchId: '1234567890' },
+   *   ],
+   *   translatedFiles: [
+   *     { fileId: '1234567890', versionId: '1234567890', branchId: '1234567890', locale: 'es-ES' },
+   *   ],
+   * }, {
    *   timeout: 10000,
    * });
    *

@@ -1,9 +1,10 @@
 import { DataFormat } from '../jsx/content';
-import { FileFormat } from './file';
-import { FileUploadRef } from './fileLifecycle';
+import { FileFormat, FileReference } from './file';
 
 export type FileUpload = {
   branchId?: string; // if not provided, will use the default branch
+  incomingBranchId?: string; // optional branch id to use for incoming translations
+  checkedOutBranchId?: string; // optional branch id to use for checked out translations
   content: string;
   fileName: string;
   fileFormat: FileFormat;
@@ -12,8 +13,6 @@ export type FileUpload = {
   versionId?: string; // Optional versionId. Only use this if you know what you are doing.
   fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
-
-export type { FileUploadRef };
 
 export type UploadData = {
   data: { source: FileUpload; translations: FileUpload[] }[];
@@ -28,7 +27,7 @@ export type UploadFilesOptions = {
 };
 
 export type UploadFilesResponse = {
-  uploadedFiles: FileUploadRef[];
+  uploadedFiles: FileReference[];
   count: number;
   message: string;
 };

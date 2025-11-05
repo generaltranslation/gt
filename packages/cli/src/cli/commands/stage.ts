@@ -14,9 +14,13 @@ import {
 } from '../../console/index.js';
 import { aggregateFiles } from '../../formats/files/translate.js';
 import { aggregateReactTranslations } from '../../translation/stage.js';
-import { sendFiles, SendFilesResult } from '../../api/sendFiles.js';
+import { stageFiles } from '../../workflow/stage.js';
 import { updateVersions } from '../../fs/config/updateVersions.js';
-import { JsxChildren } from 'generaltranslation/types';
+import type {
+  EnqueueFilesResult,
+  FileToUpload,
+  JsxChildren,
+} from 'generaltranslation/types';
 import updateConfig from '../../fs/config/updateConfig.js';
 import { hashStringSync } from '../../utils/hash.js';
 
@@ -28,7 +32,7 @@ export async function handleStage(
   settings: Settings,
   library: SupportedLibraries,
   stage: boolean
-): Promise<SendFilesResult | undefined> {
+): Promise<EnqueueFilesResult | undefined> {
   // Validate required settings are present if not in dry run
   if (!options.dryRun) {
     if (!settings.locales) {
@@ -89,7 +93,9 @@ export async function handleStage(
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
-      });
+        fileId: TEMPLATE_FILE_ID,
+        versionId: hashStringSync(JSON.stringify(fileData)),
+      } satisfies FileToUpload);
     }
   }
 
@@ -110,9 +116,9 @@ export async function handleStage(
   }
 
   // Send translations to General Translation
-  let filesTranslationResponse: SendFilesResult | undefined;
+  let filesTranslationResponse: EnqueueFilesResult | undefined;
   if (allFiles.length > 0) {
-    filesTranslationResponse = await sendFiles(allFiles, options, settings);
+    filesTranslationResponse = await stageFiles(allFiles, options, settings);
     if (stage) {
       await updateVersions({
         configDirectory: settings.configDirectory,

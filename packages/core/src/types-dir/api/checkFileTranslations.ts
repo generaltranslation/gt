@@ -1,5 +1,3 @@
-import { CompletedFileTranslationData } from './file';
-
 // Types for the checkFileTranslations function
 export type FileTranslationQuery = {
   versionId: string;
@@ -10,10 +8,6 @@ export type FileTranslationQuery = {
 
 export type CheckFileTranslationsOptions = {
   timeout?: number;
-};
-
-export type CheckFileTranslationsResult = {
-  translations: CompletedFileTranslationData[];
 };
 
 export type FileQuery = {

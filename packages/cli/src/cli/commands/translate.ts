@@ -1,4 +1,4 @@
-import { SendFilesResult } from '../../api/sendFiles.js';
+import { SendFilesResult } from '../../workflow/stage.js';
 import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import { checkFileTranslations } from '../../api/checkFileTranslations.js';

@@ -41,7 +41,6 @@ export {
 export type {
   FileTranslationQuery,
   CheckFileTranslationsOptions,
-  CheckFileTranslationsResult,
 } from './types-dir/api/checkFileTranslations';
 export type {
   DownloadFileBatchOptions,
@@ -55,33 +54,25 @@ export type {
 export type {
   EnqueueFilesOptions,
   EnqueueFilesResult,
-  FileToTranslate,
   Updates,
 } from './types-dir/api/enqueueFiles';
+export type { FileToUpload } from './types-dir/api/file';
 export type {
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
 } from './types-dir/api/enqueueEntries';
+export type { FileReference } from './types-dir/api/file';
 export type { DownloadFileOptions } from './types-dir/api/downloadFile';
-export type {
-  FileFormat,
-  CompletedFileTranslationData,
-} from './types-dir/api/file';
-export type {
-  FileEntity,
-  NotYetUploadedFile,
-  UploadedFile,
-  FileUploadRef,
-  isUploaded,
-  assertUploaded,
-  toFileRefs,
-} from './types-dir/fileLifecycle';
+export type { FileFormat } from './types-dir/api/file';
 export type { TranslateManyResult } from './types-dir/api/translateMany';
 export type {
   TranslationResult,
   TranslationError,
   TranslationResultReference,
 } from './types-dir/api/translate';
+export type { BranchDataResult } from './types-dir/api/branch';
+export type { BranchQuery } from './translate/queryBranchData';
+export type { FileDataResult } from './translate/queryFileData';
 
 /**
  * @deprecated Use {@link Content} instead.

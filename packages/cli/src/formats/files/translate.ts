@@ -1,21 +1,21 @@
 import { logError, logWarning } from '../../console/logging.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { Settings } from '../../types/index.js';
-import { FileFormat, DataFormat, FileToTranslate } from '../../types/data.js';
+import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import { determineLibrary } from '../../fs/determineFramework.js';
 import { isValidMdx } from '../../utils/validateMdx.js';
-
+import { hashStringSync } from '../../utils/hash.js';
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
   settings: Settings
-): Promise<FileToTranslate[]> {
+): Promise<FileToUpload[]> {
   // Aggregate all files to translate
-  const allFiles: FileToTranslate[] = [];
+  const allFiles: FileToUpload[] = [];
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
@@ -57,13 +57,15 @@ export async function aggregateFiles(
         );
 
         return {
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(parsedJson),
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'JSON' as const,
           dataFormat,
-        } as FileToTranslate;
+        } satisfies FileToUpload;
       })
-      .filter((file): file is FileToTranslate => {
+      .filter((file) => {
         if (!file || typeof file.content !== 'string' || !file.content.trim()) {
           logWarning(
             `Skipping ${file?.fileName ?? 'unknown'}: JSON file is empty`
@@ -92,9 +94,11 @@ export async function aggregateFiles(
           content: parsedYaml,
           fileName: relativePath,
           fileFormat,
-        } as FileToTranslate;
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(parsedYaml),
+        } satisfies FileToUpload;
       })
-      .filter((file): file is FileToTranslate => {
+      .filter((file) => {
         if (!file || typeof file.content !== 'string' || !file.content.trim()) {
           logWarning(
             `Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`
@@ -129,9 +133,11 @@ export async function aggregateFiles(
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
-          } as FileToTranslate | null;
+            fileId: hashStringSync(relativePath),
+            versionId: hashStringSync(content),
+          } satisfies FileToUpload;
         })
-        .filter((file): file is FileToTranslate => {
+        .filter((file) => {
           if (
             !file ||
             typeof file.content !== 'string' ||
@@ -144,7 +150,7 @@ export async function aggregateFiles(
           }
           return true;
         });
-      allFiles.push(...files);
+      allFiles.push(...files.filter((file) => file !== null));
     }
   }
 

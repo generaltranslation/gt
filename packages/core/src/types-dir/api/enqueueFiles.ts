@@ -1,5 +1,4 @@
-import { DataFormat, JsxChildren } from '../jsx/content';
-import { CompletedFileTranslationData, FileFormat, FileMetadata } from './file';
+import { JsxChildren } from '../jsx/content';
 
 // Types for the enqueueTranslationEntries function
 export type Updates = ({
@@ -18,22 +17,6 @@ export type Updates = ({
       source: string;
     }
 ))[];
-
-/**
- * File object structure for enqueueing files
- * @param content - Content of the file
- * @param fileName - Unique identifier for the file (such as the file path + file name)
- * @param fileFormat - The format of the file (JSON, MDX, MD, etc.)
- * @param formatMetadata - Optional metadata for the file, specific to the format of the file
- * @param dataFormat - Optional format of the data within the file
- */
-export type FileToTranslate = {
-  content: string;
-  fileName: string;
-  fileFormat: FileFormat;
-  formatMetadata?: Record<string, any>;
-  dataFormat?: DataFormat;
-};
 
 /**
  * Options for enqueueing files

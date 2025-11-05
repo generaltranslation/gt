@@ -1,16 +1,5 @@
-import { WorkflowStep } from './WorkflowStep.js';
+export abstract class WorkflowStep<TInput = void, TOutput = void> {
+  abstract run(input: TInput): Promise<TOutput>;
 
-export class Workflow<TInput, TOutput> {
-  constructor(private steps: WorkflowStep<any, any>[]) {}
-
-  async run(initialInput: TInput): Promise<TOutput> {
-    let currentData: any = initialInput;
-
-    for (const step of this.steps) {
-      currentData = await step.run(currentData);
-      await step.wait();
-    }
-
-    return currentData as TOutput;
-  }
+  abstract wait(): Promise<void>;
 }

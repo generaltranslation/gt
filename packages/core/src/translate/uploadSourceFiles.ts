@@ -40,6 +40,8 @@ export default async function _uploadSourceFiles(
         fileId: source.fileId,
         versionId: source.versionId,
         branchId: source.branchId,
+        incomingBranchId: source.incomingBranchId,
+        checkedOutBranchId: source.checkedOutBranchId,
       },
     })),
     sourceLocale: options.sourceLocale,

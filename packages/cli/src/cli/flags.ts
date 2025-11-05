@@ -82,6 +82,15 @@ export function attachTranslateFlags(command: Command) {
       '--experimental-clear-locale-dirs',
       'Clear locale directories before downloading new translations',
       false
+    )
+    .option(
+      '--branch <branch>',
+      'Specify a custom branch to use for translations'
+    )
+    .option(
+      '--disable-branch-detection',
+      'Disable additional branch detection and optimizations and use the manually specified branch',
+      false
     );
   return command;
 }

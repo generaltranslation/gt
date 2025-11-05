@@ -5,7 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
-import { FileUploadRef } from 'src/types-dir/api/uploadFiles';
+import type { FileReference } from '../types-dir/api/file';
 
 export type EnqueueOptions = {
   sourceLocale: string;
@@ -26,7 +26,7 @@ export type EnqueueOptions = {
  * @returns The result of the API call
  */
 export default async function _enqueueFiles(
-  files: FileUploadRef[],
+  files: FileReference[],
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {

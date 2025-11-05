@@ -225,6 +225,16 @@ export async function generateSettings(
   mergedOptions.parsingOptions.conditionNames = mergedOptions.parsingOptions
     .conditionNames || ['browser', 'module', 'import', 'require', 'default'];
 
+  // Add branch options if not provided
+  const branchOptions = mergedOptions.branchOptions || {};
+  branchOptions.currentBranch =
+    flags.branch ?? gtConfig.branchOptions?.currentBranch ?? undefined;
+  branchOptions.autoDetectBranches = flags.disableBranchDetection
+    ? false
+    : true;
+  branchOptions.remoteName = gtConfig.branchOptions?.remoteName ?? 'origin';
+  mergedOptions.branchOptions = branchOptions;
+
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it
   if (!fs.existsSync(mergedOptions.config)) {
