@@ -4,6 +4,7 @@ import {
   colorizeIdString,
   colorizeContent,
   colorizeLine,
+  colorizeFunctionName,
 } from './colors.js';
 
 // Synchronous wrappers for backward compatibility
@@ -23,6 +24,17 @@ export const warnVariablePropSync = (
     `${colorizeComponent('<T>')} component has dynamic attribute ${colorizeIdString(attrName)} with value: ${colorizeContent(
       value
     )}. Change ${colorizeIdString(attrName)} to ensure this content is translated.`,
+    location
+  );
+
+export const warnInvalidReturnSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does not return a static value. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, or (3) static JSX content.`,
     location
   );
 
@@ -131,6 +143,16 @@ export const withLocation = (
 
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
+
+export const warnInvalidStaticChildSync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    'Found invalid <Static> invocation. Children must be an expression container with a function invocation. Callee must be a single identifier. (Example: <T> <Static> {getSubject()} </Static> </T>)',
+    location
+  );
 
 // Re-export error messages
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;

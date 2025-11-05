@@ -3,6 +3,8 @@ export const INLINE_TRANSLATION_HOOK = 'useGT';
 export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
 export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
+export const TRANSLATION_COMPONENT = 'T';
+export const STATIC_COMPONENT = 'Static';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
@@ -11,7 +13,8 @@ export const GT_TRANSLATION_FUNCS = [
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
   MSG_TRANSLATION_HOOK,
-  'T',
+  TRANSLATION_COMPONENT,
+  STATIC_COMPONENT,
   'Var',
   'DateTime',
   'Currency',
@@ -20,7 +23,13 @@ export const GT_TRANSLATION_FUNCS = [
   'Plural',
 ];
 // Valid variable components
-export const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
+export const VARIABLE_COMPONENTS = [
+  'Var',
+  'DateTime',
+  'Currency',
+  'Num',
+  STATIC_COMPONENT,
+];
 
 export const GT_ATTRIBUTES_WITH_SUGAR = ['$id', '$context'];
 
