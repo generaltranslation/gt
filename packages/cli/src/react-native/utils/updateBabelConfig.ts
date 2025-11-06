@@ -48,6 +48,14 @@ module.exports = function (api) {
 
     const existingContent = fs.readFileSync(configPath, 'utf-8');
 
+    // Quick check: if plugin and path already exist, no modification needed
+    if (
+      existingContent.includes('gt-react-native/plugin') &&
+      existingContent.includes(relativeEntryPath)
+    ) {
+      return false;
+    }
+
     // Parse the babel config as JavaScript
     const ast = parse(existingContent, {
       sourceType: 'module',
