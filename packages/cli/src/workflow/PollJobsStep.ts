@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { WorkflowStep } from './Workflow.js';
-import { createOraSpinner, logError } from '../console/logging.js';
+import { createProgressBar, logError } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { GT } from 'generaltranslation';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -31,7 +31,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
   PollJobsInput,
   PollJobsOutput
 > {
-  private spinner: Awaited<ReturnType<typeof createOraSpinner>> | null = null;
+  private spinner: ReturnType<typeof createProgressBar> | null = null;
 
   constructor(private gt: GT) {
     super();
@@ -45,9 +45,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
     forceRetranslation,
   }: PollJobsInput): Promise<PollJobsOutput> {
     const startTime = Date.now();
-    // eslint-disable-next-line no-console
-    console.log();
-    this.spinner = await createOraSpinner();
+    this.spinner = createProgressBar(fileQueryData.length);
     const spinnerMessage = forceRetranslation
       ? 'Waiting for retranslation...'
       : 'Waiting for translation...';
@@ -146,8 +144,8 @@ export class PollTranslationJobsStep extends WorkflowStep<
     // If force retranslation, don't skip the initial check
     if (!forceRetranslation) {
       // Check if all jobs are already complete
-      if (fileTracker.inProgress.size === 0 && fileTracker.failed.size === 0) {
-        this.spinner.succeed(chalk.green('All translations ready!'));
+      if (fileTracker.inProgress.size === 0) {
+        this.spinner.stop(chalk.green('All translations ready'));
         return { success: true, fileTracker };
       }
     }
@@ -200,12 +198,10 @@ export class PollTranslationJobsStep extends WorkflowStep<
               clearInterval(intervalCheck);
 
               if (fileTracker.inProgress.size === 0) {
-                this.spinner!.succeed(
-                  chalk.green('Translation jobs finished!')
-                );
+                this.spinner!.stop(chalk.green('Translation jobs finished'));
                 resolve({ success: true, fileTracker });
               } else {
-                this.spinner!.fail(
+                this.spinner!.stop(
                   chalk.red('Timed out waiting for translation jobs')
                 );
                 resolve({ success: false, fileTracker });
@@ -229,7 +225,12 @@ export class PollTranslationJobsStep extends WorkflowStep<
       fileTracker,
       fileQueryData
     );
-    this.spinner.text = statusText;
+    this.spinner.advance(
+      fileTracker.completed.size +
+        fileTracker.failed.size +
+        fileTracker.skipped.size,
+      statusText
+    );
   }
 
   private generateStatusSuffixText(

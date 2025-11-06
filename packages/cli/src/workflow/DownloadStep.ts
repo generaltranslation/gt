@@ -1,11 +1,6 @@
 import chalk from 'chalk';
 import { WorkflowStep } from './Workflow.js';
-import {
-  createProgressBar,
-  createSpinner,
-  logError,
-  logWarning,
-} from '../console/logging.js';
+import { createProgressBar, logError, logWarning } from '../console/logging.js';
 import { BatchedFiles, downloadFileBatch } from '../api/downloadFileBatch.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
@@ -35,7 +30,6 @@ export class DownloadTranslationsStep extends WorkflowStep<
     resolveOutputPath,
     forceDownload,
   }: DownloadTranslationsInput): Promise<boolean> {
-    console.log();
     this.spinner = createProgressBar(fileTracker.completed.size);
     this.spinner.start('Downloading files...');
 
@@ -122,7 +116,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
           forceDownload
         );
         this.spinner?.stop(
-          chalk.green(`Downloaded ${batchResult.successful.length} files!`)
+          chalk.green(`Downloaded ${batchResult.successful.length} files`)
         );
         if (batchResult.failed.length > 0) {
           logWarning(

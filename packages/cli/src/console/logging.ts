@@ -116,13 +116,6 @@ export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
 export function createProgressBar(total: number) {
   return progress({ max: total });
 }
-// Spinner functionality
-export async function createOraSpinner(
-  indicator: 'dots' | 'circleHalves' = 'circleHalves'
-) {
-  const ora = await import('ora');
-  return ora.default({ spinner: indicator });
-}
 
 // Input prompts
 export async function promptText({
