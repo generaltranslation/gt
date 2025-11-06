@@ -46,7 +46,7 @@ export default async function _querySourceFile(
       url,
       {
         method: 'GET',
-        headers: generateRequestHeaders(config, true),
+        headers: generateRequestHeaders(config),
       },
       timeout
     );

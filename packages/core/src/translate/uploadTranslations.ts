@@ -69,7 +69,7 @@ export default async function _uploadTranslations(
           url,
           {
             method: 'POST',
-            headers: generateRequestHeaders(config, false),
+            headers: generateRequestHeaders(config),
             body: JSON.stringify(body),
           },
           timeout

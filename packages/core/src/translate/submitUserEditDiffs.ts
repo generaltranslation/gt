@@ -44,7 +44,7 @@ export default async function _submitUserEditDiffs(
           url,
           {
             method: 'POST',
-            headers: generateRequestHeaders(config, false),
+            headers: generateRequestHeaders(config),
             body: JSON.stringify(body),
           },
           timeout

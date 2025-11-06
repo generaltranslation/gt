@@ -58,7 +58,7 @@ export default async function _uploadSourceFiles(
           url,
           {
             method: 'POST',
-            headers: generateRequestHeaders(config, false),
+            headers: generateRequestHeaders(config),
             body: JSON.stringify(body),
           },
           timeout

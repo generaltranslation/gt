@@ -86,6 +86,6 @@ export async function stageFiles(
 
     return { branchData, enqueueResult };
   } catch (error) {
-    logErrorAndExit('Failed to send files for translation');
+    logErrorAndExit('Failed to send files for translation. ' + error);
   }
 }

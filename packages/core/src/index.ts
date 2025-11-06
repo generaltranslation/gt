@@ -502,11 +502,13 @@ export class GT {
     // Resolve canonical locales
     result.translatedFiles = result.translatedFiles?.map((item) => ({
       ...item,
-      locale: this.resolveAliasLocale(item.locale),
+      ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
     }));
     result.sourceFiles = result.sourceFiles?.map((item) => ({
       ...item,
-      sourceLocale: this.resolveAliasLocale(item.sourceLocale),
+      ...(item.sourceLocale && {
+        sourceLocale: this.resolveAliasLocale(item.sourceLocale),
+      }),
       locales: item.locales.map((locale) => this.resolveAliasLocale(locale)),
     }));
     return result;
@@ -542,14 +544,16 @@ export class GT {
     // Replace locales with canonical locales
     result.translations = result.translations.map((item) => ({
       ...item,
-      locale: this.resolveAliasLocale(item.locale),
+      ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
     }));
     result.sourceFile.locales = result.sourceFile.locales.map((locale) =>
       this.resolveAliasLocale(locale)
     );
-    result.sourceFile.sourceLocale = this.resolveAliasLocale(
-      result.sourceFile.sourceLocale
-    );
+    if (result.sourceFile.sourceLocale) {
+      result.sourceFile.sourceLocale = this.resolveAliasLocale(
+        result.sourceFile.sourceLocale
+      );
+    }
     return result;
   }
   /**

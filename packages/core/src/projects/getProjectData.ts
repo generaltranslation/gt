@@ -31,7 +31,7 @@ export default async function _getProjectData(
       url,
       {
         method: 'GET',
-        headers: generateRequestHeaders(config, true),
+        headers: generateRequestHeaders(config),
       },
       timeout
     );

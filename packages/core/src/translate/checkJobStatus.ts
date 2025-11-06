@@ -41,7 +41,7 @@ export async function _checkJobStatus(
       url,
       {
         method: 'POST',
-        headers: generateRequestHeaders(config, true),
+        headers: generateRequestHeaders(config),
         body: JSON.stringify({ jobIds }),
       },
       timeout
