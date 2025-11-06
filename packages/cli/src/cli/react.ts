@@ -41,7 +41,7 @@ const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: 'gt-react' | 'gt-next',
+    library: 'gt-react' | 'gt-next' | 'gt-react-native',
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -154,10 +154,17 @@ export class ReactCLI extends BaseCLI {
   ): Promise<void> {
     const settings = await generateSettings(initOptions);
 
+    const pkg =
+      this.library === 'gt-next'
+        ? 'gt-next'
+        : this.library === 'gt-react-native'
+          ? 'gt-react-native'
+          : 'gt-react';
+
     const updates = await aggregateReactTranslations(
       initOptions,
       settings,
-      this.library === 'gt-next' ? 'gt-next' : 'gt-react'
+      pkg
     );
 
     // Convert updates to the proper data format
@@ -281,7 +288,12 @@ export class ReactCLI extends BaseCLI {
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
 
-    const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
+    const pkg =
+      this.library === 'gt-next'
+        ? 'gt-next'
+        : this.library === 'gt-react-native'
+          ? 'gt-react-native'
+          : 'gt-react';
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates

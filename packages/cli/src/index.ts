@@ -1,6 +1,7 @@
 import { BaseCLI } from './cli/base.js';
 import { NextCLI } from './cli/next.js';
 import { ReactCLI } from './cli/react.js';
+import { ReactNativeCLI } from './cli/react-native.js';
 import { determineLibrary } from './fs/determineFramework.js';
 import { Command } from 'commander';
 
@@ -11,6 +12,8 @@ export function main(program: Command) {
     cli = new NextCLI(program, library, additionalModules);
   } else if (library === 'gt-react') {
     cli = new ReactCLI(program, library, additionalModules);
+  } else if (library === 'gt-react-native') {
+    cli = new ReactNativeCLI(program, library, additionalModules);
   } else {
     cli = new BaseCLI(program, library, additionalModules);
   }

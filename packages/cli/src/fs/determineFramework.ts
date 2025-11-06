@@ -32,11 +32,13 @@ export function determineLibrary(): {
       ...packageJson.devDependencies,
     };
 
-    // Check for gt-next or gt-react in dependencies
+    // Check for gt-next, gt-react, or gt-react-native in dependencies
     if (dependencies['gt-next']) {
       library = 'gt-next';
     } else if (dependencies['gt-react']) {
       library = 'gt-react';
+    } else if (dependencies['gt-react-native']) {
+      library = 'gt-react-native';
     } else if (dependencies['next-intl']) {
       library = 'next-intl';
     } else if (dependencies['i18next']) {

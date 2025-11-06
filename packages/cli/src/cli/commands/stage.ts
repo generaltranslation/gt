@@ -53,7 +53,11 @@ export async function handleStage(
 
   // Parse for React components
   let reactComponents = 0;
-  if (library === 'gt-react' || library === 'gt-next') {
+  if (
+    library === 'gt-react' ||
+    library === 'gt-next' ||
+    library === 'gt-react-native'
+  ) {
     const updates = await aggregateReactTranslations(
       options,
       settings,
