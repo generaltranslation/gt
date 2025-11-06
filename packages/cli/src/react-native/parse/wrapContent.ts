@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import path from 'node:path';
+import * as pathModule from 'node:path';
 import { SupportedFrameworks, WrapOptions } from '../../types/index.js';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
@@ -50,7 +50,7 @@ export async function wrapContentReactNative(
   const filesUpdated = [];
 
   for (const file of files) {
-    const baseFileName = path.basename(file);
+    const baseFileName = pathModule.basename(file);
 
     const code = await fs.promises.readFile(file, 'utf8');
 
@@ -93,8 +93,33 @@ export async function wrapContentReactNative(
           // For React Native root layout, wrap with GTProvider
           if (!hasGTProviderChild(path.node)) {
             const jsxElement = path.node;
+
+            // Create GTProvider attributes with config prop
+            const attributes = [
+              t.jsxAttribute(
+                t.jsxIdentifier('config'),
+                t.jsxExpressionContainer(t.identifier('gtConfig'))
+              ),
+            ];
+
+            const fileDir = pathModule.dirname(file);
+            const configSource =
+              fileDir === process.cwd()
+                ? './gt.config.json'
+                : pathModule.relative(fileDir, process.cwd()) +
+                  '/gt.config.json';
+            usedImports.push({
+              local: 'gtConfig',
+              imported: 'default',
+              source: configSource,
+            });
+
             const wrappedElement = t.jsxElement(
-              t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false),
+              t.jsxOpeningElement(
+                t.jsxIdentifier('GTProvider'),
+                attributes,
+                false
+              ),
               t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
               [jsxElement],
               false

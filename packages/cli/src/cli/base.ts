@@ -49,6 +49,8 @@ import {
 import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
+import { createLoadTranslationsFile as createLoadTranslationsFileReactNative } from '../react-native/parse/createLoadTranslations.js';
+import { detectEntryPoint } from '../react-native/utils/detectEntryPoint.js';
 import type { SendDiffsFlags } from './commands/edits.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 
@@ -402,9 +404,13 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     const isUsingGTReact = packageJson
       ? isPackageInstalled('gt-react', packageJson)
       : false;
+    const isUsingGTReactNative = packageJson
+      ? isPackageInstalled('gt-react-native', packageJson)
+      : false;
 
     // Ask if using another i18n library
-    const isUsingGT = isUsingGTNext || isUsingGTReact || ranReactSetup;
+    const isUsingGT =
+      isUsingGTNext || isUsingGTReact || isUsingGTReactNative || ranReactSetup;
 
     // Ask where the translations are stored
     const usingCDN = isUsingGT
@@ -432,7 +438,25 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
-      await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
+      const errors: string[] = [];
+      const warnings: string[] = [];
+      const filesUpdated: string[] = [];
+
+      if (isUsingGTReactNative) {
+        // Use Expo-specific loadTranslations with configured locales
+        await createLoadTranslationsFileReactNative(
+          process.cwd(),
+          errors,
+          warnings,
+          filesUpdated,
+          locales,
+          defaultLocale
+        );
+      } else {
+        // Use generic loadTranslations for Next.js and React
+        await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
+      }
+
       logMessage(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
@@ -482,12 +506,19 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       configFilepath = 'src/gt.config.json';
     }
 
+    // For Expo projects, verify entry point was detected in setup wizard
+    if (isUsingGTReactNative) {
+      const detection = detectEntryPoint(process.cwd());
+      logMessage(`Verified Expo entry point: ${chalk.cyan(detection.entryPoint)}`);
+    }
+
     // Create gt.config.json
     await createOrUpdateConfig(configFilepath, {
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
       publish: isUsingGT && usingCDN,
+      framework: isUsingGTReactNative ? 'expo' : undefined,
     });
 
     logSuccess(

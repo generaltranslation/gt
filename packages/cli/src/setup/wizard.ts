@@ -7,16 +7,17 @@ import { SetupOptions, SupportedFrameworks } from '../types/index.js';
 import findFilepath from '../fs/findFilepath.js';
 import { formatFiles } from '../hooks/postProcess.js';
 import { handleInitGT } from '../next/parse/handleInitGT.js';
+import { handleInitGT as handleInitGTReactNative } from '../react-native/parse/handleInitGT.js';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';
 import { wrapContentNext } from '../next/parse/wrapContent.js';
+import { wrapContentReactNative } from '../react-native/parse/wrapContent.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
-import { handleInitGT as handleInitGTReactNative } from '../react-native/parse/handleInitGT.js';
-import { wrapContentReactNative } from '../react-native/parse/wrapContent.js';
-import path from 'path';
+import { detectEntryPoint } from '../react-native/utils/detectEntryPoint.js';
+import path from 'node:path';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -169,9 +170,9 @@ Please let us know what you would like to see supported at https://github.com/ge
 
   // Handle Expo (React Native) setup
   if (frameworkType === 'expo') {
-    const babelConfigPath = path.resolve(process.cwd(), 'babel.config.js');
-    const indexPath = path.resolve(process.cwd(), 'index.js');
     const appRoot = process.cwd();
+    const babelConfigPath = path.resolve(appRoot, 'babel.config.js');
+    const indexPath = path.resolve(appRoot, 'index.js');
 
     const mergeOptions = {
       ...options,
@@ -184,6 +185,9 @@ Please let us know what you would like to see supported at https://github.com/ge
     const spinner = createSpinner();
     spinner.start('Setting up Expo project for GT...');
 
+    // Detect entry point before initialization
+    const detection = detectEntryPoint(appRoot);
+
     // Initialize Expo setup (babel.config.js, index.js, package.json)
     await handleInitGTReactNative(
       babelConfigPath,
@@ -191,11 +195,14 @@ Please let us know what you would like to see supported at https://github.com/ge
       appRoot,
       errors,
       warnings,
-      filesUpdated
+      filesUpdated,
+      detection
     );
 
     spinner.stop(
-      chalk.green('Configured babel.config.js and index.js for GT.')
+      chalk.green(
+        `Configured babel.config.js for GT using entry point: ${chalk.cyan(detection.entryPoint)}`
+      )
     );
 
     // Wrap JSX content with <T> tags
