@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { logInfo } from '../../console/logging.js';
+import { logInfo, logWarning } from '../../console/logging.js';
 import chalk from 'chalk';
 
 /**
@@ -42,7 +42,7 @@ export async function createLoadTranslationsFile(
           defaultLocale = gtConfig.defaultLocale;
         }
       } catch (error) {
-        console.warn(
+        logWarning(
           `Failed to read gt.config.json, using default locale: ${defaultLocale}`
         );
       }
