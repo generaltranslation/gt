@@ -161,7 +161,13 @@ export class BaseCLI {
         false
       );
       if (results) {
-        await handleTranslate(initOptions, settings, results);
+        await handleTranslate(
+          initOptions,
+          settings,
+          results.fileVersionData,
+          results.jobData,
+          results.branchData
+        );
       }
     } else {
       await handleDownload(initOptions, settings);

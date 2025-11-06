@@ -8,6 +8,7 @@ import { UploadStep } from './UploadStep.js';
 import { SetupStep } from './SetupStep.js';
 import { EnqueueStep } from './EnqueueStep.js';
 import { BranchStep } from './BranchStep.js';
+import { BranchData } from '../types/branch.js';
 
 /**
  * Helper: Calculate timeout with validation
@@ -46,7 +47,10 @@ export async function stageFiles(
   files: FileToUpload[],
   options: TranslateFlags,
   settings: Settings
-): Promise<EnqueueFilesResult> {
+): Promise<{
+  branchData: BranchData;
+  enqueueResult: EnqueueFilesResult;
+}> {
   try {
     // Log files to be translated
     logFilesToTranslate(files);
@@ -82,7 +86,7 @@ export async function stageFiles(
     const enqueueResult = await enqueueStep.run(uploadedFiles);
     await enqueueStep.wait();
 
-    return enqueueResult;
+    return { branchData, enqueueResult };
   } catch (error) {
     logErrorAndExit('Failed to send files for translation');
   }

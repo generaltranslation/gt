@@ -9,6 +9,7 @@ import {
   isCancel,
   cancel,
   multiselect,
+  progress,
 } from '@clack/prompts';
 import chalk from 'chalk';
 import { getCLIVersion } from '../utils/packageJson.js';
@@ -110,6 +111,10 @@ export function displayUpdatedVersionsFile(versionFilepath: string) {
 // Spinner functionality
 export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
+}
+// Spinner functionality
+export function createProgressBar(total: number) {
+  return progress({ max: total });
 }
 // Spinner functionality
 export async function createOraSpinner(

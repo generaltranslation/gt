@@ -73,6 +73,10 @@ export type {
 export type { BranchDataResult } from './types-dir/api/branch';
 export type { BranchQuery } from './translate/queryBranchData';
 export type { FileDataResult } from './translate/queryFileData';
+export type {
+  JobStatus,
+  CheckJobStatusResult,
+} from './translate/checkJobStatus';
 
 /**
  * @deprecated Use {@link Content} instead.

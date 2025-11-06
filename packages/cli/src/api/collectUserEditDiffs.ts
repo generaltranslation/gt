@@ -7,7 +7,7 @@ import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { sendUserEditDiffs } from './sendUserEdits.js';
 import type { UserEditDiff } from './sendUserEdits.js';
 import { gt } from '../utils/gt.js';
-import { UploadedFile } from 'generaltranslation/types';
+import { FileReference } from 'generaltranslation/types';
 
 const MAX_DIFF_BATCH_BYTES = 1_500_000;
 const MAX_DOWNLOAD_BATCH = 100;
@@ -19,7 +19,7 @@ const MAX_DOWNLOAD_BATCH = 100;
  * Must run before enqueueing new translations so rules are available to the generator.
  */
 export async function collectAndSendUserEditDiffs(
-  uploadedFiles: UploadedFile[],
+  uploadedFiles: FileReference[],
   settings: Settings
 ) {
   if (!settings.files) return;

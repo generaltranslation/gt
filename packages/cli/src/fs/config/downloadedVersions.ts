@@ -7,15 +7,19 @@ const GT_LOCK_FILE = 'gt-lock.json';
 const LEGACY_DOWNLOADED_VERSIONS_FILE = 'downloaded-versions.json';
 
 export type DownloadedVersionEntry = {
-  versionId: string;
-  fileId?: string;
   fileName?: string;
   updatedAt?: string;
 };
 
 export type DownloadedVersions = {
   version: number;
-  entries: Record<string, DownloadedVersionEntry>;
+  entries: {
+    [branchId: string]: {
+      [fileId: string]: {
+        [versionId: string]: { [locale: string]: DownloadedVersionEntry };
+      };
+    };
+  };
 };
 
 export function getDownloadedVersions(
@@ -60,4 +64,11 @@ export function saveDownloadedVersions(
   } catch (error) {
     logError(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);
   }
+}
+export function ensureNestedObject(obj: any, path: string[]): any {
+  return path.reduce((current, key, index) => {
+    if (index === path.length - 1) return current;
+    current[key] = current[key] || {};
+    return current[key];
+  }, obj);
 }

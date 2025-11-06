@@ -67,6 +67,19 @@ export default async function _queryFileData(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/info`;
 
+  const body = {
+    sourceFiles: data.sourceFiles?.map((item) => ({
+      fileId: item.fileId,
+      versionId: item.versionId,
+      branchId: item.branchId,
+    })),
+    translatedFiles: data.translatedFiles?.map((item) => ({
+      fileId: item.fileId,
+      versionId: item.versionId,
+      branchId: item.branchId,
+      locale: item.locale,
+    })),
+  };
   // Request the file data
   let response;
   try {
@@ -75,7 +88,7 @@ export default async function _queryFileData(
       {
         method: 'POST',
         headers: generateRequestHeaders(config),
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       },
       timeout
     );
