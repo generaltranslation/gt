@@ -8,8 +8,9 @@ import {
   defaultVariableNames,
   getVariableName,
   minifyVariableType,
-} from '../utils/getVariableName.js';
+} from '../../../utils/getVariableName.js';
 import { isAcceptedPluralForm, JsxChild } from 'generaltranslation/internal';
+import { MultipliedTreeNode } from './types.js';
 
 /**
  * Construct the data-_gt prop
@@ -80,7 +81,7 @@ function constructGTProp(
  * @returns The tree with GT identifiers added
  */
 export default function addGTIdentifierToSyntaxTree(
-  tree: any,
+  tree: MultipliedTreeNode,
   startingIndex = 0
 ): JsxChildren {
   // Object to keep track of the current index for GT IDs
@@ -91,7 +92,7 @@ export default function addGTIdentifierToSyntaxTree(
    * @param child - The child to handle
    * @returns The handled child
    */
-  const handleSingleChild = (child: any): JsxChild => {
+  const handleSingleChild = (child: MultipliedTreeNode): JsxChild => {
     // Handle JSX elements
     if (child && typeof child === 'object') {
       let { type } = child;
@@ -105,8 +106,14 @@ export default function addGTIdentifierToSyntaxTree(
 
       // Variables
       if (Object.keys(defaultVariableNames).includes(type)) {
-        const variableType = minifyVariableType(type);
-        const variableName = getVariableName(props, type, indexObject.index);
+        const variableType = minifyVariableType(
+          type as keyof typeof defaultVariableNames
+        );
+        const variableName = getVariableName(
+          props,
+          type as keyof typeof defaultVariableNames,
+          indexObject.index
+        );
         return {
           i: indexObject.index,
           k: variableName,
@@ -117,7 +124,7 @@ export default function addGTIdentifierToSyntaxTree(
       // Construct the data-_gt prop
       const generaltranslation = constructGTProp(
         type as string,
-        props as Record<string, any>,
+        (props || {}) as Record<string, any>,
         indexObject.index
       );
 
@@ -125,7 +132,7 @@ export default function addGTIdentifierToSyntaxTree(
       return {
         t: type || `C${indexObject.index}`,
         i: indexObject.index,
-        c: handleChildren(props.children),
+        c: handleChildren(props?.children ?? null),
         ...(generaltranslation && { d: generaltranslation }),
       };
     }
@@ -140,7 +147,7 @@ export default function addGTIdentifierToSyntaxTree(
    * @param children - The children to handle
    * @returns The handled children
    */
-  const handleChildren = (children: any): JsxChildren => {
+  const handleChildren = (children: MultipliedTreeNode): JsxChildren => {
     return Array.isArray(children)
       ? children.map(handleSingleChild)
       : handleSingleChild(children);

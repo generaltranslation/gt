@@ -7,7 +7,7 @@ const generate = generateModule.default || generateModule;
 import * as t from '@babel/types';
 import fs from 'node:fs';
 import { parse } from '@babel/parser';
-import addGTIdentifierToSyntaxTree from '../../../data-_gt/addGTIdentifierToSyntaxTree.js';
+import addGTIdentifierToSyntaxTree from './addGTIdentifierToSyntaxTree.js';
 import {
   warnHasUnwrappedExpressionSync,
   warnNestedTComponent,
@@ -17,8 +17,7 @@ import {
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
 } from '../../../../console/index.js';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { handleChildrenWhitespace } from '../../trimJsxStringChildren.js';
+import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   STATIC_COMPONENT,
@@ -30,29 +29,24 @@ import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';
 
-// Handle CommonJS/ESM interop
 import traverseModule from '@babel/traverse';
 import { buildImportMap } from '../buildImportMap.js';
 import { getPathsAndAliases } from '../getPathsAndAliases.js';
 import { parseTProps } from './parseTProps.js';
+import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
+import {
+  MultiplicationNode,
+  JsxTree,
+  isElementNode,
+  ElementNode,
+  ExpressionNode,
+} from './types.js';
+import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
+
+// Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 
 // TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
-
-type MultiplicationNode = {
-  type: 'multiplication';
-  branches: JSXTreeResult[];
-};
-
-type JsxTree = {
-  expression?: boolean;
-  result?: string | MultiplicationNode | null;
-  type?: string;
-  props?: {
-    children?: any;
-  };
-};
-type JSXTreeResult = JsxTree | string | null;
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -168,7 +162,7 @@ export function buildJSXTree({
   scopeNode: NodePath;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): JSXTreeResult {
+}): JsxTree {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
@@ -193,11 +187,12 @@ export function buildJSXTree({
         pkg,
       });
     }
+
     const staticAnalysis = isStaticExpression(expr);
     if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
       // Preserve the exact whitespace for static string expressions
       return {
-        expression: true,
+        nodeType: 'expression',
         result: staticAnalysis.value,
       };
     }
@@ -305,7 +300,7 @@ export function buildJSXTree({
 
     if (elementIsVariable) {
       if (componentType === STATIC_COMPONENT) {
-        const staticComponentChildren = resolveStaticComponentChildren({
+        return resolveStaticComponentChildren({
           importAliases,
           scopeNode,
           children: element.children,
@@ -318,14 +313,8 @@ export function buildJSXTree({
           parsingOptions,
           importedFunctionsMap,
           pkg,
+          props,
         });
-        return {
-          type: componentType,
-          props: {
-            ...props,
-            children: staticComponentChildren,
-          },
-        };
       }
 
       // I do not see why this is being called, i am disabling this for now:
@@ -339,9 +328,10 @@ export function buildJSXTree({
       //   parsingOptions,
       // });
       return {
+        nodeType: 'element',
         // if componentType is undefined, use typeName
         // Basically, if componentType is not a GT component, use typeName such as <div>
-        type: componentType ?? typeName,
+        type: componentType ?? typeName ?? '',
         props,
       };
     }
@@ -373,6 +363,7 @@ export function buildJSXTree({
     }
 
     return {
+      nodeType: 'element',
       // if componentType is undefined, use typeName
       // Basically, if componentType is not a GT component, use typeName such as <div>
       type: componentType ?? typeName,
@@ -410,6 +401,7 @@ export function buildJSXTree({
     }
 
     return {
+      nodeType: 'element',
       type: '',
       props,
     };
@@ -503,22 +495,19 @@ export function parseJSXElement({
     importedFunctionsMap,
   });
 
-  console.log('treeResult', JSON.stringify(treeResult, null, 2));
-  if (1 === 1) {
-    throw new Error('temp');
-  }
+  // Strip the outer <T> component if necessary
+  const jsxTree =
+    isElementNode(treeResult) && treeResult.props?.children
+      ? // We know this b/c the direct children of <T> will never be a multiplication node
+        (treeResult.props.children as JsxTree | JsxTree[])
+      : treeResult;
 
-  let jsxTree = undefined;
-  if (treeResult && typeof treeResult === 'object') {
-    jsxTree = treeResult.props?.children;
-  } else {
-    jsxTree = treeResult;
-  }
-
+  // Update warnings
   if (componentWarnings.size > 0) {
     componentWarnings.forEach((warning) => warnings.add(warning));
   }
 
+  // Update errors
   if (componentErrors.length > 0) {
     errors.push(...componentErrors);
     return;
@@ -527,14 +516,20 @@ export function parseJSXElement({
   // Handle whitespace in children
   const whitespaceHandledTree = handleChildrenWhitespace(jsxTree);
 
-  // Add GT identifiers to the tree
-  let minifiedTree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
-  minifiedTree =
-    Array.isArray(minifiedTree) && minifiedTree.length === 1
-      ? minifiedTree[0]
-      : minifiedTree;
+  // Multiply the tree
+  const multipliedTrees = multiplyJsxTree(whitespaceHandledTree);
 
-  const id = metadata.id;
+  // Add GT identifiers to the tree
+  // TODO: do this in parallel
+  const minifiedTress: JsxChildren[] = [];
+  for (const multipliedTree of multipliedTrees) {
+    const minifiedTree = addGTIdentifierToSyntaxTree(multipliedTree);
+    minifiedTress.push(
+      Array.isArray(minifiedTree) && minifiedTree.length === 1
+        ? minifiedTree[0]
+        : minifiedTree
+    );
+  }
 
   // If we found an unwrapped expression, skip
   if (unwrappedExpressions.length > 0) {
@@ -542,7 +537,7 @@ export function parseJSXElement({
       warnHasUnwrappedExpressionSync(
         file,
         unwrappedExpressions,
-        id,
+        metadata.id,
         `${node.loc?.start?.line}:${node.loc?.start?.column}`
       )
     );
@@ -550,11 +545,14 @@ export function parseJSXElement({
   }
 
   // <T> is valid here
-  updates.push({
-    dataFormat: 'JSX',
-    source: minifiedTree,
-    metadata,
-  });
+  for (const minifiedTree of minifiedTress) {
+    updates.push({
+      dataFormat: 'JSX',
+      source: minifiedTree,
+      // eslint-disable-next-line no-undef
+      metadata: { ...structuredClone(metadata) },
+    });
+  }
 }
 
 /**
@@ -587,6 +585,7 @@ function resolveStaticComponentChildren({
   parsingOptions,
   importedFunctionsMap,
   pkg,
+  props,
 }: {
   importAliases: Record<string, string>;
   scopeNode: NodePath;
@@ -606,14 +605,19 @@ function resolveStaticComponentChildren({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): JSXTreeResult {
-  const result: { type: 'Static'; props: { children: any[] } } = {
-    type: 'Static',
-    props: {
-      children: [],
-    },
+  props: { [key: string]: any };
+}): ElementNode {
+  const result = {
+    nodeType: 'element' as const,
+    type: STATIC_COMPONENT,
+    props,
   };
   let found = false;
+
+  // Create children array if necessary
+  if (children.length) {
+    result.props.children = [];
+  }
 
   for (const child of children) {
     // Ignore whitespace outside of jsx container
@@ -642,6 +646,9 @@ function resolveStaticComponentChildren({
       continue;
     }
 
+    // Set found to true
+    found = true;
+
     // Get callee and binding from scope
     const callee = (
       t.isAwaitExpression(child.expression)
@@ -656,10 +663,8 @@ function resolveStaticComponentChildren({
         callee.name,
         `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
       );
-      return null;
+      continue;
     }
-    // Set found to true
-    found = true;
 
     // Function is found locally, return wrapped in an expression
     const staticFunctionInvocation = resolveStaticFunctionInvocationFromBinding(
@@ -678,13 +683,13 @@ function resolveStaticComponentChildren({
         importedFunctionsMap,
       }
     );
-    return {
-      expression: true,
+    result.props.children.push({
+      nodeType: 'expression',
       result: staticFunctionInvocation,
-    };
+    });
   }
 
-  return null;
+  return result;
 }
 
 function resolveStaticFunctionInvocationFromBinding({
@@ -1002,7 +1007,7 @@ function processFunctionDeclarationNodePath({
 }): MultiplicationNode | null {
   let functionDepth = 0;
   const result: MultiplicationNode = {
-    type: 'multiplication',
+    nodeType: 'multiplication',
     branches: [],
   };
   path.traverse({
@@ -1078,7 +1083,7 @@ function processVariableDeclarationNodePath({
 }): MultiplicationNode | null {
   let functionDepth = 0;
   const result: MultiplicationNode = {
-    type: 'multiplication',
+    nodeType: 'multiplication',
     branches: [],
   };
   path.traverse({
@@ -1157,7 +1162,7 @@ function processReturnStatement({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
-}): JSXTreeResult {
+}): JsxTree | MultiplicationNode {
   // If the node is null, return
   if (node == null) return null;
 

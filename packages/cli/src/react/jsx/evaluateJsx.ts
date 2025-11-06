@@ -36,6 +36,7 @@ export function isMeaningful(node: t.Node): boolean {
 /**
  * Checks if an expression is static (does not contain any variables which could change at runtime).
  * @param expr - The expression to check
+ * @param ignoreStaticFunction - Whether to ignore static functions
  * @returns An object containing the result of the static check
  */
 export function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
