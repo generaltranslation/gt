@@ -31,9 +31,14 @@ export function detectEntryPoint(
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     const currentMain = packageJson.main || 'index.js';
 
+    console.log(`[DEBUG] Detecting entry point for: ${projectRoot}`);
+    console.log(`[DEBUG] package.json main field: ${currentMain}`);
+
     // Check if main points to existing project file (check file existence first)
     const mainPath = path.join(projectRoot, currentMain);
+    console.log(`[DEBUG] Checking if main path exists: ${mainPath}`);
     if (fs.existsSync(mainPath)) {
+      console.log(`[DEBUG] ✓ Main entry point exists! Using: ${currentMain}`);
       return {
         entryPoint: currentMain,
         strategy: 'use-existing',
@@ -41,6 +46,7 @@ export function detectEntryPoint(
         absolutePath: mainPath,
       };
     }
+    console.log(`[DEBUG] ✗ Main entry point does not exist at: ${mainPath}`);
 
     // Also try with common extensions if main doesn't have one
     if (!currentMain.includes('.')) {

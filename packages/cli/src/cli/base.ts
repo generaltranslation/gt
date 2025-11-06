@@ -509,7 +509,9 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     // For Expo projects, verify entry point was detected in setup wizard
     if (isUsingGTReactNative) {
       const detection = detectEntryPoint(process.cwd());
-      logMessage(`Verified Expo entry point: ${chalk.cyan(detection.entryPoint)}`);
+      logMessage(
+        `Verified Expo entry point: ${chalk.cyan(detection.entryPoint)}`
+      );
     }
 
     // Create gt.config.json

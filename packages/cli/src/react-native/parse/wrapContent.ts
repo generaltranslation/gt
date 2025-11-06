@@ -51,11 +51,9 @@ export async function wrapContentReactNative(
 
   for (const file of files) {
     const baseFileName = pathModule.basename(file);
+    const relativePath = getRelativePath(file, process.cwd());
 
     const code = await fs.promises.readFile(file, 'utf8');
-
-    // Create relative path from src directory and remove extension
-    const relativePath = getRelativePath(file, process.cwd());
 
     let ast;
     try {
@@ -75,30 +73,45 @@ export async function wrapContentReactNative(
 
     const { importAlias, initialImports } = generateImportMap(ast, pkg);
 
-    // If the file already has a T import, skip processing it
-    if (initialImports.includes(IMPORT_MAP.T.name)) {
+    // If the file already has a T import or GTProvider import, skip processing it (idempotence check)
+    if (
+      initialImports.includes(IMPORT_MAP.T.name) ||
+      initialImports.includes(IMPORT_MAP.GTProvider.name)
+    ) {
       continue;
     }
+
+    // Check if this is the root layout file for GTProvider wrapping
+    // For Expo: app/_layout.tsx or app/_layout.jsx (not nested layouts like app/(tabs)/_layout.tsx)
+    const isRootLayout =
+      (baseFileName === '_layout.tsx' || baseFileName === '_layout.jsx') &&
+      pathModule.dirname(file).endsWith(pathModule.join('app'));
 
     let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
         if (
           options.addGTProvider &&
-          (baseFileName === 'App.tsx' ||
-            baseFileName === 'App.jsx' ||
-            baseFileName === '_layout.tsx' ||
-            baseFileName === '_layout.jsx')
+          isRootLayout &&
+          !hasGTProviderChild(path.node) &&
+          !hasGTProviderAncestor(path)
         ) {
-          // For React Native root layout, wrap with GTProvider
-          if (!hasGTProviderChild(path.node)) {
+          // Only wrap the first top-level JSX element in the root layout
+          if (
+            !t.isJSXElement(path.parentPath?.node) &&
+            !t.isJSXExpressionContainer(path.parentPath?.node)
+          ) {
             const jsxElement = path.node;
 
-            // Create GTProvider attributes with config prop
+            // Create GTProvider attributes with config and loadTranslations props
             const attributes = [
               t.jsxAttribute(
                 t.jsxIdentifier('config'),
                 t.jsxExpressionContainer(t.identifier('gtConfig'))
+              ),
+              t.jsxAttribute(
+                t.jsxIdentifier('loadTranslations'),
+                t.jsxExpressionContainer(t.identifier('loadTranslations'))
               ),
             ];
 
@@ -108,10 +121,21 @@ export async function wrapContentReactNative(
                 ? './gt.config.json'
                 : pathModule.relative(fileDir, process.cwd()) +
                   '/gt.config.json';
+            const loadTranslationsSource =
+              fileDir === process.cwd()
+                ? './loadTranslations'
+                : pathModule.relative(fileDir, process.cwd()) +
+                  '/loadTranslations';
+
             usedImports.push({
               local: 'gtConfig',
               imported: 'default',
               source: configSource,
+            });
+            usedImports.push({
+              local: 'loadTranslations',
+              imported: 'default',
+              source: loadTranslationsSource,
             });
 
             const wrappedElement = t.jsxElement(
@@ -132,6 +156,7 @@ export async function wrapContentReactNative(
             });
             modified = true;
             path.skip();
+            return;
           }
         }
 
@@ -144,7 +169,7 @@ export async function wrapContentReactNative(
           return;
         }
 
-        // At this point, we're only processing top-level JSX elements
+        // At this point, we're only processing top-level JSX elements for T wrapping
         const opts = {
           ...importAlias,
           idPrefix: relativePath,
@@ -209,6 +234,26 @@ function hasGTProviderChild(element: t.JSXElement): boolean {
     ) {
       return true;
     }
+  }
+
+  return false;
+}
+
+/**
+ * Check if a JSX element already has GTProvider as an ancestor
+ */
+function hasGTProviderAncestor(path: NodePath): boolean {
+  let currentPath: NodePath | null = path.parentPath;
+
+  while (currentPath) {
+    if (
+      t.isJSXElement(currentPath.node) &&
+      t.isJSXIdentifier(currentPath.node.openingElement.name) &&
+      currentPath.node.openingElement.name.name === 'GTProvider'
+    ) {
+      return true;
+    }
+    currentPath = currentPath.parentPath;
   }
 
   return false;
