@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
  * Must run before enqueueing new translations so rules are available to the generator.
  */
 export async function collectAndSendUserEditDiffs(
-  uploadedFiles: FileReference[],
+  files: FileReference[],
   settings: Settings
 ) {
   if (!settings.files) return;
@@ -46,7 +46,7 @@ export async function collectAndSendUserEditDiffs(
   };
   const candidates: DiffCandidate[] = [];
 
-  for (const uploadedFile of uploadedFiles) {
+  for (const uploadedFile of files) {
     for (const locale of settings.locales) {
       const outputPath = fileMapping[locale]?.[uploadedFile.fileName] ?? null;
       if (!outputPath) continue;

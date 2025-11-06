@@ -1,10 +1,10 @@
-import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { aggregateFiles } from '../formats/files/translate.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
-import type { FileUpload } from './uploadFiles.js';
-
-type SourceUpload = { source: FileUpload };
+import { gt } from '../utils/gt.js';
+import { BranchStep } from '../workflow/BranchStep.js';
+import { logErrorAndExit } from '../console/logging.js';
+import type { FileReference } from 'generaltranslation/types';
 
 /**
  * Uploads current source files to obtain file references, then collects and sends
@@ -17,23 +17,22 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const files = await aggregateFiles(settings);
   if (!files.length) return;
 
-  const uploads: SourceUpload[] = files.map(
-    ({ content, fileName, fileFormat, dataFormat }) => ({
-      source: {
-        content,
-        fileName,
-        fileFormat,
-        dataFormat,
-        locale: settings.defaultLocale,
-      },
-    })
-  );
+  // run branch query to get branch id
+  // Run the branch step
+  const branchStep = new BranchStep(gt, settings);
+  const branchResult = await branchStep.run();
+  await branchStep.wait();
+  if (!branchResult) {
+    logErrorAndExit('Failed to resolve git branch information.');
+  }
 
-  // Upload sources only to get file references, then compute diffs
-  const upload = await gt.uploadSourceFiles(uploads, {
-    sourceLocale: settings.defaultLocale,
-    modelProvider: settings.modelProvider,
-  });
+  const uploads = files.map((file) => ({
+    fileName: file.fileName,
+    fileFormat: file.fileFormat,
+    branchId: branchResult.currentBranch.id,
+    fileId: file.fileId,
+    versionId: file.versionId,
+  })) satisfies FileReference[];
 
-  await collectAndSendUserEditDiffs(upload.uploadedFiles as any, settings);
+  await collectAndSendUserEditDiffs(uploads, settings);
 }

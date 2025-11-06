@@ -69,9 +69,7 @@ export async function stageFiles(
     await branchStep.wait();
 
     if (!branchData) {
-      logErrorAndExit(
-        'Failed to resolve git branch information. Please run the CLI in a git repository.'
-      );
+      logErrorAndExit('Failed to resolve git branch information.');
     }
 
     // then run the upload step

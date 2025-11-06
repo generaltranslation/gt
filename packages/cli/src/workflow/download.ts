@@ -46,9 +46,7 @@ export async function downloadTranslations(
     const branchResult = await branchStep.run();
     await branchStep.wait();
     if (!branchResult) {
-      logErrorAndExit(
-        'Failed to resolve git branch information. Please run the CLI in a git repository.'
-      );
+      logErrorAndExit('Failed to resolve git branch information.');
     }
     branchData = branchResult;
   }
