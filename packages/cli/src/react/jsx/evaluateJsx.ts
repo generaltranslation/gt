@@ -33,15 +33,32 @@ export function isMeaningful(node: t.Node): boolean {
   return false;
 }
 
+export function isStaticExpression(
+  expr: t.Expression | t.JSXEmptyExpression,
+  jsxStatic?: false
+): {
+  isStatic: boolean;
+  value?: string;
+};
+export function isStaticExpression(
+  expr: t.Expression | t.JSXEmptyExpression,
+  jsxStatic?: true
+): {
+  isStatic: boolean;
+  value?: string | boolean | null;
+};
 /**
  * Checks if an expression is static (does not contain any variables which could change at runtime).
  * @param expr - The expression to check
  * @param ignoreStaticFunction - Whether to ignore static functions
  * @returns An object containing the result of the static check
  */
-export function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
+export function isStaticExpression(
+  expr: t.Expression | t.JSXEmptyExpression,
+  jsxStatic: boolean = false
+): {
   isStatic: boolean;
-  value?: string;
+  value?: string | boolean | null;
 } {
   // Handle empty expressions
   if (t.isJSXEmptyExpression(expr)) {
@@ -55,7 +72,10 @@ export function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
 
   // Handle template literals without expressions
   if (t.isTemplateLiteral(expr) && expr.expressions.length === 0) {
-    return { isStatic: true, value: expr.quasis[0].value.raw };
+    return {
+      isStatic: true,
+      value: jsxStatic ? expr.quasis[0].value.cooked : expr.quasis[0].value.raw,
+    };
   }
 
   // Binary expressions are not static
@@ -74,14 +94,38 @@ export function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
     return { isStatic: true, value: String(expr.value) };
   }
 
+  // Handle unary expressions by converting them to strings
+  if (t.isUnaryExpression(expr)) {
+    let value: string;
+    let operator = '';
+    if (expr.operator === '-') {
+      operator = expr.operator;
+    }
+    if (t.isNumericLiteral(expr.argument)) {
+      if (expr.argument.value === 0) {
+        value = '0';
+      } else {
+        value = operator + expr.argument.value.toString();
+      }
+    } else {
+      // invalid
+      return { isStatic: false };
+    }
+
+    return { isStatic: true, value };
+  }
+
   // Handle boolean literals by converting them to strings
   if (t.isBooleanLiteral(expr)) {
-    return { isStatic: true, value: String(expr.value) };
+    return {
+      isStatic: true,
+      value: jsxStatic ? expr.value : String(expr.value),
+    };
   }
 
   // Handle null literal
   if (t.isNullLiteral(expr)) {
-    return { isStatic: true, value: 'null' };
+    return { isStatic: true, value: jsxStatic ? null : 'null' };
   }
 
   // Not a static expression

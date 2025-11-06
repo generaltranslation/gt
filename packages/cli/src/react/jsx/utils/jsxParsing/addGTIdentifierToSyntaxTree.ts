@@ -84,6 +84,11 @@ export default function addGTIdentifierToSyntaxTree(
   tree: MultipliedTreeNode,
   startingIndex = 0
 ): JsxChildren {
+  // Edge case: boolean or null, just return the tree
+  if (typeof tree === 'boolean' || tree === null) {
+    return tree as unknown as JsxChild;
+  }
+
   // Object to keep track of the current index for GT IDs
   const indexObject: { index: number } = { index: startingIndex };
 
@@ -128,11 +133,24 @@ export default function addGTIdentifierToSyntaxTree(
         indexObject.index
       );
 
+      const children = handleChildren(
+        props?.children === undefined ? null : props?.children
+      );
+
+      // Enforce boolean rendering behavior
+      // <T>{true}</T> -> true <- this is a boolean value, not a string
+      // <T>{false}</T> -> nothing
+      let includeChildren = true;
+      if (typeof children === 'boolean') {
+        // So, technically JsxChildren do include boolean values, but the type is incorrect
+        includeChildren = children !== false;
+      }
+
       // Return the result
       return {
         t: type || `C${indexObject.index}`,
         i: indexObject.index,
-        c: handleChildren(props?.children ?? null),
+        ...(includeChildren && { c: children }),
         ...(generaltranslation && { d: generaltranslation }),
       };
     }
@@ -149,7 +167,18 @@ export default function addGTIdentifierToSyntaxTree(
    */
   const handleChildren = (children: MultipliedTreeNode): JsxChildren => {
     return Array.isArray(children)
-      ? children.map(handleSingleChild)
+      ? children.map(handleSingleChild).filter((child) => {
+          // Enforce boolean rendering behavior
+          // <T>{true}{false}{null}</T> -> []
+          if (
+            typeof child === 'boolean' ||
+            child === null ||
+            child === undefined
+          ) {
+            return false;
+          }
+          return true;
+        })
       : handleSingleChild(children);
   };
 

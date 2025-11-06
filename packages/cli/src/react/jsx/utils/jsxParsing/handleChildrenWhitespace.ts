@@ -5,6 +5,7 @@ import {
   isElementNode,
   isExpressionNode,
   isMultiplicationNode,
+  isWhitespaceMultiplicationNode,
   JsxTree,
   MultiplicationNode,
   WhitespaceJsxTreeResult,
@@ -57,6 +58,10 @@ export function trimJsxStringChild(
     | 'other'
   )[]
 ) {
+  if (!child.includes('\n') && !child.includes('\r')) {
+    return child;
+  }
+
   // Normalize line endings to \n for consistency across platforms
   let result = child.replace(/\r\n|\r/g, '\n');
 
@@ -177,9 +182,10 @@ export function handleChildrenWhitespace(
           }
           break;
         case 'element':
-          newChildren.push(
-            handleChildrenWhitespace(child as ElementNode | null)
+          const newElement = handleChildrenWhitespace(
+            child as ElementNode | null
           );
+          newChildren.push(newElement);
           break;
         case 'multiplication':
           // I dont think this case is possible, at least in the array case
@@ -193,8 +199,8 @@ export function handleChildrenWhitespace(
           });
           break;
         case 'other':
-          // Return number or null
-          newChildren.push(child as number | null);
+          // Return number or boolean or null
+          newChildren.push(child as number | boolean | null);
           break;
       }
     });
@@ -212,7 +218,16 @@ export function handleChildrenWhitespace(
       ? undefined
       : Object.fromEntries(
           Object.entries(currentTree.props).map(
-            ([key, value]: [string, any]): [string, any] => {
+            ([key, value]:
+              | [string, any]
+              | [
+                  'children',
+                  (
+                    | JsxTree
+                    | MultiplicationNode
+                    | (JsxTree | MultiplicationNode)[]
+                  ),
+                ]): [string, any] => {
               let shouldProcess = false;
               // Process children
               if (key === 'children') shouldProcess = true;
@@ -221,15 +236,17 @@ export function handleChildrenWhitespace(
                 shouldProcess = true;
               // Process branch children
               if (elementIsBranch && key !== 'branch') shouldProcess = true;
+              // Do not process raw strings
+              if (typeof value === 'string' && key !== 'children')
+                shouldProcess = false;
               // Process props
-              if (shouldProcess) {
-                return [key, handleChildrenWhitespace(value)];
+              if (!shouldProcess) {
+                return [key, value];
               }
-              return [key, value];
+              return [key, handleChildrenWhitespace(value)];
             }
           )
         );
-
     return {
       nodeType: 'element',
       type: currentTree.type,
@@ -243,7 +260,7 @@ export function handleChildrenWhitespace(
     } else if (typeof result === 'string') {
       return result;
     } else {
-      return null;
+      return result;
     }
   } else if (isMultiplicationNode(currentTree)) {
     return {
@@ -256,6 +273,6 @@ export function handleChildrenWhitespace(
   } else if (typeof currentTree === 'string') {
     return trimJsxStringChild(currentTree, 0, ['text']);
   }
-  // null or number
+  // null or number or boolean
   return currentTree;
 }

@@ -6,7 +6,7 @@ type MultiplicationNode = {
 
 type ExpressionNode = {
   nodeType: 'expression';
-  result: string | number | MultiplicationNode | null;
+  result: string | number | boolean | MultiplicationNode | null;
 };
 
 // TODO: have some sort of type identifier field here that is Multiplication | Expression | Element
@@ -18,7 +18,7 @@ type ElementNode = {
     [key: string]: any;
   };
 };
-type JsxTree = ElementNode | ExpressionNode | string | number | null;
+type JsxTree = ElementNode | ExpressionNode | string | number | boolean | null;
 
 export type { MultiplicationNode, ExpressionNode, ElementNode, JsxTree };
 
@@ -74,7 +74,12 @@ type WhitespaceJsxTree = {
     [key: string]: any;
   };
 };
-type WhitespaceJsxTreeResult = WhitespaceJsxTree | string | number | null;
+type WhitespaceJsxTreeResult =
+  | WhitespaceJsxTree
+  | string
+  | number
+  | boolean
+  | null;
 
 export type {
   WhitespaceMultiplicationNode,
@@ -118,6 +123,6 @@ type MultipliedTree = {
     children?: MultipliedTreeNode;
   };
 };
-type MultipliedTreeNode = MultipliedTree | string | number | null;
+type MultipliedTreeNode = MultipliedTree | string | number | boolean | null;
 
 export type { MultipliedTree, MultipliedTreeNode };

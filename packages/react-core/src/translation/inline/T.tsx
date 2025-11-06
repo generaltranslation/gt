@@ -53,7 +53,23 @@ function T({
   _hash?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
-  if (!children) return undefined;
+  if (!children) {
+    const taggedChildren = addGTIdentifier(children);
+    const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    const hash = hashSource({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
+    console.log(`[REACT-CORE] <T> falsey ${JSON.stringify(children, null, 2)}`);
+    console.log(
+      '[REACT-CORE] <T> childrenAsObjects:',
+      JSON.stringify(childrenAsObjects, null, 2)
+    );
+    console.log('[REACT-CORE] <T> hash:', hash);
+    return undefined;
+  }
 
   // Compatibility with different options
   id = id ?? options?.$id;
@@ -83,6 +99,7 @@ function T({
   }
 
   if (typeof translationEntry === 'undefined' && _hash) {
+    console.log('[REACT-CORE] <T> received _hash:', _hash);
     translationEntry = translations?.[_hash];
   }
 
@@ -97,12 +114,17 @@ function T({
     }
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    console.log(
+      '[REACT-CORE] <T> childrenAsObjects:',
+      JSON.stringify(childrenAsObjects, null, 2)
+    );
     const hash: string = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    console.log('[REACT-CORE] <T> calculated hash:', hash);
 
     return [childrenAsObjects, hash];
   }, [taggedChildren, context, id, translationRequired, translationEntry]);

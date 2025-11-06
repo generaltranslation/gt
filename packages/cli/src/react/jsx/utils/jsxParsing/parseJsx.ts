@@ -188,7 +188,7 @@ export function buildJSXTree({
       });
     }
 
-    const staticAnalysis = isStaticExpression(expr);
+    const staticAnalysis = isStaticExpression(expr, true);
     if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
       // Preserve the exact whitespace for static string expressions
       return {
@@ -254,7 +254,10 @@ export function buildJSXTree({
 
             if (isHtmlContentProp) {
               // For HTML content props, only accept static string expressions
-              const staticAnalysis = isStaticExpression(attr.value.expression);
+              const staticAnalysis = isStaticExpression(
+                attr.value.expression,
+                true
+              );
               if (
                 staticAnalysis.isStatic &&
                 staticAnalysis.value !== undefined
@@ -271,9 +274,15 @@ export function buildJSXTree({
                 // Make sure that variable strings like {`I have ${count} book`} are invalid!
                 if (
                   t.isTemplateLiteral(attr.value.expression) &&
-                  !isStaticExpression(attr.value.expression).isStatic
+                  !isStaticExpression(attr.value.expression, true).isStatic
                 ) {
                   unwrappedExpressions.push(generate(attr.value).code);
+                }
+                // If it's an array, flag as an unwrapped expression
+                if (t.isArrayExpression(attr.value.expression)) {
+                  unwrappedExpressions.push(
+                    generate(attr.value.expression).code
+                  );
                 }
               }
               attrValue = buildJSXTree({
@@ -336,7 +345,7 @@ export function buildJSXTree({
       };
     }
 
-    const children = element.children
+    const children: JsxTree[] = element.children
       .map((child) =>
         buildJSXTree({
           importAliases,
@@ -409,6 +418,35 @@ export function buildJSXTree({
   // If it's a string literal (standalone)
   else if (t.isStringLiteral(node)) {
     return node.value;
+  }
+  // If it's a template literal
+  else if (t.isTemplateLiteral(node)) {
+    // We've already checked that it's static, and and added a warning if it's not, this check is just for fallback behavior
+    if (
+      !isStaticExpression(node, true).isStatic ||
+      node.quasis[0].value.cooked === undefined
+    ) {
+      return generate(node).code;
+    }
+    return node.quasis[0].value.cooked;
+  } else if (t.isNullLiteral(node)) {
+    // If it's null, return null
+    return null;
+  } else if (t.isBooleanLiteral(node)) {
+    // If it's a boolean, return the boolean
+    return node.value;
+  } else if (t.isNumericLiteral(node)) {
+    // If it's a number, return the number
+    return node.value.toString();
+  }
+  // Negative
+  else if (t.isUnaryExpression(node)) {
+    // If it's a unary expression, return the expression
+    const staticAnalysis = isStaticExpression(node, true);
+    if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
+      return staticAnalysis.value;
+    }
+    return generate(node).code;
   }
   // If it's some other JS expression
   else if (
@@ -514,7 +552,18 @@ export function parseJSXElement({
   }
 
   // Handle whitespace in children
+  console.log('[CLI] ================================================');
+  console.log(
+    '[CLI] parseJSXElement jsxTree:',
+    JSON.stringify(jsxTree, null, 2)
+  );
   const whitespaceHandledTree = handleChildrenWhitespace(jsxTree);
+
+  console.log('[CLI] ================================================');
+  console.log(
+    '[CLI] parseJSXElement whitespaceHandledTree:',
+    JSON.stringify(whitespaceHandledTree, null, 2)
+  );
 
   // Multiply the tree
   const multipliedTrees = multiplyJsxTree(whitespaceHandledTree);
