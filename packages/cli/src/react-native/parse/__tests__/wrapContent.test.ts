@@ -35,7 +35,9 @@ describe('wrapContentReactNative', () => {
     filesUpdated: [] as string[],
   });
 
-  const createWrapOptions = (overrides: Partial<WrapOptions> = {}): WrapOptions => ({
+  const createWrapOptions = (
+    overrides: Partial<WrapOptions> = {}
+  ): WrapOptions => ({
     src: ['src/**/*.{tsx,ts,jsx,js}'],
     addGTProvider: true,
     disableIds: true,
@@ -64,7 +66,13 @@ export default function RootLayout() {
       vi.mocked(matchFiles).mockReturnValue([filePath]);
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       // Should not attempt to write
       expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
@@ -87,7 +95,13 @@ export default function RootLayout() {
       vi.mocked(matchFiles).mockReturnValue([filePath]);
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
       expect(filesUpdated).toHaveLength(0);
@@ -120,11 +134,18 @@ export default function RootLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       // Should wrap with GTProvider and add imports
       expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalled();
-      const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+      const writtenCode = vi.mocked(fs.promises.writeFile).mock
+        .calls[0][1] as string;
       expect(writtenCode).toContain('GTProvider');
       expect(writtenCode).toContain('gtConfig');
       expect(writtenCode).toContain('loadTranslations');
@@ -147,11 +168,18 @@ export default function TabLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       // Nested layouts should NOT have GTProvider wrapping
       if (vi.mocked(fs.promises.writeFile).mock.calls.length > 0) {
-        const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+        const writtenCode = vi.mocked(fs.promises.writeFile).mock
+          .calls[0][1] as string;
         expect(writtenCode).not.toContain('GTProvider');
         expect(writtenCode).not.toContain('gtConfig');
         expect(writtenCode).not.toContain('loadTranslations');
@@ -175,9 +203,16 @@ export default function RootLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
-      const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+      const writtenCode = vi.mocked(fs.promises.writeFile).mock
+        .calls[0][1] as string;
 
       // Check that both props are present
       expect(writtenCode).toContain('config={gtConfig}');
@@ -203,9 +238,16 @@ export default function RootLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
-      const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+      const writtenCode = vi.mocked(fs.promises.writeFile).mock
+        .calls[0][1] as string;
 
       // Check imports are added
       expect(writtenCode).toContain('gt.config.json');
@@ -230,9 +272,16 @@ export default function RootLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
-      const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+      const writtenCode = vi.mocked(fs.promises.writeFile).mock
+        .calls[0][1] as string;
 
       // Should use ./gt.config.json for app level
       expect(writtenCode).toContain('./gt.config.json');
@@ -254,7 +303,13 @@ export default function RootLayout() {
       vi.mocked(matchFiles).mockReturnValue([filePath]);
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidCode);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0]).toContain('Error: Failed to parse');
@@ -278,11 +333,18 @@ export default function RootLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       // Should have written the file with GTProvider + T wrapping
       expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalled();
-      const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+      const writtenCode = vi.mocked(fs.promises.writeFile).mock
+        .calls[0][1] as string;
       // Should contain GTProvider from addGTProvider
       expect(writtenCode).toContain('GTProvider');
     });
@@ -301,7 +363,13 @@ export default function TabLayout() {
       vi.mocked(matchFiles).mockReturnValue([filePath]);
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       expect(filesUpdated).toHaveLength(0);
     });
@@ -323,12 +391,19 @@ export default function RootLayout() {
       vi.mocked(fs.promises.readFile).mockResolvedValue(code);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-      await wrapContentReactNative(options, 'gt-react-native', 'expo', errors, warnings);
+      await wrapContentReactNative(
+        options,
+        'gt-react-native',
+        'expo',
+        errors,
+        warnings
+      );
 
       // When addGTProvider is false, GTProvider should not be in the output
       // (even though T tags might be added)
       if (vi.mocked(fs.promises.writeFile).mock.calls.length > 0) {
-        const writtenCode = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
+        const writtenCode = vi.mocked(fs.promises.writeFile).mock
+          .calls[0][1] as string;
         expect(writtenCode).not.toContain('GTProvider');
         expect(writtenCode).not.toContain('gtConfig');
         expect(writtenCode).not.toContain('loadTranslations');

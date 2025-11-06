@@ -28,7 +28,9 @@ export async function handleInitGT(
 
     // Calculate relative path for babel config
     const relativeEntryPath = path.relative(appRoot, detection.absolutePath);
-    console.log(`[DEBUG] handleInitGT: Relative entry path: ${relativeEntryPath}`);
+    console.log(
+      `[DEBUG] handleInitGT: Relative entry path: ${relativeEntryPath}`
+    );
 
     if (babelExists) {
       // Parse existing babel config and add gt-react-native plugin
