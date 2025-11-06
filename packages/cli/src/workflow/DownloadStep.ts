@@ -4,6 +4,7 @@ import {
   createProgressBar,
   createSpinner,
   logError,
+  logWarning,
 } from '../console/logging.js';
 import { BatchedFiles, downloadFileBatch } from '../api/downloadFileBatch.js';
 import { GT } from 'generaltranslation';
@@ -38,26 +39,14 @@ export class DownloadTranslationsStep extends WorkflowStep<
     this.spinner = createProgressBar(fileTracker.completed.size);
     this.spinner.start('Downloading files...');
 
-    try {
-      // Download ready files
-      const success = await this.downloadFiles(
-        fileTracker,
-        resolveOutputPath,
-        forceDownload
-      );
+    // Download ready files
+    const success = await this.downloadFiles(
+      fileTracker,
+      resolveOutputPath,
+      forceDownload
+    );
 
-      if (success) {
-        this.spinner.stop(chalk.green('Files downloaded!'));
-      } else {
-        this.spinner.stop(chalk.red('Failed to download some translations'));
-      }
-
-      return success;
-    } catch (error) {
-      this.spinner.stop(chalk.red('Error downloading translations'));
-      logError(chalk.red('Error: ') + error);
-      return false;
-    }
+    return success;
   }
 
   private async downloadFiles(
@@ -122,28 +111,82 @@ export class DownloadTranslationsStep extends WorkflowStep<
         .filter((file) => file !== null) as BatchedFiles;
 
       if (batchFiles.length > 0) {
-        const batchResult = await downloadFileBatch(
+        const batchResult = await this.downloadFilesWithRetry(
           fileTracker,
           batchFiles,
-          this.settings,
           forceDownload
         );
-
-        this.spinner?.advance(
-          batchResult.failed.length + batchResult.successful.length
+        this.spinner?.stop(
+          chalk.green(`Downloaded ${batchResult.successful.length} files!`)
         );
-      }
-
-      // Check if there were any failures
-      if (fileTracker.failed.size > 0) {
-        return false;
+        if (batchResult.failed.length > 0) {
+          logWarning(
+            `Failed to download ${batchResult.failed.length} files: ${batchResult.failed.map((f) => f.inputPath).join('\n')}`
+          );
+        }
+      } else {
+        this.spinner?.stop(chalk.green('No files to download'));
       }
 
       return true;
     } catch (error) {
-      logError(chalk.red('Error downloading translations: ') + error);
+      this.spinner?.stop(
+        chalk.red('An error occurred while downloading translations')
+      );
+      logError(chalk.red('Error: ') + error);
       return false;
     }
+  }
+
+  private async downloadFilesWithRetry(
+    fileTracker: FileStatusTracker,
+    files: BatchedFiles,
+    forceDownload?: boolean,
+    maxRetries: number = 3,
+    initialDelay: number = 1000
+  ): Promise<{ successful: BatchedFiles; failed: BatchedFiles }> {
+    let remainingFiles = files;
+    let allSuccessful: BatchedFiles = [];
+    let retryCount = 0;
+
+    while (remainingFiles.length > 0 && retryCount < maxRetries) {
+      const batchResult = await downloadFileBatch(
+        fileTracker,
+        remainingFiles,
+        this.settings,
+        forceDownload
+      );
+
+      allSuccessful = [...allSuccessful, ...batchResult.successful];
+      this.spinner?.advance(allSuccessful.length);
+
+      // If no failures or we've exhausted retries, we're done
+      if (batchResult.failed.length === 0 || retryCount === maxRetries) {
+        return {
+          successful: allSuccessful,
+          failed: batchResult.failed,
+        };
+      }
+
+      // Calculate exponential backoff delay
+      const delay = initialDelay * Math.pow(2, retryCount);
+      logError(
+        chalk.yellow(
+          `Retrying ${batchResult.failed.length} failed file(s) in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})...`
+        )
+      );
+
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      remainingFiles = batchResult.failed;
+      retryCount++;
+    }
+
+    return {
+      successful: allSuccessful,
+      failed: remainingFiles,
+    };
   }
 
   async wait(): Promise<void> {

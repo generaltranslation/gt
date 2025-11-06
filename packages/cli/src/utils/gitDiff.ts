@@ -14,28 +14,29 @@ export async function getGitUnifiedDiff(
   oldPath: string,
   newPath: string
 ): Promise<string> {
-  const res = await execFileAsync(
-    'git',
-    [
-      'diff',
-      '--no-index',
-      '--text',
-      '--unified=3',
-      '--no-color',
-      '--',
-      oldPath,
-      newPath,
-    ],
-    {
-      windowsHide: true,
-    }
-  ).catch((error: any) => {
+  try {
+    const res = await execFileAsync(
+      'git',
+      [
+        'diff',
+        '--no-index',
+        '--text',
+        '--unified=3',
+        '--no-color',
+        '--',
+        oldPath,
+        newPath,
+      ],
+      {
+        windowsHide: true,
+      }
+    );
+    return res.stdout || '';
+  } catch (error: any) {
     // Exit code 1 means differences found; stdout contains the diff
     if (error && error.code === 1 && typeof error.stdout === 'string') {
-      return { stdout: error.stdout as string };
+      return error.stdout as string;
     }
     throw error;
-  });
-  // When there are no changes, stdout is empty string and exit code 0
-  return res.stdout || '';
+  }
 }

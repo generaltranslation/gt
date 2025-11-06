@@ -1,22 +1,28 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execAsync = promisify(execFile);
 
 export async function getCurrentBranch(remoteName: string): Promise<{
   branchName: string;
   defaultBranch: boolean;
 } | null> {
   try {
-    const { stdout } = await execAsync('git rev-parse --abbrev-ref HEAD', {
-      encoding: 'utf8',
-    });
+    const { stdout } = await execAsync(
+      'git',
+      ['rev-parse', '--abbrev-ref', 'HEAD'],
+      {
+        encoding: 'utf8',
+        windowsHide: true,
+      }
+    );
     const branchName = stdout.trim();
 
     // Get the default branch (usually main or master)
     const { stdout: defaultBranchRef } = await execAsync(
-      `git symbolic-ref refs/remotes/${remoteName}/HEAD`,
-      { encoding: 'utf8' }
+      'git',
+      ['symbolic-ref', `refs/remotes/${remoteName}/HEAD`],
+      { encoding: 'utf8', windowsHide: true }
     );
     const defaultBranchName = defaultBranchRef
       .trim()
