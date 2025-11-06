@@ -24,6 +24,8 @@ export default async function fetchWithTimeout(
     ? setTimeout(() => controller.abort(), timeout)
     : null;
 
+  // console.log('FETCHING: ', url, options);
+
   try {
     const response = await fetch(url, { ...options, signal });
     return response;

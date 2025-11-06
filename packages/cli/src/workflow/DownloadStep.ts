@@ -45,6 +45,11 @@ export class DownloadTranslationsStep extends WorkflowStep<
       resolveOutputPath,
       forceDownload
     );
+    if (success) {
+      this.spinner.stop(chalk.green('Downloaded files successfully'));
+    } else {
+      this.spinner.stop(chalk.red('Failed to download files'));
+    }
 
     return success;
   }

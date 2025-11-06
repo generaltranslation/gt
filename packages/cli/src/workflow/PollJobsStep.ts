@@ -45,6 +45,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
     forceRetranslation,
   }: PollJobsInput): Promise<PollJobsOutput> {
     const startTime = Date.now();
+    // eslint-disable-next-line no-console
     console.log();
     this.spinner = await createOraSpinner();
     const spinnerMessage = forceRetranslation
@@ -250,10 +251,10 @@ export class PollTranslationJobsStep extends WorkflowStep<
 
     // If terminal is very small, just show the basic progress
     if (terminalHeight < 6) {
-      return `${progressText}`;
+      return progressText;
     }
 
-    const newSuffixText = [`${progressText}`];
+    const newSuffixText = [progressText];
 
     // Organize data by filename : locale
     const fileStatus = new Map<
@@ -325,33 +326,33 @@ export class PollTranslationJobsStep extends WorkflowStep<
       // Add completed locales (green)
       if (status.completed.size > 0) {
         const completedCodes = Array.from(status.completed)
-          .map((locale) => getLocaleProperties(locale).code)
+          .map((locale) => chalk.green(getLocaleProperties(locale).code))
           .join(', ');
-        localeStatuses.push(chalk.green(`${completedCodes}`));
+        localeStatuses.push(completedCodes);
       }
 
       // Add skipped locales (green)
       if (status.skipped.size > 0) {
         const skippedCodes = Array.from(status.skipped)
-          .map((locale) => getLocaleProperties(locale).code)
+          .map((locale) => chalk.gray(getLocaleProperties(locale).code))
           .join(', ');
-        localeStatuses.push(chalk.green(`${skippedCodes}`));
+        localeStatuses.push(skippedCodes);
       }
 
       // Add failed locales (red)
       if (status.failed.size > 0) {
         const failedCodes = Array.from(status.failed)
-          .map((locale) => getLocaleProperties(locale).code)
+          .map((locale) => chalk.red(getLocaleProperties(locale).code))
           .join(', ');
-        localeStatuses.push(chalk.red(`${failedCodes}`));
+        localeStatuses.push(failedCodes);
       }
 
       // Add pending locales (yellow)
       if (status.pending.size > 0) {
         const pendingCodes = Array.from(status.pending)
-          .map((locale) => getLocaleProperties(locale).code)
+          .map((locale) => chalk.yellow(getLocaleProperties(locale).code))
           .join(', ');
-        localeStatuses.push(chalk.yellow(`${pendingCodes}`));
+        localeStatuses.push(pendingCodes);
       }
 
       // Format the line
