@@ -19,18 +19,12 @@ export async function handleInitGT(
     // Detect entry point if not provided
     const detection = detectionResult || detectEntryPoint(appRoot);
 
-    console.log(`[DEBUG] handleInitGT: Detection result:`, detection);
-    console.log(`[DEBUG] handleInitGT: Strategy is "${detection.strategy}"`);
-
     // Check if babel.config.js exists
     const babelExists = fs.existsSync(babelConfigPath);
     let newContent = '';
 
     // Calculate relative path for babel config
     const relativeEntryPath = path.relative(appRoot, detection.absolutePath);
-    console.log(
-      `[DEBUG] handleInitGT: Relative entry path: ${relativeEntryPath}`
-    );
 
     if (babelExists) {
       // Parse existing babel config and add gt-react-native plugin

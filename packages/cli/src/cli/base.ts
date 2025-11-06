@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
-import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
+import findFilepath from '../fs/findFilepath.js';
 import {
   displayHeader,
   promptText,
@@ -13,7 +13,6 @@ import {
   startCommand,
   createSpinner,
   logMessage,
-  logWarning,
 } from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -438,17 +437,10 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const filesUpdated: string[] = [];
-
       if (isUsingGTReactNative) {
         // Use Expo-specific loadTranslations with configured locales
         await createLoadTranslationsFileReactNative(
           process.cwd(),
-          errors,
-          warnings,
-          filesUpdated,
           locales,
           defaultLocale
         );
