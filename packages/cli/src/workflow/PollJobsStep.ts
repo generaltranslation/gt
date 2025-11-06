@@ -32,6 +32,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
   PollJobsOutput
 > {
   private spinner: ReturnType<typeof createProgressBar> | null = null;
+  private previousProgress = 0;
 
   constructor(private gt: GT) {
     super();
@@ -225,12 +226,13 @@ export class PollTranslationJobsStep extends WorkflowStep<
       fileTracker,
       fileQueryData
     );
-    this.spinner.advance(
+    const currentProgress =
       fileTracker.completed.size +
-        fileTracker.failed.size +
-        fileTracker.skipped.size,
-      statusText
-    );
+      fileTracker.failed.size +
+      fileTracker.skipped.size;
+    const progressDelta = currentProgress - this.previousProgress;
+    this.spinner.advance(progressDelta, statusText);
+    this.previousProgress = currentProgress;
   }
 
   private generateStatusSuffixText(
@@ -238,14 +240,13 @@ export class PollTranslationJobsStep extends WorkflowStep<
     fileQueryData: FileProperties[]
   ): string {
     // Simple progress indicator
-    const progressText =
-      chalk.green(
-        `[${
-          fileTracker.completed.size +
-          fileTracker.failed.size +
-          fileTracker.skipped.size
-        }/${fileQueryData.length}]`
-      ) + ` translations completed`;
+    const progressText = `${chalk.green(
+      `[${
+        fileTracker.completed.size +
+        fileTracker.failed.size +
+        fileTracker.skipped.size
+      }/${fileQueryData.length}]`
+    )} translations completed`;
 
     // Get terminal height to adapt our output
     const terminalHeight = process.stdout.rows || 24;

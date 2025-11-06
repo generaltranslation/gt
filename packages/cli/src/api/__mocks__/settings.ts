@@ -4,7 +4,7 @@ export const createMockSettings = (
   overrides: Partial<Settings> = {}
 ): Settings => {
   const defaultSettings = {
-    configDirectory: '',
+    configDirectory: '/mock/.gt',
     publish: false,
     baseUrl: '',
     dashboardUrl: '',
@@ -18,6 +18,14 @@ export const createMockSettings = (
       resolvedPaths: {},
       placeholderPaths: {},
       transformPaths: {},
+    },
+    parsingOptions: {
+      conditionNames: [],
+    },
+    branchOptions: {
+      currentBranch: '',
+      autoDetectBranches: false,
+      remoteName: 'origin',
     },
     stageTranslations: false,
     src: [],
