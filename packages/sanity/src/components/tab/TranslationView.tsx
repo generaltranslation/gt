@@ -28,6 +28,7 @@ export const TranslationView = () => {
     documents,
     locales,
     translationStatuses,
+    branchId,
     isBusy,
     handleTranslateAll,
     handleImportDocument,
@@ -94,7 +95,7 @@ export const TranslationView = () => {
 
       // Find translations ready to import
       const readyTranslations = availableLocales.filter((locale) => {
-        const key = `${documentId}:${locale.localeId}`;
+        const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
         const status = translationStatuses.get(key);
         return status?.isReady && !importedTranslations.has(key);
       });
@@ -292,7 +293,7 @@ export const TranslationView = () => {
 
           <Box>
             {availableLocales.map((locale) => {
-              const key = `${documentId}:${locale.localeId}`;
+              const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
               const status = translationStatuses.get(key);
               const progress = status?.progress || 0;
               const isImported = importedTranslations.has(key);
@@ -326,7 +327,7 @@ export const TranslationView = () => {
                   disabled={
                     isImporting ||
                     availableLocales.every((locale) => {
-                      const key = `${documentId}:${locale.localeId}`;
+                      const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                       const status = translationStatuses.get(key);
                       return !status?.isReady || importedTranslations.has(key);
                     })
@@ -346,14 +347,14 @@ export const TranslationView = () => {
                 Imported{' '}
                 {
                   availableLocales.filter((locale) => {
-                    const key = `${documentId}:${locale.localeId}`;
+                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                     return importedTranslations.has(key);
                   }).length
                 }
                 /
                 {
                   availableLocales.filter((locale) => {
-                    const key = `${documentId}:${locale.localeId}`;
+                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                     const status = translationStatuses.get(key);
                     return status?.isReady;
                   }).length

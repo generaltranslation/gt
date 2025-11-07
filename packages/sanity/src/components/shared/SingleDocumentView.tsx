@@ -13,6 +13,7 @@ export const SingleDocumentView: React.FC = () => {
     downloadStatus,
     importedTranslations,
     handleImportDocument,
+    branchId,
   } = useTranslations();
 
   // Get the first (and only) document in single document mode
@@ -74,7 +75,7 @@ export const SingleDocumentView: React.FC = () => {
                   .map((locale) => {
                     const documentId =
                       document._id?.replace('drafts.', '') || document._id;
-                    const key = `${documentId}:${locale.localeId}`;
+                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                     const status = translationStatuses.get(key);
                     const isDownloaded = downloadStatus.downloaded.has(key);
                     const isImported = importedTranslations.has(key);

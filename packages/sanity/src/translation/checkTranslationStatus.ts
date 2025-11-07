@@ -1,8 +1,9 @@
 import type { Secrets } from '../types';
 import { gt, overrideConfig } from '../adapter/core';
+import { FileProperties } from '../adapter/types';
 
 export async function checkTranslationStatus(
-  fileQueryData: { versionId: string; fileId: string; locale: string }[],
+  fileQueryData: FileProperties[],
   downloadStatus: {
     downloaded: Set<string>;
     failed: Set<string>;
@@ -25,13 +26,15 @@ export async function checkTranslationStatus(
       return true;
     }
     // Check for translations
-    const responseData = await gt.checkFileTranslations(currentQueryData);
+    const responseData = await gt.queryFileData({
+      translatedFiles: currentQueryData,
+    });
 
-    const translations = responseData.translations || [];
+    const translations = responseData.translatedFiles || [];
 
     // Filter for ready translations
     const readyTranslations = translations.filter(
-      (translation) => translation.isReady && translation.fileId
+      (translation) => translation.completedAt
     );
 
     return readyTranslations;

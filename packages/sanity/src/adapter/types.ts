@@ -7,3 +7,15 @@ export type TranslateDocumentFilter = {
   documentId?: string;
   type?: string;
 };
+
+export type FileProperties = {
+  versionId: string;
+  fileId: string;
+  locale: string;
+  branchId: string;
+};
+export type TranslationStatus = {
+  progress: number;
+  isReady: boolean;
+  fileData: FileProperties;
+};

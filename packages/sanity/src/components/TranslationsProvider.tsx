@@ -16,7 +16,7 @@ import {
   TranslationLocale,
   TranslationFunctionContext,
 } from '../types';
-import { pluginConfig } from '../adapter/core';
+import { gt, pluginConfig } from '../adapter/core';
 import { serializeDocument } from '../utils/serialize';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
@@ -34,6 +34,7 @@ import {
 import { processBatch } from '../utils/batchProcessor';
 import { publishTranslations } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
+import type { FileProperties, TranslationStatus } from '../adapter/types';
 
 interface ImportProgress {
   current: number;
@@ -45,12 +46,6 @@ interface DownloadStatus {
   downloaded: Set<string>;
   failed: Set<string>;
   skipped: Set<string>;
-}
-
-interface TranslationStatus {
-  progress: number;
-  isReady: boolean;
-  translationId?: string;
 }
 
 interface TranslationsContextType {
@@ -68,6 +63,7 @@ interface TranslationsContextType {
   isRefreshing: boolean;
   loadingSecrets: boolean;
   secrets: Secrets | null;
+  branchId: string | undefined;
 
   // Actions
   setLocales: (locales: TranslationLocale[]) => void;
@@ -133,6 +129,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const { loading: loadingSecrets, secrets } = useSecrets<Secrets>(
     pluginConfig.getSecretsNamespace()
   );
+  const [branchId, setBranchId] = useState<string | undefined>(undefined);
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
@@ -294,15 +291,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   }, [secrets, documents, locales, schema]);
 
   const handleImportAll = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
+    if (!secrets || documents.length === 0 || !branchId) return;
 
     setIsBusy(true);
 
     try {
-      const readyFiles = await getReadyFilesForImport(
-        documents,
-        translationStatuses
-      );
+      const readyFiles = await getReadyFilesForImport(translationStatuses);
 
       if (readyFiles.length === 0) {
         toast.push({
@@ -373,10 +367,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     translationContext,
   ]);
 
-  const getMissingTranslations = useCallback(
+  const getExistingTranslations = useCallback(
     async (
       documentIds: string[],
-      localeIds: string[]
+      localeIds: string[],
+      branchId: string
     ): Promise<Set<string>> => {
       const sourceLocale = pluginConfig.getSourceLocale();
 
@@ -384,6 +379,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       _type == 'translation.metadata' &&
       translations[_key == $sourceLocale][0].value._ref in $documentIds
     ] {
+      _rev,
       'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
       'existingTranslations': translations[_key in $localeIds]._key
     }`;
@@ -398,30 +394,20 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       existingMetadata.forEach((metadata: any) => {
         metadata.existingTranslations?.forEach((localeId: string) => {
           if (localeId !== sourceLocale) {
-            existing.add(`${metadata.sourceDocId}:${localeId}`);
+            existing.add(
+              `${branchId}:${metadata.sourceDocId}:${metadata._rev}:${localeId}`
+            );
           }
         });
       });
 
-      const missing = new Set<string>();
-      documentIds.forEach((docId) => {
-        localeIds.forEach((localeId) => {
-          if (localeId !== sourceLocale) {
-            const key = `${docId}:${localeId}`;
-            if (!existing.has(key)) {
-              missing.add(key);
-            }
-          }
-        });
-      });
-
-      return missing;
+      return existing;
     },
     [client]
   );
 
   const handleImportMissing = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
+    if (!secrets || documents.length === 0 || !branchId) return;
 
     setIsBusy(true);
 
@@ -434,19 +420,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         (doc) => doc._id?.replace('drafts.', '') || doc._id
       );
 
-      const missingTranslations = await getMissingTranslations(
+      const existingTranslations = await getExistingTranslations(
         documentIds,
-        availableLocaleIds
+        availableLocaleIds,
+        branchId
       );
 
-      console.log('missingTranslations', missingTranslations);
-      const readyFiles = await getReadyFilesForImport(
-        documents,
-        translationStatuses,
-        {
-          filterReadyFiles: (key) => missingTranslations.has(key),
-        }
-      );
+      const readyFiles = await getReadyFilesForImport(translationStatuses, {
+        filterReadyFiles: (key) => !existingTranslations.has(key),
+      });
 
       if (readyFiles.length === 0) {
         toast.push({
@@ -517,11 +499,19 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     translationStatuses,
     downloadStatus,
     translationContext,
-    getMissingTranslations,
+    getExistingTranslations,
   ]);
 
+  const handleGetBranchId = useCallback(async () => {
+    const defaultBranch = await gt.createBranch({
+      branchName: 'main',
+      defaultBranch: true,
+    });
+    setBranchId(defaultBranch.branch.id);
+  }, []);
+
   const handleRefreshAll = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
+    if (!secrets || documents.length === 0 || !branchId) return;
 
     setIsRefreshing(true);
 
@@ -530,13 +520,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const fileQueryData = [];
+      const fileQueryData: FileProperties[] = [];
       for (const doc of documents) {
         for (const localeId of availableLocaleIds) {
           const documentId = doc._id?.replace('drafts.', '') || doc._id;
           fileQueryData.push({
             versionId: doc._rev,
             fileId: documentId,
+            branchId: branchId,
             locale: localeId,
           });
         }
@@ -554,18 +545,24 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         for (const doc of documents) {
           for (const localeId of availableLocaleIds) {
             const documentId = doc._id?.replace('drafts.', '') || doc._id;
-            const key = `${documentId}:${localeId}`;
+            const versionId = doc._rev;
+            const key = `${branchId}:${documentId}:${versionId}:${localeId}`;
             newStatuses.set(key, { progress: 0, isReady: false });
           }
         }
 
         if (Array.isArray(readyTranslations)) {
           for (const translation of readyTranslations) {
-            const key = `${translation.fileId}:${translation.locale}`;
+            const key = `${branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
             newStatuses.set(key, {
               progress: 100,
               isReady: true,
-              translationId: translation.id,
+              fileData: {
+                versionId: translation.versionId,
+                fileId: translation.fileId,
+                branchId: translation.branchId,
+                locale: translation.locale,
+              },
             });
           }
         }
@@ -597,7 +594,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const key = `${documentId}:${localeId}`;
       const status = translationStatuses.get(key);
 
-      if (!status?.isReady || !status.translationId) {
+      if (!status?.isReady || !status.fileData) {
         toast.push({
           title: `Translation not ready for ${documentId} (${localeId})`,
           status: 'warning',
@@ -623,10 +620,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         const downloadedFiles = await downloadTranslations(
           [
             {
-              documentId,
-              versionId: document._rev,
-              translationId: status.translationId,
-              locale: localeId,
+              fileId: status.fileData.fileId,
+              branchId: status.fileData.branchId,
+              versionId: status.fileData.versionId,
+              locale: status.fileData.locale,
             },
           ],
           secrets
@@ -882,6 +879,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   }, [fetchLocales, secrets]);
 
   useEffect(() => {
+    if (secrets) {
+      handleGetBranchId();
+    }
+  }, [secrets]);
+
+  useEffect(() => {
     if (documents.length > 0 && locales.length > 0) {
       fetchExistingTranslations();
     }
@@ -927,6 +930,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     isRefreshing,
     loadingSecrets,
     secrets,
+    branchId,
 
     // Actions
     setLocales,
