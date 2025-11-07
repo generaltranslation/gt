@@ -1,5 +1,9 @@
 import { WorkflowStep } from './Workflow.js';
-import { createSpinner, logErrorAndExit } from '../console/logging.js';
+import {
+  createSpinner,
+  logError,
+  logErrorAndExit,
+} from '../console/logging.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
@@ -9,6 +13,7 @@ import {
   getCheckedOutBranches,
 } from '../git/branches.js';
 import { BranchData } from '../types/branch.js';
+import { ApiError } from 'generaltranslation/errors';
 
 // Step 1: Resolve the current branch id & update API with branch information
 export class BranchStep extends WorkflowStep<null, BranchData | null> {
@@ -39,7 +44,11 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     let incoming: string[] = [];
     let checkedOut: string[] = [];
     let useDefaultBranch: boolean = false;
-    if (this.settings.branchOptions.autoDetectBranches) {
+
+    if (
+      this.settings.branchOptions.enabled &&
+      this.settings.branchOptions.autoDetectBranches
+    ) {
       const [currentResult, incomingResult, checkedOutResult] =
         await Promise.all([
           getCurrentBranch(this.settings.branchOptions.remoteName),
@@ -50,7 +59,10 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       incoming = incomingResult;
       checkedOut = checkedOutResult;
     }
-    if (this.settings.branchOptions.currentBranch) {
+    if (
+      this.settings.branchOptions.enabled &&
+      this.settings.branchOptions.currentBranch
+    ) {
       current = {
         branchName: this.settings.branchOptions.currentBranch,
         defaultBranch: current?.defaultBranch ?? false, // we have no way of knowing if this is the default branch without using the auto-detection logic
@@ -84,8 +96,22 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         (b) => b.name === current.branchName
       );
       if (!currentBranch) {
-        const createBranchResult = await this.gt.createBranch(current);
-        this.branchData.currentBranch = createBranchResult.branch;
+        try {
+          const createBranchResult = await this.gt.createBranch(current);
+          this.branchData.currentBranch = createBranchResult.branch;
+        } catch (error) {
+          if (error instanceof ApiError && error.getCode() === 403) {
+            logError(
+              'Failed to create branch. To enable branching, please upgrade your plan.'
+            );
+            // retry with default branch
+            const createBranchResult = await this.gt.createBranch({
+              branchName: 'main', // name doesn't matter for default branch
+              defaultBranch: true,
+            });
+            this.branchData.currentBranch = createBranchResult.branch;
+          }
+        }
       } else {
         this.branchData.currentBranch = currentBranch;
       }

@@ -110,6 +110,41 @@ export default [
     plugins: [dts()],
   },
 
+  // Bundling for the errors module
+  {
+    input: 'src/errors.ts',
+    output: [
+      {
+        file: 'dist/errors.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/errors.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+    external: [], // External dependencies not bundled in
+  },
+
+  // TypeScript declarations for the errors module
+  {
+    input: 'src/errors.ts',
+    output: {
+      file: 'dist/errors.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
+
   // Bundling for the types module
   {
     input: 'src/types.ts',
