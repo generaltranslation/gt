@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { logErrorAndExit, logMessage, logSuccess } from '../console/logging.js';
+import { logErrorAndExit, logMessage } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
@@ -8,6 +8,7 @@ import { UploadStep } from './UploadStep.js';
 import { SetupStep } from './SetupStep.js';
 import { EnqueueStep } from './EnqueueStep.js';
 import { BranchStep } from './BranchStep.js';
+import { UserEditDiffsStep } from './UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 
 /**
@@ -61,6 +62,7 @@ export async function stageFiles(
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);
     const uploadStep = new UploadStep(gt, settings);
+    const userEditDiffsStep = new UserEditDiffsStep(settings);
     const setupStep = new SetupStep(gt, settings, timeoutMs);
     const enqueueStep = new EnqueueStep(gt, settings, options.force);
 
@@ -75,6 +77,12 @@ export async function stageFiles(
     // then run the upload step
     const uploadedFiles = await uploadStep.run({ files, branchData });
     await uploadStep.wait();
+
+    // optionally run the user edit diffs step
+    if (options?.saveLocal) {
+      await userEditDiffsStep.run(uploadedFiles);
+      await userEditDiffsStep.wait();
+    }
 
     // then run the setup step
     await setupStep.run(uploadedFiles);
