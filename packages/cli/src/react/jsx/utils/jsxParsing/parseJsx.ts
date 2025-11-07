@@ -16,6 +16,7 @@ import {
   warnFunctionNotFoundSync,
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
+  warnInvalidStaticInitSync,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -1004,7 +1005,6 @@ function processFunctionInFile({
     // Mark this function search as processed in the cache
     processFunctionCache.set(cacheKey, result !== undefined);
   } catch {
-    console.log(`function ${functionName} could not be parsed at ${filePath}`);
     // Silently skip files that can't be parsed or accessed
     // Still mark as processed to avoid retrying failed parses
     processFunctionCache.set(cacheKey, false);
@@ -1043,24 +1043,16 @@ function processFunctionDeclarationNodePath({
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
-  let functionDepth = 0;
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
     branches: [],
   };
   path.traverse({
-    'FunctionDeclaration|FunctionExpression|ArrowFunctionExpression|Method|ObjectMethod':
-      {
-        enter() {
-          functionDepth++;
-        },
-        exit() {
-          functionDepth--;
-        },
-      },
+    Function(path) {
+      path.skip();
+    },
     ReturnStatement(returnPath) {
       // Requires depth 0
-      if (functionDepth !== 0) return;
       result.branches.push(
         processReturnStatement({
           unwrappedExpressions,
@@ -1091,6 +1083,8 @@ function processFunctionDeclarationNodePath({
  * const getInfo = () => { ... }
  *
  * TODO: handle no return eg const getInfo = () => "value"
+ *
+ * IMPORTANT: the RHand value must be the function definition, or this will fail
  */
 function processVariableDeclarationNodePath({
   functionName,
@@ -1119,24 +1113,28 @@ function processVariableDeclarationNodePath({
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
-  let functionDepth = 0;
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
     branches: [],
   };
-  path.traverse({
-    'FunctionDeclaration|FunctionExpression|ArrowFunctionExpression|Method|ObjectMethod':
-      {
-        enter() {
-          functionDepth++;
-        },
-        exit() {
-          functionDepth--;
-        },
-      },
+
+  // Enforce the Rhand is a function definition
+  if (!t.isArrowFunctionExpression(path.node.init)) {
+    errors.push(
+      warnInvalidStaticInitSync(
+        file,
+        functionName,
+        `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
+      )
+    );
+  }
+  const arrowFunctionPath = path.get('init');
+  arrowFunctionPath.traverse({
+    Function(path) {
+      path.skip();
+    },
     ReturnStatement(returnPath) {
       // Requires two entries
-      if (functionDepth === 2) return;
       result.branches.push(
         processReturnStatement({
           unwrappedExpressions,

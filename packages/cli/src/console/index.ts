@@ -7,6 +7,13 @@ import {
   colorizeFunctionName,
 } from './colors.js';
 
+const withWillErrorInNextVersion = (message: string): string =>
+  `${message} (This will become an error in the next major version of the CLI.)`;
+
+// Static function related errors
+const withStaticError = (message: string): string =>
+  `<Static> rules violation: ${message}`;
+
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
@@ -153,9 +160,6 @@ export const withLocation = (
 ): string =>
   `${colorizeFilepath(file)}${location ? ` (${colorizeLine(location)})` : ''}: ${message}`;
 
-const withWillErrorInNextVersion = (message: string): string =>
-  `${message} (This will become an error in the next major version of the CLI.)`;
-
 export const warnInvalidStaticChildSync = (
   file: string,
   location?: string
@@ -185,6 +189,21 @@ export const warnDuplicateFunctionDefinitionSync = (
   withLocation(
     file,
     `Function ${colorizeFunctionName(functionName)} is defined multiple times. Only the first definition will be used.`,
+    location
+  );
+
+export const warnInvalidStaticInitSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withStaticError(
+      `The definition for ${colorizeFunctionName(functionName)} could not be resolved. When using arrow syntax to define a static function, the right hand side or the assignment MUST only contain the arrow function itself and no other expressions.
+Example: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = () => { ... }`)}
+Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() => { ... }][0]`)}`
+    ),
     location
   );
 

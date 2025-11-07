@@ -5,6 +5,13 @@ import { Branch, Static, T, Var } from 'gt-next';
 
 // Subjects
 function getThirdSubject(subject: string) {
+  function fakeSubject() {
+    if (1) {
+      return 'fake subject 1'
+    } else {
+      return 'fake subject 2'
+    }
+  }
   if (subject === 'Lily') {
     return 'Lily';
   } else {
@@ -12,7 +19,14 @@ function getThirdSubject(subject: string) {
   }
 }
 
-function getSecondSubject(subject: string) {
+const getSecondSubject = (subject: string) => {
+  const fakeSubject = () => {
+    if (1) {
+      return 'fake subject 1'
+    } else {
+      return 'fake subject 2'
+    }
+  }
   if (subject === 'Ernest') {
     return 'Ernest';
   } else if (subject === 'Fernanda') {
