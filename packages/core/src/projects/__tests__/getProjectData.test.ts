@@ -256,7 +256,7 @@ describe.sequential('_getProjectData', () => {
 
     await _getProjectData(projectId, options, mockConfig);
 
-    expect(generateRequestHeaders).toHaveBeenCalledWith(mockConfig, true);
+    expect(generateRequestHeaders).toHaveBeenCalledWith(mockConfig);
   });
 
   it('should handle JSON parsing errors', async () => {

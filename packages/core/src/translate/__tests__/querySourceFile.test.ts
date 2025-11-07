@@ -348,7 +348,7 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(generateRequestHeaders).toHaveBeenCalledWith(mockConfig, true);
+    expect(generateRequestHeaders).toHaveBeenCalledWith(mockConfig);
   });
 
   it('should handle JSON parsing errors', async () => {
