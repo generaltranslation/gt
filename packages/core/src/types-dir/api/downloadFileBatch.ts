@@ -21,7 +21,7 @@ export type BatchDownloadResult = {
   error?: string;
 };
 
-type File = {
+export type DownloadedFile = {
   id: string;
   branchId: string;
   fileId: string;
@@ -34,6 +34,6 @@ type File = {
 };
 
 export type DownloadFileBatchResult = {
-  files: File[];
+  files: DownloadedFile[];
   count: number;
 };

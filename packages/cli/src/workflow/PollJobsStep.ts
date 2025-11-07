@@ -323,46 +323,70 @@ export class PollTranslationJobsStep extends WorkflowStep<
       const [fileName, status] = filesArray[i];
 
       // Create condensed locale status
-      const localeStatuses = [];
+      const localeStatuses: { locale: string; status: string }[] = [];
 
       // Add completed locales (green)
       if (status.completed.size > 0) {
-        const completedCodes = Array.from(status.completed)
-          .map((locale) => chalk.green(getLocaleProperties(locale).code))
-          .join(', ');
-        localeStatuses.push(completedCodes);
+        localeStatuses.push(
+          ...Array.from(status.completed).map((locale) => ({
+            locale,
+            status: 'completed',
+          }))
+        );
       }
 
       // Add skipped locales (green)
       if (status.skipped.size > 0) {
-        const skippedCodes = Array.from(status.skipped)
-          .map((locale) => chalk.gray(getLocaleProperties(locale).code))
-          .join(', ');
-        localeStatuses.push(skippedCodes);
+        localeStatuses.push(
+          ...Array.from(status.skipped).map((locale) => ({
+            locale,
+            status: 'skipped',
+          }))
+        );
       }
 
       // Add failed locales (red)
       if (status.failed.size > 0) {
-        const failedCodes = Array.from(status.failed)
-          .map((locale) => chalk.red(getLocaleProperties(locale).code))
-          .join(', ');
-        localeStatuses.push(failedCodes);
+        localeStatuses.push(
+          ...Array.from(status.failed).map((locale) => ({
+            locale,
+            status: 'failed',
+          }))
+        );
       }
 
       // Add pending locales (yellow)
       if (status.pending.size > 0) {
-        const pendingCodes = Array.from(status.pending)
-          .map((locale) => chalk.yellow(getLocaleProperties(locale).code))
-          .join(', ');
-        localeStatuses.push(pendingCodes);
+        localeStatuses.push(
+          ...Array.from(status.pending).map((locale) => ({
+            locale,
+            status: 'pending',
+          }))
+        );
       }
+
+      // Sort localeStatuses by locale
+      localeStatuses.sort((a, b) => a.locale.localeCompare(b.locale));
+
+      // Add colors
+      const localeString = localeStatuses
+        .map((locale) => {
+          if (locale.status === 'completed') {
+            return chalk.green(locale.locale);
+          } else if (locale.status === 'skipped') {
+            return chalk.gray(locale.locale);
+          } else if (locale.status === 'failed') {
+            return chalk.red(locale.locale);
+          } else if (locale.status === 'pending') {
+            return chalk.yellow(locale.locale);
+          }
+        })
+        .join(', ');
 
       // Format the line
       const prettyFileName =
         fileName === TEMPLATE_FILE_NAME ? '<React Elements>' : fileName;
-      newSuffixText.push(
-        `${chalk.bold(prettyFileName)} [${localeStatuses.join(', ')}]`
-      );
+      newSuffixText.push(`${chalk.bold(prettyFileName)} [${localeString}]`);
     }
 
     // If we couldn't show all files, add an indicator

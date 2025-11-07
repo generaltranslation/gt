@@ -312,7 +312,7 @@ export class GT {
   }
 
   /**
-   * Creates a new branch in the API.
+   * Creates a new branch in the API. If the branch already exists, it will be returned.
    *
    * @param {CreateBranchQuery} query - Object mapping the branch name and default branch flag
    * @returns {Promise<CreateBranchResult>} The created branch information

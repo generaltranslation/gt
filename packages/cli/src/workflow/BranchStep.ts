@@ -71,14 +71,12 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       useDefaultBranch = true; // we don't even use current if this is the case
     }
 
-    if (!current) {
-      logErrorAndExit(
-        'Failed to determine the current branch. Please specify a custom branch or enable automatic branch detection.'
-      );
-    }
-
     const branchData = await this.gt.queryBranchData({
-      branchNames: [current.branchName, ...incoming, ...checkedOut],
+      branchNames: [
+        ...(current ? [current.branchName] : []),
+        ...incoming,
+        ...checkedOut,
+      ],
     });
 
     if (useDefaultBranch) {
@@ -92,6 +90,11 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         this.branchData.currentBranch = branchData.defaultBranch;
       }
     } else {
+      if (!current) {
+        logErrorAndExit(
+          'Failed to determine the current branch. Please specify a custom branch or enable automatic branch detection.'
+        );
+      }
       const currentBranch = branchData.branches.find(
         (b) => b.name === current.branchName
       );
