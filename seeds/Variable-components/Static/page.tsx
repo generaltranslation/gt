@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Branch, Static, T, Var } from 'gt-next';
 
 // Subjects
+const getFourthSubject = () => "Lily"
 function getThirdSubject(subject: string) {
   function fakeSubject() {
     if (1) {
@@ -13,7 +14,7 @@ function getThirdSubject(subject: string) {
     }
   }
   if (subject === 'Lily') {
-    return 'Lily';
+    return getFourthSubject();
   } else {
     return <Var>{subject}</Var>;
   }

@@ -12,7 +12,7 @@ import {
   warnHasUnwrappedExpressionSync,
   warnNestedTComponent,
   warnInvalidStaticChildSync,
-  warnInvalidReturnSync,
+  warnInvalidReturnSync as warnInvalidReturnExpressionSync,
   warnFunctionNotFoundSync,
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
@@ -1054,7 +1054,7 @@ function processFunctionDeclarationNodePath({
     ReturnStatement(returnPath) {
       // Requires depth 0
       result.branches.push(
-        processReturnStatement({
+        processReturnExpression({
           unwrappedExpressions,
           functionName,
           pkg,
@@ -1119,7 +1119,8 @@ function processVariableDeclarationNodePath({
   };
 
   // Enforce the Rhand is a function definition
-  if (!t.isArrowFunctionExpression(path.node.init)) {
+  const arrowFunctionPath = path.get('init');
+  if (!arrowFunctionPath.isArrowFunctionExpression()) {
     errors.push(
       warnInvalidStaticInitSync(
         file,
@@ -1127,33 +1128,56 @@ function processVariableDeclarationNodePath({
         `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
       )
     );
+    return null;
   }
-  const arrowFunctionPath = path.get('init');
-  arrowFunctionPath.traverse({
-    Function(path) {
-      path.skip();
-    },
-    ReturnStatement(returnPath) {
-      // Requires two entries
-      result.branches.push(
-        processReturnStatement({
-          unwrappedExpressions,
-          functionName,
-          pkg,
-          scopeNode: returnPath,
-          node: returnPath.node.argument,
-          importAliases,
-          visited,
-          updates,
-          errors,
-          warnings,
-          file,
-          parsingOptions,
-          importedFunctionsMap,
-        })
-      );
-    },
-  });
+
+  if (t.isExpression(arrowFunctionPath.node.body)) {
+    // process expression return
+    result.branches.push(
+      processReturnExpression({
+        unwrappedExpressions,
+        functionName,
+        pkg,
+        scopeNode: arrowFunctionPath,
+        node: arrowFunctionPath.node.body,
+        importAliases,
+        visited,
+        updates,
+        errors,
+        warnings,
+        file,
+        parsingOptions,
+        importedFunctionsMap,
+      })
+    );
+  } else {
+    // search for a return statement
+    arrowFunctionPath.get('body').traverse({
+      Function(path) {
+        path.skip();
+      },
+      ReturnStatement(returnPath) {
+        result.branches.push(
+          processReturnExpression({
+            unwrappedExpressions,
+            functionName,
+            pkg,
+            scopeNode: returnPath,
+            node: returnPath.node.argument,
+            importAliases,
+            visited,
+            updates,
+            errors,
+            warnings,
+            file,
+            parsingOptions,
+            importedFunctionsMap,
+          })
+        );
+      },
+    });
+  }
+
   if (result.branches.length === 0) {
     errors.push(
       warnMissingReturnSync(
@@ -1168,9 +1192,10 @@ function processVariableDeclarationNodePath({
 }
 
 /**
- * Process a return statement of a function
+ * Process a expression being returned from a function
+ * // TODO: here add ternary
  */
-function processReturnStatement({
+function processReturnExpression({
   unwrappedExpressions,
   scopeNode,
   node,
@@ -1205,7 +1230,7 @@ function processReturnStatement({
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(node)) {
     // ex: return (value)
-    return processReturnStatement({
+    return processReturnExpression({
       unwrappedExpressions,
       importAliases,
       scopeNode,
@@ -1304,9 +1329,10 @@ function processReturnStatement({
     }
     // reject
     errors.push(
-      warnInvalidReturnSync(
+      warnInvalidReturnExpressionSync(
         file,
         functionName,
+        generate(node).code,
         `${scopeNode.node.loc?.start?.line}:${scopeNode.node.loc?.start?.column}`
       )
     );

@@ -37,11 +37,14 @@ export const warnVariablePropSync = (
 export const warnInvalidReturnSync = (
   file: string,
   functionName: string,
+  expression: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does not return a static value. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, or (3) static JSX content.`,
+    withStaticError(
+      `Function ${colorizeFunctionName(functionName)} does not return a static expression. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, or (3) static JSX content. Instead got:\n${colorizeContent(expression)}`
+    ),
     location
   );
 
