@@ -1052,14 +1052,17 @@ function processFunctionDeclarationNodePath({
       path.skip();
     },
     ReturnStatement(returnPath) {
-      // Requires depth 0
+      const returnNodePath = returnPath.get('argument');
+      if (!returnNodePath.isExpression()) {
+        return;
+      }
       result.branches.push(
         processReturnExpression({
           unwrappedExpressions,
           functionName,
           pkg,
-          scopeNode: returnPath,
-          node: returnPath.node.argument,
+          scopeNode: returnNodePath,
+          expressionNodePath: returnNodePath,
           importAliases,
           visited,
           updates,
@@ -1081,8 +1084,6 @@ function processFunctionDeclarationNodePath({
 /**
  * Process a variable declaration of a function
  * const getInfo = () => { ... }
- *
- * TODO: handle no return eg const getInfo = () => "value"
  *
  * IMPORTANT: the RHand value must be the function definition, or this will fail
  */
@@ -1131,7 +1132,8 @@ function processVariableDeclarationNodePath({
     return null;
   }
 
-  if (t.isExpression(arrowFunctionPath.node.body)) {
+  const bodyNodePath = arrowFunctionPath.get('body');
+  if (bodyNodePath.isExpression()) {
     // process expression return
     result.branches.push(
       processReturnExpression({
@@ -1139,7 +1141,7 @@ function processVariableDeclarationNodePath({
         functionName,
         pkg,
         scopeNode: arrowFunctionPath,
-        node: arrowFunctionPath.node.body,
+        expressionNodePath: bodyNodePath,
         importAliases,
         visited,
         updates,
@@ -1152,18 +1154,22 @@ function processVariableDeclarationNodePath({
     );
   } else {
     // search for a return statement
-    arrowFunctionPath.get('body').traverse({
+    bodyNodePath.traverse({
       Function(path) {
         path.skip();
       },
       ReturnStatement(returnPath) {
+        const returnNodePath = returnPath.get('argument');
+        if (!returnNodePath.isExpression()) {
+          return;
+        }
         result.branches.push(
           processReturnExpression({
             unwrappedExpressions,
             functionName,
             pkg,
             scopeNode: returnPath,
-            node: returnPath.node.argument,
+            expressionNodePath: returnNodePath,
             importAliases,
             visited,
             updates,
@@ -1193,12 +1199,11 @@ function processVariableDeclarationNodePath({
 
 /**
  * Process a expression being returned from a function
- * // TODO: here add ternary
  */
 function processReturnExpression({
   unwrappedExpressions,
   scopeNode,
-  node,
+  expressionNodePath,
   importAliases,
   visited,
   updates,
@@ -1212,8 +1217,9 @@ function processReturnExpression({
 }: {
   functionName: string;
   unwrappedExpressions: string[];
+  /* TODO: remove scopeNode, we can just reuse expressionNodePath here */
   scopeNode: NodePath;
-  node: t.Expression | null | undefined;
+  expressionNodePath: NodePath<t.Expression>;
   importAliases: Record<string, string>;
   visited: Set<string>;
   updates: Updates;
@@ -1224,17 +1230,17 @@ function processReturnExpression({
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
 }): JsxTree | MultiplicationNode {
-  // If the node is null, return
-  if (node == null) return null;
+  // // If the node is null, return
+  // if (expressionNodePath == null) return null;
 
   // Remove parentheses if they exist
-  if (t.isParenthesizedExpression(node)) {
+  if (t.isParenthesizedExpression(expressionNodePath.node)) {
     // ex: return (value)
     return processReturnExpression({
       unwrappedExpressions,
       importAliases,
       scopeNode,
-      node: node.expression,
+      expressionNodePath: expressionNodePath.get('expression'),
       visited,
       updates,
       errors,
@@ -1245,9 +1251,12 @@ function processReturnExpression({
       importedFunctionsMap,
       pkg,
     });
-  } else if (t.isCallExpression(node) && t.isIdentifier(node.callee)) {
+  } else if (
+    t.isCallExpression(expressionNodePath.node) &&
+    t.isIdentifier(expressionNodePath.node.callee)
+  ) {
     // ex: return someFunc()
-    const callee = node.callee;
+    const callee = expressionNodePath.node.callee;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
     if (!calleeBinding) {
       warnFunctionNotFoundSync(
@@ -1273,12 +1282,12 @@ function processReturnExpression({
       importedFunctionsMap,
     });
   } else if (
-    t.isAwaitExpression(node) &&
-    t.isCallExpression(node.argument) &&
-    t.isIdentifier(node.argument.callee)
+    t.isAwaitExpression(expressionNodePath.node) &&
+    t.isCallExpression(expressionNodePath.node.argument) &&
+    t.isIdentifier(expressionNodePath.node.argument.callee)
   ) {
     // ex: return await someFunc()
-    const callee = node.argument.callee;
+    const callee = expressionNodePath.node.argument.callee;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
     if (!calleeBinding) {
       warnFunctionNotFoundSync(
@@ -1303,11 +1312,14 @@ function processReturnExpression({
       parsingOptions,
       importedFunctionsMap,
     });
-  } else if (t.isJSXElement(node) || t.isJSXFragment(node)) {
+  } else if (
+    t.isJSXElement(expressionNodePath.node) ||
+    t.isJSXFragment(expressionNodePath.node)
+  ) {
     // ex: return <div>Jsx content</div>
     return buildJSXTree({
       importAliases,
-      node,
+      node: expressionNodePath.node,
       unwrappedExpressions,
       visited,
       updates,
@@ -1320,9 +1332,36 @@ function processReturnExpression({
       importedFunctionsMap,
       pkg,
     });
+  } else if (t.isConditionalExpression(expressionNodePath.node)) {
+    // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
+    // since two options here we must construct a new multiplication node
+    const consequentNodePath = expressionNodePath.get('consequent');
+    const alternateNodePath = expressionNodePath.get('alternate');
+    const result: MultiplicationNode = {
+      nodeType: 'multiplication' as const,
+      branches: [consequentNodePath, alternateNodePath].map(
+        (expressionNodePath) =>
+          processReturnExpression({
+            unwrappedExpressions,
+            importAliases,
+            scopeNode,
+            expressionNodePath,
+            visited,
+            updates,
+            errors,
+            warnings,
+            file,
+            parsingOptions,
+            functionName,
+            importedFunctionsMap,
+            pkg,
+          })
+      ),
+    };
+    return result;
   } else {
     // Handle static expressions (e.g. return 'static string')
-    const staticAnalysis = isStaticExpression(node);
+    const staticAnalysis = isStaticExpression(expressionNodePath.node);
     if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
       // Preserve the exact whitespace for static string expressions
       return staticAnalysis.value;
@@ -1332,7 +1371,7 @@ function processReturnExpression({
       warnInvalidReturnExpressionSync(
         file,
         functionName,
-        generate(node).code,
+        generate(expressionNodePath.node).code,
         `${scopeNode.node.loc?.start?.line}:${scopeNode.node.loc?.start?.column}`
       )
     );

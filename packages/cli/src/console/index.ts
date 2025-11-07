@@ -43,7 +43,7 @@ export const warnInvalidReturnSync = (
   withLocation(
     file,
     withStaticError(
-      `Function ${colorizeFunctionName(functionName)} does not return a static expression. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, or (3) static JSX content. Instead got:\n${colorizeContent(expression)}`
+      `Function ${colorizeFunctionName(functionName)} does not return a static expression. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, (3) static JSX content, or (4) a ternary expression. Instead got:\n${colorizeContent(expression)}`
     ),
     location
   );

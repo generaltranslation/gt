@@ -4,7 +4,6 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { createInlineUpdates } from '../createInlineUpdates.js';
 import { hashSource } from 'generaltranslation/id';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
-import { JsxChildren } from 'generaltranslation/types';
 
 // Mock parseStrings since we're not testing string parsing functionality
 vi.mock('../jsx/utils/parseStringFunction.js', () => ({

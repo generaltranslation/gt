@@ -28,10 +28,8 @@ const getSecondSubject = (subject: string) => {
       return 'fake subject 2'
     }
   }
-  if (subject === 'Ernest') {
-    return 'Ernest';
-  } else if (subject === 'Fernanda') {
-    return <>Fernanda</>;
+  if (subject === 'Ernest' || subject === 'Fernanda') {
+    return subject === 'Ernest' ? 'Ernest' : <>Fernanda</>;
   } else {
     return (
       <>
