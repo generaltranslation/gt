@@ -1,19 +1,19 @@
 export class ApiError extends Error {
-  private code: number;
-  private error: string;
+  public code: number;
+  public message: string;
 
-  constructor(message: string, code: number, error: string) {
-    super(message);
+  constructor(error: string, code: number, message: string) {
+    super(error);
     this.name = 'ApiError';
     this.code = code;
-    this.error = error;
+    this.message = message;
   }
 
   getCode() {
     return this.code;
   }
 
-  getError() {
-    return this.error;
+  getMessage() {
+    return this.message;
   }
 }
