@@ -44,9 +44,17 @@ export async function getIncomingBranches(
     // Get merge commits in the current branch's history
     // This will show branches that were merged, including remote PR merges
     const { stdout: log } = await execAsync(
-      'git log --merges --first-parent --format="%s" --no-abbrev-commit',
+      'git',
+      [
+        'log',
+        '--merges',
+        '--first-parent',
+        '--format=%s',
+        '--no-abbrev-commit',
+      ],
       {
         encoding: 'utf8',
+        windowsHide: true,
       }
     );
 
@@ -66,7 +74,7 @@ export async function getIncomingBranches(
       // Match GitHub PR merge format: "Merge pull request #123 from owner/branch_name"
       let match = line.match(/Merge pull request #\d+ from [^/]+\/(.+)/i);
       if (match && match[1]) {
-        const branchName = match[1].trim();
+        const branchName = match[1].trim().replace(/^["']|["']$/g, '');
         if (!seen.has(branchName)) {
           seen.add(branchName);
           branches.push(branchName);
@@ -77,7 +85,7 @@ export async function getIncomingBranches(
       // Match standard merge format: "Merge branch 'branch_name'"
       match = line.match(/Merge branch '([^']+)'/i);
       if (match && match[1]) {
-        const branchName = match[1].trim();
+        const branchName = match[1].trim().replace(/^["']|["']$/g, '');
         if (!seen.has(branchName)) {
           seen.add(branchName);
           branches.push(branchName);
@@ -103,9 +111,14 @@ export async function getCheckedOutBranches(
     }
 
     // Get branches that the current branch was checked out from
-    const { stdout: reflog } = await execAsync('git reflog --format="%gs"', {
-      encoding: 'utf8',
-    });
+    const { stdout: reflog } = await execAsync(
+      'git',
+      ['reflog', '--format=%gs'],
+      {
+        encoding: 'utf8',
+        windowsHide: true,
+      }
+    );
 
     const branches: string[] = [];
     const seen = new Set<string>();

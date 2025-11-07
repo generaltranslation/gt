@@ -43,8 +43,8 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     let current: { branchName: string; defaultBranch: boolean } | null = null;
     let incoming: string[] = [];
     let checkedOut: string[] = [];
-    let useDefaultBranch: boolean = false;
-
+    let useDefaultBranch: boolean = true;
+    console.log('this.settings.branchOptions', this.settings.branchOptions);
     if (
       this.settings.branchOptions.enabled &&
       this.settings.branchOptions.autoDetectBranches
@@ -58,6 +58,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       current = currentResult;
       incoming = incomingResult;
       checkedOut = checkedOutResult;
+      useDefaultBranch = false;
     }
     if (
       this.settings.branchOptions.enabled &&
@@ -67,9 +68,12 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         branchName: this.settings.branchOptions.currentBranch,
         defaultBranch: current?.defaultBranch ?? false, // we have no way of knowing if this is the default branch without using the auto-detection logic
       };
-    } else {
-      useDefaultBranch = true; // we don't even use current if this is the case
+      useDefaultBranch = false;
     }
+
+    console.log('current', current);
+    console.log('incoming', incoming);
+    console.log('checkedOut', checkedOut);
 
     const branchData = await this.gt.queryBranchData({
       branchNames: [

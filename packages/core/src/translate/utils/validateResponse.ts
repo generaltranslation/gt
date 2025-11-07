@@ -1,5 +1,4 @@
 import { apiError } from '../../logging/errors';
-import { fetchLogger } from '../../logging/logger';
 import { ApiError } from '../../errors/ApiError';
 
 export default async function validateResponse(response: Response) {
@@ -10,11 +9,6 @@ export default async function validateResponse(response: Response) {
       response.statusText,
       errorText
     );
-    fetchLogger.error(errorMessage, {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorText,
-    });
     const error = new ApiError(errorMessage, response.status, errorText);
     throw error;
   }

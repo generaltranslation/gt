@@ -2,7 +2,7 @@ import { DataFormat } from '../jsx/content';
 import { FileFormat, FileReference } from './file';
 
 export type FileUpload = {
-  branchId?: string; // if not provided, will use the default branch
+  branchId?: string; // optional branch id. If not provided, will use the default branch.
   incomingBranchId?: string; // optional branch id to use for incoming translations
   checkedOutBranchId?: string; // optional branch id to use for checked out translations
   content: string;

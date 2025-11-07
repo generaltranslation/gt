@@ -70,6 +70,7 @@ export class UploadStep extends WorkflowStep<
       filesToUpload.map((f) => ({
         source: {
           ...f,
+          branchId: f.branchId ?? branchData.currentBranch.id,
           locale: this.settings.defaultLocale,
           incomingBranchId: branchData.incomingBranch?.id,
           checkedOutBranchId: branchData.checkedOutBranch?.id,
