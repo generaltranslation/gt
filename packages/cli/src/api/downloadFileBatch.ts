@@ -28,6 +28,7 @@ export type BatchedFiles = {
 export type DownloadFileBatchResult = {
   successful: BatchedFiles;
   failed: BatchedFiles;
+  skipped: BatchedFiles;
 };
 /**
  * Downloads multiple translation files in a single batch request
@@ -56,6 +57,7 @@ export async function downloadFileBatch(
   const result: DownloadFileBatchResult = {
     successful: [],
     failed: [],
+    skipped: [],
   };
 
   // Create a map of translationId to outputPath for easier lookup
@@ -113,7 +115,7 @@ export async function downloadFileBatch(
           downloadedVersions.entries[branchId]?.[fileId]?.[versionId]?.[locale];
         const fileExists = fs.existsSync(outputPath);
         if (!forceDownload && fileExists && downloadedVersion) {
-          result.successful.push(requestedFile);
+          result.skipped.push(requestedFile);
           continue;
         }
         let data = file.data;

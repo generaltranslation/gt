@@ -1,7 +1,11 @@
 import chalk from 'chalk';
 import { WorkflowStep } from './Workflow.js';
 import { createProgressBar, logError, logWarning } from '../console/logging.js';
-import { BatchedFiles, downloadFileBatch } from '../api/downloadFileBatch.js';
+import {
+  BatchedFiles,
+  downloadFileBatch,
+  DownloadFileBatchResult,
+} from '../api/downloadFileBatch.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import { FileStatusTracker } from './PollJobsStep.js';
@@ -116,7 +120,9 @@ export class DownloadTranslationsStep extends WorkflowStep<
           forceDownload
         );
         this.spinner?.stop(
-          chalk.green(`Downloaded ${batchResult.successful.length} files`)
+          chalk.green(
+            `Downloaded ${batchResult.successful.length} files${batchResult.skipped.length > 0 ? `, skipped ${batchResult.skipped.length} files` : ''}`
+          )
         );
         if (batchResult.failed.length > 0) {
           logWarning(
@@ -143,11 +149,11 @@ export class DownloadTranslationsStep extends WorkflowStep<
     forceDownload?: boolean,
     maxRetries: number = 3,
     initialDelay: number = 1000
-  ): Promise<{ successful: BatchedFiles; failed: BatchedFiles }> {
+  ): Promise<DownloadFileBatchResult> {
     let remainingFiles = files;
     let allSuccessful: BatchedFiles = [];
     let retryCount = 0;
-
+    let allSkipped: BatchedFiles = [];
     while (remainingFiles.length > 0 && retryCount < maxRetries) {
       const batchResult = await downloadFileBatch(
         fileTracker,
@@ -157,13 +163,20 @@ export class DownloadTranslationsStep extends WorkflowStep<
       );
 
       allSuccessful = [...allSuccessful, ...batchResult.successful];
-      this.spinner?.advance(allSuccessful.length);
+      allSkipped = [...allSkipped, ...batchResult.skipped];
+
+      this.spinner?.advance(
+        batchResult.successful.length +
+          batchResult.skipped.length +
+          batchResult.failed.length
+      );
 
       // If no failures or we've exhausted retries, we're done
       if (batchResult.failed.length === 0 || retryCount === maxRetries) {
         return {
           successful: allSuccessful,
           failed: batchResult.failed,
+          skipped: allSkipped,
         };
       }
 
@@ -185,6 +198,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
     return {
       successful: allSuccessful,
       failed: remainingFiles,
+      skipped: allSkipped,
     };
   }
 

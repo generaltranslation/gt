@@ -40,7 +40,10 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     this.spinner.start(`Resolving branch information...`);
 
     // First get some info about the branches we're working with
-    let current: { branchName: string; defaultBranch: boolean } | null = null;
+    let current: {
+      currentBranchName: string;
+      defaultBranch: boolean;
+    } | null = null;
     let incoming: string[] = [];
     let checkedOut: string[] = [];
     let useDefaultBranch: boolean = true;
@@ -65,7 +68,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       this.settings.branchOptions.currentBranch
     ) {
       current = {
-        branchName: this.settings.branchOptions.currentBranch,
+        currentBranchName: this.settings.branchOptions.currentBranch,
         defaultBranch: current?.defaultBranch ?? false, // we have no way of knowing if this is the default branch without using the auto-detection logic
       };
       useDefaultBranch = false;
@@ -77,7 +80,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
 
     const branchData = await this.gt.queryBranchData({
       branchNames: [
-        ...(current ? [current.branchName] : []),
+        ...(current ? [current.currentBranchName] : []),
         ...incoming,
         ...checkedOut,
       ],
@@ -100,11 +103,14 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         );
       }
       const currentBranch = branchData.branches.find(
-        (b) => b.name === current.branchName
+        (b) => b.name === current.currentBranchName
       );
       if (!currentBranch) {
         try {
-          const createBranchResult = await this.gt.createBranch(current);
+          const createBranchResult = await this.gt.createBranch({
+            branchName: current.currentBranchName,
+            defaultBranch: current.defaultBranch,
+          });
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {

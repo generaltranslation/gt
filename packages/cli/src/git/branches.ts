@@ -2,10 +2,12 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(execFile);
+const MAX_BRANCHES = 5;
 
 export async function getCurrentBranch(remoteName: string): Promise<{
-  branchName: string;
+  currentBranchName: string;
   defaultBranch: boolean;
+  defaultBranchName: string;
 } | null> {
   try {
     const { stdout } = await execAsync(
@@ -16,7 +18,7 @@ export async function getCurrentBranch(remoteName: string): Promise<{
         windowsHide: true,
       }
     );
-    const branchName = stdout.trim();
+    const currentBranchName = stdout.trim();
 
     // Get the default branch (usually main or master)
     const { stdout: defaultBranchRef } = await execAsync(
@@ -27,30 +29,27 @@ export async function getCurrentBranch(remoteName: string): Promise<{
     const defaultBranchName = defaultBranchRef
       .trim()
       .replace(`refs/remotes/${remoteName}/`, '');
-    const defaultBranch = branchName === defaultBranchName;
+    const defaultBranch = currentBranchName === defaultBranchName;
 
-    return { branchName, defaultBranch };
+    return { currentBranchName, defaultBranch, defaultBranchName };
   } catch {
     return null;
   }
 }
 
-const MAX_BRANCHES = 10;
-
 export async function getIncomingBranches(
   remoteName: string
 ): Promise<string[]> {
   try {
-    // Get merge commits in the current branch's history
-    // This will show branches that were merged, including remote PR merges
-    const { stdout: log } = await execAsync(
+    // Get merge commits into the current branch
+    const { stdout } = await execAsync(
       'git',
       [
         'log',
         '--merges',
         '--first-parent',
-        '--format=%s',
-        '--no-abbrev-commit',
+        '--pretty=format:%s',
+        `-${MAX_BRANCHES}`,
       ],
       {
         encoding: 'utf8',
@@ -58,42 +57,28 @@ export async function getIncomingBranches(
       }
     );
 
-    const branches: string[] = [];
-    const seen = new Set<string>();
+    if (!stdout.trim()) {
+      return [];
+    }
 
-    // Parse commit messages like "Merge pull request #123 from owner/branch_name"
-    // or "Merge branch 'branch_name' into main"
-    const lines = log
-      .trim()
-      .split('\n')
-      .filter((line) => line);
+    const branches: string[] = [];
+    const lines = stdout.trim().split('\n');
 
     for (const line of lines) {
-      if (branches.length >= MAX_BRANCHES) break;
+      // Parse merge commit messages:
+      // - "Merge branch 'feature-name'" or "Merge branch 'feature-name' into main"
+      // - "Merge pull request #123 from user/branch-name"
+      const branchMatch = line.match(/Merge branch '([^']+)'/);
+      const prMatch = line.match(/Merge pull request #\d+ from [^/]+\/(.+)/);
 
-      // Match GitHub PR merge format: "Merge pull request #123 from owner/branch_name"
-      let match = line.match(/Merge pull request #\d+ from [^/]+\/(.+)/i);
-      if (match && match[1]) {
-        const branchName = match[1].trim().replace(/^["']|["']$/g, '');
-        if (!seen.has(branchName)) {
-          seen.add(branchName);
-          branches.push(branchName);
-        }
-        continue;
-      }
-
-      // Match standard merge format: "Merge branch 'branch_name'"
-      match = line.match(/Merge branch '([^']+)'/i);
-      if (match && match[1]) {
-        const branchName = match[1].trim().replace(/^["']|["']$/g, '');
-        if (!seen.has(branchName)) {
-          seen.add(branchName);
-          branches.push(branchName);
-        }
+      if (branchMatch && branchMatch[1]) {
+        branches.push(branchMatch[1]);
+      } else if (prMatch && prMatch[1]) {
+        branches.push(prMatch[1]);
       }
     }
 
-    return branches;
+    return branches.slice(0, MAX_BRANCHES);
   } catch {
     // If log fails or no merges found, return empty array
     return [];
@@ -104,51 +89,32 @@ export async function getCheckedOutBranches(
   remoteName: string
 ): Promise<string[]> {
   try {
-    const currentBranch = await getCurrentBranch(remoteName);
-
-    if (!currentBranch) {
+    // Get current branch
+    const currentBranchResult = await getCurrentBranch(remoteName);
+    if (!currentBranchResult) {
       return [];
     }
 
-    // Get branches that the current branch was checked out from
-    const { stdout: reflog } = await execAsync(
-      'git',
-      ['reflog', '--format=%gs'],
-      {
-        encoding: 'utf8',
-        windowsHide: true,
-      }
-    );
-
-    const branches: string[] = [];
-    const seen = new Set<string>();
-
-    // Parse reflog entries like "checkout: moving from branch1 to branch2"
-    // We want the "from" branch when we checked out TO the current branch
-    const lines = reflog
-      .trim()
-      .split('\n')
-      .filter((line) => line);
-
-    for (const line of lines) {
-      if (branches.length >= MAX_BRANCHES) break;
-
-      const match = line.match(/checkout: moving from (.+) to (.+)/i);
-      if (match && match[1] && match[2]) {
-        const fromBranch = match[1].trim();
-        const toBranch = match[2].trim();
-
-        // If we checked out TO the current branch, record the FROM branch
-        if (toBranch === currentBranch.branchName && !seen.has(fromBranch)) {
-          seen.add(fromBranch);
-          branches.push(fromBranch);
-        }
-      }
+    // If we're already on the default branch, return empty
+    if (currentBranchResult.defaultBranch) {
+      return [];
     }
 
-    return branches;
+    // Check if there's a merge-base (common ancestor) between default branch and current
+    // This means the branch was at some point checked out from the default branch
+    try {
+      await execAsync(
+        'git',
+        ['merge-base', currentBranchResult.defaultBranchName, 'HEAD'],
+        { encoding: 'utf8', windowsHide: true }
+      );
+      // If merge-base exists, the branch shares history with default branch
+      return [currentBranchResult.defaultBranchName];
+    } catch {
+      // No common ancestor found
+      return [];
+    }
   } catch {
-    // If reflog fails, return empty array
     return [];
   }
 }
