@@ -133,6 +133,8 @@ export default function addGTIdentifierToSyntaxTree(
         indexObject.index
       );
 
+      // Save current index and recurse
+      const currentIndex = indexObject.index;
       const children = handleChildren(
         props?.children === undefined ? null : props?.children
       );
@@ -148,8 +150,8 @@ export default function addGTIdentifierToSyntaxTree(
 
       // Return the result
       return {
-        t: type || `C${indexObject.index}`,
-        i: indexObject.index,
+        t: type || `C${currentIndex}`,
+        i: currentIndex,
         ...(includeChildren && { c: children }),
         ...(generaltranslation && { d: generaltranslation }),
       };

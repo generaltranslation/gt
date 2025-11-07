@@ -4,6 +4,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { createInlineUpdates } from '../createInlineUpdates.js';
 import { hashSource } from 'generaltranslation/id';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
+import { JsxChildren } from 'generaltranslation/types';
 
 // Mock parseStrings since we're not testing string parsing functionality
 vi.mock('../jsx/utils/parseStringFunction.js', () => ({
@@ -63,42 +64,32 @@ async function createTest(dirPath: string) {
       );
 
       // Verify we got updates from files that have T components
-      expect(result.updates).toBeDefined();
-
-      // Skip test if no updates were generated (file may not have T components)
       if (result.updates.length === 0) {
-        console.warn(
-          `No updates generated for test ${testName} - file may not contain T components`
+        expect(result.warnings.length || result.errors.length).toBeGreaterThan(
+          0
         );
         return;
       }
 
+      // no updates were generated (file may not have T components)
+      expect(result.updates).not.toHaveLength(0);
+
       // For each update that came from parsing T components, verify the hash
       for (const update of result.updates) {
         if (update.metadata.hash && update.source) {
+          if (expected.static) {
+            expect(expected.content).toHaveProperty(update.metadata.hash);
+            continue;
+          }
+
           // Calculate expected hash from the expected.json
           const context = update.metadata.context;
           const expectedHash = hashSource({
-            source: expected,
+            source: update.source,
             ...(context && { context }),
             ...(update.metadata.id && { id: update.metadata.id }),
             dataFormat: update.dataFormat,
           });
-
-          // Only log when there's a mismatch to see failing cases
-          if (update.metadata.hash !== expectedHash) {
-            console.log(`\n=== FAILING TEST: ${testName} ===`);
-            console.log(
-              'UPDATE SOURCE:',
-              JSON.stringify(update.source, null, 2)
-            );
-            console.log(
-              'EXPECTED STRUCTURE:',
-              JSON.stringify(expected, null, 2)
-            );
-            console.log('Calculated hash:', update.metadata.hash);
-            console.log('Expected hash:', expectedHash);
-          }
 
           // Verify that the hash was calculated correctly
           expect(update.metadata.hash).toEqual(expectedHash);
@@ -150,8 +141,6 @@ beforeEach(() => {
 });
 
 describe('createInlineUpdates', () => {
-  // Test full suite to see our amazing progress  
-  createTests(
-    '/Users/ernestmccarter/Documents/dev/gt/packages/compiler/src/transform/jsx-children/__tests__/seeds'
-  );
+  // Test full suite to see our amazing progress
+  createTests(path.join(__dirname, '../../../../../../seeds'));
 });

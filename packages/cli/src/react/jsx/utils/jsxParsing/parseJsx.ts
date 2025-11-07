@@ -552,18 +552,7 @@ export function parseJSXElement({
   }
 
   // Handle whitespace in children
-  console.log('[CLI] ================================================');
-  console.log(
-    '[CLI] parseJSXElement jsxTree:',
-    JSON.stringify(jsxTree, null, 2)
-  );
   const whitespaceHandledTree = handleChildrenWhitespace(jsxTree);
-
-  console.log('[CLI] ================================================');
-  console.log(
-    '[CLI] parseJSXElement whitespaceHandledTree:',
-    JSON.stringify(whitespaceHandledTree, null, 2)
-  );
 
   // Multiply the tree
   const multipliedTrees = multiplyJsxTree(whitespaceHandledTree);

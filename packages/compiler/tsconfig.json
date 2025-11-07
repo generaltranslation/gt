@@ -18,6 +18,6 @@
     "allowSyntheticDefaultImports": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../seeds"],
   "exclude": ["node_modules", "dist", "**/__tests__/**/*"]
 }
