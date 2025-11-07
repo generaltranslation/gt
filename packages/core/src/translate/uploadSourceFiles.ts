@@ -30,8 +30,6 @@ export default async function _uploadSourceFiles(
   const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-files`;
 
-  console.log('uploadSourceFiles', files);
-
   return processBatches(
     files,
     async (batch) => {
