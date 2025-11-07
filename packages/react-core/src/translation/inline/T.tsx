@@ -55,16 +55,6 @@ function T({
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
 
-  const taggedChildren1 = addGTIdentifier(children);
-  const childrenAsObjects1 = writeChildrenAsObjects(taggedChildren1);
-  const hash1 = hashSource({
-    source: childrenAsObjects1,
-    ...(context && { context }),
-    ...(id && { id }),
-    dataFormat: 'JSX',
-  });
-  console.log(`"${hash1}":${JSON.stringify(childrenAsObjects1)},`);
-
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
