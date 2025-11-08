@@ -82,7 +82,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...jsonFiles);
+    allFiles.push(...jsonFiles.filter((file) => file !== null));
   }
 
   // Process YAML files
@@ -123,7 +123,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...yamlFiles);
+    allFiles.push(...yamlFiles.filter((file) => file !== null));
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
