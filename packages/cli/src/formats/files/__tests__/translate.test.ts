@@ -85,7 +85,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       const result = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.json: JSON file is empty'
+        'Skipping empty.json: JSON file is not parsable'
       );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
@@ -110,7 +110,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       const result = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping whitespace.json: JSON file is empty'
+        'Skipping whitespace.json: JSON file is not parsable'
       );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
@@ -302,7 +302,7 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       // Check that warnings were logged for empty files
       expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.json: JSON file is empty'
+        'Skipping empty.json: JSON file is not parsable'
       );
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping empty.yaml: YAML file is empty'
@@ -344,10 +344,10 @@ describe('aggregateFiles - Empty File Handling', () => {
       const result = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty1.json: JSON file is empty'
+        'Skipping empty1.json: JSON file is not parsable'
       );
       expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty2.json: JSON file is empty'
+        'Skipping empty2.json: JSON file is not parsable'
       );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');
