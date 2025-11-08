@@ -84,8 +84,6 @@ export async function stageFiles(
       await userEditDiffsStep.wait();
     }
 
-    // wtf
-
     // then run the setup step
     await setupStep.run(uploadedFiles);
     await setupStep.wait();
