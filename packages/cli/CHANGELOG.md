@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.4.15
+
+### Patch Changes
+
+- [#792](https://github.com/generaltranslation/gt/pull/792) [`b6d6869`](https://github.com/generaltranslation/gt/commit/b6d686917316f6ed44130a54509459a7f9ee35fa) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skipping over JSON and YAML files with failing parse to avoid crashing
+
 ## 2.4.14
 
 ### Patch Changes

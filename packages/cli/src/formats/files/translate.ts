@@ -6,6 +6,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
+import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework.js';
 import { isValidMdx } from '../../utils/validateMdx.js';
 import { hashStringSync } from '../../utils/hash.js';
@@ -49,6 +50,14 @@ export async function aggregateFiles(
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
+        // Pre-validate JSON parseability
+        try {
+          JSON.parse(content);
+        } catch (e: any) {
+          logWarning(`Skipping ${relativePath}: JSON file is not parsable`);
+          return null;
+        }
+
         const parsedJson = parseJson(
           content,
           filePath,
@@ -66,10 +75,9 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => {
-        if (!file || typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(
-            `Skipping ${file?.fileName ?? 'unknown'}: JSON file is empty`
-          );
+        if (!file) return false;
+        if (typeof file.content !== 'string' || !file.content.trim()) {
+          logWarning(`Skipping ${file.fileName}: JSON file is empty`);
           return false;
         }
         return true;
@@ -83,6 +91,14 @@ export async function aggregateFiles(
       .map((filePath) => {
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
+
+        // Pre-validate YAML parseability
+        try {
+          YAML.parse(content);
+        } catch (e: any) {
+          logWarning(`Skipping ${relativePath}: YAML file is not parsable`);
+          return null;
+        }
 
         const { content: parsedYaml, fileFormat } = parseYaml(
           content,
