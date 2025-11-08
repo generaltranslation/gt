@@ -38,13 +38,17 @@ export const TranslationView = () => {
     setLocales,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
+    autoRefresh,
+    setAutoRefresh,
+    autoImport,
+    setAutoImport,
+    autoPatchReferences,
+    setAutoPatchReferences,
+    autoPublish,
+    setAutoPublish,
   } = useTranslations();
 
-  const [autoImport, setAutoImport] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [autoPatchReferences, setAutoPatchReferences] = useState(true);
-  const [autoPublish, setAutoPublish] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
 
   const toast = useToast();
@@ -107,7 +111,7 @@ export const TranslationView = () => {
         // Import all ready translations
         await Promise.all(
           readyTranslations.map((locale) =>
-            handleImportDocument(documentId, locale.localeId)
+            handleImportDocument(documentId, document._rev, locale.localeId)
           )
         );
 
@@ -145,31 +149,12 @@ export const TranslationView = () => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
 
-  // Auto refresh functionality
+  // Enable auto features on mount
   useEffect(() => {
-    if (!autoRefresh || !documentId || availableLocales.length === 0) return;
-
-    const interval = setInterval(async () => {
-      await handleRefreshAll();
-      await handleImportTranslations({ autoOnly: true });
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [
-    autoRefresh,
-    documentId,
-    availableLocales.length,
-    handleRefreshAll,
-    handleImportTranslations,
-  ]);
-
-  useEffect(() => {
-    const initialRefresh = async () => {
-      await handleRefreshAll();
-      await handleImportTranslations({ autoOnly: true });
-    };
-    initialRefresh();
-  }, []);
+    setAutoRefresh(true);
+    setAutoPatchReferences(true);
+    setAutoPublish(true);
+  }, [setAutoRefresh, setAutoPatchReferences, setAutoPublish]);
 
   // Locale toggle functionality
   const toggleLocale = useCallback(
@@ -286,7 +271,7 @@ export const TranslationView = () => {
                 padding={2}
                 text='Refresh Status'
                 onClick={handleRefreshAll}
-                disabled={isRefreshing}
+                disabled={isRefreshing || isBusy}
               />
             </Flex>
           </Flex>
@@ -306,7 +291,11 @@ export const TranslationView = () => {
                   isImported={isImported}
                   importFile={async () => {
                     if (!isImported && status?.isReady) {
-                      await handleImportDocument(documentId, locale.localeId);
+                      await handleImportDocument(
+                        documentId,
+                        document._rev,
+                        locale.localeId
+                      );
                     }
                   }}
                 />

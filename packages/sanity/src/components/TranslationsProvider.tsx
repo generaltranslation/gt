@@ -16,7 +16,7 @@ import {
   TranslationLocale,
   TranslationFunctionContext,
 } from '../types';
-import { gt, pluginConfig } from '../adapter/core';
+import { gt, overrideConfig, pluginConfig } from '../adapter/core';
 import { serializeDocument } from '../utils/serialize';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
@@ -54,6 +54,9 @@ interface TranslationsContextType {
   documents: SanityDocument[];
   locales: TranslationLocale[];
   autoRefresh: boolean;
+  autoImport: boolean;
+  autoPatchReferences: boolean;
+  autoPublish: boolean;
   loadingDocuments: boolean;
   importProgress: ImportProgress;
   importedTranslations: Set<string>;
@@ -68,11 +71,18 @@ interface TranslationsContextType {
   // Actions
   setLocales: (locales: TranslationLocale[]) => void;
   setAutoRefresh: (value: boolean) => void;
+  setAutoImport: (value: boolean) => void;
+  setAutoPatchReferences: (value: boolean) => void;
+  setAutoPublish: (value: boolean) => void;
   handleTranslateAll: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
   handleRefreshAll: () => Promise<void>;
-  handleImportDocument: (documentId: string, localeId: string) => Promise<void>;
+  handleImportDocument: (
+    documentId: string,
+    versionId: string,
+    localeId: string
+  ) => Promise<void>;
   handlePatchDocumentReferences: () => Promise<number>;
   handlePublishAllTranslations: () => Promise<number>;
 }
@@ -100,6 +110,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   const [locales, setLocales] = useState<TranslationLocale[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoImport, setAutoImport] = useState(false);
+  const [autoPatchReferences, setAutoPatchReferences] = useState(false);
+  const [autoPublish, setAutoPublish] = useState(false);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -365,6 +378,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     translationStatuses,
     downloadStatus,
     translationContext,
+    branchId,
   ]);
 
   const getExistingTranslations = useCallback(
@@ -500,19 +514,23 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     downloadStatus,
     translationContext,
     getExistingTranslations,
+    branchId,
   ]);
 
-  const handleGetBranchId = useCallback(async () => {
-    const defaultBranch = await gt.createBranch({
-      branchName: 'main',
-      defaultBranch: true,
-    });
-    setBranchId(defaultBranch.branch.id);
-  }, []);
+  const handleGetBranchId = useCallback(
+    async (secrets: Secrets) => {
+      overrideConfig(secrets);
+      const defaultBranch = await gt.createBranch({
+        branchName: 'main',
+        defaultBranch: true,
+      });
+      setBranchId(defaultBranch.branch.id);
+    },
+    [secrets]
+  );
 
   const handleRefreshAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
-
     setIsRefreshing(true);
 
     try {
@@ -585,13 +603,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales]);
+  }, [secrets, documents, locales, branchId]);
 
   const handleImportDocument = useCallback(
-    async (documentId: string, localeId: string) => {
+    async (documentId: string, versionId: string, localeId: string) => {
       if (!secrets) return;
 
-      const key = `${documentId}:${localeId}`;
+      const key = `${branchId}:${documentId}:${versionId}:${localeId}`;
       const status = translationStatuses.get(key);
 
       if (!status?.isReady || !status.fileData) {
@@ -679,7 +697,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       }
     },
-    [secrets, documents, translationContext, translationStatuses]
+    [secrets, documents, translationContext, translationStatuses, branchId]
   );
 
   const handlePatchDocumentReferences = useCallback(async () => {
@@ -786,7 +804,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
     }
-  }, [secrets, documents, locales, client]);
+  }, [secrets, documents, locales, client, branchId]);
 
   const handlePublishAllTranslations = useCallback(async () => {
     if (!secrets || documents.length === 0) return 0;
@@ -866,7 +884,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, client]);
+  }, [secrets, documents, client, branchId]);
 
   useEffect(() => {
     fetchDocuments();
@@ -877,12 +895,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       fetchLocales();
     }
   }, [fetchLocales, secrets]);
-
-  useEffect(() => {
-    if (secrets) {
-      handleGetBranchId();
-    }
-  }, [secrets]);
 
   useEffect(() => {
     if (documents.length > 0 && locales.length > 0) {
@@ -915,12 +927,18 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setImportedTranslations(new Set(downloadStatus.downloaded));
   }, [downloadStatus.downloaded]);
 
+  if (secrets) {
+    handleGetBranchId(secrets);
+  }
   const contextValue: TranslationsContextType = {
     // State
     isBusy,
     documents,
     locales,
     autoRefresh,
+    autoImport,
+    autoPatchReferences,
+    autoPublish,
     loadingDocuments,
     importProgress,
     importedTranslations,
@@ -935,6 +953,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     // Actions
     setLocales,
     setAutoRefresh,
+    setAutoImport,
+    setAutoPatchReferences,
+    setAutoPublish,
     handleTranslateAll,
     handleImportAll,
     handleImportMissing,

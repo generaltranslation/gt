@@ -54,13 +54,14 @@ export const TranslationsTable: React.FC = () => {
 
                       return (
                         <LanguageStatus
-                          key={`${document._id}-${locale.localeId}`}
+                          key={`${document._id}-${document._rev}-${locale.localeId}`}
                           title={locale.description || locale.localeId}
                           progress={status?.progress || 0}
                           isImported={isImported || isDownloaded}
                           importFile={async () => {
                             await handleImportDocument(
                               documentId,
+                              document._rev,
                               locale.localeId
                             );
                           }}

@@ -285,12 +285,10 @@ export class GT {
     const errors: string[] = [];
     if (!this.apiKey && !this.devApiKey) {
       const error = noApiKeyProvidedError(functionName);
-      gtInstanceLogger.error(error);
       errors.push(error);
     }
     if (!this.projectId) {
       const error = noProjectIdProvidedError(functionName);
-      gtInstanceLogger.error(error);
       errors.push(error);
     }
     if (errors.length) {
