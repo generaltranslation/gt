@@ -27,7 +27,7 @@ export type DownloadedFile = {
   fileId: string;
   versionId: string;
   locale?: string;
-  fileName: string;
+  fileName?: string; // Only present for source files (if locale is not present)
   data: string;
   metadata: Record<string, any>;
   fileFormat: FileFormat;
