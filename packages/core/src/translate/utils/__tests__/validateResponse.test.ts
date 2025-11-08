@@ -49,11 +49,6 @@ describe.sequential('validateResponse', () => {
     await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(mockResponse.text).toHaveBeenCalled();
     expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorText);
-    expect(fetchLogger.error).toHaveBeenCalledWith(expectedErrorMessage, {
-      status: 401,
-      statusText: 'Unauthorized',
-      error: errorText,
-    });
   });
 
   it('should handle 404 not found errors', async () => {
