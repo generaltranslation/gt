@@ -75,9 +75,7 @@ export async function aggregateFiles(
       .filter((file): file is FileToTranslate => {
         if (!file) return false;
         if (typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(
-            `Skipping ${file.fileName}: JSON file is empty`
-          );
+          logWarning(`Skipping ${file.fileName}: JSON file is empty`);
           return false;
         }
         return true;
@@ -115,9 +113,7 @@ export async function aggregateFiles(
       .filter((file): file is FileToTranslate => {
         if (!file) return false;
         if (typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(
-            `Skipping ${file.fileName}: YAML file is empty`
-          );
+          logWarning(`Skipping ${file.fileName}: YAML file is empty`);
           return false;
         }
         return true;
