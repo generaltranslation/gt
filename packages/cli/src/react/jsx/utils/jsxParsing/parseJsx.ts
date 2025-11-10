@@ -17,6 +17,7 @@ import {
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
   warnInvalidStaticInitSync,
+  warnRecursiveFunctionCallSync,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -61,7 +62,7 @@ const resolveImportPathCache = new Map<string, string | null>();
  * Key: `${filePath}::${functionName}::${argIndex}`
  * Value: boolean indicating whether the function was found and processed
  */
-const processFunctionCache = new Map<string, boolean>();
+const processFunctionCache = new Map<string, MultiplicationNode | null>();
 
 /**
  * Entry point for JSX parsing
@@ -140,6 +141,7 @@ export function buildJSXTree({
   node,
   unwrappedExpressions,
   visited,
+  callStack,
   updates,
   errors,
   warnings,
@@ -152,6 +154,7 @@ export function buildJSXTree({
 }: {
   importAliases: Record<string, string>;
   node: any;
+  callStack: string[];
   unwrappedExpressions: string[];
   visited: Set<string>;
   updates: Updates;
@@ -177,6 +180,7 @@ export function buildJSXTree({
         node: expr,
         unwrappedExpressions,
         visited,
+        callStack,
         updates,
         errors: errors,
         warnings: warnings,
@@ -291,6 +295,7 @@ export function buildJSXTree({
                 node: attr.value.expression,
                 unwrappedExpressions,
                 visited,
+                callStack,
                 updates,
                 errors: errors,
                 warnings: warnings,
@@ -320,6 +325,7 @@ export function buildJSXTree({
           errors,
           warnings,
           file,
+          callStack,
           parsingOptions,
           importedFunctionsMap,
           pkg,
@@ -353,6 +359,7 @@ export function buildJSXTree({
           node: child,
           unwrappedExpressions,
           visited,
+          callStack,
           updates,
           errors,
           warnings,
@@ -389,6 +396,7 @@ export function buildJSXTree({
           node: child,
           unwrappedExpressions,
           visited,
+          callStack,
           updates,
           errors,
           warnings,
@@ -523,6 +531,7 @@ export function parseJSXElement({
     node,
     scopeNode,
     visited: new Set(),
+    callStack: [],
     pkg,
     unwrappedExpressions,
     updates,
@@ -621,6 +630,7 @@ function resolveStaticComponentChildren({
   errors,
   warnings,
   file,
+  callStack,
   parsingOptions,
   importedFunctionsMap,
   pkg,
@@ -637,6 +647,7 @@ function resolveStaticComponentChildren({
   )[];
   unwrappedExpressions: string[];
   visited: Set<string>;
+  callStack: string[];
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -712,6 +723,7 @@ function resolveStaticComponentChildren({
         calleeBinding,
         callee,
         visited,
+        callStack,
         file,
         updates,
         errors,
@@ -737,6 +749,7 @@ function resolveStaticFunctionInvocationFromBinding({
   callee,
   unwrappedExpressions,
   visited,
+  callStack,
   file,
   updates,
   errors,
@@ -750,6 +763,7 @@ function resolveStaticFunctionInvocationFromBinding({
   callee: t.Identifier;
   unwrappedExpressions: string[];
   visited: Set<string>;
+  callStack: string[];
   file: string;
   updates: Updates;
   errors: string[];
@@ -758,21 +772,55 @@ function resolveStaticFunctionInvocationFromBinding({
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
+  // Stop recursive calls
+  type RecursiveGuardCallback = () =>
+    | ReturnType<typeof processFunctionDeclarationNodePath>
+    | ReturnType<typeof processVariableDeclarationNodePath>
+    | ReturnType<typeof processFunctionInFile>;
+  function withRecusionGuard({
+    cb,
+    filename,
+    functionName,
+  }: {
+    cb: RecursiveGuardCallback;
+    filename: string;
+    functionName: string;
+  }) {
+    const cacheKey = `${filename}::${functionName}`;
+    if (callStack.includes(cacheKey)) {
+      errors.push(warnRecursiveFunctionCallSync(file, functionName));
+      return null;
+    }
+    callStack.push(cacheKey);
+    const result = cb();
+    callStack.pop();
+    return result;
+  }
+
+  // check for recursive calls
   if (calleeBinding.path.isFunctionDeclaration()) {
     // Handle function declarations: function getSubject() { ... }
-    return processFunctionDeclarationNodePath({
-      importAliases,
-      functionName: callee.name,
-      path: calleeBinding.path,
-      unwrappedExpressions,
-      updates,
-      errors,
-      warnings,
-      visited,
-      file,
-      parsingOptions,
-      importedFunctionsMap,
-      pkg,
+    const functionName = callee.name;
+    const path = calleeBinding.path;
+    return withRecusionGuard({
+      filename: file,
+      functionName,
+      cb: () =>
+        processFunctionDeclarationNodePath({
+          importAliases,
+          functionName,
+          path,
+          unwrappedExpressions,
+          callStack,
+          updates,
+          errors,
+          warnings,
+          visited,
+          file,
+          parsingOptions,
+          importedFunctionsMap,
+          pkg,
+        }),
     });
   } else if (
     calleeBinding.path.isVariableDeclarator() &&
@@ -781,41 +829,56 @@ function resolveStaticFunctionInvocationFromBinding({
       t.isFunctionExpression(calleeBinding.path.node.init))
   ) {
     // Handle arrow functions assigned to variables: const getData = (t) => {...}
-    return processVariableDeclarationNodePath({
-      importAliases,
-      functionName: callee.name,
-      path: calleeBinding.path,
-      unwrappedExpressions,
-      updates,
-      pkg,
-      errors,
-      visited,
-      warnings,
-      file,
-      parsingOptions,
-      importedFunctionsMap,
+    const functionName = callee.name;
+    const path = calleeBinding.path;
+    return withRecusionGuard({
+      filename: file,
+      functionName,
+      cb: () =>
+        processVariableDeclarationNodePath({
+          importAliases,
+          functionName,
+          path,
+          unwrappedExpressions,
+          updates,
+          callStack,
+          pkg,
+          errors,
+          visited,
+          warnings,
+          file,
+          parsingOptions,
+          importedFunctionsMap,
+        }),
     });
   } else if (importedFunctionsMap.has(callee.name)) {
     // Function is being imported
     const importPath = importedFunctionsMap.get(callee.name)!;
-    const resolvedPath = resolveImportPath(
+    const filePath = resolveImportPath(
       file,
       importPath,
       parsingOptions,
       resolveImportPathCache
     );
-    if (resolvedPath) {
-      return processFunctionInFile({
-        filePath: resolvedPath,
-        functionName: callee.name,
-        visited,
-        unwrappedExpressions,
-        updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
-        pkg,
+    if (filePath) {
+      const functionName = callee.name;
+      return withRecusionGuard({
+        filename: file,
+        functionName,
+        cb: () =>
+          processFunctionInFile({
+            filePath,
+            functionName,
+            visited,
+            callStack,
+            unwrappedExpressions,
+            updates,
+            errors,
+            warnings,
+            file,
+            parsingOptions,
+            pkg,
+          }),
       });
     }
   }
@@ -844,6 +907,7 @@ function processFunctionInFile({
   filePath,
   functionName,
   visited,
+  callStack,
   parsingOptions,
   updates,
   errors,
@@ -855,6 +919,7 @@ function processFunctionInFile({
   filePath: string;
   functionName: string;
   visited: Set<string>;
+  callStack: string[];
   parsingOptions: ParsingConfigOptions;
   updates: Updates;
   errors: string[];
@@ -863,14 +928,17 @@ function processFunctionInFile({
   unwrappedExpressions: string[];
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
-  // Check cache first to avoid redundant parsing
+  // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
+  // Check cache first to avoid redundant parsing
   if (processFunctionCache.has(cacheKey)) {
-    return null;
+    return processFunctionCache.get(cacheKey) ?? null;
   }
 
   // Prevent infinite loops from circular re-exports
-  if (visited.has(filePath)) return null;
+  if (visited.has(filePath)) {
+    return null;
+  }
   visited.add(filePath);
 
   let result: MultiplicationNode | null | undefined = undefined;
@@ -913,6 +981,7 @@ function processFunctionInFile({
             functionName,
             path,
             unwrappedExpressions,
+            callStack,
             visited,
             pkg,
             updates,
@@ -938,6 +1007,7 @@ function processFunctionInFile({
             importAliases,
             functionName,
             path,
+            callStack,
             pkg,
             updates,
             errors,
@@ -986,11 +1056,12 @@ function processFunctionInFile({
           resolveImportPathCache
         );
         if (resolvedPath) {
-          result = processFunctionInFile({
+          const foundResult = processFunctionInFile({
             filePath: resolvedPath,
             functionName,
             unwrappedExpressions,
             visited,
+            callStack,
             parsingOptions,
             updates,
             errors,
@@ -998,16 +1069,20 @@ function processFunctionInFile({
             file,
             pkg,
           });
+          if (foundResult != null) {
+            result = foundResult;
+            break;
+          }
         }
       }
     }
 
     // Mark this function search as processed in the cache
-    processFunctionCache.set(cacheKey, result !== undefined);
+    processFunctionCache.set(cacheKey, result !== undefined ? result : null);
   } catch {
     // Silently skip files that can't be parsed or accessed
     // Still mark as processed to avoid retrying failed parses
-    processFunctionCache.set(cacheKey, false);
+    processFunctionCache.set(cacheKey, null);
   }
   return result !== undefined ? result : null;
 }
@@ -1022,6 +1097,7 @@ function processFunctionDeclarationNodePath({
   importAliases,
   unwrappedExpressions,
   visited,
+  callStack,
   updates,
   errors,
   warnings,
@@ -1035,6 +1111,7 @@ function processFunctionDeclarationNodePath({
   importAliases: Record<string, string>;
   unwrappedExpressions: string[];
   visited: Set<string>;
+  callStack: string[];
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -1061,6 +1138,7 @@ function processFunctionDeclarationNodePath({
           unwrappedExpressions,
           functionName,
           pkg,
+          callStack,
           scopeNode: returnNodePath,
           expressionNodePath: returnNodePath,
           importAliases,
@@ -1093,6 +1171,7 @@ function processVariableDeclarationNodePath({
   importAliases,
   unwrappedExpressions,
   visited,
+  callStack,
   updates,
   errors,
   warnings,
@@ -1106,6 +1185,7 @@ function processVariableDeclarationNodePath({
   importAliases: Record<string, string>;
   unwrappedExpressions: string[];
   visited: Set<string>;
+  callStack: string[];
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -1144,6 +1224,7 @@ function processVariableDeclarationNodePath({
         expressionNodePath: bodyNodePath,
         importAliases,
         visited,
+        callStack,
         updates,
         errors,
         warnings,
@@ -1172,6 +1253,7 @@ function processVariableDeclarationNodePath({
             expressionNodePath: returnNodePath,
             importAliases,
             visited,
+            callStack,
             updates,
             errors,
             warnings,
@@ -1206,6 +1288,7 @@ function processReturnExpression({
   expressionNodePath,
   importAliases,
   visited,
+  callStack,
   updates,
   errors,
   warnings,
@@ -1222,6 +1305,7 @@ function processReturnExpression({
   expressionNodePath: NodePath<t.Expression>;
   importAliases: Record<string, string>;
   visited: Set<string>;
+  callStack: string[];
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -1242,6 +1326,7 @@ function processReturnExpression({
       scopeNode,
       expressionNodePath: expressionNodePath.get('expression'),
       visited,
+      callStack,
       updates,
       errors,
       warnings,
@@ -1259,10 +1344,12 @@ function processReturnExpression({
     const callee = expressionNodePath.node.callee;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
     if (!calleeBinding) {
-      warnFunctionNotFoundSync(
-        file,
-        callee.name,
-        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+      warnings.add(
+        warnFunctionNotFoundSync(
+          file,
+          callee.name,
+          `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+        )
       );
       return null;
     }
@@ -1272,6 +1359,7 @@ function processReturnExpression({
       calleeBinding,
       callee,
       unwrappedExpressions,
+      callStack,
       visited,
       file,
       updates,
@@ -1290,10 +1378,12 @@ function processReturnExpression({
     const callee = expressionNodePath.node.argument.callee;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
     if (!calleeBinding) {
-      warnFunctionNotFoundSync(
-        file,
-        callee.name,
-        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+      warnings.add(
+        warnFunctionNotFoundSync(
+          file,
+          callee.name,
+          `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+        )
       );
       return null;
     }
@@ -1304,6 +1394,7 @@ function processReturnExpression({
       callee,
       unwrappedExpressions,
       visited,
+      callStack,
       file,
       updates,
       errors,
@@ -1322,6 +1413,7 @@ function processReturnExpression({
       node: expressionNodePath.node,
       unwrappedExpressions,
       visited,
+      callStack,
       updates,
       errors,
       warnings,
@@ -1347,6 +1439,7 @@ function processReturnExpression({
             scopeNode,
             expressionNodePath,
             visited,
+            callStack,
             updates,
             errors,
             warnings,

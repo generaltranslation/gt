@@ -221,6 +221,19 @@ Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() =>
     location
   );
 
+export const warnRecursiveFunctionCallSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withStaticError(
+      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function use recursive calls to construct its result.`
+    ),
+    location
+  );
+
 // Re-export error messages
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
