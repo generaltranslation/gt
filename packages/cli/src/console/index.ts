@@ -78,6 +78,17 @@ export const warnHasUnwrappedExpressionSync = (
     location
   );
 
+export const warnFailedToConstructJsxTreeSync = (
+  file: string,
+  code: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Failed to construct JsxTree! Call expression is not a valid createElement call: ${colorizeContent(code)}`,
+    location
+  );
+
 export const warnNestedTComponent = (file: string, location?: string): string =>
   withLocation(
     file,
