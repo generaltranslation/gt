@@ -14,7 +14,3 @@ Please update the following packages to the latest version:
 - gt-sanity: `1.0.11` or later
 
 Older versions of these packages may not be compatible with the latest version of the General Translation API and may require updating.
-
-```bash
-pnpm update generaltranslation gtx-cli gt-sanity
-```
