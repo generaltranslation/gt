@@ -41,7 +41,6 @@ import {
   JsxTree,
   isElementNode,
   ElementNode,
-  ExpressionNode,
 } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 
