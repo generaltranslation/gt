@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.1
+
+### Patch Changes
+
+- [#796](https://github.com/generaltranslation/gt/pull/796) [`855a653`](https://github.com/generaltranslation/gt/commit/855a6538e2a080fc73d97585df2a838f02a3d00a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove null vals from jsx children
+
 ## 2.5.0
 
 ### Minor Changes
