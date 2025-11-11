@@ -47,17 +47,7 @@ const hasNonJsxWhitespace = (str: string) => {
   return false;
 };
 
-export function trimJsxStringChild(
-  child: string,
-  index: number,
-  childrenTypes: (
-    | 'expression'
-    | 'text'
-    | 'element'
-    | 'multiplication'
-    | 'other'
-  )[]
-) {
+export function trimJsxStringChild(child: string) {
   if (!child.includes('\n') && !child.includes('\r')) {
     return child;
   }
@@ -165,7 +155,7 @@ export function handleChildrenWhitespace(
             const result = handleChildrenWhitespace(textNode);
             if (result) newChildren.push(result);
           } else {
-            const string = trimJsxStringChild(textNode, index, childrenTypes);
+            const string = trimJsxStringChild(textNode);
             if (string) newChildren.push(string);
           }
           break;
@@ -271,7 +261,7 @@ export function handleChildrenWhitespace(
       ),
     };
   } else if (typeof currentTree === 'string') {
-    return trimJsxStringChild(currentTree, 0, ['text']);
+    return trimJsxStringChild(currentTree);
   }
   // null or number or boolean
   return currentTree;

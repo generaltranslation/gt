@@ -37,7 +37,7 @@ export function findMultiplicationNode(
   ): MultiplicationNodeResult | undefined {
     if (Array.isArray(curr)) {
       for (const [index, child] of Object.entries(curr)) {
-        const result = handleChild(child, parent, index);
+        const result = handleChild(child, curr, index);
         if (result) return result;
       }
       return undefined;

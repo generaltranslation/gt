@@ -30,7 +30,6 @@ function createTest(dirPath: string) {
 
     // Skip static tests
     if (expected && expected['static'] === true) {
-      console.log(`Skipping static test ${testName}`);
       test(testName, () => {
         expect(true).toBe(true);
       });

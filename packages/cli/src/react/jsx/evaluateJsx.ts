@@ -47,6 +47,13 @@ export function isStaticExpression(
   isStatic: boolean;
   value?: string | boolean | null;
 };
+export function isStaticExpression(
+  expr: t.Expression | t.JSXEmptyExpression,
+  jsxStatic?: boolean
+): {
+  isStatic: boolean;
+  value?: string | boolean | null;
+};
 /**
  * Checks if an expression is static (does not contain any variables which could change at runtime).
  * @param expr - The expression to check
@@ -55,7 +62,7 @@ export function isStaticExpression(
  */
 export function isStaticExpression(
   expr: t.Expression | t.JSXEmptyExpression,
-  jsxStatic: boolean = false
+  jsxStatic = false
 ): {
   isStatic: boolean;
   value?: string | boolean | null;
@@ -86,7 +93,7 @@ export function isStaticExpression(
 
   // Handle parenthesized expressions
   if (t.isParenthesizedExpression(expr)) {
-    return isStaticExpression(expr.expression);
+    return isStaticExpression(expr.expression, jsxStatic);
   }
 
   // Handle numeric literals by converting them to strings
