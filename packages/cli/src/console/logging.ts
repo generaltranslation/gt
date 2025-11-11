@@ -9,6 +9,7 @@ import {
   isCancel,
   cancel,
   multiselect,
+  progress,
 } from '@clack/prompts';
 import chalk from 'chalk';
 import { getCLIVersion } from '../utils/packageJson.js';
@@ -112,11 +113,8 @@ export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
 }
 // Spinner functionality
-export async function createOraSpinner(
-  indicator: 'dots' | 'circleHalves' = 'circleHalves'
-) {
-  const ora = await import('ora');
-  return ora.default({ spinner: indicator });
+export function createProgressBar(total: number) {
+  return progress({ max: total });
 }
 
 // Input prompts

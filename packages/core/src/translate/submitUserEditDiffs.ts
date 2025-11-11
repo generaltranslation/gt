@@ -5,18 +5,19 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
+import { processBatches } from './utils/batch';
 
 export type SubmitUserEditDiff = {
   fileName: string;
   locale: string;
   diff: string;
-  versionId?: string;
-  fileId?: string;
+  branchId: string;
+  versionId: string;
+  fileId: string;
   localContent?: string;
 };
 
 export type SubmitUserEditDiffsPayload = {
-  projectId?: string;
   diffs: SubmitUserEditDiff[];
 };
 
@@ -32,21 +33,31 @@ export default async function _submitUserEditDiffs(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/diffs`;
 
-  let response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config, false),
-        body: JSON.stringify(payload),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
+  await processBatches(
+    payload.diffs,
+    async (batch) => {
+      const body = { diffs: batch } satisfies SubmitUserEditDiffsPayload;
 
-  await validateResponse(response);
+      let response: Response | undefined;
+      try {
+        response = await fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            headers: generateRequestHeaders(config),
+            body: JSON.stringify(body),
+          },
+          timeout
+        );
+      } catch (error) {
+        handleFetchError(error, timeout);
+      }
+
+      await validateResponse(response);
+      return [{ success: true }];
+    },
+    { batchSize: 100 }
+  );
+
   return { success: true };
 }

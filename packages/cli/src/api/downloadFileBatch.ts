@@ -10,23 +10,25 @@ import mergeYaml from '../formats/yaml/mergeYaml.js';
 import {
   getDownloadedVersions,
   saveDownloadedVersions,
+  ensureNestedObject,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
 import stringify from 'fast-json-stable-stringify';
+import type { FileStatusTracker } from '../workflow/PollJobsStep.js';
 
-export type BatchedFiles = Array<{
-  translationId: string;
+export type BatchedFiles = {
+  branchId: string;
+  fileId: string;
+  versionId: string;
+  locale: string;
   outputPath: string;
   inputPath: string;
-  locale: string;
-  fileLocale: string; // key for a translated file
-  fileId?: string; // stable id from API; preferred key
-  versionId?: string; // source content version id
-}>;
+}[];
 
 export type DownloadFileBatchResult = {
-  successful: string[];
-  failed: string[];
+  successful: BatchedFiles;
+  failed: BatchedFiles;
+  skipped: BatchedFiles;
 };
 /**
  * Downloads multiple translation files in a single batch request
@@ -36,196 +38,190 @@ export type DownloadFileBatchResult = {
  * @returns Object containing successful and failed file IDs
  */
 export async function downloadFileBatch(
+  fileTracker: FileStatusTracker,
   files: BatchedFiles,
   options: Settings,
-  maxRetries = 3,
-  retryDelay = 1000,
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
   const downloadedVersions = getDownloadedVersions(options.configDirectory);
   let didUpdateDownloadedLock = false;
-  let retries = 0;
-  const fileIds = files.map((file) => file.translationId);
-  const result = { successful: [] as string[], failed: [] as string[] };
+
+  // Create a map of requested file keys to the file object
+  const requestedFileMap = new Map(
+    files.map((file) => [
+      `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
+      file,
+    ])
+  );
+  const result: DownloadFileBatchResult = {
+    successful: [],
+    failed: [],
+    skipped: [],
+  };
 
   // Create a map of translationId to outputPath for easier lookup
   const outputPathMap = new Map(
-    files.map((file) => [file.translationId, file.outputPath])
-  );
-  const inputPathMap = new Map(
-    files.map((file) => [file.translationId, file.inputPath])
-  );
-  const fileIdMap = new Map(
-    files.map((file) => [file.translationId, file.fileId])
-  );
-  const localeMap = new Map(
     files.map((file) => [
-      file.translationId,
-      gt.resolveAliasLocale(file.locale),
+      `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
+      file.outputPath,
     ])
   );
-  const versionMap = new Map(
-    files.map((file) => [file.translationId, file.versionId])
-  );
 
-  while (retries <= maxRetries) {
-    try {
-      // Download the files
-      const responseData = await gt.downloadFileBatch(fileIds);
-      const downloadedFiles = responseData.files || [];
+  try {
+    // Download the files
+    const responseData = await gt.downloadFileBatch(
+      files.map((file) => ({
+        fileId: file.fileId,
+        branchId: file.branchId,
+        versionId: file.versionId,
+        locale: file.locale,
+      }))
+    );
+    const downloadedFiles = responseData.files || [];
 
-      // Process each file in the response
-      for (const file of downloadedFiles) {
-        try {
-          const translationId = file.id;
-          const outputPath = outputPathMap.get(translationId);
-          const inputPath = inputPathMap.get(translationId);
-          const locale = localeMap.get(translationId);
-          const fileId = fileIdMap.get(translationId);
-          const versionId = versionMap.get(translationId);
+    // Process each file in the response
+    for (const file of downloadedFiles) {
+      const fileKey = `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`;
+      const requestedFile = requestedFileMap.get(fileKey);
+      if (!requestedFile) {
+        continue;
+      }
+      try {
+        const outputPath = outputPathMap.get(fileKey);
+        const fileProperties = fileTracker.completed.get(fileKey);
 
-          if (!outputPath || !inputPath) {
-            logWarning(`No input/output path found for file: ${translationId}`);
-            result.failed.push(translationId);
-            continue;
-          }
+        if (!outputPath || !fileProperties) {
+          logWarning(`No input/output path found for file: ${fileKey}`);
+          result.failed.push(requestedFile);
+          continue;
+        }
 
-          // Ensure the directory exists
-          const dir = path.dirname(outputPath);
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          // If a local translation already exists for the same source version, skip overwrite
-          const keyId = fileId || inputPath;
-          const downloadedKey = `${keyId}:${locale}`;
-          const alreadyDownloadedVersion =
-            downloadedVersions.entries[downloadedKey]?.versionId;
-          const fileExists = fs.existsSync(outputPath);
-          if (
-            !forceDownload &&
-            fileExists &&
-            versionId &&
-            alreadyDownloadedVersion === versionId
-          ) {
-            result.successful.push(translationId);
-            continue;
-          }
-          let data = file.data;
-          if (options.options?.jsonSchema && locale) {
-            const jsonSchema = validateJsonSchema(options.options, inputPath);
-            if (jsonSchema) {
-              const originalContent = fs.readFileSync(inputPath, 'utf8');
-              if (originalContent) {
-                data = mergeJson(
-                  originalContent,
-                  inputPath,
-                  options.options,
-                  [
-                    {
-                      translatedContent: file.data,
-                      targetLocale: locale,
-                    },
-                  ],
-                  options.defaultLocale
-                )[0];
-              }
+        const {
+          fileId,
+          versionId,
+          locale,
+          branchId,
+          fileName: inputPath,
+        } = fileProperties;
+
+        // Ensure the directory exists
+        const dir = path.dirname(outputPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        // If a local translation already exists for the same source version, skip overwrite
+        const downloadedVersion =
+          downloadedVersions.entries[branchId]?.[fileId]?.[versionId]?.[locale];
+        const fileExists = fs.existsSync(outputPath);
+        if (!forceDownload && fileExists && downloadedVersion) {
+          result.skipped.push(requestedFile);
+          continue;
+        }
+        let data = file.data;
+        if (options.options?.jsonSchema && locale) {
+          const jsonSchema = validateJsonSchema(options.options, inputPath);
+          if (jsonSchema) {
+            const originalContent = fs.readFileSync(inputPath, 'utf8');
+            if (originalContent) {
+              data = mergeJson(
+                originalContent,
+                inputPath,
+                options.options,
+                [
+                  {
+                    translatedContent: file.data,
+                    targetLocale: locale,
+                  },
+                ],
+                options.defaultLocale
+              )[0];
             }
           }
+        }
 
-          if (options.options?.yamlSchema && locale) {
-            const yamlSchema = validateYamlSchema(options.options, inputPath);
-            if (yamlSchema) {
-              const originalContent = fs.readFileSync(inputPath, 'utf8');
-              if (originalContent) {
-                data = mergeYaml(
-                  originalContent,
-                  inputPath,
-                  options.options,
-                  [
-                    {
-                      translatedContent: file.data,
-                      targetLocale: locale,
-                    },
-                  ],
-                  options.defaultLocale
-                )[0];
-              }
+        if (options.options?.yamlSchema && locale) {
+          const yamlSchema = validateYamlSchema(options.options, inputPath);
+          if (yamlSchema) {
+            const originalContent = fs.readFileSync(inputPath, 'utf8');
+            if (originalContent) {
+              data = mergeYaml(
+                originalContent,
+                inputPath,
+                options.options,
+                [
+                  {
+                    translatedContent: file.data,
+                    targetLocale: locale,
+                  },
+                ],
+                options.defaultLocale
+              )[0];
             }
           }
+        }
 
-          // If the file is a GTJSON file, stable sort the order and format the data
-          if (file.fileFormat === 'GTJSON') {
-            try {
-              const jsonData = JSON.parse(data);
-              const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
-              const sortedJsonData = JSON.parse(sortedData);
-              data = JSON.stringify(sortedJsonData, null, 2); // format the data
-            } catch (error) {
-              logWarning(`Failed to sort GTJson file: ${file.id}: ` + error);
-            }
+        // If the file is a GTJSON file, stable sort the order and format the data
+        if (file.fileFormat === 'GTJSON') {
+          try {
+            const jsonData = JSON.parse(data);
+            const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
+            const sortedJsonData = JSON.parse(sortedData);
+            data = JSON.stringify(sortedJsonData, null, 2); // format the data
+          } catch (error) {
+            logWarning(`Failed to sort GTJson file: ${file.id}: ` + error);
           }
-
-          // Write the file to disk
-          await fs.promises.writeFile(outputPath, data);
-          // Track as downloaded
-          recordDownloaded(outputPath);
-
-          result.successful.push(translationId);
-          if (versionId) {
-            downloadedVersions.entries[downloadedKey] = {
-              versionId,
-              fileId: fileId || undefined,
-              fileName: inputPath,
-              updatedAt: new Date().toISOString(),
-            };
-            didUpdateDownloadedLock = true;
-          }
-        } catch (error) {
-          logError(`Error saving file ${file.id}: ` + error);
-          result.failed.push(file.id);
         }
-      }
 
-      // Add any files that weren't in the response to the failed list
-      const downloadedIds = new Set(
-        downloadedFiles.map((file: any) => file.id)
-      );
-      for (const fileId of fileIds) {
-        if (!downloadedIds.has(fileId) && !result.failed.includes(fileId)) {
-          result.failed.push(fileId);
+        // Write the file to disk
+        await fs.promises.writeFile(outputPath, data);
+        // Track as downloaded
+        recordDownloaded(outputPath);
+
+        result.successful.push(requestedFile);
+        if (branchId && fileId && versionId && locale) {
+          ensureNestedObject(downloadedVersions.entries, [
+            branchId,
+            fileId,
+            versionId,
+            locale,
+          ]);
+          downloadedVersions.entries[branchId][fileId][versionId][locale] = {
+            updatedAt: new Date().toISOString(),
+          };
+          didUpdateDownloadedLock = true;
         }
+      } catch (error) {
+        logError(`Error saving file ${fileKey}: ` + error);
+        result.failed.push(requestedFile);
       }
-
-      // Persist any updates to the downloaded map at the end of a successful cycle
-      if (didUpdateDownloadedLock) {
-        saveDownloadedVersions(options.configDirectory, downloadedVersions);
-        didUpdateDownloadedLock = false;
-      }
-      return result;
-    } catch (error) {
-      // If we've retried too many times, log an error and return false
-      if (retries >= maxRetries) {
-        logError(
-          `Error downloading files in batch after ${maxRetries + 1} attempts: ` +
-            error
-        );
-        // Mark all files as failed
-        result.failed = [...fileIds];
-        if (didUpdateDownloadedLock) {
-          saveDownloadedVersions(options.configDirectory, downloadedVersions);
-        }
-        return result;
-      }
-
-      // Increment retry counter and wait before next attempt
-      retries++;
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
+
+    // Add any files that weren't in the response to the failed list
+    const downloadedFileKeys = new Set(
+      downloadedFiles.map(
+        (file) =>
+          `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`
+      )
+    );
+    for (const [fileKey, requestedFile] of requestedFileMap.entries()) {
+      if (!downloadedFileKeys.has(fileKey)) {
+        result.failed.push(requestedFile);
+      }
+    }
+
+    // Persist any updates to the downloaded map at the end of a successful cycle
+    if (didUpdateDownloadedLock) {
+      saveDownloadedVersions(options.configDirectory, downloadedVersions);
+      didUpdateDownloadedLock = false;
+    }
+    return result;
+  } catch (error) {
+    logError(`An unexpected error occurred while downloading files: ` + error);
   }
 
   // Mark all files as failed if we get here
-  result.failed = [...fileIds];
+  result.failed = [...requestedFileMap.values()];
   if (didUpdateDownloadedLock) {
     saveDownloadedVersions(options.configDirectory, downloadedVersions);
   }

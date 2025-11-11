@@ -5,6 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
+import { processBatches } from './utils/batch';
 
 import {
   FileUpload,
@@ -15,11 +16,11 @@ import { encode } from '../utils/base64';
 
 /**
  * @internal
- * Uploads multiple translations to the General Translation API.
+ * Uploads multiple translations to the General Translation API in batches.
  * @param files - Translations to upload with their source
  * @param options - The options for the API call
  * @param config - The configuration for the API call
- * @returns The result of the API call
+ * @returns Promise resolving to a BatchList with all uploaded files
  */
 export default async function _uploadTranslations(
   files: {
@@ -28,51 +29,61 @@ export default async function _uploadTranslations(
   }[],
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
-): Promise<UploadFilesResponse> {
+) {
   const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-translations`;
 
-  const body = {
-    data: files.map(({ source, translations }) => ({
-      source: {
-        content: encode(source.content),
-        fileName: source.fileName,
-        fileFormat: source.fileFormat,
-        locale: source.locale,
-        ...(source.dataFormat && { dataFormat: source.dataFormat }),
-        ...(source.fileId && { fileId: source.fileId }),
-        ...(source.versionId && { versionId: source.versionId }),
-      },
-      translations: translations.map((t) => ({
-        content: encode(t.content),
-        fileName: t.fileName,
-        fileFormat: t.fileFormat,
-        locale: t.locale,
-        ...(t.dataFormat && { dataFormat: t.dataFormat }),
-        ...(t.fileId && { fileId: t.fileId }),
-        ...(t.versionId && { versionId: t.versionId }),
-      })),
-    })),
-    sourceLocale: options.sourceLocale,
-  };
+  return processBatches(
+    files,
+    async (batch) => {
+      const body = {
+        data: batch.map(({ source, translations }) => ({
+          source: {
+            content: encode(source.content),
+            fileName: source.fileName,
+            fileFormat: source.fileFormat,
+            locale: source.locale,
+            dataFormat: source.dataFormat,
+            fileId: source.fileId,
+            versionId: source.versionId,
+            branchId: source.branchId,
+          },
+          translations: translations.map((t) => ({
+            content: encode(t.content),
+            fileName: t.fileName,
+            fileFormat: t.fileFormat,
+            locale: t.locale,
+            dataFormat: t.dataFormat,
+            fileId: t.fileId,
+            versionId: t.versionId,
+            branchId: t.branchId,
+          })),
+        })),
+        sourceLocale: options.sourceLocale,
+      };
 
-  let response: Response | undefined;
-  try {
-    // Request the file uploads
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config, false),
-        body: JSON.stringify(body),
-      },
-      timeout
-    );
-  } catch (err) {
-    handleFetchError(err, timeout);
-  }
+      let response: Response | undefined;
+      try {
+        // Request the file uploads
+        response = await fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            headers: generateRequestHeaders(config),
+            body: JSON.stringify(body),
+          },
+          timeout
+        );
+      } catch (err) {
+        handleFetchError(err, timeout);
+      }
 
-  // Validate response
-  await validateResponse(response);
-  return (await response!.json()) as UploadFilesResponse;
+      // Validate response
+      await validateResponse(response);
+      const batchResult = (await response!.json()) as UploadFilesResponse;
+
+      return batchResult.uploadedFiles || [];
+    },
+    { batchSize: 100 }
+  );
 }

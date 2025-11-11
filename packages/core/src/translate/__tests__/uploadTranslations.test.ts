@@ -4,7 +4,7 @@ import { TranslationRequestConfig } from '../../types';
 import {
   FileUpload,
   RequiredUploadFilesOptions,
-} from '../../types-dir/uploadFiles';
+} from '../../types-dir/api/uploadFiles';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
@@ -77,7 +77,7 @@ describe('_uploadTranslations', () => {
 
     const mockResponse = {
       success: true,
-      translations: [
+      uploadedFiles: [
         {
           translationId: 'trans-123',
           locale: 'es',
@@ -145,7 +145,8 @@ describe('_uploadTranslations', () => {
     );
 
     expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-    expect(result).toEqual(mockResponse);
+    expect(result.data).toEqual(mockResponse.uploadedFiles || []);
+    expect(result.batchCount).toBe(1);
   });
 
   it('should handle single translation per source', async () => {

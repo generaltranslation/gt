@@ -1,7 +1,10 @@
-import { SendFilesResult } from '../../api/sendFiles.js';
+import { EnqueueFilesResult } from 'generaltranslation/types';
 import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
-import { checkFileTranslations } from '../../api/checkFileTranslations.js';
+import {
+  FileTranslationData,
+  downloadTranslations,
+} from '../../workflow/download.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import { logError } from '../../console/logging.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
@@ -11,14 +14,17 @@ import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
+import { BranchData } from '../../types/branch.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
   options: TranslateFlags,
   settings: Settings,
-  filesTranslationResponse: SendFilesResult | undefined
+  fileVersionData: FileTranslationData | undefined,
+  jobData: EnqueueFilesResult | undefined,
+  branchData: BranchData | undefined
 ) {
-  if (filesTranslationResponse) {
+  if (fileVersionData) {
     const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
 
     const fileMapping = createFileMapping(
@@ -28,10 +34,11 @@ export async function handleTranslate(
       settings.locales,
       settings.defaultLocale
     );
-    const { data } = filesTranslationResponse;
     // Check for remaining translations
-    await checkFileTranslations(
-      data,
+    await downloadTranslations(
+      fileVersionData,
+      jobData,
+      branchData,
       settings.locales,
       options.timeout,
       (sourcePath, locale) => fileMapping[locale]?.[sourcePath] ?? null,
@@ -66,8 +73,10 @@ export async function handleDownload(
   );
   const stagedVersionData = await getStagedVersions(settings.configDirectory);
   // Check for remaining translations
-  await checkFileTranslations(
+  await downloadTranslations(
     stagedVersionData,
+    undefined,
+    undefined,
     settings.locales,
     options.timeout,
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,

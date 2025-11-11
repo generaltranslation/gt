@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import generateRequestHeaders from '../generateRequestHeaders';
 import { TranslationRequestConfig } from '../../../types';
+import { API_VERSION } from '../../api';
 
 describe('generateRequestHeaders', () => {
   it('should return headers with Content-Type and project ID', () => {
@@ -14,6 +15,7 @@ describe('generateRequestHeaders', () => {
     expect(headers).toEqual({
       'Content-Type': 'application/json',
       'x-gt-project-id': 'test-project',
+      'gt-api-version': API_VERSION,
     });
   });
 
@@ -30,6 +32,7 @@ describe('generateRequestHeaders', () => {
       'Content-Type': 'application/json',
       'x-gt-api-key': 'test-api-key',
       'x-gt-project-id': 'test-project',
+      'gt-api-version': API_VERSION,
     });
   });
 
@@ -44,6 +47,7 @@ describe('generateRequestHeaders', () => {
     expect(headers).toEqual({
       'Content-Type': 'application/json',
       'x-gt-project-id': 'test-project',
+      'gt-api-version': API_VERSION,
     });
   });
 
@@ -59,6 +63,7 @@ describe('generateRequestHeaders', () => {
     expect(headers).toEqual({
       'Content-Type': 'application/json',
       'x-gt-project-id': 'test-project',
+      'gt-api-version': API_VERSION,
     });
   });
 });

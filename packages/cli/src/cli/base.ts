@@ -49,7 +49,6 @@ import {
 import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
-import type { SendDiffsFlags } from './commands/edits.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 
 export type UploadOptions = {
@@ -161,7 +160,13 @@ export class BaseCLI {
         false
       );
       if (results) {
-        await handleTranslate(initOptions, settings, results);
+        await handleTranslate(
+          initOptions,
+          settings,
+          results.fileVersionData,
+          results.jobData,
+          results.branchData
+        );
       }
     } else {
       await handleDownload(initOptions, settings);

@@ -28,6 +28,7 @@ export const TranslationView = () => {
     documents,
     locales,
     translationStatuses,
+    branchId,
     isBusy,
     handleTranslateAll,
     handleImportDocument,
@@ -37,13 +38,17 @@ export const TranslationView = () => {
     setLocales,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
+    autoRefresh,
+    setAutoRefresh,
+    autoImport,
+    setAutoImport,
+    autoPatchReferences,
+    setAutoPatchReferences,
+    autoPublish,
+    setAutoPublish,
   } = useTranslations();
 
-  const [autoImport, setAutoImport] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [autoPatchReferences, setAutoPatchReferences] = useState(true);
-  const [autoPublish, setAutoPublish] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
 
   const toast = useToast();
@@ -94,7 +99,7 @@ export const TranslationView = () => {
 
       // Find translations ready to import
       const readyTranslations = availableLocales.filter((locale) => {
-        const key = `${documentId}:${locale.localeId}`;
+        const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
         const status = translationStatuses.get(key);
         return status?.isReady && !importedTranslations.has(key);
       });
@@ -106,7 +111,7 @@ export const TranslationView = () => {
         // Import all ready translations
         await Promise.all(
           readyTranslations.map((locale) =>
-            handleImportDocument(documentId, locale.localeId)
+            handleImportDocument(documentId, document._rev, locale.localeId)
           )
         );
 
@@ -144,31 +149,12 @@ export const TranslationView = () => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
 
-  // Auto refresh functionality
+  // Enable auto features on mount
   useEffect(() => {
-    if (!autoRefresh || !documentId || availableLocales.length === 0) return;
-
-    const interval = setInterval(async () => {
-      await handleRefreshAll();
-      await handleImportTranslations({ autoOnly: true });
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [
-    autoRefresh,
-    documentId,
-    availableLocales.length,
-    handleRefreshAll,
-    handleImportTranslations,
-  ]);
-
-  useEffect(() => {
-    const initialRefresh = async () => {
-      await handleRefreshAll();
-      await handleImportTranslations({ autoOnly: true });
-    };
-    initialRefresh();
-  }, []);
+    setAutoRefresh(true);
+    setAutoPatchReferences(true);
+    setAutoPublish(true);
+  }, [setAutoRefresh, setAutoPatchReferences, setAutoPublish]);
 
   // Locale toggle functionality
   const toggleLocale = useCallback(
@@ -285,14 +271,14 @@ export const TranslationView = () => {
                 padding={2}
                 text='Refresh Status'
                 onClick={handleRefreshAll}
-                disabled={isRefreshing}
+                disabled={isRefreshing || isBusy}
               />
             </Flex>
           </Flex>
 
           <Box>
             {availableLocales.map((locale) => {
-              const key = `${documentId}:${locale.localeId}`;
+              const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
               const status = translationStatuses.get(key);
               const progress = status?.progress || 0;
               const isImported = importedTranslations.has(key);
@@ -305,7 +291,11 @@ export const TranslationView = () => {
                   isImported={isImported}
                   importFile={async () => {
                     if (!isImported && status?.isReady) {
-                      await handleImportDocument(documentId, locale.localeId);
+                      await handleImportDocument(
+                        documentId,
+                        document._rev,
+                        locale.localeId
+                      );
                     }
                   }}
                 />
@@ -326,7 +316,7 @@ export const TranslationView = () => {
                   disabled={
                     isImporting ||
                     availableLocales.every((locale) => {
-                      const key = `${documentId}:${locale.localeId}`;
+                      const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                       const status = translationStatuses.get(key);
                       return !status?.isReady || importedTranslations.has(key);
                     })
@@ -346,14 +336,14 @@ export const TranslationView = () => {
                 Imported{' '}
                 {
                   availableLocales.filter((locale) => {
-                    const key = `${documentId}:${locale.localeId}`;
+                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                     return importedTranslations.has(key);
                   }).length
                 }
                 /
                 {
                   availableLocales.filter((locale) => {
-                    const key = `${documentId}:${locale.localeId}`;
+                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
                     const status = translationStatuses.get(key);
                     return status?.isReady;
                   }).length

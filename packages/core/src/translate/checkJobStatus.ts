@@ -6,37 +6,43 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
-export type SetupJobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+export type JobStatus =
+  | 'queued'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'unknown';
 
-export type CheckSetupStatusResult = {
+export type CheckJobStatusResult = {
   jobId: string;
-  status: SetupJobStatus;
+  status: JobStatus;
   error?: { message: string };
-};
+}[];
 
 /**
  * @internal
- * Queries setup status for a project
- * @param jobId - Setup job ID
+ * Queries job statuses for a project
+ * @param jobIds - Job IDs
  * @param config - The configuration for the API call
  * @param timeoutMS - The timeout in milliseconds
  * @returns The result of the API call
  */
-export async function _checkSetupStatus(
-  jobId: string,
+export async function _checkJobStatus(
+  jobIds: string[],
   config: TranslationRequestConfig,
   timeoutMs?: number
-): Promise<CheckSetupStatusResult> {
+): Promise<CheckJobStatusResult> {
   const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/status/${encodeURIComponent(jobId)}`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/jobs/info`;
 
   let response: Response;
   try {
     response = await fetchWithTimeout(
       url,
       {
-        method: 'GET',
-        headers: generateRequestHeaders(config, true),
+        method: 'POST',
+        headers: generateRequestHeaders(config),
+        body: JSON.stringify({ jobIds }),
       },
       timeout
     );
@@ -45,5 +51,5 @@ export async function _checkSetupStatus(
   }
 
   await validateResponse(response);
-  return (await response.json()) as CheckSetupStatusResult;
+  return (await response.json()) as CheckJobStatusResult;
 }

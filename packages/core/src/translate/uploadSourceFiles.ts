@@ -6,6 +6,7 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { encode } from '../utils/base64';
+import { processBatches } from './utils/batch';
 
 import {
   FileUpload,
@@ -15,66 +16,63 @@ import {
 
 /**
  * @internal
- * Uploads source files to the General Translation API.
+ * Uploads source files to the General Translation API in batches.
  * @param files - The files to upload
  * @param options - The options for the API call
  * @param config - The configuration for the API call
- * @returns The result of the API call
+ * @returns Promise resolving to a BatchList with all uploaded files
  */
 export default async function _uploadSourceFiles(
   files: { source: FileUpload }[],
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
-): Promise<UploadFilesResponse> {
+) {
   const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-files`;
 
-  const body = {
-    data: files.map(({ source }) => ({
-      source: {
-        content: encode(source.content),
-        fileName: source.fileName,
-        fileFormat: source.fileFormat,
-        locale: source.locale,
-        ...(source.dataFormat && { dataFormat: source.dataFormat }),
-        ...(source.fileId && { fileId: source.fileId }),
-        ...(source.versionId && { versionId: source.versionId }),
-      },
-    })),
-    sourceLocale: options.sourceLocale,
-  } satisfies {
-    data: Array<{
-      source: {
-        content: string;
-        fileName: string;
-        fileFormat: FileUpload['fileFormat'];
-        locale: string;
-        dataFormat?: FileUpload['dataFormat'];
-        fileId?: FileUpload['fileId'];
-        versionId?: FileUpload['versionId'];
+  return processBatches(
+    files,
+    async (batch) => {
+      const body = {
+        data: batch.map(({ source }) => ({
+          source: {
+            content: encode(source.content),
+            fileName: source.fileName,
+            fileFormat: source.fileFormat,
+            locale: source.locale,
+            dataFormat: source.dataFormat,
+            fileId: source.fileId,
+            versionId: source.versionId,
+            branchId: source.branchId,
+            incomingBranchId: source.incomingBranchId,
+            checkedOutBranchId: source.checkedOutBranchId,
+          },
+        })),
+        sourceLocale: options.sourceLocale,
       };
-    }>;
-    sourceLocale: string;
-    modelProvider?: string;
-  };
 
-  let response: Response | undefined;
-  try {
-    // Request the file uploads
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config, false),
-        body: JSON.stringify(body),
-      },
-      timeout
-    );
-  } catch (err) {
-    handleFetchError(err, timeout);
-  }
+      let response: Response | undefined;
+      try {
+        // Request the file uploads
+        response = await fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            headers: generateRequestHeaders(config),
+            body: JSON.stringify(body),
+          },
+          timeout
+        );
+      } catch (err) {
+        handleFetchError(err, timeout);
+      }
 
-  // Validate response
-  await validateResponse(response);
-  return (await response!.json()) as UploadFilesResponse;
+      // Validate response
+      await validateResponse(response);
+      const batchResult = (await response!.json()) as UploadFilesResponse;
+
+      return batchResult.uploadedFiles || [];
+    },
+    { batchSize: 100 }
+  );
 }

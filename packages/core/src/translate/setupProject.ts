@@ -5,7 +5,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
-import { FileUploadRef } from 'src/types-dir/api/uploadFiles';
+import type { FileReference } from '../types-dir/api/file';
 
 export type SetupProjectResult =
   | { setupJobId: string; status: 'queued' }
@@ -25,7 +25,7 @@ export type SetupProjectOptions = {
  * @returns The result of the API call
  */
 export default async function _setupProject(
-  files: FileUploadRef[],
+  files: FileReference[],
   config: TranslationRequestConfig,
   options?: SetupProjectOptions
 ): Promise<SetupProjectResult> {
@@ -34,11 +34,12 @@ export default async function _setupProject(
 
   const body = {
     files: files.map((f) => ({
+      branchId: f.branchId,
       fileId: f.fileId,
       versionId: f.versionId,
       fileName: f.fileName,
       fileFormat: f.fileFormat,
-      ...(f.dataFormat && { dataFormat: f.dataFormat }),
+      dataFormat: f.dataFormat,
     })),
     locales: options?.locales,
   };
@@ -49,7 +50,7 @@ export default async function _setupProject(
       url,
       {
         method: 'POST',
-        headers: generateRequestHeaders(config, false),
+        headers: generateRequestHeaders(config),
         body: JSON.stringify(body),
       },
       timeout

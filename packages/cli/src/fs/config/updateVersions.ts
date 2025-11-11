@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const STAGED_VERSIONS_FILE = 'staged-versions.json';
 type StagedVersionData = Record<
-  string,
+  string, // fileId
   { fileName: string; versionId: string }
 >;
 // Update the versions.json file with the new version ids

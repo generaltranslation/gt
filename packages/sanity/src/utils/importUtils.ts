@@ -1,16 +1,8 @@
 import { SanityDocument } from 'sanity';
-import { GTFile, Secrets, TranslationFunctionContext } from '../types';
-import {
-  downloadTranslations,
-  BatchedFiles,
-} from '../translation/downloadTranslations';
+import { Secrets, TranslationFunctionContext } from '../types';
+import { downloadTranslations } from '../translation/downloadTranslations';
 import { processImportBatch, ImportBatchItem } from './batchProcessor';
-
-export interface TranslationStatus {
-  progress: number;
-  isReady: boolean;
-  translationId?: string;
-}
+import type { FileProperties, TranslationStatus } from '../adapter/types';
 
 export interface ImportResult {
   successCount: number;
@@ -25,32 +17,20 @@ export interface ImportOptions {
 }
 
 export async function getReadyFilesForImport(
-  documents: SanityDocument[],
   translationStatuses: Map<string, TranslationStatus>,
   options: ImportOptions = {}
-): Promise<BatchedFiles> {
+): Promise<FileProperties[]> {
   const { filterReadyFiles = () => true } = options;
-  const readyFiles: BatchedFiles = [];
+  const readyFiles: FileProperties[] = [];
 
   for (const [key, status] of translationStatuses.entries()) {
-    if (
-      status.isReady &&
-      status.translationId &&
-      filterReadyFiles(key, status)
-    ) {
-      const [documentId, locale] = key.split(':');
-      const document = documents.find(
-        (doc) => (doc._id?.replace('drafts.', '') || doc._id) === documentId
-      );
-
-      if (document) {
-        readyFiles.push({
-          documentId,
-          versionId: document._rev,
-          translationId: status.translationId,
-          locale,
-        });
-      }
+    if (status.isReady && filterReadyFiles(key, status)) {
+      readyFiles.push({
+        fileId: status.fileData.fileId,
+        versionId: status.fileData.versionId,
+        branchId: status.fileData.branchId,
+        locale: status.fileData.locale,
+      });
     }
   }
 
@@ -58,7 +38,7 @@ export async function getReadyFilesForImport(
 }
 
 export async function importTranslations(
-  readyFiles: BatchedFiles,
+  readyFiles: FileProperties[],
   secrets: Secrets,
   translationContext: TranslationFunctionContext,
   options: ImportOptions = {}
@@ -71,13 +51,13 @@ export async function importTranslations(
 
   const importItems: ImportBatchItem[] = downloadedFiles.map((file) => ({
     docInfo: {
-      documentId: file.docData.documentId,
-      versionId: file.docData.versionId,
+      documentId: file.fileId,
+      versionId: file.versionId,
     },
-    locale: file.docData.locale,
+    locale: file.locale!,
     data: file.data,
     translationContext,
-    key: `${file.docData.documentId}:${file.docData.locale}`,
+    key: `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
   }));
 
   const result = await processImportBatch(importItems, {

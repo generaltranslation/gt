@@ -1,3 +1,4 @@
+import { DataFormat } from 'src/types';
 import { Entry } from './entry';
 
 export type FileFormat =
@@ -23,13 +24,33 @@ export type File = {
   fileMetadata: FileMetadata;
 };
 
-export type CompletedFileTranslationData = {
-  locale: string;
-  metadata: any;
+/**
+ * File object structure for uploading files
+ * @param content - Content of the file
+ * @param fileName - Unique identifier for the file (such as the file path + file name)
+ * @param fileFormat - The format of the file (JSON, MDX, MD, etc.)
+ * @param formatMetadata - Optional metadata for the file, specific to the format of the file
+ * @param dataFormat - Optional format of the data within the file
+ */
+export type FileToUpload = {
+  content: string;
+  formatMetadata?: Record<string, any>;
+  incomingBranchId?: string;
+  checkedOutBranchId?: string;
+} & Omit<FileReference, 'branchId'> & { branchId?: string };
+
+/**
+ * File object structure for referencing files
+ * @param fileId - The ID of the file
+ * @param versionId - The ID of the version of the file
+ * @param branchId - The ID of the branch of the file
+ * @param locale - The locale of the file ()
+ */
+export type FileReference = {
   fileId: string;
-  fileName: string;
   versionId: string;
-  id: string; // Include ID for downloading
-  isReady: boolean;
-  downloadUrl: string;
+  branchId: string;
+  fileName: string;
+  fileFormat: FileFormat;
+  dataFormat?: DataFormat;
 };

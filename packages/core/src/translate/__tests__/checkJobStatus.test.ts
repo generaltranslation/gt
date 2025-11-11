@@ -1,21 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  _checkSetupStatus,
-  CheckSetupStatusResult,
-  SetupJobStatus,
-} from '../checkSetupStatus';
 import { TranslationRequestConfig } from '../../types';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
 import generateRequestHeaders from '../utils/generateRequestHeaders';
+import { _checkJobStatus, CheckJobStatusResult } from '../checkJobStatus';
 
 vi.mock('../utils/fetchWithTimeout');
 vi.mock('../utils/validateResponse');
 vi.mock('../utils/handleFetchError');
 vi.mock('../utils/generateRequestHeaders');
 
-describe('_checkSetupStatus', () => {
+describe('_checkJobStatus', () => {
   const mockConfig: TranslationRequestConfig = {
     baseUrl: 'https://api.test.com',
     projectId: 'test-project',
@@ -37,10 +33,13 @@ describe('_checkSetupStatus', () => {
   });
 
   it('should check setup status successfully', async () => {
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'completed',
-    };
+    const mockResponse: CheckJobStatusResult = [
+      {
+        jobId: 'job-123',
+        status: 'completed',
+        error: undefined,
+      },
+    ];
 
     const mockFetchResponse = {
       json: vi.fn().mockResolvedValue(mockResponse),
@@ -49,17 +48,18 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const result = await _checkSetupStatus('job-123', mockConfig);
+    const result = await _checkJobStatus(['job-123'], mockConfig);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/setup/status/job-123',
+      'https://api.test.com/v2/project/jobs/info',
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
+        body: JSON.stringify({ jobIds: ['job-123'] }),
       },
       60000
     );
@@ -69,10 +69,12 @@ describe('_checkSetupStatus', () => {
   });
 
   it('should check setup status with custom timeout', async () => {
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'processing',
-    };
+    const mockResponse: CheckJobStatusResult = [
+      {
+        jobId: 'job-123',
+        status: 'processing',
+      },
+    ];
 
     const mockFetchResponse = {
       json: vi.fn().mockResolvedValue(mockResponse),
@@ -81,7 +83,7 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const result = await _checkSetupStatus('job-123', mockConfig, 30000);
+    const result = await _checkJobStatus(['job-123'], mockConfig, 30000);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
@@ -93,10 +95,12 @@ describe('_checkSetupStatus', () => {
   });
 
   it('should handle queued status', async () => {
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'queued',
-    };
+    const mockResponse: CheckJobStatusResult = [
+      {
+        jobId: 'job-123',
+        status: 'queued',
+      },
+    ];
 
     const mockFetchResponse = {
       json: vi.fn().mockResolvedValue(mockResponse),
@@ -105,18 +109,20 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const result = await _checkSetupStatus('job-123', mockConfig);
+    const result = await _checkJobStatus(['job-123'], mockConfig);
 
-    expect(result.status).toBe('queued');
-    expect(result.jobId).toBe('job-123');
+    expect(result[0].status).toBe('queued');
+    expect(result[0].jobId).toBe('job-123');
   });
 
   it('should handle failed status with error message', async () => {
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'failed',
-      error: { message: 'Setup generation failed' },
-    };
+    const mockResponse: CheckJobStatusResult = [
+      {
+        jobId: 'job-123',
+        status: 'failed',
+        error: { message: 'Setup generation failed' },
+      },
+    ];
 
     const mockFetchResponse = {
       json: vi.fn().mockResolvedValue(mockResponse),
@@ -125,17 +131,19 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const result = await _checkSetupStatus('job-123', mockConfig);
+    const result = await _checkJobStatus(['job-123'], mockConfig);
 
-    expect(result.status).toBe('failed');
-    expect(result.error?.message).toBe('Setup generation failed');
+    expect(result[0].status).toBe('failed');
+    expect(result[0].error?.message).toBe('Setup generation failed');
   });
 
   it('should handle processing status', async () => {
-    const mockResponse: CheckSetupStatusResult = {
-      jobId: 'job-123',
-      status: 'processing',
-    };
+    const mockResponse: CheckJobStatusResult = [
+      {
+        jobId: 'job-123',
+        status: 'processing',
+      },
+    ];
 
     const mockFetchResponse = {
       json: vi.fn().mockResolvedValue(mockResponse),
@@ -144,10 +152,10 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const result = await _checkSetupStatus('job-123', mockConfig);
+    const result = await _checkJobStatus(['job-123'], mockConfig);
 
-    expect(result.status).toBe('processing');
-    expect(result.jobId).toBe('job-123');
+    expect(result[0].status).toBe('processing');
+    expect(result[0].jobId).toBe('job-123');
   });
 
   it('should handle fetch errors', async () => {
@@ -157,7 +165,7 @@ describe('_checkSetupStatus', () => {
       throw fetchError;
     });
 
-    await expect(_checkSetupStatus('job-123', mockConfig)).rejects.toThrow(
+    await expect(_checkJobStatus(['job-123'], mockConfig)).rejects.toThrow(
       'Network error'
     );
 
@@ -173,7 +181,7 @@ describe('_checkSetupStatus', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
     vi.mocked(validateResponse).mockRejectedValue(validationError);
 
-    await expect(_checkSetupStatus('job-123', mockConfig)).rejects.toThrow(
+    await expect(_checkJobStatus(['job-123'], mockConfig)).rejects.toThrow(
       'Invalid response'
     );
 

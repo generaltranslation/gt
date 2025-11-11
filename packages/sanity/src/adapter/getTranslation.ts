@@ -11,7 +11,7 @@ export const getTranslation: Adapter['getTranslation'] = async (
     return '';
   }
   overrideConfig(secrets);
-  const text = await gt.downloadTranslatedFile({
+  const text = await gt.downloadFile({
     fileId: documentInfo.documentId,
     versionId: documentInfo.versionId || undefined,
     locale: localeId,

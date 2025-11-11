@@ -27,14 +27,17 @@ export async function initProject(
     let setupFailedMessage: string | null = null;
 
     while (true) {
-      const status = await gt.checkSetupStatus(setupJobId);
-
-      if (status.status === 'completed') {
+      const status = await gt.checkJobStatus([setupJobId]);
+      if (!status[0]) {
+        setupFailedMessage = 'Unknown error';
+        break;
+      }
+      if (status[0].status === 'completed') {
         setupCompleted = true;
         break;
       }
-      if (status.status === 'failed') {
-        setupFailedMessage = status.error?.message || 'Unknown error';
+      if (status[0].status === 'failed') {
+        setupFailedMessage = status[0].error?.message || 'Unknown error';
         break;
       }
       if (Date.now() - start > setupTimeoutMs) {

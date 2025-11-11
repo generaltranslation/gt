@@ -14,11 +14,17 @@ import {
 } from '../../console/index.js';
 import { aggregateFiles } from '../../formats/files/translate.js';
 import { aggregateReactTranslations } from '../../translation/stage.js';
-import { sendFiles, SendFilesResult } from '../../api/sendFiles.js';
+import { stageFiles } from '../../workflow/stage.js';
 import { updateVersions } from '../../fs/config/updateVersions.js';
-import { JsxChildren } from 'generaltranslation/types';
+import type {
+  EnqueueFilesResult,
+  FileToUpload,
+  JsxChildren,
+} from 'generaltranslation/types';
 import updateConfig from '../../fs/config/updateConfig.js';
 import { hashStringSync } from '../../utils/hash.js';
+import { FileTranslationData } from '../../workflow/download.js';
+import { BranchData } from '../../types/branch.js';
 
 export const TEMPLATE_FILE_NAME = '__INTERNAL_GT_TEMPLATE_NAME__';
 export const TEMPLATE_FILE_ID = hashStringSync(TEMPLATE_FILE_NAME);
@@ -28,7 +34,11 @@ export async function handleStage(
   settings: Settings,
   library: SupportedLibraries,
   stage: boolean
-): Promise<SendFilesResult | undefined> {
+): Promise<{
+  fileVersionData: FileTranslationData | undefined;
+  jobData: EnqueueFilesResult | undefined;
+  branchData: BranchData | undefined;
+} | null> {
   // Validate required settings are present if not in dry run
   if (!options.dryRun) {
     if (!settings.locales) {
@@ -89,7 +99,9 @@ export async function handleStage(
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
-      });
+        fileId: TEMPLATE_FILE_ID,
+        versionId: hashStringSync(JSON.stringify(fileData)),
+      } satisfies FileToUpload);
     }
   }
 
@@ -106,20 +118,42 @@ export async function handleStage(
     logSuccess(
       `Dry run: No files were sent to General Translation. Found files:\n${fileNames}`
     );
-    return undefined;
+    return null;
   }
 
   // Send translations to General Translation
-  let filesTranslationResponse: SendFilesResult | undefined;
+  let fileVersionData: FileTranslationData | undefined;
+  let jobData: EnqueueFilesResult | undefined;
+  let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    filesTranslationResponse = await sendFiles(allFiles, options, settings);
+    const { branchData: branchDataResult, enqueueResult } = await stageFiles(
+      allFiles,
+      options,
+      settings
+    );
+    jobData = enqueueResult;
+    branchData = branchDataResult;
+
+    fileVersionData = Object.fromEntries(
+      allFiles.map((file) => [
+        file.fileId,
+        {
+          fileName: file.fileName,
+          versionId: file.versionId,
+        },
+      ])
+    );
+
+    // This logic is a little scuffed because stage is async from the API
     if (stage) {
       await updateVersions({
         configDirectory: settings.configDirectory,
-        versionData: filesTranslationResponse.data,
+        versionData: fileVersionData,
       });
     }
-    const templateData = filesTranslationResponse.data[TEMPLATE_FILE_ID];
+    const templateData = allFiles.find(
+      (file) => file.fileId === TEMPLATE_FILE_ID
+    );
     if (templateData?.versionId) {
       await updateConfig({
         configFilepath: settings.config,
@@ -127,5 +161,9 @@ export async function handleStage(
       });
     }
   }
-  return filesTranslationResponse;
+  return {
+    fileVersionData,
+    jobData,
+    branchData,
+  };
 }

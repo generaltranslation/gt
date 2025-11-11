@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _enqueueFiles, { EnqueueOptions } from '../enqueueFiles';
 import { TranslationRequestConfig, EnqueueFilesResult } from '../../types';
-import { FileUploadRef } from '../../types-dir/uploadFiles';
+import { FileReference } from '../../types-dir/api/file';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import validateResponse from '../utils/validateResponse';
 import handleFetchError from '../utils/handleFetchError';
@@ -20,8 +20,9 @@ describe('_enqueueFiles', () => {
   };
 
   const createMockFile = (
-    overrides: Partial<FileUploadRef> = {}
-  ): FileUploadRef => ({
+    overrides: Partial<FileReference> = {}
+  ): FileReference => ({
+    branchId: 'branch-123',
     fileId: 'file-123',
     versionId: 'version-456',
     fileName: 'test.json',
@@ -61,16 +62,20 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions();
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'component.json': {
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
           versionId: 'version-456',
-          fileName: 'component.json',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
         },
-        'page.json': { versionId: 'version-789', fileName: 'page.json' },
       },
-      message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
-      translations: [],
+      message: 'Files enqueued successfully',
     };
 
     const mockFetchResponse = {
@@ -94,11 +99,13 @@ describe('_enqueueFiles', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'component.json',
             },
             {
+              branchId: 'branch-123',
               fileId: 'file-456',
               versionId: 'version-456',
               fileName: 'page.json',
@@ -124,12 +131,20 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions({ targetLocales: ['es'] });
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'File enqueued successfully',
       locales: ['es'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -142,7 +157,7 @@ describe('_enqueueFiles', () => {
     const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
     expect(result.locales).toEqual(['es']);
-    expect(Object.keys(result.data)).toHaveLength(1);
+    expect(Object.keys(result.jobData)).toHaveLength(1);
   });
 
   it('should handle all optional parameters', async () => {
@@ -156,12 +171,20 @@ describe('_enqueueFiles', () => {
     });
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -181,6 +204,7 @@ describe('_enqueueFiles', () => {
         body: JSON.stringify({
           files: [
             {
+              branchId: 'branch-123',
               fileId: 'file-123',
               versionId: 'version-456',
               fileName: 'test.json',
@@ -188,14 +212,13 @@ describe('_enqueueFiles', () => {
           ],
           targetLocales: ['es', 'fr'],
           sourceLocale: 'en',
-          publish: false,
-          requireApproval: true,
-          modelProvider: 'openai',
-          force: true,
+          publish: true,
         }),
       },
-      30000
+      60000
     );
+
+    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
   });
 
   it('should use custom timeout when provided', async () => {
@@ -203,12 +226,20 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions({ timeout: 60000 });
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -232,12 +263,20 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions({ timeout: 1000000 }); // Very large timeout
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -264,12 +303,20 @@ describe('_enqueueFiles', () => {
     });
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr', 'de', 'it', 'pt'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -285,14 +332,13 @@ describe('_enqueueFiles', () => {
   });
 
   it('should handle empty files array', async () => {
-    const mockFiles: FileUploadRef[] = [];
+    const mockFiles: FileReference[] = [];
     const mockOptions = createMockOptions();
 
     const mockResponse: EnqueueFilesResult = {
-      data: {},
+      jobData: {},
       message: 'No files to enqueue',
       locales: ['es', 'fr'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -304,8 +350,8 @@ describe('_enqueueFiles', () => {
 
     const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
-    expect(result.data).toEqual({});
-    expect(Object.keys(result.data)).toHaveLength(0);
+    expect(result.jobData).toEqual({});
+    expect(Object.keys(result.jobData)).toHaveLength(0);
   });
 
   it('should handle fetch errors', async () => {
@@ -335,12 +381,20 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions();
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
-      translations: [],
     };
 
     const mockFetchResponse = {
@@ -364,28 +418,20 @@ describe('_enqueueFiles', () => {
     const mockOptions = createMockOptions();
 
     const mockResponse: EnqueueFilesResult = {
-      data: {
-        'test.json': { versionId: 'version-456', fileName: 'test.json' },
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: true,
+          modelProvider: undefined,
+        },
       },
       message: 'Files enqueued successfully',
       locales: ['es', 'fr'],
-      translations: [
-        {
-          locale: 'es',
-          metadata: {
-            context: 'test',
-            id: 'test-id',
-            sourceLocale: 'en',
-            actionType: 'standard',
-          },
-          fileId: 'file-123',
-          fileName: 'test.json',
-          versionId: 'version-456',
-          id: 'translation-1',
-          isReady: false,
-          downloadUrl: '',
-        },
-      ],
     };
 
     const mockFetchResponse = {
@@ -397,9 +443,7 @@ describe('_enqueueFiles', () => {
 
     const result = await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
-    expect(result.translations).toHaveLength(1);
-    expect(result.translations[0].locale).toBe('es');
-    expect(result.translations[0].isReady).toBe(false);
+    expect(Object.keys(result.jobData)).toHaveLength(1);
   });
 
   it('should handle validation errors', async () => {

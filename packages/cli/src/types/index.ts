@@ -175,6 +175,14 @@ export type Settings = {
   options?: AdditionalOptions;
   modelProvider?: string;
   parsingOptions: ParsingConfigOptions;
+  branchOptions: BranchOptions;
+};
+
+export type BranchOptions = {
+  currentBranch?: string;
+  autoDetectBranches?: boolean;
+  remoteName: string; // default 'origin'. The name of the remote to use for auto-detection.
+  enabled: boolean; // if true, branching is enabled for the project
 };
 
 export type AdditionalOptions = {

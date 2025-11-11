@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { uploadFiles, FileUpload, UploadData } from '../uploadFiles.js';
-import { createSpinner, exit, logMessage } from '../../console/logging.js';
+import {
+  createProgressBar,
+  createSpinner,
+  exit,
+  logMessage,
+} from '../../console/logging.js';
 import { SpinnerResult } from '@clack/prompts';
 import { Settings } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
@@ -9,6 +14,7 @@ import { gt } from '../../utils/gt.js';
 // Mock dependencies
 vi.mock('../../console/logging.js', () => ({
   createSpinner: vi.fn(),
+  createProgressBar: vi.fn(),
   exit: vi.fn(),
   logMessage: vi.fn(),
 }));
@@ -22,8 +28,11 @@ vi.mock('../../utils/gt.js', () => ({
 
 describe('uploadFiles', () => {
   const mockSpinner = {
-    start: vi.fn(),
-    stop: vi.fn(),
+    start: vi.fn().mockReturnThis(),
+    stop: vi.fn().mockReturnThis(),
+    advance: vi.fn().mockReturnThis(),
+    message: vi.fn().mockReturnThis(),
+    isCancelled: false,
   };
 
   // Common mock data factories
@@ -77,16 +86,31 @@ describe('uploadFiles', () => {
       placeholderPaths: {},
       transformPaths: {},
     },
+    parsingOptions: {
+      conditionNames: [],
+    },
+    branchOptions: {
+      currentBranch: '',
+      autoDetectBranches: false,
+      remoteName: 'origin',
+    },
     ...overrides,
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createSpinner).mockReturnValue(
-      mockSpinner as unknown as SpinnerResult
-    );
-    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({ success: true });
-    vi.mocked(gt.uploadTranslations).mockResolvedValue({ success: true });
+    vi.mocked(createProgressBar).mockReturnValue(mockSpinner);
+    vi.mocked(createSpinner).mockReturnValue(mockSpinner as any);
+    vi.mocked(gt.uploadSourceFiles).mockResolvedValue({
+      uploadedFiles: [],
+      count: 0,
+      message: '',
+    });
+    vi.mocked(gt.uploadTranslations).mockResolvedValue({
+      uploadedFiles: [],
+      count: 0,
+      message: '',
+    });
   });
 
   it('should upload files successfully', async () => {
