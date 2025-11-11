@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.2
+
+### Patch Changes
+
+- [#798](https://github.com/generaltranslation/gt/pull/798) [`cf475e4`](https://github.com/generaltranslation/gt/commit/cf475e4db92199cf61f9179b7d678ed3aa116c98) Thanks [@brian-lou](https://github.com/brian-lou)! - Test OIDC
+
 ## 2.5.1
 
 ### Patch Changes
