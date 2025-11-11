@@ -1,6 +1,6 @@
 import type { FileToUpload } from 'generaltranslation/types';
 import { WorkflowStep } from './Workflow.js';
-import { createSpinner } from '../console/logging.js';
+import { createSpinner, logInfo } from '../console/logging.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
@@ -28,6 +28,11 @@ export class UploadStep extends WorkflowStep<
     files: FileToUpload[];
     branchData: BranchData;
   }): Promise<FileReference[]> {
+    if (files.length === 0) {
+      logInfo('No files to upload found... skipping upload step');
+      return [];
+    }
+
     this.spinner.start(
       `Syncing ${files.length} file${files.length !== 1 ? 's' : ''} with General Translation API...`
     );
