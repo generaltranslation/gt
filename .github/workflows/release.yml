@@ -33,6 +33,7 @@ jobs:
         with:
           node-version: 24
           cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
