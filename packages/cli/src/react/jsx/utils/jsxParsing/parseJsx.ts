@@ -12,7 +12,6 @@ import {
   warnHasUnwrappedExpressionSync,
   warnNestedTComponent,
   warnInvalidStaticChildSync,
-  warnInvalidReturnSync as warnInvalidReturnExpressionSync,
   warnFunctionNotFoundSync,
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
@@ -43,6 +42,7 @@ import {
   ElementNode,
 } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
+import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -593,9 +593,12 @@ export function parseJSXElement({
 
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
+    // Clean the tree by removing null 'c' fields from JsxElements
+    const cleanedTree = removeNullChildrenFields(minifiedTree);
+
     updates.push({
       dataFormat: 'JSX',
-      source: minifiedTree,
+      source: cleanedTree,
       // eslint-disable-next-line no-undef
       metadata: { ...structuredClone(metadata) },
     });
@@ -1452,21 +1455,21 @@ function processReturnExpression({
     };
     return result;
   } else {
-    // Handle static expressions (e.g. return 'static string')
-    const staticAnalysis = isStaticExpression(expressionNodePath.node);
-    if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
-      // Preserve the exact whitespace for static string expressions
-      return staticAnalysis.value;
-    }
-    // reject
-    errors.push(
-      warnInvalidReturnExpressionSync(
-        file,
-        functionName,
-        generate(expressionNodePath.node).code,
-        `${scopeNode.node.loc?.start?.line}:${scopeNode.node.loc?.start?.column}`
-      )
-    );
-    return null;
+    return buildJSXTree({
+      importAliases,
+      node: expressionNodePath.node,
+      unwrappedExpressions,
+      visited,
+      callStack,
+      updates,
+      errors,
+      warnings,
+      file,
+      insideT: true,
+      parsingOptions,
+      scopeNode,
+      importedFunctionsMap,
+      pkg,
+    });
   }
 }
