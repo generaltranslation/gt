@@ -12,7 +12,6 @@ import {
   warnHasUnwrappedExpressionSync,
   warnNestedTComponent,
   warnInvalidStaticChildSync,
-  warnInvalidReturnSync as warnInvalidReturnExpressionSync,
   warnFunctionNotFoundSync,
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
@@ -26,7 +25,7 @@ import {
   TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
 } from '../constants.js';
-import { Metadata, HTML_CONTENT_PROPS, GTProp } from 'generaltranslation/types';
+import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';
