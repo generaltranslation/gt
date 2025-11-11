@@ -16,7 +16,7 @@ export function removeNullChildrenFields(tree: JsxChildren): JsxChildren {
     if (typeof child === 'string') {
       return child;
     }
-    if (typeof child !== 'object') {
+    if (typeof child !== 'object' || child === null) {
       return child;
     }
     if (isVariable(child)) {
