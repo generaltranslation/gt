@@ -108,7 +108,7 @@ export async function downloadTranslations(
 
     if (pollResult.fileTracker.failed.size > 0) {
       logError(
-        `${chalk.red(`${pollResult.fileTracker.failed.size} files failed to translate:`)}\n${Array.from(
+        `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
           pollResult.fileTracker.failed.entries()
         )
           .map(([key, value]) => `- ${value.fileName}`)
