@@ -40,6 +40,9 @@ jobs:
         with:
           targets: wasm32-wasip1
 
+      - name: Check npm version
+        run: npm --version
+
       - name: Install Dependencies
         # not frozen since we are using workspaces & package versions will change
         run: pnpm install --no-frozen-lockfile
