@@ -186,6 +186,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
                   fileTracker.skipped.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
                 }
+                jobFileMap.delete(job.jobId);
               }
             }
 

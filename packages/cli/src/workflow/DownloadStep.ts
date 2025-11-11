@@ -154,7 +154,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
     let allSuccessful: BatchedFiles = [];
     let retryCount = 0;
     let allSkipped: BatchedFiles = [];
-    while (remainingFiles.length > 0 && retryCount < maxRetries) {
+    while (remainingFiles.length > 0 && retryCount <= maxRetries) {
       const batchResult = await downloadFileBatch(
         fileTracker,
         remainingFiles,
