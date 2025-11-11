@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - "packages/*/CHANGELOG.md"
       - "packages/*/package.json"
+      - ".changeset/**"
 
 env:
   CI: true

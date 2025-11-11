@@ -6,6 +6,7 @@ on:
       - main
 
 permissions:
+  id-token: write # Required for OIDC
   contents: write
   pull-requests: write
   packages: write
@@ -18,6 +19,8 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    environment:
+      name: "release"
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -30,6 +33,7 @@ jobs:
         with:
           node-version: 24
           cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -54,4 +58,3 @@ jobs:
           title: "[ci] release"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
