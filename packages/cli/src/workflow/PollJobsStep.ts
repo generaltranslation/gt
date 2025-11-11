@@ -179,14 +179,16 @@ export class PollTranslationJobsStep extends WorkflowStep<
                 if (job.status === 'completed') {
                   fileTracker.completed.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
+                  jobFileMap.delete(job.jobId);
                 } else if (job.status === 'failed') {
                   fileTracker.failed.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
+                  jobFileMap.delete(job.jobId);
                 } else if (job.status === 'unknown') {
                   fileTracker.skipped.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
+                  jobFileMap.delete(job.jobId);
                 }
-                jobFileMap.delete(job.jobId);
               }
             }
 
