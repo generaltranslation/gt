@@ -1,13 +1,13 @@
 import {
   Content,
-  DataFormat,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   JsxChildren,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   IcuMessage,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   I18nextMessage,
-} from '../../types';
+} from '../../types-dir/jsx/content';
+import { DataFormat } from '../../types-dir/jsx/content';
 
 /**
  * ActionType is the type of action to perform on the request.

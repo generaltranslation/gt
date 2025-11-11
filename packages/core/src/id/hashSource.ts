@@ -1,6 +1,8 @@
 // Functions provided to other GT libraries
 
-import { DataFormat, JsxChild, JsxChildren, Variable } from '../types';
+import { DataFormat } from '../types-dir/jsx/content';
+import { JsxChild, JsxChildren } from '../types-dir/jsx/content';
+import { Variable } from '../types-dir/jsx/variables';
 import stringify from 'fast-json-stable-stringify';
 import CryptoJS from 'crypto-js';
 import isVariable from '../utils/isVariable';
