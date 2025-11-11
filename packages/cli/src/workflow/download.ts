@@ -6,9 +6,10 @@ import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
 import { FileStatusTracker, PollTranslationJobsStep } from './PollJobsStep.js';
 import { DownloadTranslationsStep } from './DownloadStep.js';
 import { BranchData } from '../types/branch.js';
-import { logErrorAndExit } from '../console/logging.js';
+import { logError, logErrorAndExit } from '../console/logging.js';
 import { BranchStep } from './BranchStep.js';
 import { FileProperties } from '../types/files.js';
+import chalk from 'chalk';
 
 export type FileTranslationData = {
   [fileId: string]: {
@@ -104,6 +105,17 @@ export async function downloadTranslations(
       forceRetranslation,
     });
     await pollStep.wait();
+
+    if (pollResult.fileTracker.failed.size > 0) {
+      logError(
+        `${chalk.red(`${pollResult.fileTracker.failed.size} files failed to translate:`)}\n${Array.from(
+          pollResult.fileTracker.failed.entries()
+        )
+          .map(([key, value]) => `- ${value.fileName}`)
+          .join('\n')}`
+      );
+      return false;
+    }
 
     if (!pollResult.success) {
       return false;
