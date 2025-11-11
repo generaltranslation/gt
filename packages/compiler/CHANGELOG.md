@@ -1,5 +1,18 @@
 # @generaltranslation/compiler
 
+## 1.1.0
+
+### Minor Changes
+
+- [#788](https://github.com/generaltranslation/gt/pull/788) [`99e4648`](https://github.com/generaltranslation/gt/commit/99e46486ae2046c689e0045372d63c4eb3dc5d48) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - More information: https://https://generaltranslation.com/en-US/blog/gt-next_v6_8_0
+
+  feat: static component
+
+### Patch Changes
+
+- Updated dependencies [[`fee5d4a`](https://github.com/generaltranslation/gt/commit/fee5d4a3d0fd20e0928eebb83201a87289265719)]:
+  - generaltranslation@8.0.0
+
 ## 1.0.9
 
 ### Patch Changes

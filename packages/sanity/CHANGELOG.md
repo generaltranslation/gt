@@ -1,5 +1,24 @@
 # gt-sanity
 
+## 1.1.0
+
+### Minor Changes
+
+- [#791](https://github.com/generaltranslation/gt/pull/791) [`fee5d4a`](https://github.com/generaltranslation/gt/commit/fee5d4a3d0fd20e0928eebb83201a87289265719) Thanks [@brian-lou](https://github.com/brian-lou)! - Update Notes:
+  https://generaltranslation.com/blog/generaltranslation_v8
+
+  Please update the following packages to the latest version:
+  - generaltranslation: `7.9.1` or later
+  - gtx-cli: `2.4.15` or later
+  - gt-sanity: `1.0.11` or later
+
+  Older versions of these packages may not be compatible with the latest version of the General Translation API and may require updating.
+
+### Patch Changes
+
+- Updated dependencies [[`fee5d4a`](https://github.com/generaltranslation/gt/commit/fee5d4a3d0fd20e0928eebb83201a87289265719)]:
+  - generaltranslation@8.0.0
+
 ## 1.0.11
 
 ### Patch Changes
