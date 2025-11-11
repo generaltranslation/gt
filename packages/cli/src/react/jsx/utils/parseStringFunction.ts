@@ -26,13 +26,10 @@ const generate = generateModule.default || generateModule;
 const traverse = traverseModule.default || traverseModule;
 
 import fs from 'node:fs';
-import path from 'node:path';
 import { parse } from '@babel/parser';
-import { createMatchPath, loadConfig } from 'tsconfig-paths';
-import resolve from 'resolve';
-import enhancedResolve from 'enhanced-resolve';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
-const { ResolverFactory } = enhancedResolve;
+import { resolveImportPath } from './resolveImportPath.js';
+import { buildImportMap } from './buildImportMap.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -183,41 +180,6 @@ function extractParameterName(param: t.Node): string | null {
 }
 
 /**
- * Builds a map of imported function names to their import paths from a given program path.
- * Handles both named imports and default imports.
- *
- * Example: import { getInfo } from './constants' -> Map { 'getInfo' => './constants' }
- * Example: import utils from './utils' -> Map { 'utils' => './utils' }
- */
-function buildImportMap(programPath: NodePath): Map<string, string> {
-  const importMap = new Map<string, string>();
-
-  programPath.traverse({
-    ImportDeclaration(importPath) {
-      if (t.isStringLiteral(importPath.node.source)) {
-        const importSource = importPath.node.source.value;
-        importPath.node.specifiers.forEach((spec) => {
-          if (
-            t.isImportSpecifier(spec) &&
-            t.isIdentifier(spec.imported) &&
-            t.isIdentifier(spec.local)
-          ) {
-            importMap.set(spec.local.name, importSource);
-          } else if (
-            t.isImportDefaultSpecifier(spec) &&
-            t.isIdentifier(spec.local)
-          ) {
-            importMap.set(spec.local.name, importSource);
-          }
-        });
-      }
-    },
-  });
-
-  return importMap;
-}
-
-/**
  * Recursively resolves variable assignments to find all aliases of a translation callback parameter.
  * Handles cases like: const t = translate; const a = translate; const b = a; const c = b;
  *
@@ -358,7 +320,8 @@ function handleFunctionCall(
         const resolvedPath = resolveImportPath(
           file,
           importPath,
-          parsingOptions
+          parsingOptions,
+          resolveImportPathCache
         );
 
         if (resolvedPath) {
@@ -475,124 +438,6 @@ function findFunctionParameterUsage(
         });
       }
     });
-  }
-}
-
-/**
- * Resolves import paths to absolute file paths using battle-tested libraries.
- * Handles relative paths, TypeScript paths, and node module resolution.
- *
- * Examples:
- * - './constants' -> '/full/path/to/constants.ts'
- * - '@/components/ui/button' -> '/full/path/to/src/components/ui/button.tsx'
- * - '@shared/utils' -> '/full/path/to/packages/utils/index.ts'
- */
-function resolveImportPath(
-  currentFile: string,
-  importPath: string,
-  parsingOptions: ParsingConfigOptions
-): string | null {
-  // Check cache first
-  const cacheKey = `${currentFile}::${importPath}`;
-  if (resolveImportPathCache.has(cacheKey)) {
-    return resolveImportPathCache.get(cacheKey)!;
-  }
-
-  const basedir = path.dirname(currentFile);
-  const extensions = ['.tsx', '.ts', '.jsx', '.js'];
-  const mainFields = ['module', 'main'];
-
-  let result: string | null = null;
-
-  // 1. Try tsconfig-paths resolution first (handles TypeScript path mapping)
-  const tsConfigResult = loadConfig(basedir);
-  if (tsConfigResult.resultType === 'success') {
-    const matchPath = createMatchPath(
-      tsConfigResult.absoluteBaseUrl,
-      tsConfigResult.paths,
-      mainFields
-    );
-
-    // First try without any extension
-    let tsResolved = matchPath(importPath);
-    if (tsResolved && fs.existsSync(tsResolved)) {
-      result = tsResolved;
-      resolveImportPathCache.set(cacheKey, result);
-      return result;
-    }
-
-    // Then try with each extension
-    for (const ext of extensions) {
-      tsResolved = matchPath(importPath + ext);
-      if (tsResolved && fs.existsSync(tsResolved)) {
-        result = tsResolved;
-        resolveImportPathCache.set(cacheKey, result);
-        return result;
-      }
-
-      // Also try the resolved path with extension
-      tsResolved = matchPath(importPath);
-      if (tsResolved) {
-        const resolvedWithExt = tsResolved + ext;
-        if (fs.existsSync(resolvedWithExt)) {
-          result = resolvedWithExt;
-          resolveImportPathCache.set(cacheKey, result);
-          return result;
-        }
-      }
-    }
-  }
-
-  // 2. Try enhanced-resolve (handles package.json exports field and modern resolution)
-  try {
-    const resolver = ResolverFactory.createResolver({
-      useSyncFileSystemCalls: true,
-      fileSystem: fs as any,
-      extensions,
-      // Include 'development' condition to resolve to source files in monorepos
-      conditionNames: parsingOptions.conditionNames, // defaults to ['browser', 'module', 'import', 'require', 'default']. See generateSettings.ts for more details
-      exportsFields: ['exports'],
-      mainFields,
-    });
-
-    const resolved = resolver.resolveSync({}, basedir, importPath);
-    if (resolved) {
-      result = resolved;
-      resolveImportPathCache.set(cacheKey, result);
-      return result;
-    }
-  } catch {
-    // Fall through to next resolution strategy
-  }
-
-  // 3. Fallback to Node.js resolution (handles relative paths and node_modules)
-  try {
-    result = resolve.sync(importPath, { basedir, extensions });
-    resolveImportPathCache.set(cacheKey, result);
-    return result;
-  } catch {
-    // If resolution fails, try to manually replace .js/.jsx with .ts/.tsx for source files
-    if (importPath.endsWith('.js')) {
-      const tsPath = importPath.replace(/\.js$/, '.ts');
-      try {
-        result = resolve.sync(tsPath, { basedir, extensions });
-        resolveImportPathCache.set(cacheKey, result);
-        return result;
-      } catch {
-        // Continue to return null
-      }
-    } else if (importPath.endsWith('.jsx')) {
-      const tsxPath = importPath.replace(/\.jsx$/, '.tsx');
-      try {
-        result = resolve.sync(tsxPath, { basedir, extensions });
-        resolveImportPathCache.set(cacheKey, result);
-        return result;
-      } catch {
-        // Continue to return null
-      }
-    }
-    resolveImportPathCache.set(cacheKey, null);
-    return null;
   }
 }
 
@@ -722,7 +567,8 @@ function processFunctionInFile(
         const resolvedPath = resolveImportPath(
           filePath,
           reExportPath,
-          parsingOptions
+          parsingOptions,
+          resolveImportPathCache
         );
         if (resolvedPath) {
           processFunctionInFile(

@@ -1,5 +1,5 @@
 import { TransformState } from '../../../state/types';
-import { hashSource } from 'generaltranslation/id';
+import hashSource from '../../../utils/calculateHash';
 
 /**
  * Track gt() function invocations

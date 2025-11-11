@@ -4,7 +4,15 @@ import {
   colorizeIdString,
   colorizeContent,
   colorizeLine,
+  colorizeFunctionName,
 } from './colors.js';
+
+const withWillErrorInNextVersion = (message: string): string =>
+  `${message} (This will become an error in the next major version of the CLI.)`;
+
+// Static function related errors
+const withStaticError = (message: string): string =>
+  `<Static> rules violation: ${message}`;
 
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
@@ -26,6 +34,32 @@ export const warnVariablePropSync = (
     location
   );
 
+export const warnInvalidReturnSync = (
+  file: string,
+  functionName: string,
+  expression: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withStaticError(
+      `Function ${colorizeFunctionName(functionName)} does not return a static expression. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, (3) static JSX content, or (4) a ternary expression. Instead got:\n${colorizeContent(expression)}`
+    ),
+    location
+  );
+
+// TODO: this is temporary until we handle implicit returns
+export const warnMissingReturnSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does have an explicit return statement. Static functions must have an explicit return statment.`,
+    location
+  );
+
 export const warnHasUnwrappedExpressionSync = (
   file: string,
   unwrappedExpressions: string[],
@@ -41,6 +75,17 @@ export const warnHasUnwrappedExpressionSync = (
     )} to ensure this content is translated.\n${colorizeContent(
       unwrappedExpressions.join('\n')
     )}`,
+    location
+  );
+
+export const warnFailedToConstructJsxTreeSync = (
+  file: string,
+  code: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Failed to construct JsxTree! Call expression is not a valid createElement call: ${colorizeContent(code)}`,
     location
   );
 
@@ -129,8 +174,65 @@ export const withLocation = (
 ): string =>
   `${colorizeFilepath(file)}${location ? ` (${colorizeLine(location)})` : ''}: ${message}`;
 
-const withWillErrorInNextVersion = (message: string): string =>
-  `${message} (This will become an error in the next major version of the CLI.)`;
+export const warnInvalidStaticChildSync = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    'Found invalid <Static> invocation. Children must be an expression container with a function invocation. Callee must be a single identifier. (Example: <T> <Static> {getSubject()} </Static> </T>)',
+    location
+  );
+
+export const warnFunctionNotFoundSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} definition could not be resolved. This might affect translation resolution for this ${colorizeComponent('<T>')} component.`,
+    location
+  );
+
+export const warnDuplicateFunctionDefinitionSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Function ${colorizeFunctionName(functionName)} is defined multiple times. Only the first definition will be used.`,
+    location
+  );
+
+export const warnInvalidStaticInitSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withStaticError(
+      `The definition for ${colorizeFunctionName(functionName)} could not be resolved. When using arrow syntax to define a static function, the right hand side or the assignment MUST only contain the arrow function itself and no other expressions.
+Example: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = () => { ... }`)}
+Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() => { ... }][0]`)}`
+    ),
+    location
+  );
+
+export const warnRecursiveFunctionCallSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withStaticError(
+      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function use recursive calls to construct its result.`
+    ),
+    location
+  );
 
 // Re-export error messages
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;

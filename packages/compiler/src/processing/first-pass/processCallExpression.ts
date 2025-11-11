@@ -22,10 +22,10 @@ import { registerUseMessagesCallback } from '../../transform/registration/callba
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { validateTranslationComponentArgs } from '../../transform/validation/validateTranslationComponentArgs';
-import { hashSource } from 'generaltranslation/id';
 import { registerTranslationComponent } from '../../transform/registration/registerTranslationComponent';
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { createErrorLocation } from '../../utils/errors';
+import hashSource from '../../utils/calculateHash';
 
 /**
  * Process call expressions

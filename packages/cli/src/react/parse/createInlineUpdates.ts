@@ -2,28 +2,15 @@ import fs from 'node:fs';
 import { Options, Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
-import traverseModule from '@babel/traverse';
-import { NodePath } from '@babel/traverse';
-
-// Handle CommonJS/ESM interop
-const traverse = traverseModule.default || traverseModule;
-
 import { hashSource } from 'generaltranslation/id';
-import { parseJSXElement } from '../jsx/utils/parseJsx.js';
+import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logError } from '../../console/logging.js';
-import {
-  GT_TRANSLATION_FUNCS,
-  INLINE_TRANSLATION_HOOK,
-  INLINE_TRANSLATION_HOOK_ASYNC,
-  INLINE_MESSAGE_HOOK,
-  INLINE_MESSAGE_HOOK_ASYNC,
-  MSG_TRANSLATION_HOOK,
-} from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
+import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 
 export async function createInlineUpdates(
   pkg: 'gt-react' | 'gt-next',
@@ -52,88 +39,16 @@ export async function createInlineUpdates(
       continue;
     }
 
-    const importAliases: Record<string, string> = {};
-
     // First pass: collect imports and process translation functions
-    const translationPaths: Array<{
-      localName: string;
-      path: NodePath;
-      originalName: string;
-    }> = [];
-
-    traverse(ast, {
-      ImportDeclaration(path) {
-        if (path.node.source.value.startsWith(pkg)) {
-          const importName = extractImportName(
-            path.node,
-            pkg,
-            GT_TRANSLATION_FUNCS
-          );
-          for (const name of importName) {
-            if (
-              name.original === INLINE_TRANSLATION_HOOK ||
-              name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
-              name.original === INLINE_MESSAGE_HOOK ||
-              name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-              name.original === MSG_TRANSLATION_HOOK
-            ) {
-              translationPaths.push({
-                localName: name.local,
-                path,
-                originalName: name.original,
-              });
-            } else {
-              importAliases[name.local] = name.original;
-            }
-          }
-        }
-      },
-      VariableDeclarator(path) {
-        // Check if the init is a require call
-        if (
-          path.node.init?.type === 'CallExpression' &&
-          path.node.init.callee.type === 'Identifier' &&
-          path.node.init.callee.name === 'require'
-        ) {
-          // Check if it's requiring our package
-          const args = path.node.init.arguments;
-          if (
-            args.length === 1 &&
-            args[0].type === 'StringLiteral' &&
-            args[0].value.startsWith(pkg)
-          ) {
-            const parentPath = path.parentPath;
-            if (parentPath.isVariableDeclaration()) {
-              const importName = extractImportName(
-                parentPath.node,
-                pkg,
-                GT_TRANSLATION_FUNCS
-              );
-              for (const name of importName) {
-                if (
-                  name.original === INLINE_TRANSLATION_HOOK ||
-                  name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
-                  name.original === INLINE_MESSAGE_HOOK ||
-                  name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-                  name.original === MSG_TRANSLATION_HOOK
-                ) {
-                  translationPaths.push({
-                    localName: name.local,
-                    path: parentPath,
-                    originalName: name.original,
-                  });
-                } else {
-                  importAliases[name.local] = name.original;
-                }
-              }
-            }
-          }
-        }
-      },
-    });
+    const { importAliases, inlineTranslationPaths, translationComponentPaths } =
+      getPathsAndAliases(ast, pkg);
 
     // Process translation functions asynchronously
-    for (const { localName: name, originalName, path } of translationPaths) {
+    for (const {
+      localName: name,
+      originalName,
+      path,
+    } of inlineTranslationPaths) {
       parseStrings(
         name,
         originalName,
@@ -147,18 +62,21 @@ export async function createInlineUpdates(
     }
 
     // Parse <T> components
-    traverse(ast, {
-      JSXElement(path) {
-        parseJSXElement(
-          importAliases,
-          path.node,
-          updates,
-          errors,
-          warnings,
-          file
-        );
-      },
-    });
+    for (const { localName, path } of translationComponentPaths) {
+      parseTranslationComponent({
+        importAliases: importAliases,
+        originalName: localName,
+        localName,
+        ast,
+        pkg,
+        path,
+        updates,
+        errors,
+        warnings,
+        file,
+        parsingOptions,
+      });
+    }
 
     // Extra validation (for Locadex)
     // Done in parseStrings() atm

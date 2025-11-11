@@ -17,6 +17,7 @@ export enum GT_COMPONENT_TYPES {
   Currency = 'Currency',
   DateTime = 'DateTime',
   Num = 'Num',
+  Static = 'Static',
   Branch = 'Branch',
   Plural = 'Plural',
   LocaleSelector = 'LocaleSelector',
@@ -127,6 +128,7 @@ export const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.Num]: 'n',
   [GT_COMPONENT_TYPES.Currency]: 'c',
   [GT_COMPONENT_TYPES.DateTime]: 'd',
+  [GT_COMPONENT_TYPES.Static]: 's',
   [GT_COMPONENT_TYPES.Branch]: 'b',
   [GT_COMPONENT_TYPES.Plural]: 'p',
 } as const;

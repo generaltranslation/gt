@@ -8,6 +8,10 @@ export function colorizeComponent(component: string) {
   return chalk.yellow(component);
 }
 
+export function colorizeFunctionName(functionName: string) {
+  return chalk.yellow(functionName);
+}
+
 export function colorizeIdString(id: string) {
   return chalk.yellow(id);
 }

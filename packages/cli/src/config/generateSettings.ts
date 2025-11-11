@@ -223,7 +223,14 @@ export async function generateSettings(
   // Add parsing options if not provided
   mergedOptions.parsingOptions = mergedOptions.parsingOptions || {};
   mergedOptions.parsingOptions.conditionNames = mergedOptions.parsingOptions
-    .conditionNames || ['browser', 'module', 'import', 'require', 'default'];
+    .conditionNames || [
+    'development',
+    'browser',
+    'module',
+    'import',
+    'require',
+    'default',
+  ];
 
   // Add branch options if not provided
   const branchOptions = mergedOptions.branchOptions || {};

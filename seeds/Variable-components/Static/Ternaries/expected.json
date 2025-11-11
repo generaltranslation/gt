@@ -1,0 +1,7 @@
+{
+  "static": true,
+  "content": {
+    "b504e6005f6d2aad": [{"t":"C1","i":1,"c":{"t":"C2","i":2,"c":"The girl"}}," is beautiful"],
+    "f8d8173dd6fda6ce": [{"t":"C1","i":1,"c":{"t":"C2","i":2,"c":"The boy"}}," is beautiful"]
+  }
+}

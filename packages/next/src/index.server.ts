@@ -4,6 +4,7 @@ import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
 import DateTime from './variables/DateTime';
+import Static from './variables/Static';
 import T from './server-dir/buildtime/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
@@ -54,6 +55,7 @@ export {
   Num,
   Currency,
   DateTime,
+  Static,
   Branch,
   Plural,
   useGT,
