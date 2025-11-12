@@ -41,7 +41,7 @@ export function Static<T extends React.ReactNode>({
  *   return (Math.random() > 0.5) ? "Alice" : "Brian";
  * }
  * ...
- * gt("My name is {declareStatic(getSubject())}");
+ * gt(`My name is ${declareStatic(getSubject())}`);
  * ```
  *
  * @param {T extends string | null | undefined} string - String returning function invocation to declare as static.
