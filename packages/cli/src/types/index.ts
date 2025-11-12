@@ -176,6 +176,8 @@ export type Settings = {
   modelProvider?: string;
   parsingOptions: ParsingConfigOptions;
   branchOptions: BranchOptions;
+  // Optional shared static assets config
+  sharedStaticAssets?: SharedStaticAssetsConfig;
 };
 
 export type BranchOptions = {
@@ -208,6 +210,12 @@ export type AdditionalOptions = {
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
   baseDomain?: string; // The base http:// url where the project is hosted
+};
+
+export type SharedStaticAssetsConfig = {
+  include: string | string[];
+  outDir: string;
+  publicPath?: string;
 };
 
 export type JsonSchema = {
