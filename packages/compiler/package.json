@@ -21,6 +21,10 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
   "keywords": [
     "unplugin",
     "webpack",
