@@ -32,6 +32,8 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  Static, 
+  declareStatic
 } from '@generaltranslation/react-core/internal';
 
 import {
@@ -97,6 +99,8 @@ export {
   defaultRegionCookieName,
   reactHasUse,
   msg,
+  declareStatic,
+  Static,
   decodeMsg,
   decodeOptions,
 };

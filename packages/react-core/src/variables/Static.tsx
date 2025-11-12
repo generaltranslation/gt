@@ -1,15 +1,14 @@
 import React from 'react';
 
 /**
- * The `<Static>` component allows you to render the output of a function invocation. Such a function MUST return
- * only static content. If the function returns non-static content, the CLI tool will throw an error.
- *
- * Currently, this feature does not yet support <Suspense>.
+ * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool. 
+ * 
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
  *
  * @example
  * ```jsx
  * function getSubject() {
- *   return 'John';
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
  * }
  * ...
  * <T>
@@ -21,10 +20,29 @@ import React from 'react';
  * ```
  *
  * @param {T extends React.ReactNode} children - Static content to render.
- * @returns {T} The static content.
+ * @returns {T} The result of the function invocation.
  */
-function Static<T extends React.ReactNode>({ children }: { children: T }): T {
+export function Static<T extends React.ReactNode>({ children }: { children: T }): T {
   return children;
 }
 
-export default Static;
+/**
+ * declareStatic() is a powerful but dangerous function which marks its argument as statically analyzable for the compiler and CLI tool. 
+ * 
+ * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not statically analyzable.
+ * 
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * gt("My name is {declareStatic(getSubject())}");
+ * ```
+ *
+ * @param {T extends string | null | undefined} string - String returning function invocation to declare as static.
+ * @returns {T} The result of the function invocation.
+ */
+export function declareStatic<T extends string | null | undefined>(string: T): T {
+  return string;
+}

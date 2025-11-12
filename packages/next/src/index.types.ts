@@ -17,14 +17,13 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
-  Static as _Static,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import { msg, decodeMsg, decodeOptions, _Messages } from 'gt-react/internal';
+import { msg, decodeMsg, decodeOptions, _Messages, Static as _Static, declareStatic as _declareStatic } from 'gt-react/internal';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -162,15 +161,49 @@ export const Var: typeof _Var = () => {
 Var._gtt = 'variable-variable';
 
 /**
- * The `<Static>` component allows you to render the output of a function invocation. Such a function MUST return
- * only static content. If the function returns non-static content, the CLI tool will throw an error.
+ * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool. 
+ * 
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
  *
- * Currently, this feature does not yet support <Suspense>.
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * <T>
+ *   <Static>
+ *      {getSubject()}
+ *   </Static>
+ *   is going to school today.
+ * </T>
+ * ```
  *
  * @param {T extends React.ReactNode} children - Static content to render.
- * @returns {T} The static content.
+ * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * declareStatic() is a powerful but dangerous function which marks its argument as statically analyzable for the compiler and CLI tool. 
+ * 
+ * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not statically analyzable.
+ * 
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * gt("My name is {declareStatic(getSubject())}");
+ * ```
+ *
+ * @param {T extends string | null | undefined} string - String returning function invocation to declare as static.
+ * @returns {T} The result of the function invocation.
+ */
+export const declareStatic: typeof _declareStatic = () => {
   throw new Error(typesFileError);
 };
 

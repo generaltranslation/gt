@@ -9,7 +9,7 @@ import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
 import DateTime from './variables/DateTime';
-import Static from './variables/Static';
+import { Static, declareStatic } from './variables/Static';
 import Plural from './branches/plurals/Plural';
 import Branch from './branches/Branch';
 import useLocales from './hooks/useLocales';
@@ -39,6 +39,7 @@ export {
   Currency,
   DateTime,
   Static,
+  declareStatic,
   T,
   GTProvider,
   Plural,

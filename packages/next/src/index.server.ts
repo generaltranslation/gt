@@ -4,7 +4,6 @@ import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
 import DateTime from './variables/DateTime';
-import Static from './variables/Static';
 import T from './server-dir/buildtime/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
@@ -14,7 +13,7 @@ import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
 import getI18NConfig from './config-dir/getI18NConfig';
-import { msg, decodeMsg, decodeOptions } from 'gt-react/internal';
+import { msg, decodeMsg, decodeOptions, Static, declareStatic } from 'gt-react/internal';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
