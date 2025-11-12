@@ -23,11 +23,12 @@ export default [
       },
     ],
     plugins: [
-      resolve({ extensions: ['.js', '.mjs', '.ts'] }), // add intl-messageformat into the bundle
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
       typescript({ tsconfig: './tsconfig.json' }),
       commonjs(), // Handle CommonJS dependencies
       terser(), // Minification
     ],
+    external: ['crypto-js', 'fast-json-stable-stringify', 'intl-messageformat'], // External dependencies not bundled in
   },
 
   // TypeScript declarations for the main library
