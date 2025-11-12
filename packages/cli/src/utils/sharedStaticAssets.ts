@@ -36,7 +36,12 @@ async function moveFile(src: string, dest: string) {
     await fs.promises.rename(src, dest);
   } catch (err: any) {
     // Fallback to copy+unlink for cross-device or existing files
-    if (err && (err.code === 'EXDEV' || err.code === 'EEXIST' || err.code === 'ENOTEMPTY')) {
+    if (
+      err &&
+      (err.code === 'EXDEV' ||
+        err.code === 'EEXIST' ||
+        err.code === 'ENOTEMPTY')
+    ) {
       const data = await fs.promises.readFile(src);
       await ensureDir(path.dirname(dest));
       await fs.promises.writeFile(dest, data);
@@ -119,7 +124,14 @@ function rewriteMdxContent(
 
   // Helper to resolve and possibly rewrite a URL
   const maybeRewrite = (url: string): string | null => {
-    if (!url || /^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+    if (
+      !url ||
+      /^(https?:)?\/\//i.test(url) ||
+      url.startsWith('data:') ||
+      url.startsWith('#') ||
+      url.startsWith('mailto:') ||
+      url.startsWith('tel:')
+    ) {
       return null;
     }
     const { base, suffix } = stripQueryAndHash(url);
@@ -150,7 +162,8 @@ function rewriteMdxContent(
     }
     // MDX <img src="..." />
     if (
-      (node.type === 'mdxJsxFlowElement' || node.type === 'mdxJsxTextElement') &&
+      (node.type === 'mdxJsxFlowElement' ||
+        node.type === 'mdxJsxTextElement') &&
       Array.isArray(node.attributes)
     ) {
       for (const attr of node.attributes) {
@@ -191,7 +204,8 @@ function rewriteMdxContent(
 }
 
 export default async function processSharedStaticAssets(settings: Settings) {
-  const cfg: SharedStaticAssetsConfig | undefined = settings.sharedStaticAssets as any;
+  const cfg: SharedStaticAssetsConfig | undefined =
+    settings.sharedStaticAssets as any;
   if (!cfg) return;
 
   const cwd = process.cwd();
@@ -208,7 +222,9 @@ export default async function processSharedStaticAssets(settings: Settings) {
   }
   if (assetPaths.size === 0) return;
 
-  const outDirInput = cfg.outDir.startsWith('/') ? cfg.outDir.slice(1) : cfg.outDir;
+  const outDirInput = cfg.outDir.startsWith('/')
+    ? cfg.outDir.slice(1)
+    : cfg.outDir;
   const outDirAbs = path.resolve(cwd, outDirInput);
   const publicPath = derivePublicPath(outDirInput, cfg.publicPath);
 
@@ -216,7 +232,10 @@ export default async function processSharedStaticAssets(settings: Settings) {
   const originalToPublic = new Map<string, string>();
   for (const abs of assetPaths) {
     const relFromRoot = path.relative(cwd, abs).replace(/\\/g, '/');
-    const publicUrl = (publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath) + '/' + relFromRoot;
+    const publicUrl =
+      (publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath) +
+      '/' +
+      relFromRoot;
     originalToPublic.set(path.normalize(abs), publicUrl);
   }
 
@@ -242,10 +261,7 @@ export default async function processSharedStaticAssets(settings: Settings) {
 
   // Rewrite references in default-locale files we send for translation
   const resolved = settings.files?.resolvedPaths || {};
-  const mdFiles = [
-    ...(resolved.mdx || []),
-    ...(resolved.md || []),
-  ];
+  const mdFiles = [...(resolved.mdx || []), ...(resolved.md || [])];
 
   await Promise.all(
     mdFiles.map(async (filePath) => {
