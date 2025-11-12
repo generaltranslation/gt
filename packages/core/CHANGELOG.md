@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.0.1
+
+### Patch Changes
+
+- [#801](https://github.com/generaltranslation/gt/pull/801) [`f98c504`](https://github.com/generaltranslation/gt/commit/f98c504f1e025024b3e1e5e16a0271e86ed095fa) Thanks [@SamEggert](https://github.com/SamEggert)! - make getRegionProperties not internal
+
 ## 8.0.0
 
 ### Major Changes

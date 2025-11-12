@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gtx-cli@2.5.3
+
 ## 1.0.30
 
 ### Patch Changes

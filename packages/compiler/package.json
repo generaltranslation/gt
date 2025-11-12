@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/compiler",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,6 +20,10 @@
     "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" --fix",
     "test": "vitest run",
     "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "keywords": [
     "unplugin",

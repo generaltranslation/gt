@@ -1800,18 +1800,17 @@ export function getLocaleProperties(
  *  - `code`: the input region code
  *  - `name`: the localized or custom region name
  *  - `emoji`: the matching emoji flag or symbol
- * @internal
  *
  * @example
- * _getRegionProperties('US', 'en');
+ * getRegionProperties('US', 'en');
  * // => { code: 'US', name: 'United States', emoji: '🇺🇸' }
  *
  * @example
- * _getRegionProperties('US', 'fr');
+ * getRegionProperties('US', 'fr');
  * // => { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
  *
  * @example
- * _getRegionProperties('US', 'en', { US: { name: 'USA', emoji: '🗽' } });
+ * getRegionProperties('US', 'en', { US: { name: 'USA', emoji: '🗽' } });
  * // => { code: 'US', name: 'USA', emoji: '🗽' }
  */
 export function getRegionProperties(
