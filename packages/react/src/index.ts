@@ -15,7 +15,7 @@ import {
   DateTime,
   Static,
   declareStatic,
-  Plural, 
+  Plural,
   Branch,
   useLocales,
   useLocaleSelector,

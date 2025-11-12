@@ -32,8 +32,8 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
-  Static, 
-  declareStatic
+  Static,
+  declareStatic,
 } from '@generaltranslation/react-core/internal';
 
 import {

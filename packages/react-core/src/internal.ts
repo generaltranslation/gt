@@ -66,5 +66,6 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
-  Static, declareStatic
+  Static,
+  declareStatic,
 };

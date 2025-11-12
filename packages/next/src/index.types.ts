@@ -23,7 +23,14 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import { msg, decodeMsg, decodeOptions, _Messages, Static as _Static, declareStatic as _declareStatic } from 'gt-react/internal';
+import {
+  msg,
+  decodeMsg,
+  decodeOptions,
+  _Messages,
+  Static as _Static,
+  declareStatic as _declareStatic,
+} from 'gt-react/internal';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -161,8 +168,8 @@ export const Var: typeof _Var = () => {
 Var._gtt = 'variable-variable';
 
 /**
- * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool. 
- * 
+ * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ *
  * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
  *
  * @example
@@ -187,10 +194,10 @@ export const Static: typeof _Static = () => {
 };
 
 /**
- * declareStatic() is a powerful but dangerous function which marks its argument as statically analyzable for the compiler and CLI tool. 
- * 
+ * declareStatic() is a powerful but dangerous function which marks its argument as statically analyzable for the compiler and CLI tool.
+ *
  * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not statically analyzable.
- * 
+ *
  * @example
  * ```jsx
  * function getSubject() {
