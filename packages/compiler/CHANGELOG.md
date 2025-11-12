@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.1.2
+
+### Patch Changes
+
+- [#803](https://github.com/generaltranslation/gt/pull/803) [`b0715ff`](https://github.com/generaltranslation/gt/commit/b0715ffd91c119c4546790f03f1cfcafcae00c3f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: repository field
+
 ## 1.1.1
 
 ### Patch Changes
