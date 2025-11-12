@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.4
+
+### Patch Changes
+
+- [#807](https://github.com/generaltranslation/gt/pull/807) [`293a5a3`](https://github.com/generaltranslation/gt/commit/293a5a3ceba2321eed7b1271ca955331995f40a7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add handling of shared static assets
+
 ## 2.5.3
 
 ### Patch Changes
