@@ -1,5 +1,12 @@
 # gt-next
 
+## 6.8.2
+
+### Patch Changes
+
+- Updated dependencies [[`b0715ff`](https://github.com/generaltranslation/gt/commit/b0715ffd91c119c4546790f03f1cfcafcae00c3f)]:
+  - @generaltranslation/compiler@1.1.2
+
 ## 6.8.1
 
 ### Patch Changes
