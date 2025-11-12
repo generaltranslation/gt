@@ -50,6 +50,7 @@ import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
+import processSharedStaticAssets from '../utils/sharedStaticAssets.js';
 
 export type UploadOptions = {
   config?: string;
@@ -138,6 +139,9 @@ export class BaseCLI {
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
     const settings = await generateSettings(initOptions);
 
+    // Preprocess shared static assets if configured (move + rewrite sources)
+    await processSharedStaticAssets(settings);
+
     if (!settings.stageTranslations) {
       // Update settings.stageTranslations to true
       settings.stageTranslations = true;
@@ -151,6 +155,9 @@ export class BaseCLI {
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
     const settings = await generateSettings(initOptions);
+
+    // Preprocess shared static assets if configured (move + rewrite sources)
+    await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
       const results = await handleStage(

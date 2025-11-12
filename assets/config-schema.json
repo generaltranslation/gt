@@ -298,6 +298,34 @@
         }
       },
       "additionalProperties": false
+    },
+    "sharedStaticAssets": {
+      "type": "object",
+      "description": "Configuration for moving shared static assets to a single directory and rewriting references in source files.",
+      "properties": {
+        "include": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          ],
+          "description": "Glob or array of globs (repo-root relative) that match static assets to consolidate (e.g., 'docs/**/*.{png,jpg,svg}')."
+        },
+        "outDir": {
+          "type": "string",
+          "description": "Repo-root relative output directory where assets will be placed (on disk). Examples: 'public/shared', 'static/img', 'shared'."
+        },
+        "publicPath": {
+          "type": "string",
+          "description": "Public URL prefix to use in rewritten content. If omitted, it is derived from outDir (public/* → '/…', static/* → '/…', otherwise '/basename(outDir)').",
+          "examples": ["/shared", "/img", "/assets"]
+        }
+      },
+      "required": ["include", "outDir"],
+      "additionalProperties": false
     }
   },
   "options": {
