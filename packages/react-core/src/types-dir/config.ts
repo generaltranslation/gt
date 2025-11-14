@@ -43,8 +43,6 @@ export type GTConfig = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   enableI18n?: boolean;
-  defaultEnableI18nValue?: boolean | undefined; // default val while enableI18n flag is loaded asynchronously
-  enableI18nCookieMaxAge?: number;
 };
 
 export type InternalGTProviderProps = {
