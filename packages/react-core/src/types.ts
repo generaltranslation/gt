@@ -30,6 +30,8 @@ import {
 import {
   UseRegionStateParams,
   UseRegionStateReturn,
+  UseEnableI18nParams,
+  UseEnableI18nReturn,
 } from './provider/hooks/types';
 import { LocaleSelectorProps, RegionSelectorProps } from './ui/types';
 
@@ -70,5 +72,7 @@ export {
   UseDetermineLocaleReturn,
   UseRegionStateParams,
   UseRegionStateReturn,
+  UseEnableI18nParams,
+  UseEnableI18nReturn,
   GTConfig,
 };
