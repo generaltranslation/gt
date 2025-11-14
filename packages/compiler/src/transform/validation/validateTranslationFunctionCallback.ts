@@ -52,7 +52,7 @@ export function validateUseGTCallback(
     if (errors.length > 0) {
       errors.push(...validatedContent.errors);
       errors.push(
-        'useGT_callback / getGT_callback must have a string literal as the first argument. Variable content is not allowed.'
+        'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
       );
       return { errors };
     }
@@ -148,7 +148,7 @@ function validatePropertyFromObjectExpression(
   // validate value
   if (!t.isExpression(value.value)) {
     result.errors.push(
-      `useGT_callback / getGT_callback must have a string literal for its ${name} field. Variable content is not allowed.`
+      `useGT_callback / getGT_callback must use a string literal for its ${name} field. Variable content is not allowed.`
     );
     return result;
   }

@@ -71,7 +71,7 @@ describe('validateTranslationFunctionCallback', () => {
 
         expect(result.errors).toHaveLength(1);
         expect(result.errors[0]).toBe(
-          'useGT_callback / getGT_callback must have a string literal as the first argument. Variable content is not allowed.'
+          'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
         );
         expect(result.content).toBeUndefined();
       });
