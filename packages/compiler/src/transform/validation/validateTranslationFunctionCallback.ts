@@ -35,7 +35,7 @@ export function validateUseGTCallback(
   // Validate first argument
   if (!t.isExpression(callExpr.arguments[0])) {
     errors.push(
-      'useGT_callback / getGT_callback must have a string literal as the first argument. Variable content is not allowed.'
+      'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
     );
     return { errors };
   }
@@ -178,7 +178,7 @@ function validateExpressionIsStringLiteral(expr: t.Expression): {
 }
 
 /**
- * Validates if an expression is either a string or using the declareStatic function correctly
+ * Validates if an expression using the declareStatic function correctly
  */
 function validateDeclareStatic(
   expr: t.Expression,
@@ -204,6 +204,7 @@ function validateDeclareStatic(
       errors.push('Expression does not use an allowed call expression');
       return { errors };
     }
+    // Validate the function is actually the GT declareStatic function
     if (
       type !== 'generaltranslation' ||
       canonicalName !== GT_OTHER_FUNCTIONS.declareStatic
@@ -211,7 +212,8 @@ function validateDeclareStatic(
       errors.push('Expression does not use an allowed call expression');
       return { errors };
     }
-    handleDeclareStatic(expr, errors);
+    // Validate that the call expression has exactly one argument and the argument is a call expression
+    validateDeclareStaticExpression(expr, errors);
     return { errors };
   }
 
@@ -246,9 +248,12 @@ function validateDeclareStatic(
 }
 
 /**
- * Takes in a declareStatic function invocation and checks if it is used correctly
+ * Takes in a call expression to check if:
+ * - it has exactly one argument
+ * - the argument is a call expression
+ * Example: declareStatic(getName())
  */
-function handleDeclareStatic(
+function validateDeclareStaticExpression(
   expr: t.CallExpression,
   errors: string[]
 ): {
