@@ -25,6 +25,11 @@ pub fn is_translation_function_callback(name: &Atom) -> bool {
   matches!(name.as_ref(), "useGT_callback" | "getGT_callback")
 }
 
+/// Check if a name is declareStatic
+pub fn is_declare_static_name(name: &Atom) -> bool {
+  matches!(name.as_ref(), "declareStatic")
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

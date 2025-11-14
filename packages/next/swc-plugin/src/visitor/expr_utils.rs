@@ -2,6 +2,34 @@ use swc_core::common::{Span, SyntaxContext};
 use swc_core::ecma::ast::*;
 use swc_core::ecma::atoms::Atom;
 
+/**
+ * Takes in a call expression and checks if:
+ * - it has exactly one argument
+ * - the argument is a call expression
+ * Example: declareStatic(getName())
+ */
+pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
+  // Check if the expression is a call expression
+    // Check if it has only one argument
+    if call_expr.args.len() != 1 {
+      errors.push(format!(
+        "declareStatic must have exactly one argument, found {}",
+        call_expr.args.len()
+      ));
+      return;
+    }
+
+    // Check if that argument is a call expression
+    if let Some(first_arg) = call_expr.args.first() {
+      if !matches!(first_arg.expr.as_ref(), Expr::Call(_)) {
+        errors.push(
+          "declareStatic first argument must be a call expression".to_string()
+        );
+      }
+    }
+    return;
+}
+
 // Helper function to extract string values from expressions
 pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
   match expr {
