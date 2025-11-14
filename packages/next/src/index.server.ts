@@ -74,4 +74,5 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  declareStatic,
 };
