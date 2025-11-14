@@ -1,5 +1,16 @@
 # gt-react
 
+## 10.8.0
+
+### Minor Changes
+
+- [#809](https://github.com/generaltranslation/gt/pull/809) [`a287f6f`](https://github.com/generaltranslation/gt/commit/a287f6fc79cc96acdc082fc4ff664bb23d0f0e3c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: enable i18n feature flag for gt-react
+
+### Patch Changes
+
+- Updated dependencies [[`a287f6f`](https://github.com/generaltranslation/gt/commit/a287f6fc79cc96acdc082fc4ff664bb23d0f0e3c)]:
+  - @generaltranslation/react-core@1.2.0
+
 ## 10.7.1
 
 ### Patch Changes
