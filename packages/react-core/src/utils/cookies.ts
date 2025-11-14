@@ -10,4 +10,4 @@ export const defaultRegionCookieName = 'generaltranslation.region';
  * Cookie name for persisting the enableI18n feature flag
  * "true" or "false"
  */
-export const defaultEnableI18nCookieName = 'generaltranslation.enableI18n';
+export const defaultEnableI18nCookieName = 'generaltranslation.enable-i18n';
