@@ -8,7 +8,7 @@ describe('getRequestFunction', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    
+
     // Reset environment variables
     delete process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED;
     delete process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED;
@@ -110,7 +110,9 @@ describe('getRequestFunction', () => {
       // getLocale should throw in SSG mode when no custom locale is enabled
       expect(() => {
         getRequestFunction('getLocale');
-      }).toThrow('You are using SSG, but you have not set a custom getLocale() function');
+      }).toThrow(
+        'You are using SSG, but you have not set a custom getLocale() function'
+      );
     });
 
     it('should handle module loading errors gracefully', async () => {
