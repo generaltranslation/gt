@@ -1,7 +1,7 @@
 import { RequestFunctionReturnType as RequestFunctionReturnType } from '../types';
 import { createGetRequestFunctionError } from '../../errors/createErrors';
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
-import { noCustomLocaleEnabledSSGError } from '../../errors';
+import { noCustomLocaleEnabledSSGError, ssrErrorMessage } from '../../errors';
 
 export function getRequestFunction(
   functionName: 'getLocale' | 'getRegion' | 'getDomain'
@@ -234,8 +234,9 @@ function isSSR() {
     if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
       return false;
     }
-  } catch {
+  } catch (error) {
     // Silently fail
+    console.error(ssrErrorMessage + ' Error: ' + error);
   }
   return isSSR;
 }

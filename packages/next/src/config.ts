@@ -78,7 +78,6 @@ export function withGTConfig(
   nextConfig: any = {},
   props: withGTConfigProps = {}
 ) {
-  // console.log('withGTConfig', process.env.NEXT_PHASE, props.nextPhase);
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<withGTConfigProps> = {};
   try {

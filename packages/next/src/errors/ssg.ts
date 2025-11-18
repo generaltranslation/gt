@@ -2,6 +2,9 @@
 
 export const noCustomLocaleEnabledSSGError = `gt-next Error: You are using SSG, but you have not set a custom getLocale() function. Please set a custom getLocale() function to use SSG. For more information, visit https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale`;
 
+export const ssrErrorMessage =
+  'gt-next Error: Failed to determine SSG status. SSG in this version of NextJS may not be compatible with gt-next. Please ensure you are using the latest version of NextJS.';
+
 // ========== WARNINGS ========== //
 
 // This was (1) triggered by SSG without running middleware, or (2) triggered by a request with no locale headers (also no middleware).
