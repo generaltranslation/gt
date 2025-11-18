@@ -2,7 +2,7 @@ import { isSameDialect, standardizeLocale } from 'generaltranslation';
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
-// import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
@@ -42,15 +42,11 @@ export default function createNextMiddleware({
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,
   pathConfig = {},
-  NextResponse, // TODO REMOVE
-  NextRequest,
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
-  NextResponse?: any;
-  NextRequest?: any;
 } = {}) {
   // i18n config
   let envParams;
@@ -151,8 +147,7 @@ export default function createNextMiddleware({
    * @param {NextRequest} req - The incoming request object, containing URL and headers.
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
-  // function middleware(req: NextRequest) {
-  function middleware(req: any) {
+  function middleware(req: NextRequest) {
     // Ignore source maps
     if (
       ignoreSourceMaps &&
@@ -169,8 +164,7 @@ export default function createNextMiddleware({
       unstandardizedPathnameLocale,
       clearResetCookie,
     } = getLocaleFromRequest(
-      // req,
-      req as any,
+      req,
       defaultLocale,
       locales,
       localeRouting,
@@ -195,8 +189,6 @@ export default function createNextMiddleware({
       localeCookieName,
       resetLocaleCookieName,
       localeHeaderName,
-      NextRequest: req as any,
-      NextResponse: NextResponse as any,
     };
 
     const getRewriteResponse = (responsePath: string) =>

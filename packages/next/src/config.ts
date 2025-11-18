@@ -64,7 +64,6 @@ import { PHASE_PRODUCTION_BUILD } from 'next/constants';
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
- * @param {string|undefined} [nextPhase] - When using SSG, pass the phase of the Next.js build.
  * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
