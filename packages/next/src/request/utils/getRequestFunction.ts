@@ -1,7 +1,11 @@
 import { RequestFunctionReturnType as RequestFunctionReturnType } from '../types';
-import { createGetRequestFunctionError } from '../../errors/createErrors';
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
-import { noCustomLocaleEnabledSSGError, ssrErrorMessage } from '../../errors';
+import {
+  noCustomLocaleEnabledSSGError,
+  ssrErrorMessage,
+  createGetRequestFunctionWarning,
+  createCustomGetRequestFunctionWarning,
+} from '../../errors';
 
 export function getRequestFunction(
   functionName: 'getLocale' | 'getRegion' | 'getDomain'
@@ -65,8 +69,8 @@ function getModule(functionName: 'getLocale' | 'getRegion' | 'getDomain'):
       module,
     };
   } catch (error) {
-    console.error(
-      createGetRequestFunctionError(functionName) + ' Error: ' + error
+    console.warn(
+      createGetRequestFunctionWarning(functionName) + ' Error: ' + error
     );
     return {
       error: true,
@@ -146,8 +150,8 @@ function extractCustomFunction(
     }
     throw new Error(undefinedNamespaceError);
   } catch (error) {
-    console.error(
-      createGetRequestFunctionError(functionName) + ' Error: ' + error
+    console.warn(
+      createCustomGetRequestFunctionWarning(functionName) + ' Error: ' + error
     );
     return {
       error: true,
@@ -182,7 +186,6 @@ const extractCustomFunctionHelper = (
     case 'getDomain':
       if ('getDomain' in module && typeof module.getDomain === 'function') {
         result = module.getDomain;
-        break;
       }
       break;
   }

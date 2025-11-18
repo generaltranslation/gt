@@ -25,3 +25,11 @@ export const createFallbackCustomRequestFunctionWarning = (
 
 export const invalidSSGConfigurationWarning =
   'gt-next: You are using SSG, but you have not configured SSG in your withGTConfig() plugin. Please visit https://generaltranslation.com/en/docs/next/guides/ssg to configure SSG.';
+
+export const createGetRequestFunctionWarning = (
+  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+) => `gt-next: Unable to resolve ${functionName} function.`;
+
+export const createCustomGetRequestFunctionWarning = (
+  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+) => `gt-next: Unable to resolve custom ${functionName} function.`;

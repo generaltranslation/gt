@@ -92,14 +92,6 @@ export const invalidCanonicalLocalesError = (locales: string[]) =>
 export const createInvalidIcuDictionaryEntryError = (id: string) =>
   `gt-next Error: Invalid ICU string dictionary entry found for id: "${id}"`;
 
-export const createGetRequestFunctionError = (
-  functionName: 'getLocale' | 'getRegion' | 'getDomain'
-) => `gt-next Error: Unable to resolve ${functionName} function.`;
-
-export const createCustomGetRequestFunctionError = (
-  functionName: 'getLocale' | 'getRegion' | 'getDomain'
-) => `gt-next Error: Unable to resolve custom ${functionName} function.`;
-
 // ---- WARNINGS ---- //
 
 export const createInvalidIcuDictionaryEntryWarning = (id: string) =>

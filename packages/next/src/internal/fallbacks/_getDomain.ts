@@ -3,5 +3,5 @@ import { createFallbackCustomRequestFunctionWarning } from '../../errors/ssg';
 
 export default async function getDomain(): Promise<RequestFunctionReturnType> {
   console.warn(createFallbackCustomRequestFunctionWarning('getDomain'));
-  return '';
+  return undefined;
 }

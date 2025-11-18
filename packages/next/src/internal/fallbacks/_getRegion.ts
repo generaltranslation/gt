@@ -4,5 +4,5 @@ import { createFallbackCustomRequestFunctionWarning } from '../../errors/ssg';
 
 export default async function getRegion(): Promise<RequestFunctionReturnType> {
   console.warn(createFallbackCustomRequestFunctionWarning('getRegion'));
-  return '';
+  return undefined;
 }
