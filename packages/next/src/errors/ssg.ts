@@ -13,17 +13,10 @@ const createCustomSSGFunctionSuffix = (
 ) =>
   `If you wish to use ${functionName} please define a custom ${functionName}() function for SSG. For more information, visit https://generaltranslation.com/en/docs/next/guides/ssg. To disable this warning, set "disableSSGWarnings" to true.`;
 
-// export const createNoCustomRequestFunctionWarning = (
-//   functionName: 'getRegion' | 'getDomain'
-// ) =>
-//   process.env.DISABLE_SSG_WARNINGS === 'true'
-//     ? ''
-//     : `gt-next: During SSG, the ${functionName}() function will always return undefined. ${createCustomSSGFunctionSuffix(functionName)}`;
-
 export const createFallbackCustomRequestFunctionWarning = (
   functionName: 'getRegion' | 'getDomain'
 ) =>
-  process.env.DISABLE_SSG_WARNINGS === 'true'
+  process.env._GENERALTRANSLATION_DISABLE_SSG_WARNINGS === 'true'
     ? ''
     : `gt-next: ${functionName}() was invoked during SSG. ${createCustomSSGFunctionSuffix(functionName)}`;
 

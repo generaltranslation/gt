@@ -42,7 +42,7 @@ export default function createNextMiddleware({
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,
   pathConfig = {},
-  NextResponse,
+  NextResponse, // TODO REMOVE
   NextRequest,
 }: {
   localeRouting?: boolean;

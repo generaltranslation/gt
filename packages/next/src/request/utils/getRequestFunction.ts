@@ -221,7 +221,7 @@ function extractDefaultFunction(
 }
 
 function isSSR() {
-  let isSSR = true;
+  const isSSR = true;
   try {
     // Only way to tell if we are in SSG
     const {
