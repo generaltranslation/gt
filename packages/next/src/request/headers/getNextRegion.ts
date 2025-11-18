@@ -1,10 +1,9 @@
 import { cookies } from 'next/headers';
-// import getI18NConfig from '../config-dir/getI18NConfig';
 import { defaultRegionCookieName } from 'gt-react/internal';
+import { RequestFunctionReturnType } from '../types';
 
-export async function getNextRegion(): Promise<string | undefined> {
+export async function getNextRegion(): Promise<RequestFunctionReturnType> {
   const cookieStore = await cookies();
-  // const I18NConfig = getI18NConfig();
   const cookieRegion = cookieStore.get(defaultRegionCookieName)?.value;
   return cookieRegion;
 }

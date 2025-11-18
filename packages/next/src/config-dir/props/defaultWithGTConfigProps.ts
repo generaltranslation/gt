@@ -40,6 +40,7 @@ type DefaultGTConfigProps = {
     resetLocaleCookieName: string;
   };
   experimentalCompilerOptions: CompilerOptions;
+  disableSSGWarnings: boolean;
 };
 
 const defaultWithGTConfigProps: DefaultGTConfigProps = {
@@ -68,6 +69,7 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
     compileTimeHash: true,
     disableBuildChecks: false,
   },
+  disableSSGWarnings: false,
 } as const;
 
 // exported separately because it's only used in production

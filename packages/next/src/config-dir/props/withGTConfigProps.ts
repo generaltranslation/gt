@@ -75,6 +75,9 @@ type withGTConfigProps = {
   experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
+  // SSG
+  nextPhase?: string;
+  disableSSGWarnings?: boolean;
   [key: string]: any;
 };
 

@@ -99,6 +99,15 @@
     "./eslint-plugin": {
       "types": "./dist/eslint-plugin/index.d.ts",
       "default": "./dist/eslint-plugin/index.js"
+    },
+    "./internal/_getLocale": {
+      "default": "./dist/internal/defaults/_getLocale.js"
+    },
+    "./internal/_getRegion": {
+      "default": "./dist/internal/defaults/_getRegion.js"
+    },
+    "./internal/_getDomain": {
+      "default": "./dist/internal/defaults/_getDomain.js"
     }
   },
   "typesVersions": {
@@ -135,6 +144,15 @@
       ],
       "eslint-plugin": [
         "./dist/eslint-plugin/index.d.ts"
+      ],
+      "internal/_getLocale": [
+        "./dist/internal/defaults/_getLocale.d.ts"
+      ],
+      "internal/_getRegion": [
+        "./dist/internal/defaults/_getRegion.d.ts"
+      ],
+      "internal/_getDomain": [
+        "./dist/internal/defaults/_getDomain.d.ts"
       ]
     }
   },
@@ -173,6 +191,15 @@
       ],
       "gt-next/eslint-plugin": [
         "/dist/eslint-plugin"
+      ],
+      "gt-next/internal/_getLocale": [
+        "/dist/internal/defaults/_getLocale"
+      ],
+      "gt-next/internal/_getRegion": [
+        "/dist/internal/defaults/_getRegion"
+      ],
+      "gt-next/internal/_getDomain": [
+        "/dist/internal/defaults/_getDomain"
       ]
     }
   },

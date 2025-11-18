@@ -1,5 +1,4 @@
-import { getNextRegion } from '../next/getNextRegion';
-import use from '../utils/use';
+import { getRequestFunction } from './utils/getRequestFunction';
 
 let getRegionFunction: () => Promise<string | undefined>;
 
@@ -17,8 +16,8 @@ let getRegionFunction: () => Promise<string | undefined>;
 export async function getRegion(): Promise<string | undefined> {
   if (getRegionFunction) return await getRegionFunction();
   getRegionFunction = async () => {
-    const res = await getNextRegion();
-    return res;
+    const region = await getRequestFunction('getRegion')();
+    return region;
   };
   return await getRegionFunction();
 }

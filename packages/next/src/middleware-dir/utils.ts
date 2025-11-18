@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { determineLocale, GT, standardizeLocale } from 'generaltranslation';
+// import { NextRequest, NextResponse } from 'next/server';
+import { GT, standardizeLocale } from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {
@@ -18,6 +18,8 @@ export type ResponseConfig = {
   localeCookieName: string;
   resetLocaleCookieName: string;
   localeHeaderName: string;
+  NextRequest: any;
+  NextResponse: any;
 };
 
 export function getResponse({
@@ -32,11 +34,14 @@ export function getResponse({
   localeCookieName,
   resetLocaleCookieName,
   localeHeaderName,
-}: ResponseConfig): NextResponse<unknown> {
+  NextRequest: _NextRequest,
+  NextResponse: _NextResponse,
+  // }: ResponseConfig): NextResponse<unknown> {
+}: ResponseConfig): any {
   // Get Response
   let response;
   if (type === 'next') {
-    response = NextResponse.next({
+    response = _NextResponse.next({
       request: {
         headers: headerList,
       },
@@ -46,10 +51,10 @@ export function getResponse({
     responseUrl.search = originalUrl.search;
     response =
       type === 'rewrite'
-        ? NextResponse.rewrite(responseUrl, {
+        ? _NextResponse.rewrite(responseUrl, {
             headers: headerList,
           })
-        : NextResponse.redirect(responseUrl, {
+        : _NextResponse.redirect(responseUrl, {
             headers: headerList,
           });
   }
@@ -258,7 +263,8 @@ function inDefaultLocalePaths(
  * Gets the locale from the request using various sources
  */
 export function getLocaleFromRequest(
-  req: NextRequest,
+  // req: NextRequest,
+  req: any,
   defaultLocale: string,
   approvedLocales: string[],
   localeRouting: boolean,

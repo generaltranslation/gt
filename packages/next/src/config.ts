@@ -19,7 +19,7 @@ import {
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
-} from './errors/createErrors';
+} from './errors';
 import {
   getLocaleProperties,
   isValidLocale,
@@ -30,6 +30,7 @@ import {
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
 import { validateCompiler } from './config-dir/validateCompiler';
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -63,6 +64,8 @@ import { validateCompiler } from './config-dir/validateCompiler';
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
+ * @param {string|undefined} [nextPhase] - When using SSG, pass the phase of the Next.js build.
+ * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -75,6 +78,7 @@ export function withGTConfig(
   nextConfig: any = {},
   props: withGTConfigProps = {}
 ) {
+  // console.log('withGTConfig', process.env.NEXT_PHASE, props.nextPhase);
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<withGTConfigProps> = {};
   try {
@@ -322,6 +326,20 @@ export function withGTConfig(
     );
   }
 
+  // Resolve custom getRegion path
+  const customGetRegionPath =
+    typeof mergedConfig.getRegionPath === 'string'
+      ? mergedConfig.getRegionPath
+      : resolveConfigFilepath('getRegion', ['.ts', '.js']);
+  const customRegionEnabled = !!customGetRegionPath;
+
+  // Resolve custom getDomain path
+  const customGetDomainPath =
+    typeof mergedConfig.getDomainPath === 'string'
+      ? mergedConfig.getDomainPath
+      : resolveConfigFilepath('getDomain', ['.ts', '.js']);
+  const customDomainEnabled = !!customGetDomainPath;
+
   // ----------- LOCALE STANDARDIZATION ----------- //
 
   // Check if using Services
@@ -514,6 +532,9 @@ export function withGTConfig(
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
     'gt-next/_request': customGetLocalePath || '',
+    'gt-next/internal/_getLocale': customGetLocalePath || '',
+    'gt-next/internal/_getRegion': customGetRegionPath || '',
+    'gt-next/internal/_getDomain': customGetDomainPath || '',
   };
 
   // experimental.turbo is deprecated in next@15.3.0.
@@ -550,7 +571,13 @@ export function withGTConfig(
         'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
+      _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED:
+        customRegionEnabled.toString(),
+      _GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED:
+        customDomainEnabled.toString(),
       _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParamStability,
+      _GENERALTRANSLATION_DISABLE_SSG_WARNINGS:
+        mergedConfig.disableSSGWarnings?.toString() || 'false',
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
@@ -632,6 +659,18 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
+        if (customGetLocalePath) {
+          webpackConfig.resolve.alias['gt-next/internal/_getLocale'] =
+            path.resolve(webpackConfig.context, customGetLocalePath);
+        }
+        if (customGetRegionPath) {
+          webpackConfig.resolve.alias['gt-next/internal/_getRegion'] =
+            path.resolve(webpackConfig.context, customGetRegionPath);
+        }
+        if (customGetDomainPath) {
+          webpackConfig.resolve.alias['gt-next/internal/_getDomain'] =
+            path.resolve(webpackConfig.context, customGetDomainPath);
+        }
       }
       if (typeof nextConfig?.webpack === 'function') {
         return nextConfig.webpack(webpackConfig, options);
@@ -657,7 +696,7 @@ function resolveConfigFilepath(
   fileName: string,
   extensions: string[] = ['.ts', '.js'],
   cwd?: string,
-  prefixes: string[] = ['', 'src']
+  prefixes: string[] = ['.', './src']
 ): string | undefined {
   function resolvePath(pathname: string) {
     const parts = [];
@@ -672,8 +711,8 @@ function resolveConfigFilepath(
 
   // Check for file existence in the root and src directories with supported extensions
   for (const candidate of [
-    ...prefixes.flatMap((prefix) =>
-      extensions.map((ext) => `./${prefix}/${fileName}${ext}`)
+    ...prefixes.flatMap(
+      (prefix) => extensions.map((ext) => `${prefix}/${fileName}${ext}`) // TOOD: is the / necessary after dot?
     ),
   ]) {
     if (pathExists(candidate)) {

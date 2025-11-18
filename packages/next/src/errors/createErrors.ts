@@ -92,6 +92,14 @@ export const invalidCanonicalLocalesError = (locales: string[]) =>
 export const createInvalidIcuDictionaryEntryError = (id: string) =>
   `gt-next Error: Invalid ICU string dictionary entry found for id: "${id}"`;
 
+export const createGetRequestFunctionError = (
+  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+) => `gt-next Error: Unable to resolve ${functionName} function.`;
+
+export const createCustomGetRequestFunctionError = (
+  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+) => `gt-next Error: Unable to resolve custom ${functionName} function.`;
+
 // ---- WARNINGS ---- //
 
 export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
@@ -165,10 +173,6 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: You are using The following canonical locales were standardized: ${locales.join(', ')}.`;
 
 export const deprecatedLocaleMappingWarning = `gt-next: You are using the deprecated localeMapping configuration. Please move "customMapping" to your gt.config.json file.`;
-
-// This was (1) triggered by SSG without running middleware, or (2) triggered by a request with no locale headers (also no middleware).
-export const noLocalesCouldBeDeterminedWarning =
-  'gt-next: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
