@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.0.2
+
+### Patch Changes
+
+- [#815](https://github.com/generaltranslation/gt/pull/815) [`e7d25b0`](https://github.com/generaltranslation/gt/commit/e7d25b06a3e1d7ca404d64257570b88e7b0d1915) Thanks [@brian-lou](https://github.com/brian-lou)! - Batch enqueue jobs
+
 ## 8.0.1
 
 ### Patch Changes

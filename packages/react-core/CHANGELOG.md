@@ -1,5 +1,13 @@
 # @generaltranslation/react-core
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`e7d25b0`](https://github.com/generaltranslation/gt/commit/e7d25b06a3e1d7ca404d64257570b88e7b0d1915)]:
+  - generaltranslation@8.0.2
+  - @generaltranslation/supported-locales@2.0.25
+
 ## 1.2.0
 
 ### Minor Changes
