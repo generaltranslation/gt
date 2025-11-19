@@ -6,6 +6,7 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import type { FileReference } from '../types-dir/api/file';
+import { processBatches } from './utils/batch';
 
 export type EnqueueOptions = {
   sourceLocale: string;
@@ -33,39 +34,54 @@ export default async function _enqueueFiles(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/enqueue`;
 
-  const body = {
-    files: files.map((f) => ({
-      branchId: f.branchId,
-      fileId: f.fileId,
-      versionId: f.versionId,
-      fileName: f.fileName,
-    })),
-    targetLocales: options.targetLocales,
-    sourceLocale: options.sourceLocale,
-    publish: options.publish,
-    requireApproval: options.requireApproval,
-    modelProvider: options.modelProvider,
-    force: options.force,
+  const result = await processBatches(
+    files,
+    async (batch) => {
+      const body = {
+        files: batch.map((f) => ({
+          branchId: f.branchId,
+          fileId: f.fileId,
+          versionId: f.versionId,
+          fileName: f.fileName,
+        })),
+        targetLocales: options.targetLocales,
+        sourceLocale: options.sourceLocale,
+        publish: options.publish,
+        requireApproval: options.requireApproval,
+        modelProvider: options.modelProvider,
+        force: options.force,
+      };
+
+      let response: Response | undefined;
+      try {
+        // Request translations
+        response = await fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            headers: generateRequestHeaders(config),
+            body: JSON.stringify(body),
+          },
+          timeout
+        );
+      } catch (error) {
+        handleFetchError(error, timeout);
+      }
+
+      // Validate response
+      await validateResponse(response);
+      const result = (await response!.json()) as EnqueueFilesResult;
+      return Array.from(Object.entries(result.jobData));
+    },
+    { batchSize: 100 }
+  );
+  // flatten the result
+  const jobs = Object.fromEntries(
+    result.data.map(([jobId, jobData]) => [jobId, jobData])
+  );
+  return {
+    jobData: jobs,
+    locales: options.targetLocales,
+    message: `Successfully enqueued ${result.count} file translation jobs in ${result.batchCount} batch(es)`,
   };
-
-  let response;
-  try {
-    // Request translations
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify(body),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
-
-  // Validate response
-  await validateResponse(response);
-  const result = (await response.json()) as EnqueueFilesResult;
-  return result;
 }
