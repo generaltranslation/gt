@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.9.0
+
+### Minor Changes
+
+- [#811](https://github.com/generaltranslation/gt/pull/811) [`ef81f68`](https://github.com/generaltranslation/gt/commit/ef81f687655a2bae9a00160940ce30f6cfebf54d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: ssg support
+
 ## 6.8.3
 
 ### Patch Changes
