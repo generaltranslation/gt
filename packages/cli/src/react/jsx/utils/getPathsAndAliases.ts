@@ -15,7 +15,10 @@ import { extractImportName } from './parseAst.js';
 const traverse = traverseModule.default || traverseModule;
 
 /**
- *
+ * Constructs tracking for gt related variables of interest
+ * inlineTranslationPaths: these are string-related translation functions
+ * translationComponentPaths: these are just <T> components
+ * importAliases: any other GT related imports
  */
 export function getPathsAndAliases(
   ast: any,

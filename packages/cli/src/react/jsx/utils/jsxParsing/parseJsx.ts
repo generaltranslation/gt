@@ -865,7 +865,7 @@ function resolveStaticFunctionInvocationFromBinding({
     if (filePath) {
       const functionName = callee.name;
       return withRecusionGuard({
-        filename: file,
+        filename: filePath,
         functionName,
         cb: () =>
           processFunctionInFile({
@@ -989,7 +989,7 @@ function processFunctionInFile({
             updates,
             errors,
             warnings,
-            file,
+            file: filePath,
             parsingOptions,
             importedFunctionsMap,
           });
@@ -1016,7 +1016,7 @@ function processFunctionInFile({
             warnings,
             visited,
             unwrappedExpressions,
-            file,
+            file: filePath,
             parsingOptions,
             importedFunctionsMap,
           });
@@ -1068,7 +1068,7 @@ function processFunctionInFile({
             updates,
             errors,
             warnings,
-            file,
+            file: filePath,
             pkg,
           });
           if (foundResult != null) {
