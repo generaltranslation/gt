@@ -101,13 +101,22 @@
       "default": "./dist/eslint-plugin/index.js"
     },
     "./internal/_getLocale": {
-      "default": "./dist/internal/defaults/_getLocale.js"
+      "default": "./dist/internal/_getLocale.js"
     },
     "./internal/_getRegion": {
-      "default": "./dist/internal/defaults/_getRegion.js"
+      "default": "./dist/internal/_getRegion.js"
     },
     "./internal/_getDomain": {
-      "default": "./dist/internal/defaults/_getDomain.js"
+      "default": "./dist/internal/_getDomain.js"
+    },
+    "./internal/static/_getLocale": {
+      "default": "./dist/internal/static/_getLocale.js"
+    },
+    "./internal/static/_getRegion": {
+      "default": "./dist/internal/static/_getRegion.js"
+    },
+    "./internal/static/_getDomain": {
+      "default": "./dist/internal/static/_getDomain.js"
     }
   },
   "typesVersions": {
@@ -146,13 +155,22 @@
         "./dist/eslint-plugin/index.d.ts"
       ],
       "internal/_getLocale": [
-        "./dist/internal/defaults/_getLocale.d.ts"
+        "./dist/internal/_getLocale.d.ts"
       ],
       "internal/_getRegion": [
-        "./dist/internal/defaults/_getRegion.d.ts"
+        "./dist/internal/_getRegion.d.ts"
       ],
       "internal/_getDomain": [
-        "./dist/internal/defaults/_getDomain.d.ts"
+        "./dist/internal/_getDomain.d.ts"
+      ],
+      "internal/static/_getLocale": [
+        "./dist/internal/static/_getLocale.d.ts"
+      ],
+      "internal/static/_getRegion": [
+        "./dist/internal/static/_getRegion.d.ts"
+      ],
+      "internal/static/_getDomain": [
+        "./dist/internal/static/_getDomain.d.ts"
       ]
     }
   },
@@ -174,9 +192,6 @@
       "gt-next/types": [
         "/dist/types"
       ],
-      "gt-next/_request": [
-        "/dist/_request"
-      ],
       "gt-next/_dictionary": [
         "/dist/_dictionary"
       ],
@@ -193,13 +208,22 @@
         "/dist/eslint-plugin"
       ],
       "gt-next/internal/_getLocale": [
-        "/dist/internal/defaults/_getLocale"
+        "/dist/internal/_getLocale"
       ],
       "gt-next/internal/_getRegion": [
-        "/dist/internal/defaults/_getRegion"
+        "/dist/internal/_getRegion"
       ],
       "gt-next/internal/_getDomain": [
-        "/dist/internal/defaults/_getDomain"
+        "/dist/internal/_getDomain"
+      ],
+      "gt-next/internal/static/_getLocale": [
+        "/dist/internal/static/_getLocale"
+      ],
+      "gt-next/internal/static/_getRegion": [
+        "/dist/internal/static/_getRegion"
+      ],
+      "gt-next/internal/static/_getDomain": [
+        "/dist/internal/static/_getDomain"
       ]
     }
   },

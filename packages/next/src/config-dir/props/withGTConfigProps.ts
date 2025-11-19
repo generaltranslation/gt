@@ -1,5 +1,6 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { RenderMethod } from 'gt-react/internal';
+import { RequestFunctions, StaticRequestFunctions } from '../../request/types';
 
 export type HeadersAndCookies = {
   localeHeaderName?: string;
@@ -32,6 +33,21 @@ export type CompilerOptions = {
   disableBuildChecks?: boolean;
 };
 
+export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
+  getLocale: 'getLocalePath',
+  getRegion: 'getRegionPath',
+  getDomain: 'getDomainPath',
+  getStaticLocale: 'getStaticLocalePath',
+  getStaticRegion: 'getStaticRegionPath',
+  getStaticDomain: 'getStaticDomainPath',
+} as const;
+
+type RequestFunctionPaths = Partial<
+  Record<
+    (typeof REQUEST_FUNCTION_TO_CONFIG_KEY)[keyof typeof REQUEST_FUNCTION_TO_CONFIG_KEY],
+    string
+  >
+>;
 type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
@@ -48,7 +64,6 @@ type withGTConfigProps = {
   locales?: string[];
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
-  getLocalePath?: string;
   // Custom mapping
   /**@deprecated Use customMapping in gt.config.json instead */
   customMapping?: CustomMapping;
@@ -76,9 +91,9 @@ type withGTConfigProps = {
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
   // SSG
-  nextPhase?: string;
+  experimentalEnableSSG?: boolean;
   disableSSGWarnings?: boolean;
   [key: string]: any;
-};
+} & RequestFunctionPaths;
 
 export default withGTConfigProps;

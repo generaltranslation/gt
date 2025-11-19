@@ -1,8 +1,12 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import use from '../utils/use';
+import { RequestFunctionReturnType } from './types';
 import { getRequestFunction } from './utils/getRequestFunction';
+import isSSR from './utils/isSSR';
 
-let getLocaleFunction: () => Promise<string>;
+let getLocaleFunction: () => Promise<RequestFunctionReturnType>;
+let getStaticLocaleFunction: () => Promise<RequestFunctionReturnType>;
+let getLocaleFunctionWrapper: () => Promise<string>;
 
 /**
  * Gets the user's current locale.
@@ -14,19 +18,24 @@ let getLocaleFunction: () => Promise<string>;
  * console.log(locale); // 'en-US'
  */
 export async function getLocale(): Promise<string> {
-  if (getLocaleFunction) return await getLocaleFunction();
+  if (getLocaleFunctionWrapper) return await getLocaleFunctionWrapper();
   const I18NConfig = getI18NConfig();
   const gt = I18NConfig.getGTClass();
 
+  // Construct getLocale function
+  getLocaleFunction = getRequestFunction('getLocale', true);
+  getStaticLocaleFunction = getRequestFunction('getLocale', false);
+
   // Construct locale function
-  getLocaleFunction = async () => {
+  getLocaleFunctionWrapper = async () => {
     // Always fallback to default locale
-    const locale =
-      (await getRequestFunction('getLocale')()) ||
-      I18NConfig.getDefaultLocale();
-    return gt.resolveAliasLocale(locale);
+    const locale = isSSR()
+      ? await getLocaleFunction()
+      : await getStaticLocaleFunction();
+    return gt.resolveAliasLocale(locale || I18NConfig.getDefaultLocale());
   };
-  return getLocaleFunction();
+
+  return getLocaleFunctionWrapper();
 }
 
 export function useLocale() {

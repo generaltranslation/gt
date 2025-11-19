@@ -1,28 +1,56 @@
-import { RequestFunctionReturnType as RequestFunctionReturnType } from '../types';
-import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 import {
-  noCustomLocaleEnabledSSGError,
-  ssrErrorMessage,
+  RequestFunctionReturnType as RequestFunctionReturnType,
+  RequestFunctions,
+  StaticRequestFunctions,
+} from '../types';
+import {
   createGetRequestFunctionWarning,
   createCustomGetRequestFunctionWarning,
+  createSsgMissingCustomFunctionWarning,
+  createSsrFunctionDuringSsgWarning,
 } from '../../errors';
+import getRegion from '../../internal/_getRegion';
+import getDomain from '../../internal/_getDomain';
+import getLocale from '../../internal/_getLocale';
+import getStaticRegion from '../../internal/static/_getRegion';
+import getStaticDomain from '../../internal/static/_getDomain';
+import getStaticLocale from '../../internal/static/_getLocale';
 
+/**
+ * Two scenarios: SSR or SSG
+ * SSR:
+ * - custom function > default function (library)
+ * SSG:
+ * - custom static function > custom function > SSG fallback (library)
+ */
 export function getRequestFunction(
-  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+  functionName: 'getLocale' | 'getRegion' | 'getDomain',
+  ssr: boolean
 ): () => Promise<RequestFunctionReturnType> {
+  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
+    ssr = true;
+  }
+
+  // Resolve function name
+  let resolvedFunctionName: RequestFunctions | StaticRequestFunctions =
+    functionName;
+  if (ssr === false) {
+    resolvedFunctionName = getStaticName(functionName);
+  }
+
   // Get the module for the function
-  const { error: moduleError, module } = getModule(functionName);
+  const { error: moduleError, module } = getModule(resolvedFunctionName);
   if (moduleError) {
     return async () => undefined;
   }
 
   // Is using custom getHeaders function
-  const usingCustom = getUsingCustom(functionName);
+  const usingCustom = getUsingCustom(resolvedFunctionName);
 
   // Resolve the custom/default function
   if (usingCustom) {
     const { error: extractError, value: extractedFunction } =
-      extractCustomFunction(module, functionName);
+      extractCustomFunction(module, resolvedFunctionName);
     if (!extractError) {
       return extractedFunction;
     }
@@ -30,8 +58,9 @@ export function getRequestFunction(
 
   // Fallback to default function
   return extractDefaultFunction(
-    functionName,
-    module as { default: () => Promise<RequestFunctionReturnType> }
+    resolvedFunctionName,
+    module as { default: () => Promise<RequestFunctionReturnType> },
+    ssr
   );
 }
 
@@ -42,7 +71,7 @@ export function getRequestFunction(
  * @param functionName
  * @returns failed field is for type safety
  */
-function getModule(functionName: 'getLocale' | 'getRegion' | 'getDomain'):
+function getModule(functionName: RequestFunctions | StaticRequestFunctions):
   | {
       error: true;
       module: never;
@@ -53,6 +82,7 @@ function getModule(functionName: 'getLocale' | 'getRegion' | 'getDomain'):
     } {
   try {
     let module: unknown;
+
     switch (functionName) {
       case 'getLocale':
         module = require('gt-next/internal/_getLocale');
@@ -62,6 +92,15 @@ function getModule(functionName: 'getLocale' | 'getRegion' | 'getDomain'):
         break;
       case 'getDomain':
         module = require('gt-next/internal/_getDomain');
+        break;
+      case 'getStaticLocale':
+        module = require('gt-next/internal/static/_getLocale');
+        break;
+      case 'getStaticRegion':
+        module = require('gt-next/internal/static/_getRegion');
+        break;
+      case 'getStaticDomain':
+        module = require('gt-next/internal/static/_getDomain');
         break;
     }
     return {
@@ -83,7 +122,7 @@ function getModule(functionName: 'getLocale' | 'getRegion' | 'getDomain'):
  * Returns true if using a custom getHeaders function.
  */
 function getUsingCustom(
-  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+  functionName: RequestFunctions | StaticRequestFunctions
 ): boolean {
   switch (functionName) {
     case 'getLocale':
@@ -98,6 +137,18 @@ function getUsingCustom(
       return (
         process.env._GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED === 'true'
       );
+    case 'getStaticLocale':
+      return (
+        process.env._GENERALTRANSLATION_STATIC_GET_LOCALE_ENABLED === 'true'
+      );
+    case 'getStaticRegion':
+      return (
+        process.env._GENERALTRANSLATION_STATIC_GET_REGION_ENABLED === 'true'
+      );
+    case 'getStaticDomain':
+      return (
+        process.env._GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED === 'true'
+      );
   }
 }
 
@@ -106,7 +157,7 @@ function getUsingCustom(
  */
 function extractCustomFunction(
   module: unknown,
-  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+  functionName: RequestFunctions | StaticRequestFunctions
 ):
   | {
       error: true;
@@ -165,7 +216,7 @@ function extractCustomFunction(
  */
 const extractCustomFunctionHelper = (
   module: Object | null,
-  functionName: 'getLocale' | 'getRegion' | 'getDomain'
+  functionName: RequestFunctions | StaticRequestFunctions
 ): (() => Promise<RequestFunctionReturnType>) => {
   const undefinedNamespaceError = `gt-next Error: expected a custom ${functionName} function, but got ${module}.`;
   if (module == null) {
@@ -173,16 +224,19 @@ const extractCustomFunctionHelper = (
   }
   let result: Function | undefined = undefined;
   switch (functionName) {
+    case 'getStaticLocale':
     case 'getLocale':
       if ('getLocale' in module && typeof module.getLocale === 'function') {
         result = module.getLocale;
       }
       break;
+    case 'getStaticRegion':
     case 'getRegion':
       if ('getRegion' in module && typeof module.getRegion === 'function') {
         result = module.getRegion;
       }
       break;
+    case 'getStaticDomain':
     case 'getDomain':
       if ('getDomain' in module && typeof module.getDomain === 'function') {
         result = module.getDomain;
@@ -200,46 +254,47 @@ const extractCustomFunctionHelper = (
  * This either resolves to runtime or buildtime (ssg) variant.
  */
 function extractDefaultFunction(
-  functionName: 'getLocale' | 'getRegion' | 'getDomain',
+  functionName: RequestFunctions | StaticRequestFunctions,
   module: {
     default: () => Promise<RequestFunctionReturnType>;
-  }
+  },
+  ssr: boolean
 ): () => Promise<RequestFunctionReturnType> {
-  // Return runtime variant
-  const ssr = isSSR();
-
+  // Return ssr variant
   if (ssr) {
     return module.default;
   }
 
-  // Return buildtime variant
+  // Return ssg variant
   switch (functionName) {
     case 'getRegion':
-      return require('../../internal/fallbacks/_getRegion').default;
+      console.warn(createSsrFunctionDuringSsgWarning('getRegion'));
+      return getRegion;
     case 'getDomain':
-      return require('../../internal/fallbacks/_getDomain').default;
+      console.warn(createSsrFunctionDuringSsgWarning('getDomain'));
+      return getDomain;
     case 'getLocale':
-      throw new Error(noCustomLocaleEnabledSSGError);
+      console.warn(createSsrFunctionDuringSsgWarning('getLocale'));
+      return getLocale;
+    case 'getStaticRegion':
+      console.warn(createSsgMissingCustomFunctionWarning('getStaticRegion'));
+      return getStaticRegion;
+    case 'getStaticDomain':
+      console.warn(createSsgMissingCustomFunctionWarning('getStaticDomain'));
+      return getStaticDomain;
+    case 'getStaticLocale':
+      console.warn(createSsgMissingCustomFunctionWarning('getStaticLocale'));
+      return getStaticLocale;
   }
 }
 
-function isSSR() {
-  const isSSR = true;
-  try {
-    // Only way to tell if we are in SSG
-    const {
-      workAsyncStorage,
-    } = require('next/dist/server/app-render/work-async-storage.external');
-    const workStore = workAsyncStorage.getStore();
-    if (workStore && workStore.isStaticGeneration) {
-      return false;
-    }
-    if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
-      return false;
-    }
-  } catch (error) {
-    // Silently fail
-    console.error(ssrErrorMessage + ' Error: ' + error);
+function getStaticName(functionName: RequestFunctions): StaticRequestFunctions {
+  switch (functionName) {
+    case 'getLocale':
+      return 'getStaticLocale';
+    case 'getRegion':
+      return 'getStaticRegion';
+    case 'getDomain':
+      return 'getStaticDomain';
   }
-  return isSSR;
 }

@@ -15,6 +15,7 @@ import {
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
+  ssgMissingGetStaticLocaleFunctionError,
   standardizedCanonicalLocalesWarning,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -29,8 +30,12 @@ import {
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
-import { validateCompiler } from './config-dir/validateCompiler';
-import { PHASE_PRODUCTION_BUILD } from 'next/constants';
+import { validateCompiler } from './config-dir/utils/validateCompiler';
+import {
+  REQUEST_FUNCTION_ALIASES,
+  resolveRequestFunctionPaths,
+} from './config-dir/utils/resolveRequestFunctionPaths';
+import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -57,6 +62,7 @@ import { PHASE_PRODUCTION_BUILD } from 'next/constants';
  * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
+ * @param {string|undefined} [getLocalePath="getLocale"] - The path to the custom getLocale function.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
@@ -64,7 +70,11 @@ import { PHASE_PRODUCTION_BUILD } from 'next/constants';
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
+ * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
  * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings.
+ * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function.
+ * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function.
+ * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -265,12 +275,6 @@ export function withGTConfig(
     mergedConfig._dictionaryFileType = resolvedDictionaryFilePathType;
   }
 
-  // Resolve getLocale path
-  const customGetLocalePath =
-    typeof mergedConfig.getLocalePath === 'string'
-      ? mergedConfig.getLocalePath
-      : resolveConfigFilepath('getLocale', ['.ts', '.js', '.json']);
-
   // Resolve custom dictionary loader path
   const customLoadDictionaryPath =
     typeof mergedConfig.loadDictionaryPath === 'string'
@@ -282,6 +286,9 @@ export function withGTConfig(
     typeof mergedConfig.loadTranslationsPath === 'string'
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
+
+  // Resolve request function paths
+  const requestFunctionPaths = resolveRequestFunctionPaths(mergedConfig);
 
   // Warn if found in /app directory
   if (
@@ -323,20 +330,6 @@ export function withGTConfig(
       createBadFilepathWarning('loadTranslations', ['./app', './src/app'])
     );
   }
-
-  // Resolve custom getRegion path
-  const customGetRegionPath =
-    typeof mergedConfig.getRegionPath === 'string'
-      ? mergedConfig.getRegionPath
-      : resolveConfigFilepath('getRegion', ['.ts', '.js']);
-  const customRegionEnabled = !!customGetRegionPath;
-
-  // Resolve custom getDomain path
-  const customGetDomainPath =
-    typeof mergedConfig.getDomainPath === 'string'
-      ? mergedConfig.getDomainPath
-      : resolveConfigFilepath('getDomain', ['.ts', '.js']);
-  const customDomainEnabled = !!customGetDomainPath;
 
   // ----------- LOCALE STANDARDIZATION ----------- //
 
@@ -469,9 +462,6 @@ export function withGTConfig(
     }
   }
 
-  // Resolve getLocale path
-  const customLocaleEnabled = !!customGetLocalePath;
-
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
     (mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
@@ -513,6 +503,14 @@ export function withGTConfig(
     }
   }
 
+  // Check: if using SSG, error ons missing getStaticLocale function
+  if (
+    mergedConfig.experimentalEnableSSG &&
+    !requestFunctionPaths.getStaticLocale
+  ) {
+    throw new Error(ssgMissingGetStaticLocaleFunctionError);
+  }
+
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
 
@@ -529,10 +527,16 @@ export function withGTConfig(
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
-    'gt-next/_request': customGetLocalePath || '',
-    'gt-next/internal/_getLocale': customGetLocalePath || '',
-    'gt-next/internal/_getRegion': customGetRegionPath || '',
-    'gt-next/internal/_getDomain': customGetDomainPath || '',
+    ...Object.fromEntries(
+      Object.entries(requestFunctionPaths).map(([functionName, path]) => {
+        return [
+          REQUEST_FUNCTION_ALIASES[
+            functionName as keyof typeof REQUEST_FUNCTION_ALIASES
+          ],
+          path,
+        ];
+      })
+    ),
   };
 
   // experimental.turbo is deprecated in next@15.3.0.
@@ -568,14 +572,22 @@ export function withGTConfig(
         defaultWithGTConfigProps.ignoreBrowserLocales?.toString() ||
         'false',
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
-        customLocaleEnabled.toString(),
+        requestFunctionPaths.getLocale ? 'true' : 'false',
       _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED:
-        customRegionEnabled.toString(),
+        requestFunctionPaths.getRegion ? 'true' : 'false',
       _GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED:
-        customDomainEnabled.toString(),
+        requestFunctionPaths.getDomain ? 'true' : 'false',
+      _GENERALTRANSLATION_STATIC_GET_LOCALE_ENABLED:
+        requestFunctionPaths.getStaticLocale ? 'true' : 'false',
+      _GENERALTRANSLATION_STATIC_GET_REGION_ENABLED:
+        requestFunctionPaths.getStaticRegion ? 'true' : 'false',
+      _GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED:
+        requestFunctionPaths.getStaticDomain ? 'true' : 'false',
       _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParamStability,
       _GENERALTRANSLATION_DISABLE_SSG_WARNINGS:
         mergedConfig.disableSSGWarnings?.toString() || 'false',
+      _GENERALTRANSLATION_ENABLE_SSG:
+        mergedConfig.experimentalEnableSSG?.toString() || 'false',
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
@@ -643,12 +655,6 @@ export function withGTConfig(
             resolvedDictionaryFilePath
           );
         }
-        if (customGetLocalePath) {
-          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
-            webpackConfig.context,
-            customGetLocalePath
-          );
-        }
         if (customLoadTranslationsPath) {
           webpackConfig.resolve.alias[`gt-next/_load-translations`] =
             path.resolve(webpackConfig.context, customLoadTranslationsPath);
@@ -657,17 +663,17 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
-        if (customGetLocalePath) {
-          webpackConfig.resolve.alias['gt-next/internal/_getLocale'] =
-            path.resolve(webpackConfig.context, customGetLocalePath);
-        }
-        if (customGetRegionPath) {
-          webpackConfig.resolve.alias['gt-next/internal/_getRegion'] =
-            path.resolve(webpackConfig.context, customGetRegionPath);
-        }
-        if (customGetDomainPath) {
-          webpackConfig.resolve.alias['gt-next/internal/_getDomain'] =
-            path.resolve(webpackConfig.context, customGetDomainPath);
+        for (const [functionName, pathString] of Object.entries(
+          requestFunctionPaths
+        )) {
+          const key =
+            REQUEST_FUNCTION_ALIASES[
+              functionName as keyof typeof REQUEST_FUNCTION_ALIASES
+            ];
+          webpackConfig.resolve.alias[key] = path.resolve(
+            webpackConfig.context,
+            pathString
+          );
         }
       }
       if (typeof nextConfig?.webpack === 'function') {
@@ -682,42 +688,3 @@ export function withGTConfig(
 // Keep initGT for backward compatibility
 export const initGT = (props: withGTConfigProps) => (nextConfig: any) =>
   withGTConfig(nextConfig, props);
-
-/**
- * Resolves a configuration filepath for dictionary files.
- *
- * @param {string} fileName - The base name of the config file to look for.
- * @param {string} [cwd] - An optional current working directory path.
- * @returns {string|undefined} - The path if found; otherwise undefined.
- */
-function resolveConfigFilepath(
-  fileName: string,
-  extensions: string[] = ['.ts', '.js'],
-  cwd?: string,
-  prefixes: string[] = ['.', './src']
-): string | undefined {
-  function resolvePath(pathname: string) {
-    const parts = [];
-    if (cwd) parts.push(cwd);
-    parts.push(pathname);
-    return path.resolve(...parts);
-  }
-
-  function pathExists(pathname: string) {
-    return fs.existsSync(resolvePath(pathname));
-  }
-
-  // Check for file existence in the root and src directories with supported extensions
-  for (const candidate of [
-    ...prefixes.flatMap(
-      (prefix) => extensions.map((ext) => `${prefix}/${fileName}${ext}`) // TOOD: is the / necessary after dot?
-    ),
-  ]) {
-    if (pathExists(candidate)) {
-      return candidate;
-    }
-  }
-
-  // Return undefined if no file is found
-  return undefined;
-}
