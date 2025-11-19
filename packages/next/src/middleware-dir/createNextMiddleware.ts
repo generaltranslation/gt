@@ -17,6 +17,7 @@ import {
   createPathToSharedPathMap,
   getLocaleFromRequest,
   getResponse,
+  ResponseConfig,
 } from './utils';
 import { defaultLocaleHeaderName } from '../utils/headers';
 
@@ -178,7 +179,7 @@ export default function createNextMiddleware({
 
     const headerList = new Headers(req.headers);
 
-    const responseConfig = {
+    const responseConfig: Omit<ResponseConfig, 'type'> = {
       originalUrl: req.nextUrl,
       headerList,
       userLocale,

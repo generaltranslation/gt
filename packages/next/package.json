@@ -30,8 +30,8 @@
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
-    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
-    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\" --fix",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\" \"**/__mocks__/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\" \"**/__mocks__/**/*.{js,ts,tsx}\" --fix",
     "test": "pnpm run test:js && pnpm run test:rust",
     "test:js": "vitest run",
     "test:rust": "cargo test --manifest-path ./swc-plugin/Cargo.toml",
@@ -99,6 +99,24 @@
     "./eslint-plugin": {
       "types": "./dist/eslint-plugin/index.d.ts",
       "default": "./dist/eslint-plugin/index.js"
+    },
+    "./internal/_getLocale": {
+      "default": "./dist/internal/_getLocale.js"
+    },
+    "./internal/_getRegion": {
+      "default": "./dist/internal/_getRegion.js"
+    },
+    "./internal/_getDomain": {
+      "default": "./dist/internal/_getDomain.js"
+    },
+    "./internal/static/_getLocale": {
+      "default": "./dist/internal/static/_getLocale.js"
+    },
+    "./internal/static/_getRegion": {
+      "default": "./dist/internal/static/_getRegion.js"
+    },
+    "./internal/static/_getDomain": {
+      "default": "./dist/internal/static/_getDomain.js"
     }
   },
   "typesVersions": {
@@ -135,6 +153,24 @@
       ],
       "eslint-plugin": [
         "./dist/eslint-plugin/index.d.ts"
+      ],
+      "internal/_getLocale": [
+        "./dist/internal/_getLocale.d.ts"
+      ],
+      "internal/_getRegion": [
+        "./dist/internal/_getRegion.d.ts"
+      ],
+      "internal/_getDomain": [
+        "./dist/internal/_getDomain.d.ts"
+      ],
+      "internal/static/_getLocale": [
+        "./dist/internal/static/_getLocale.d.ts"
+      ],
+      "internal/static/_getRegion": [
+        "./dist/internal/static/_getRegion.d.ts"
+      ],
+      "internal/static/_getDomain": [
+        "./dist/internal/static/_getDomain.d.ts"
       ]
     }
   },
@@ -156,9 +192,6 @@
       "gt-next/types": [
         "/dist/types"
       ],
-      "gt-next/_request": [
-        "/dist/_request"
-      ],
       "gt-next/_dictionary": [
         "/dist/_dictionary"
       ],
@@ -173,6 +206,24 @@
       ],
       "gt-next/eslint-plugin": [
         "/dist/eslint-plugin"
+      ],
+      "gt-next/internal/_getLocale": [
+        "/dist/internal/_getLocale"
+      ],
+      "gt-next/internal/_getRegion": [
+        "/dist/internal/_getRegion"
+      ],
+      "gt-next/internal/_getDomain": [
+        "/dist/internal/_getDomain"
+      ],
+      "gt-next/internal/static/_getLocale": [
+        "/dist/internal/static/_getLocale"
+      ],
+      "gt-next/internal/static/_getRegion": [
+        "/dist/internal/static/_getRegion"
+      ],
+      "gt-next/internal/static/_getDomain": [
+        "/dist/internal/static/_getDomain"
       ]
     }
   },

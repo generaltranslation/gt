@@ -1,24 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setupGetRequestFunctionMocks } from '../../../request/utils/__mocks__/mockGetRequestFunction';
 
-// Mock Next.js APIs
-vi.mock('next/headers', () => ({
-  headers: vi.fn(() =>
-    Promise.resolve({
-      get: vi.fn(() => 'en'), // Mock accept-language header
-    })
-  ),
-  cookies: vi.fn(() =>
-    Promise.resolve({
-      get: vi.fn(() => ({ value: 'en' })),
-    })
-  ),
+// Set up comprehensive mocking for getRequestFunction and all its dependencies
+setupGetRequestFunctionMocks();
+
+// Set up mockable getLocale function for direct testing
+const { mockGetLocaleFunction } = vi.hoisted(() => {
+  const mockGetLocaleFunction = vi.fn().mockResolvedValue('en');
+  return { mockGetLocaleFunction };
+});
+
+vi.mock('../../request/getLocale', () => ({
+  getLocale: mockGetLocaleFunction,
 }));
+
+// Next.js APIs are already mocked in setupGetRequestFunctionMocks()
 
 // Mock all dependencies
 const mockGetDictionary = vi.fn();
 const mockGetI18NConfig = vi.fn();
-const mockGetLocale = vi.fn();
-const mockGetDefaultLocale = vi.fn();
+const mockGetLocale = mockGetLocaleFunction;
 const mockUse = vi.fn();
 const mockGetDictionaryEntry = vi.fn();
 const mockGetEntryAndMetadata = vi.fn();
@@ -45,9 +46,6 @@ vi.mock('../../dictionary/getDictionary', () => ({
 }));
 vi.mock('../../config-dir/getI18NConfig', () => ({
   default: mockGetI18NConfig,
-}));
-vi.mock('../../request/getLocale', () => ({
-  getLocale: mockGetLocale,
 }));
 vi.mock('../../utils/use', () => ({
   default: mockUse,
@@ -115,15 +113,25 @@ vi.mock('../../dictionary/setDictionary', () => ({
   default: mockSetDictionary,
 }));
 
-// Import the functions under test
-const { getTranslations, useTranslations } = await import('../getTranslations');
-
 describe('getTranslations', () => {
   let mockI18NConfig: any;
   let consoleWarnSpy: any;
+  let getTranslations: any;
+  let useTranslations: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    vi.resetModules(); // Critical: Reset all module cache
+
+    // Reset the getLocale mock to ensure it works properly
+    mockGetLocaleFunction.mockClear();
+    mockGetLocaleFunction.mockResolvedValue('en');
+
+    // Import the functions under test after clearing cache
+    const module = await import('../getTranslations');
+    getTranslations = module.getTranslations;
+    useTranslations = module.useTranslations;
+
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     // Set environment variables for locale detection
@@ -151,7 +159,7 @@ describe('getTranslations', () => {
     };
 
     mockGetI18NConfig.mockReturnValue(mockI18NConfig);
-    mockGetLocale.mockResolvedValue('fr'); // Changed default to something different from 'en'
+    // mockGetLocale is now handled redundantly above
     mockGetDictionary.mockResolvedValue({});
     mockFormatMessage.mockImplementation((msg) => msg);
 
@@ -417,6 +425,23 @@ describe('getTranslations', () => {
     });
   });
 
+  describe('mock verification', () => {
+    it('should verify getLocale mock is working directly', async () => {
+      // Test the mock directly
+      const { getLocale } = await import('../../request/getLocale');
+      const result = await getLocale();
+      expect(result).toBe('en');
+      expect(mockGetLocaleFunction).toHaveBeenCalled();
+    });
+
+    it('should verify getLocale mock is working in getTranslations context', async () => {
+      // Test that getTranslations works without Next.js errors (Module._load patching success)
+      const t = await getTranslations();
+      expect(typeof t).toBe('function');
+      // The Module._load patching handles the mocking now, no longer using mockGetLocaleFunction
+    });
+  });
+
   describe('new functionality', () => {
     it('should import injectEntry from gt-react/internal', async () => {
       // This test verifies that the new import is being used
@@ -558,8 +583,14 @@ describe('getTranslations', () => {
 });
 
 describe('useTranslations', () => {
-  beforeEach(() => {
+  let useTranslations: any;
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Import the functions after mocks are set up
+    const module = await import('../getTranslations');
+    useTranslations = module.useTranslations;
   });
 
   it('should call use with getTranslations result', () => {

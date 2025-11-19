@@ -1,10 +1,10 @@
-import withGTConfigProps from './props/withGTConfigProps';
-import { babelPluginCompatible } from '../plugin/getStableNextVersionInfo';
+import withGTConfigProps from '../props/withGTConfigProps';
+import { babelPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 import {
   createGTCompilerUnavailableWarning,
   disablingCompileTimeHashWarning,
-} from '../errors/createErrors';
-import { swcPluginCompatible } from '../plugin/getStableNextVersionInfo';
+} from '../../errors/createErrors';
+import { swcPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 
 /**
  * Validate the compiler options
