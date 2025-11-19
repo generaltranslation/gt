@@ -1,9 +1,12 @@
+import { ROOT_PARAM_STABILITY } from '../plugin/constants';
 import { RequestFunctions, StaticRequestFunctions } from '../request/types';
 
 // ========== ERRORS ========== //
 
 export const ssgMissingGetStaticLocaleFunctionError =
   'gt-next: You have enabled SSG, but you have not configured a custom getStaticLocale() function. Please visit https://generaltranslation.com/en/docs/next/guides/ssg to configure SSG.';
+
+export const ssgInvalidNextVersionError = `gt-next: SSG support in gt-next is only available for Next.js ${ROOT_PARAM_STABILITY.unstable} and higher. Please visit https://generaltranslation.com/en/docs/next/guides/ssg to configure SSG.`;
 
 // ========== WARNINGS ========== //
 
