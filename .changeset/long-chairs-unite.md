@@ -1,5 +1,5 @@
 ---
-'gt-next': patch
+'gt-next': minor
 ---
 
 feat: ssg support
