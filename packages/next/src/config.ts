@@ -15,6 +15,7 @@ import {
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
+  ssgInvalidNextVersionError,
   ssgMissingGetStaticLocaleFunctionError,
   standardizedCanonicalLocalesWarning,
   standardizedLocalesWarning,
@@ -509,6 +510,14 @@ export function withGTConfig(
     !requestFunctionPaths.getStaticLocale
   ) {
     throw new Error(ssgMissingGetStaticLocaleFunctionError);
+  }
+
+  // Check: if using SSG, error on invalid Next.js version
+  if (
+    mergedConfig.experimentalEnableSSG &&
+    rootParamStability === 'unsupported'
+  ) {
+    throw new Error(ssgInvalidNextVersionError);
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
