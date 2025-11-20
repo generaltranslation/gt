@@ -1091,4 +1091,212 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update.dataFormat).toBe('JSX');
     expect(update.source).toBeDefined();
   });
+
+  it('should handle import aliases correctly', () => {
+    // Mock the file contents with import aliases
+    const pageFile = `
+      import { T, Static } from "gt-next";
+      import { utils1 as aliasUtils1, otherUtils } from "./libs/utils1";
+
+      function getStatic() {
+        return 1 ? "static" : "dynamic";
+      }
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Static>{aliasUtils1()}</Static></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      export function utils1() {
+        // if (Math.random() > 0.5) {
+        //   return aliasUtils3();
+        // }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+      
+      export function otherUtils() {
+        return 1 ? "otherUtils-a" : "otherUtils-b";
+      }
+    `;
+
+    // Set up file system mocks (using unique paths for cache isolation)
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/aliases/libs/utils1.ts':
+          return utils1File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    // Set up import path resolution mocks
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1') {
+          return '/test/aliases/libs/utils1.ts';
+        }
+        return null;
+      }
+    );
+
+    // Parse the page file
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    // Find the T component import and local name
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Static'
+            ) {
+              importAliases[spec.local.name] = 'Static';
+            }
+          });
+        }
+      },
+    });
+
+    // Find the T component usage and test parsing
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+
+        if (tBinding) {
+          parseTranslationComponent({
+            ast,
+            pkg: 'gt-next',
+            originalName: 'T',
+            importAliases,
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            errors,
+            warnings,
+            file: '/test/aliases/page.tsx',
+            parsingOptions,
+          });
+        }
+      },
+    });
+
+    // Verify no errors occurred
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(2); // Should have 2 branches: utils1-a, utils1-b
+
+    // Calculate hashes for each update
+    const hashedUpdates = updates.map((update) => {
+      const context = update.metadata.context;
+      const hash = hashSource({
+        source: update.source,
+        ...(context && { context }),
+        ...(update.metadata.id && { id: update.metadata.id }),
+        dataFormat: update.dataFormat,
+      });
+      return { hash, source: update.source };
+    });
+
+    // Expected hash-to-source mappings for alias scenario
+    const expectedData = {
+      '40d52de32ba666ce': [
+        'test ',
+        {
+          t: 'Static',
+          i: 1,
+          c: 'utils1-a',
+        },
+      ],
+      '081fa70a614caa27': [
+        'test ',
+        {
+          t: 'Static',
+          i: 1,
+          c: 'utils1-b',
+        },
+      ],
+    };
+
+    // Hard check: Verify we have exactly the expected hashes
+    const actualHashes = hashedUpdates.map((u) => u.hash).sort();
+    const expectedHashes = Object.keys(expectedData).sort();
+    expect(actualHashes).toEqual(expectedHashes);
+
+    // Hard check: Verify each specific hash and data structure exists
+    expect(hashedUpdates.some((u) => u.hash === '40d52de32ba666ce')).toBe(true);
+    expect(hashedUpdates.some((u) => u.hash === '081fa70a614caa27')).toBe(true);
+
+    // Hard check: Verify each hash maps to the exact expected content
+    const update40d = hashedUpdates.find((u) => u.hash === '40d52de32ba666ce')!;
+    expect(update40d.source).toEqual([
+      'test ',
+      {
+        t: 'Static',
+        i: 1,
+        c: 'utils1-a',
+      },
+    ]);
+
+    const update081 = hashedUpdates.find((u) => u.hash === '081fa70a614caa27')!;
+    expect(update081.source).toEqual([
+      'test ',
+      {
+        t: 'Static',
+        i: 1,
+        c: 'utils1-b',
+      },
+    ]);
+
+    // Hard check: Verify hash calculation is correct for each
+    expect(
+      hashSource({
+        source: expectedData['40d52de32ba666ce'],
+        dataFormat: 'JSX',
+      })
+    ).toBe('40d52de32ba666ce');
+
+    expect(
+      hashSource({
+        source: expectedData['081fa70a614caa27'],
+        dataFormat: 'JSX',
+      })
+    ).toBe('081fa70a614caa27');
+
+    // Verify that the aliased function was resolved correctly
+    expect(mockFs.readFileSync).toHaveBeenCalledWith(
+      '/test/aliases/libs/utils1.ts',
+      'utf8'
+    );
+    expect(mockResolveImportPath).toHaveBeenCalledWith(
+      '/test/aliases/page.tsx',
+      './libs/utils1',
+      parsingOptions,
+      expect.any(Map)
+    );
+
+    // Verify specific content variations exist
+    const staticContents = hashedUpdates.map((u) => (u.source[1] as { c: string }).c);
+    expect(staticContents).toContain('utils1-a');
+    expect(staticContents).toContain('utils1-b');
+  });
 });

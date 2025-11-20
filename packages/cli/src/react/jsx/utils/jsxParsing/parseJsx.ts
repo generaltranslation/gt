@@ -859,6 +859,18 @@ function resolveStaticFunctionInvocationFromBinding({
         }),
     });
   } else if (importedFunctionsMap.has(callee.name)) {
+    // Get the original function name
+    let originalName: string | undefined;
+    if (calleeBinding.path.isImportSpecifier()) {
+      originalName = t.isIdentifier(calleeBinding.path.node.imported)
+        ? calleeBinding.path.node.imported.name
+        : calleeBinding.path.node.imported.value;
+    } else if (calleeBinding.path.isImportDefaultSpecifier()) {
+      originalName = calleeBinding.path.node.local.name;
+    } else if (calleeBinding.path.isImportNamespaceSpecifier()) {
+      originalName = calleeBinding.path.node.local.name;
+    }
+
     // Function is being imported
     const importPath = importedFunctionsMap.get(callee.name)!;
     const filePath = resolveImportPath(
@@ -867,15 +879,14 @@ function resolveStaticFunctionInvocationFromBinding({
       parsingOptions,
       resolveImportPathCache
     );
-    if (filePath) {
-      const functionName = callee.name;
+    if (filePath && originalName) {
       const result = withRecusionGuard({
         filename: filePath,
-        functionName,
+        functionName: originalName,
         cb: () =>
           processFunctionInFile({
             filePath,
-            functionName,
+            functionName: originalName,
             visited,
             callStack,
             unwrappedExpressions,
