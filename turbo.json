@@ -39,6 +39,21 @@
       "cache": true,
       "outputs": ["dist/**"],
       "env": ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN"]
+    },
+    "release": {
+      "dependsOn": ["^release"],
+      "cache": false,
+      "outputs": ["dist/**"]
+    },
+    "release:alpha": {
+      "dependsOn": ["^release:alpha"],
+      "cache": false,
+      "outputs": ["dist/**"]
+    },
+    "release:beta": {
+      "dependsOn": ["^release:beta"],
+      "cache": false,
+      "outputs": ["dist/**"]
     }
   }
 }

@@ -75,7 +75,7 @@ describe('_enqueueFiles', () => {
         },
       },
       locales: ['es', 'fr'],
-      message: 'Files enqueued successfully',
+      message: 'Successfully enqueued 1 file translation jobs in 1 batch(es)',
     };
 
     const mockFetchResponse = {

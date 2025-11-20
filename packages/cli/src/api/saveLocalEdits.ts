@@ -3,8 +3,9 @@ import { aggregateFiles } from '../formats/files/translate.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
 import { gt } from '../utils/gt.js';
 import { BranchStep } from '../workflow/BranchStep.js';
-import { logErrorAndExit } from '../console/logging.js';
+import { createSpinner, logErrorAndExit } from '../console/logging.js';
 import type { FileReference } from 'generaltranslation/types';
+import chalk from 'chalk';
 
 /**
  * Uploads current source files to obtain file references, then collects and sends
@@ -34,5 +35,9 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
     versionId: file.versionId,
   })) satisfies FileReference[];
 
+  const spinner = createSpinner('dots');
+  spinner.start('Saving local edits...');
+
   await collectAndSendUserEditDiffs(uploads, settings);
+  spinner.stop(chalk.green('Local edits saved successfully'));
 }
