@@ -1295,7 +1295,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
 
     // Verify specific content variations exist
-    const staticContents = hashedUpdates.map((u) => (u.source[1] as { c: string }).c);
+    const staticContents = hashedUpdates.map(
+      (u) => (u.source[1] as { c: string }).c
+    );
     expect(staticContents).toContain('utils1-a');
     expect(staticContents).toContain('utils1-b');
   });
