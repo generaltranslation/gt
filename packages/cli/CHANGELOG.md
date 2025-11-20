@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.6
+
+### Patch Changes
+
+- [#817](https://github.com/generaltranslation/gt/pull/817) [`80eef0e`](https://github.com/generaltranslation/gt/commit/80eef0e0f61d5a07ed850aa39b25e81bddd12b34) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: Static component resolution edge cases
+
 ## 2.5.5
 
 ### Patch Changes
