@@ -779,9 +779,6 @@ function resolveStaticFunctionInvocationFromBinding({
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
-  console.log('===== resolveStaticFunctionInvocationFromBinding =====');
-  console.log('callee', callee.name + '()');
-  console.log('file', file.split('/').pop());
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
     | ReturnType<typeof processFunctionDeclarationNodePath>
@@ -941,20 +938,15 @@ function processFunctionInFile({
   unwrappedExpressions: string[];
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
-  console.log('===== processFunctionInFile =====');
-  console.log('filePath    ', filePath.split('/').pop());
-  console.log('functionName', functionName + '()');
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
   // Check cache first to avoid redundant parsing
   if (processFunctionCache.has(cacheKey)) {
-    console.log('cache hit', cacheKey);
     return processFunctionCache.get(cacheKey) ?? null;
   }
 
   // Prevent infinite loops from circular re-exports
   if (visited.has(filePath)) {
-    console.log('visited', filePath);
     return null;
   }
   visited.add(filePath);
@@ -1100,12 +1092,6 @@ function processFunctionInFile({
   } catch {
     // Silently skip files that can't be parsed or accessed
     // Still mark as processed to avoid retrying failed parses
-    console.log(
-      'failed to parse file',
-      filePath.split('/').pop(),
-      'for function',
-      functionName + '()'
-    );
     processFunctionCache.set(cacheKey, null);
   }
   return result !== undefined ? result : null;
