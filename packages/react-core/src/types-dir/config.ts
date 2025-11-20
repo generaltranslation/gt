@@ -12,7 +12,17 @@ import {
 import {
   UseRegionStateParams,
   UseRegionStateReturn,
+  UseEnableI18nParams,
+  UseEnableI18nReturn,
 } from '../provider/hooks/types';
+
+// Configuration for the enableI18n feature flag
+export type EnableI18nConfig = {
+  /** Persist the feature flag as a cookie @default false (use when loading flag asynchronously) */
+  persist?: boolean;
+  /** Name of cookie @default defaultEnableI18nCookieName */
+  cookieName?: string;
+};
 
 // Type definition for the config object passed to the GTProvider
 export type GTConfig = {
@@ -32,6 +42,7 @@ export type GTConfig = {
   localeCookieName?: string;
   customMapping?: CustomMapping;
   modelProvider?: string;
+  enableI18n?: boolean;
 };
 
 export type InternalGTProviderProps = {
@@ -60,10 +71,15 @@ export type InternalGTProviderProps = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   environment: 'development' | 'production' | 'test';
+  /* flag to enable i18n, true by default */
+  enableI18n?: boolean;
+  /** Flag to indicate if the enableI18n flag is finished loading asynchronously */
+  enableI18nLoaded?: boolean;
   readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
   useDetermineLocale: (
     params: UseDetermineLocaleParams
   ) => UseDetermineLocaleReturn;
   useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
+  useEnableI18n?: (params: UseEnableI18nParams) => UseEnableI18nReturn;
   [key: string]: any;
 };

@@ -1,5 +1,19 @@
 # @generaltranslation/react-core
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`e7d25b0`](https://github.com/generaltranslation/gt/commit/e7d25b06a3e1d7ca404d64257570b88e7b0d1915)]:
+  - generaltranslation@8.0.2
+  - @generaltranslation/supported-locales@2.0.25
+
+## 1.2.0
+
+### Minor Changes
+
+- [#809](https://github.com/generaltranslation/gt/pull/809) [`a287f6f`](https://github.com/generaltranslation/gt/commit/a287f6fc79cc96acdc082fc4ff664bb23d0f0e3c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: enable i18n feature flag for gt-react
+
 ## 1.1.1
 
 ### Patch Changes

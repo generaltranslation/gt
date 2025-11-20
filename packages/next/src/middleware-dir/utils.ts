@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { determineLocale, GT, standardizeLocale } from 'generaltranslation';
+import { GT, standardizeLocale } from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {
@@ -47,11 +47,11 @@ export function getResponse({
     response =
       type === 'rewrite'
         ? NextResponse.rewrite(responseUrl, {
-            headers: headerList,
+            request: {
+              headers: headerList,
+            },
           })
-        : NextResponse.redirect(responseUrl, {
-            headers: headerList,
-          });
+        : NextResponse.redirect(responseUrl);
   }
 
   // Set Headers & Cookies

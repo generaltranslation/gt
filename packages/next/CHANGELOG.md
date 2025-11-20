@@ -1,5 +1,30 @@
 # gt-next
 
+## 6.9.1
+
+### Patch Changes
+
+- [#813](https://github.com/generaltranslation/gt/pull/813) [`3ec2b2c`](https://github.com/generaltranslation/gt/commit/3ec2b2cc0df7a14451264209958bbf3583bdb55a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: require root param support for SSG
+
+- Updated dependencies [[`e7d25b0`](https://github.com/generaltranslation/gt/commit/e7d25b06a3e1d7ca404d64257570b88e7b0d1915)]:
+  - generaltranslation@8.0.2
+  - @generaltranslation/compiler@1.1.3
+  - gt-react@10.8.1
+  - @generaltranslation/supported-locales@2.0.25
+
+## 6.9.0
+
+### Minor Changes
+
+- [#811](https://github.com/generaltranslation/gt/pull/811) [`ef81f68`](https://github.com/generaltranslation/gt/commit/ef81f687655a2bae9a00160940ce30f6cfebf54d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: ssg support
+
+## 6.8.3
+
+### Patch Changes
+
+- Updated dependencies [[`a287f6f`](https://github.com/generaltranslation/gt/commit/a287f6fc79cc96acdc082fc4ff664bb23d0f0e3c)]:
+  - gt-react@10.8.0
+
 ## 6.8.2
 
 ### Patch Changes

@@ -17,12 +17,16 @@ export function useDetermineLocale({
   localeCookieName = defaultLocaleCookieName,
   ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
   customMapping,
+  enableI18n, // when enabled, don't change locale cookie (feature flag might be loaded async, updating cookie means state is lost on refresh)
 }: UseDetermineLocaleParams): UseDetermineLocaleReturn {
   // resolve alias locale
   _locale = resolveAliasLocale(_locale, customMapping);
   locales = locales.map((locale) => resolveAliasLocale(locale, customMapping));
 
   const initializeLocale = () => {
+    if (!enableI18n) {
+      return defaultLocale;
+    }
     const result = resolveAliasLocale(
       ssr
         ? _locale
@@ -35,6 +39,7 @@ export function useDetermineLocale({
             defaultLocale,
             localeCookieName,
             customMapping,
+            enableI18n,
           }),
       customMapping
     );
@@ -52,6 +57,7 @@ export function useDetermineLocale({
     localeCookieName,
     _setLocale,
     customMapping,
+    enableI18n,
   });
 
   // check browser for locales
@@ -63,9 +69,10 @@ export function useDetermineLocale({
       defaultLocale,
       localeCookieName,
       customMapping,
+      enableI18n,
     });
     setLocaleWithoutSettingCookie(newLocale);
-  }, [_locale, locale, locales, defaultLocale, localeCookieName]);
+  }, [_locale, locale, locales, defaultLocale, localeCookieName, enableI18n]);
 
   return [locale, setLocale];
 }
@@ -87,6 +94,7 @@ function getNewLocale({
   defaultLocale,
   localeCookieName,
   customMapping,
+  enableI18n,
 }: {
   _locale: string;
   locale: string;
@@ -94,7 +102,11 @@ function getNewLocale({
   defaultLocale: string;
   localeCookieName: string;
   customMapping?: CustomMapping;
+  enableI18n: boolean;
 }): string {
+  if (!enableI18n) {
+    return defaultLocale;
+  }
   // No change, return
   if (
     _locale &&
@@ -166,6 +178,7 @@ function createSetLocale({
   localeCookieName,
   _setLocale,
   customMapping,
+  enableI18n,
 }: {
   locale: string;
   locales: string[];
@@ -173,9 +186,13 @@ function createSetLocale({
   localeCookieName: string;
   _setLocale: any;
   customMapping?: CustomMapping;
+  enableI18n?: boolean;
 }) {
   locale = resolveAliasLocale(locale, customMapping);
   const setLocaleWithoutSettingCookie = (newLocale: string): string => {
+    if (!enableI18n) {
+      return defaultLocale;
+    }
     // validate locale
     const validatedLocale = resolveAliasLocale(
       determineLocale(newLocale, locales, customMapping) ||
@@ -195,6 +212,9 @@ function createSetLocale({
   };
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
+    if (!enableI18n) {
+      return;
+    }
     newLocale = resolveAliasLocale(newLocale);
     const validatedLocale = setLocaleWithoutSettingCookie(newLocale);
     if (typeof document !== 'undefined') {

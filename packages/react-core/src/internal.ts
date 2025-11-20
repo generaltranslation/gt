@@ -19,6 +19,7 @@ import renderSkeleton from './rendering/renderSkeleton';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
+  defaultEnableI18nCookieName,
 } from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
 import { reactHasUse } from './promises/reactHasUse';
@@ -51,6 +52,7 @@ export {
   getDefaultRenderSettings,
   defaultLocaleCookieName,
   defaultRegionCookieName,
+  defaultEnableI18nCookieName,
   mergeDictionaries,
   reactHasUse,
   getSubtree,

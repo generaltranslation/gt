@@ -1,5 +1,4 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
-import use from '../utils/use';
 import { getLocale, useLocale } from './getLocale';
 
 /**

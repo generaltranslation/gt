@@ -12,6 +12,7 @@ import useCreateInternalUseTranslationsFunction from './hooks/translation/useCre
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
+  defaultEnableI18nCookieName,
 } from '../utils/cookies';
 import { InternalGTProviderProps } from '../types-dir/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
@@ -20,34 +21,14 @@ import { GT, resolveAliasLocale } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
+import { useEnableI18n as _useEnableI18n } from './hooks/useEnableI18n';
 
 // Deprecated functions, will be removed in a future version
 import { readAuthFromEnv as _readAuthFromEnv } from '../utils/utils';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { useDetermineLocale as _useDetermineLocale } from './hooks/locales/useDetermineLocale';
 import { useRegionState as _useRegionState } from './hooks/useRegionState';
-/**
- * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
- *
- * @param {React.ReactNode} children - The children components that will use the translation context.
- * @param {string} [projectId] - The project ID required for General Translation cloud services.
- * @param {Dictionary} [dictionary=defaultDictionary] - The translation dictionary for the project.
- * @param {string[]} [locales] - The list of approved locales for the project.
- * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale to use if no other locale is found.
- * @param {string} [locale] - The current locale, if already set.
- * @param {string} [cacheUrl='https://cdn.gtx.dev'] - The URL of the cache service for fetching translations.
- * @param {string} [runtimeUrl='https://runtime.gtx.dev'] - The URL of the runtime service for fetching translations.
- * @param {RenderSettings} [renderSettings=defaultRenderSettings] - The settings for rendering translations.
- * @param {string} [_versionId] - The version ID for fetching translations.
- * @param {string} [devApiKey] - The API key for development environments.
- * @param {object} [metadata] - Additional metadata to pass to the context.
- * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
- * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
- * @param {Translations | null} [translations=null] - The translations to use for the context.
- * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
- *
- * @returns {JSX.Element} The provider component for General Translation context.
- */
+
 export default function GTProvider({
   children,
   config,
@@ -71,6 +52,11 @@ export default function GTProvider({
   fallback = undefined,
   translations: _translations = null,
   customMapping = config?.customMapping,
+  enableI18n: _enableI18n = config?.enableI18n !== undefined
+    ? config.enableI18n
+    : true,
+  enableI18nLoaded,
+  useEnableI18n = _useEnableI18n,
   readAuthFromEnv = _readAuthFromEnv,
   useDetermineLocale = _useDetermineLocale,
   useRegionState = _useRegionState,
@@ -85,6 +71,14 @@ export default function GTProvider({
   const { projectId, devApiKey } = readAuthFromEnv({
     projectId: _projectId,
     devApiKey: _devApiKey,
+  });
+
+  // Enable I18n feature flags
+  const { enableI18n } = useEnableI18n({
+    enableI18n: _enableI18n,
+    enableI18nLoaded,
+    enableI18nCookieName: defaultEnableI18nCookieName,
+    ssr,
   });
 
   // Get locale data including
@@ -107,6 +101,7 @@ export default function GTProvider({
     localeCookieName,
     customMapping,
     useDetermineLocale,
+    enableI18n,
   });
 
   // Define the region instance

@@ -1,5 +1,26 @@
 # gtx-cli
 
+## 2.5.6
+
+### Patch Changes
+
+- [#817](https://github.com/generaltranslation/gt/pull/817) [`80eef0e`](https://github.com/generaltranslation/gt/commit/80eef0e0f61d5a07ed850aa39b25e81bddd12b34) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: Static component resolution edge cases
+
+## 2.5.5
+
+### Patch Changes
+
+- [#815](https://github.com/generaltranslation/gt/pull/815) [`e7d25b0`](https://github.com/generaltranslation/gt/commit/e7d25b06a3e1d7ca404d64257570b88e7b0d1915) Thanks [@brian-lou](https://github.com/brian-lou)! - Batch enqueue jobs
+
+- Updated dependencies [[`e7d25b0`](https://github.com/generaltranslation/gt/commit/e7d25b06a3e1d7ca404d64257570b88e7b0d1915)]:
+  - generaltranslation@8.0.2
+
+## 2.5.4
+
+### Patch Changes
+
+- [#807](https://github.com/generaltranslation/gt/pull/807) [`293a5a3`](https://github.com/generaltranslation/gt/commit/293a5a3ceba2321eed7b1271ca955331995f40a7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add handling of shared static assets
+
 ## 2.5.3
 
 ### Patch Changes

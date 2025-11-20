@@ -2,7 +2,12 @@ import {
   createUnresolvedNextVersionError,
   createUnresolvedReactVersionError,
 } from '../errors/createErrors';
-import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from './constants';
+import {
+  BABEL_PLUGIN_SUPPORT,
+  ROOT_PARAM_STABILITY,
+  STABLE_TURBO_CONFIG_VERSION,
+  SWC_PLUGIN_SUPPORT,
+} from './constants';
 
 /**
  * Get the next version of the package.
@@ -59,18 +64,12 @@ function comparePackageVersion(a: string, b: string): boolean {
  * Starting at version next@15.3.0 experimental field in turbo config was deprecated.
  * Shout out to next-intl: https://github.com/amannn/next-intl/pull/1850
  */
-const STABLE_TURBO_CONFIG_VERSION = '15.3.0';
 export const turboConfigStable = comparePackageVersion(
   getNextVersion(),
   STABLE_TURBO_CONFIG_VERSION
 );
 
 export type RootParam = 'unsupported' | 'unstable' | 'experimental' | 'stable';
-const ROOT_PARAM_STABILITY = {
-  unsupported: '0.0.0',
-  unstable: '15.2.0',
-  experimental: '15.5.0',
-};
 
 export const rootParamStability: RootParam = (() => {
   const nextVersion = getNextVersion();

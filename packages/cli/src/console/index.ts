@@ -229,7 +229,7 @@ export const warnRecursiveFunctionCallSync = (
   withLocation(
     file,
     withStaticError(
-      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function use recursive calls to construct its result.`
+      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function cannot use recursive calls to construct its result.`
     ),
     location
   );

@@ -155,7 +155,7 @@ export function buildJSXTree({
   node: any;
   callStack: string[];
   unwrappedExpressions: string[];
-  visited: Set<string>;
+  visited: Set<string> | null;
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -314,6 +314,9 @@ export function buildJSXTree({
 
     if (elementIsVariable) {
       if (componentType === STATIC_COMPONENT) {
+        if (visited === null) {
+          visited = new Set();
+        }
         return resolveStaticComponentChildren({
           importAliases,
           scopeNode,
@@ -529,7 +532,7 @@ export function parseJSXElement({
     importAliases,
     node,
     scopeNode,
-    visited: new Set(),
+    visited: null,
     callStack: [],
     pkg,
     unwrappedExpressions,
@@ -710,10 +713,12 @@ function resolveStaticComponentChildren({
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
 
     if (!calleeBinding) {
-      warnFunctionNotFoundSync(
-        file,
-        callee.name,
-        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+      warnings.add(
+        warnFunctionNotFoundSync(
+          file,
+          callee.name,
+          `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+        )
       );
       continue;
     }
@@ -854,6 +859,18 @@ export function resolveStaticFunctionInvocationFromBinding({
         }),
     });
   } else if (importedFunctionsMap.has(callee.name)) {
+    // Get the original function name
+    let originalName: string | undefined;
+    if (calleeBinding.path.isImportSpecifier()) {
+      originalName = t.isIdentifier(calleeBinding.path.node.imported)
+        ? calleeBinding.path.node.imported.name
+        : calleeBinding.path.node.imported.value;
+    } else if (calleeBinding.path.isImportDefaultSpecifier()) {
+      originalName = calleeBinding.path.node.local.name;
+    } else if (calleeBinding.path.isImportNamespaceSpecifier()) {
+      originalName = calleeBinding.path.node.local.name;
+    }
+
     // Function is being imported
     const importPath = importedFunctionsMap.get(callee.name)!;
     const filePath = resolveImportPath(
@@ -862,15 +879,14 @@ export function resolveStaticFunctionInvocationFromBinding({
       parsingOptions,
       resolveImportPathCache
     );
-    if (filePath) {
-      const functionName = callee.name;
-      return withRecusionGuard({
-        filename: file,
-        functionName,
+    if (filePath && originalName) {
+      const result = withRecusionGuard({
+        filename: filePath,
+        functionName: originalName,
         cb: () =>
           processFunctionInFile({
             filePath,
-            functionName,
+            functionName: originalName,
             visited,
             callStack,
             unwrappedExpressions,
@@ -882,6 +898,9 @@ export function resolveStaticFunctionInvocationFromBinding({
             pkg,
           }),
       });
+      if (result !== null) {
+        return result;
+      }
     }
   }
   warnings.add(
@@ -974,7 +993,7 @@ function processFunctionInFile({
     const warnDuplicateFuncDef = (path: NodePath) => {
       warnings.add(
         warnDuplicateFunctionDefinitionSync(
-          file,
+          filePath,
           functionName,
           `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
         )
@@ -997,7 +1016,7 @@ function processFunctionInFile({
             updates,
             errors,
             warnings,
-            file,
+            file: filePath,
             parsingOptions,
             importedFunctionsMap,
           });
@@ -1024,7 +1043,7 @@ function processFunctionInFile({
             warnings,
             visited,
             unwrappedExpressions,
-            file,
+            file: filePath,
             parsingOptions,
             importedFunctionsMap,
           });
@@ -1076,7 +1095,7 @@ function processFunctionInFile({
             updates,
             errors,
             warnings,
-            file,
+            file: filePath,
             pkg,
           });
           if (foundResult != null) {
