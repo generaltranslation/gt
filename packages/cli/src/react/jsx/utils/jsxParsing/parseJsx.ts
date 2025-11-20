@@ -974,7 +974,7 @@ function processFunctionInFile({
     const warnDuplicateFuncDef = (path: NodePath) => {
       warnings.add(
         warnDuplicateFunctionDefinitionSync(
-          file,
+          filePath,
           functionName,
           `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
         )
