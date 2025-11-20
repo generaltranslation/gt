@@ -155,7 +155,7 @@ export function buildJSXTree({
   node: any;
   callStack: string[];
   unwrappedExpressions: string[];
-  visited: Set<string>;
+  visited: Set<string> | null;
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -314,6 +314,9 @@ export function buildJSXTree({
 
     if (elementIsVariable) {
       if (componentType === STATIC_COMPONENT) {
+        if (visited === null) {
+          visited = new Set();
+        }
         return resolveStaticComponentChildren({
           importAliases,
           scopeNode,
@@ -529,7 +532,7 @@ export function parseJSXElement({
     importAliases,
     node,
     scopeNode,
-    visited: new Set(),
+    visited: null,
     callStack: [],
     pkg,
     unwrappedExpressions,
@@ -930,15 +933,20 @@ function processFunctionInFile({
   unwrappedExpressions: string[];
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
+  console.log('===== processFunctionInFile =====');
+  console.log('filePath    ', filePath.split('/').pop());
+  console.log('functionName', functionName + '()');
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
   // Check cache first to avoid redundant parsing
   if (processFunctionCache.has(cacheKey)) {
+    console.log('cache hit', cacheKey);
     return processFunctionCache.get(cacheKey) ?? null;
   }
 
   // Prevent infinite loops from circular re-exports
   if (visited.has(filePath)) {
+    console.log('visited', filePath);
     return null;
   }
   visited.add(filePath);
