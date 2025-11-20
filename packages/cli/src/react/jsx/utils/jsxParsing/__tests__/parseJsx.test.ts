@@ -799,4 +799,163 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(staticContents).toContain('utils1-a');
     expect(staticContents).toContain('utils1-b');
   });
+
+  it('should handle function resolution failure when import chain is broken', () => {
+    // Mock the file contents with broken import chain
+    const pageFile = `
+      import { T, Static } from "gt-next";
+      import { utils1 } from "./libs/utils1";
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Static>{utils1()}</Static></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      import { utils3 } from "./utils2";
+
+      export function utils1() {
+        if (Math.random() > 0.5) {
+          return utils3();
+        }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+    `;
+
+    const utils2File = `
+      export * from "./utils1";
+      // export * from "./utils3";
+    `;
+
+    const utils3File = `
+      export function utils3() {
+        return 1 ? "utils3-a" : "utils3-b";
+      }
+    `;
+
+    // Set up file system mocks (using unique paths for cache isolation)
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/broken/libs/utils1.ts':
+          return utils1File;
+        case '/test/broken/libs/utils2.ts':
+          return utils2File;
+        case '/test/broken/libs/utils3.ts':
+          return utils3File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    // Set up import path resolution mocks
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1') {
+          return '/test/broken/libs/utils1.ts';
+        }
+        if (importPath === './utils2') {
+          return '/test/broken/libs/utils2.ts';
+        }
+        if (importPath === './utils3') {
+          return '/test/broken/libs/utils3.ts';
+        }
+        if (importPath === './utils1') {
+          return '/test/broken/libs/utils1.ts';
+        }
+        return null;
+      }
+    );
+
+    // Parse the page file
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    // Find the T component import and local name
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Static'
+            ) {
+              importAliases[spec.local.name] = 'Static';
+            }
+          });
+        }
+      },
+    });
+
+    // Find the T component usage and test parsing
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+
+        if (tBinding) {
+          parseTranslationComponent({
+            ast,
+            pkg: 'gt-next',
+            originalName: 'T',
+            importAliases,
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            errors,
+            warnings,
+            file: '/test/broken/page.tsx',
+            parsingOptions,
+          });
+        }
+      },
+    });
+
+    // Should have warnings about function not found
+    expect(warnings.size).toBeGreaterThan(0);
+    expect(
+      Array.from(warnings).some((warning) =>
+        warning.includes('Function utils3 definition could not be resolved')
+      )
+    ).toBe(true);
+    expect(
+      Array.from(warnings).some((warning) =>
+        warning.includes('This might affect translation resolution')
+      )
+    ).toBe(true);
+
+    // Should still process the parts that can be resolved (utils1-a, utils1-b)
+    expect(updates.length).toBeGreaterThan(0);
+
+    // Verify that utils1 was still processed despite utils3 resolution failure
+    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
+    expect(staticContents).toContain('utils1-a');
+    expect(staticContents).toContain('utils1-b');
+
+    // Verify that files were attempted to be read
+    expect(mockFs.readFileSync).toHaveBeenCalledWith(
+      '/test/broken/libs/utils1.ts',
+      'utf8'
+    );
+    expect(mockFs.readFileSync).toHaveBeenCalledWith(
+      '/test/broken/libs/utils2.ts',
+      'utf8'
+    );
+  });
 });

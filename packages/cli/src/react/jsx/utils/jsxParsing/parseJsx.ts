@@ -713,10 +713,12 @@ function resolveStaticComponentChildren({
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
 
     if (!calleeBinding) {
-      warnFunctionNotFoundSync(
-        file,
-        callee.name,
-        `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+      warnings.add(
+        warnFunctionNotFoundSync(
+          file,
+          callee.name,
+          `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+        )
       );
       continue;
     }
@@ -777,6 +779,9 @@ function resolveStaticFunctionInvocationFromBinding({
   importedFunctionsMap: Map<string, string>;
   pkg: 'gt-react' | 'gt-next';
 }): MultiplicationNode | null {
+  console.log('===== resolveStaticFunctionInvocationFromBinding =====');
+  console.log('callee', callee.name + '()');
+  console.log('file', file.split('/').pop());
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
     | ReturnType<typeof processFunctionDeclarationNodePath>
