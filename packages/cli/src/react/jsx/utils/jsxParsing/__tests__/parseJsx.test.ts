@@ -90,11 +90,11 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     // Set up file system mocks
     mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
       switch (path) {
-        case '/test/project/libs/utils1.ts':
+        case '/test/original/libs/utils1.ts':
           return utils1File;
-        case '/test/project/libs/utils2.ts':
+        case '/test/original/libs/utils2.ts':
           return utils2File;
-        case '/test/project/libs/utils3.ts':
+        case '/test/original/libs/utils3.ts':
           return utils3File;
         default:
           throw new Error(`File not found: ${path}`);
@@ -105,16 +105,16 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     mockResolveImportPath.mockImplementation(
       (_currentFile: string, importPath: string) => {
         if (importPath === './libs/utils1') {
-          return '/test/project/libs/utils1.ts';
+          return '/test/original/libs/utils1.ts';
         }
         if (importPath === './utils2') {
-          return '/test/project/libs/utils2.ts';
+          return '/test/original/libs/utils2.ts';
         }
         if (importPath === './utils3') {
-          return '/test/project/libs/utils3.ts';
+          return '/test/original/libs/utils3.ts';
         }
         if (importPath === './utils1') {
-          return '/test/project/libs/utils1.ts';
+          return '/test/original/libs/utils1.ts';
         }
         return null;
       }
@@ -171,7 +171,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             updates,
             errors,
             warnings,
-            file: '/test/project/page.tsx',
+            file: '/test/original/page.tsx',
             parsingOptions,
           });
         }
@@ -313,27 +313,27 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
     // Verify that utils1 and utils3 functions were resolved
     expect(mockFs.readFileSync).toHaveBeenCalledWith(
-      '/test/project/libs/utils1.ts',
+      '/test/original/libs/utils1.ts',
       'utf8'
     );
     expect(mockFs.readFileSync).toHaveBeenCalledWith(
-      '/test/project/libs/utils2.ts',
+      '/test/original/libs/utils2.ts',
       'utf8'
     );
     expect(mockFs.readFileSync).toHaveBeenCalledWith(
-      '/test/project/libs/utils3.ts',
+      '/test/original/libs/utils3.ts',
       'utf8'
     );
 
     // Check that import paths were resolved correctly
     expect(mockResolveImportPath).toHaveBeenCalledWith(
-      '/test/project/page.tsx',
+      '/test/original/page.tsx',
       './libs/utils1',
       parsingOptions,
       expect.any(Map)
     );
     expect(mockResolveImportPath).toHaveBeenCalledWith(
-      '/test/project/libs/utils1.ts',
+      '/test/original/libs/utils1.ts',
       './utils2',
       parsingOptions,
       expect.any(Map)
@@ -343,6 +343,457 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     const staticContents = hashedUpdates.map(
       (u) => (u.source[1] as { c: string }).c
     );
+    expect(staticContents).toContain('utils3-a');
+    expect(staticContents).toContain('utils3-b');
+    expect(staticContents).toContain('utils1-a');
+    expect(staticContents).toContain('utils1-b');
+  });
+
+  it('should detect direct self-recursion and throw error', () => {
+    // Mock the file contents with utils3 calling itself
+    const pageFile = `
+      import { T, Static } from "gt-next";
+      import { utils1 } from "./libs/utils1";
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Static>{utils1()}</Static></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      import { utils3 } from "./utils2";
+
+      export function utils1() {
+        if (Math.random() > 0.5) {
+          return utils3();
+        }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+    `;
+
+    const utils2File = `
+      export * from "./utils3";
+    `;
+
+    const utils3File = `
+      import { utils1 } from "./utils1";
+      export function utils3() {
+        if (Math.random() > 0.5) {
+          // return utils1();
+          return utils3();
+        }
+        return 1 ? "utils3-a" : "utils3-b";
+      }
+    `;
+
+    // Set up file system mocks (using unique paths for cache isolation)
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/selfrecursion/libs/utils1.ts':
+          return utils1File;
+        case '/test/selfrecursion/libs/utils2.ts':
+          return utils2File;
+        case '/test/selfrecursion/libs/utils3.ts':
+          return utils3File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    // Set up import path resolution mocks
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1') {
+          return '/test/selfrecursion/libs/utils1.ts';
+        }
+        if (importPath === './utils2') {
+          return '/test/selfrecursion/libs/utils2.ts';
+        }
+        if (importPath === './utils3') {
+          return '/test/selfrecursion/libs/utils3.ts';
+        }
+        if (importPath === './utils1') {
+          return '/test/selfrecursion/libs/utils1.ts';
+        }
+        return null;
+      }
+    );
+
+    // Parse the page file
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    // Find the T component import and local name
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Static'
+            ) {
+              importAliases[spec.local.name] = 'Static';
+            }
+          });
+        }
+      },
+    });
+
+    // Find the T component usage and test parsing
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+
+        if (tBinding) {
+          parseTranslationComponent({
+            ast,
+            pkg: 'gt-next',
+            originalName: 'T',
+            importAliases,
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            errors,
+            warnings,
+            file: '/test/selfrecursion/page.tsx',
+            parsingOptions,
+          });
+        }
+      },
+    });
+
+    // Should detect recursive call and add error
+    expect(errors.length).toBeGreaterThan(0);
+    expect(
+      errors.some((error) =>
+        error.includes('Recursive function call detected: utils3')
+      )
+    ).toBe(true);
+    expect(
+      errors.some((error) =>
+        error.includes(
+          'A static function cannot use recursive calls to construct its result'
+        )
+      )
+    ).toBe(true);
+  });
+
+  it('should detect cross-function recursion and throw error', () => {
+    // Mock the file contents with utils3 calling utils1 (creating a cycle)
+    const pageFile = `
+      import { T, Static } from "gt-next";
+      import { utils1 } from "./libs/utils1";
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Static>{utils1()}</Static></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      import { utils3 } from "./utils2";
+
+      export function utils1() {
+        if (Math.random() > 0.5) {
+          return utils3();
+        }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+    `;
+
+    const utils2File = `
+      export * from "./utils3";
+    `;
+
+    const utils3File = `
+      import { utils1 } from "./utils1";
+      export function utils3() {
+        if (Math.random() > 0.5) {
+          return utils1();
+          // return utils3();
+        }
+        return 1 ? "utils3-a" : "utils3-b";
+      }
+    `;
+
+    // Set up file system mocks (using unique paths for cache isolation)
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/recursion2/libs/utils1.ts':
+          return utils1File;
+        case '/test/recursion2/libs/utils2.ts':
+          return utils2File;
+        case '/test/recursion2/libs/utils3.ts':
+          return utils3File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    // Set up import path resolution mocks
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1') {
+          return '/test/recursion2/libs/utils1.ts';
+        }
+        if (importPath === './utils2') {
+          return '/test/recursion2/libs/utils2.ts';
+        }
+        if (importPath === './utils3') {
+          return '/test/recursion2/libs/utils3.ts';
+        }
+        if (importPath === './utils1') {
+          return '/test/recursion2/libs/utils1.ts';
+        }
+        return null;
+      }
+    );
+
+    // Parse the page file
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    // Find the T component import and local name
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Static'
+            ) {
+              importAliases[spec.local.name] = 'Static';
+            }
+          });
+        }
+      },
+    });
+
+    // Find the T component usage and test parsing
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+
+        if (tBinding) {
+          parseTranslationComponent({
+            ast,
+            pkg: 'gt-next',
+            originalName: 'T',
+            importAliases,
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            errors,
+            warnings,
+            file: '/test/recursion2/page.tsx',
+            parsingOptions,
+          });
+        }
+      },
+    });
+
+    // Should detect recursive call and add error
+    expect(errors.length).toBeGreaterThan(0);
+    expect(
+      errors.some((error) =>
+        error.includes('Recursive function call detected: utils1')
+      )
+    ).toBe(true);
+    expect(
+      errors.some((error) =>
+        error.includes(
+          'A static function cannot use recursive calls to construct its result'
+        )
+      )
+    ).toBe(true);
+  });
+
+  it('should handle circular imports without infinite loop', () => {
+    // Mock the file contents with circular imports but no function recursion
+    const pageFile = `
+      import { T, Static } from "gt-next";
+      import { utils1 } from "./libs/utils1";
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Static>{utils1()}</Static></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      import { utils3 } from "./utils2";
+
+      export function utils1() {
+        if (Math.random() > 0.5) {
+          return utils3();
+        }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+    `;
+
+    const utils2File = `
+      export * from "./utils1";
+      export * from "./utils3";
+    `;
+
+    const utils3File = `
+      import { utils1 } from "./utils1";
+      export function utils3() {
+        if (Math.random() > 0.5) {
+          // return utils1();
+          // return utils3();
+        }
+        return 1 ? "utils3-a" : "utils3-b";
+      }
+    `;
+
+    // Set up file system mocks (using unique paths for cache isolation)
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/circular/libs/utils1.ts':
+          return utils1File;
+        case '/test/circular/libs/utils2.ts':
+          return utils2File;
+        case '/test/circular/libs/utils3.ts':
+          return utils3File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    // Set up import path resolution mocks
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1') {
+          return '/test/circular/libs/utils1.ts';
+        }
+        if (importPath === './utils2') {
+          return '/test/circular/libs/utils2.ts';
+        }
+        if (importPath === './utils3') {
+          return '/test/circular/libs/utils3.ts';
+        }
+        if (importPath === './utils1') {
+          return '/test/circular/libs/utils1.ts';
+        }
+        return null;
+      }
+    );
+
+    // Parse the page file
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    // Find the T component import and local name
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Static'
+            ) {
+              importAliases[spec.local.name] = 'Static';
+            }
+          });
+        }
+      },
+    });
+
+    // Find the T component usage and test parsing
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+
+        if (tBinding) {
+          parseTranslationComponent({
+            ast,
+            pkg: 'gt-next',
+            originalName: 'T',
+            importAliases,
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            errors,
+            warnings,
+            file: '/test/circular/page.tsx',
+            parsingOptions,
+          });
+        }
+      },
+    });
+
+    // Should work without errors (circular imports are handled, no function recursion)
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(4); // Should still have 4 branches: utils3-a, utils3-b, utils1-a, utils1-b
+
+    // Verify that all updates have the correct structure (same as original test)
+    updates.forEach((update) => {
+      expect(update.dataFormat).toBe('JSX');
+      expect(Array.isArray(update.source)).toBe(true);
+      expect(update.source).toHaveLength(2);
+      expect(update.source[0]).toBe('test ');
+
+      const staticComponent = update.source[1] as any;
+      expect(staticComponent.t).toBe('Static');
+      expect(staticComponent.i).toBe(1);
+      expect(staticComponent.c).toMatch(/^(utils3-[ab]|utils1-[ab])$/);
+    });
+
+    // Verify specific content variations exist
+    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
     expect(staticContents).toContain('utils3-a');
     expect(staticContents).toContain('utils3-b');
     expect(staticContents).toContain('utils1-a');

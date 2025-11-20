@@ -867,7 +867,7 @@ function resolveStaticFunctionInvocationFromBinding({
     );
     if (filePath) {
       const functionName = callee.name;
-      return withRecusionGuard({
+      const result = withRecusionGuard({
         filename: filePath,
         functionName,
         cb: () =>
@@ -885,6 +885,9 @@ function resolveStaticFunctionInvocationFromBinding({
             pkg,
           }),
       });
+      if (result !== null) {
+        return result;
+      }
     }
   }
   warnings.add(
@@ -1092,6 +1095,12 @@ function processFunctionInFile({
   } catch {
     // Silently skip files that can't be parsed or accessed
     // Still mark as processed to avoid retrying failed parses
+    console.log(
+      'failed to parse file',
+      filePath.split('/').pop(),
+      'for function',
+      functionName + '()'
+    );
     processFunctionCache.set(cacheKey, null);
   }
   return result !== undefined ? result : null;
