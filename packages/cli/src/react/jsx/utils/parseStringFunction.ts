@@ -30,6 +30,7 @@ import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
+import { handleStaticExpression, StringTree } from './parseDeclareStatic.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -71,13 +72,28 @@ function processTranslationCall(
   file: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean
+  ignoreInvalidIcu: boolean,
+  parsingOptions: ParsingConfigOptions,
+  pkg: 'gt-react' | 'gt-next'
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
     tPath.parent.arguments.length > 0
   ) {
     const arg = tPath.parent.arguments[0];
+    if (t.isExpression(arg)) {
+      const testTree: StringTree = [];
+      const isOk = handleStaticExpression(
+        arg,
+        testTree,
+        tPath,
+        file,
+        parsingOptions,
+        pkg
+      );
+      console.log(testTree);
+      console.log(isOk);
+    }
     if (
       arg.type === 'StringLiteral' ||
       (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
@@ -188,7 +204,7 @@ function extractParameterName(param: t.Node): string | null {
  * @param visited Set to track already visited variables to prevent infinite loops
  * @returns Array of all variable names that reference the original translation callback
  */
-function resolveVariableAliases(
+export function resolveVariableAliases(
   scope: any,
   variableName: string,
   visited: Set<string> = new Set()
@@ -244,7 +260,8 @@ function handleFunctionCall(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  pkg: 'gt-react' | 'gt-next'
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -259,7 +276,9 @@ function handleFunctionCall(
       file,
       ignoreAdditionalData,
       ignoreDynamicContent,
-      ignoreInvalidIcu
+      ignoreInvalidIcu,
+      parsingOptions,
+      pkg
     );
   } else if (
     tPath.parent.type === 'CallExpression' &&
@@ -287,7 +306,8 @@ function handleFunctionCall(
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
-          parsingOptions
+          parsingOptions,
+          pkg
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -311,7 +331,8 @@ function handleFunctionCall(
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
-          parsingOptions
+          parsingOptions,
+          pkg
         );
       }
       // If not found locally, check if it's an imported function
@@ -335,7 +356,8 @@ function handleFunctionCall(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions
+            parsingOptions,
+            pkg
           );
         }
       }
@@ -360,7 +382,8 @@ function processFunctionIfMatches(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  pkg: 'gt-react' | 'gt-next'
 ): void {
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
@@ -377,7 +400,8 @@ function processFunctionIfMatches(
         ignoreAdditionalData,
         ignoreDynamicContent,
         ignoreInvalidIcu,
-        parsingOptions
+        parsingOptions,
+        pkg
       );
     }
   }
@@ -401,7 +425,8 @@ function findFunctionParameterUsage(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  pkg: 'gt-react' | 'gt-next'
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -433,7 +458,8 @@ function findFunctionParameterUsage(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions
+            parsingOptions,
+            pkg
           );
         });
       }
@@ -463,6 +489,7 @@ function processFunctionInFile(
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
   parsingOptions: ParsingConfigOptions,
+  pkg: 'gt-react' | 'gt-next',
   visited: Set<string> = new Set()
 ): void {
   // Check cache first to avoid redundant parsing
@@ -504,7 +531,8 @@ function processFunctionInFile(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions
+            parsingOptions,
+            pkg
           );
         }
       },
@@ -531,7 +559,8 @@ function processFunctionInFile(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions
+            parsingOptions,
+            pkg
           );
         }
       },
@@ -582,6 +611,7 @@ function processFunctionInFile(
             ignoreDynamicContent,
             ignoreInvalidIcu,
             parsingOptions,
+            pkg,
             visited
           );
         }
@@ -618,7 +648,8 @@ export function parseStrings(
   errors: string[],
   warnings: Set<string>,
   file: string,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  pkg: 'gt-react' | 'gt-next'
 ): void {
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
@@ -645,7 +676,9 @@ export function parseStrings(
           file,
           ignoreAdditionalData,
           ignoreDynamicContent,
-          ignoreInvalidIcu
+          ignoreInvalidIcu,
+          parsingOptions,
+          pkg
         );
       }
       continue;
@@ -728,7 +761,8 @@ export function parseStrings(
               ignoreAdditionalData,
               ignoreDynamicContent,
               ignoreInvalidIcu,
-              parsingOptions
+              parsingOptions,
+              pkg
             );
           }
         });

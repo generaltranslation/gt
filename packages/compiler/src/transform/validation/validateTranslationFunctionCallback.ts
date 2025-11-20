@@ -266,6 +266,17 @@ function validateDeclareStaticExpression(
   }
   const [onlyArg] = expr.arguments;
 
+  // Await expression: declareStatic(await ...)
+  if (t.isAwaitExpression(onlyArg)) {
+    // Validate that the awaited expression is a call expression
+    if (!t.isCallExpression(onlyArg.argument)) {
+      errors.push('DeclareStatic must have a call expression as the argument');
+      return { errors };
+    }
+    // Valid: declareStatic(await someFunction())
+    return { errors };
+  }
+
   // Validate that the argument is a call expression
   if (!t.isCallExpression(onlyArg)) {
     errors.push('DeclareStatic must have a call expression as the argument');

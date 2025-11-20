@@ -5,8 +5,10 @@ use swc_core::ecma::atoms::Atom;
 /**
  * Takes in a call expression and checks if:
  * - it has exactly one argument
- * - the argument is a call expression
- * Example: declareStatic(getName())
+ * - the argument is a call expression or an await expression wrapping a call expression
+ * Examples:
+ *   declareStatic(getName())
+ *   declareStatic(await getName())
  */
 pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
   // Check if the expression is a call expression
@@ -19,9 +21,22 @@ pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
       return;
     }
 
-    // Check if that argument is a call expression
+    // Check if that argument is a call expression or await expression wrapping a call
     if let Some(first_arg) = call_expr.args.first() {
-      if !matches!(first_arg.expr.as_ref(), Expr::Call(_)) {
+      let is_valid = match first_arg.expr.as_ref() {
+        // Direct call expression: declareStatic(getName())
+        Expr::Call(_) => true,
+
+        // Await expression: declareStatic(await getName())
+        Expr::Await(await_expr) => {
+          // Validate that the awaited expression is a call expression
+          matches!(await_expr.arg.as_ref(), Expr::Call(_))
+        }
+
+        _ => false,
+      };
+
+      if !is_valid {
         errors.push(
           "declareStatic first argument must be a call expression".to_string()
         );

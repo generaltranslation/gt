@@ -274,6 +274,125 @@ describe('validateTranslationFunctionCallback', () => {
 
         expect(result.errors.length).toBeGreaterThan(0);
       });
+
+      it('should accept declareStatic with await expression', () => {
+        const awaitExpr = t.awaitExpression(
+          t.callExpression(t.identifier('getName'), [])
+        );
+
+        const declareStaticCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
+          [awaitExpr]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          declareStaticCall,
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should return error when declareStatic has await expression with non-call argument', () => {
+        const awaitExpr = t.awaitExpression(t.stringLiteral('not a call'));
+
+        const declareStaticCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
+          [awaitExpr]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          declareStaticCall,
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors.length).toBeGreaterThan(0);
+        expect(
+          result.errors.some((e) =>
+            e.includes(
+              'DeclareStatic must have a call expression as the argument'
+            )
+          )
+        ).toBe(true);
+      });
+
+      it('should accept template literal with declareStatic containing await', () => {
+        const awaitExpr = t.awaitExpression(
+          t.callExpression(t.identifier('getName'), [])
+        );
+
+        const declareStaticCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
+          [awaitExpr]
+        );
+
+        const templateLiteral = t.templateLiteral(
+          [
+            t.templateElement({ raw: 'Hello ', cooked: 'Hello ' }),
+            t.templateElement({ raw: '!', cooked: '!' }),
+          ],
+          [declareStaticCall]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          templateLiteral,
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should accept string concatenation with declareStatic containing await', () => {
+        const awaitExpr = t.awaitExpression(
+          t.callExpression(t.identifier('getTime'), [])
+        );
+
+        const declareStaticCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
+          [awaitExpr]
+        );
+
+        const binaryExpr = t.binaryExpression(
+          '+',
+          t.stringLiteral('Current time: '),
+          declareStaticCall
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          binaryExpr,
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should return error when declareStatic with await has identifier argument', () => {
+        const awaitExpr = t.awaitExpression(t.identifier('someVar'));
+
+        const declareStaticCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
+          [awaitExpr]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          declareStaticCall,
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors.length).toBeGreaterThan(0);
+        expect(
+          result.errors.some((e) =>
+            e.includes(
+              'DeclareStatic must have a call expression as the argument'
+            )
+          )
+        ).toBe(true);
+      });
     });
 
     describe('second argument validation', () => {
