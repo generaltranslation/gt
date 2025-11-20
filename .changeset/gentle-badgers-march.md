@@ -1,5 +1,5 @@
 ---
-'gt-next': patch
+'gtx-cli': patch
 ---
 
-fix: require root param support for SSG
+fix: jsx parse with Static component
