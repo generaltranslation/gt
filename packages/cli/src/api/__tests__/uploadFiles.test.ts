@@ -4,11 +4,11 @@ import { logger } from '../../console/logger.js';
 import { Settings } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
 import { gt } from '../../utils/gt.js';
-import { exit } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
 
 // Mock dependencies
 vi.mock('../../console/logging.js', () => ({
-  exit: vi.fn(),
+  exitSync: vi.fn(),
 }));
 
 vi.mock('../../console/logger.js', () => ({
@@ -235,7 +235,7 @@ describe('uploadFiles', () => {
       )
     );
 
-    expect(exit).toHaveBeenCalledWith(1);
+    expect(exitSync).toHaveBeenCalledWith(1);
   });
 
   it('should handle network errors', async () => {
@@ -254,7 +254,7 @@ describe('uploadFiles', () => {
       )
     );
 
-    expect(exit).toHaveBeenCalledWith(1);
+    expect(exitSync).toHaveBeenCalledWith(1);
   });
 
   it('should handle different file formats', async () => {

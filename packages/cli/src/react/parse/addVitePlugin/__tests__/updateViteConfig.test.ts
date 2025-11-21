@@ -20,12 +20,13 @@ vi.mock('../../../utils/parse/needsCJS.js', () => ({
 }));
 
 // Mock spinner and logging
-vi.mock('../../../console/logging.js', () => ({
+vi.mock('../../../../console/logging.js', () => ({
   createSpinner: vi.fn(() => ({
     start: vi.fn(),
     stop: vi.fn(),
   })),
   logError: vi.fn(),
+  exitSync: vi.fn(),
 }));
 
 // Mock chalk to prevent any styling output
@@ -69,6 +70,7 @@ describe('updateViteConfig', () => {
   const mockReadFile = vi.mocked(fs.promises.readFile);
   const mockWriteFile = vi.mocked(fs.promises.writeFile);
   const mockNeedsCJS = vi.mocked(needsCJS);
+  const mockExitSync = vi.mocked(exitSync);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -650,22 +652,22 @@ describe('updateViteConfig', () => {
       const warnings: string[] = [];
       const filesUpdated: string[] = [];
 
-      // Should exit process on file read error
-      const exitSpy = vi
-        .spyOn(process, 'exit')
-        .mockImplementation((() => {}) as any);
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/nonexistent.ts',
+      // Mock exitSync to throw an error to stop execution
+      mockExitSync.mockImplementation(() => {
+        throw new Error('Process exited');
       });
 
-      expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(mockWriteFile).not.toHaveBeenCalled();
+      await expect(
+        updateViteConfig({
+          errors,
+          warnings,
+          filesUpdated,
+          viteConfigPath: '/path/to/nonexistent.ts',
+        })
+      ).rejects.toThrow('Process exited');
 
-      exitSpy.mockRestore();
+      expect(mockExitSync).toHaveBeenCalledWith(1);
+      expect(mockWriteFile).not.toHaveBeenCalled();
     });
 
     it('should handle file write errors gracefully', async () => {
@@ -681,27 +683,28 @@ describe('updateViteConfig', () => {
       const warnings: string[] = [];
       const filesUpdated: string[] = [];
 
-      const exitSpy = vi
-        .spyOn(process, 'exit')
-        .mockImplementation((() => {}) as any);
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
+      // Mock exitSync to throw an error to stop execution
+      mockExitSync.mockImplementation(() => {
+        throw new Error('Process exited');
       });
 
-      expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(filesUpdated).toHaveLength(0);
+      await expect(
+        updateViteConfig({
+          errors,
+          warnings,
+          filesUpdated,
+          viteConfigPath: '/path/to/vite.config.ts',
+        })
+      ).rejects.toThrow('Process exited');
 
-      exitSpy.mockRestore();
+      expect(mockExitSync).toHaveBeenCalledWith(1);
+      expect(filesUpdated).toHaveLength(0);
     });
 
     it('should handle AST parsing errors gracefully', async () => {
       const invalidCode = `
         import { defineConfig } from 'vite';
-        export default defineConfig({ 
+        export default defineConfig({
           plugins: [
             // Invalid syntax
             }]
@@ -714,19 +717,22 @@ describe('updateViteConfig', () => {
       const warnings: string[] = [];
       const filesUpdated: string[] = [];
 
-      const exitSpy = vi.mocked(exitSync).mockImplementation((() => {}) as any);
-
-      await updateViteConfig({
-        errors,
-        warnings,
-        filesUpdated,
-        viteConfigPath: '/path/to/vite.config.ts',
+      // Mock exitSync to throw an error to stop execution
+      mockExitSync.mockImplementation(() => {
+        throw new Error('Process exited');
       });
 
-      expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(mockWriteFile).not.toHaveBeenCalled();
+      await expect(
+        updateViteConfig({
+          errors,
+          warnings,
+          filesUpdated,
+          viteConfigPath: '/path/to/vite.config.ts',
+        })
+      ).rejects.toThrow('Process exited');
 
-      exitSpy.mockRestore();
+      expect(mockExitSync).toHaveBeenCalledWith(1);
+      expect(mockWriteFile).not.toHaveBeenCalled();
     });
   });
 
