@@ -12,6 +12,7 @@ export type SetupProjectResult =
   | { status: 'completed' };
 
 export type SetupProjectOptions = {
+  force?: boolean;
   locales?: string[];
   timeoutMs?: number;
 };
@@ -37,11 +38,9 @@ export default async function _setupProject(
       branchId: f.branchId,
       fileId: f.fileId,
       versionId: f.versionId,
-      fileName: f.fileName,
-      fileFormat: f.fileFormat,
-      dataFormat: f.dataFormat,
     })),
     locales: options?.locales,
+    force: options?.force,
   };
 
   let response;

@@ -82,6 +82,14 @@ class MockProgress implements ProgressResult {
   }
 }
 
+/**
+ * GT_LOG_FORMAT: default | json.
+ * - If default, logs will be pretty-printed using @clack/prompts.
+ * - If json, logs will be written in JSON format to the console.
+ * GT_LOG_FILE: If specified, logs will be written to the file.
+ * GT_LOG_LEVEL: The level of logs to write. If not specified, defaults to 'info'.
+ * - Valid levels: debug, info, warn, error.
+ */
 class Logger {
   private static instance: Logger;
   private pinoLogger: PinoLogger | null = null;
@@ -93,14 +101,22 @@ class Logger {
     const format = (
       process.env.GT_LOG_FORMAT || 'default'
     ).toLowerCase() as LogFormat;
+    const logFile = process.env.GT_LOG_FILE;
+    const logLevel = process.env.GT_LOG_LEVEL || 'info';
 
     if (format !== 'default' && format !== 'json') {
       console.error('Invalid log format');
       process.exit(1);
     }
-
-    const logFile = process.env.GT_LOG_FILE;
-    const logLevel = process.env.GT_LOG_LEVEL || 'info';
+    if (
+      logLevel !== 'debug' &&
+      logLevel !== 'info' &&
+      logLevel !== 'warn' &&
+      logLevel !== 'error'
+    ) {
+      console.error('Invalid log level');
+      process.exit(1);
+    }
 
     this.logFormat = format;
 

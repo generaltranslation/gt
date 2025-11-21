@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
-import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
+import findFilepath from '../fs/findFilepath.js';
 import {
   displayHeader,
   promptText,
@@ -35,6 +35,7 @@ import { areCredentialsSet } from '../utils/credentials.js';
 import { upload } from '../formats/files/upload.js';
 import { attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
+import { handleSetupProject } from './commands/setupProject.js';
 import {
   handleDownload,
   handleTranslate,
@@ -72,13 +73,14 @@ export class BaseCLI {
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
     this.setupConfigureCommand();
-    this.setupSetupCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
   }
   // Init is never called in a child class
   public init() {
+    this.setupSetupProjectCommand();
+    this.setupStageCommand();
     this.setupTranslateCommand();
   }
   // Execute is called by the main program
@@ -87,6 +89,20 @@ export class BaseCLI {
     if (process.argv.length <= 2) {
       process.argv.push('init');
     }
+  }
+
+  protected setupSetupProjectCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('setup')
+        .description(
+          'Upload source files and setup the project for translation'
+        )
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader('Uploading source files and setting up project...');
+      await this.handleSetupProject(initOptions);
+      logger.endCommand('Done!');
+    });
   }
 
   protected setupStageCommand(): void {
@@ -131,6 +147,16 @@ export class BaseCLI {
       });
   }
 
+  protected async handleSetupProject(
+    initOptions: TranslateFlags
+  ): Promise<void> {
+    const settings = await generateSettings(initOptions);
+
+    // Preprocess shared static assets if configured (move + rewrite sources)
+    await processSharedStaticAssets(settings);
+
+    await handleSetupProject(initOptions, settings, this.library);
+  }
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
     const settings = await generateSettings(initOptions);
 
@@ -332,30 +358,6 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       });
   }
 
-  protected setupSetupCommand(): void {
-    this.program
-      .command('setup')
-      .description(
-        'Run the setup to configure your Next.js or React project for General Translation'
-      )
-      .option(
-        '--src <paths...>',
-        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
-      )
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .action(async (options: SetupOptions) => {
-        displayHeader('Running React setup wizard...');
-        await this.handleSetupReactCommand(options);
-        logger.endCommand(
-          "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
-        );
-      });
-  }
-
   protected async handleUploadCommand(
     settings: Settings & UploadOptions
   ): Promise<void> {
@@ -421,7 +423,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
               ? 'https://generaltranslation.com/en/docs/next/guides/local-tx'
               : 'https://generaltranslation.com/en/docs/react/guides/local-tx'
           } for more information.\nIf you answer no, we'll configure the CLI tool to download completed translations.`,
-          defaultValue: true,
+          defaultValue: false,
         })
       : false;
     // Ask where the translations are stored
@@ -439,7 +441,11 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
-      await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
+      await createLoadTranslationsFile(
+        process.cwd(),
+        finalTranslationsDir,
+        locales
+      );
       logger.message(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.

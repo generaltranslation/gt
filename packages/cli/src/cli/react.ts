@@ -39,6 +39,7 @@ export class ReactCLI extends BaseCLI {
     super(command, library, additionalModules);
   }
   public init() {
+    this.setupSetupProjectCommand();
     this.setupStageCommand();
     this.setupTranslateCommand();
     this.setupGenerateSourceCommand();
@@ -55,6 +56,22 @@ export class ReactCLI extends BaseCLI {
     warnings: string[]
   ): Promise<{ filesUpdated: string[] }> {
     return wrapContentReact(options, pkg, framework, errors, warnings);
+  }
+
+  protected setupSetupProjectCommand(): void {
+    attachAdditionalReactTranslateFlags(
+      attachTranslateFlags(
+        this.program
+          .command('setup')
+          .description(
+            'Upload source files and setup the project for translation'
+          )
+      )
+    ).action(async (options: TranslateFlags) => {
+      displayHeader('Uploading source files and setting up project...');
+      await this.handleSetupProject(options);
+      logger.endCommand('Done!');
+    });
   }
 
   protected setupStageCommand(): void {
