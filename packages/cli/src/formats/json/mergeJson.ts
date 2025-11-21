@@ -5,6 +5,7 @@ import {
   findMatchingItemArray,
   findMatchingItemObject,
   generateSourceObjectPointers,
+  getIdentifyingLocaleProperty,
   getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
@@ -20,7 +21,8 @@ export function mergeJson(
     translatedContent: string;
     targetLocale: string;
   }[],
-  defaultLocale: string
+  defaultLocale: string,
+  localeOrder: string[] = []
 ): string[] {
   const jsonSchema = validateJsonSchema(options, inputPath);
   if (!jsonSchema) {
@@ -232,7 +234,13 @@ export function mergeJson(
       JSONPointer.set(
         mergedJson,
         sourceObjectPointer,
-        filteredSourceObjectValue
+        sortByLocaleOrder(
+          filteredSourceObjectValue,
+          sourceObjectOptions,
+          localeOrder,
+          sourceObjectPointer,
+          defaultLocale
+        )
       );
     } else {
       // Validate type
@@ -335,6 +343,73 @@ export function mergeJson(
     }
   }
   return [JSON.stringify(mergedJson, null, 2)];
+}
+
+function sortByLocaleOrder(
+  items: any[],
+  sourceObjectOptions: SourceObjectOptions,
+  localeOrder: string[],
+  sourceObjectPointer: string,
+  defaultLocale: string
+): any[] {
+  if (
+    sourceObjectOptions.experimentalSort !== 'locales' ||
+    !localeOrder.length ||
+    !sourceObjectOptions.key
+  ) {
+    return items;
+  }
+
+  const orderedLocaleList = [
+    defaultLocale,
+    ...localeOrder.filter((locale) => locale !== defaultLocale),
+  ];
+  const localeOrderValues = orderedLocaleList.map((locale) =>
+    getIdentifyingLocaleProperty(
+      locale,
+      sourceObjectPointer,
+      sourceObjectOptions
+    )
+  );
+
+  const itemsWithLocale = items.map((item) => {
+    let localeValue: string | undefined;
+    try {
+      const values = JSONPath({
+        json: item,
+        path: sourceObjectOptions.key as string,
+        resultType: 'value',
+        flatten: true,
+        wrap: true,
+      });
+      const value = values?.[0];
+      if (typeof value === 'string') {
+        localeValue = value;
+      }
+    } catch {
+      /* empty */
+    }
+    return { item, localeValue };
+  });
+
+  const orderedItems: any[] = [];
+  const remainingItems = [...itemsWithLocale];
+
+  for (const localeValue of localeOrderValues) {
+    for (let i = 0; i < remainingItems.length; ) {
+      const entry = remainingItems[i];
+      if (entry.localeValue === localeValue) {
+        orderedItems.push(entry.item);
+        remainingItems.splice(i, 1);
+        continue;
+      }
+      i += 1;
+    }
+  }
+
+  remainingItems.forEach((entry) => orderedItems.push(entry.item));
+
+  return orderedItems;
 }
 
 /**
