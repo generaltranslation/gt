@@ -124,7 +124,7 @@ export async function downloadFileBatch(
           if (jsonSchema) {
             const originalContent = fs.readFileSync(inputPath, 'utf8');
             if (originalContent) {
-              data = await mergeJson(
+              data = mergeJson(
                 originalContent,
                 inputPath,
                 options.options,
