@@ -6,8 +6,10 @@ import { exitSync } from '../../../console/logging.js';
 import { logger } from '../../../console/logger.js';
 import YAML from 'yaml';
 
+vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
-const mockLogError = vi.mocked(logger.error);
+
+const mockLogError = vi.spyOn(logger, 'error');
 const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });

@@ -5,8 +5,10 @@ import path from 'path';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
 
+vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
-const mockLogError = vi.mocked(logger.error);
+
+const mockLogError = vi.spyOn(logger, 'error');
 const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });
