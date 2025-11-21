@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.7
+
+### Patch Changes
+
+- [#819](https://github.com/generaltranslation/gt/pull/819) [`50338d2`](https://github.com/generaltranslation/gt/commit/50338d2192e2882a4192273a7bbf12d39939c209) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding sorting by locale order
+
 ## 2.5.6
 
 ### Patch Changes
