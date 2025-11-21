@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.8
+
+### Patch Changes
+
+- [#821](https://github.com/generaltranslation/gt/pull/821) [`321854a`](https://github.com/generaltranslation/gt/commit/321854ad881ca07b6a0207b3b0cbc004c6c0f5a4) Thanks [@brian-lou](https://github.com/brian-lou)! - Refactor CLI Logging behavior
+
 ## 2.5.7
 
 ### Patch Changes
