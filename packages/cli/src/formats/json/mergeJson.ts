@@ -353,7 +353,7 @@ function sortByLocaleOrder(
   defaultLocale: string
 ): any[] {
   if (
-    sourceObjectOptions.experimentalSort !== 'locale' ||
+    sourceObjectOptions.experimentalSort !== 'locales' ||
     !localeOrder.length ||
     !sourceObjectOptions.key
   ) {

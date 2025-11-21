@@ -378,7 +378,7 @@
                       },
                       "experimentalSort": {
                         "type": "string",
-                        "enum": ["locale"],
+                        "enum": ["locales"],
                         "description": "Optional sorting behavior for array type. When set to 'locale', items are ordered to match your locales array."
                       },
                       "localeProperty": {
