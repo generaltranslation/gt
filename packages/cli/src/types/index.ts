@@ -268,6 +268,10 @@ export type SourceObjectOptions = {
   // optional config for transforming specific fields in the sourceItem
   // for example, helpful for handling urls with locale-specific paths
   transform?: TransformOptions;
+
+  // optional sorting behavior for array sourceObjects. When set to 'locale',
+  // the array will be ordered to match the locales array provided to mergeJson
+  experimentalSort?: 'locales';
 };
 
 export type TransformOptions = {
