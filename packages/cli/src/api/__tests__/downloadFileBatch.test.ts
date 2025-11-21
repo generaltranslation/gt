@@ -28,6 +28,9 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('path', () => ({
+  default: {
+    dirname: vi.fn(),
+  },
   dirname: vi.fn(),
 }));
 
