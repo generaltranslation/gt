@@ -12,6 +12,7 @@ import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 import type { ParsingConfigOptions } from '../types/parsing.js';
+import { exitSync } from '../console/logging.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -53,7 +54,7 @@ export async function createUpdates(
           logger.error(
             `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
           );
-          process.exit(1);
+          exitSync(1);
         }
         esbuildConfig = createESBuildConfig(jsconfig);
       } else {

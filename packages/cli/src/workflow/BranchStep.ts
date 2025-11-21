@@ -91,7 +91,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       }
     } else {
       if (!current) {
-        return await logErrorAndExit(
+        return logErrorAndExit(
           'Failed to determine the current branch. Please specify a custom branch or enable automatic branch detection.'
         );
       }

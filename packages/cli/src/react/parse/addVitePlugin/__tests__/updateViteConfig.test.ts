@@ -63,6 +63,7 @@ vi.mock('@clack/prompts', () => ({
 // Import mocked functions
 // @ts-expect-error - we want to mock this function
 import { needsCJS } from '../../../utils/parse/needsCJS.js';
+import { exitSync } from '../../../../console/logging.js';
 
 describe('updateViteConfig', () => {
   const mockReadFile = vi.mocked(fs.promises.readFile);
@@ -713,9 +714,7 @@ describe('updateViteConfig', () => {
       const warnings: string[] = [];
       const filesUpdated: string[] = [];
 
-      const exitSpy = vi
-        .spyOn(process, 'exit')
-        .mockImplementation((() => {}) as any);
+      const exitSpy = vi.mocked(exitSync).mockImplementation((() => {}) as any);
 
       await updateViteConfig({
         errors,

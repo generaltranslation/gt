@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
-import { exit } from '../console/logging.js';
+import { exitSync } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { DataFormat, FileFormat } from '../types/data.js';
 import { gt } from '../utils/gt.js';
@@ -71,6 +71,6 @@ export async function uploadFiles(
     spinner.stop(
       chalk.red('An unexpected error occurred while uploading files')
     );
-    return await exit(1);
+    return exitSync(1);
   }
 }

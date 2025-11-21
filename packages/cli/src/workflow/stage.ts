@@ -72,7 +72,7 @@ export async function stageFiles(
     await branchStep.wait();
 
     if (!branchData) {
-      return await logErrorAndExit('Failed to resolve git branch information.');
+      return logErrorAndExit('Failed to resolve git branch information.');
     }
 
     // then run the upload step
@@ -95,8 +95,6 @@ export async function stageFiles(
 
     return { branchData, enqueueResult };
   } catch (error) {
-    return await logErrorAndExit(
-      'Failed to send files for translation. ' + error
-    );
+    return logErrorAndExit('Failed to send files for translation. ' + error);
   }
 }

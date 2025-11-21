@@ -43,19 +43,19 @@ export async function handleStage(
   // Validate required settings are present if not in dry run
   if (!options.dryRun) {
     if (!settings.locales) {
-      return await logErrorAndExit(noLocalesError);
+      return logErrorAndExit(noLocalesError);
     }
     if (!settings.defaultLocale) {
-      return await logErrorAndExit(noDefaultLocaleError);
+      return logErrorAndExit(noDefaultLocaleError);
     }
     if (!settings.apiKey) {
-      return await logErrorAndExit(noApiKeyError);
+      return logErrorAndExit(noApiKeyError);
     }
     if (settings.apiKey.startsWith('gtx-dev-')) {
-      return await logErrorAndExit(devApiKeyError);
+      return logErrorAndExit(devApiKeyError);
     }
     if (!settings.projectId) {
-      return await logErrorAndExit(noProjectIdError);
+      return logErrorAndExit(noProjectIdError);
     }
   }
 

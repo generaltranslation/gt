@@ -287,26 +287,9 @@ class Logger {
   }
 
   // Flush logs to ensure they're written before process exit
-  async flush(): Promise<void> {
-    const flushPromises: Promise<void>[] = [];
-
-    if (this.pinoLogger) {
-      flushPromises.push(
-        new Promise((resolve) => {
-          this.pinoLogger?.flush(() => resolve());
-        })
-      );
-    }
-
-    if (this.fileLogger) {
-      flushPromises.push(
-        new Promise((resolve) => {
-          this.fileLogger?.flush(() => resolve());
-        })
-      );
-    }
-
-    await Promise.all(flushPromises);
+  flush(): void {
+    this.pinoLogger?.flush();
+    this.fileLogger?.flush();
   }
 }
 

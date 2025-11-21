@@ -10,15 +10,9 @@ import chalk from 'chalk';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 
-export async function logErrorAndExit(message: string): Promise<never> {
+export function logErrorAndExit(message: string): never {
   logger.error(message);
-  return await exit(1);
-}
-
-export async function exit(code: number): Promise<never> {
-  // Flush logs before exit
-  await logger.flush();
-  process.exit(code);
+  return exitSync(1);
 }
 
 export function exitSync(code: number): never {
@@ -110,7 +104,7 @@ export async function promptText({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    return await exit(0);
+    return exitSync(0);
   }
 
   return result;
@@ -140,7 +134,7 @@ export async function promptSelect<T>({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    return await exit(0);
+    return exitSync(0);
   }
 
   return result as T;
@@ -170,7 +164,7 @@ export async function promptMultiSelect<T extends string>({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    return await exit(0);
+    return exitSync(0);
   }
 
   return result as Array<T>;
@@ -192,7 +186,7 @@ export async function promptConfirm({
 
   if (isCancel(result)) {
     cancel(cancelMessage);
-    return await exit(0);
+    return exitSync(0);
   }
 
   return result;

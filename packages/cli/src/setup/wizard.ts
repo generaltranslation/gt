@@ -14,6 +14,7 @@ import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
+import { exitSync } from '../console/logging.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -34,7 +35,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
     logger.info(
       'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup'
     );
-    process.exit(0);
+    exitSync(0);
   }
 
   const frameworkType = await promptSelect<SupportedFrameworks | 'other'>({
@@ -55,7 +56,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       `Sorry, other React frameworks are not currently supported. 
 Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
     );
-    process.exit(0);
+    exitSync(0);
   }
 
   // ----- Create a starter gt.config.json file -----
@@ -70,7 +71,7 @@ Please let us know what you would like to see supported at https://github.com/ge
         'No package.json found in the current directory. Please run this command from the root of your project.'
       )
     );
-    process.exit(1);
+    exitSync(1);
   }
   // Check if gt-next or gt-react is installed
   if (
@@ -113,7 +114,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     ]);
     if (!nextConfigPath) {
       logger.error('No next.config.[js|ts|mjs|mts] file found.');
-      process.exit(1);
+      exitSync(1);
     }
 
     const mergeOptions = {

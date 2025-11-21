@@ -11,6 +11,7 @@ import { logger } from '../../console/logger.js';
 import { randomUUID } from 'node:crypto';
 import { isValidIcu } from '../jsx/evaluateJsx.js';
 import { warnInvalidIcuSync } from '../../console/index.js';
+import { exitSync } from '../../console/logging.js';
 
 export async function createDictionaryUpdates(
   dictionaryPath: string,
@@ -45,7 +46,7 @@ export async function createDictionaryUpdates(
       dictionaryModule = await import(tempFilePath);
     } catch (error) {
       logger.error(`Failed to load the bundled dictionary code: ${error}`);
-      process.exit(1);
+      exitSync(1);
     } finally {
       // Clean up the temporary file
       await fs.promises.unlink(tempFilePath);

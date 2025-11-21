@@ -8,6 +8,7 @@ import { addCompilerImport } from './utils/addCompilerImport.js';
 import { checkCompilerImport } from './utils/checkCompilerImport.js';
 import { checkPluginInvocation } from './utils/checkPluginInvocation.js';
 import { addPluginInvocation } from './utils/addPluginInvocation.js';
+import { exitSync } from '../../../console/logging.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -42,8 +43,7 @@ export async function updateViteConfig({
     code = await fs.promises.readFile(viteConfigPath, 'utf8');
   } catch (error) {
     logger.error(`Error: Failed to read ${viteConfigPath}: ${error}`);
-    process.exit(1);
-    return;
+    exitSync(1);
   }
 
   // Update the ast
@@ -59,8 +59,7 @@ export async function updateViteConfig({
     }));
   } catch (error) {
     logger.error(`Error: Failed to update ${viteConfigPath}: ${error}`);
-    process.exit(1);
-    return;
+    exitSync(1);
   }
 
   // Write the file
@@ -69,8 +68,7 @@ export async function updateViteConfig({
     filesUpdated.push(viteConfigPath);
   } catch (error) {
     logger.error(`Error: Failed to write ${viteConfigPath}: ${error}`);
-    process.exit(1);
-    return;
+    exitSync(1);
   }
 
   // Animation

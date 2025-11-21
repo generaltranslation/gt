@@ -1,5 +1,6 @@
 import {
   displayProjectId,
+  exitSync,
   logErrorAndExit,
   warnApiKeyInConfig,
 } from '../console/logging.js';
@@ -59,7 +60,7 @@ export async function generateSettings(
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
     warnApiKeyInConfig(flags.config);
-    process.exit(1);
+    exitSync(1);
   }
   const projectIdEnv = resolveProjectId();
   // Resolve mismatched projectIds

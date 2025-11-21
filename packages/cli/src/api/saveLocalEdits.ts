@@ -25,7 +25,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const branchResult = await branchStep.run();
   await branchStep.wait();
   if (!branchResult) {
-    return await logErrorAndExit('Failed to resolve git branch information.');
+    return logErrorAndExit('Failed to resolve git branch information.');
   }
 
   const uploads = files.map((file) => ({

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
+import { exitSync } from '../console/logging.js';
 
 /**
  * Resolve the file path from the given file path or default paths.
@@ -33,7 +34,7 @@ export function findFilepaths(
   }
   if (errorMessage) {
     logger.error(errorMessage);
-    process.exit(1);
+    exitSync(1);
   }
   return resolvedPaths;
 }

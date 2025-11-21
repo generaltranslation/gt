@@ -6,7 +6,6 @@ import {
   downloadTranslations,
 } from '../../workflow/download.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import { logger } from '../../console/logger.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
@@ -15,6 +14,7 @@ import processAnchorIds from '../../utils/processAnchorIds.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
+import { logErrorAndExit } from '../../console/logging.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -55,12 +55,10 @@ export async function handleDownload(
   settings: Settings
 ) {
   if (!settings._versionId) {
-    logger.error(noVersionIdError);
-    process.exit(1);
+    logErrorAndExit(noVersionIdError);
   }
   if (!settings.files) {
-    logger.error(noFilesError);
-    process.exit(1);
+    logErrorAndExit(noFilesError);
   }
   // Files
   const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;

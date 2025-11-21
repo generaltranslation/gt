@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fromPackageRoot } from '../fs/getPackageResource.js';
+import { exitSync } from '../console/logging.js';
 
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(
@@ -62,7 +63,7 @@ export async function updatePackageJson(
     );
   } catch (error) {
     logger.error(chalk.red('Error updating package.json: ' + String(error)));
-    process.exit(1);
+    exitSync(1);
   }
 }
 

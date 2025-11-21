@@ -7,7 +7,7 @@ import {
   SupportedLibraries,
   TranslateFlags,
 } from '../types/index.js';
-import { displayHeader, promptConfirm } from '../console/logging.js';
+import { displayHeader, exitSync, promptConfirm } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import findFilepath from '../fs/findFilepath.js';
@@ -172,7 +172,7 @@ export class ReactCLI extends BaseCLI {
       );
       if (!translationFiles.gt) {
         logger.error(noFilesError);
-        process.exit(1);
+        exitSync(1);
       }
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
@@ -212,7 +212,7 @@ export class ReactCLI extends BaseCLI {
 
     if (!answer) {
       logger.error('Operation cancelled.');
-      process.exit(0);
+      exitSync(0);
     }
 
     // ----- Create a starter gt.config.json file -----

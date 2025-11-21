@@ -2,6 +2,7 @@ import findFilepath from '../../../fs/findFilepath.js';
 import { logger } from '../../../console/logger.js';
 import { installCompiler } from './installCompiler.js';
 import { updateViteConfig } from './updateViteConfig.js';
+import { exitSync } from '../../../console/logging.js';
 
 const VITE_CONFIG_PATH_BASE = './vite.config.';
 /**
@@ -42,7 +43,7 @@ export async function addVitePlugin({
       });
       `
     );
-    process.exit(1);
+    exitSync(1);
   }
 
   // Install @generaltranslation/compiler if not installed

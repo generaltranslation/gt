@@ -122,16 +122,16 @@ export async function upload(
   }
 
   if (!options.defaultLocale) {
-    return await logErrorAndExit(noDefaultLocaleError);
+    return logErrorAndExit(noDefaultLocaleError);
   }
   if (!options.apiKey) {
-    return await logErrorAndExit(noApiKeyError);
+    return logErrorAndExit(noApiKeyError);
   }
   if (options.apiKey.startsWith('gtx-dev-')) {
-    return await logErrorAndExit(devApiKeyError);
+    return logErrorAndExit(devApiKeyError);
   }
   if (!options.projectId) {
-    return await logErrorAndExit(noProjectIdError);
+    return logErrorAndExit(noProjectIdError);
   }
 
   const locales = options.locales || [];
