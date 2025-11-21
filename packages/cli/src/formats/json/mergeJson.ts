@@ -365,7 +365,11 @@ function sortByLocaleOrder(
     ...localeOrder.filter((locale) => locale !== defaultLocale),
   ];
   const localeOrderValues = orderedLocaleList.map((locale) =>
-    getIdentifyingLocaleProperty(locale, sourceObjectPointer, sourceObjectOptions)
+    getIdentifyingLocaleProperty(
+      locale,
+      sourceObjectPointer,
+      sourceObjectOptions
+    )
   );
 
   const itemsWithLocale = items.map((item) => {
