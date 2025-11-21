@@ -271,7 +271,7 @@ export type SourceObjectOptions = {
 
   // optional sorting behavior for array sourceObjects. When set to 'locale',
   // the array will be ordered to match the locales array provided to mergeJson
-  sort?: 'locale';
+  experimentalSort?: 'locale';
 };
 
 export type TransformOptions = {

@@ -376,7 +376,7 @@
                         "type": "string",
                         "description": "Relative JSONPath to the key to distinguish between source and target locales (required for array type)"
                       },
-                      "sort": {
+                      "experimentalSort": {
                         "type": "string",
                         "enum": ["locale"],
                         "description": "Optional sorting behavior for array type. When set to 'locale', items are ordered to match your locales array."
