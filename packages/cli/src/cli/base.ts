@@ -129,6 +129,7 @@ export class BaseCLI {
         'Save local edits for all configured files by sending diffs (no translation enqueued)'
       )
       .action(async () => {
+        displayHeader('Saving local edits...');
         const config = findFilepath(['gt.config.json']);
         const settings = await generateSettings({ config });
         await saveLocalEdits(settings);
