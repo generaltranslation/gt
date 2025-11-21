@@ -19,7 +19,10 @@ export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
     super();
   }
 
-  async run(files: FileReference[]): Promise<FileReference[]> {
+  async run(
+    files: FileReference[],
+    force: boolean = false
+  ): Promise<FileReference[]> {
     this.files = files;
     this.spinner.start('Setting up project...');
 
@@ -30,6 +33,7 @@ export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
 
     const result = await this.gt.setupProject(files, {
       locales: this.settings.locales,
+      force,
     });
 
     if (result.status === 'completed') {

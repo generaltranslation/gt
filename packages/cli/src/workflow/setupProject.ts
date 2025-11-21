@@ -55,7 +55,7 @@ export async function setupProject(
     await uploadStep.wait();
 
     // then run the setup step
-    await setupStep.run(uploadedFiles);
+    await setupStep.run(uploadedFiles, options.force ?? false);
     await setupStep.wait();
 
     return { branchData };
