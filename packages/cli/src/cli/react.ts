@@ -267,7 +267,7 @@ export class ReactCLI extends BaseCLI {
     initOptions: Options,
     files?: string[]
   ): Promise<void> {
-    await validateConfigExists();
+    validateConfigExists();
     const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method

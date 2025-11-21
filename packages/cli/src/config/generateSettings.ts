@@ -258,7 +258,7 @@ export async function generateSettings(
 
   mergedOptions.configDirectory = path.join(cwd, '.gt');
 
-  await validateSettings(mergedOptions);
+  validateSettings(mergedOptions);
 
   // Set up GT instance
   gt.setConfig({
