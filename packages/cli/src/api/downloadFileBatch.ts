@@ -134,7 +134,8 @@ export async function downloadFileBatch(
                     targetLocale: locale,
                   },
                 ],
-                options.defaultLocale
+                options.defaultLocale,
+                options.locales
               )[0];
             }
           }

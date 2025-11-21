@@ -20,6 +20,7 @@ export function generatePreset(
                 '$..anchor',
                 '$..dropdown',
               ],
+              sort: 'locale',
               transform: {
                 '$..pages[*]': {
                   match: '^{locale}/(.*)$',
@@ -31,6 +32,7 @@ export function generatePreset(
               type: 'array',
               key: '$.language',
               include: [],
+              sort: 'locale',
               transform: {
                 '$.source': {
                   match: '^/{locale}/(.*)$',
