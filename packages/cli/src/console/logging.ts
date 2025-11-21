@@ -9,6 +9,8 @@ import {
 import chalk from 'chalk';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
+import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
+import { FileToUpload } from 'generaltranslation/types';
 
 export function logErrorAndExit(message: string): never {
   logger.error(message);
@@ -259,5 +261,26 @@ export function warnTernary(file: string) {
   logger.warn(
     `Found ternary expression in ${chalk.cyan(file)}. ` +
       chalk.white('A Branch component may be more appropriate here.')
+  );
+}
+
+/**
+ * Helper: Log all collected files
+ */
+export function logCollectedFiles(
+  files: FileToUpload[],
+  reactComponents?: number
+): void {
+  logger.message(
+    chalk.cyan('Files found in project:') +
+      '\n' +
+      files
+        .map((file) => {
+          if (file.fileName === TEMPLATE_FILE_NAME) {
+            return `- <React Elements>${reactComponents ? ` (${reactComponents})` : ''}`;
+          }
+          return `- ${file.fileName}`;
+        })
+        .join('\n')
   );
 }

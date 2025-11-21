@@ -44,6 +44,7 @@ export type TranslateFlags = {
   dryRun: boolean;
   saveLocal?: boolean;
   stageTranslations?: boolean;
+  setupProject?: boolean; // if true, skip enqueue step
   publish?: boolean;
   force?: boolean;
   forceDownload?: boolean;

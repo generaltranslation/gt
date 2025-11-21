@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
-import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
+import findFilepath from '../fs/findFilepath.js';
 import {
   displayHeader,
   promptText,
@@ -35,6 +35,7 @@ import { areCredentialsSet } from '../utils/credentials.js';
 import { upload } from '../formats/files/upload.js';
 import { attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
+import { handleSetupProject } from './commands/setupProject.js';
 import {
   handleDownload,
   handleTranslate,
@@ -72,7 +73,6 @@ export class BaseCLI {
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
     this.setupConfigureCommand();
-    this.setupSetupCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
@@ -131,6 +131,14 @@ export class BaseCLI {
       });
   }
 
+  protected async handleSetup(initOptions: TranslateFlags): Promise<void> {
+    const settings = await generateSettings(initOptions);
+
+    // Preprocess shared static assets if configured (move + rewrite sources)
+    await processSharedStaticAssets(settings);
+
+    await handleSetupProject(initOptions, settings, this.library);
+  }
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
     const settings = await generateSettings(initOptions);
 
@@ -328,30 +336,6 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
-        );
-      });
-  }
-
-  protected setupSetupCommand(): void {
-    this.program
-      .command('setup')
-      .description(
-        'Run the setup to configure your Next.js or React project for General Translation'
-      )
-      .option(
-        '--src <paths...>',
-        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
-      )
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .action(async (options: SetupOptions) => {
-        displayHeader('Running React setup wizard...');
-        await this.handleSetupReactCommand(options);
-        logger.endCommand(
-          "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
         );
       });
   }
