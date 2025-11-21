@@ -3,7 +3,7 @@ import chalk from 'chalk';
 
 import findFilepath from '../fs/findFilepath.js';
 import { Settings, TranslateFlags, Updates } from '../types/index.js';
-import { logWarning, logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 
@@ -34,7 +34,7 @@ export async function aggregateReactTranslations(
   );
 
   if (warnings.length > 0) {
-    logWarning(
+    logger.warn(
       chalk.yellow(
         `CLI tool encountered ${warnings.length} warnings while scanning for translatable content.\n` +
           warnings
@@ -48,7 +48,7 @@ export async function aggregateReactTranslations(
 
   if (errors.length > 0) {
     if (options.ignoreErrors) {
-      logWarning(
+      logger.warn(
         chalk.yellow(
           `Warning: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content. These components will not be translated.\n` +
             errors
@@ -69,7 +69,7 @@ export async function aggregateReactTranslations(
   }
 
   if (updates.length == 0) {
-    logError(
+    logger.error(
       chalk.red(
         `No in-line content or dictionaries were found for ${chalk.green(
           library

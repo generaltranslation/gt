@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { logInfo } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 
 export async function createLoadTranslationsFile(
@@ -38,13 +38,13 @@ export default async function loadTranslations(locale) {
 }
 `;
     await fs.promises.writeFile(filePath, loadTranslationsContent);
-    logInfo(
+    logger.info(
       `Created ${chalk.cyan(
         'loadTranslations.js'
       )} file at ${chalk.cyan(filePath)}.`
     );
   } else {
-    logInfo(
+    logger.info(
       `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
         filePath
       )}. Skipping creation...`

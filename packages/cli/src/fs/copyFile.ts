@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { Settings } from '../types/index.js';
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 /**
  * Copy a file to target locale without translation
@@ -21,7 +21,7 @@ export default async function copyFile(settings: Settings) {
         filePathTemplate.replace('[locale]', settings.defaultLocale)
       );
       if (!fs.existsSync(sourcePath)) {
-        logError(
+        logger.error(
           `Failed to copy files: File path does not exist: ${sourcePath}`
         );
         return paths;

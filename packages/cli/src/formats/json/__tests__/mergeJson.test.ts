@@ -2,12 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mergeJson, applyTransformations } from '../mergeJson';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { logError, logWarning, exit } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
+import { exitSync } from '../../../console/logging.js';
 
+vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
-const mockLogError = vi.mocked(logError);
-const mockLogWarning = vi.mocked(logWarning);
-const mockExit = vi.mocked(exit).mockImplementation(() => {
+
+const mockLogError = vi.spyOn(logger, 'error');
+const mockLogWarning = vi.spyOn(logger, 'warn');
+const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });
 

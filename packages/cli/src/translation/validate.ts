@@ -1,8 +1,8 @@
-import { logErrorAndExit, logWarning } from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
 import { Options, Settings } from '../types/index.js';
-import { logError, logSuccess } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
@@ -31,7 +31,7 @@ export async function validateProject(
         )
       );
     }
-    logSuccess(
+    logger.success(
       chalk.green(`Success! Found ${updates.length} translatable entries.`)
     );
     return;
@@ -58,7 +58,7 @@ export async function validateProject(
   );
 
   if (warnings.length > 0) {
-    logWarning(
+    logger.warn(
       chalk.yellow(
         `CLI tool encountered ${warnings.length} warnings while scanning for translatable content.`
       ) +
@@ -81,7 +81,7 @@ export async function validateProject(
   }
 
   if (updates.length === 0) {
-    logError(
+    logger.error(
       chalk.red(
         `No in-line content or dictionaries were found for ${chalk.green(
           pkg
@@ -89,7 +89,7 @@ export async function validateProject(
       )
     );
   } else {
-    logSuccess(
+    logger.success(
       chalk.green(
         `Success! Found ${updates.length} translatable entries for ${chalk.green(
           pkg

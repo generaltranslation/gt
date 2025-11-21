@@ -9,13 +9,17 @@ vi.mock('../../fs/config/parseFilesConfig', () => ({
 
 // Mock other dependencies
 vi.mock('../../console/logging.js', () => ({
-  logWarning: vi.fn(),
-  logInfo: vi.fn(),
-  logError: vi.fn(),
   logErrorAndExit: vi.fn(),
   displayProjectId: vi.fn(),
   displayCreatedConfigFile: vi.fn(),
   warnApiKeyInConfig: vi.fn(),
+}));
+vi.mock('../../console/logger.js', () => ({
+  logger: {
+    warn: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 vi.mock('../../fs/config/findGTConfig.js', () => ({

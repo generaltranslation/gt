@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'node:path';
-import { logSuccess, logWarning } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import fg from 'fast-glob';
 import micromatch from 'micromatch';
 
@@ -95,7 +95,7 @@ export async function clearLocaleDirs(
 
       if (!excludePatterns?.length) {
         await fs.rm(dir, { recursive: true, force: true });
-        logSuccess(`Cleared locale directory: ${dir}`);
+        logger.success(`Cleared locale directory: ${dir}`);
         continue;
       }
 
@@ -114,7 +114,7 @@ export async function clearLocaleDirs(
           await fs.unlink(file);
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-            logWarning(`Failed to delete file ${file}: ${error}`);
+            logger.warn(`Failed to delete file ${file}: ${error}`);
           }
         }
       }
@@ -124,15 +124,15 @@ export async function clearLocaleDirs(
 
       const excludedCount = allFiles.length - filesToDelete.length;
       if (excludedCount > 0) {
-        logSuccess(
+        logger.success(
           `Cleared locale directory: ${dir} (excluded ${excludedCount} file${excludedCount > 1 ? 's' : ''})`
         );
       } else {
-        logSuccess(`Cleared locale directory: ${dir}`);
+        logger.success(`Cleared locale directory: ${dir}`);
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logWarning(`Failed to clear locale directory ${dir}: ${error}`);
+        logger.warn(`Failed to clear locale directory ${dir}: ${error}`);
       }
     }
   }

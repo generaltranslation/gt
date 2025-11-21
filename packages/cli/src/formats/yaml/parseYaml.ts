@@ -1,5 +1,6 @@
 import { AdditionalOptions } from '../../types/index.js';
-import { exit, logError } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import YAML from 'yaml';
 import { validateYamlSchema } from './utils.js';
 import { flattenJsonWithStringFilter } from '../json/flattenJson.js';
@@ -18,8 +19,8 @@ export default function parseYaml(
   try {
     yaml = YAML.parse(content);
   } catch {
-    logError(`Invalid YAML file: ${filePath}`);
-    exit(1);
+    logger.error(`Invalid YAML file: ${filePath}`);
+    return exitSync(1);
   }
 
   if (yamlSchema.include) {

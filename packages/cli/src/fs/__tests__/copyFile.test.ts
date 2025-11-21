@@ -23,11 +23,9 @@ vi.mock('node:path', () => ({
 }));
 
 // Mock logging module
-vi.mock('../../console/logging.js', () => ({
-  logError: vi.fn(),
-}));
+vi.mock('../../console/logger.js');
 
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 describe('copyFile', () => {
   beforeEach(() => {
@@ -383,7 +381,7 @@ describe('copyFile', () => {
       await copyFile(settings as any);
 
       // Should log error for missing source file
-      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
         'Failed to copy files: File path does not exist: /project/assets/en/config.json'
       );
 
@@ -411,11 +409,11 @@ describe('copyFile', () => {
       await copyFile(settings as any);
 
       // Should log error for each missing source file
-      expect(vi.mocked(logError)).toHaveBeenCalledTimes(2);
-      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.error)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
         'Failed to copy files: File path does not exist: /project/assets/en/config.json'
       );
-      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
         'Failed to copy files: File path does not exist: /project/public/en/manifest.json'
       );
 
@@ -447,8 +445,8 @@ describe('copyFile', () => {
       await copyFile(settings as any);
 
       // Should only log error for the missing file
-      expect(vi.mocked(logError)).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.error)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
         'Failed to copy files: File path does not exist: /project/assets/en/config.json'
       );
 

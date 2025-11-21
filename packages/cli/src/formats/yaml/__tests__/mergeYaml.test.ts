@@ -2,12 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import mergeYaml from '../mergeYaml';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { logError, exit } from '../../../console/logging.js';
+import { exitSync } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import YAML from 'yaml';
 
+vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
-const mockLogError = vi.mocked(logError);
-const mockExit = vi.mocked(exit).mockImplementation(() => {
+
+const mockLogError = vi.spyOn(logger, 'error');
+const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });
 
@@ -58,7 +61,8 @@ metadata:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       expect(result).toHaveLength(2);
@@ -104,7 +108,8 @@ app:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -137,7 +142,8 @@ title: "English Title"
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -175,7 +181,8 @@ other: "unchanged"
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -207,7 +214,8 @@ other: "unchanged"
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       expect(result).toHaveLength(1);
@@ -227,7 +235,8 @@ other: "unchanged"
         originalContent,
         'test.yaml',
         {}, // no yamlSchema
-        targets
+        targets,
+        'en'
       );
 
       expect(result).toHaveLength(1);
@@ -256,7 +265,8 @@ title: "Valid start"
               },
             },
           },
-          targets
+          targets,
+          'en'
         );
       }).toThrow('Process exit called');
 
@@ -286,7 +296,8 @@ title: "Valid"
               },
             },
           },
-          targets
+          targets,
+          'en'
         );
       }).toThrow();
     });
@@ -311,7 +322,8 @@ title: "Valid"
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       // Should not crash, should return original content unchanged
@@ -356,7 +368,8 @@ database:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -406,7 +419,8 @@ description: "English Description"
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       expect(result).toHaveLength(3);
@@ -456,7 +470,8 @@ settings:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -484,7 +499,8 @@ settings:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       expect(result).toHaveLength(1);
@@ -511,7 +527,8 @@ settings:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -541,7 +558,8 @@ settings:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -573,7 +591,8 @@ settings:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -595,7 +614,8 @@ description: "Content"`;
             },
           },
         },
-        [{ translatedContent: 'test: "value"', targetLocale: 'es' }]
+        [{ translatedContent: 'test: "value"', targetLocale: 'es' }],
+        'en'
       );
 
       expect(result[0]).toBe('test: "value"');
@@ -627,7 +647,8 @@ valid: "value"
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);
@@ -665,7 +686,8 @@ mixed:
             },
           },
         },
-        targets
+        targets,
+        'en'
       );
 
       const parsed = YAML.parse(result[0]);

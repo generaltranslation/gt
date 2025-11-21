@@ -1,4 +1,5 @@
-import { logErrorAndExit, logSuccess } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
+import { logErrorAndExit } from '../../console/logging.js';
 import {
   Settings,
   SupportedLibraries,
@@ -42,19 +43,19 @@ export async function handleStage(
   // Validate required settings are present if not in dry run
   if (!options.dryRun) {
     if (!settings.locales) {
-      logErrorAndExit(noLocalesError);
+      return logErrorAndExit(noLocalesError);
     }
     if (!settings.defaultLocale) {
-      logErrorAndExit(noDefaultLocaleError);
+      return logErrorAndExit(noDefaultLocaleError);
     }
     if (!settings.apiKey) {
-      logErrorAndExit(noApiKeyError);
+      return logErrorAndExit(noApiKeyError);
     }
     if (settings.apiKey.startsWith('gtx-dev-')) {
-      logErrorAndExit(devApiKeyError);
+      return logErrorAndExit(devApiKeyError);
     }
     if (!settings.projectId) {
-      logErrorAndExit(noProjectIdError);
+      return logErrorAndExit(noProjectIdError);
     }
   }
 
@@ -115,7 +116,7 @@ export async function handleStage(
         return `- ${file.fileName}`;
       })
       .join('\n');
-    logSuccess(
+    logger.success(
       `Dry run: No files were sent to General Translation. Found files:\n${fileNames}`
     );
     return null;

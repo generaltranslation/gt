@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { RetrievedTranslations } from 'generaltranslation/types';
 import { ResolvedFiles } from '../../types/index.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
+import { exitSync } from '../../console/logging.js';
 import { noFilesError } from '../../console/index.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 /**
@@ -19,8 +20,8 @@ export async function saveTranslations(
     const locale = translation.locale;
     const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
     if (!translationFiles.gt) {
-      logError(noFilesError);
-      process.exit(1);
+      logger.error(noFilesError);
+      exitSync(1);
     }
     const filepath = translationFiles.gt;
     const translationData = translation.translation;

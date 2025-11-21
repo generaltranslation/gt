@@ -1,5 +1,6 @@
 import { getLocaleProperties } from 'generaltranslation';
-import { exit, logError } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { JSONPath } from 'jsonpath-plus';
 import { LocaleProperties } from 'generaltranslation/types';
 import {
@@ -55,19 +56,19 @@ export function findMatchingItemArray(
       wrap: true,
     });
     if (!keyCandidates) {
-      logError(
+      logger.error(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
       );
-      exit(1);
+      return exitSync(1);
     } else if (keyCandidates.length === 0) {
       // If no key candidates, skip the item
       continue;
     } else if (keyCandidates.length > 1) {
       // If multiple key candidates, exit with an error
-      logError(
+      logger.error(
         `Source item at path: ${sourceObjectPointer} has multiple matching keys with path: ${localeKeyJsonPath}`
       );
-      exit(1);
+      return exitSync(1);
     } else if (identifyingLocaleProperty !== keyCandidates[0].value) {
       // Validate the key is the identifying locale property
       continue;
@@ -125,10 +126,10 @@ export function getIdentifyingLocaleProperty(
   const identifyingLocaleProperty =
     getLocaleProperties(locale)[localeProperty as keyof LocaleProperties];
   if (!identifyingLocaleProperty) {
-    logError(
+    logger.error(
       `Source object options localeProperty is not a valid locale property at path: ${sourceObjectPointer}`
     );
-    exit(1);
+    return exitSync(1);
   }
   return identifyingLocaleProperty;
 }
@@ -152,10 +153,10 @@ export function getSourceObjectOptionsArray(
   );
   const localeKeyJsonPath = sourceObjectOptions.key;
   if (!localeKeyJsonPath) {
-    logError(
+    logger.error(
       `Source object options key is required for array at path: ${sourceObjectPointer}`
     );
-    exit(1);
+    return exitSync(1);
   }
   return { identifyingLocaleProperty, localeKeyJsonPath };
 }
@@ -172,10 +173,10 @@ export function getSourceObjectOptionsObject(
   );
   const jsonPathKey = sourceObjectOptions.key;
   if (jsonPathKey) {
-    logError(
+    logger.error(
       `Source object options key is not allowed for object at path: ${sourceObjectPointer}`
     );
-    exit(1);
+    return exitSync(1);
   }
   return { identifyingLocaleProperty };
 }
@@ -233,16 +234,16 @@ export function validateJsonSchema(
   // Validate includes or composite
   const jsonSchema = options.jsonSchema[matchingGlob];
   if (jsonSchema.include && jsonSchema.composite) {
-    logError(
+    logger.error(
       'include and composite cannot be used together in the same JSON schema'
     );
-    exit(1);
+    return exitSync(1);
     return null;
   }
 
   if (!jsonSchema.include && !jsonSchema.composite) {
-    logError('No include or composite property found in JSON schema');
-    exit(1);
+    logger.error('No include or composite property found in JSON schema');
+    return exitSync(1);
     return null;
   }
   return jsonSchema;

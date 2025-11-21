@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import { logErrorAndExit, logMessage } from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
@@ -23,7 +24,7 @@ function calculateTimeout(timeout: string | number | undefined): number {
  * Helper: Log files to be translated
  */
 function logFilesToTranslate(files: FileToUpload[]): void {
-  logMessage(
+  logger.message(
     chalk.cyan('Files found in project:') +
       '\n' +
       files
@@ -71,7 +72,7 @@ export async function stageFiles(
     await branchStep.wait();
 
     if (!branchData) {
-      logErrorAndExit('Failed to resolve git branch information.');
+      return logErrorAndExit('Failed to resolve git branch information.');
     }
 
     // then run the upload step
@@ -94,6 +95,6 @@ export async function stageFiles(
 
     return { branchData, enqueueResult };
   } catch (error) {
-    logErrorAndExit('Failed to send files for translation. ' + error);
+    return logErrorAndExit('Failed to send files for translation. ' + error);
   }
 }

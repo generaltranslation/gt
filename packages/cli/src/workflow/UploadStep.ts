@@ -1,6 +1,6 @@
 import type { FileToUpload } from 'generaltranslation/types';
 import { WorkflowStep } from './Workflow.js';
-import { createSpinner, logInfo } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
@@ -11,7 +11,7 @@ export class UploadStep extends WorkflowStep<
   { files: FileToUpload[]; branchData: BranchData },
   FileReference[]
 > {
-  private spinner = createSpinner('dots');
+  private spinner = logger.createSpinner('dots');
   private result: FileReference[] | null = null;
 
   constructor(
@@ -29,7 +29,7 @@ export class UploadStep extends WorkflowStep<
     branchData: BranchData;
   }): Promise<FileReference[]> {
     if (files.length === 0) {
-      logInfo('No files to upload found... skipping upload step');
+      logger.info('No files to upload found... skipping upload step');
       return [];
     }
 

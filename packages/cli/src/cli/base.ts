@@ -5,16 +5,10 @@ import {
   displayHeader,
   promptText,
   logErrorAndExit,
-  endCommand,
   promptConfirm,
   promptMultiSelect,
-  logSuccess,
-  logInfo,
-  startCommand,
-  createSpinner,
-  logMessage,
-  logWarning,
 } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import {
@@ -107,7 +101,7 @@ export class BaseCLI {
         'Staging project for translation with approval required...'
       );
       await this.handleStage(initOptions);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
   protected setupTranslateCommand(): void {
@@ -118,7 +112,7 @@ export class BaseCLI {
     ).action(async (initOptions: TranslateFlags) => {
       displayHeader('Starting translation...');
       await this.handleTranslate(initOptions);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -133,7 +127,7 @@ export class BaseCLI {
         const config = findFilepath(['gt.config.json']);
         const settings = await generateSettings({ config });
         await saveLocalEdits(settings);
-        endCommand('Saved local edits');
+        logger.endCommand('Saved local edits');
       });
   }
 
@@ -214,7 +208,7 @@ export class BaseCLI {
         const options = { ...initOptions, ...settings };
 
         await this.handleUploadCommand(options);
-        endCommand('Done!');
+        logger.endCommand('Done!');
       });
   }
 
@@ -257,7 +251,7 @@ export class BaseCLI {
           }
         }
         await this.handleLoginCommand(options);
-        endCommand(
+        logger.endCommand(
           `Done! A ${options.keyType} key has been generated and saved to your .env.local file.`
         );
       });
@@ -292,11 +286,11 @@ export class BaseCLI {
           });
 
           if (wrap) {
-            logInfo(
+            logger.info(
               `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
             );
             await this.handleSetupReactCommand(options);
-            endCommand(
+            logger.endCommand(
               `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
 Certain aspects of your app may still need manual setup.
 See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
@@ -305,12 +299,12 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
           }
         }
         if (ranReactSetup) {
-          startCommand('Setting up project config...');
+          logger.startCommand('Setting up project config...');
         }
         // Configure gt.config.json
         await this.handleInitCommand(ranReactSetup);
 
-        endCommand(
+        logger.endCommand(
           'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
         );
       });
@@ -325,14 +319,14 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       .action(async () => {
         displayHeader('Configuring project...');
 
-        logInfo(
+        logger.info(
           'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
         );
 
         // Configure gt.config.json
         await this.handleInitCommand(false);
 
-        endCommand(
+        logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
         );
       });
@@ -356,7 +350,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       .action(async (options: SetupOptions) => {
         displayHeader('Running React setup wizard...');
         await this.handleSetupReactCommand(options);
-        endCommand(
+        logger.endCommand(
           "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
         );
       });
@@ -446,7 +440,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
       await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
-      logMessage(
+      logger.message(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
 See https://generaltranslation.com/en/docs/next/guides/local-tx`
@@ -503,7 +497,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       publish: isUsingGT && usingCDN,
     });
 
-    logSuccess(
+    logger.success(
       `Feel free to edit ${chalk.cyan(
         configFilepath
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
@@ -516,7 +510,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
 
     if (!isCLIInstalled) {
       const packageManager = await getPackageManager();
-      const spinner = createSpinner();
+      const spinner = logger.createSpinner();
       spinner.start(
         `Installing gtx-cli as a dev dependency with ${packageManager.name}...`
       );
