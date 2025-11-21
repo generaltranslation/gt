@@ -1,6 +1,7 @@
 import JSONPointer from 'jsonpointer';
 import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
-import { exit, logError, logWarning } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import {
   findMatchingItemArray,
   findMatchingItemObject,
@@ -32,7 +33,7 @@ export function mergeJson(
     originalJson = JSON.parse(originalContent);
   } catch {
     logger.error(`Invalid JSON file: ${inputPath}`);
-    exit(1);
+    return exitSync(1);
   }
 
   // Handle include
@@ -60,7 +61,7 @@ export function mergeJson(
 
   if (!jsonSchema.composite) {
     logger.error('No composite property found in JSON schema');
-    exit(1);
+    return exitSync(1);
   }
 
   // Handle composite
@@ -85,7 +86,7 @@ export function mergeJson(
         logger.error(
           `Source object value is not an array at path: ${sourceObjectPointer}`
         );
-        exit(1);
+        return exitSync(1);
       }
 
       // Get source item for default locale
@@ -161,7 +162,7 @@ export function mergeJson(
             logger.error(
               `Array index ${sourceItemPointer} is not present in the source json. It is possible that the source json has been modified since the translation was generated.`
             );
-            exit(1);
+            return exitSync(1);
           }
 
           // 6. Override the source item with the translated values
@@ -218,7 +219,7 @@ export function mergeJson(
         logger.error(
           `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
         );
-        exit(1);
+        return exitSync(1);
       }
 
       // 9. Remove all items for the target locale (they can be identified by the key)
@@ -240,7 +241,7 @@ export function mergeJson(
         logger.error(
           `Source object value is not an object at path: ${sourceObjectPointer}`
         );
-        exit(1);
+        return exitSync(1);
       }
       // Validate localeProperty
       const matchingDefaultLocaleItem = findMatchingItemObject(
@@ -254,7 +255,7 @@ export function mergeJson(
         logger.error(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );
-        exit(1);
+        return exitSync(1);
       }
       const { sourceItem: defaultLocaleSourceItem } = matchingDefaultLocaleItem;
 

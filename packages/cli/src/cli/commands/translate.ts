@@ -6,7 +6,7 @@ import {
   downloadTranslations,
 } from '../../workflow/download.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';

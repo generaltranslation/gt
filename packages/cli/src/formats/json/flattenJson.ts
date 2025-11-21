@@ -1,5 +1,5 @@
 import { JSONPath } from 'jsonpath-plus';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 /**
  * Flattens a JSON object according to a list of JSON paths.

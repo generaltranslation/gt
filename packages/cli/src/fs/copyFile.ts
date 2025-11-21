@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { Settings } from '../types/index.js';
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 /**
  * Copy a file to target locale without translation

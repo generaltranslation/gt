@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { displayUpdatedVersionsFile } from '../../console/logging.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import path from 'node:path';
 
 const STAGED_VERSIONS_FILE = 'staged-versions.json';

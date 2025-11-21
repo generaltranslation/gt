@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 /**
  * Resolve the file path from the given file path or default paths.

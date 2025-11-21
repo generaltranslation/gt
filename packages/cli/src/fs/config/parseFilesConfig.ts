@@ -7,7 +7,7 @@ import {
 } from '../../types/index.js';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
-import { logWarning } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import chalk from 'chalk';
 
 /**

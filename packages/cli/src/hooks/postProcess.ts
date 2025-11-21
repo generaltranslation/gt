@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import chalk from 'chalk';
-import { logMessage, logWarning } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 type Formatter = 'prettier' | 'biome' | 'eslint';
 
@@ -57,7 +57,7 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'prettier') {
-      logMessage(chalk.dim('Cleaning up with prettier...'));
+      logger.message(chalk.dim('Cleaning up with prettier...'));
       const prettier = await import('prettier');
       for (const file of filesUpdated) {
         const config = await prettier.resolveConfig(file);
@@ -72,7 +72,7 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'biome') {
-      logMessage(chalk.dim('Cleaning up with biome...'));
+      logger.message(chalk.dim('Cleaning up with biome...'));
       try {
         await new Promise<void>((resolve, reject) => {
           const args = [
@@ -109,7 +109,7 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'eslint') {
-      logMessage(chalk.dim('Cleaning up with eslint...'));
+      logger.message(chalk.dim('Cleaning up with eslint...'));
       const { ESLint } = await import('eslint');
       const eslint = new ESLint({
         fix: true,

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { RetrievedTranslations } from 'generaltranslation/types';
 import { ResolvedFiles } from '../../types/index.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { noFilesError } from '../../console/index.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 /**

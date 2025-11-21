@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { displayCreatedConfigFile } from '../../console/logging.js';
 import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { GT_CONFIG_SCHEMA_URL } from '../../utils/constants.js';
 
 /**

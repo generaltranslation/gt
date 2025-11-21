@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 // New lock file name, use old name for deletion of legacy lock file
 const GT_LOCK_FILE = 'gt-lock.json';

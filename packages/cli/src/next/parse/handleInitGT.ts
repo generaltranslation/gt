@@ -8,7 +8,7 @@ const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
 
 import * as t from '@babel/types';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { needsCJS } from '../../utils/parse/needsCJS.js';
 
 export async function handleInitGT(

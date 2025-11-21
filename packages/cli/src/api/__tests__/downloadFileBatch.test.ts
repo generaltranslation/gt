@@ -3,8 +3,7 @@ import { BatchedFiles, downloadFileBatch } from '../downloadFileBatch.js';
 import { gt } from '../../utils/gt.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { logError, logWarning } from '../../console/logging.js';
-import { DownloadFileBatchResult } from '../downloadFileBatch.js';
+import { logger } from '../../console/logger.js';
 import {
   DownloadFileBatchResult as CoreDownloadFileBatchResult,
   FileFormat,
@@ -32,9 +31,11 @@ vi.mock('path', () => ({
   dirname: vi.fn(),
 }));
 
-vi.mock('../../console/logging.js', () => ({
-  logError: vi.fn(),
-  logWarning: vi.fn(),
+vi.mock('../../console/logger.js', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
 }));
 
 describe('downloadFileBatch', () => {
@@ -234,7 +235,7 @@ describe('downloadFileBatch', () => {
       createMockSettings()
     );
 
-    expect(logError).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
     expect(result.successful).toHaveLength(1);
     expect(result.failed).toHaveLength(1);
   });
@@ -293,7 +294,7 @@ describe('downloadFileBatch', () => {
       createMockSettings()
     );
 
-    expect(logWarning).toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalled();
     expect(result.successful).toHaveLength(1);
     expect(result.failed).toHaveLength(1);
   });
@@ -472,7 +473,7 @@ describe('downloadFileBatch', () => {
       createMockSettings()
     );
 
-    expect(logError).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
     expect(result.successful).toHaveLength(0);
     expect(result.failed).toHaveLength(1);
   });

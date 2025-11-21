@@ -1,22 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { uploadFiles, FileUpload, UploadData } from '../uploadFiles.js';
-import {
-  createProgressBar,
-  createSpinner,
-  exit,
-  logMessage,
-} from '../../console/logging.js';
-import { SpinnerResult } from '@clack/prompts';
+import { logger } from '../../console/logger.js';
 import { Settings } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
 import { gt } from '../../utils/gt.js';
+import { exit } from '../../console/logging.js';
 
 // Mock dependencies
 vi.mock('../../console/logging.js', () => ({
-  createSpinner: vi.fn(),
-  createProgressBar: vi.fn(),
   exit: vi.fn(),
-  logMessage: vi.fn(),
+}));
+
+vi.mock('../../console/logger.js', () => ({
+  logger: {
+    createProgressBar: vi.fn(),
+    createSpinner: vi.fn(),
+    message: vi.fn(),
+  },
 }));
 
 vi.mock('../../utils/gt.js', () => ({
@@ -90,6 +90,7 @@ describe('uploadFiles', () => {
       conditionNames: [],
     },
     branchOptions: {
+      enabled: false,
       currentBranch: '',
       autoDetectBranches: false,
       remoteName: 'origin',
@@ -99,8 +100,8 @@ describe('uploadFiles', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createProgressBar).mockReturnValue(mockSpinner);
-    vi.mocked(createSpinner).mockReturnValue(mockSpinner as any);
+    vi.mocked(logger.createProgressBar).mockReturnValue(mockSpinner);
+    vi.mocked(logger.createSpinner).mockReturnValue(mockSpinner as any);
     vi.mocked(gt.uploadSourceFiles).mockResolvedValue({
       uploadedFiles: [],
       count: 0,
@@ -137,7 +138,7 @@ describe('uploadFiles', () => {
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(logMessage).toHaveBeenCalledWith(
+    expect(logger.message).toHaveBeenCalledWith(
       expect.stringContaining('Files to upload:')
     );
 
@@ -352,7 +353,7 @@ describe('uploadFiles', () => {
 
     await uploadFiles(mockFiles, mockSettings);
 
-    expect(logMessage).toHaveBeenCalledWith(
+    expect(logger.message).toHaveBeenCalledWith(
       expect.stringContaining('messages.json -> es, fr')
     );
 

@@ -7,16 +7,8 @@ import {
   SupportedLibraries,
   TranslateFlags,
 } from '../types/index.js';
-import {
-  displayHeader,
-  endCommand,
-  logError,
-  logErrorAndExit,
-  logStep,
-  logSuccess,
-  logWarning,
-  promptConfirm,
-} from '../console/logging.js';
+import { displayHeader, promptConfirm } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import findFilepath from '../fs/findFilepath.js';
 import chalk from 'chalk';
@@ -79,7 +71,7 @@ export class ReactCLI extends BaseCLI {
         'Staging project for translation with approval required...'
       );
       await this.handleStage(options);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -95,7 +87,7 @@ export class ReactCLI extends BaseCLI {
     ).action(async (options: TranslateFlags) => {
       displayHeader('Translating project...');
       await this.handleTranslate(options);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -129,7 +121,7 @@ export class ReactCLI extends BaseCLI {
         // intro here since we don't want to show the ascii title
         intro(chalk.cyan('Validating project...'));
         await this.handleValidate(options, files);
-        endCommand('Done!');
+        logger.endCommand('Done!');
       });
   }
 
@@ -145,7 +137,7 @@ export class ReactCLI extends BaseCLI {
     ).action(async (initOptions: TranslateFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -183,7 +175,7 @@ export class ReactCLI extends BaseCLI {
         process.exit(1);
       }
       await saveJSON(translationFiles.gt, newData);
-      logStep('Source file saved successfully!');
+      logger.step('Source file saved successfully!');
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(
@@ -205,7 +197,7 @@ export class ReactCLI extends BaseCLI {
         );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
-      logStep('Merged translations successfully!');
+      logger.step('Merged translations successfully!');
     }
   }
 
@@ -250,14 +242,14 @@ export class ReactCLI extends BaseCLI {
     // Format updated files if formatters are available
     if (!options.disableFormatting) await formatFiles(filesUpdated);
 
-    logSuccess(
+    logger.success(
       `Success! Added <T> tags and updated ${chalk.bold.cyan(
         filesUpdated.length
       )} files:\n` +
         filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
     if (filesUpdated.length > 0) {
-      logStep(chalk.green('Please verify the changes before committing.'));
+      logger.step(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
@@ -275,7 +267,7 @@ export class ReactCLI extends BaseCLI {
     initOptions: Options,
     files?: string[]
   ): Promise<void> {
-    validateConfigExists();
+    await validateConfigExists();
     const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method

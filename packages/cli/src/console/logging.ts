@@ -21,6 +21,12 @@ export async function exit(code: number): Promise<never> {
   process.exit(code);
 }
 
+export function exitSync(code: number): never {
+  // Flush logs before exit
+  logger.flush();
+  process.exit(code);
+}
+
 // GT specific logging
 export function displayHeader(introString?: string) {
   displayAsciiTitle();

@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import mergeYaml from '../mergeYaml';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { logError, exit } from '../../../console/logging.js';
+import { exitSync } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import YAML from 'yaml';
 
 vi.mock('../../../console/logging.js');
-const mockLogError = vi.mocked(logError);
-const mockExit = vi.mocked(exit).mockImplementation(() => {
+const mockLogError = vi.mocked(logger.error);
+const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });
 

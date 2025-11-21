@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { SupportedLibraries } from '../types/index.js';
-import { logWarning, logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;

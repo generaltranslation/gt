@@ -1,7 +1,8 @@
 import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
 import { flattenJsonWithStringFilter } from './flattenJson.js';
 import { JSONPath } from 'jsonpath-plus';
-import { exit, logError } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import {
   findMatchingItemArray,
   findMatchingItemObject,
@@ -26,7 +27,7 @@ export function parseJson(
     json = JSON.parse(content);
   } catch {
     logger.error(`Invalid JSON file: ${filePath}`);
-    exit(1);
+    return exitSync(1);
   }
 
   // Handle include
@@ -37,7 +38,7 @@ export function parseJson(
 
   if (!jsonSchema.composite) {
     logger.error('No composite property found in JSON schema');
-    exit(1);
+    return exitSync(1);
   }
 
   // Construct lvl 1
@@ -69,7 +70,7 @@ export function parseJson(
         logger.error(
           `Source object value is not an array at path: ${sourceObjectPointer}`
         );
-        exit(1);
+        return exitSync(1);
       }
 
       // Find matching source items
@@ -83,7 +84,7 @@ export function parseJson(
         logger.error(
           `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
         );
-        exit(1);
+        return exitSync(1);
       }
       // Construct lvl 3
       const sourceItemsToTranslate: Record<string, Record<string, string>> = {};
@@ -132,7 +133,7 @@ export function parseJson(
         logger.error(
           `Source object value is not an object at path: ${sourceObjectPointer}`
         );
-        exit(1);
+        return exitSync(1);
       }
 
       // Validate localeProperty
@@ -147,7 +148,7 @@ export function parseJson(
         logger.error(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );
-        exit(1);
+        return exitSync(1);
       }
       const { sourceItem } = matchingItem;
 

@@ -23,7 +23,7 @@ function calculateTimeout(timeout: string | number | undefined): number {
  * Helper: Log files to be translated
  */
 function logFilesToTranslate(files: FileToUpload[]): void {
-  logMessage(
+  logger.message(
     chalk.cyan('Files found in project:') +
       '\n' +
       files

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { displayUpdatedConfigFile } from '../../console/logging.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 /**
  * Update the config file version id, locales, and projectId (if necessary)

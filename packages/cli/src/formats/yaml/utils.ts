@@ -1,5 +1,6 @@
 import { AdditionalOptions, YamlSchema } from '../../types/index.js';
-import { logError, exit } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import micromatch from 'micromatch';
 const { isMatch } = micromatch;
 import path from 'path';
@@ -24,7 +25,7 @@ export function validateYamlSchema(
   const yamlSchema = options.yamlSchema[matchingGlob];
   if (!yamlSchema.include) {
     logger.error('No include property found in YAML schema');
-    exit(1);
+    return exitSync(1);
   }
   return yamlSchema;
 }
