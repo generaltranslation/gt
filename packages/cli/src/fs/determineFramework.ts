@@ -17,7 +17,7 @@ export function determineLibrary(): {
 
     // Check if package.json exists
     if (!fs.existsSync(packageJsonPath)) {
-      logWarning(
+      logger.warn(
         chalk.yellow(
           'No package.json found in the current directory. Please run this command from the root of your project.'
         )
@@ -50,7 +50,7 @@ export function determineLibrary(): {
     // Fallback to base if neither is found
     return { library, additionalModules };
   } catch (error) {
-    logError('Error determining framework: ' + String(error));
+    logger.error('Error determining framework: ' + String(error));
     return { library: 'base', additionalModules: [] };
   }
 }

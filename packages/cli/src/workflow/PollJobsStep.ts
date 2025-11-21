@@ -212,7 +212,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
               }
             }
           } catch (error) {
-            logError(chalk.red('Error checking job status: ') + error);
+            logger.error(chalk.red('Error checking job status: ') + error);
           }
         }, 5000);
       }, msUntilNextInterval);

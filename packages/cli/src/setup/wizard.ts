@@ -51,7 +51,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
     defaultValue: 'next-app',
   });
   if (frameworkType === 'other') {
-    logError(
+    logger.error(
       `Sorry, other React frameworks are not currently supported. 
 Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
     );
@@ -65,7 +65,7 @@ Please let us know what you would like to see supported at https://github.com/ge
 
   const packageJson = await getPackageJson();
   if (!packageJson) {
-    logError(
+    logger.error(
       chalk.red(
         'No package.json found in the current directory. Please run this command from the root of your project.'
       )
@@ -112,7 +112,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       './next.config.mts',
     ]);
     if (!nextConfigPath) {
-      logError('No next.config.[js|ts|mjs|mts] file found.');
+      logger.error('No next.config.[js|ts|mjs|mts] file found.');
       process.exit(1);
     }
 
@@ -166,11 +166,11 @@ Please let us know what you would like to see supported at https://github.com/ge
   }
 
   if (errors.length > 0) {
-    logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
+    logger.error(chalk.red('Failed to write files:\n') + errors.join('\n'));
   }
 
   if (warnings.length > 0) {
-    logWarning(
+    logger.warn(
       chalk.yellow('Warnings encountered:') +
         '\n' +
         warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')

@@ -61,7 +61,7 @@ export async function updatePackageJson(
       JSON.stringify(packageJson, null, 2)
     );
   } catch (error) {
-    logError(chalk.red('Error updating package.json: ' + String(error)));
+    logger.error(chalk.red('Error updating package.json: ' + String(error)));
     process.exit(1);
   }
 }

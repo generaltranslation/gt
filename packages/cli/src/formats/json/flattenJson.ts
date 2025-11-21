@@ -28,7 +28,7 @@ export function flattenJson(
         extractedJson[result.pointer] = result.value;
       });
     } catch (error) {
-      logError(`Error with JSONPath pattern: ${jsonPath}`);
+      logger.error(`Error with JSONPath pattern: ${jsonPath}`);
     }
   }
   return extractedJson;
@@ -63,7 +63,7 @@ export function flattenJsonWithStringFilter(
         }
       });
     } catch {
-      logError(`Error with JSONPath pattern: ${jsonPath}`);
+      logger.error(`Error with JSONPath pattern: ${jsonPath}`);
     }
   }
   return extractedJson;

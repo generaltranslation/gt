@@ -31,7 +31,7 @@ export function mergeJson(
   try {
     originalJson = JSON.parse(originalContent);
   } catch {
-    logError(`Invalid JSON file: ${inputPath}`);
+    logger.error(`Invalid JSON file: ${inputPath}`);
     exit(1);
   }
 
@@ -59,7 +59,7 @@ export function mergeJson(
   }
 
   if (!jsonSchema.composite) {
-    logError('No composite property found in JSON schema');
+    logger.error('No composite property found in JSON schema');
     exit(1);
   }
 
@@ -82,7 +82,7 @@ export function mergeJson(
     if (sourceObjectOptions.type === 'array') {
       // Validate type
       if (!Array.isArray(sourceObjectValue)) {
-        logError(
+        logger.error(
           `Source object value is not an array at path: ${sourceObjectPointer}`
         );
         exit(1);
@@ -96,7 +96,7 @@ export function mergeJson(
         sourceObjectValue
       );
       if (!Object.keys(matchingDefaultLocaleItems).length) {
-        logWarning(
+        logger.warn(
           `Matching sourceItems not found at path: ${sourceObjectPointer}. Please check your JSON file includes the key field. Skipping this target`
         );
         continue;
@@ -147,7 +147,7 @@ export function mergeJson(
         };
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
-          logWarning(
+          logger.warn(
             `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
           );
           continue;
@@ -158,7 +158,7 @@ export function mergeJson(
         )) {
           // 5. Validate that all the array indecies are still present in the source json
           if (!matchingDefaultLocaleItemKeys.has(sourceItemPointer)) {
-            logError(
+            logger.error(
               `Array index ${sourceItemPointer} is not present in the source json. It is possible that the source json has been modified since the translation was generated.`
             );
             exit(1);
@@ -215,7 +215,7 @@ export function mergeJson(
 
       // 8. Check that items to add is >= items to remove (if this happens, something is very wrong)
       if (itemsToAdd.length < indiciesToRemove.size) {
-        logError(
+        logger.error(
           `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
         );
         exit(1);
@@ -237,7 +237,7 @@ export function mergeJson(
     } else {
       // Validate type
       if (typeof sourceObjectValue !== 'object' || sourceObjectValue === null) {
-        logError(
+        logger.error(
           `Source object value is not an object at path: ${sourceObjectPointer}`
         );
         exit(1);
@@ -251,7 +251,7 @@ export function mergeJson(
       );
       // Validate source item exists
       if (!matchingDefaultLocaleItem.sourceItem) {
-        logError(
+        logger.error(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );
         exit(1);
@@ -294,7 +294,7 @@ export function mergeJson(
 
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
-          logWarning(
+          logger.warn(
             `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
           );
           continue;

@@ -46,6 +46,8 @@ export default async function updateConfig({
     // show update in console
     displayUpdatedConfigFile(configFilepath);
   } catch (error) {
-    logError(`An error occurred while updating ${configFilepath}: ${error}`);
+    logger.error(
+      `An error occurred while updating ${configFilepath}: ${error}`
+    );
   }
 }

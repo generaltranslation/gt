@@ -18,7 +18,7 @@ export default function parseYaml(
   try {
     yaml = YAML.parse(content);
   } catch {
-    logError(`Invalid YAML file: ${filePath}`);
+    logger.error(`Invalid YAML file: ${filePath}`);
     exit(1);
   }
 

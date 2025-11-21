@@ -23,7 +23,7 @@ export function validateYamlSchema(
   // Validate includes
   const yamlSchema = options.yamlSchema[matchingGlob];
   if (!yamlSchema.include) {
-    logError('No include property found in YAML schema');
+    logger.error('No include property found in YAML schema');
     exit(1);
   }
   return yamlSchema;

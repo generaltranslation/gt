@@ -62,7 +62,9 @@ export async function createOrUpdateConfig(
     // show update in console
     displayCreatedConfigFile(configFilepath);
   } catch (error) {
-    logError(`An error occurred while updating ${configFilepath}: ${error}`);
+    logger.error(
+      `An error occurred while updating ${configFilepath}: ${error}`
+    );
   }
   return configFilepath;
 }

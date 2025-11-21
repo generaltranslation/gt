@@ -50,7 +50,7 @@ export async function createUpdates(
       if (options.jsconfig) {
         const jsconfig = loadJSON(options.jsconfig);
         if (!jsconfig) {
-          logError(
+          logger.error(
             `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
           );
           process.exit(1);

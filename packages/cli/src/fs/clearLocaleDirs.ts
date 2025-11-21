@@ -114,7 +114,7 @@ export async function clearLocaleDirs(
           await fs.unlink(file);
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-            logWarning(`Failed to delete file ${file}: ${error}`);
+            logger.warn(`Failed to delete file ${file}: ${error}`);
           }
         }
       }
@@ -132,7 +132,7 @@ export async function clearLocaleDirs(
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logWarning(`Failed to clear locale directory ${dir}: ${error}`);
+        logger.warn(`Failed to clear locale directory ${dir}: ${error}`);
       }
     }
   }

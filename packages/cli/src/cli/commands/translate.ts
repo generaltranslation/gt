@@ -55,11 +55,11 @@ export async function handleDownload(
   settings: Settings
 ) {
   if (!settings._versionId) {
-    logError(noVersionIdError);
+    logger.error(noVersionIdError);
     process.exit(1);
   }
   if (!settings.files) {
-    logError(noFilesError);
+    logger.error(noFilesError);
     process.exit(1);
   }
   // Files

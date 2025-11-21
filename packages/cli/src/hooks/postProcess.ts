@@ -52,7 +52,7 @@ export async function formatFiles(
     const detectedFormatter = formatter || (await detectFormatter());
 
     if (!detectedFormatter) {
-      logWarning(chalk.yellow('No supported formatter detected'));
+      logger.warn(chalk.yellow('No supported formatter detected'));
       return;
     }
 
@@ -87,7 +87,7 @@ export async function formatFiles(
           });
 
           child.on('error', (error: Error) => {
-            logWarning(
+            logger.warn(
               chalk.yellow('Biome formatting failed: ' + error.message)
             );
             resolve();
@@ -95,7 +95,7 @@ export async function formatFiles(
 
           child.on('close', (code: number) => {
             if (code !== 0) {
-              logWarning(
+              logger.warn(
                 chalk.yellow(`Biome formatting failed with exit code ${code}`)
               );
             }
@@ -103,7 +103,7 @@ export async function formatFiles(
           });
         });
       } catch (error) {
-        logWarning(chalk.yellow('Biome formatting failed: ' + String(error)));
+        logger.warn(chalk.yellow('Biome formatting failed: ' + String(error)));
       }
       return;
     }
@@ -122,6 +122,6 @@ export async function formatFiles(
       return;
     }
   } catch (e) {
-    logWarning(chalk.yellow('Unable to run code formatter: ' + String(e)));
+    logger.warn(chalk.yellow('Unable to run code formatter: ' + String(e)));
   }
 }

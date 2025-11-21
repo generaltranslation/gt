@@ -44,7 +44,7 @@ export async function createDictionaryUpdates(
     try {
       dictionaryModule = await import(tempFilePath);
     } catch (error) {
-      logError(`Failed to load the bundled dictionary code: ${error}`);
+      logger.error(`Failed to load the bundled dictionary code: ${error}`);
       process.exit(1);
     } finally {
       // Clean up the temporary file

@@ -35,7 +35,7 @@ export async function createInlineUpdates(
         plugins: ['jsx', 'typescript'],
       });
     } catch (error) {
-      logError(`Error parsing file ${file}: ${error}`);
+      logger.error(`Error parsing file ${file}: ${error}`);
       continue;
     }
 

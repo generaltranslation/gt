@@ -42,7 +42,7 @@ export async function updateViteConfig({
   try {
     code = await fs.promises.readFile(viteConfigPath, 'utf8');
   } catch (error) {
-    logError(`Error: Failed to read ${viteConfigPath}: ${error}`);
+    logger.error(`Error: Failed to read ${viteConfigPath}: ${error}`);
     process.exit(1);
     return;
   }
@@ -59,7 +59,7 @@ export async function updateViteConfig({
       tsconfigJson,
     }));
   } catch (error) {
-    logError(`Error: Failed to update ${viteConfigPath}: ${error}`);
+    logger.error(`Error: Failed to update ${viteConfigPath}: ${error}`);
     process.exit(1);
     return;
   }
@@ -69,7 +69,7 @@ export async function updateViteConfig({
     await fs.promises.writeFile(viteConfigPath, updatedCode);
     filesUpdated.push(viteConfigPath);
   } catch (error) {
-    logError(`Error: Failed to write ${viteConfigPath}: ${error}`);
+    logger.error(`Error: Failed to write ${viteConfigPath}: ${error}`);
     process.exit(1);
     return;
   }

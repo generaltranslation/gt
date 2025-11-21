@@ -126,7 +126,7 @@ export function expandGlobPatterns(
       !transformPatterns &&
       !compositePatterns?.includes(pattern)
     ) {
-      logWarning(
+      logger.warn(
         chalk.yellow(
           `Pattern "${pattern}" does not include [locale], so the CLI tool may incorrectly save translated files.`
         )

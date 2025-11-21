@@ -21,7 +21,7 @@ export default async function copyFile(settings: Settings) {
         filePathTemplate.replace('[locale]', settings.defaultLocale)
       );
       if (!fs.existsSync(sourcePath)) {
-        logError(
+        logger.error(
           `Failed to copy files: File path does not exist: ${sourcePath}`
         );
         return paths;

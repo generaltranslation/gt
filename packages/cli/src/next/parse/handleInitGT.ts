@@ -219,7 +219,7 @@ export async function handleInitGT(
     await fs.promises.writeFile(filepath, processedCode);
     filesUpdated.push(filepath);
   } catch (error) {
-    logError(`Error parsing file ${filepath}: ${error}`);
+    logger.error(`Error parsing file ${filepath}: ${error}`);
     errors.push(`Failed to parse ${filepath}: ${error}`);
   }
 }

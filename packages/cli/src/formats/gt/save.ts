@@ -19,7 +19,7 @@ export async function saveTranslations(
     const locale = translation.locale;
     const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
     if (!translationFiles.gt) {
-      logError(noFilesError);
+      logger.error(noFilesError);
       process.exit(1);
     }
     const filepath = translationFiles.gt;

@@ -24,12 +24,12 @@ export default function mergeYaml(
   try {
     originalYaml = YAML.parse(originalContent);
   } catch {
-    logError(`Invalid YAML file: ${inputPath}`);
+    logger.error(`Invalid YAML file: ${inputPath}`);
     exit(1);
   }
   // Unreachable (validated in validateYamlSchema, included for type check)
   if (!yamlSchema.include) {
-    logError('No include property found in YAML schema');
+    logger.error('No include property found in YAML schema');
     exit(1);
   }
 

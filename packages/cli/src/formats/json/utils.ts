@@ -55,7 +55,7 @@ export function findMatchingItemArray(
       wrap: true,
     });
     if (!keyCandidates) {
-      logError(
+      logger.error(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
       );
       exit(1);
@@ -64,7 +64,7 @@ export function findMatchingItemArray(
       continue;
     } else if (keyCandidates.length > 1) {
       // If multiple key candidates, exit with an error
-      logError(
+      logger.error(
         `Source item at path: ${sourceObjectPointer} has multiple matching keys with path: ${localeKeyJsonPath}`
       );
       exit(1);
@@ -125,7 +125,7 @@ export function getIdentifyingLocaleProperty(
   const identifyingLocaleProperty =
     getLocaleProperties(locale)[localeProperty as keyof LocaleProperties];
   if (!identifyingLocaleProperty) {
-    logError(
+    logger.error(
       `Source object options localeProperty is not a valid locale property at path: ${sourceObjectPointer}`
     );
     exit(1);
@@ -152,7 +152,7 @@ export function getSourceObjectOptionsArray(
   );
   const localeKeyJsonPath = sourceObjectOptions.key;
   if (!localeKeyJsonPath) {
-    logError(
+    logger.error(
       `Source object options key is required for array at path: ${sourceObjectPointer}`
     );
     exit(1);
@@ -172,7 +172,7 @@ export function getSourceObjectOptionsObject(
   );
   const jsonPathKey = sourceObjectOptions.key;
   if (jsonPathKey) {
-    logError(
+    logger.error(
       `Source object options key is not allowed for object at path: ${sourceObjectPointer}`
     );
     exit(1);
@@ -233,7 +233,7 @@ export function validateJsonSchema(
   // Validate includes or composite
   const jsonSchema = options.jsonSchema[matchingGlob];
   if (jsonSchema.include && jsonSchema.composite) {
-    logError(
+    logger.error(
       'include and composite cannot be used together in the same JSON schema'
     );
     exit(1);
@@ -241,7 +241,7 @@ export function validateJsonSchema(
   }
 
   if (!jsonSchema.include && !jsonSchema.composite) {
-    logError('No include or composite property found in JSON schema');
+    logger.error('No include or composite property found in JSON schema');
     exit(1);
     return null;
   }

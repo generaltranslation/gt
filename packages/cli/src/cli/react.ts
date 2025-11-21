@@ -179,7 +179,7 @@ export class ReactCLI extends BaseCLI {
         settings.defaultLocale
       );
       if (!translationFiles.gt) {
-        logError(noFilesError);
+        logger.error(noFilesError);
         process.exit(1);
       }
       await saveJSON(translationFiles.gt, newData);
@@ -219,7 +219,7 @@ export class ReactCLI extends BaseCLI {
     });
 
     if (!answer) {
-      logError('Operation cancelled.');
+      logger.error('Operation cancelled.');
       process.exit(0);
     }
 
@@ -244,7 +244,7 @@ export class ReactCLI extends BaseCLI {
     );
 
     if (errors.length > 0) {
-      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
+      logger.error(chalk.red('Failed to write files:\n') + errors.join('\n'));
     }
 
     // Format updated files if formatters are available
@@ -261,7 +261,7 @@ export class ReactCLI extends BaseCLI {
     }
 
     if (warnings.length > 0) {
-      logWarning(
+      logger.warn(
         chalk.yellow('Warnings encountered:') +
           '\n' +
           warnings

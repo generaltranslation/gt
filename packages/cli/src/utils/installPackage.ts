@@ -30,7 +30,7 @@ export async function installPackage(
     }
 
     childProcess.on('error', (error) => {
-      logError(chalk.red(`Installation error: ${error.message}`));
+      logger.error(chalk.red(`Installation error: ${error.message}`));
       logInfo(
         `Please manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
       );
@@ -41,9 +41,9 @@ export async function installPackage(
       if (code === 0) {
         resolve();
       } else {
-        logError(chalk.red(`Installation failed with exit code ${code}`));
+        logger.error(chalk.red(`Installation failed with exit code ${code}`));
         if (errorOutput) {
-          logError(chalk.red(`Error details: ${errorOutput}`));
+          logger.error(chalk.red(`Error details: ${errorOutput}`));
         }
         logInfo(
           `Please manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
@@ -78,7 +78,7 @@ export async function installPackageGlobal(
     }
 
     childProcess.on('error', (error) => {
-      logError(chalk.red(`Installation error: ${error.message}`));
+      logger.error(chalk.red(`Installation error: ${error.message}`));
       logInfo(
         `Please manually install ${packageName} with: npm install -g ${packageName}`
       );
@@ -89,9 +89,9 @@ export async function installPackageGlobal(
       if (code === 0) {
         resolve();
       } else {
-        logError(chalk.red(`Installation failed with exit code ${code}`));
+        logger.error(chalk.red(`Installation failed with exit code ${code}`));
         if (errorOutput) {
-          logError(chalk.red(`Error details: ${errorOutput}`));
+          logger.error(chalk.red(`Error details: ${errorOutput}`));
         }
         logInfo(
           `Please manually install ${packageName} with: npm install -g ${packageName}`

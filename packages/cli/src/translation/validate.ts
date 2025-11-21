@@ -58,7 +58,7 @@ export async function validateProject(
   );
 
   if (warnings.length > 0) {
-    logWarning(
+    logger.warn(
       chalk.yellow(
         `CLI tool encountered ${warnings.length} warnings while scanning for translatable content.`
       ) +
@@ -81,7 +81,7 @@ export async function validateProject(
   }
 
   if (updates.length === 0) {
-    logError(
+    logger.error(
       chalk.red(
         `No in-line content or dictionaries were found for ${chalk.green(
           pkg

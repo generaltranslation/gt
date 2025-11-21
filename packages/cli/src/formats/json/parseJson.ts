@@ -25,7 +25,7 @@ export function parseJson(
   try {
     json = JSON.parse(content);
   } catch {
-    logError(`Invalid JSON file: ${filePath}`);
+    logger.error(`Invalid JSON file: ${filePath}`);
     exit(1);
   }
 
@@ -36,7 +36,7 @@ export function parseJson(
   }
 
   if (!jsonSchema.composite) {
-    logError('No composite property found in JSON schema');
+    logger.error('No composite property found in JSON schema');
     exit(1);
   }
 
@@ -66,7 +66,7 @@ export function parseJson(
     if (sourceObjectOptions.type === 'array') {
       // Validate type
       if (!Array.isArray(sourceObjectValue)) {
-        logError(
+        logger.error(
           `Source object value is not an array at path: ${sourceObjectPointer}`
         );
         exit(1);
@@ -80,7 +80,7 @@ export function parseJson(
         sourceObjectValue
       );
       if (!Object.keys(matchingItems).length) {
-        logError(
+        logger.error(
           `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
         );
         exit(1);
@@ -129,7 +129,7 @@ export function parseJson(
       // Object: use the key in this object with the matching locale property
       // Validate type
       if (typeof sourceObjectValue !== 'object' || sourceObjectValue === null) {
-        logError(
+        logger.error(
           `Source object value is not an object at path: ${sourceObjectPointer}`
         );
         exit(1);
@@ -144,7 +144,7 @@ export function parseJson(
       );
       // Validate source item exists
       if (!matchingItem.sourceItem) {
-        logError(
+        logger.error(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );
         exit(1);

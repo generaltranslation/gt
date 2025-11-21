@@ -34,7 +34,7 @@ export async function addVitePlugin({
     VITE_CONFIG_PATH_BASE + 'cts',
   ]);
   if (!viteConfigPath) {
-    logError(
+    logger.error(
       `No ${VITE_CONFIG_PATH_BASE}[js|ts|mjs|mts|cjs|cts] file found. Please add the @generaltranslation/compiler plugin to your vite configuration file:
       import { vite as gtCompiler } from '@generaltranslation/compiler';
       export default defineConfig({
