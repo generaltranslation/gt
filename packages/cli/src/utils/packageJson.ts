@@ -1,4 +1,4 @@
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 import chalk from 'chalk';
 import path from 'node:path';

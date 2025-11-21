@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { WorkflowStep } from './Workflow.js';
-import { createProgressBar, logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { GT } from 'generaltranslation';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -31,7 +31,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
   PollJobsInput,
   PollJobsOutput
 > {
-  private spinner: ReturnType<typeof createProgressBar> | null = null;
+  private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
   private previousProgress = 0;
 
   constructor(private gt: GT) {
@@ -46,7 +46,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
     forceRetranslation,
   }: PollJobsInput): Promise<PollJobsOutput> {
     const startTime = Date.now();
-    this.spinner = createProgressBar(fileQueryData.length);
+    this.spinner = logger.createProgressBar(fileQueryData.length);
     const spinnerMessage = forceRetranslation
       ? 'Waiting for retranslation...'
       : 'Waiting for translation...';

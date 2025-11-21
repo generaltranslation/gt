@@ -1,5 +1,4 @@
-import { createSpinner } from '../../../console/logging.js';
-import { logError } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import fs from 'node:fs';
 import chalk from 'chalk';
 import generateModule from '@babel/generator';
@@ -34,7 +33,7 @@ export async function updateViteConfig({
   tsconfigJson?: { compilerOptions?: { module?: string } };
 }) {
   // Animation
-  const spinner = createSpinner();
+  const spinner = logger.createSpinner();
   spinner.start(`Adding gt compiler plugin to ${viteConfigPath}...`);
 
   // Read the file

@@ -1,6 +1,6 @@
 import { detectFormatter } from '../hooks/postProcess.js';
-import { createSpinner, promptSelect } from '../console/logging.js';
-import { logInfo, logError, logStep, logWarning } from '../console/logging.js';
+import { promptSelect } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import { promptConfirm } from '../console/logging.js';
 import { SetupOptions, SupportedFrameworks } from '../types/index.js';
@@ -31,7 +31,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup',
   });
   if (!answer) {
-    logInfo(
+    logger.info(
       'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup'
     );
     process.exit(0);
@@ -78,7 +78,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     !isPackageInstalled('gt-next', packageJson)
   ) {
     const packageManager = await getPackageManager();
-    const spinner = createSpinner('timer');
+    const spinner = logger.createSpinner('timer');
     spinner.start(`Installing gt-next with ${packageManager.name}...`);
     await installPackage('gt-next', packageManager);
     spinner.stop(chalk.green('Automatically installed gt-next.'));
@@ -89,7 +89,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     !isPackageInstalled('gt-react', packageJson)
   ) {
     const packageManager = await getPackageManager();
-    const spinner = createSpinner('timer');
+    const spinner = logger.createSpinner('timer');
     spinner.start(`Installing gt-react with ${packageManager.name}...`);
     await installPackage('gt-react', packageManager);
     spinner.stop(chalk.green('Automatically installed gt-react.'));
@@ -123,7 +123,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       skipTs: true,
       addGTProvider: true,
     };
-    const spinner = createSpinner();
+    const spinner = logger.createSpinner();
     spinner.start('Wrapping JSX content with <T> tags...');
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
@@ -149,7 +149,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       packageJson,
       tsconfigJson
     );
-    logStep(
+    logger.step(
       chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
     );
   }

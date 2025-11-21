@@ -7,7 +7,7 @@ import flattenDictionary from '../utils/flattenDictionary.js';
 import loadJSON from '../../fs/loadJSON.js';
 import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { randomUUID } from 'node:crypto';
 import { isValidIcu } from '../jsx/evaluateJsx.js';
 import { warnInvalidIcuSync } from '../../console/index.js';

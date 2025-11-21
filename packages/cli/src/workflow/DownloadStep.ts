@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { WorkflowStep } from './Workflow.js';
-import { createProgressBar, logError, logWarning } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import {
   BatchedFiles,
   downloadFileBatch,
@@ -20,7 +20,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
   DownloadTranslationsInput,
   boolean
 > {
-  private spinner: ReturnType<typeof createProgressBar> | null = null;
+  private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
 
   constructor(
     private gt: GT,
@@ -34,7 +34,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
     resolveOutputPath,
     forceDownload,
   }: DownloadTranslationsInput): Promise<boolean> {
-    this.spinner = createProgressBar(fileTracker.completed.size);
+    this.spinner = logger.createProgressBar(fileTracker.completed.size);
     this.spinner.start('Downloading files...');
 
     // Download ready files

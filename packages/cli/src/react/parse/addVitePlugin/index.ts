@@ -1,5 +1,5 @@
 import findFilepath from '../../../fs/findFilepath.js';
-import { logError } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import { installCompiler } from './installCompiler.js';
 import { updateViteConfig } from './updateViteConfig.js';
 

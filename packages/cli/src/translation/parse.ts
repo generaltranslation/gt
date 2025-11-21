@@ -5,7 +5,7 @@ import {
   TranslateFlags,
 } from '../types/index.js';
 import fs from 'fs';
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';

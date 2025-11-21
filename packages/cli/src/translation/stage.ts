@@ -3,7 +3,7 @@ import chalk from 'chalk';
 
 import findFilepath from '../fs/findFilepath.js';
 import { Settings, TranslateFlags, Updates } from '../types/index.js';
-import { logWarning, logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 

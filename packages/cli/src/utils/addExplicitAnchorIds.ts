@@ -5,7 +5,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
-import { logWarning } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import escapeHtmlInTextNodes from 'gt-remark';
 
 /**

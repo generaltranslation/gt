@@ -1,6 +1,6 @@
 import type { EnqueueFilesResult } from 'generaltranslation/types';
 import { WorkflowStep } from './Workflow.js';
-import { createSpinner } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import type { FileReference } from 'generaltranslation/types';
@@ -10,7 +10,7 @@ export class EnqueueStep extends WorkflowStep<
   FileReference[],
   EnqueueFilesResult
 > {
-  private spinner = createSpinner('dots');
+  private spinner = logger.createSpinner('dots');
   private result: EnqueueFilesResult | null = null;
 
   constructor(

@@ -1,8 +1,5 @@
-import {
-  createSpinner,
-  logErrorAndExit,
-  logMessage,
-} from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { Settings, SupportedFrameworks } from '../types/index.js';
@@ -37,7 +34,7 @@ export async function retrieveCredentials(
     )}\n\n${chalk.cyan(urlToOpen)}`
   );
 
-  const spinner = createSpinner('dots');
+  const spinner = logger.createSpinner('dots');
   spinner.start('Waiting for response from dashboard...');
 
   const credentials = await new Promise<Credentials>(
