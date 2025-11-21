@@ -8,5 +8,6 @@ minimumReleaseAgeExclude:
   - gt-next
   - gt-react
   - gt-sanity
+  - gt-core
   - gtx-cli
   - generaltranslation

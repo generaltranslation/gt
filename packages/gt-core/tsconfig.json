@@ -1,25 +1,26 @@
 {
   "compilerOptions": {
     "module": "ESNext",
-    "target": "ES2022",
     "strict": true,
+    "composite": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "resolveJsonModule": true,
-    "moduleResolution": "Node",
-    "sourceMap": false,
     "declaration": true,
     "declarationDir": "./dist",
-    "declarationMap": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
     "removeComments": false,
-    "allowSyntheticDefaultImports": true,
-    "composite": true,
-    "jsx": "react-jsx"
+    "stripInternal": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "paths": {
+      "gt-core": ["dist/index.d.ts"]
+    },
+    "lib": ["ES2023"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
   "references": [
     {
