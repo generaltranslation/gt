@@ -1,54 +1,24 @@
 import {
-  log,
-  spinner,
-  intro,
-  outro,
   text,
   select,
   confirm,
   isCancel,
   cancel,
   multiselect,
-  progress,
 } from '@clack/prompts';
 import chalk from 'chalk';
 import { getCLIVersion } from '../utils/packageJson.js';
+import { logger } from './logger.js';
 
-// Basic logging functions
-export function logInfo(message: string) {
-  log.info(message);
-}
-export function logWarning(message: string) {
-  log.warn(message);
-}
-export function logError(message: string) {
-  log.error(message);
-}
-export function logSuccess(message: string) {
-  log.success(message);
-}
-export function logStep(message: string) {
-  log.step(message);
-}
-export function logMessage(message: string) {
-  log.message(message, { symbol: chalk.cyan('~') });
+export async function logErrorAndExit(message: string): Promise<never> {
+  logger.error(message);
+  return await exit(1);
 }
 
-export function logErrorAndExit(message: string): never {
-  log.error(message);
-  exit(1);
-}
-
-export function exit(code: number): never {
+export async function exit(code: number): Promise<never> {
+  // Flush logs before exit
+  await logger.flush();
   process.exit(code);
-}
-
-// Clack prompts
-export function startCommand(message: string) {
-  intro(chalk.cyan(message));
-}
-export function endCommand(message: string) {
-  outro(chalk.cyan(message));
 }
 
 // GT specific logging
@@ -57,7 +27,7 @@ export function displayHeader(introString?: string) {
   displayInitializingText();
 
   if (introString) {
-    startCommand(introString);
+    logger.startCommand(introString);
   }
 }
 
@@ -86,35 +56,29 @@ ${chalk.dim(`CLI Version: ${version}\n`)}`
 }
 
 export function displayProjectId(projectId: string) {
-  logMessage(chalk.dim(`Project ID: ${chalk.bold(projectId)}`));
+  logger.message(
+    chalk.dim(`Project ID: ${chalk.bold(projectId)}`),
+    chalk.cyan('~')
+  );
 }
 
 export function displayResolvedPaths(resolvedPaths: [string, string][]) {
   const paths = resolvedPaths.map(([key, resolvedPath]) => {
     return chalk.dim(`'${chalk.white(key)}' → '${chalk.green(resolvedPath)}'`);
   });
-  log.step(`Resolved path aliases:\n${paths.join('\n')}`);
+  logger.step(`Resolved path aliases:\n${paths.join('\n')}`);
 }
 
 export function displayCreatedConfigFile(configFilepath: string) {
-  log.step(`Created config file ${chalk.cyan(configFilepath)}`);
+  logger.step(`Created config file ${chalk.cyan(configFilepath)}`);
 }
 
 export function displayUpdatedConfigFile(configFilepath: string) {
-  log.success(`Updated config file ${chalk.cyan(configFilepath)}`);
+  logger.success(`Updated config file ${chalk.cyan(configFilepath)}`);
 }
 
 export function displayUpdatedVersionsFile(versionFilepath: string) {
-  log.success(`Updated versions file ${chalk.cyan(versionFilepath)}`);
-}
-
-// Spinner functionality
-export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
-  return spinner({ indicator });
-}
-// Spinner functionality
-export function createProgressBar(total: number) {
-  return progress({ max: total });
+  logger.success(`Updated versions file ${chalk.cyan(versionFilepath)}`);
 }
 
 // Input prompts
@@ -140,7 +104,7 @@ export async function promptText({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    process.exit(0);
+    return await exit(0);
   }
 
   return result;
@@ -170,7 +134,7 @@ export async function promptSelect<T>({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    process.exit(0);
+    return await exit(0);
   }
 
   return result as T;
@@ -200,7 +164,7 @@ export async function promptMultiSelect<T extends string>({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    process.exit(0);
+    return await exit(0);
   }
 
   return result as Array<T>;
@@ -222,7 +186,7 @@ export async function promptConfirm({
 
   if (isCancel(result)) {
     cancel(cancelMessage);
-    process.exit(0);
+    return await exit(0);
   }
 
   return result;
@@ -230,7 +194,7 @@ export async function promptConfirm({
 
 // Warning display functions
 export function warnApiKeyInConfig(optionsFilepath: string) {
-  log.warn(
+  logger.warn(
     `Found ${chalk.cyan('apiKey')} in "${chalk.green(optionsFilepath)}". ` +
       chalk.white(
         'Your API key is exposed! Please remove it from the file and include it as an environment variable.'
@@ -243,14 +207,14 @@ export function warnVariableProp(
   attrName: string,
   value: string
 ) {
-  log.warn(
+  logger.warn(
     `Found ${chalk.green('<T>')} component in ${chalk.cyan(file)} with variable ${attrName}: "${chalk.white(value)}". ` +
       `Change "${attrName}" to ensure this content is translated.`
   );
 }
 
 export function warnNoId(file: string) {
-  log.warn(
+  logger.warn(
     `Found ${chalk.green('<T>')} component in ${chalk.cyan(file)} with no id. ` +
       chalk.white('Add an id to ensure the content is translated.')
   );
@@ -261,7 +225,7 @@ export function warnHasUnwrappedExpression(
   id: string,
   unwrappedExpressions: string[]
 ) {
-  log.warn(
+  logger.warn(
     `${chalk.green('<T>')} with id "${id}" in ${chalk.cyan(file)} has children: ${unwrappedExpressions.join(', ')} that could change at runtime. ` +
       chalk.white('Use a variable component like ') +
       chalk.green('<Var>') +
@@ -276,14 +240,14 @@ export function warnNonStaticExpression(
   attrName: string,
   value: string
 ) {
-  log.warn(
+  logger.warn(
     `Found non-static expression in ${chalk.cyan(file)} for attribute ${attrName}: "${chalk.white(value)}". ` +
       `Change "${attrName}" to ensure this content is translated.`
   );
 }
 
 export function warnTemplateLiteral(file: string, value: string) {
-  log.warn(
+  logger.warn(
     `Found template literal with quasis (${value}) in ${chalk.cyan(file)}. ` +
       chalk.white(
         'Change the template literal to a string to ensure this content is translated.'
@@ -292,7 +256,7 @@ export function warnTemplateLiteral(file: string, value: string) {
 }
 
 export function warnTernary(file: string) {
-  log.warn(
+  logger.warn(
     `Found ternary expression in ${chalk.cyan(file)}. ` +
       chalk.white('A Branch component may be more appropriate here.')
   );
