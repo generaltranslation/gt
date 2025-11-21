@@ -91,10 +91,16 @@ class Logger {
   private constructor() {
     // Read configuration from environment variables
     const format = (
-      process.env.LOG_FORMAT || 'default'
+      process.env.GT_LOG_FORMAT || 'default'
     ).toLowerCase() as LogFormat;
-    const logFile = process.env.LOG_FILE;
-    const logLevel = process.env.LOG_LEVEL || 'info';
+
+    if (format !== 'default' && format !== 'json') {
+      console.error('Invalid log format');
+      process.exit(1);
+    }
+
+    const logFile = process.env.GT_LOG_FILE;
+    const logLevel = process.env.GT_LOG_LEVEL || 'info';
 
     this.logFormat = format;
 
