@@ -79,6 +79,8 @@ export class BaseCLI {
   }
   // Init is never called in a child class
   public init() {
+    this.setupSetupProjectCommand();
+    this.setupStageCommand();
     this.setupTranslateCommand();
   }
   // Execute is called by the main program
@@ -87,6 +89,20 @@ export class BaseCLI {
     if (process.argv.length <= 2) {
       process.argv.push('init');
     }
+  }
+
+  protected setupSetupProjectCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('setup')
+        .description(
+          'Upload source files and setup the project for translation'
+        )
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader('Uploading source files and setting up project...');
+      await this.handleSetupProject(initOptions);
+      logger.endCommand('Done!');
+    });
   }
 
   protected setupStageCommand(): void {
@@ -131,7 +147,9 @@ export class BaseCLI {
       });
   }
 
-  protected async handleSetup(initOptions: TranslateFlags): Promise<void> {
+  protected async handleSetupProject(
+    initOptions: TranslateFlags
+  ): Promise<void> {
     const settings = await generateSettings(initOptions);
 
     // Preprocess shared static assets if configured (move + rewrite sources)
@@ -405,7 +423,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
               ? 'https://generaltranslation.com/en/docs/next/guides/local-tx'
               : 'https://generaltranslation.com/en/docs/react/guides/local-tx'
           } for more information.\nIf you answer no, we'll configure the CLI tool to download completed translations.`,
-          defaultValue: true,
+          defaultValue: false,
         })
       : false;
     // Ask where the translations are stored
@@ -423,7 +441,11 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
-      await createLoadTranslationsFile(process.cwd(), finalTranslationsDir);
+      await createLoadTranslationsFile(
+        process.cwd(),
+        finalTranslationsDir,
+        locales
+      );
       logger.message(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
