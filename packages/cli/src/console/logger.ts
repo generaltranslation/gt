@@ -12,7 +12,7 @@ import {
 import type { Logger as PinoLogger } from 'pino';
 import type { SpinnerResult, ProgressResult } from '@clack/prompts';
 
-export type LogFormat = 'default' | 'pretty' | 'json';
+export type LogFormat = 'default' | 'json';
 
 // Mock spinner that logs to console instead of updating terminal UI
 class MockSpinner implements SpinnerResult {
@@ -105,19 +105,7 @@ class Logger {
     }> = [];
 
     // Console output (stdout)
-    if (format === 'pretty') {
-      // Pino-pretty formatted console output
-      transports.push({
-        level: logLevel,
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-          destination: 1, // stdout
-        },
-      });
-    } else if (format === 'json') {
+    if (format === 'json') {
       // JSON formatted console output
       transports.push({
         level: logLevel,
