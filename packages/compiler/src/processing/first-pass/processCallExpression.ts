@@ -15,7 +15,7 @@ import {
   validateUseGTCallback,
   validateUseMessagesCallback,
   validateUseTranslationsCallback,
-} from '../../utils/validation/validateTranslationFunctionCallback';
+} from '../../transform/validation/validateTranslationFunctionCallback';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { regsiterUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
 import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
@@ -125,7 +125,7 @@ function handleUseGTCallback(
   identifier: number
 ) {
   // Check for violations
-  const useGTCallbackParams = validateUseGTCallback(callExpr);
+  const useGTCallbackParams = validateUseGTCallback(callExpr, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
   if (useGTCallbackParams.errors.length > 0) {
     return;
@@ -135,7 +135,8 @@ function handleUseGTCallback(
   registerUseGTCallback(
     identifier,
     state,
-    useGTCallbackParams.content!,
+    useGTCallbackParams.content ?? '', // content will only be undefined if it is a declareStatic function invocation
+    // Todo: update this logic to store a flag to skip injection on the second pass
     useGTCallbackParams.context,
     useGTCallbackParams.id,
     useGTCallbackParams.hash

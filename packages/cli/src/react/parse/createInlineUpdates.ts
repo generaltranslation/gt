@@ -57,7 +57,8 @@ export async function createInlineUpdates(
         errors,
         warnings,
         file,
-        parsingOptions
+        parsingOptions,
+        pkg
       );
     }
 
