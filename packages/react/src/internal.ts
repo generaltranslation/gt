@@ -36,7 +36,7 @@ import {
 
 import {
   MFunctionType,
-  TFunctionType,
+  GTFunctionType,
   Dictionary,
   RenderMethod,
   TranslatedChildren,
@@ -85,7 +85,7 @@ export type {
   RenderVariable,
   VariableProps,
   MFunctionType,
-  TFunctionType,
+  GTFunctionType,
   _Message,
   _Messages,
 };

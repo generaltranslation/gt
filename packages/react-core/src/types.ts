@@ -1,4 +1,4 @@
-import { MFunctionType, TFunctionType } from './types-dir/types';
+import { MFunctionType, GTFunctionType } from './types-dir/types';
 import {
   Dictionary,
   RenderMethod,
@@ -62,7 +62,7 @@ export {
   _Message,
   _Messages,
   MFunctionType,
-  TFunctionType,
+  GTFunctionType,
   LocaleSelectorProps,
   RegionSelectorProps,
   InternalGTProviderProps,
