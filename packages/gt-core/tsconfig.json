@@ -15,9 +15,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
-    "paths": {
-      "gt-core": ["dist/index.d.ts"]
-    },
     "lib": ["ES2023"]
   },
   "include": ["src/**/*.ts"],

@@ -71,12 +71,20 @@
       "types": "./dist/types.d.ts",
       "require": "./dist/types.cjs.min.cjs",
       "import": "./dist/types.esm.min.mjs"
+    },
+    "./fallbacks": {
+      "types": "./dist/fallbacks.d.ts",
+      "require": "./dist/fallbacks.cjs.min.cjs",
+      "import": "./dist/fallbacks.esm.min.mjs"
     }
   },
   "typesVersions": {
     "*": {
       "types": [
         "./dist/types.d.ts"
+      ],
+      "fallbacks": [
+        "./dist/fallbacks.d.ts"
       ]
     }
   },
@@ -85,6 +93,9 @@
     "paths": {
       "gt-core/types": [
         "/dist/types"
+      ],
+      "gt-core/fallbacks": [
+        "/dist/fallbacks"
       ]
     }
   }
