@@ -579,6 +579,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../generaltranslation
+      gt-core:
+        specifier: workspace:*
+        version: link:../gt-core
       react:
         specifier: '>=16.8.0'
         version: 19.1.1

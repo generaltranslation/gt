@@ -27,6 +27,9 @@
     },
     {
       "path": "../supported-locales"
+    },
+    {
+      "path": "../gt-core"
     }
   ]
 }

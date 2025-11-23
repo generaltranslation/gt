@@ -1,4 +1,5 @@
 // TODO: next major version, this should be Record<string, string>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type BaseTranslationOptions = Record<string, any>;
 
 // For t()
@@ -35,6 +36,7 @@ export type RuntimeTranslationOptions = {
 export type MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
   // TODO: this needs to become a InlineTranslationOptions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options?: Record<string, any>
 ) => T extends string ? string : T;
 
