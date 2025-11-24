@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.11
+
+### Patch Changes
+
+- [#827](https://github.com/generaltranslation/gt/pull/827) [`35197d0`](https://github.com/generaltranslation/gt/commit/35197d075670411dcdd2ddc93fd5eaf021cd924b) Thanks [@brian-lou](https://github.com/brian-lou)! - Pin @clack/prompts version
+
 ## 2.5.10
 
 ### Patch Changes
