@@ -10,6 +10,7 @@ import { formatMessage } from './utils/formatMessage';
 import { extractVariables } from '../utils/extractVariables';
 import { validateDecodedOptions } from './utils/validateDecodedOptions';
 import { interpolationFailureWarning } from 'src/logs/warnings';
+import { gtFallback } from './gtFallback';
 
 /**
  * A fallback function for the m() function that decodes and interpolates.
@@ -38,38 +39,21 @@ import { interpolationFailureWarning } from 'src/logs/warnings';
  */
 export const mFallback: MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
-  // TODO: this needs to become a InlineTranslationOptions
   options: InlineResolveOptions = {}
 ): T extends string ? string : T => {
   // Return if the encoded message is null or undefined
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;
 
-  // Get the encoded options
-  let decodedOptions =
+  // Get any encoded options
+  const decodedOptions =
     decodeOptions(encodedMsg) || ({} as InlineTranslationOptions);
 
-  // Validate the decoded options
-  if (!validateDecodedOptions(decodedOptions)) {
-    // Fallback to provided options if the decoded options are invalid
-    decodedOptions = options;
-  }
-
-  // Extract variable fields
-  const variables = extractVariables(decodedOptions);
-
-  // No decoded options, fallback to decodeMsg
-  if (Object.keys(variables).length === 0) {
+  // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
+  if (validateDecodedOptions(decodedOptions)) {
+    // This is an encoded string, msg already interpolated, just return decoded string
     return decodeMsg(encodedMsg) as T extends string ? string : T;
   }
 
-  try {
-    // Interpolate the message
-    return formatMessage(encodedMsg, variables) as T extends string
-      ? string
-      : T;
-  } catch {
-    // Fallback to decodeMsg
-    logger.warn(interpolationFailureWarning);
-    return decodeMsg(encodedMsg) as T extends string ? string : T;
-  }
+  // Use gtFallback to interpolate
+  return gtFallback(encodedMsg, options) as T extends string ? string : T;
 };

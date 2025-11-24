@@ -34,28 +34,17 @@ import { interpolationFailureWarning } from 'src/logs/warnings';
  */
 export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
-  // TODO: this needs to become a InlineTranslationOptions
   options: InlineTranslationOptions = {}
 ): T extends string ? string : T => {
   // Return if the encoded message is null or undefined
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;
 
-  // Get the encoded options
-  let decodedOptions =
-    decodeOptions(encodedMsg) || ({} as InlineTranslationOptions);
-
-  // Validate the decoded options
-  if (!validateDecodedOptions(decodedOptions)) {
-    // Fallback to provided options if the decoded options are invalid
-    decodedOptions = options;
-  }
-
-  // Extract variable fields
-  const variables = extractVariables(decodedOptions);
+  // Remove any gt related options
+  const variables = extractVariables(options);
 
   // No decoded options, fallback to decodeMsg
   if (Object.keys(variables).length === 0) {
-    return decodeMsg(encodedMsg) as T extends string ? string : T;
+    return encodedMsg as T extends string ? string : T;
   }
 
   try {
@@ -66,6 +55,6 @@ export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
   } catch {
     // Fallback to decodeMsg
     logger.warn(interpolationFailureWarning);
-    return decodeMsg(encodedMsg) as T extends string ? string : T;
+    return encodedMsg as T extends string ? string : T;
   }
 };
