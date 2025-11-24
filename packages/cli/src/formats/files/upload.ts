@@ -5,7 +5,8 @@ import {
   noProjectIdError,
   devApiKeyError,
 } from '../../console/index.js';
-import { logErrorAndExit, logError } from '../../console/logging.js';
+import { logErrorAndExit } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
@@ -114,23 +115,23 @@ export async function upload(
   }
 
   if (allFiles.length === 0) {
-    logError(
+    logger.error(
       'No files to upload were found. Please check your configuration and try again.'
     );
     return;
   }
 
   if (!options.defaultLocale) {
-    logErrorAndExit(noDefaultLocaleError);
+    return logErrorAndExit(noDefaultLocaleError);
   }
   if (!options.apiKey) {
-    logErrorAndExit(noApiKeyError);
+    return logErrorAndExit(noApiKeyError);
   }
   if (options.apiKey.startsWith('gtx-dev-')) {
-    logErrorAndExit(devApiKeyError);
+    return logErrorAndExit(devApiKeyError);
   }
   if (!options.projectId) {
-    logErrorAndExit(noProjectIdError);
+    return logErrorAndExit(noProjectIdError);
   }
 
   const locales = options.locales || [];

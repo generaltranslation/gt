@@ -1,4 +1,4 @@
-import { logError, logWarning } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
@@ -54,7 +54,7 @@ export async function aggregateFiles(
         try {
           JSON.parse(content);
         } catch (e: any) {
-          logWarning(`Skipping ${relativePath}: JSON file is not parsable`);
+          logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
           return null;
         }
 
@@ -77,7 +77,7 @@ export async function aggregateFiles(
       .filter((file) => {
         if (!file) return false;
         if (typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(`Skipping ${file.fileName}: JSON file is empty`);
+          logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
           return false;
         }
         return true;
@@ -96,7 +96,7 @@ export async function aggregateFiles(
         try {
           YAML.parse(content);
         } catch (e: any) {
-          logWarning(`Skipping ${relativePath}: YAML file is not parsable`);
+          logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
           return null;
         }
 
@@ -116,7 +116,7 @@ export async function aggregateFiles(
       })
       .filter((file) => {
         if (!file || typeof file.content !== 'string' || !file.content.trim()) {
-          logWarning(
+          logger.warn(
             `Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`
           );
           return false;
@@ -137,7 +137,7 @@ export async function aggregateFiles(
           if (fileType === 'mdx') {
             const validation = isValidMdx(content, filePath);
             if (!validation.isValid) {
-              logWarning(
+              logger.warn(
                 `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
               );
               return null;
@@ -159,7 +159,7 @@ export async function aggregateFiles(
             typeof file.content !== 'string' ||
             !file.content.trim()
           ) {
-            logWarning(
+            logger.warn(
               `Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`
             );
             return false;
@@ -171,7 +171,7 @@ export async function aggregateFiles(
   }
 
   if (allFiles.length === 0 && !settings.publish) {
-    logError(
+    logger.error(
       'No files to translate were found. Please check your configuration and try again.'
     );
   }

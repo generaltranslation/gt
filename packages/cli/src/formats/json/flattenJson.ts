@@ -1,5 +1,5 @@
 import { JSONPath } from 'jsonpath-plus';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 /**
  * Flattens a JSON object according to a list of JSON paths.
@@ -28,7 +28,7 @@ export function flattenJson(
         extractedJson[result.pointer] = result.value;
       });
     } catch (error) {
-      logError(`Error with JSONPath pattern: ${jsonPath}`);
+      logger.error(`Error with JSONPath pattern: ${jsonPath}`);
     }
   }
   return extractedJson;
@@ -63,7 +63,7 @@ export function flattenJsonWithStringFilter(
         }
       });
     } catch {
-      logError(`Error with JSONPath pattern: ${jsonPath}`);
+      logger.error(`Error with JSONPath pattern: ${jsonPath}`);
     }
   }
   return extractedJson;

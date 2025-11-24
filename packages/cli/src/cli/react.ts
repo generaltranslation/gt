@@ -7,16 +7,8 @@ import {
   SupportedLibraries,
   TranslateFlags,
 } from '../types/index.js';
-import {
-  displayHeader,
-  endCommand,
-  logError,
-  logErrorAndExit,
-  logStep,
-  logSuccess,
-  logWarning,
-  promptConfirm,
-} from '../console/logging.js';
+import { displayHeader, exitSync, promptConfirm } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import findFilepath from '../fs/findFilepath.js';
 import chalk from 'chalk';
@@ -47,6 +39,7 @@ export class ReactCLI extends BaseCLI {
     super(command, library, additionalModules);
   }
   public init() {
+    this.setupSetupProjectCommand();
     this.setupStageCommand();
     this.setupTranslateCommand();
     this.setupGenerateSourceCommand();
@@ -65,6 +58,22 @@ export class ReactCLI extends BaseCLI {
     return wrapContentReact(options, pkg, framework, errors, warnings);
   }
 
+  protected setupSetupProjectCommand(): void {
+    attachAdditionalReactTranslateFlags(
+      attachTranslateFlags(
+        this.program
+          .command('setup')
+          .description(
+            'Upload source files and setup the project for translation'
+          )
+      )
+    ).action(async (options: TranslateFlags) => {
+      displayHeader('Uploading source files and setting up project...');
+      await this.handleSetupProject(options);
+      logger.endCommand('Done!');
+    });
+  }
+
   protected setupStageCommand(): void {
     attachAdditionalReactTranslateFlags(
       attachTranslateFlags(
@@ -79,7 +88,7 @@ export class ReactCLI extends BaseCLI {
         'Staging project for translation with approval required...'
       );
       await this.handleStage(options);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -95,7 +104,7 @@ export class ReactCLI extends BaseCLI {
     ).action(async (options: TranslateFlags) => {
       displayHeader('Translating project...');
       await this.handleTranslate(options);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -129,7 +138,7 @@ export class ReactCLI extends BaseCLI {
         // intro here since we don't want to show the ascii title
         intro(chalk.cyan('Validating project...'));
         await this.handleValidate(options, files);
-        endCommand('Done!');
+        logger.endCommand('Done!');
       });
   }
 
@@ -145,7 +154,7 @@ export class ReactCLI extends BaseCLI {
     ).action(async (initOptions: TranslateFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
-      endCommand('Done!');
+      logger.endCommand('Done!');
     });
   }
 
@@ -179,11 +188,11 @@ export class ReactCLI extends BaseCLI {
         settings.defaultLocale
       );
       if (!translationFiles.gt) {
-        logError(noFilesError);
-        process.exit(1);
+        logger.error(noFilesError);
+        exitSync(1);
       }
       await saveJSON(translationFiles.gt, newData);
-      logStep('Source file saved successfully!');
+      logger.step('Source file saved successfully!');
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(
@@ -205,7 +214,7 @@ export class ReactCLI extends BaseCLI {
         );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
-      logStep('Merged translations successfully!');
+      logger.step('Merged translations successfully!');
     }
   }
 
@@ -219,8 +228,8 @@ export class ReactCLI extends BaseCLI {
     });
 
     if (!answer) {
-      logError('Operation cancelled.');
-      process.exit(0);
+      logger.error('Operation cancelled.');
+      exitSync(0);
     }
 
     // ----- Create a starter gt.config.json file -----
@@ -244,24 +253,24 @@ export class ReactCLI extends BaseCLI {
     );
 
     if (errors.length > 0) {
-      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
+      logger.error(chalk.red('Failed to write files:\n') + errors.join('\n'));
     }
 
     // Format updated files if formatters are available
     if (!options.disableFormatting) await formatFiles(filesUpdated);
 
-    logSuccess(
+    logger.success(
       `Success! Added <T> tags and updated ${chalk.bold.cyan(
         filesUpdated.length
       )} files:\n` +
         filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
     if (filesUpdated.length > 0) {
-      logStep(chalk.green('Please verify the changes before committing.'));
+      logger.step(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
-      logWarning(
+      logger.warn(
         chalk.yellow('Warnings encountered:') +
           '\n' +
           warnings

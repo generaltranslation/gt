@@ -5,7 +5,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
-import { logWarning } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import escapeHtmlInTextNodes from 'gt-remark';
 
 /**
@@ -127,7 +127,7 @@ export function addExplicitAnchorIds(
       ? `translated file: ${translatedPath}`
       : 'translated file';
 
-    logWarning(
+    logger.warn(
       `Header count mismatch detected! ${sourceFile} has ${sourceHeadingMap.length} headers but ${translatedFile} has ${translatedHeadings.length} headers. ` +
         `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
         `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`

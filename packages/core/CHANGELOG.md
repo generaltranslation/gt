@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.0.3
+
+### Patch Changes
+
+- [#823](https://github.com/generaltranslation/gt/pull/823) [`afbd29a`](https://github.com/generaltranslation/gt/commit/afbd29a34b051c76fce387269c4eb4a2e00a5831) Thanks [@brian-lou](https://github.com/brian-lou)! - Deprecate old 'setup' command -> Use 'init' instead. New 'setup' command runs project setup
+
 ## 8.0.2
 
 ### Patch Changes

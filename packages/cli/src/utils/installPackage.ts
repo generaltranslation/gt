@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { spawn } from 'child_process';
-import { logError, logInfo } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { PackageManager } from './packageManager.js';
 
 export async function installPackage(
@@ -30,8 +30,8 @@ export async function installPackage(
     }
 
     childProcess.on('error', (error) => {
-      logError(chalk.red(`Installation error: ${error.message}`));
-      logInfo(
+      logger.error(chalk.red(`Installation error: ${error.message}`));
+      logger.info(
         `Please manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
       );
       reject(error);
@@ -41,11 +41,11 @@ export async function installPackage(
       if (code === 0) {
         resolve();
       } else {
-        logError(chalk.red(`Installation failed with exit code ${code}`));
+        logger.error(chalk.red(`Installation failed with exit code ${code}`));
         if (errorOutput) {
-          logError(chalk.red(`Error details: ${errorOutput}`));
+          logger.error(chalk.red(`Error details: ${errorOutput}`));
         }
-        logInfo(
+        logger.info(
           `Please manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
         );
         reject(new Error(`Process exited with code ${code}`));
@@ -78,8 +78,8 @@ export async function installPackageGlobal(
     }
 
     childProcess.on('error', (error) => {
-      logError(chalk.red(`Installation error: ${error.message}`));
-      logInfo(
+      logger.error(chalk.red(`Installation error: ${error.message}`));
+      logger.info(
         `Please manually install ${packageName} with: npm install -g ${packageName}`
       );
       reject(error);
@@ -89,11 +89,11 @@ export async function installPackageGlobal(
       if (code === 0) {
         resolve();
       } else {
-        logError(chalk.red(`Installation failed with exit code ${code}`));
+        logger.error(chalk.red(`Installation failed with exit code ${code}`));
         if (errorOutput) {
-          logError(chalk.red(`Error details: ${errorOutput}`));
+          logger.error(chalk.red(`Error details: ${errorOutput}`));
         }
-        logInfo(
+        logger.info(
           `Please manually install ${packageName} with: npm install -g ${packageName}`
         );
         reject(new Error(`Process exited with code ${code}`));

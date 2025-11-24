@@ -1,7 +1,8 @@
 import findFilepath from '../../../fs/findFilepath.js';
-import { logError } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import { installCompiler } from './installCompiler.js';
 import { updateViteConfig } from './updateViteConfig.js';
+import { exitSync } from '../../../console/logging.js';
 
 const VITE_CONFIG_PATH_BASE = './vite.config.';
 /**
@@ -34,7 +35,7 @@ export async function addVitePlugin({
     VITE_CONFIG_PATH_BASE + 'cts',
   ]);
   if (!viteConfigPath) {
-    logError(
+    logger.error(
       `No ${VITE_CONFIG_PATH_BASE}[js|ts|mjs|mts|cjs|cts] file found. Please add the @generaltranslation/compiler plugin to your vite configuration file:
       import { vite as gtCompiler } from '@generaltranslation/compiler';
       export default defineConfig({
@@ -42,7 +43,7 @@ export async function addVitePlugin({
       });
       `
     );
-    process.exit(1);
+    exitSync(1);
   }
 
   // Install @generaltranslation/compiler if not installed

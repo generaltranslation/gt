@@ -1,13 +1,12 @@
-import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
-import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
+import { FileToUpload } from 'generaltranslation/types';
 import { UploadStep } from './UploadStep.js';
 import { SetupStep } from './SetupStep.js';
-import { EnqueueStep } from './EnqueueStep.js';
 import { BranchStep } from './BranchStep.js';
-import { UserEditDiffsStep } from './UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
+import { logCollectedFiles } from '../console/logging.js';
 
 /**
  * Helper: Calculate timeout with validation
@@ -18,19 +17,18 @@ function calculateTimeout(timeout: string | number | undefined): number {
 }
 
 /**
- * Sends multiple files for translation to the API using a workflow pattern
- * @param files - Array of file objects to translate
+ * Sets up a project by uploading files running the setup step
+ * @param files - Array of file objects to upload
  * @param options - The options for the API call
  * @param settings - Settings configuration
- * @returns The translated content or version ID
+ * @returns The branch data
  */
-export async function stageFiles(
+export async function setupProject(
   files: FileToUpload[],
   options: TranslateFlags,
   settings: Settings
 ): Promise<{
   branchData: BranchData;
-  enqueueResult: EnqueueFilesResult;
 }> {
   try {
     // Log files to be translated
@@ -42,9 +40,7 @@ export async function stageFiles(
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);
     const uploadStep = new UploadStep(gt, settings);
-    const userEditDiffsStep = new UserEditDiffsStep(settings);
     const setupStep = new SetupStep(gt, settings, timeoutMs);
-    const enqueueStep = new EnqueueStep(gt, settings, options.force);
 
     // first run the branch step
     const branchData = await branchStep.run();
@@ -58,22 +54,12 @@ export async function stageFiles(
     const uploadedFiles = await uploadStep.run({ files, branchData });
     await uploadStep.wait();
 
-    // optionally run the user edit diffs step
-    if (options?.saveLocal) {
-      await userEditDiffsStep.run(uploadedFiles);
-      await userEditDiffsStep.wait();
-    }
-
     // then run the setup step
-    await setupStep.run(uploadedFiles);
+    await setupStep.run(uploadedFiles, options.force ?? false);
     await setupStep.wait();
 
-    // then run the enqueue step
-    const enqueueResult = await enqueueStep.run(uploadedFiles);
-    await enqueueStep.wait();
-
-    return { branchData, enqueueResult };
+    return { branchData };
   } catch (error) {
-    return logErrorAndExit('Failed to send files for translation. ' + error);
+    return logErrorAndExit('Failed to run project setup. ' + error);
   }
 }

@@ -1,5 +1,38 @@
 # gtx-cli
 
+## 2.5.11
+
+### Patch Changes
+
+- [#827](https://github.com/generaltranslation/gt/pull/827) [`35197d0`](https://github.com/generaltranslation/gt/commit/35197d075670411dcdd2ddc93fd5eaf021cd924b) Thanks [@brian-lou](https://github.com/brian-lou)! - Pin @clack/prompts version
+
+## 2.5.10
+
+### Patch Changes
+
+- [#825](https://github.com/generaltranslation/gt/pull/825) [`a9bdf21`](https://github.com/generaltranslation/gt/commit/a9bdf21d9ec80edc190b32b963dfe19c5fe2ea33) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix init write files
+
+## 2.5.9
+
+### Patch Changes
+
+- [#823](https://github.com/generaltranslation/gt/pull/823) [`afbd29a`](https://github.com/generaltranslation/gt/commit/afbd29a34b051c76fce387269c4eb4a2e00a5831) Thanks [@brian-lou](https://github.com/brian-lou)! - Deprecate old 'setup' command -> Use 'init' instead. New 'setup' command runs project setup
+
+- Updated dependencies [[`afbd29a`](https://github.com/generaltranslation/gt/commit/afbd29a34b051c76fce387269c4eb4a2e00a5831)]:
+  - generaltranslation@8.0.3
+
+## 2.5.8
+
+### Patch Changes
+
+- [#821](https://github.com/generaltranslation/gt/pull/821) [`321854a`](https://github.com/generaltranslation/gt/commit/321854ad881ca07b6a0207b3b0cbc004c6c0f5a4) Thanks [@brian-lou](https://github.com/brian-lou)! - Refactor CLI Logging behavior
+
+## 2.5.7
+
+### Patch Changes
+
+- [#819](https://github.com/generaltranslation/gt/pull/819) [`50338d2`](https://github.com/generaltranslation/gt/commit/50338d2192e2882a4192273a7bbf12d39939c209) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding sorting by locale order
+
 ## 2.5.6
 
 ### Patch Changes

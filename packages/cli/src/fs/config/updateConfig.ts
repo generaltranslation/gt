@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { displayUpdatedConfigFile } from '../../console/logging.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 /**
  * Update the config file version id, locales, and projectId (if necessary)
@@ -46,6 +46,8 @@ export default async function updateConfig({
     // show update in console
     displayUpdatedConfigFile(configFilepath);
   } catch (error) {
-    logError(`An error occurred while updating ${configFilepath}: ${error}`);
+    logger.error(
+      `An error occurred while updating ${configFilepath}: ${error}`
+    );
   }
 }

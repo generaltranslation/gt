@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 // New lock file name, use old name for deletion of legacy lock file
 const GT_LOCK_FILE = 'gt-lock.json';
@@ -47,7 +47,9 @@ export function getDownloadedVersions(
     }
     return { version: 1, entries: {} };
   } catch (error) {
-    logError(`An error occurred while getting downloaded versions: ${error}`);
+    logger.error(
+      `An error occurred while getting downloaded versions: ${error}`
+    );
     return { version: 1, entries: {} };
   }
 }
@@ -62,7 +64,7 @@ export function saveDownloadedVersions(
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
     fs.writeFileSync(filepath, JSON.stringify(lock, null, 2));
   } catch (error) {
-    logError(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);
+    logger.error(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);
   }
 }
 export function ensureNestedObject(obj: any, path: string[]): any {

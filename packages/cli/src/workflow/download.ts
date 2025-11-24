@@ -6,7 +6,8 @@ import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
 import { FileStatusTracker, PollTranslationJobsStep } from './PollJobsStep.js';
 import { DownloadTranslationsStep } from './DownloadStep.js';
 import { BranchData } from '../types/branch.js';
-import { logError, logErrorAndExit } from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { BranchStep } from './BranchStep.js';
 import { FileProperties } from '../types/files.js';
 import chalk from 'chalk';
@@ -47,7 +48,7 @@ export async function downloadTranslations(
     const branchResult = await branchStep.run();
     await branchStep.wait();
     if (!branchResult) {
-      logErrorAndExit('Failed to resolve git branch information.');
+      return logErrorAndExit('Failed to resolve git branch information.');
     }
     branchData = branchResult;
   }
@@ -107,7 +108,7 @@ export async function downloadTranslations(
     await pollStep.wait();
 
     if (pollResult.fileTracker.failed.size > 0) {
-      logError(
+      logger.error(
         `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
           pollResult.fileTracker.failed.entries()
         )

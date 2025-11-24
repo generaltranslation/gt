@@ -1,9 +1,10 @@
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fromPackageRoot } from '../fs/getPackageResource.js';
+import { exitSync } from '../console/logging.js';
 
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(
@@ -61,8 +62,8 @@ export async function updatePackageJson(
       JSON.stringify(packageJson, null, 2)
     );
   } catch (error) {
-    logError(chalk.red('Error updating package.json: ' + String(error)));
-    process.exit(1);
+    logger.error(chalk.red('Error updating package.json: ' + String(error)));
+    exitSync(1);
   }
 }
 

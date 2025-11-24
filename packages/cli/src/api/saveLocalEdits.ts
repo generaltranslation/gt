@@ -3,7 +3,8 @@ import { aggregateFiles } from '../formats/files/translate.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
 import { gt } from '../utils/gt.js';
 import { BranchStep } from '../workflow/BranchStep.js';
-import { createSpinner, logErrorAndExit } from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 
@@ -24,7 +25,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const branchResult = await branchStep.run();
   await branchStep.wait();
   if (!branchResult) {
-    logErrorAndExit('Failed to resolve git branch information.');
+    return logErrorAndExit('Failed to resolve git branch information.');
   }
 
   const uploads = files.map((file) => ({
@@ -35,7 +36,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
     versionId: file.versionId,
   })) satisfies FileReference[];
 
-  const spinner = createSpinner('dots');
+  const spinner = logger.createSpinner('dots');
   spinner.start('Saving local edits...');
 
   await collectAndSendUserEditDiffs(uploads, settings);

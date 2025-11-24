@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.5.6",
+  "version": "2.5.11",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -91,7 +91,7 @@
     "@babel/parser": "^7.25.7",
     "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/traverse": "^7.25.7",
-    "@clack/prompts": "^1.0.0-alpha.6",
+    "@clack/prompts": "1.0.0-alpha.6",
     "@formatjs/icu-messageformat-parser": "^2.11.4",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
@@ -100,7 +100,6 @@
     "esbuild": "^0.25.4",
     "fast-glob": "^3.3.3",
     "fast-json-stable-stringify": "^2.1.0",
-    "form-data": "^4.0.4",
     "generaltranslation": "workspace:*",
     "gt-remark": "^1.0.1",
     "json-pointer": "^0.6.2",
@@ -109,6 +108,7 @@
     "mdast-util-find-and-replace": "^3.0.2",
     "micromatch": "^4.0.8",
     "open": "^10.1.1",
+    "pino": "^10.1.0",
     "remark-frontmatter": "^5.0.0",
     "remark-mdx": "^3.1.0",
     "remark-parse": "^11.0.0",

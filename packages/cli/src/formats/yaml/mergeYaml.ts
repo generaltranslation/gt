@@ -1,5 +1,6 @@
 import JSONPointer from 'jsonpointer';
-import { exit, logError } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { AdditionalOptions } from '../../types/index.js';
 import { validateYamlSchema } from './utils.js';
 import YAML from 'yaml';
@@ -24,13 +25,13 @@ export default function mergeYaml(
   try {
     originalYaml = YAML.parse(originalContent);
   } catch {
-    logError(`Invalid YAML file: ${inputPath}`);
-    exit(1);
+    logger.error(`Invalid YAML file: ${inputPath}`);
+    return exitSync(1);
   }
   // Unreachable (validated in validateYamlSchema, included for type check)
   if (!yamlSchema.include) {
-    logError('No include property found in YAML schema');
-    exit(1);
+    logger.error('No include property found in YAML schema');
+    return exitSync(1);
   }
 
   // Handle include

@@ -7,7 +7,7 @@ import {
 } from '../../types/index.js';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
-import { logWarning } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import chalk from 'chalk';
 
 /**
@@ -126,7 +126,7 @@ export function expandGlobPatterns(
       !transformPatterns &&
       !compositePatterns?.includes(pattern)
     ) {
-      logWarning(
+      logger.warn(
         chalk.yellow(
           `Pattern "${pattern}" does not include [locale], so the CLI tool may incorrectly save translated files.`
         )

@@ -2,12 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mergeJson, applyTransformations } from '../mergeJson';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { logError, logWarning, exit } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
+import { exitSync } from '../../../console/logging.js';
 
+vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
-const mockLogError = vi.mocked(logError);
-const mockLogWarning = vi.mocked(logWarning);
-const mockExit = vi.mocked(exit).mockImplementation(() => {
+
+const mockLogError = vi.spyOn(logger, 'error');
+const mockLogWarning = vi.spyOn(logger, 'warn');
+const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });
 
@@ -1403,6 +1406,118 @@ describe('mergeJson', () => {
       expect(englishItem.desc).toBe('English Description');
       expect(germanItem.title).toBe('Deutscher Titel');
       expect(germanItem.desc).toBe('Deutsche Beschreibung');
+    });
+
+    it('should order array items to match locales when sort is set to locale', () => {
+      const originalContent = JSON.stringify({
+        navigation: {
+          languages: [
+            { language: 'ja', tab: 'ホーム' },
+            { language: 'en', tab: 'Home' },
+          ],
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/navigation/languages': {
+              '/1': {
+                '/tab': 'Inicio',
+              },
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'docs.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$.tab'],
+                  key: '$.language',
+                  experimentalSort: 'locales',
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en',
+        ['en', 'es', 'ja']
+      );
+
+      const parsed = JSON.parse(result[0]);
+      const languages = parsed.navigation.languages;
+      expect(languages.map((lang: any) => lang.language)).toEqual([
+        'en',
+        'es',
+        'ja',
+      ]);
+      const spanishEntry = languages.find(
+        (lang: any) => lang.language === 'es'
+      );
+      expect(spanishEntry.tab).toBe('Inicio');
+    });
+
+    it('should place default locale first when not listed in locales array', () => {
+      const originalContent = JSON.stringify({
+        navigation: {
+          languages: [
+            { language: 'ja', tab: 'ホーム' },
+            { language: 'en', tab: 'Home' },
+          ],
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/navigation/languages': {
+              '/1': {
+                '/tab': 'Inicio',
+              },
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'docs.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$.tab'],
+                  key: '$.language',
+                  experimentalSort: 'locales',
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en',
+        ['es', 'ja']
+      );
+
+      const parsed = JSON.parse(result[0]);
+      const languages = parsed.navigation.languages;
+      expect(languages.map((lang: any) => lang.language)).toEqual([
+        'en',
+        'es',
+        'ja',
+      ]);
     });
 
     it('should preserve non-translatable fields during merge', () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import { handleInitGT } from '../handleInitGT.js';
-import { logError } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 
 // Mock dependencies
 vi.mock('node:fs', () => ({
@@ -13,8 +13,10 @@ vi.mock('node:fs', () => ({
   },
 }));
 
-vi.mock('../../../console/logging.js', () => ({
-  logError: vi.fn(),
+vi.mock('../../../console/logger.js', () => ({
+  logger: {
+    error: vi.fn(),
+  },
 }));
 
 describe('handleInitGT', () => {
@@ -506,7 +508,7 @@ const nextConfig = {
 
       await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
 
-      expect(logError).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining('Error parsing file /test/next.config.js:')
       );
       expect(errors.length).toBeGreaterThan(0);

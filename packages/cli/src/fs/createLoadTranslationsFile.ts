@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { logInfo } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 
 export async function createLoadTranslationsFile(
   appDirectory: string,
-  translationsDir: string = './public/_gt'
+  translationsDir: string = './public/_gt',
+  locales: string[]
 ) {
   const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));
 
@@ -38,13 +39,28 @@ export default async function loadTranslations(locale) {
 }
 `;
     await fs.promises.writeFile(filePath, loadTranslationsContent);
-    logInfo(
+    logger.info(
       `Created ${chalk.cyan(
         'loadTranslations.js'
       )} file at ${chalk.cyan(filePath)}.`
     );
+    try {
+      await fs.promises.mkdir(translationsDir, { recursive: true });
+      // Create empty JSON files
+      for (const locale of locales) {
+        if (fs.existsSync(path.join(translationsDir, `${locale}.json`))) {
+          continue;
+        }
+        await fs.promises.writeFile(
+          path.join(translationsDir, `${locale}.json`),
+          '{}'
+        );
+      }
+    } catch (error) {
+      logger.error(`Failed to create translations directory: ${error}`);
+    }
   } else {
-    logInfo(
+    logger.info(
       `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
         filePath
       )}. Skipping creation...`

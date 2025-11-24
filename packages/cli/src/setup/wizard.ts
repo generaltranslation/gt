@@ -1,6 +1,6 @@
 import { detectFormatter } from '../hooks/postProcess.js';
-import { createSpinner, promptSelect } from '../console/logging.js';
-import { logInfo, logError, logStep, logWarning } from '../console/logging.js';
+import { promptSelect } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import { promptConfirm } from '../console/logging.js';
 import { SetupOptions, SupportedFrameworks } from '../types/index.js';
@@ -14,6 +14,7 @@ import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
+import { exitSync } from '../console/logging.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -31,10 +32,10 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup',
   });
   if (!answer) {
-    logInfo(
+    logger.info(
       'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup'
     );
-    process.exit(0);
+    exitSync(0);
   }
 
   const frameworkType = await promptSelect<SupportedFrameworks | 'other'>({
@@ -51,11 +52,11 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
     defaultValue: 'next-app',
   });
   if (frameworkType === 'other') {
-    logError(
+    logger.error(
       `Sorry, other React frameworks are not currently supported. 
 Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
     );
-    process.exit(0);
+    exitSync(0);
   }
 
   // ----- Create a starter gt.config.json file -----
@@ -65,12 +66,12 @@ Please let us know what you would like to see supported at https://github.com/ge
 
   const packageJson = await getPackageJson();
   if (!packageJson) {
-    logError(
+    logger.error(
       chalk.red(
         'No package.json found in the current directory. Please run this command from the root of your project.'
       )
     );
-    process.exit(1);
+    exitSync(1);
   }
   // Check if gt-next or gt-react is installed
   if (
@@ -78,7 +79,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     !isPackageInstalled('gt-next', packageJson)
   ) {
     const packageManager = await getPackageManager();
-    const spinner = createSpinner('timer');
+    const spinner = logger.createSpinner('timer');
     spinner.start(`Installing gt-next with ${packageManager.name}...`);
     await installPackage('gt-next', packageManager);
     spinner.stop(chalk.green('Automatically installed gt-next.'));
@@ -89,7 +90,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     !isPackageInstalled('gt-react', packageJson)
   ) {
     const packageManager = await getPackageManager();
-    const spinner = createSpinner('timer');
+    const spinner = logger.createSpinner('timer');
     spinner.start(`Installing gt-react with ${packageManager.name}...`);
     await installPackage('gt-react', packageManager);
     spinner.stop(chalk.green('Automatically installed gt-react.'));
@@ -112,8 +113,8 @@ Please let us know what you would like to see supported at https://github.com/ge
       './next.config.mts',
     ]);
     if (!nextConfigPath) {
-      logError('No next.config.[js|ts|mjs|mts] file found.');
-      process.exit(1);
+      logger.error('No next.config.[js|ts|mjs|mts] file found.');
+      exitSync(1);
     }
 
     const mergeOptions = {
@@ -123,7 +124,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       skipTs: true,
       addGTProvider: true,
     };
-    const spinner = createSpinner();
+    const spinner = logger.createSpinner();
     spinner.start('Wrapping JSX content with <T> tags...');
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
@@ -149,7 +150,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       packageJson,
       tsconfigJson
     );
-    logStep(
+    logger.step(
       chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
     );
   }
@@ -166,11 +167,11 @@ Please let us know what you would like to see supported at https://github.com/ge
   }
 
   if (errors.length > 0) {
-    logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
+    logger.error(chalk.red('Failed to write files:\n') + errors.join('\n'));
   }
 
   if (warnings.length > 0) {
-    logWarning(
+    logger.warn(
       chalk.yellow('Warnings encountered:') +
         '\n' +
         warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
