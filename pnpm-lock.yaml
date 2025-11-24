@@ -79,7 +79,7 @@ importers:
         specifier: ^7.25.7
         version: 7.28.4
       '@clack/prompts':
-        specifier: ^1.0.0-alpha.6
+        specifier: 1.0.0-alpha.6
         version: 1.0.0-alpha.6
       '@formatjs/icu-messageformat-parser':
         specifier: ^2.11.4

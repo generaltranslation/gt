@@ -80,7 +80,7 @@
     "@babel/parser": "^7.25.7",
     "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/traverse": "^7.25.7",
-    "@clack/prompts": "^1.0.0-alpha.6",
+    "@clack/prompts": "1.0.0-alpha.6",
     "@formatjs/icu-messageformat-parser": "^2.11.4",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
