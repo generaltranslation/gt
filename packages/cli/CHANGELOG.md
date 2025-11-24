@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.10
+
+### Patch Changes
+
+- [#825](https://github.com/generaltranslation/gt/pull/825) [`a9bdf21`](https://github.com/generaltranslation/gt/commit/a9bdf21d9ec80edc190b32b963dfe19c5fe2ea33) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix init write files
+
 ## 2.5.9
 
 ### Patch Changes
