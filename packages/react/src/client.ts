@@ -28,6 +28,8 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  mFallback,
+  gtFallback,
 } from '@generaltranslation/react-core';
 
 export {
@@ -49,6 +51,8 @@ export {
   decodeMsg,
   decodeOptions,
   useMessages,
+  mFallback,
+  gtFallback,
   T,
   Var,
   Num,
