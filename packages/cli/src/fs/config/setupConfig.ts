@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { displayCreatedConfigFile } from '../../console/logging.js';
 import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { GT_CONFIG_SCHEMA_URL } from '../../utils/constants.js';
 
 /**
@@ -62,7 +62,9 @@ export async function createOrUpdateConfig(
     // show update in console
     displayCreatedConfigFile(configFilepath);
   } catch (error) {
-    logError(`An error occurred while updating ${configFilepath}: ${error}`);
+    logger.error(
+      `An error occurred while updating ${configFilepath}: ${error}`
+    );
   }
   return configFilepath;
 }

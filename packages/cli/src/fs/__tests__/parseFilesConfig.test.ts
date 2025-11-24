@@ -15,9 +15,7 @@ vi.mock('fast-glob', () => ({
 }));
 
 // Mock logging module
-vi.mock('../../console/logging.js', () => ({
-  logWarning: vi.fn(),
-}));
+vi.mock('../../console/logger.js');
 
 // Mock chalk
 vi.mock('chalk', () => ({
@@ -27,7 +25,7 @@ vi.mock('chalk', () => ({
 }));
 
 import fg from 'fast-glob';
-import { logWarning } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 describe('parseFilesConfig', () => {
   beforeEach(() => {
@@ -433,7 +431,7 @@ describe('parseFilesConfig', () => {
         defaultLocales
       );
 
-      expect(logWarning).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
         'Pattern "src/static/*.json" does not include [locale], so the CLI tool may incorrectly save translated files.'
       );
     });
@@ -454,7 +452,7 @@ describe('parseFilesConfig', () => {
         transformPatterns
       );
 
-      expect(logWarning).not.toHaveBeenCalled();
+      expect(vi.mocked(logger.warn)).not.toHaveBeenCalled();
     });
 
     it('should not warn when pattern does not include [locale] but has TransformOption patterns', () => {
@@ -476,7 +474,7 @@ describe('parseFilesConfig', () => {
         transformPatterns
       );
 
-      expect(logWarning).not.toHaveBeenCalled();
+      expect(vi.mocked(logger.warn)).not.toHaveBeenCalled();
     });
 
     it('should handle multiple include patterns', () => {
@@ -852,7 +850,7 @@ describe('parseFilesConfig', () => {
         compositePatterns
       );
 
-      expect(logWarning).not.toHaveBeenCalled();
+      expect(vi.mocked(logger.warn)).not.toHaveBeenCalled();
     });
 
     it('should warn when pattern is not in composite patterns list', () => {
@@ -872,7 +870,7 @@ describe('parseFilesConfig', () => {
         compositePatterns
       );
 
-      expect(logWarning).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
         'Pattern "src/static/*.json" does not include [locale], so the CLI tool may incorrectly save translated files.'
       );
     });
@@ -894,7 +892,7 @@ describe('parseFilesConfig', () => {
         compositePatterns
       );
 
-      expect(logWarning).toHaveBeenCalledWith(
+      expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
         'Pattern "src/static/*.json" does not include [locale], so the CLI tool may incorrectly save translated files.'
       );
     });

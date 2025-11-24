@@ -23,6 +23,7 @@ export const createMockSettings = (
       conditionNames: [],
     },
     branchOptions: {
+      enabled: false,
       currentBranch: '',
       autoDetectBranches: false,
       remoteName: 'origin',

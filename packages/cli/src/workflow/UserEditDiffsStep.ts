@@ -1,6 +1,6 @@
 import type { FileReference } from 'generaltranslation/types';
 import { WorkflowStep } from './Workflow.js';
-import { createSpinner } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
 import { collectAndSendUserEditDiffs } from '../api/collectUserEditDiffs.js';
@@ -9,7 +9,7 @@ export class UserEditDiffsStep extends WorkflowStep<
   FileReference[],
   FileReference[]
 > {
-  private spinner = createSpinner('dots');
+  private spinner = logger.createSpinner('dots');
   private completed = false;
 
   constructor(private settings: Settings) {

@@ -1,5 +1,4 @@
-import { createSpinner } from '../../../console/logging.js';
-import { logError } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import fs from 'node:fs';
 import chalk from 'chalk';
 import generateModule from '@babel/generator';
@@ -9,6 +8,7 @@ import { addCompilerImport } from './utils/addCompilerImport.js';
 import { checkCompilerImport } from './utils/checkCompilerImport.js';
 import { checkPluginInvocation } from './utils/checkPluginInvocation.js';
 import { addPluginInvocation } from './utils/addPluginInvocation.js';
+import { exitSync } from '../../../console/logging.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -34,7 +34,7 @@ export async function updateViteConfig({
   tsconfigJson?: { compilerOptions?: { module?: string } };
 }) {
   // Animation
-  const spinner = createSpinner();
+  const spinner = logger.createSpinner();
   spinner.start(`Adding gt compiler plugin to ${viteConfigPath}...`);
 
   // Read the file
@@ -42,9 +42,8 @@ export async function updateViteConfig({
   try {
     code = await fs.promises.readFile(viteConfigPath, 'utf8');
   } catch (error) {
-    logError(`Error: Failed to read ${viteConfigPath}: ${error}`);
-    process.exit(1);
-    return;
+    logger.error(`Error: Failed to read ${viteConfigPath}: ${error}`);
+    exitSync(1);
   }
 
   // Update the ast
@@ -59,9 +58,8 @@ export async function updateViteConfig({
       tsconfigJson,
     }));
   } catch (error) {
-    logError(`Error: Failed to update ${viteConfigPath}: ${error}`);
-    process.exit(1);
-    return;
+    logger.error(`Error: Failed to update ${viteConfigPath}: ${error}`);
+    exitSync(1);
   }
 
   // Write the file
@@ -69,9 +67,8 @@ export async function updateViteConfig({
     await fs.promises.writeFile(viteConfigPath, updatedCode);
     filesUpdated.push(viteConfigPath);
   } catch (error) {
-    logError(`Error: Failed to write ${viteConfigPath}: ${error}`);
-    process.exit(1);
-    return;
+    logger.error(`Error: Failed to write ${viteConfigPath}: ${error}`);
+    exitSync(1);
   }
 
   // Animation

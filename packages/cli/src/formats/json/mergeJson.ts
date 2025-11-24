@@ -1,10 +1,12 @@
 import JSONPointer from 'jsonpointer';
 import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
-import { exit, logError, logWarning } from '../../console/logging.js';
+import { exitSync } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import {
   findMatchingItemArray,
   findMatchingItemObject,
   generateSourceObjectPointers,
+  getIdentifyingLocaleProperty,
   getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
@@ -20,7 +22,8 @@ export function mergeJson(
     translatedContent: string;
     targetLocale: string;
   }[],
-  defaultLocale: string
+  defaultLocale: string,
+  localeOrder: string[] = []
 ): string[] {
   const jsonSchema = validateJsonSchema(options, inputPath);
   if (!jsonSchema) {
@@ -31,8 +34,8 @@ export function mergeJson(
   try {
     originalJson = JSON.parse(originalContent);
   } catch {
-    logError(`Invalid JSON file: ${inputPath}`);
-    exit(1);
+    logger.error(`Invalid JSON file: ${inputPath}`);
+    return exitSync(1);
   }
 
   // Handle include
@@ -59,8 +62,8 @@ export function mergeJson(
   }
 
   if (!jsonSchema.composite) {
-    logError('No composite property found in JSON schema');
-    exit(1);
+    logger.error('No composite property found in JSON schema');
+    return exitSync(1);
   }
 
   // Handle composite
@@ -82,10 +85,10 @@ export function mergeJson(
     if (sourceObjectOptions.type === 'array') {
       // Validate type
       if (!Array.isArray(sourceObjectValue)) {
-        logError(
+        logger.error(
           `Source object value is not an array at path: ${sourceObjectPointer}`
         );
-        exit(1);
+        return exitSync(1);
       }
 
       // Get source item for default locale
@@ -96,7 +99,7 @@ export function mergeJson(
         sourceObjectValue
       );
       if (!Object.keys(matchingDefaultLocaleItems).length) {
-        logWarning(
+        logger.warn(
           `Matching sourceItems not found at path: ${sourceObjectPointer}. Please check your JSON file includes the key field. Skipping this target`
         );
         continue;
@@ -147,7 +150,7 @@ export function mergeJson(
         };
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
-          logWarning(
+          logger.warn(
             `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
           );
           continue;
@@ -158,10 +161,10 @@ export function mergeJson(
         )) {
           // 5. Validate that all the array indecies are still present in the source json
           if (!matchingDefaultLocaleItemKeys.has(sourceItemPointer)) {
-            logError(
+            logger.error(
               `Array index ${sourceItemPointer} is not present in the source json. It is possible that the source json has been modified since the translation was generated.`
             );
-            exit(1);
+            return exitSync(1);
           }
 
           // 6. Override the source item with the translated values
@@ -215,10 +218,10 @@ export function mergeJson(
 
       // 8. Check that items to add is >= items to remove (if this happens, something is very wrong)
       if (itemsToAdd.length < indiciesToRemove.size) {
-        logError(
+        logger.error(
           `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
         );
-        exit(1);
+        return exitSync(1);
       }
 
       // 9. Remove all items for the target locale (they can be identified by the key)
@@ -232,15 +235,21 @@ export function mergeJson(
       JSONPointer.set(
         mergedJson,
         sourceObjectPointer,
-        filteredSourceObjectValue
+        sortByLocaleOrder(
+          filteredSourceObjectValue,
+          sourceObjectOptions,
+          localeOrder,
+          sourceObjectPointer,
+          defaultLocale
+        )
       );
     } else {
       // Validate type
       if (typeof sourceObjectValue !== 'object' || sourceObjectValue === null) {
-        logError(
+        logger.error(
           `Source object value is not an object at path: ${sourceObjectPointer}`
         );
-        exit(1);
+        return exitSync(1);
       }
       // Validate localeProperty
       const matchingDefaultLocaleItem = findMatchingItemObject(
@@ -251,10 +260,10 @@ export function mergeJson(
       );
       // Validate source item exists
       if (!matchingDefaultLocaleItem.sourceItem) {
-        logError(
+        logger.error(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );
-        exit(1);
+        return exitSync(1);
       }
       const { sourceItem: defaultLocaleSourceItem } = matchingDefaultLocaleItem;
 
@@ -294,7 +303,7 @@ export function mergeJson(
 
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
-          logWarning(
+          logger.warn(
             `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
           );
           continue;
@@ -335,6 +344,73 @@ export function mergeJson(
     }
   }
   return [JSON.stringify(mergedJson, null, 2)];
+}
+
+function sortByLocaleOrder(
+  items: any[],
+  sourceObjectOptions: SourceObjectOptions,
+  localeOrder: string[],
+  sourceObjectPointer: string,
+  defaultLocale: string
+): any[] {
+  if (
+    sourceObjectOptions.experimentalSort !== 'locales' ||
+    !localeOrder.length ||
+    !sourceObjectOptions.key
+  ) {
+    return items;
+  }
+
+  const orderedLocaleList = [
+    defaultLocale,
+    ...localeOrder.filter((locale) => locale !== defaultLocale),
+  ];
+  const localeOrderValues = orderedLocaleList.map((locale) =>
+    getIdentifyingLocaleProperty(
+      locale,
+      sourceObjectPointer,
+      sourceObjectOptions
+    )
+  );
+
+  const itemsWithLocale = items.map((item) => {
+    let localeValue: string | undefined;
+    try {
+      const values = JSONPath({
+        json: item,
+        path: sourceObjectOptions.key as string,
+        resultType: 'value',
+        flatten: true,
+        wrap: true,
+      });
+      const value = values?.[0];
+      if (typeof value === 'string') {
+        localeValue = value;
+      }
+    } catch {
+      /* empty */
+    }
+    return { item, localeValue };
+  });
+
+  const orderedItems: any[] = [];
+  const remainingItems = [...itemsWithLocale];
+
+  for (const localeValue of localeOrderValues) {
+    for (let i = 0; i < remainingItems.length; ) {
+      const entry = remainingItems[i];
+      if (entry.localeValue === localeValue) {
+        orderedItems.push(entry.item);
+        remainingItems.splice(i, 1);
+        continue;
+      }
+      i += 1;
+    }
+  }
+
+  remainingItems.forEach((entry) => orderedItems.push(entry.item));
+
+  return orderedItems;
 }
 
 /**

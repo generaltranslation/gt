@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { displayUpdatedVersionsFile } from '../../console/logging.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import path from 'node:path';
 
 const STAGED_VERSIONS_FILE = 'staged-versions.json';
@@ -25,7 +25,9 @@ export async function updateVersions({
     // show update in console
     displayUpdatedVersionsFile(versionFilepath);
   } catch (error) {
-    logError(`An error occurred while updating ${versionFilepath}: ${error}`);
+    logger.error(
+      `An error occurred while updating ${versionFilepath}: ${error}`
+    );
   }
 }
 
@@ -37,7 +39,7 @@ export async function getStagedVersions(
     const versionData = JSON.parse(fs.readFileSync(versionFilepath, 'utf8'));
     return versionData;
   } catch (error) {
-    logError(`An error occurred while getting staged versions: ${error}`);
+    logger.error(`An error occurred while getting staged versions: ${error}`);
     return {};
   }
 }

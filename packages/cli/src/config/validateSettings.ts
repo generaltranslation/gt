@@ -3,13 +3,12 @@ import { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { gt } from '../utils/gt.js';
 
 export function validateSettings(settings: Settings) {
   // Validate locales
   for (const locale of settings.locales) {
     if (!isValidLocale(locale, settings.customMapping)) {
-      logErrorAndExit(
+      return logErrorAndExit(
         `Provided locales: "${settings?.locales?.join()}", ${locale} is not a valid locale!`
       );
     }
@@ -18,7 +17,7 @@ export function validateSettings(settings: Settings) {
     settings.defaultLocale &&
     !isValidLocale(settings.defaultLocale, settings.customMapping)
   ) {
-    logErrorAndExit(
+    return logErrorAndExit(
       `defaultLocale: ${settings.defaultLocale} is not a valid locale!`
     );
   }
@@ -35,7 +34,7 @@ export function validateSettings(settings: Settings) {
     const locale = settings.locales.find((locale) =>
       isSupersetLocale(settings.defaultLocale, locale)
     );
-    logErrorAndExit(
+    return logErrorAndExit(
       `defaultLocale: ${settings.defaultLocale} is a superset of another locale (${locale})! Please change the defaultLocale to a more specific locale.`
     );
   }
@@ -52,7 +51,7 @@ export function validateConfigExists() {
       return possibleConfigPath;
     }
   }
-  logErrorAndExit(
+  return logErrorAndExit(
     'No gt.config.json file found. Are you in the correct directory?'
   );
 }

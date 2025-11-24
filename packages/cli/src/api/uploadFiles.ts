@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import { createSpinner, exit, logMessage } from '../console/logging.js';
+import { logger } from '../console/logger.js';
+import { exitSync } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { DataFormat, FileFormat } from '../types/data.js';
 import { gt } from '../utils/gt.js';
@@ -31,7 +32,7 @@ export async function uploadFiles(
   }[],
   options: Settings
 ) {
-  logMessage(
+  logger.message(
     chalk.cyan('Files to upload:') +
       '\n' +
       files
@@ -44,7 +45,7 @@ export async function uploadFiles(
         .join('\n')
   );
 
-  const spinner = createSpinner('dots');
+  const spinner = logger.createSpinner('dots');
   spinner.start(
     `Uploading ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation...`
   );
@@ -70,6 +71,6 @@ export async function uploadFiles(
     spinner.stop(
       chalk.red('An unexpected error occurred while uploading files')
     );
-    exit(1);
+    return exitSync(1);
   }
 }

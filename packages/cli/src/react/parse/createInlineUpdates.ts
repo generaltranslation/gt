@@ -6,7 +6,7 @@ import { hashSource } from 'generaltranslation/id';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
-import { logError } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
@@ -35,7 +35,7 @@ export async function createInlineUpdates(
         plugins: ['jsx', 'typescript'],
       });
     } catch (error) {
-      logError(`Error parsing file ${file}: ${error}`);
+      logger.error(`Error parsing file ${file}: ${error}`);
       continue;
     }
 

@@ -1,12 +1,12 @@
 import { FileReference } from 'generaltranslation/types';
 import { WorkflowStep } from './Workflow.js';
-import { createSpinner, logInfo } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
 
 export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
-  private spinner = createSpinner('dots');
+  private spinner = logger.createSpinner('dots');
   private setupJobId: string | null = null;
   private files: FileReference[] | null = null;
   private completed = false;
@@ -19,7 +19,10 @@ export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
     super();
   }
 
-  async run(files: FileReference[]): Promise<FileReference[]> {
+  async run(
+    files: FileReference[],
+    force: boolean = false
+  ): Promise<FileReference[]> {
     this.files = files;
     this.spinner.start('Setting up project...');
 
@@ -30,6 +33,7 @@ export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
 
     const result = await this.gt.setupProject(files, {
       locales: this.settings.locales,
+      force,
     });
 
     if (result.status === 'completed') {

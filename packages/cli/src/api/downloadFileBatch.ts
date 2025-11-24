@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { logError, logWarning } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
@@ -92,7 +92,7 @@ export async function downloadFileBatch(
         const fileProperties = fileTracker.completed.get(fileKey);
 
         if (!outputPath || !fileProperties) {
-          logWarning(`No input/output path found for file: ${fileKey}`);
+          logger.warn(`No input/output path found for file: ${fileKey}`);
           result.failed.push(requestedFile);
           continue;
         }
@@ -134,7 +134,8 @@ export async function downloadFileBatch(
                     targetLocale: locale,
                   },
                 ],
-                options.defaultLocale
+                options.defaultLocale,
+                options.locales
               )[0];
             }
           }
@@ -169,7 +170,7 @@ export async function downloadFileBatch(
             const sortedJsonData = JSON.parse(sortedData);
             data = JSON.stringify(sortedJsonData, null, 2); // format the data
           } catch (error) {
-            logWarning(`Failed to sort GTJson file: ${file.id}: ` + error);
+            logger.warn(`Failed to sort GTJson file: ${file.id}: ` + error);
           }
         }
 
@@ -192,7 +193,7 @@ export async function downloadFileBatch(
           didUpdateDownloadedLock = true;
         }
       } catch (error) {
-        logError(`Error saving file ${fileKey}: ` + error);
+        logger.error(`Error saving file ${fileKey}: ` + error);
         result.failed.push(requestedFile);
       }
     }
@@ -217,7 +218,9 @@ export async function downloadFileBatch(
     }
     return result;
   } catch (error) {
-    logError(`An unexpected error occurred while downloading files: ` + error);
+    logger.error(
+      `An unexpected error occurred while downloading files: ` + error
+    );
   }
 
   // Mark all files as failed if we get here

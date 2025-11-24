@@ -1,9 +1,6 @@
 import { WorkflowStep } from './Workflow.js';
-import {
-  createSpinner,
-  logError,
-  logErrorAndExit,
-} from '../console/logging.js';
+import { logErrorAndExit } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
@@ -17,7 +14,7 @@ import { ApiError } from 'generaltranslation/errors';
 
 // Step 1: Resolve the current branch id & update API with branch information
 export class BranchStep extends WorkflowStep<null, BranchData | null> {
-  private spinner = createSpinner('dots');
+  private spinner = logger.createSpinner('dots');
   private branchData: BranchData;
   private settings: Settings;
   private gt: GT;
@@ -94,7 +91,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       }
     } else {
       if (!current) {
-        logErrorAndExit(
+        return logErrorAndExit(
           'Failed to determine the current branch. Please specify a custom branch or enable automatic branch detection.'
         );
       }
@@ -110,7 +107,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {
-            logError(
+            logger.error(
               'Failed to create branch. To enable branching, please upgrade your plan.'
             );
             // retry with default branch

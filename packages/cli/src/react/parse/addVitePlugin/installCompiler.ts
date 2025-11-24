@@ -1,4 +1,4 @@
-import { createSpinner } from '../../../console/logging.js';
+import { logger } from '../../../console/logger.js';
 import { installPackage } from '../../../utils/installPackage.js';
 import { isPackageInstalled } from '../../../utils/packageJson.js';
 import { getPackageManager } from '../../../utils/packageManager.js';
@@ -18,7 +18,7 @@ export async function installCompiler({
   }
 
   // Animation
-  const spinner = createSpinner();
+  const spinner = logger.createSpinner();
   spinner.start(`Installing @generaltranslation/compiler...`);
 
   // Install

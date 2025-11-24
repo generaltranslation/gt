@@ -5,13 +5,14 @@ import {
   TranslateFlags,
 } from '../types/index.js';
 import fs from 'fs';
-import { logError } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 import type { ParsingConfigOptions } from '../types/parsing.js';
+import { exitSync } from '../console/logging.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -50,10 +51,10 @@ export async function createUpdates(
       if (options.jsconfig) {
         const jsconfig = loadJSON(options.jsconfig);
         if (!jsconfig) {
-          logError(
+          logger.error(
             `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
           );
-          process.exit(1);
+          exitSync(1);
         }
         esbuildConfig = createESBuildConfig(jsconfig);
       } else {
