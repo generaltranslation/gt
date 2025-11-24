@@ -23,13 +23,13 @@
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
   "references": [
     {
-      "path": "../generaltranslation"
+      "path": "../core"
     },
     {
       "path": "../supported-locales"
     },
     {
-      "path": "../gt-core"
+      "path": "../i18n"
     }
   ]
 }

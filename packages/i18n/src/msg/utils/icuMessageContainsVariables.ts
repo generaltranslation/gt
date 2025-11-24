@@ -5,7 +5,7 @@
  *
  * @example
  * ```jsx
- * import { icuMessageContainsVariables } from 'gt-core/messages/utils';
+ * import { icuMessageContainsVariables } from 'gt-i18n/messages/utils';
  * const message = 'Hello {name}';
  * console.log(icuMessageContainsVariables(message)); // true
  * ```

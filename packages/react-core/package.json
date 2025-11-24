@@ -15,7 +15,7 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
-    "gt-core": "workspace:*"
+    "gt-i18n": "workspace:*"
   },
   "scripts": {
     "patch": "pnpm version patch",

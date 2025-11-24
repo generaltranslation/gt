@@ -3,7 +3,7 @@
   "include": ["./src", "./package.config.ts"],
   "references": [
     {
-      "path": "../generaltranslation"
+      "path": "../core"
     }
   ]
 }

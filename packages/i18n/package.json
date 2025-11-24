@@ -1,7 +1,7 @@
 {
-  "name": "gt-core",
+  "name": "gt-i18n",
   "version": "1.0.0",
-  "description": "Core functionality for General Translation",
+  "description": "Pure JS i18n library for General Translation",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
   "types": "dist/index.d.ts",
@@ -91,10 +91,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "gt-core/types": [
+      "gt-i18n/types": [
         "/dist/types"
       ],
-      "gt-core/fallbacks": [
+      "gt-i18n/fallbacks": [
         "/dist/fallbacks"
       ]
     }

@@ -33,7 +33,7 @@ import useCreateInternalUseGTFunction from './provider/hooks/translation/useCrea
 import useCreateInternalUseTranslationsFunction from './provider/hooks/translation/useCreateInternalUseTranslationsFunction';
 import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
 
-export * from 'gt-core/fallbacks';
+export * from 'gt-i18n/fallbacks';
 
 export {
   Var,

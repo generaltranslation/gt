@@ -25,7 +25,7 @@ import { extractVariables } from 'src/utils/extractVariables';
  * @example - Basic usage
  *
  * ```jsx
- * import { msg } from 'gt-core';
+ * import { msg } from 'gt-i18n';
  * const message1 = msg('Hello, World!');
  * console.log(message1); // "Hello, World!"
  * const message2 = msg('Hello, {name}!', { name: 'Brian' });

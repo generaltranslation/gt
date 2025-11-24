@@ -21,7 +21,7 @@
   "exclude": ["node_modules", "dist", "**/__tests__/**/*", "**/__mocks__/**/*"],
   "references": [
     {
-      "path": "../generaltranslation"
+      "path": "../core"
     },
     {
       "path": "../react"

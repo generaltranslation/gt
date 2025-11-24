@@ -13,7 +13,7 @@ export type {
   InlineTranslationOptions,
   DictionaryTranslationOptions,
   RuntimeTranslationOptions,
-} from 'gt-core/types';
+} from 'gt-i18n/types';
 
 /**
  * TaggedElement is a React element with a GTProp property.

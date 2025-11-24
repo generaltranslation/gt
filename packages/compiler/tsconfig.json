@@ -22,10 +22,7 @@
   "exclude": ["node_modules", "dist", "**/__tests__/**/*", "../../seeds"],
   "references": [
     {
-      "path": "../generaltranslation"
-    },
-    {
-      "path": "../generaltranslation"
+      "path": "../core"
     }
   ]
 }

@@ -1,2 +1,2 @@
-// moved to gt-core
-export { msg, decodeMsg, decodeOptions } from 'gt-core';
+// moved to gt-i18n
+export { msg, decodeMsg, decodeOptions } from 'gt-i18n';

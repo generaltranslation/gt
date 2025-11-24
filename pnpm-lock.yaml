@@ -110,7 +110,7 @@ importers:
         version: 4.0.4
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
       gt-remark:
         specifier: ^1.0.1
         version: 1.0.1
@@ -234,7 +234,7 @@ importers:
         version: 7.28.4
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10
@@ -267,7 +267,7 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.17)(jsdom@27.0.0(bufferutil@4.0.9)(postcss@8.5.6))(lightningcss@1.30.1)(terser@5.44.0)
 
-  packages/generaltranslation:
+  packages/core:
     dependencies:
       crypto-js:
         specifier: ^4.2.0
@@ -310,14 +310,14 @@ importers:
         specifier: ^5.6.2
         version: 5.9.2
 
-  packages/gt-core:
+  packages/i18n:
     dependencies:
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: ^28.0.1
@@ -446,7 +446,7 @@ importers:
         version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
       gt-react:
         specifier: workspace:*
         version: link:../react
@@ -511,7 +511,7 @@ importers:
         version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
       react:
         specifier: '>=16.8.0'
         version: 19.1.1
@@ -578,10 +578,10 @@ importers:
         version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
-      gt-core:
+        version: link:../core
+      gt-i18n:
         specifier: workspace:*
-        version: link:../gt-core
+        version: link:../i18n
       react:
         specifier: '>=16.8.0'
         version: 19.1.1
@@ -685,7 +685,7 @@ importers:
         version: 3.99.0(@types/react@19.1.15)
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
       jsonpath-plus:
         specifier: ^10.3.0
         version: 10.3.0
@@ -746,7 +746,7 @@ importers:
     dependencies:
       generaltranslation:
         specifier: workspace:*
-        version: link:../generaltranslation
+        version: link:../core
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: ^28.0.1
