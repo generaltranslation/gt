@@ -1,104 +1,85 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../types/parsing.js';
-import { parseStringExpression, nodeToStrings } from './parseString.js';
 import { Node } from './types.js';
 import { buildImportMap } from './buildImportMap.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { parse } from '@babel/parser';
 import fs from 'node:fs';
 import {
-  warnFunctionNotFoundSync,
   warnDeclareStaticNoResultsSync,
+  warnFunctionNotFoundSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 
-// Nested arrays of strings (deprecated - kept for backwards compatibility)
-export type StringTree = (string | StringTree)[];
-
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
- * Key: `${currentFile}::${importPath}`
- * Value: resolved absolute path or null
  */
 const resolveImportPathCache = new Map<string, string | null>();
 
 /**
  * Cache for processed functions to avoid re-parsing the same files.
- * Key: `${filePath}::${functionName}`
- * Value: Node result or null
  */
 const processFunctionCache = new Map<string, Node | null>();
 
 /**
- * Checks if an expression is static or uses declareStatic
- * Returns a Node representing the parsed expression
- * @param expr - The expression to check
+ * Processes a string expression node and resolves any function calls within it
+ * This handles cases like:
+ *   - "hello" (string literal)
+ *   - "hello" + world() (binary expression with function call)
+ *   - Math.random() > 0.5 ? "day" : "night" (conditional expression)
+ *   - greeting() (function call that returns string or conditional)
+ *
+ * @param node - The AST node to process
  * @param tPath - NodePath for scope resolution
  * @param file - Current file path
  * @param parsingOptions - Parsing configuration
- * @returns Node | null - The parsed node, or null if invalid
+ * @param warnings - Set to collect warning messages
+ * @returns Node | null
  */
-export function handleStaticExpression(
-  expr: t.Expression,
+export function parseStringExpression(
+  node: t.Node,
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  warnings: Set<string> = new Set()
 ): Node | null {
-  if (!expr) {
-    return null;
+  // Handle string literals
+  if (t.isStringLiteral(node)) {
+    return { type: 'text', text: node.value };
   }
 
-  // Handle expressions
-  if (t.isCallExpression(expr)) {
-    const variants = getDeclareStaticVariants(
-      expr,
-      tPath,
-      file,
-      parsingOptions,
-      warnings
-    );
-    if (variants) {
-      // We found declareStatic -> return as ChoiceNode
-      return {
-        type: 'choice',
-        nodes: variants.map((v) => ({ type: 'text', text: v })),
-      };
-    }
-    // We found a call that is not declareStatic or has poor recursion -> bail out
-    if (t.isIdentifier(expr.callee)) {
-      warnings.add(
-        warnDeclareStaticNoResultsSync(
-          file,
-          expr.callee.name,
-          `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
-        )
-      );
-    }
-    return null;
+  // Handle numeric literals
+  if (t.isNumericLiteral(node)) {
+    return { type: 'text', text: String(node.value) };
   }
 
-  // Handle direct string literals
-  if (t.isStringLiteral(expr)) {
-    return { type: 'text', text: expr.value };
+  // Handle boolean literals
+  if (t.isBooleanLiteral(node)) {
+    return { type: 'text', text: String(node.value) };
+  }
+
+  // Handle null literal
+  if (t.isNullLiteral(node)) {
+    return { type: 'text', text: 'null' };
   }
 
   // Handle template literals
-  if (t.isTemplateLiteral(expr)) {
+  if (t.isTemplateLiteral(node)) {
     const parts: Node[] = [];
-    for (let index = 0; index < expr.quasis.length; index++) {
-      const quasi = expr.quasis[index];
+
+    for (let index = 0; index < node.quasis.length; index++) {
+      const quasi = node.quasis[index];
       const text = quasi.value.cooked ?? quasi.value.raw ?? '';
       if (text) {
         parts.push({ type: 'text', text });
       }
-      const exprNode = expr.expressions[index];
+      const exprNode = node.expressions[index];
       if (exprNode && t.isExpression(exprNode)) {
-        const result = handleStaticExpression(
+        const result = parseStringExpression(
           exprNode,
           tPath,
           file,
@@ -106,7 +87,6 @@ export function handleStaticExpression(
           warnings
         );
         if (result === null) {
-          // Early bailout if we can't handle something inside interpolation
           return null;
         }
         parts.push(result);
@@ -122,20 +102,21 @@ export function handleStaticExpression(
     return { type: 'sequence', nodes: parts };
   }
 
-  // Handle binary expressions
-  if (t.isBinaryExpression(expr) && expr.operator === '+') {
-    if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
+  // Handle binary expressions (e.g., "hello" + world())
+  if (t.isBinaryExpression(node) && node.operator === '+') {
+    if (!t.isExpression(node.left) || !t.isExpression(node.right)) {
       return null;
     }
-    const leftResult = handleStaticExpression(
-      expr.left,
+
+    const leftResult = parseStringExpression(
+      node.left,
       tPath,
       file,
       parsingOptions,
       warnings
     );
-    const rightResult = handleStaticExpression(
-      expr.right,
+    const rightResult = parseStringExpression(
+      node.right,
       tPath,
       file,
       parsingOptions,
@@ -149,217 +130,172 @@ export function handleStaticExpression(
     return { type: 'sequence', nodes: [leftResult, rightResult] };
   }
 
-  // Handle parenthesized expressions
-  if (t.isParenthesizedExpression(expr)) {
-    return handleStaticExpression(
-      expr.expression,
+  // Handle conditional expressions (e.g., cond ? "day" : "night")
+  if (t.isConditionalExpression(node)) {
+    if (!t.isExpression(node.consequent) || !t.isExpression(node.alternate)) {
+      return null;
+    }
+
+    const consequentResult = parseStringExpression(
+      node.consequent,
       tPath,
       file,
       parsingOptions,
       warnings
     );
-  }
+    const alternateResult = parseStringExpression(
+      node.alternate,
+      tPath,
+      file,
+      parsingOptions,
+      warnings
+    );
 
-  // Handle numeric literals by converting them to strings
-  if (t.isNumericLiteral(expr)) {
-    return { type: 'text', text: String(expr.value) };
-  }
-
-  // Handle unary expressions by converting them to strings
-  if (t.isUnaryExpression(expr)) {
-    let operator = '';
-    if (expr.operator === '-') {
-      operator = expr.operator;
-    }
-    if (t.isNumericLiteral(expr.argument)) {
-      if (expr.argument.value === 0) {
-        return { type: 'text', text: '0' };
-      } else {
-        return {
-          type: 'text',
-          text: operator + expr.argument.value.toString(),
-        };
-      }
-    } else {
-      // invalid
+    if (consequentResult === null || alternateResult === null) {
       return null;
     }
+
+    // Create a choice node with both branches
+    return {
+      type: 'choice',
+      nodes: [consequentResult, alternateResult],
+    };
   }
 
-  // Handle boolean literals by converting them to strings
-  if (t.isBooleanLiteral(expr)) {
-    return { type: 'text', text: String(expr.value) };
-  }
+  // Handle variable references (e.g., result)
+  if (t.isIdentifier(node)) {
+    const binding = tPath.scope.getBinding(node.name);
 
-  // Handle null literal
-  if (t.isNullLiteral(expr)) {
-    return { type: 'text', text: 'null' };
-  }
+    if (!binding) {
+      // Variable not found in scope
+      return null;
+    }
 
-  // Not a static expression
-  return null;
-}
+    // Check if it's a const/let/var with an initializer
+    if (binding.path.isVariableDeclarator() && binding.path.node.init) {
+      const init = binding.path.node.init;
+      if (t.isExpression(init)) {
+        // Recursively resolve the initializer
+        return parseStringExpression(
+          init,
+          binding.path,
+          file,
+          parsingOptions,
+          warnings
+        );
+      }
+    }
 
-/**
- * Given a CallExpression, if it is declareStatic(<call>) or declareStatic(await <call>),
- * return all possible string outcomes of that argument call as an array of strings.
- *
- * Examples:
- *   declareStatic(time()) -> ["day", "night"]
- *   declareStatic(await time()) -> ["day", "night"]
- *
- * Returns null if it can't be resolved.
- */
-export function getDeclareStaticVariants(
-  call: t.CallExpression,
-  tPath: NodePath,
-  file: string,
-  parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
-): string[] | null {
-  // Must be declareStatic(...)
-  if (!t.isIdentifier(call.callee, { name: 'declareStatic' })) {
+    // Not a resolvable variable
     return null;
   }
-  if (call.arguments.length !== 1) return null;
 
-  const arg = call.arguments[0];
-  if (!t.isExpression(arg)) return null;
-
-  // Handle await expression: declareStatic(await time())
-  if (t.isAwaitExpression(arg)) {
-    // Unwrap the await and check if it's a call expression
-    if (!t.isCallExpression(arg.argument)) {
-      return null;
-    }
-    // Resolve the inner call's possible string outcomes
-    return resolveCallStringVariants(
-      arg.argument,
-      tPath,
-      file,
-      parsingOptions,
-      warnings
-    );
-  }
-
-  // Handle direct call expression: declareStatic(time())
-  if (!t.isCallExpression(arg)) return null;
-
-  // Resolve the inner call's possible string outcomes
-  return resolveCallStringVariants(arg, tPath, file, parsingOptions, warnings);
-}
-
-export function resolveCallStringVariants(
-  call: t.CallExpression,
-  tPath: NodePath,
-  file: string,
-  parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
-): string[] | null {
-  const results = new Set<string>();
-
-  // Handle inline arrow functions: declareStatic(() => "day")
-  if (t.isArrowFunctionExpression(call.callee)) {
-    const body = call.callee.body;
-
-    if (t.isStringLiteral(body)) {
-      results.add(body.value);
-    } else if (t.isConditionalExpression(body)) {
-      collectConditionalStringVariants(body, results);
-    }
-
-    return results.size ? [...results] : null;
-  }
-
-  // Handle explicit conditional expression call:
-  // declareStatic((cond ? "day" : "night")())
-  if (t.isConditionalExpression(call.callee)) {
-    collectConditionalStringVariants(call.callee, results);
-    return results.size ? [...results] : null;
-  }
-
-  // Handle function identifier calls: declareStatic(time())
-  if (t.isIdentifier(call.callee)) {
-    const functionName = call.callee.name;
-
-    // Use Binding to resolve the function
+  // Handle function calls (e.g., getName())
+  if (t.isCallExpression(node) && t.isIdentifier(node.callee)) {
+    const functionName = node.callee.name;
     const calleeBinding = tPath.scope.getBinding(functionName);
 
-    if (calleeBinding) {
-      // Check if function is imported from another file
-      const importedFunctionsMap = buildImportMap(
-        tPath.scope.getProgramParent().path
-      );
-
-      if (importedFunctionsMap.has(functionName)) {
-        // Function is imported - resolve cross-file
-        let originalName: string | undefined;
-        if (calleeBinding.path.isImportSpecifier()) {
-          originalName = t.isIdentifier(calleeBinding.path.node.imported)
-            ? calleeBinding.path.node.imported.name
-            : calleeBinding.path.node.imported.value;
-        } else if (calleeBinding.path.isImportDefaultSpecifier()) {
-          originalName = calleeBinding.path.node.local.name;
-        } else if (calleeBinding.path.isImportNamespaceSpecifier()) {
-          originalName = calleeBinding.path.node.local.name;
-        }
-
-        const importPath = importedFunctionsMap.get(functionName)!;
-        const filePath = resolveImportPath(
-          file,
-          importPath,
-          parsingOptions,
-          resolveImportPathCache
-        );
-
-        if (filePath && originalName) {
-          const node = resolveFunctionInFile(
-            filePath,
-            originalName,
-            parsingOptions,
-            warnings
-          );
-          if (node) {
-            return nodeToStrings(node);
-          }
-        }
-      } else {
-        // Function is local - use parseStringExpression with resolveFunctionCall
-        const node = resolveFunctionCallFromBinding(
-          calleeBinding,
-          tPath,
-          file,
-          parsingOptions
-        );
-        if (node) {
-          return nodeToStrings(node);
-        }
-      }
-    } else {
+    if (!calleeBinding) {
       // Function not found in scope
       warnings.add(
         warnFunctionNotFoundSync(
           file,
           functionName,
-          `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
+          `${node.callee.loc?.start?.line}:${node.callee.loc?.start?.column}`
         )
       );
       return null;
     }
+
+    // Check if this is an imported function
+    const programPath = tPath.scope.getProgramParent().path;
+    const importedFunctionsMap = buildImportMap(programPath);
+
+    if (importedFunctionsMap.has(functionName)) {
+      // Function is imported - resolve cross-file
+      let originalName: string | undefined;
+      if (calleeBinding.path.isImportSpecifier()) {
+        originalName = t.isIdentifier(calleeBinding.path.node.imported)
+          ? calleeBinding.path.node.imported.name
+          : calleeBinding.path.node.imported.value;
+      } else if (calleeBinding.path.isImportDefaultSpecifier()) {
+        originalName = calleeBinding.path.node.local.name;
+      } else if (calleeBinding.path.isImportNamespaceSpecifier()) {
+        originalName = calleeBinding.path.node.local.name;
+      }
+
+      const importPath = importedFunctionsMap.get(functionName)!;
+      const filePath = resolveImportPath(
+        file,
+        importPath,
+        parsingOptions,
+        resolveImportPathCache
+      );
+
+      if (filePath && originalName) {
+        return resolveFunctionInFile(
+          filePath,
+          originalName,
+          parsingOptions,
+          warnings
+        );
+      }
+      return null;
+    }
+
+    // Resolve the function locally and get its return values
+    return resolveFunctionCall(
+      calleeBinding,
+      tPath,
+      file,
+      parsingOptions,
+      warnings
+    );
   }
 
-  // If we get here: cannot analyze this call statically
+  // Handle parenthesized expressions
+  if (t.isParenthesizedExpression(node)) {
+    return parseStringExpression(
+      node.expression,
+      tPath,
+      file,
+      parsingOptions,
+      warnings
+    );
+  }
+
+  // Handle unary expressions (e.g., -123)
+  if (t.isUnaryExpression(node)) {
+    let operator = '';
+    if (node.operator === '-') {
+      operator = node.operator;
+    }
+    if (t.isNumericLiteral(node.argument)) {
+      if (node.argument.value === 0) {
+        return { type: 'text', text: '0' };
+      } else {
+        return {
+          type: 'text',
+          text: operator + node.argument.value.toString(),
+        };
+      }
+    }
+    return null;
+  }
+
+  // Unsupported expression type
   return null;
 }
 
 /**
- * Resolves a function from a binding (local function) using parseStringExpression logic
+ * Resolves a function call by traversing its body and collecting return values
  */
-function resolveFunctionCallFromBinding(
+function resolveFunctionCall(
   calleeBinding: ReturnType<NodePath['scope']['getBinding']>,
   tPath: NodePath,
   file: string,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  warnings: Set<string>
 ): Node | null {
   if (!calleeBinding) {
     return null;
@@ -371,10 +307,13 @@ function resolveFunctionCallFromBinding(
   // Handle function declarations: function time() { return "day"; }
   if (bindingPath.isFunctionDeclaration()) {
     bindingPath.traverse({
+      // Don't skip nested functions - let parseStringExpression handle function calls
       ReturnStatement(returnPath) {
         // Only process return statements that are direct children of this function
+        // Skip return statements from nested functions (they'll be handled when those functions are called)
         const parentFunction = returnPath.getFunctionParent();
         if (parentFunction?.node !== bindingPath.node) {
+          // This return belongs to a nested function, skip it
           return;
         }
 
@@ -386,7 +325,8 @@ function resolveFunctionCallFromBinding(
           returnArg,
           returnPath,
           file,
-          parsingOptions
+          parsingOptions,
+          warnings
         );
         if (returnResult !== null) {
           branches.push(returnResult);
@@ -409,7 +349,8 @@ function resolveFunctionCallFromBinding(
         body.node,
         body,
         file,
-        parsingOptions
+        parsingOptions,
+        warnings
       );
       if (bodyResult !== null) {
         branches.push(bodyResult);
@@ -419,10 +360,13 @@ function resolveFunctionCallFromBinding(
     else if (body.isBlockStatement()) {
       const arrowFunction = init.node;
       body.traverse({
+        // Don't skip nested functions - let parseStringExpression handle function calls
         ReturnStatement(returnPath) {
           // Only process return statements that are direct children of this function
+          // Skip return statements from nested functions (they'll be handled when those functions are called)
           const parentFunction = returnPath.getFunctionParent();
           if (parentFunction?.node !== arrowFunction) {
+            // This return belongs to a nested function, skip it
             return;
           }
 
@@ -434,7 +378,8 @@ function resolveFunctionCallFromBinding(
             returnArg,
             returnPath,
             file,
-            parsingOptions
+            parsingOptions,
+            warnings
           );
           if (returnResult !== null) {
             branches.push(returnResult);
@@ -480,7 +425,7 @@ function resolveFunctionInFile(
     });
 
     traverse(ast, {
-      // Handle function declarations: function woah() { ... }
+      // Handle function declarations: function interjection() { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName && result === null) {
           const branches: Node[] = [];
@@ -501,7 +446,8 @@ function resolveFunctionInFile(
                 returnArg,
                 returnPath,
                 filePath,
-                parsingOptions
+                parsingOptions,
+                warnings
               );
               if (returnResult !== null) {
                 branches.push(returnResult);
@@ -516,7 +462,7 @@ function resolveFunctionInFile(
           }
         }
       },
-      // Handle variable declarations: const woah = () => { ... }
+      // Handle variable declarations: const interjection = () => { ... }
       VariableDeclarator(path) {
         if (
           t.isIdentifier(path.node.id) &&
@@ -543,7 +489,8 @@ function resolveFunctionInFile(
               bodyPath.node,
               bodyPath,
               filePath,
-              parsingOptions
+              parsingOptions,
+              warnings
             );
             if (bodyResult !== null) {
               branches.push(bodyResult);
@@ -578,7 +525,8 @@ function resolveFunctionInFile(
                   returnArg,
                   returnPath,
                   filePath,
-                  parsingOptions
+                  parsingOptions,
+                  warnings
                 );
                 if (returnResult !== null) {
                   branches.push(returnResult);
@@ -613,13 +561,78 @@ function resolveFunctionInFile(
 }
 
 /**
- * Handle cond ? "a" : "b"
- * Collects string literals from both branches of a conditional expression
+ * Converts a Node tree to an array of all possible string combinations
+ * This is a helper function for compatibility with existing code
  */
-function collectConditionalStringVariants(
-  cond: t.ConditionalExpression,
-  out: Set<string>
-) {
-  if (t.isStringLiteral(cond.consequent)) out.add(cond.consequent.value);
-  if (t.isStringLiteral(cond.alternate)) out.add(cond.alternate.value);
+export function nodeToStrings(node: Node | null): string[] {
+  if (node === null) {
+    return [];
+  }
+
+  // Handle TextNode
+  if (
+    typeof node === 'object' &&
+    node !== null &&
+    'type' in node &&
+    node.type === 'text'
+  ) {
+    return [node.text];
+  }
+
+  // Handle SequenceNode - concatenate all parts
+  if (
+    typeof node === 'object' &&
+    node !== null &&
+    'type' in node &&
+    node.type === 'sequence'
+  ) {
+    const partResults: string[][] = node.nodes.map((n) => nodeToStrings(n));
+    return cartesianProduct(partResults);
+  }
+
+  // Handle ChoiceNode - flatten all branches
+  if (
+    typeof node === 'object' &&
+    node !== null &&
+    'type' in node &&
+    node.type === 'choice'
+  ) {
+    const allStrings: string[] = [];
+    for (const branch of node.nodes) {
+      allStrings.push(...nodeToStrings(branch));
+    }
+    return [...new Set(allStrings)]; // Deduplicate
+  }
+
+  return [];
+}
+
+/**
+ * Creates cartesian product of string arrays and concatenates them
+ * @example cartesianProduct([["Hello "], ["day", "night"]]) → ["Hello day", "Hello night"]
+ */
+function cartesianProduct(arrays: string[][]): string[] {
+  if (arrays.length === 0) {
+    return [];
+  }
+
+  if (arrays.length === 1) {
+    return arrays[0];
+  }
+
+  // Start with first array
+  let result = arrays[0];
+
+  // Combine with each subsequent array
+  for (let i = 1; i < arrays.length; i++) {
+    const newResult: string[] = [];
+    for (const prev of result) {
+      for (const curr of arrays[i]) {
+        newResult.push(prev + curr);
+      }
+    }
+    result = newResult;
+  }
+
+  return result;
 }

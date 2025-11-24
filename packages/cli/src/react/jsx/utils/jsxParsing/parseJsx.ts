@@ -972,15 +972,11 @@ function processFunctionInFile({
 
     let { importAliases } = getPathsAndAliases(ast, pkg);
 
-    console.log('importAliases', importAliases);
-    console.log('file', file);
-    console.log('filePath', filePath);
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string>;
     traverse(ast, {
       Program(path) {
         importedFunctionsMap = buildImportMap(path);
-        console.log('importedFunctionsMap', importedFunctionsMap);
       },
     });
     importAliases = {
@@ -1311,7 +1307,7 @@ function processVariableDeclarationNodePath({
 /**
  * Process a expression being returned from a function
  */
-function processReturnExpression({
+export function processReturnExpression({
   unwrappedExpressions,
   scopeNode,
   expressionNodePath,

@@ -57,8 +57,7 @@ export async function createInlineUpdates(
         errors,
         warnings,
         file,
-        parsingOptions,
-        pkg
+        parsingOptions
       );
     }
 
@@ -101,6 +100,5 @@ export async function createInlineUpdates(
       update.metadata.hash = hash;
     })
   );
-
   return { updates, errors, warnings: [...warnings] };
 }

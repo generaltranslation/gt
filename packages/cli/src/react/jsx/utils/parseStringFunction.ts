@@ -14,7 +14,6 @@ import {
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
-  warnTemplateLiteralSync,
   warnAsyncUseGT,
   warnSyncGetGT,
   warnInvalidIcuSync,
@@ -30,7 +29,8 @@ import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
-import { handleStaticExpression, StringTree } from './parseDeclareStatic.js';
+import { handleStaticExpression } from './parseDeclareStatic.js';
+import { nodeToStrings } from './parseString.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -73,8 +73,7 @@ function processTranslationCall(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions,
-  pkg: 'gt-react' | 'gt-next'
+  parsingOptions: ParsingConfigOptions
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -82,101 +81,83 @@ function processTranslationCall(
   ) {
     const arg = tPath.parent.arguments[0];
     if (t.isExpression(arg)) {
-      const testTree: StringTree = [];
-      const isOk = handleStaticExpression(
+      const result = handleStaticExpression(
         arg,
-        testTree,
         tPath,
         file,
         parsingOptions,
-        pkg
+        warnings
       );
-      console.log(testTree);
-      console.log(isOk);
-    }
-    if (
-      arg.type === 'StringLiteral' ||
-      (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
-    ) {
-      const source =
-        arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
-
-      // Validate is ICU
-      if (!ignoreInvalidIcu) {
-        const { isValid, error } = isValidIcu(source);
-        if (!isValid) {
-          warnings.add(
-            warnInvalidIcuSync(
-              file,
-              source,
-              error ?? 'Unknown error',
-              `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-            )
-          );
-          return;
-        }
-      }
-
-      // get metadata and id from options
-      const options = tPath.parent.arguments[1];
-      const metadata: Record<string, string> = {};
-      if (options && options.type === 'ObjectExpression') {
-        options.properties.forEach((prop) => {
-          if (
-            prop.type === 'ObjectProperty' &&
-            prop.key.type === 'Identifier'
-          ) {
-            const attribute = prop.key.name;
-            if (
-              GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
-              t.isExpression(prop.value)
-            ) {
-              const result = isStaticExpression(prop.value);
-              if (!result.isStatic) {
-                errors.push(
-                  warnNonStaticExpressionSync(
-                    file,
-                    attribute,
-                    generate(prop.value).code,
-                    `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-                  )
-                );
-              }
-              if (result.isStatic && result.value && !ignoreAdditionalData) {
-                // Map $id and $context to id and context
-                metadata[mapAttributeName(attribute)] = result.value;
-              }
+      if (result) {
+        const strings = nodeToStrings(result);
+        if (!ignoreDynamicContent) {
+          for (const string of strings) {
+            const { isValid, error } = isValidIcu(string);
+            if (!isValid) {
+              warnings.add(
+                warnInvalidIcuSync(
+                  file,
+                  string,
+                  error ?? 'Unknown error',
+                  `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+                )
+              );
+              return;
             }
           }
-        });
-      }
+        }
 
-      updates.push({
-        dataFormat: 'ICU',
-        source,
-        metadata,
-      });
-    } else if (t.isTemplateLiteral(arg)) {
-      // warn if template literal
-      if (!ignoreDynamicContent) {
-        errors.push(
-          warnTemplateLiteralSync(
-            file,
-            generate(arg).code,
-            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-          )
-        );
+        // get metadata and id from options
+        const options = tPath.parent.arguments[1];
+        const metadata: Record<string, string> = {};
+        if (options && options.type === 'ObjectExpression') {
+          options.properties.forEach((prop) => {
+            if (
+              prop.type === 'ObjectProperty' &&
+              prop.key.type === 'Identifier'
+            ) {
+              const attribute = prop.key.name;
+              if (
+                GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
+                t.isExpression(prop.value)
+              ) {
+                const result = isStaticExpression(prop.value);
+                if (!result.isStatic) {
+                  errors.push(
+                    warnNonStaticExpressionSync(
+                      file,
+                      attribute,
+                      generate(prop.value).code,
+                      `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                    )
+                  );
+                }
+                if (result.isStatic && result.value && !ignoreAdditionalData) {
+                  // Map $id and $context to id and context
+                  metadata[mapAttributeName(attribute)] = result.value;
+                }
+              }
+            }
+          });
+        }
+        for (const string of strings) {
+          updates.push({
+            dataFormat: 'ICU',
+            source: string,
+            metadata: { ...metadata },
+          });
+        }
+        return;
       }
-    } else {
-      if (!ignoreDynamicContent) {
-        errors.push(
-          warnNonStringSync(
-            file,
-            generate(arg).code,
-            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-          )
-        );
-      }
+    }
+    if (!ignoreDynamicContent) {
+      errors.push(
+        warnNonStringSync(
+          file,
+          generate(arg).code,
+          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+        )
+      );
     }
   }
 }
@@ -260,8 +241,7 @@ function handleFunctionCall(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions,
-  pkg: 'gt-react' | 'gt-next'
+  parsingOptions: ParsingConfigOptions
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -277,8 +257,7 @@ function handleFunctionCall(
       ignoreAdditionalData,
       ignoreDynamicContent,
       ignoreInvalidIcu,
-      parsingOptions,
-      pkg
+      parsingOptions
     );
   } else if (
     tPath.parent.type === 'CallExpression' &&
@@ -306,8 +285,7 @@ function handleFunctionCall(
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
-          parsingOptions,
-          pkg
+          parsingOptions
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -331,8 +309,7 @@ function handleFunctionCall(
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
-          parsingOptions,
-          pkg
+          parsingOptions
         );
       }
       // If not found locally, check if it's an imported function
@@ -356,8 +333,7 @@ function handleFunctionCall(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions,
-            pkg
+            parsingOptions
           );
         }
       }
@@ -382,8 +358,7 @@ function processFunctionIfMatches(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions,
-  pkg: 'gt-react' | 'gt-next'
+  parsingOptions: ParsingConfigOptions
 ): void {
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
@@ -400,8 +375,7 @@ function processFunctionIfMatches(
         ignoreAdditionalData,
         ignoreDynamicContent,
         ignoreInvalidIcu,
-        parsingOptions,
-        pkg
+        parsingOptions
       );
     }
   }
@@ -425,8 +399,7 @@ function findFunctionParameterUsage(
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions,
-  pkg: 'gt-react' | 'gt-next'
+  parsingOptions: ParsingConfigOptions
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -458,8 +431,7 @@ function findFunctionParameterUsage(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions,
-            pkg
+            parsingOptions
           );
         });
       }
@@ -489,7 +461,6 @@ function processFunctionInFile(
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
   parsingOptions: ParsingConfigOptions,
-  pkg: 'gt-react' | 'gt-next',
   visited: Set<string> = new Set()
 ): void {
   // Check cache first to avoid redundant parsing
@@ -531,8 +502,7 @@ function processFunctionInFile(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions,
-            pkg
+            parsingOptions
           );
         }
       },
@@ -559,8 +529,7 @@ function processFunctionInFile(
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
-            parsingOptions,
-            pkg
+            parsingOptions
           );
         }
       },
@@ -611,7 +580,6 @@ function processFunctionInFile(
             ignoreDynamicContent,
             ignoreInvalidIcu,
             parsingOptions,
-            pkg,
             visited
           );
         }
@@ -648,8 +616,7 @@ export function parseStrings(
   errors: string[],
   warnings: Set<string>,
   file: string,
-  parsingOptions: ParsingConfigOptions,
-  pkg: 'gt-react' | 'gt-next'
+  parsingOptions: ParsingConfigOptions
 ): void {
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
@@ -677,8 +644,7 @@ export function parseStrings(
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
-          parsingOptions,
-          pkg
+          parsingOptions
         );
       }
       continue;
@@ -761,8 +727,7 @@ export function parseStrings(
               ignoreAdditionalData,
               ignoreDynamicContent,
               ignoreInvalidIcu,
-              parsingOptions,
-              pkg
+              parsingOptions
             );
           }
         });

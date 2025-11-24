@@ -52,9 +52,7 @@ export function getPathsAndAliases(
 
   traverse(ast, {
     ImportDeclaration(path) {
-      console.log('path1');
       if (path.node.source.value.startsWith(pkg)) {
-        console.log('path1.1');
         const importName = extractImportName(
           path.node,
           pkg,
@@ -86,8 +84,6 @@ export function getPathsAndAliases(
       }
     },
     VariableDeclarator(path) {
-      console.log('path2');
-
       // Check if the init is a require call
       if (
         path.node.init?.type === 'CallExpression' &&
