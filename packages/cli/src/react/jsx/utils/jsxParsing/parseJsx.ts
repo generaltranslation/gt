@@ -750,7 +750,7 @@ function resolveStaticComponentChildren({
   return result;
 }
 
-function resolveStaticFunctionInvocationFromBinding({
+export function resolveStaticFunctionInvocationFromBinding({
   importAliases,
   calleeBinding,
   callee,
@@ -970,7 +970,7 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    const { importAliases } = getPathsAndAliases(ast, pkg);
+    let { importAliases } = getPathsAndAliases(ast, pkg);
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string>;
@@ -979,6 +979,10 @@ function processFunctionInFile({
         importedFunctionsMap = buildImportMap(path);
       },
     });
+    importAliases = {
+      ...importAliases,
+      ...Object.fromEntries(importedFunctionsMap!.entries()),
+    };
 
     const reExports: string[] = [];
 
@@ -1303,7 +1307,7 @@ function processVariableDeclarationNodePath({
 /**
  * Process a expression being returned from a function
  */
-function processReturnExpression({
+export function processReturnExpression({
   unwrappedExpressions,
   scopeNode,
   expressionNodePath,
@@ -1374,7 +1378,7 @@ function processReturnExpression({
       );
       return null;
     }
-    // Function is found locally
+    // Function is found
     return resolveStaticFunctionInvocationFromBinding({
       importAliases,
       calleeBinding,
@@ -1408,7 +1412,7 @@ function processReturnExpression({
       );
       return null;
     }
-    // Function is found locally
+    // Function is found
     return resolveStaticFunctionInvocationFromBinding({
       importAliases,
       calleeBinding,

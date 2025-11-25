@@ -234,6 +234,19 @@ export const warnRecursiveFunctionCallSync = (
     location
   );
 
+export const warnDeclareStaticNoResultsSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withStaticError(
+      `Could not resolve ${colorizeFunctionName(functionName)}. This call is either not wrapped in declareStatic() or uses circular/looped file imports. Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    ),
+    location
+  );
+
 // Re-export error messages
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
