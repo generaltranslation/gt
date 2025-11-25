@@ -11,10 +11,10 @@ import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
-import { GTLibraries, GT_LIBRARIES_UPSTREAM } from '../jsx/utils/constants.js';
+import { GTLibrary, GT_LIBRARIES_UPSTREAM } from '../jsx/utils/constants.js';
 
 export async function createInlineUpdates(
-  pkg: GTLibraries,
+  pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingOptions: ParsingConfigOptions
@@ -111,6 +111,6 @@ export async function createInlineUpdates(
  * Given a package name, return the upstream packages that it depends on
  * @param pkg
  */
-function getUpstreamPackages(pkg: GTLibraries): GTLibraries[] {
+function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
 }

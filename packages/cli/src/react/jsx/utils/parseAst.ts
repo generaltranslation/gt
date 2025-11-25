@@ -7,7 +7,7 @@ const traverse = traverseModule.default || traverseModule;
 import { ParseResult } from '@babel/parser';
 import * as babel from '@babel/types';
 import { ImportDeclaration, VariableDeclaration } from '@babel/types';
-import { GTLibraries } from './constants.js';
+import { GTLibrary } from './constants.js';
 
 export function determineModuleType(ast: ParseResult<t.File>) {
   let isESM = false;
@@ -275,7 +275,7 @@ export interface ImportNameResult {
 
 export function extractImportName(
   node: ImportDeclaration | VariableDeclaration,
-  pkgs: GTLibraries[],
+  pkgs: GTLibrary[],
   translationFuncs: string[]
 ): ImportNameResult[] {
   const results: ImportNameResult[] = [];

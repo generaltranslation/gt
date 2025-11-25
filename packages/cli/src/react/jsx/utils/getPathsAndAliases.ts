@@ -8,7 +8,7 @@ import {
   INLINE_MESSAGE_HOOK_ASYNC,
   MSG_TRANSLATION_HOOK,
   TRANSLATION_COMPONENT,
-  GTLibraries,
+  GTLibrary,
 } from '../../jsx/utils/constants.js';
 import { extractImportName } from './parseAst.js';
 import * as t from '@babel/types';
@@ -24,7 +24,7 @@ const traverse = traverseModule.default || traverseModule;
  */
 export function getPathsAndAliases(
   ast: any,
-  pkgs: GTLibraries[]
+  pkgs: GTLibrary[]
 ): {
   importAliases: Record<string, string>;
   inlineTranslationPaths: Array<{

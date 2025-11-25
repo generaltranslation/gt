@@ -48,8 +48,8 @@ export const GT_LIBRARIES = [
   'gt-i18n',
   '@generaltranslation/react-core',
 ] as const;
-export type GTLibraries = (typeof GT_LIBRARIES)[number];
-export const GT_LIBRARIES_UPSTREAM: Record<GTLibraries, GTLibraries[]> = {
+export type GTLibrary = (typeof GT_LIBRARIES)[number];
+export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
   'gt-next': [
     'gt-i18n',
     '@generaltranslation/react-core',

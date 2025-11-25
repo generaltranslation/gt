@@ -43,7 +43,7 @@ import {
 } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
-import { GTLibraries } from '../constants.js';
+import { GTLibrary } from '../constants.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -80,7 +80,7 @@ export function parseTranslationComponent({
   pkgs,
 }: {
   ast: any;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
   originalName: string;
   importAliases: Record<string, string>;
   path: traverseModule.NodePath<traverseModule.Node>;
@@ -165,7 +165,7 @@ export function buildJSXTree({
   parsingOptions: ParsingConfigOptions;
   scopeNode: NodePath;
   importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
 }): JsxTree {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -493,7 +493,7 @@ export function parseJSXElement({
   importAliases: Record<string, string>;
   node: t.JSXElement;
   originalName: string;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -660,7 +660,7 @@ function resolveStaticComponentChildren({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
   props: { [key: string]: any };
 }): ElementNode {
   const result = {
@@ -778,7 +778,7 @@ function resolveStaticFunctionInvocationFromBinding({
   warnings: Set<string>;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
@@ -948,7 +948,7 @@ function processFunctionInFile({
   warnings: Set<string>;
   file: string;
   unwrappedExpressions: string[];
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
@@ -1140,7 +1140,7 @@ function processFunctionDeclarationNodePath({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1214,7 +1214,7 @@ function processVariableDeclarationNodePath({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1334,7 +1334,7 @@ function processReturnExpression({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibraries[];
+  pkgs: GTLibrary[];
 }): JsxTree | MultiplicationNode {
   // // If the node is null, return
   // if (expressionNodePath == null) return null;
