@@ -34,6 +34,7 @@ import { injectAndMerge } from './dictionaries/injectAndMerge';
 import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
 
+export * from 'gt-i18n/fallbacks';
 export {
   addGTIdentifier,
   writeChildrenAsObjects,

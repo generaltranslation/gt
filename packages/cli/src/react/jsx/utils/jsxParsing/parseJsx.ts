@@ -43,6 +43,7 @@ import {
 } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
+import { GTLibrary } from '../constants.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -76,10 +77,10 @@ export function parseTranslationComponent({
   warnings,
   file,
   parsingOptions,
-  pkg,
+  pkgs,
 }: {
   ast: any;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
   originalName: string;
   importAliases: Record<string, string>;
   path: traverseModule.NodePath<traverseModule.Node>;
@@ -112,7 +113,7 @@ export function parseTranslationComponent({
     parseJSXElement({
       scopeNode: jsxElementPath,
       node: jsxElementPath.node,
-      pkg,
+      pkgs,
       originalName,
       importAliases,
       updates,
@@ -149,7 +150,7 @@ export function buildJSXTree({
   parsingOptions,
   scopeNode,
   importedFunctionsMap,
-  pkg,
+  pkgs,
 }: {
   importAliases: Record<string, string>;
   node: any;
@@ -164,7 +165,7 @@ export function buildJSXTree({
   parsingOptions: ParsingConfigOptions;
   scopeNode: NodePath;
   importedFunctionsMap: Map<string, string>;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
 }): JsxTree {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -188,7 +189,7 @@ export function buildJSXTree({
         parsingOptions,
         scopeNode,
         importedFunctionsMap,
-        pkg,
+        pkgs,
       });
     }
 
@@ -303,7 +304,7 @@ export function buildJSXTree({
                 parsingOptions,
                 scopeNode,
                 importedFunctionsMap,
-                pkg,
+                pkgs,
               });
             }
           }
@@ -330,7 +331,7 @@ export function buildJSXTree({
           callStack,
           parsingOptions,
           importedFunctionsMap,
-          pkg,
+          pkgs,
           props,
         });
       }
@@ -370,7 +371,7 @@ export function buildJSXTree({
           parsingOptions,
           scopeNode,
           importedFunctionsMap,
-          pkg,
+          pkgs,
         })
       )
       .filter((child) => child !== null && child !== '');
@@ -407,7 +408,7 @@ export function buildJSXTree({
           parsingOptions,
           scopeNode,
           importedFunctionsMap,
-          pkg,
+          pkgs,
         })
       )
       .filter((child: any) => child !== null && child !== '');
@@ -480,7 +481,7 @@ export function parseJSXElement({
   importAliases,
   node,
   originalName,
-  pkg,
+  pkgs,
   updates,
   errors,
   warnings,
@@ -492,7 +493,7 @@ export function parseJSXElement({
   importAliases: Record<string, string>;
   node: t.JSXElement;
   originalName: string;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -534,7 +535,7 @@ export function parseJSXElement({
     scopeNode,
     visited: null,
     callStack: [],
-    pkg,
+    pkgs,
     unwrappedExpressions,
     updates,
     errors: componentErrors,
@@ -638,7 +639,7 @@ function resolveStaticComponentChildren({
   callStack,
   parsingOptions,
   importedFunctionsMap,
-  pkg,
+  pkgs,
   props,
 }: {
   importAliases: Record<string, string>;
@@ -659,7 +660,7 @@ function resolveStaticComponentChildren({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
   props: { [key: string]: any };
 }): ElementNode {
   const result = {
@@ -736,7 +737,7 @@ function resolveStaticComponentChildren({
         errors,
         warnings,
         unwrappedExpressions,
-        pkg,
+        pkgs,
         parsingOptions,
         importedFunctionsMap,
       }
@@ -763,7 +764,7 @@ function resolveStaticFunctionInvocationFromBinding({
   warnings,
   parsingOptions,
   importedFunctionsMap,
-  pkg,
+  pkgs,
 }: {
   importAliases: Record<string, string>;
   calleeBinding: traverseModule.Binding;
@@ -777,7 +778,7 @@ function resolveStaticFunctionInvocationFromBinding({
   warnings: Set<string>;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
@@ -826,7 +827,7 @@ function resolveStaticFunctionInvocationFromBinding({
           file,
           parsingOptions,
           importedFunctionsMap,
-          pkg,
+          pkgs,
         }),
     });
   } else if (
@@ -849,7 +850,7 @@ function resolveStaticFunctionInvocationFromBinding({
           unwrappedExpressions,
           updates,
           callStack,
-          pkg,
+          pkgs,
           errors,
           visited,
           warnings,
@@ -895,7 +896,7 @@ function resolveStaticFunctionInvocationFromBinding({
             warnings,
             file,
             parsingOptions,
-            pkg,
+            pkgs,
           }),
       });
       if (result !== null) {
@@ -935,7 +936,7 @@ function processFunctionInFile({
   warnings,
   file,
   unwrappedExpressions,
-  pkg,
+  pkgs,
 }: {
   filePath: string;
   functionName: string;
@@ -947,7 +948,7 @@ function processFunctionInFile({
   warnings: Set<string>;
   file: string;
   unwrappedExpressions: string[];
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
@@ -970,7 +971,7 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    const { importAliases } = getPathsAndAliases(ast, pkg);
+    const { importAliases } = getPathsAndAliases(ast, pkgs);
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string>;
@@ -1004,7 +1005,7 @@ function processFunctionInFile({
             unwrappedExpressions,
             callStack,
             visited,
-            pkg,
+            pkgs,
             updates,
             errors,
             warnings,
@@ -1029,7 +1030,7 @@ function processFunctionInFile({
             functionName,
             path,
             callStack,
-            pkg,
+            pkgs,
             updates,
             errors,
             warnings,
@@ -1088,7 +1089,7 @@ function processFunctionInFile({
             errors,
             warnings,
             file: filePath,
-            pkg,
+            pkgs,
           });
           if (foundResult != null) {
             result = foundResult;
@@ -1125,7 +1126,7 @@ function processFunctionDeclarationNodePath({
   file,
   parsingOptions,
   importedFunctionsMap,
-  pkg,
+  pkgs,
 }: {
   functionName: string;
   path: NodePath<t.FunctionDeclaration>;
@@ -1139,7 +1140,7 @@ function processFunctionDeclarationNodePath({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1158,7 +1159,7 @@ function processFunctionDeclarationNodePath({
         processReturnExpression({
           unwrappedExpressions,
           functionName,
-          pkg,
+          pkgs,
           callStack,
           scopeNode: returnNodePath,
           expressionNodePath: returnNodePath,
@@ -1199,7 +1200,7 @@ function processVariableDeclarationNodePath({
   file,
   parsingOptions,
   importedFunctionsMap,
-  pkg,
+  pkgs,
 }: {
   functionName: string;
   path: NodePath<t.VariableDeclarator>;
@@ -1213,7 +1214,7 @@ function processVariableDeclarationNodePath({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1240,7 +1241,7 @@ function processVariableDeclarationNodePath({
       processReturnExpression({
         unwrappedExpressions,
         functionName,
-        pkg,
+        pkgs,
         scopeNode: arrowFunctionPath,
         expressionNodePath: bodyNodePath,
         importAliases,
@@ -1269,7 +1270,7 @@ function processVariableDeclarationNodePath({
           processReturnExpression({
             unwrappedExpressions,
             functionName,
-            pkg,
+            pkgs,
             scopeNode: returnPath,
             expressionNodePath: returnNodePath,
             importAliases,
@@ -1317,7 +1318,7 @@ function processReturnExpression({
   parsingOptions,
   importedFunctionsMap,
   functionName,
-  pkg,
+  pkgs,
 }: {
   functionName: string;
   unwrappedExpressions: string[];
@@ -1333,7 +1334,7 @@ function processReturnExpression({
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
-  pkg: 'gt-react' | 'gt-next';
+  pkgs: GTLibrary[];
 }): JsxTree | MultiplicationNode {
   // // If the node is null, return
   // if (expressionNodePath == null) return null;
@@ -1355,7 +1356,7 @@ function processReturnExpression({
       parsingOptions,
       functionName,
       importedFunctionsMap,
-      pkg,
+      pkgs,
     });
   } else if (
     t.isCallExpression(expressionNodePath.node) &&
@@ -1386,7 +1387,7 @@ function processReturnExpression({
       updates,
       errors,
       warnings,
-      pkg,
+      pkgs,
       parsingOptions,
       importedFunctionsMap,
     });
@@ -1420,7 +1421,7 @@ function processReturnExpression({
       updates,
       errors,
       warnings,
-      pkg,
+      pkgs,
       parsingOptions,
       importedFunctionsMap,
     });
@@ -1443,7 +1444,7 @@ function processReturnExpression({
       parsingOptions,
       scopeNode,
       importedFunctionsMap,
-      pkg,
+      pkgs,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1468,7 +1469,7 @@ function processReturnExpression({
             parsingOptions,
             functionName,
             importedFunctionsMap,
-            pkg,
+            pkgs,
           })
       ),
     };
@@ -1488,7 +1489,7 @@ function processReturnExpression({
       parsingOptions,
       scopeNode,
       importedFunctionsMap,
-      pkg,
+      pkgs,
     });
   }
 }

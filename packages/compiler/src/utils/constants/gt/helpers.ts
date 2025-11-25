@@ -152,6 +152,7 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
     GT_IMPORT_SOURCES.GT_NEXT_CLIENT,
     GT_IMPORT_SOURCES.GT_NEXT_SERVER,
     GT_IMPORT_SOURCES.GT_REACT,
+    GT_IMPORT_SOURCES.GT_I18N,
   ]).includes(name as GT_IMPORT_SOURCES);
 }
 

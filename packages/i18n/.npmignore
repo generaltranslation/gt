@@ -1,0 +1,6 @@
+node_modules
+src
+tsconfig.json
+.npmignore
+rollup.config.mjs
+package-lock.json

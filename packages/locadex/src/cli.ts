@@ -10,7 +10,7 @@ import './utils/shutdown.js';
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
-import { main } from 'gtx-cli/index';
+import { main } from 'gtx-cli';
 import { GT_DASHBOARD_URL } from 'gtx-cli/utils/constants';
 import chalk from 'chalk';
 import { displayHeader, logMessage } from './logging/console.js';

@@ -11,9 +11,10 @@ import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
+import { GTLibrary, GT_LIBRARIES_UPSTREAM } from '../jsx/utils/constants.js';
 
 export async function createInlineUpdates(
-  pkg: 'gt-react' | 'gt-next',
+  pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingOptions: ParsingConfigOptions
@@ -22,6 +23,8 @@ export async function createInlineUpdates(
 
   const errors: string[] = [];
   const warnings: Set<string> = new Set();
+
+  const pkgs = getUpstreamPackages(pkg);
 
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
@@ -41,7 +44,7 @@ export async function createInlineUpdates(
 
     // First pass: collect imports and process translation functions
     const { importAliases, inlineTranslationPaths, translationComponentPaths } =
-      getPathsAndAliases(ast, pkg);
+      getPathsAndAliases(ast, pkgs);
 
     // Process translation functions asynchronously
     for (const {
@@ -68,7 +71,7 @@ export async function createInlineUpdates(
         originalName: localName,
         localName,
         ast,
-        pkg,
+        pkgs,
         path,
         updates,
         errors,
@@ -102,4 +105,12 @@ export async function createInlineUpdates(
   );
 
   return { updates, errors, warnings: [...warnings] };
+}
+
+/**
+ * Given a package name, return the upstream packages that it depends on
+ * @param pkg
+ */
+function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
+  return GT_LIBRARIES_UPSTREAM[pkg];
 }
