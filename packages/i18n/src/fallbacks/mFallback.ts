@@ -5,7 +5,7 @@ import {
   MFunctionType,
 } from '../types';
 import { decodeOptions } from '../msg/decodeOptions';
-import { validateDecodedOptions } from './utils/validateDecodedOptions';
+import { isEncodedTranslationOptions } from './utils/isEncodedTranslationOptions';
 import { gtFallback } from './gtFallback';
 
 /**
@@ -45,7 +45,7 @@ export const mFallback: MFunctionType = <T extends string | null | undefined>(
     decodeOptions(encodedMsg) || ({} as InlineTranslationOptions);
 
   // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
-  if (validateDecodedOptions(decodedOptions)) {
+  if (isEncodedTranslationOptions(decodedOptions)) {
     // This is an encoded string, msg already interpolated, just return decoded string
     return decodeMsg(encodedMsg) as T extends string ? string : T;
   }
