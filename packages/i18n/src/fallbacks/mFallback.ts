@@ -4,12 +4,8 @@ import {
   InlineTranslationOptions,
   MFunctionType,
 } from '../types';
-import logger from '../logs/logger';
 import { decodeOptions } from '../msg/decodeOptions';
-import { formatMessage } from './utils/formatMessage';
-import { extractVariables } from '../utils/extractVariables';
 import { validateDecodedOptions } from './utils/validateDecodedOptions';
-import { interpolationFailureWarning } from 'src/logs/warnings';
 import { gtFallback } from './gtFallback';
 
 /**

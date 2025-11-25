@@ -6,7 +6,7 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { encode } from 'generaltranslation/internal';
 import { interpolationFailureWarning } from '../logs/warnings';
 import logger from '../logs/logger';
-import { extractVariables } from 'src/utils/extractVariables';
+import { extractVariables } from '../utils/extractVariables';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
