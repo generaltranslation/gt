@@ -42,6 +42,7 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getStaticDomain: 'getStaticDomainPath',
 } as const;
 
+/** @deprecated Use RequestFunctions and StaticRequestFunctions instead */
 type RequestFunctionPaths = Partial<
   Record<
     (typeof REQUEST_FUNCTION_TO_CONFIG_KEY)[keyof typeof REQUEST_FUNCTION_TO_CONFIG_KEY],
@@ -90,9 +91,19 @@ type withGTConfigProps = {
   experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
+  getRegionPath?: string;
+  getLocalePath?: string;
+  getDomainPath?: string;
   // SSG
+  /** @deprecated */
   experimentalEnableSSG?: boolean;
   disableSSGWarnings?: boolean;
+  /** @deprecated */
+  getStaticDomainPath?: string;
+  /** @deprecated */
+  getStaticRegionPath?: string;
+  /** @deprecated */
+  getStaticLocalePath?: string;
   [key: string]: any;
 } & RequestFunctionPaths;
 

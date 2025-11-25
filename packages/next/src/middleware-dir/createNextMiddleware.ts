@@ -2,7 +2,8 @@ import { isSameDialect, standardizeLocale } from 'generaltranslation';
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
-import { NextRequest, NextResponse } from 'next/server';
+// TODO: uncomment
+// import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
@@ -42,11 +43,17 @@ export default function createNextMiddleware({
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,
   pathConfig = {},
+  // TODO: remove
+  NextRequest,
+  NextResponse,
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
+  // TODO: remove
+  NextRequest?: any;
+  NextResponse?: any;
 } = {}) {
   // i18n config
   let envParams;
@@ -147,7 +154,9 @@ export default function createNextMiddleware({
    * @param {NextRequest} req - The incoming request object, containing URL and headers.
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
-  function middleware(req: NextRequest) {
+  // TODO: uncomment
+  // function middleware(req: NextRequest) {
+  function middleware(req: any) {
     // Ignore source maps
     if (
       ignoreSourceMaps &&
@@ -189,6 +198,9 @@ export default function createNextMiddleware({
       localeCookieName,
       resetLocaleCookieName,
       localeHeaderName,
+      // TODO: remove
+      NextResponse,
+      NextRequest,
     };
 
     const getRewriteResponse = (responsePath: string) =>
