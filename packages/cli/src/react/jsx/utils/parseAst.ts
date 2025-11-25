@@ -7,6 +7,7 @@ const traverse = traverseModule.default || traverseModule;
 import { ParseResult } from '@babel/parser';
 import * as babel from '@babel/types';
 import { ImportDeclaration, VariableDeclaration } from '@babel/types';
+import { GTLibraries } from './constants.js';
 
 export function determineModuleType(ast: ParseResult<t.File>) {
   let isESM = false;
@@ -274,14 +275,14 @@ export interface ImportNameResult {
 
 export function extractImportName(
   node: ImportDeclaration | VariableDeclaration,
-  pkg: string,
+  pkgs: GTLibraries[],
   translationFuncs: string[]
 ): ImportNameResult[] {
   const results: ImportNameResult[] = [];
 
   if (node.type === 'ImportDeclaration') {
     // Handle ES6 imports
-    if (node.source.value.startsWith(pkg)) {
+    if (pkgs.some((pkg) => node.source.value.startsWith(pkg))) {
       for (const specifier of node.specifiers) {
         if (
           specifier.type === 'ImportSpecifier' &&
@@ -304,7 +305,12 @@ export function extractImportName(
         declaration.init.callee.type === 'Identifier' &&
         declaration.init.callee.name === 'require' &&
         declaration.init.arguments[0]?.type === 'StringLiteral' &&
-        declaration.init.arguments[0].value.startsWith(pkg)
+        pkgs.some((pkg) =>
+          (
+            (declaration!.init as t.CallExpression)
+              .arguments[0] as t.StringLiteral
+          ).value.startsWith(pkg)
+        )
       ) {
         // Handle destructuring case: const { T } = require('gt-next')
         if (declaration.id.type === 'ObjectPattern') {

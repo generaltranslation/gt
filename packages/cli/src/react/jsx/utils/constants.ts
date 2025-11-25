@@ -40,3 +40,31 @@ export function mapAttributeName(attrName: string): string {
   if (attrName === '$context') return 'context';
   return attrName;
 }
+
+export const GT_LIBRARIES = [
+  'gt-react',
+  'gt-next',
+  'gt-react-native',
+  'gt-i18n',
+  '@generaltranslation/react-core',
+] as const;
+export type GTLibraries = (typeof GT_LIBRARIES)[number];
+export const GT_LIBRARIES_UPSTREAM: Record<GTLibraries, GTLibraries[]> = {
+  'gt-next': [
+    'gt-i18n',
+    '@generaltranslation/react-core',
+    'gt-react',
+    'gt-next',
+  ],
+  'gt-react': ['gt-i18n', '@generaltranslation/react-core', 'gt-react'],
+  'gt-react-native': [
+    'gt-i18n',
+    '@generaltranslation/react-core',
+    'gt-react-native',
+  ],
+  '@generaltranslation/react-core': [
+    'gt-i18n',
+    '@generaltranslation/react-core',
+  ],
+  'gt-i18n': ['gt-i18n'],
+} as const;
