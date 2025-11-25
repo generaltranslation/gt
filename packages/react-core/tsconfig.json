@@ -19,7 +19,7 @@
     "composite": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../i18n/src/msg/__tests__"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
   "references": [
     {
