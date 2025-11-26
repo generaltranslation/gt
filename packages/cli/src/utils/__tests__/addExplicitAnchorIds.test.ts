@@ -66,9 +66,51 @@ Another section here.
     const sourceHeadingMap = extractHeadingInfo(input);
     const result = addExplicitAnchorIds(input, sourceHeadingMap);
 
-    expect(result.hasChanges).toBe(false);
-    expect(result.addedIds).toHaveLength(0);
-    expect(result.content).toBe(input);
+    expect(result.hasChanges).toBe(true);
+    expect(result.addedIds).toHaveLength(1);
+    expect(result.content).toContain('## Already has ID \\{#custom-id\\}');
+  });
+
+  it('reuses explicit IDs from source when translation lacks them', () => {
+    const source = `## Source heading {#custom-source-id}
+
+## Another Source Heading
+`;
+
+    const translated = `## Encabezado traducido
+
+## Otro encabezado
+`;
+
+    const sourceHeadingMap = extractHeadingInfo(source);
+    const result = addExplicitAnchorIds(translated, sourceHeadingMap);
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.addedIds).toEqual([
+      { heading: 'Encabezado traducido', id: 'custom-source-id' },
+      { heading: 'Otro encabezado', id: 'another-source-heading' },
+    ]);
+
+    expect(result.content).toContain(
+      '## Encabezado traducido \\{#custom-source-id\\}'
+    );
+    expect(result.content).toContain(
+      '## Otro encabezado \\{#another-source-heading\\}'
+    );
+  });
+
+  it('normalizes existing inline IDs to escaped form when they match source', () => {
+    const source = `## Source heading {#custom-source-id}`;
+    const translated = `## Traducción {#custom-source-id}`;
+
+    const sourceHeadingMap = extractHeadingInfo(source);
+    const result = addExplicitAnchorIds(translated, sourceHeadingMap);
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.content).toContain(
+      '## Traducción \\{#custom-source-id\\}'
+    );
+    expect(result.addedIds).toHaveLength(1);
   });
 
   it('should add IDs to all headings even without anchor links', () => {

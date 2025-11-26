@@ -97,9 +97,15 @@ export async function postProcessTranslations(
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales, includeFiles);
     }
+  }
 
-    // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
-    // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
+  const shouldProcessAnchorIds =
+    settings.options?.experimentalLocalizeStaticUrls ||
+    settings.options?.experimentalAddHeaderAnchorIds;
+
+  // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
+  // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
+  if (shouldProcessAnchorIds) {
     await processAnchorIds(settings, includeFiles);
   }
 

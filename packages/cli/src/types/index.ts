@@ -26,7 +26,7 @@ export type Options = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
-  experimentalAddHeaderAnchorIds?: 'mintlify';
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
 };
 
 export type TranslateFlags = {
@@ -52,7 +52,7 @@ export type TranslateFlags = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
-  experimentalAddHeaderAnchorIds?: 'mintlify';
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
 };
@@ -207,7 +207,7 @@ export type AdditionalOptions = {
   clearLocaleDirsExclude?: string[]; // array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., "./snippets/[locale]/preserved/**" or "./[locales]/static/**")
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
-  experimentalAddHeaderAnchorIds?: 'mintlify'; // Format for anchor IDs when experimentalLocalizeStaticUrls is enabled: 'mintlify' for div wrapping, undefined for inline {#id}
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for div wrapping, 'default' or undefined for inline {#id}. Can run independently of static url localization
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
   baseDomain?: string; // The base http:// url where the project is hosted
