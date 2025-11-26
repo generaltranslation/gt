@@ -65,5 +65,6 @@ export type GTProviderProps = {
   modelProvider?: string;
   enableI18n?: boolean;
   enableI18nLoaded?: boolean;
+  disableCloudServiceWarnings?: boolean;
   [key: string]: any;
 };

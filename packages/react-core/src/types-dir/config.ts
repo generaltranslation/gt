@@ -43,6 +43,7 @@ export type GTConfig = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   enableI18n?: boolean;
+  disableCloudServiceWarnings?: boolean;
 };
 
 export type InternalGTProviderProps = {
@@ -75,6 +76,7 @@ export type InternalGTProviderProps = {
   enableI18n?: boolean;
   /** Flag to indicate if the enableI18n flag is finished loading asynchronously */
   enableI18nLoaded?: boolean;
+  disableCloudServiceWarnings?: boolean;
   readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
   useDetermineLocale: (
     params: UseDetermineLocaleParams
