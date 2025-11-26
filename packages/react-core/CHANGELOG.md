@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 1.2.4
+
+### Patch Changes
+
+- [#831](https://github.com/generaltranslation/gt/pull/831) [`73d78b2`](https://github.com/generaltranslation/gt/commit/73d78b20e067fd291080856d33dd1bd2656b3399) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: disable runtime and cache behavior by setting cacheUrl and runtimeUrl to null
+
 ## 1.2.3
 
 ### Patch Changes
