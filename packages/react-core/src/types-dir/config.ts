@@ -31,8 +31,8 @@ export type GTConfig = {
   locales?: string[];
   defaultLocale?: string;
   dictionary?: string; // path to the dictionary file
-  runtimeUrl?: string;
-  cacheUrl?: string;
+  runtimeUrl?: string | null;
+  cacheUrl?: string | null;
   renderSettings?: {
     method: RenderMethod;
     timeout?: number;
@@ -54,8 +54,8 @@ export type InternalGTProviderProps = {
   defaultLocale?: string;
   locale?: string;
   region?: string;
-  cacheUrl?: string;
-  runtimeUrl?: string;
+  cacheUrl?: string | null;
+  runtimeUrl?: string | null;
   renderSettings?: {
     method: RenderMethod;
     timeout?: number;

@@ -1,6 +1,5 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { RenderMethod } from 'gt-react/internal';
-import { RequestFunctions, StaticRequestFunctions } from '../../request/types';
 
 export type HeadersAndCookies = {
   localeHeaderName?: string;
