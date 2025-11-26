@@ -36,13 +36,12 @@ function extractHeadingText(heading: Heading): string {
   return text;
 }
 
-function parseHeadingContent(
-  text: string
-): { cleanedText: string; explicitId?: string } {
+function parseHeadingContent(text: string): {
+  cleanedText: string;
+  explicitId?: string;
+} {
   // Support both {#id} and escaped \{#id\} forms
-  const anchorMatch = text.match(
-    /(\\\{#([^}]+)\\\}|\{#([^}]+)\})\s*$/
-  );
+  const anchorMatch = text.match(/(\\\{#([^}]+)\\\}|\{#([^}]+)\})\s*$/);
 
   if (!anchorMatch) {
     return { cleanedText: text };
@@ -220,12 +219,15 @@ function applyInlineIds(
   idMappings: Map<number, string>
 ): string {
   const escapeInlineAnchors = (content: string): string => {
-    return content.replace(/\{#([A-Za-z0-9-_]+)\}/g, (match, id, offset, str) => {
-      if (offset > 0 && str[offset - 1] === '\\') {
-        return match;
+    return content.replace(
+      /\{#([A-Za-z0-9-_]+)\}/g,
+      (match, id, offset, str) => {
+        if (offset > 0 && str[offset - 1] === '\\') {
+          return match;
+        }
+        return `\\{#${id}\\}`;
       }
-      return `\\{#${id}\\}`;
-    });
+    );
   };
 
   // Parse the translated content

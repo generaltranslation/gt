@@ -107,9 +107,7 @@ Another section here.
     const result = addExplicitAnchorIds(translated, sourceHeadingMap);
 
     expect(result.hasChanges).toBe(true);
-    expect(result.content).toContain(
-      '## Traducción \\{#custom-source-id\\}'
-    );
+    expect(result.content).toContain('## Traducción \\{#custom-source-id\\}');
     expect(result.addedIds).toHaveLength(1);
   });
 
