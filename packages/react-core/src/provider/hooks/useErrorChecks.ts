@@ -81,5 +81,6 @@ export function useErrorChecks({
     runtimeUrl,
     projectId,
     locales,
+    disableCloudServiceWarnings,
   ]);
 }
