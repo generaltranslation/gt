@@ -469,8 +469,7 @@ export function withGTConfig(
     !mergedConfig.projectId &&
     process.env.NODE_ENV === 'development' &&
     mergedConfig.loadTranslationsType === 'remote' &&
-    !mergedConfig.loadDictionaryEnabled && // skip warn if using local dictionary
-    !mergedConfig.disableCloudServiceWarnings
+    !mergedConfig.loadDictionaryEnabled // skip warn if using local dictionary
   ) {
     console.warn(projectIdMissingWarn);
   }
@@ -485,14 +484,13 @@ export function withGTConfig(
     mergedConfig.projectId && // must have projectId for this check to matter anyways
     mergedConfig.runtimeUrl &&
     !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
-    process.env.NODE_ENV === 'development' &&
-    !mergedConfig.disableCloudServiceWarnings
+    process.env.NODE_ENV === 'development'
   ) {
     console.warn(APIKeyMissingWarn);
   }
 
   // Check: if using GT infrastructure, warn about unsupported locales
-  if (gtServicesEnabled && !mergedConfig.disableCloudServiceWarnings) {
+  if (gtServicesEnabled) {
     // Warn about standardized locales
     if (updatedLocales.length) {
       console.warn(standardizedLocalesWarning(updatedLocales));

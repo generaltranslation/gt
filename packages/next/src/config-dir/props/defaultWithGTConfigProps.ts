@@ -42,7 +42,6 @@ type DefaultGTConfigProps = {
   experimentalCompilerOptions: CompilerOptions;
   disableSSGWarnings: boolean;
   experimentalEnableSSG: boolean;
-  disableCloudServiceWarnings: boolean;
 };
 
 const defaultWithGTConfigProps: DefaultGTConfigProps = {
@@ -73,7 +72,6 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
   },
   disableSSGWarnings: false,
   experimentalEnableSSG: false,
-  disableCloudServiceWarnings: false,
 } as const;
 
 // exported separately because it's only used in production

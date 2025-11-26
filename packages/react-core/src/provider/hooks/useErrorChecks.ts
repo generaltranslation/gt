@@ -19,26 +19,19 @@ export function useErrorChecks({
   cacheUrl,
   locales,
   environment,
-  disableCloudServiceWarnings,
 }: {
   devApiKey?: string;
   projectId: string;
-  runtimeUrl: string;
+  runtimeUrl: string | null;
   loadTranslationsType: string;
-  cacheUrl: string;
+  cacheUrl: string | null;
   locales: string[];
   environment: 'development' | 'production' | 'test';
-  disableCloudServiceWarnings?: boolean;
 }) {
   useEffect(() => {
     // Check: no devApiKey in production
     if (environment === 'production' && devApiKey) {
       throw new Error(apiKeyInProductionError);
-    }
-
-    // All other checks are cloud service warnings, so skip if disabled
-    if (disableCloudServiceWarnings) {
-      return;
     }
 
     // Check: projectId missing while using cache/runtime in dev
@@ -81,6 +74,5 @@ export function useErrorChecks({
     runtimeUrl,
     projectId,
     locales,
-    disableCloudServiceWarnings,
   ]);
 }

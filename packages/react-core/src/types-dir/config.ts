@@ -31,8 +31,8 @@ export type GTConfig = {
   locales?: string[];
   defaultLocale?: string;
   dictionary?: string; // path to the dictionary file
-  runtimeUrl?: string;
-  cacheUrl?: string;
+  runtimeUrl?: string | null;
+  cacheUrl?: string | null;
   renderSettings?: {
     method: RenderMethod;
     timeout?: number;
@@ -43,7 +43,6 @@ export type GTConfig = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   enableI18n?: boolean;
-  disableCloudServiceWarnings?: boolean;
 };
 
 export type InternalGTProviderProps = {
@@ -55,8 +54,8 @@ export type InternalGTProviderProps = {
   defaultLocale?: string;
   locale?: string;
   region?: string;
-  cacheUrl?: string;
-  runtimeUrl?: string;
+  cacheUrl?: string | null;
+  runtimeUrl?: string | null;
   renderSettings?: {
     method: RenderMethod;
     timeout?: number;
@@ -76,7 +75,6 @@ export type InternalGTProviderProps = {
   enableI18n?: boolean;
   /** Flag to indicate if the enableI18n flag is finished loading asynchronously */
   enableI18nLoaded?: boolean;
-  disableCloudServiceWarnings?: boolean;
   readAuthFromEnv: (params: AuthFromEnvParams) => AuthFromEnvReturn;
   useDetermineLocale: (
     params: UseDetermineLocaleParams

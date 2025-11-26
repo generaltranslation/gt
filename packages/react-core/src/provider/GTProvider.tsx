@@ -55,10 +55,6 @@ export default function GTProvider({
   enableI18n: _enableI18n = config?.enableI18n !== undefined
     ? config.enableI18n
     : true,
-  disableCloudServiceWarnings = config?.disableCloudServiceWarnings !==
-  undefined
-    ? config.disableCloudServiceWarnings
-    : false,
   enableI18nLoaded,
   useEnableI18n = _useEnableI18n,
   readAuthFromEnv = _readAuthFromEnv,
@@ -124,7 +120,7 @@ export default function GTProvider({
         sourceLocale: defaultLocale,
         targetLocale: locale,
         projectId,
-        baseUrl: runtimeUrl,
+        baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
     [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
@@ -164,7 +160,6 @@ export default function GTProvider({
     cacheUrl,
     locales,
     environment,
-    disableCloudServiceWarnings,
   });
 
   // ---------- TRANSLATION STATE ---------- //

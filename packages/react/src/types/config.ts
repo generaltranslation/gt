@@ -47,8 +47,8 @@ export type GTProviderProps = {
   defaultLocale?: string;
   locale?: string;
   region?: string;
-  cacheUrl?: string;
-  runtimeUrl?: string;
+  cacheUrl?: string | null;
+  runtimeUrl?: string | null;
   renderSettings?: {
     method: RenderMethod;
     timeout?: number;
@@ -65,6 +65,5 @@ export type GTProviderProps = {
   modelProvider?: string;
   enableI18n?: boolean;
   enableI18nLoaded?: boolean;
-  disableCloudServiceWarnings?: boolean;
   [key: string]: any;
 };
