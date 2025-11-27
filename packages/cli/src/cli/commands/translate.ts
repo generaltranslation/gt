@@ -44,7 +44,7 @@ export async function handleTranslate(
       (sourcePath, locale) => fileMapping[locale]?.[sourcePath] ?? null,
       settings,
       options.force,
-      options.forceDownload
+      options.forceDownload || options.force // if force is true should also force download
     );
   }
 }
@@ -80,7 +80,7 @@ export async function handleDownload(
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
     settings,
     false, // force is not applicable for downloading staged translations
-    options.forceDownload
+    options.force || options.forceDownload
   );
 }
 
