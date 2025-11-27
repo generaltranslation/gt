@@ -447,12 +447,17 @@ function transformMdxImports(
     console.warn(
       `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
     );
-    console.warn('Returning original content unchanged due to parsing error.');
-    return {
-      content: mdxContent,
-      hasChanges: false,
-      transformedImports: [],
-    };
+    console.warn('Falling back to string-based import localization.');
+    return transformImportsStringFallback(
+      mdxContent,
+      defaultLocale,
+      targetLocale,
+      hideDefaultLocale,
+      pattern,
+      exclude,
+      currentFilePath,
+      options as any
+    );
   }
 
   let content = mdxContent;
@@ -538,6 +543,76 @@ function transformMdxImports(
       });
     }
   });
+
+  return {
+    content,
+    hasChanges: transformedImports.length > 0,
+    transformedImports,
+  };
+}
+
+/**
+ * String-based fallback for import localization when MDX parsing fails (e.g., on .md files)
+ */
+function transformImportsStringFallback(
+  mdxContent: string,
+  defaultLocale: string,
+  targetLocale: string,
+  hideDefaultLocale: boolean,
+  pattern: string = '/[locale]',
+  exclude: string[] = [],
+  currentFilePath?: string,
+  options?: Options
+): ImportTransformResult {
+  const transformedImports: Array<{ originalPath: string; newPath: string }> =
+    [];
+
+  if (!pattern.startsWith('/') && !pattern.startsWith('.')) {
+    pattern = '/' + pattern;
+  }
+  const patternHead = pattern.split('[locale]')[0];
+
+  let content = mdxContent;
+  const importRegex =
+    /import\s+[^'"]*['"]([^'"]+)['"]\s*;?/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = importRegex.exec(mdxContent)) !== null) {
+    const fullMatch = match[0];
+    const importPath = match[1];
+
+    if (
+      !shouldProcessImportPath(
+        importPath,
+        patternHead,
+        targetLocale,
+        defaultLocale
+      )
+    ) {
+      continue;
+    }
+
+    if (isImportPathExcluded(importPath, exclude, defaultLocale)) {
+      continue;
+    }
+
+    const newPath = transformImportPath(
+      importPath,
+      patternHead,
+      targetLocale,
+      defaultLocale,
+      hideDefaultLocale,
+      currentFilePath,
+      process.cwd(),
+      options?.docsImportRewrites
+    );
+
+    if (!newPath) continue;
+
+    const updatedImport = fullMatch.replace(importPath, newPath);
+    content = content.replace(fullMatch, updatedImport);
+    transformedImports.push({ originalPath: importPath, newPath });
+  }
 
   return {
     content,
