@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.5.14
+
+### Patch Changes
+
+- [#837](https://github.com/generaltranslation/gt/pull/837) [`0772b57`](https://github.com/generaltranslation/gt/commit/0772b5714f1cfe8af5f5edcdf6bcb28125a1536f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Making experimentalAddHeaderAnchorIds independent of experimentalLocalizeStaticUrls and fetching anchor IDs from source files when present
+
+- [#835](https://github.com/generaltranslation/gt/pull/835) [`79225fb`](https://github.com/generaltranslation/gt/commit/79225fb3bbea3bb7a453cc237c619b67dd0dd3da) Thanks [@brian-lou](https://github.com/brian-lou)! - When using --force translate, also force files to re-download
+
 ## 2.5.13
 
 ### Patch Changes
