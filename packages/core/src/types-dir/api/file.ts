@@ -9,7 +9,8 @@ export type FileFormat =
   | 'MD'
   | 'TS'
   | 'JS'
-  | 'HTML';
+  | 'HTML'
+  | 'TXT';
 
 export type FileMetadata = {
   filePath: string;
