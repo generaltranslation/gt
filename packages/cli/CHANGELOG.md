@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.5.13
+
+### Patch Changes
+
+- [#833](https://github.com/generaltranslation/gt/pull/833) [`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678) Thanks [@brian-lou](https://github.com/brian-lou)! - Add txt file translation support
+
+- Updated dependencies [[`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678)]:
+  - generaltranslation@8.0.5
+
 ## 2.5.12
 
 ### Patch Changes
