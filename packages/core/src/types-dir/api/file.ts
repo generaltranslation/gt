@@ -1,4 +1,4 @@
-import { DataFormat } from 'src/types';
+import { DataFormat } from '../jsx/content';
 import { Entry } from './entry';
 
 export type FileFormat =
