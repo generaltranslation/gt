@@ -27,6 +27,10 @@ export type Options = {
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
+  docsImportRewrites?: Array<{
+    match: string;
+    replace: string;
+  }>;
 };
 
 export type TranslateFlags = {
@@ -55,6 +59,10 @@ export type TranslateFlags = {
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
+  docsImportRewrites?: Array<{
+    match: string;
+    replace: string;
+  }>;
 };
 
 export type WrapOptions = {
@@ -211,6 +219,10 @@ export type AdditionalOptions = {
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
   baseDomain?: string; // The base http:// url where the project is hosted
+  docsImportRewrites?: Array<{
+    match: string; // prefix to match, e.g. '@site/docs'
+    replace: string; // replacement prefix, can include [locale] or [defaultLocale]
+  }>;
 };
 
 export type SharedStaticAssetsConfig = {
