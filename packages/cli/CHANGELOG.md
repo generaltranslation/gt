@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.15
+
+### Patch Changes
+
+- [#838](https://github.com/generaltranslation/gt/pull/838) [`3a3d45b`](https://github.com/generaltranslation/gt/commit/3a3d45be0b454fb017ad4b75a772df1c8aaee65e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding fallback when localizing static imports
+
 ## 2.5.14
 
 ### Patch Changes
