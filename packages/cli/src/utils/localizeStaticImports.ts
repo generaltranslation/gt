@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Options, Settings } from '../types/index.js';
+import { Options, Settings, AdditionalOptions } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
 import { unified } from 'unified';
@@ -80,7 +80,8 @@ export default async function localizeStaticImports(
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
             settings.options?.excludeStaticImports,
-            filePath
+            filePath,
+            settings.options
           );
           // Write the localized file back to the same path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -117,7 +118,8 @@ export default async function localizeStaticImports(
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
             settings.options?.excludeStaticImports,
-            filePath
+            filePath,
+            settings.options
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -303,8 +305,40 @@ function transformImportPath(
   defaultLocale: string,
   hideDefaultLocale: boolean,
   currentFilePath?: string,
-  projectRoot: string = process.cwd() // fallback if not provided
+  projectRoot: string = process.cwd(), // fallback if not provided
+  rewrites?: Array<{ match: string; replace: string }>
 ): string | null {
+  // Apply explicit rewrites first (e.g., Docusaurus @site/docs -> @site/i18n/[locale]/...)
+  if (rewrites && rewrites.length > 0) {
+    const localeMap: Record<string, string> = {
+      '[locale]': targetLocale,
+      '[defaultLocale]': defaultLocale,
+    };
+
+    for (const { match, replace } of rewrites) {
+      const resolvedMatch = match.replace(
+        /\[locale\]|\[defaultLocale\]/g,
+        (token) => localeMap[token] || token
+      );
+      if (fullPath.startsWith(resolvedMatch)) {
+        const remainder = fullPath.slice(resolvedMatch.length);
+        const resolvedReplace = replace.replace(
+          /\[locale\]|\[defaultLocale\]/g,
+          (token) => localeMap[token] || token
+        );
+        let newPath: string;
+        if (resolvedReplace.endsWith('/')) {
+          newPath = `${resolvedReplace}${remainder.replace(/^\//, '')}`;
+        } else if (remainder.startsWith('/')) {
+          newPath = `${resolvedReplace}${remainder}`;
+        } else {
+          newPath = `${resolvedReplace}/${remainder}`;
+        }
+        return newPath;
+      }
+    }
+  }
+
   let newPath: string | null;
 
   if (targetLocale === defaultLocale) {
@@ -361,7 +395,8 @@ function transformMdxImports(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
   exclude: string[] = [],
-  currentFilePath?: string
+  currentFilePath?: string,
+  options?: AdditionalOptions
 ): ImportTransformResult {
   const transformedImports: Array<{ originalPath: string; newPath: string }> =
     [];
@@ -477,7 +512,9 @@ function transformMdxImports(
             targetLocale,
             defaultLocale,
             hideDefaultLocale,
-            currentFilePath
+            currentFilePath,
+            process.cwd(),
+            options?.docsImportRewrites
           );
 
           if (!newPath) {
@@ -519,13 +556,9 @@ function localizeStaticImportsForFile(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
-  currentFilePath?: string
+  currentFilePath?: string,
+  options?: AdditionalOptions
 ): string {
-  // Skip .md files entirely - they cannot have imports
-  if (currentFilePath && currentFilePath.endsWith('.md')) {
-    return file;
-  }
-
   // For MDX files, use AST-based transformation
   const result = transformMdxImports(
     file,
@@ -534,7 +567,8 @@ function localizeStaticImportsForFile(
     hideDefaultLocale,
     pattern,
     exclude,
-    currentFilePath
+    currentFilePath,
+    options
   );
   return result.content;
 }
