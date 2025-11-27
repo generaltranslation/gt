@@ -573,8 +573,7 @@ function transformImportsStringFallback(
   const patternHead = pattern.split('[locale]')[0];
 
   let content = mdxContent;
-  const importRegex =
-    /import\s+[^'"]*['"]([^'"]+)['"]\s*;?/g;
+  const importRegex = /import\s+[^'"]*['"]([^'"]+)['"]\s*;?/g;
   let match: RegExpExecArray | null;
 
   while ((match = importRegex.exec(mdxContent)) !== null) {
