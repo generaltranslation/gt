@@ -1,10 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  Options,
-  Settings,
-  AdditionalOptions,
-} from '../types/index.js';
+import { Options, Settings, AdditionalOptions } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
 import { unified } from 'unified';
