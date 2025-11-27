@@ -192,6 +192,10 @@ export function addExplicitAnchorIds(
     };
   }
 
+  const translatedIsMdx = translatedPath
+    ? translatedPath.toLowerCase().endsWith('.mdx')
+    : true; // default to mdx-style escaping when unknown
+
   // Apply IDs to translated content
   let content: string;
   if (useDivWrapping) {
@@ -201,7 +205,7 @@ export function addExplicitAnchorIds(
       idMappings
     );
   } else {
-    content = applyInlineIds(translatedContent, idMappings);
+    content = applyInlineIds(translatedContent, idMappings, translatedIsMdx);
   }
 
   return {
@@ -216,9 +220,11 @@ export function addExplicitAnchorIds(
  */
 function applyInlineIds(
   translatedContent: string,
-  idMappings: Map<number, string>
+  idMappings: Map<number, string>,
+  escapeAnchors: boolean
 ): string {
   const escapeInlineAnchors = (content: string): string => {
+    if (!escapeAnchors) return content;
     return content.replace(
       /\{#([A-Za-z0-9-_]+)\}/g,
       (match, id, offset, str) => {
@@ -244,7 +250,11 @@ function applyInlineIds(
     console.warn(
       `Failed to parse translated MDX content: ${error instanceof Error ? error.message : String(error)}`
     );
-    return escapeInlineAnchors(translatedContent);
+    return applyInlineIdsStringFallback(
+      translatedContent,
+      idMappings,
+      escapeAnchors
+    );
   }
 
   // Apply IDs to headings based on position
@@ -256,16 +266,18 @@ function applyInlineIds(
     if (id) {
       // Skip if heading already has explicit ID
       if (hasExplicitId(heading, processedAst)) {
-        // Normalize existing inline IDs to escaped form
-        const lastChild = heading.children[heading.children.length - 1];
-        if (lastChild?.type === 'text') {
-          const match = lastChild.value.match(/\{#([^}]+)\}\s*$/);
-          const alreadyEscaped = lastChild.value.match(/\\\{#[^}]+\\\}\s*$/);
-          if (match && !alreadyEscaped) {
-            const anchorId = match[1];
-            const base = lastChild.value.replace(/\s*\{#[^}]+\}\s*$/, '');
-            lastChild.value = `${base} \\{#${anchorId}\\}`;
-            actuallyModifiedContent = true;
+        if (escapeAnchors) {
+          // Normalize existing inline IDs to escaped form
+          const lastChild = heading.children[heading.children.length - 1];
+          if (lastChild?.type === 'text') {
+            const match = lastChild.value.match(/\{#([^}]+)\}\s*$/);
+            const alreadyEscaped = lastChild.value.match(/\\\{#[^}]+\\\}\s*$/);
+            if (match && !alreadyEscaped) {
+              const anchorId = match[1];
+              const base = lastChild.value.replace(/\s*\{#[^}]+\}\s*$/, '');
+              lastChild.value = `${base} \\{#${anchorId}\\}`;
+              actuallyModifiedContent = true;
+            }
           }
         }
         headingIndex++;
@@ -275,12 +287,12 @@ function applyInlineIds(
       // Add the ID to the heading
       const lastChild = heading.children[heading.children.length - 1];
       if (lastChild?.type === 'text') {
-        lastChild.value += ` \\{#${id}\\}`;
+        lastChild.value += escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
       } else {
         // If last child is not text, add a new text node
         heading.children.push({
           type: 'text',
-          value: ` \\{#${id}\\}`,
+          value: escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`,
         });
       }
       actuallyModifiedContent = true;
@@ -329,6 +341,43 @@ function applyInlineIds(
     );
     return translatedContent;
   }
+}
+
+/**
+ * Fallback string-based inline ID application when AST parsing fails
+ */
+function applyInlineIdsStringFallback(
+  translatedContent: string,
+  idMappings: Map<number, string>,
+  escapeAnchors: boolean
+): string {
+  let headingIndex = 0;
+  return translatedContent.replace(
+    /^(#{1,6}\s+)(.*)$/gm,
+    (match, prefix: string, text: string) => {
+      const id = idMappings.get(headingIndex++);
+      if (!id) {
+        return match;
+      }
+
+      const hasEscaped = /\\\{#[^}]+\\\}\s*$/.test(text);
+      const hasUnescaped = /\{#[^}]+\}\s*$/.test(text);
+
+      if (hasEscaped) {
+        return match;
+      }
+
+      if (hasUnescaped) {
+        if (!escapeAnchors) {
+          return match;
+        }
+        return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\\\{#$1\\\\}')}`;
+      }
+
+      const suffix = escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
+      return `${prefix}${text}${suffix}`;
+    }
+  );
 }
 
 /**

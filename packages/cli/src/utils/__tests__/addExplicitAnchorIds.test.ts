@@ -66,9 +66,11 @@ Another section here.
     const sourceHeadingMap = extractHeadingInfo(input);
     const result = addExplicitAnchorIds(input, sourceHeadingMap);
 
+    // Normalizes to escaped form in MDX; no new IDs added
     expect(result.hasChanges).toBe(true);
+    // We track the normalized anchor as an addition in MDX mode
     expect(result.addedIds).toHaveLength(1);
-    expect(result.content).toContain('## Already has ID \\{#custom-id\\}');
+    expect(result.content).toContain('## Already has ID \\\\{#custom-id\\\\}');
   });
 
   it('reuses explicit IDs from source when translation lacks them', () => {
@@ -107,7 +109,10 @@ Another section here.
     const result = addExplicitAnchorIds(translated, sourceHeadingMap);
 
     expect(result.hasChanges).toBe(true);
-    expect(result.content).toContain('## Traducción \\{#custom-source-id\\}');
+    expect(result.content).toContain(
+      '## Traducción \\\\{#custom-source-id\\\\}'
+    );
+    // Normalization counts as a recorded ID in MDX mode
     expect(result.addedIds).toHaveLength(1);
   });
 
@@ -133,6 +138,40 @@ No links here either.
     expect(result.content).toContain('## No Links Here \\{#no-links-here\\}');
     expect(result.content).toContain(
       '## Another Section \\{#another-section\\}'
+    );
+  });
+
+  it('keeps markdown inline anchors unescaped for .md targets while still applying source IDs', () => {
+    const source = `## Source heading {#custom-source-id}
+
+## Another Source Heading {#another-source-heading}
+`;
+
+    // Simulate a .md target path
+    const mdTargetPath = '/tmp/file.md';
+
+    const translated = `## Encabezado traducido
+
+## Otro encabezado {#another-source-heading}
+`;
+
+    const sourceHeadingMap = extractHeadingInfo(source);
+    const result = addExplicitAnchorIds(
+      translated,
+      sourceHeadingMap,
+      undefined,
+      source,
+      mdTargetPath
+    );
+
+    expect(result.hasChanges).toBe(true);
+    // First heading gets the source ID added, unescaped
+    expect(result.content).toContain(
+      '## Encabezado traducido {#custom-source-id}'
+    );
+    // Existing anchor in markdown remains unescaped
+    expect(result.content).toContain(
+      '## Otro encabezado {#another-source-heading}'
     );
   });
 
