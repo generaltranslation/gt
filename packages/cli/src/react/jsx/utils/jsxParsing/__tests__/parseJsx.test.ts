@@ -163,7 +163,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,
@@ -465,7 +465,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,
@@ -612,7 +612,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,
@@ -760,7 +760,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,
@@ -912,7 +912,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,
@@ -1050,7 +1050,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,
@@ -1186,7 +1186,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         if (tBinding) {
           parseTranslationComponent({
             ast,
-            pkgs: ['gt-next'],
+            pkg: 'gt-next',
             originalName: 'T',
             importAliases,
             localName: tLocalName,

@@ -8,10 +8,8 @@ import {
   INLINE_MESSAGE_HOOK_ASYNC,
   MSG_TRANSLATION_HOOK,
   TRANSLATION_COMPONENT,
-  GTLibrary,
 } from '../../jsx/utils/constants.js';
 import { extractImportName } from './parseAst.js';
-import * as t from '@babel/types';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -24,7 +22,7 @@ const traverse = traverseModule.default || traverseModule;
  */
 export function getPathsAndAliases(
   ast: any,
-  pkgs: GTLibrary[]
+  pkg: 'gt-react' | 'gt-next'
 ): {
   importAliases: Record<string, string>;
   inlineTranslationPaths: Array<{
@@ -54,10 +52,10 @@ export function getPathsAndAliases(
 
   traverse(ast, {
     ImportDeclaration(path) {
-      if (pkgs.some((pkg) => path.node.source.value.startsWith(pkg))) {
+      if (path.node.source.value.startsWith(pkg)) {
         const importName = extractImportName(
           path.node,
-          pkgs,
+          pkg,
           GT_TRANSLATION_FUNCS
         );
         for (const name of importName) {
@@ -97,13 +95,13 @@ export function getPathsAndAliases(
         if (
           args.length === 1 &&
           args[0].type === 'StringLiteral' &&
-          pkgs.some((pkg) => (args[0] as t.StringLiteral).value.startsWith(pkg))
+          args[0].value.startsWith(pkg)
         ) {
           const parentPath = path.parentPath;
           if (parentPath.isVariableDeclaration()) {
             const importName = extractImportName(
               parentPath.node,
-              pkgs,
+              pkg,
               GT_TRANSLATION_FUNCS
             );
             for (const name of importName) {

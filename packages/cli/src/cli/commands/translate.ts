@@ -44,7 +44,7 @@ export async function handleTranslate(
       (sourcePath, locale) => fileMapping[locale]?.[sourcePath] ?? null,
       settings,
       options.force,
-      options.forceDownload || options.force // if force is true should also force download
+      options.forceDownload
     );
   }
 }
@@ -80,7 +80,7 @@ export async function handleDownload(
     (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
     settings,
     false, // force is not applicable for downloading staged translations
-    options.force || options.forceDownload
+    options.forceDownload
   );
 }
 
@@ -97,15 +97,9 @@ export async function postProcessTranslations(
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales, includeFiles);
     }
-  }
 
-  const shouldProcessAnchorIds =
-    settings.options?.experimentalLocalizeStaticUrls ||
-    settings.options?.experimentalAddHeaderAnchorIds;
-
-  // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
-  // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
-  if (shouldProcessAnchorIds) {
+    // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
+    // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
     await processAnchorIds(settings, includeFiles);
   }
 

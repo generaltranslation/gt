@@ -2141,46 +2141,6 @@ import Component2 from '/snippets/excluded.mdx';
         await localizeStaticImports(settings as any);
       });
     });
-
-    describe('docsImportRewrites and markdown imports', () => {
-      it('applies explicit rewrites on .md imports for non-default locale', async () => {
-        const fileContent = `import SystemTableCloud from '@site/docs/_snippets/_system_table_cloud.md';`;
-        const expected = `import SystemTableCloud from '@site/i18n/ja/docusaurus-plugin-content-docs/current/_snippets/_system_table_cloud.md';`;
-
-        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
-        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
-          expect(content).toBe(expected);
-          return Promise.resolve();
-        });
-
-        const mockFileMapping = {
-          ja: { 'system.md': '/path/to/ja/system.md' },
-        };
-        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-
-        const settings = {
-          files: {
-            placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['system'],
-            transformPaths: {},
-          },
-          defaultLocale: 'en',
-          locales: ['en', 'ja'],
-          options: {
-            experimentalLocalizeStaticImports: true,
-            docsImportRewrites: [
-              {
-                match: '@site/docs',
-                replace:
-                  '@site/i18n/[locale]/docusaurus-plugin-content-docs/current',
-              },
-            ],
-          },
-        };
-
-        await localizeStaticImports(settings as any);
-      });
-    });
   });
 
   describe('invalid MDX error handling', () => {

@@ -44,20 +44,15 @@ export default async function loadTranslations(locale) {
         'loadTranslations.js'
       )} file at ${chalk.cyan(filePath)}.`
     );
-    try {
-      await fs.promises.mkdir(translationsDir, { recursive: true });
-      // Create empty JSON files
-      for (const locale of locales) {
-        if (fs.existsSync(path.join(translationsDir, `${locale}.json`))) {
-          continue;
-        }
-        await fs.promises.writeFile(
-          path.join(translationsDir, `${locale}.json`),
-          '{}'
-        );
+    // Create empty JSON files
+    for (const locale of locales) {
+      if (fs.existsSync(path.join(translationsDir, `${locale}.json`))) {
+        continue;
       }
-    } catch (error) {
-      logger.error(`Failed to create translations directory: ${error}`);
+      await fs.promises.writeFile(
+        path.join(translationsDir, `${locale}.json`),
+        '{}'
+      );
     }
   } else {
     logger.info(

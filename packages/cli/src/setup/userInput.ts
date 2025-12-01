@@ -22,9 +22,6 @@ export async function getDesiredLocales(): Promise<{
       if (localeList.length === 0) {
         return 'Please enter at least one locale';
       }
-      if (localeList.some((locale) => !locale.trim())) {
-        return 'Please enter a valid locale (e.g., en, fr, es)';
-      }
       for (const locale of localeList) {
         if (!gt.isValidLocale(locale)) {
           return 'Please enter a valid locale (e.g., en, fr, es)';

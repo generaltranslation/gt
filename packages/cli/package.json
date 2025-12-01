@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.5.15",
+  "version": "2.5.9",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -23,48 +23,37 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/index.js"
     },
     "./types": {
-      "import": "./dist/types.js",
-      "types": "./dist/types.d.ts"
+      "import": "./dist/types.js"
     },
     "./updates/*": {
-      "import": "./dist/updates/*.js",
-      "types": "./dist/updates/*.d.ts"
+      "import": "./dist/updates/*.js"
     },
     "./jsx/*": {
-      "import": "./dist/jsx/*.js",
-      "types": "./dist/jsx/*.d.ts"
+      "import": "./dist/jsx/*.js"
     },
     "./fs/*": {
-      "import": "./dist/fs/*.js",
-      "types": "./dist/fs/*.d.ts"
+      "import": "./dist/fs/*.js"
     },
     "./console/*": {
-      "import": "./dist/console/*.js",
-      "types": "./dist/console/*.d.ts"
+      "import": "./dist/console/*.js"
     },
     "./config/*": {
-      "import": "./dist/config/*.js",
-      "types": "./dist/config/*.d.ts"
+      "import": "./dist/config/*.js"
     },
     "./api/*": {
-      "import": "./dist/api/*.js",
-      "types": "./dist/api/*.d.ts"
+      "import": "./dist/api/*.js"
     },
     "./setup/*": {
-      "import": "./dist/setup/*.js",
-      "types": "./dist/setup/*.d.ts"
+      "import": "./dist/setup/*.js"
     },
     "./*": {
-      "import": "./dist/*.js",
-      "types": "./dist/*.d.ts"
+      "import": "./dist/*.js"
     },
     "./utils/*": {
-      "import": "./dist/utils/*.js",
-      "types": "./dist/utils/*.d.ts"
+      "import": "./dist/utils/*.js"
     }
   },
   "repository": {
@@ -91,7 +80,7 @@
     "@babel/parser": "^7.25.7",
     "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/traverse": "^7.25.7",
-    "@clack/prompts": "1.0.0-alpha.6",
+    "@clack/prompts": "^1.0.0-alpha.6",
     "@formatjs/icu-messageformat-parser": "^2.11.4",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
