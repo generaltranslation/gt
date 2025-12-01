@@ -1,5 +1,49 @@
 # gtx-cli
 
+## 2.5.15
+
+### Patch Changes
+
+- [#838](https://github.com/generaltranslation/gt/pull/838) [`3a3d45b`](https://github.com/generaltranslation/gt/commit/3a3d45be0b454fb017ad4b75a772df1c8aaee65e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding fallback when localizing static imports
+
+## 2.5.14
+
+### Patch Changes
+
+- [#837](https://github.com/generaltranslation/gt/pull/837) [`0772b57`](https://github.com/generaltranslation/gt/commit/0772b5714f1cfe8af5f5edcdf6bcb28125a1536f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Making experimentalAddHeaderAnchorIds independent of experimentalLocalizeStaticUrls and fetching anchor IDs from source files when present
+
+- [#835](https://github.com/generaltranslation/gt/pull/835) [`79225fb`](https://github.com/generaltranslation/gt/commit/79225fb3bbea3bb7a453cc237c619b67dd0dd3da) Thanks [@brian-lou](https://github.com/brian-lou)! - When using --force translate, also force files to re-download
+
+## 2.5.13
+
+### Patch Changes
+
+- [#833](https://github.com/generaltranslation/gt/pull/833) [`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678) Thanks [@brian-lou](https://github.com/brian-lou)! - Add txt file translation support
+
+- Updated dependencies [[`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678)]:
+  - generaltranslation@8.0.5
+
+## 2.5.12
+
+### Patch Changes
+
+- [#816](https://github.com/generaltranslation/gt/pull/816) [`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add gt-i18n, a pure js library for translation
+
+- Updated dependencies [[`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605)]:
+  - generaltranslation@8.0.4
+
+## 2.5.11
+
+### Patch Changes
+
+- [#827](https://github.com/generaltranslation/gt/pull/827) [`35197d0`](https://github.com/generaltranslation/gt/commit/35197d075670411dcdd2ddc93fd5eaf021cd924b) Thanks [@brian-lou](https://github.com/brian-lou)! - Pin @clack/prompts version
+
+## 2.5.10
+
+### Patch Changes
+
+- [#825](https://github.com/generaltranslation/gt/pull/825) [`a9bdf21`](https://github.com/generaltranslation/gt/commit/a9bdf21d9ec80edc190b32b963dfe19c5fe2ea33) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix init write files
+
 ## 2.5.9
 
 ### Patch Changes

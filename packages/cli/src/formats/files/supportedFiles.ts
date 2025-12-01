@@ -6,6 +6,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'js',
   'yaml',
   'html',
+  'txt',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -16,4 +17,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   js: 'JavaScript',
   yaml: 'YAML',
   html: 'HTML',
+  txt: 'Text',
 };
