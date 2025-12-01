@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import {
   warnFunctionNotFoundSync,
   warnDeclareStaticNoResultsSync,
+  warnDeclareStaticNotWrappedSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -47,7 +48,7 @@ export function handleStaticExpression(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  errors: string[]
 ): Node | null {
   if (!expr) {
     return null;
@@ -60,7 +61,7 @@ export function handleStaticExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      errors
     );
     if (variants) {
       // We found declareStatic -> return as ChoiceNode
@@ -69,16 +70,16 @@ export function handleStaticExpression(
         nodes: variants.map((v) => ({ type: 'text', text: v })),
       };
     }
-    // We found a call that is not declareStatic or has poor recursion -> bail out
-    if (t.isIdentifier(expr.callee)) {
-      warnings.add(
-        warnDeclareStaticNoResultsSync(
-          file,
-          expr.callee.name,
-          `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
-        )
-      );
-    }
+
+    // Call has no results
+    errors.push(
+      warnDeclareStaticNoResultsSync(
+        file,
+        expr.arguments[0].toString(),
+        `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+      )
+    );
+
     return null;
   }
 
@@ -103,7 +104,7 @@ export function handleStaticExpression(
           tPath,
           file,
           parsingOptions,
-          warnings
+          errors
         );
         if (result === null) {
           // Early bailout if we can't handle something inside interpolation
@@ -132,14 +133,14 @@ export function handleStaticExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      errors
     );
     const rightResult = handleStaticExpression(
       expr.right,
       tPath,
       file,
       parsingOptions,
-      warnings
+      errors
     );
 
     if (leftResult === null || rightResult === null) {
@@ -156,7 +157,7 @@ export function handleStaticExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      errors
     );
   }
 
@@ -215,12 +216,54 @@ export function getDeclareStaticVariants(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  errors: string[]
 ): string[] | null {
-  // Must be declareStatic(...)
-  if (!t.isIdentifier(call.callee, { name: 'declareStatic' })) {
+  // Must be declareStatic(...) or an alias of it
+  if (!t.isIdentifier(call.callee)) {
+    errors.push(
+      warnDeclareStaticNotWrappedSync(
+        file,
+        call.arguments[0].toString(),
+        `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
+      )
+    );
     return null;
   }
+
+  // Check if this is declareStatic by name or by checking the import
+  const calleeName = call.callee.name;
+  const calleeBinding = tPath.scope.getBinding(calleeName);
+
+  // If it's not literally named 'declareStatic', check if it's imported from GT
+  if (calleeName !== 'declareStatic') {
+    if (!calleeBinding) {
+      return null;
+    }
+
+    // Check if it's imported from a GT package
+    if (calleeBinding.path.isImportSpecifier()) {
+      const imported = calleeBinding.path.node.imported;
+      const originalName = t.isIdentifier(imported)
+        ? imported.name
+        : imported.value;
+
+      // Only proceed if the original name is 'declareStatic'
+      if (originalName !== 'declareStatic') {
+        return null;
+      }
+    } else {
+      // Not an import specifier, so it's not declareStatic
+      errors.push(
+        warnDeclareStaticNotWrappedSync(
+          file,
+          calleeName,
+          `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
+        )
+      );
+      return null;
+    }
+  }
+
   if (call.arguments.length !== 1) return null;
 
   const arg = call.arguments[0];
@@ -238,7 +281,7 @@ export function getDeclareStaticVariants(
       tPath,
       file,
       parsingOptions,
-      warnings
+      errors
     );
   }
 
@@ -246,7 +289,7 @@ export function getDeclareStaticVariants(
   if (!t.isCallExpression(arg)) return null;
 
   // Resolve the inner call's possible string outcomes
-  return resolveCallStringVariants(arg, tPath, file, parsingOptions, warnings);
+  return resolveCallStringVariants(arg, tPath, file, parsingOptions, errors);
 }
 
 export function resolveCallStringVariants(
@@ -254,7 +297,7 @@ export function resolveCallStringVariants(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  errors: string[]
 ): string[] | null {
   const results = new Set<string>();
 
@@ -286,13 +329,18 @@ export function resolveCallStringVariants(
     const calleeBinding = tPath.scope.getBinding(functionName);
 
     if (calleeBinding) {
-      // Check if function is imported from another file
-      const importedFunctionsMap = buildImportMap(
-        tPath.scope.getProgramParent().path
-      );
+      // Check if the binding itself is an import (not just if the name exists in imports)
+      const isImportBinding =
+        calleeBinding.path.isImportSpecifier() ||
+        calleeBinding.path.isImportDefaultSpecifier() ||
+        calleeBinding.path.isImportNamespaceSpecifier();
 
-      if (importedFunctionsMap.has(functionName)) {
+      if (isImportBinding) {
         // Function is imported - resolve cross-file
+        const importedFunctionsMap = buildImportMap(
+          tPath.scope.getProgramParent().path
+        );
+
         let originalName: string | undefined;
         if (calleeBinding.path.isImportSpecifier()) {
           originalName = t.isIdentifier(calleeBinding.path.node.imported)
@@ -304,23 +352,25 @@ export function resolveCallStringVariants(
           originalName = calleeBinding.path.node.local.name;
         }
 
-        const importPath = importedFunctionsMap.get(functionName)!;
-        const filePath = resolveImportPath(
-          file,
-          importPath,
-          parsingOptions,
-          resolveImportPathCache
-        );
-
-        if (filePath && originalName) {
-          const node = resolveFunctionInFile(
-            filePath,
-            originalName,
+        const importPath = importedFunctionsMap.get(functionName);
+        if (importPath) {
+          const filePath = resolveImportPath(
+            file,
+            importPath,
             parsingOptions,
-            warnings
+            resolveImportPathCache
           );
-          if (node) {
-            return nodeToStrings(node);
+
+          if (filePath && originalName) {
+            const node = resolveFunctionInFile(
+              filePath,
+              originalName,
+              parsingOptions,
+              errors
+            );
+            if (node) {
+              return nodeToStrings(node);
+            }
           }
         }
       } else {
@@ -337,7 +387,7 @@ export function resolveCallStringVariants(
       }
     } else {
       // Function not found in scope
-      warnings.add(
+      errors.push(
         warnFunctionNotFoundSync(
           file,
           functionName,
@@ -462,7 +512,7 @@ function resolveFunctionInFile(
   filePath: string,
   functionName: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  errors: string[]
 ): Node | null {
   // Check cache first
   const cacheKey = `${filePath}::${functionName}`;
@@ -480,6 +530,96 @@ function resolveFunctionInFile(
     });
 
     traverse(ast, {
+      // Handle re-exports: export * from './utils'
+      ExportAllDeclaration(path) {
+        // Only follow re-exports if we haven't found the function yet
+        if (result !== null) return;
+
+        if (t.isStringLiteral(path.node.source)) {
+          const reexportPath = path.node.source.value;
+          const resolvedPath = resolveImportPath(
+            filePath,
+            reexportPath,
+            parsingOptions,
+            resolveImportPathCache
+          );
+
+          if (resolvedPath) {
+            // Recursively resolve in the re-exported file
+            const reexportResult = resolveFunctionInFile(
+              resolvedPath,
+              functionName,
+              parsingOptions,
+              errors
+            );
+            if (reexportResult) {
+              result = reexportResult;
+            }
+          }
+        }
+      },
+      // Handle named re-exports: export { fn1 } from './utils'
+      ExportNamedDeclaration(path) {
+        // Only follow re-exports if we haven't found the function yet
+        if (result !== null) return;
+
+        // Check if this is a re-export with a source
+        if (path.node.source && t.isStringLiteral(path.node.source)) {
+          // Check if any of the exported specifiers match our function name
+          const hasMatchingExport = path.node.specifiers.some((spec) => {
+            if (t.isExportSpecifier(spec)) {
+              const exportedName = t.isIdentifier(spec.exported)
+                ? spec.exported.name
+                : spec.exported.value;
+              return exportedName === functionName;
+            }
+            return false;
+          });
+
+          if (hasMatchingExport) {
+            const reexportPath = path.node.source.value;
+            const resolvedPath = resolveImportPath(
+              filePath,
+              reexportPath,
+              parsingOptions,
+              resolveImportPathCache
+            );
+
+            if (resolvedPath) {
+              // Find the original name in case it was renamed
+              const specifier = path.node.specifiers.find((spec) => {
+                if (t.isExportSpecifier(spec)) {
+                  const exportedName = t.isIdentifier(spec.exported)
+                    ? spec.exported.name
+                    : spec.exported.value;
+                  return exportedName === functionName;
+                }
+                return false;
+              });
+
+              let originalName = functionName;
+              if (
+                specifier &&
+                t.isExportSpecifier(specifier) &&
+                t.isIdentifier(specifier.local)
+              ) {
+                originalName = specifier.local.name;
+              }
+
+              // Recursively resolve in the re-exported file
+              const reexportResult = resolveFunctionInFile(
+                resolvedPath,
+                originalName,
+                parsingOptions,
+                errors
+              );
+              if (reexportResult) {
+                result = reexportResult;
+              }
+            }
+          }
+        }
+      },
       // Handle function declarations: function woah() { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName && result === null) {
@@ -597,7 +737,7 @@ function resolveFunctionInFile(
     });
   } catch (error) {
     // File read or parse error - return null
-    warnings.add(
+    errors.push(
       warnDeclareStaticNoResultsSync(
         filePath,
         functionName,

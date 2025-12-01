@@ -86,7 +86,7 @@ function processTranslationCall(
         tPath,
         file,
         parsingOptions,
-        warnings
+        errors
       );
       if (result) {
         const strings = nodeToStrings(result);

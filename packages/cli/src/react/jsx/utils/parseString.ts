@@ -425,6 +425,96 @@ function resolveFunctionInFile(
     });
 
     traverse(ast, {
+      // Handle re-exports: export * from './utils1'
+      ExportAllDeclaration(path) {
+        // Only follow re-exports if we haven't found the function yet
+        if (result !== null) return;
+
+        if (t.isStringLiteral(path.node.source)) {
+          const reexportPath = path.node.source.value;
+          const resolvedPath = resolveImportPath(
+            filePath,
+            reexportPath,
+            parsingOptions,
+            resolveImportPathCache
+          );
+
+          if (resolvedPath) {
+            // Recursively resolve in the re-exported file
+            const reexportResult = resolveFunctionInFile(
+              resolvedPath,
+              functionName,
+              parsingOptions,
+              warnings
+            );
+            if (reexportResult) {
+              result = reexportResult;
+            }
+          }
+        }
+      },
+      // Handle named re-exports: export { fn1 } from './utils'
+      ExportNamedDeclaration(path) {
+        // Only follow re-exports if we haven't found the function yet
+        if (result !== null) return;
+
+        // Check if this is a re-export with a source
+        if (path.node.source && t.isStringLiteral(path.node.source)) {
+          // Check if any of the exported specifiers match our function name
+          const hasMatchingExport = path.node.specifiers.some((spec) => {
+            if (t.isExportSpecifier(spec)) {
+              const exportedName = t.isIdentifier(spec.exported)
+                ? spec.exported.name
+                : spec.exported.value;
+              return exportedName === functionName;
+            }
+            return false;
+          });
+
+          if (hasMatchingExport) {
+            const reexportPath = path.node.source.value;
+            const resolvedPath = resolveImportPath(
+              filePath,
+              reexportPath,
+              parsingOptions,
+              resolveImportPathCache
+            );
+
+            if (resolvedPath) {
+              // Find the original name in case it was renamed
+              const specifier = path.node.specifiers.find((spec) => {
+                if (t.isExportSpecifier(spec)) {
+                  const exportedName = t.isIdentifier(spec.exported)
+                    ? spec.exported.name
+                    : spec.exported.value;
+                  return exportedName === functionName;
+                }
+                return false;
+              });
+
+              let originalName = functionName;
+              if (
+                specifier &&
+                t.isExportSpecifier(specifier) &&
+                t.isIdentifier(specifier.local)
+              ) {
+                originalName = specifier.local.name;
+              }
+
+              // Recursively resolve in the re-exported file
+              const reexportResult = resolveFunctionInFile(
+                resolvedPath,
+                originalName,
+                parsingOptions,
+                warnings
+              );
+              if (reexportResult) {
+                result = reexportResult;
+              }
+            }
+          }
+        }
+      },
       // Handle function declarations: function interjection() { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName && result === null) {

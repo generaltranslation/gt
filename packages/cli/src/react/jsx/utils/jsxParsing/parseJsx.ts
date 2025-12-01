@@ -750,7 +750,7 @@ function resolveStaticComponentChildren({
   return result;
 }
 
-export function resolveStaticFunctionInvocationFromBinding({
+function resolveStaticFunctionInvocationFromBinding({
   importAliases,
   calleeBinding,
   callee,
@@ -1307,7 +1307,7 @@ function processVariableDeclarationNodePath({
 /**
  * Process a expression being returned from a function
  */
-export function processReturnExpression({
+function processReturnExpression({
   unwrappedExpressions,
   scopeNode,
   expressionNodePath,

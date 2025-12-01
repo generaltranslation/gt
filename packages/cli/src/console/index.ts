@@ -14,6 +14,8 @@ const withWillErrorInNextVersion = (message: string): string =>
 const withStaticError = (message: string): string =>
   `<Static> rules violation: ${message}`;
 
+const withDeclareStaticError = (message: string): string =>
+  `declareStatic() rules violation: ${message}`;
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
@@ -234,6 +236,19 @@ export const warnRecursiveFunctionCallSync = (
     location
   );
 
+export const warnDeclareStaticNotWrappedSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeclareStaticError(
+      `Could not resolve ${colorizeFunctionName(functionName)}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    ),
+    location
+  );
+
 export const warnDeclareStaticNoResultsSync = (
   file: string,
   functionName: string,
@@ -241,8 +256,8 @@ export const warnDeclareStaticNoResultsSync = (
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `Could not resolve ${colorizeFunctionName(functionName)}. This call is either not wrapped in declareStatic() or uses circular/looped file imports. Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    withDeclareStaticError(
+      `Could not resolve ${colorizeFunctionName(functionName)}. DeclareStatic cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );
