@@ -44,7 +44,7 @@ export const ssrDetectionFailedWarning =
   'gt-next: Unable to determine if runtime is SSR or SSG. Falling back to SSR behavior.';
 
 export const deprecatedExperimentalEnableSSGWarning =
-  'gt-next: You are using the deprecated experimentalEnableSSG configuration. Please use experimental.enableSSG instead.';
+  'gt-next: You are using the deprecated experimentalEnableSSG configuration. This will be removed in a future version.';
 
 export const createDeprecatedGetStaticLocaleFunctionWarning = (
   functionName: keyof typeof DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY
