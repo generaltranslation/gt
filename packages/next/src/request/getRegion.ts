@@ -1,5 +1,3 @@
-import { legacyGetRequestFunction } from './utils/legacyGetRequestFunction';
-import isSSR from './utils/isSSR';
 import { getRequestFunction } from './utils/getRequestFunction';
 import { legacyGetRegionFunction } from './utils/legacyGetRegionFunction';
 

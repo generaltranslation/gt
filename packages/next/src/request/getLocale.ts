@@ -1,8 +1,5 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import use from '../utils/use';
-import { RequestFunctionReturnType } from './types';
-import { legacyGetRequestFunction } from './utils/legacyGetRequestFunction';
-import isSSR from './utils/isSSR';
 import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
 
