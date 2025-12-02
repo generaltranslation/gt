@@ -23,9 +23,9 @@ export async function getLocale(): Promise<string> {
   const gt = I18NConfig.getGTClass();
 
   if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
+    const requestFunction = getRequestFunction('getLocale');
     // Support new behavior
     getLocaleFunction = async () => {
-      const requestFunction = getRequestFunction('getLocale');
       const requestLocale = await requestFunction();
       return gt.resolveAliasLocale(
         requestLocale || I18NConfig.getDefaultLocale()

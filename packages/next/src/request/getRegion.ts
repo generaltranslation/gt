@@ -1,9 +1,9 @@
 import { legacyGetRequestFunction } from './utils/legacyGetRequestFunction';
 import isSSR from './utils/isSSR';
+import { getRequestFunction } from './utils/getRequestFunction';
+import { legacyGetRegionFunction } from './utils/legacyGetRegionFunction';
 
 let getRegionFunction: () => Promise<string | undefined>;
-let getStaticRegionFunction: () => Promise<string | undefined>;
-let getRegionFunctionWrapper: () => Promise<string | undefined>;
 /**
  * @internal
  *
@@ -16,17 +16,15 @@ let getRegionFunctionWrapper: () => Promise<string | undefined>;
  * console.log(region); // "US" or undefined
  */
 export async function getRegion(): Promise<string | undefined> {
-  if (getRegionFunctionWrapper) return await getRegionFunctionWrapper();
+  if (getRegionFunction) return await getRegionFunction();
 
-  getRegionFunction = legacyGetRequestFunction('getRegion', true);
-  getStaticRegionFunction = legacyGetRequestFunction('getRegion', false);
+  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
+    // Support new behavior
+    getRegionFunction = getRequestFunction('getRegion');
+  } else {
+    // Support legacy behavior
+    getRegionFunction = legacyGetRegionFunction();
+  }
 
-  getRegionFunctionWrapper = async () => {
-    const region = isSSR()
-      ? await getRegionFunction()
-      : await getStaticRegionFunction();
-    return region;
-  };
-
-  return await getRegionFunctionWrapper();
+  return await getRegionFunction();
 }
