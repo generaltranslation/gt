@@ -89,6 +89,7 @@ type withGTConfigProps = {
   _usingPlugin?: boolean;
   // SSG
   experimentalEnableSSG?: boolean;
+  /** @deprecated */
   disableSSGWarnings?: boolean;
   // Request function paths
   getLocalePath?: string;

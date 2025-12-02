@@ -73,7 +73,7 @@ import ssgChecks from './plugin/checks/ssgChecks';
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
- * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings.
+ * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
  * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
  * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
  * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
