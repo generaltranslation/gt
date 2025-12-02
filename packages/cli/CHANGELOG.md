@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.16
+
+### Patch Changes
+
+- [#843](https://github.com/generaltranslation/gt/pull/843) [`b135cbe`](https://github.com/generaltranslation/gt/commit/b135cbed44b259619697d9a429ba61c434bed7b5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Job polling correctly resolves locale aliases
+
 ## 2.5.15
 
 ### Patch Changes
