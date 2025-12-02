@@ -1,4 +1,4 @@
-import { getRequestFunction } from './utils/getRequestFunction';
+import { legacyGetRequestFunction } from './utils/legacyGetRequestFunction';
 import isSSR from './utils/isSSR';
 
 let getRegionFunction: () => Promise<string | undefined>;
@@ -18,8 +18,8 @@ let getRegionFunctionWrapper: () => Promise<string | undefined>;
 export async function getRegion(): Promise<string | undefined> {
   if (getRegionFunctionWrapper) return await getRegionFunctionWrapper();
 
-  getRegionFunction = getRequestFunction('getRegion', true);
-  getStaticRegionFunction = getRequestFunction('getRegion', false);
+  getRegionFunction = legacyGetRequestFunction('getRegion', true);
+  getStaticRegionFunction = legacyGetRequestFunction('getRegion', false);
 
   getRegionFunctionWrapper = async () => {
     const region = isSSR()

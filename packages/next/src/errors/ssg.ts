@@ -1,12 +1,10 @@
-import { ROOT_PARAM_STABILITY } from '../plugin/constants';
+import { DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY } from '../config-dir/props/withGTConfigProps';
 import { RequestFunctions, StaticRequestFunctions } from '../request/types';
 
 // ========== ERRORS ========== //
 
 export const ssgMissingGetStaticLocaleFunctionError =
   'gt-next: You have enabled SSG, but you have not configured a custom getStaticLocale() function. Please visit https://generaltranslation.com/en/docs/next/guides/ssg to configure SSG.';
-
-export const ssgInvalidNextVersionError = `gt-next: SSG support in gt-next is only available for Next.js ${ROOT_PARAM_STABILITY.unstable} and higher. Please visit https://generaltranslation.com/en/docs/next/guides/ssg to configure SSG.`;
 
 // ========== WARNINGS ========== //
 
@@ -44,3 +42,11 @@ export const createSsrFunctionDuringSsgWarning = (
 
 export const ssrDetectionFailedWarning =
   'gt-next: Unable to determine if runtime is SSR or SSG. Falling back to SSR behavior.';
+
+export const deprecatedExperimentalEnableSSGWarning =
+  'gt-next: You are using the deprecated experimentalEnableSSG configuration. Please use experimental.enableSSG instead.';
+
+export const createDeprecatedGetStaticLocaleFunctionWarning = (
+  functionName: keyof typeof DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY
+) =>
+  `gt-next: You are using the deprecated ${functionName} function. Please use ${functionName.replace('Static', '')} instead.`;

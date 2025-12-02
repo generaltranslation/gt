@@ -1,12 +1,12 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import use from '../utils/use';
 import { RequestFunctionReturnType } from './types';
-import { getRequestFunction } from './utils/getRequestFunction';
+import { legacyGetRequestFunction } from './utils/legacyGetRequestFunction';
 import isSSR from './utils/isSSR';
+import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
+import { getRequestFunction } from './utils/getRequestFunction';
 
-let getLocaleFunction: () => Promise<RequestFunctionReturnType>;
-let getStaticLocaleFunction: () => Promise<RequestFunctionReturnType>;
-let getLocaleFunctionWrapper: () => Promise<string>;
+let getLocaleFunction: () => Promise<string>;
 
 /**
  * Gets the user's current locale.
@@ -18,24 +18,25 @@ let getLocaleFunctionWrapper: () => Promise<string>;
  * console.log(locale); // 'en-US'
  */
 export async function getLocale(): Promise<string> {
-  if (getLocaleFunctionWrapper) return await getLocaleFunctionWrapper();
+  if (getLocaleFunction) return await getLocaleFunction();
   const I18NConfig = getI18NConfig();
   const gt = I18NConfig.getGTClass();
 
-  // Construct getLocale function
-  getLocaleFunction = getRequestFunction('getLocale', true);
-  getStaticLocaleFunction = getRequestFunction('getLocale', false);
+  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
+    // Support new behavior
+    getLocaleFunction = async () => {
+      const requestFunction = getRequestFunction('getLocale');
+      const requestLocale = await requestFunction();
+      return gt.resolveAliasLocale(
+        requestLocale || I18NConfig.getDefaultLocale()
+      );
+    };
+  } else {
+    // Support legacy behavior
+    getLocaleFunction = legacyGetLocaleFunction(I18NConfig, gt);
+  }
 
-  // Construct locale function
-  getLocaleFunctionWrapper = async () => {
-    // Always fallback to default locale
-    const locale = isSSR()
-      ? await getLocaleFunction()
-      : await getStaticLocaleFunction();
-    return gt.resolveAliasLocale(locale || I18NConfig.getDefaultLocale());
-  };
-
-  return getLocaleFunctionWrapper();
+  return getLocaleFunction();
 }
 
 export function useLocale() {
