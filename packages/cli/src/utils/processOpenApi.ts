@@ -136,6 +136,11 @@ export default async function processOpenApi(
   }
 }
 
+/**
+ * Resolve configured OpenAPI files to absolute paths and collect the operations,
+ * schemas, and webhooks they expose. Warns and skips when files are missing,
+ * unsupported (non-JSON), or fail to parse so later steps can continue gracefully.
+ */
 function buildSpecAnalyses(
   openapiFiles: string[],
   configDir: string
@@ -180,6 +185,10 @@ function isRecord(val: unknown): val is Record<string, unknown> {
   return typeof val === 'object' && val !== null;
 }
 
+/**
+ * Collect path+method identifiers (e.g., "POST /foo") from an OpenAPI spec.
+ * Safely no-ops when paths is missing or malformed.
+ */
 function extractOperations(spec: unknown): Set<string> {
   const ops = new Set<string>();
   if (!isRecord(spec) || !isRecord(spec.paths)) return ops;
@@ -197,6 +206,10 @@ function extractOperations(spec: unknown): Set<string> {
   return ops;
 }
 
+/**
+ * Collect schema names from components.schemas.
+ * Returns empty set if components/schemas are missing or malformed.
+ */
 function extractSchemas(spec: unknown): Set<string> {
   if (!isRecord(spec) || !isRecord(spec.components)) return new Set();
   const components = spec.components as Record<string, unknown>;
@@ -204,11 +217,21 @@ function extractSchemas(spec: unknown): Set<string> {
   return new Set(Object.keys(components.schemas as Record<string, unknown>));
 }
 
+/**
+ * Collect webhook names from webhooks (OpenAPI 3.1+).
+ * Returns empty set if webhooks is missing or malformed.
+ */
 function extractWebhooks(spec: unknown): Set<string> {
   if (!isRecord(spec) || !isRecord(spec.webhooks)) return new Set();
   return new Set(Object.keys(spec.webhooks as Record<string, unknown>));
 }
 
+/**
+ * Parse MDX/MD frontmatter, rewrite openapi/openapi-schema entries to the
+ * resolved (possibly localized) spec path, and return updated content.
+ * Uses remark to find the YAML node so the rest of the document remains
+ * untouched. When parsing fails or no relevant keys exist, it returns null.
+ */
 function rewriteFrontmatter(
   content: string,
   filePath: string,
@@ -333,6 +356,11 @@ function stripWrappingQuotes(value: string): string {
   return value.trim().replace(/^['"]|['"]$/g, '');
 }
 
+/**
+ * Parse frontmatter openapi string into spec/method/path or webhook.
+ * Supports optional leading spec file, the webhook keyword, quoted values,
+ * and forgiving whitespace. Returns null when the structure is unrecognized.
+ */
 function parseOpenApiValue(value: string): ParsedOpenApiValue | null {
   const stripped = stripWrappingQuotes(value);
   const tokens = stripped.split(/\s+/).filter(Boolean);
@@ -358,6 +386,11 @@ function parseOpenApiValue(value: string): ParsedOpenApiValue | null {
   return { kind: 'operation', specPath, method, operationPath };
 }
 
+/**
+ * Parse frontmatter openapi-schema string into spec/schemaName.
+ * Accepts optional leading spec file and quoted values; returns null on invalid
+ * shapes so callers can skip rewrites gracefully.
+ */
 function parseSchemaValue(value: string): ParsedSchemaValue | null {
   const stripped = stripWrappingQuotes(value);
   const tokens = stripped.split(/\s+/).filter(Boolean);
@@ -373,6 +406,13 @@ function parseSchemaValue(value: string): ParsedSchemaValue | null {
   return { specPath, schemaName };
 }
 
+/**
+ * Choose which configured spec a reference should use.
+ * - If an explicit spec path is provided, resolve it relative to the config
+ *   and the referencing file, warn when unknown, and bail.
+ * - Otherwise, try to match by operation/webhook/schema name; resolve
+ *   ambiguity using config order and warn when ambiguous or missing.
+ */
 function resolveSpec(
   explicitPath: string | undefined,
   specs: SpecAnalysis[],
@@ -427,6 +467,11 @@ function resolveSpec(
   return specs[0];
 }
 
+/**
+ * Map a spec to the locale-specific file path when available and normalize it
+ * for frontmatter. Falls back to the source spec when the locale copy does
+ * not exist to preserve deterministic behavior.
+ */
 function resolveLocalizedSpecPath(
   spec: SpecAnalysis,
   locale: string,
@@ -444,6 +489,13 @@ function resolveLocalizedSpecPath(
   );
 }
 
+/**
+ * Format the path that will be written back to frontmatter:
+ * - Preserve the user's absolute style when they used a leading slash.
+ * - Preserve upward relative references (../) exactly.
+ * - Otherwise return a repo-root-relative path with a leading slash so Mintlify
+ *   resolves consistently regardless of the MDX file location.
+ */
 function formatSpecPathForFrontmatter(
   relativePath: string,
   originalPathText: string
@@ -465,20 +517,24 @@ function formatSpecPathForFrontmatter(
   return `/${base.replace(/^\/+/, '')}`;
 }
 
+/** Normalize the descriptive portion after the spec path for frontmatter. */
 function formatOpenApiDescriptor(value: ParsedOpenApiValue): string {
   if (value.kind === 'webhook') return `webhook ${value.name}`;
   return `${value.method.toUpperCase()} ${value.operationPath}`;
 }
 
+/** Human-readable description a specific OpenAPI reference. */
 function describeOpenApiRef(value: ParsedOpenApiValue): string {
   if (value.kind === 'webhook') return `webhook ${value.name}`;
   return `${value.method.toUpperCase()} ${value.operationPath}`;
 }
 
+/** Normalize separators for stable comparisons and output. */
 function normalizeSlashes(p: string): string {
   return p.replace(/\\/g, '/');
 }
 
+/** Compare paths after resolution to avoid casing/separator mismatches. */
 function samePath(a: string, b: string): boolean {
   return path.resolve(a) === path.resolve(b);
 }
