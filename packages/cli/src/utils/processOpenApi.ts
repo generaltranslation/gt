@@ -11,7 +11,6 @@ import { Settings } from '../types/index.js';
 
 type SpecAnalysis = {
   absPath: string;
-  relativePath: string; // relative to configDir (unused for mapping)
   configPath: string; // as provided in config (for formatting)
   operations: Set<string>;
   schemas: Set<string>;
@@ -141,7 +140,6 @@ function buildSpecAnalyses(
   openapiFiles: string[],
   configDir: string
 ): SpecAnalysis[] {
-  const workspaceRoot = configDir;
   const analyses: SpecAnalysis[] = [];
 
   for (const configEntry of openapiFiles) {
@@ -168,7 +166,6 @@ function buildSpecAnalyses(
 
     analyses.push({
       absPath,
-      relativePath: path.relative(workspaceRoot, absPath),
       configPath: configEntry,
       operations: extractOperations(spec),
       schemas: extractSchemas(spec),
