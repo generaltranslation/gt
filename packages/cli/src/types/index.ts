@@ -33,6 +33,12 @@ export type Options = {
   }>;
 };
 
+export type OpenApiConfig = {
+  framework: 'mintlify';
+  files: string[];
+  translateFields?: string[];
+};
+
 export type TranslateFlags = {
   config?: string;
   apiKey?: string;
@@ -187,6 +193,9 @@ export type Settings = {
   branchOptions: BranchOptions;
   // Optional shared static assets config
   sharedStaticAssets?: SharedStaticAssetsConfig;
+
+  // Optional OpenAPI handling
+  openapi?: OpenApiConfig;
 };
 
 export type BranchOptions = {
