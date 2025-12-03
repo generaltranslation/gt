@@ -51,11 +51,15 @@ function extractHeadingsWithFallback(mdxContent: string): HeadingInfo[] {
   for (const line of lines) {
     const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
     if (fenceMatch) {
-      const char = fenceMatch[2][0];
+      const fenceString = fenceMatch[2];
       if (!inFence) {
         inFence = true;
-        fenceChar = char;
-      } else if (char === fenceChar) {
+        fenceChar = fenceString;
+      } else if (
+        fenceChar &&
+        fenceString[0] === fenceChar[0] &&
+        fenceString.length >= fenceChar.length
+      ) {
         inFence = false;
         fenceChar = null;
       }
@@ -393,11 +397,15 @@ function applyInlineIdsStringFallback(
   const processedLines = translatedContent.split('\n').map((line) => {
     const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
     if (fenceMatch) {
-      const char = fenceMatch[2][0];
+      const fenceString = fenceMatch[2];
       if (!inFence) {
         inFence = true;
-        fenceChar = char;
-      } else if (char === fenceChar) {
+        fenceChar = fenceString;
+      } else if (
+        fenceChar &&
+        fenceString[0] === fenceChar[0] &&
+        fenceString.length >= fenceChar.length
+      ) {
         inFence = false;
         fenceChar = null;
       }
