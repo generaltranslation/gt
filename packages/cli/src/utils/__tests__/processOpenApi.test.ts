@@ -178,4 +178,45 @@ describe('processOpenApi', () => {
       '/es/openapi/dirA/dirAa/openapi.json POST /foo'
     );
   });
+
+  it('resolves explicit leading-slash spec paths against config dir', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
+    const specPath = path.join(tmpDir, 'openapi.demo.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+    const localizedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.json');
+    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
+    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
+
+    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
+    fs.writeFileSync(
+      sourceMdxPath,
+      '---\nopenapi: /openapi.demo.json POST /foo\n---\n'
+    );
+    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
+    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
+    fs.writeFileSync(
+      translatedMdxPath,
+      '---\nopenapi: /openapi.demo.json POST /foo\n---\n'
+    );
+
+    const settings = createSettings(tmpDir, ['./openapi.demo.json']);
+    settings.files = {
+      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
+      placeholderPaths: {
+        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
+        json: [specPath],
+      },
+      transformPaths: {
+        json: {
+          match: 'openapi.demo.json$',
+          replace: '{locale}/openapi.demo.json',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
+    expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
+  });
 });

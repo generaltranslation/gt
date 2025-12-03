@@ -385,9 +385,10 @@ function resolveSpec(
   if (!specs.length) return null;
 
   if (explicitPath) {
+    const normalizedExplicit = explicitPath.replace(/^\.?\/+/, '');
     const candidates = [
-      path.resolve(configDir, explicitPath),
-      path.resolve(path.dirname(filePath), explicitPath),
+      path.resolve(configDir, normalizedExplicit),
+      path.resolve(path.dirname(filePath), normalizedExplicit),
     ];
     const foundSpec = specs.find((spec) =>
       candidates.some((candidate) => samePath(candidate, spec.absPath))
