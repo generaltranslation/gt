@@ -19,11 +19,11 @@ export default defineConfig({
   outputDir: 'test-results/',
   // Opt out of parallel tests on CI for stability
   workers: process.env.CI ? 1 : undefined,
-  
+
   // Generate HTML report
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
-    ['list'] // Also show results in console
+    ['list'], // Also show results in console
   ],
 
   // Run your local dev server before starting the tests:
@@ -52,33 +52,10 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'Desktop Chrome',
+      name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
       },
-    },
-    // {
-    //   name: 'Desktop Firefox',
-    //   use: {
-    //     ...devices['Desktop Firefox'],
-    //   },
-    // },
-    // {
-    //   name: 'Desktop Safari',
-    //   use: {
-    //     ...devices['Desktop Safari'],
-    //   },
-    // },
-    // Test against mobile viewports.
-    {
-      name: 'Mobile Chrome',
-      use: {
-        ...devices['Pixel 5'],
-      },
-    },
-    {
-      name: 'Mobile Safari',
-      use: devices['iPhone 12'],
     },
   ],
 });
