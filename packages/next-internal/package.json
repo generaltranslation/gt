@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/next-internal",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Internal utilities for Next.js GT integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
