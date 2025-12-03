@@ -17,6 +17,8 @@ export default defineConfig({
   retries: 2,
   // Artifacts folder where screenshots, videos, and traces are stored.
   outputDir: 'test-results/',
+  // Opt out of parallel tests on CI for stability
+  workers: process.env.CI ? 1 : undefined,
 
   // Run your local dev server before starting the tests:
   // https://playwright.dev/docs/test-advanced#launching-a-development-web-server-during-the-tests

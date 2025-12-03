@@ -1,0 +1,71 @@
+name: cron tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'packages/next-internal/**'
+      - 'packages/next-internal/tests/**'
+      - '.github/workflows/playwright.yml'
+  schedule:
+    # Run daily at 6am GMT (cron format: minute hour day month weekday)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  CI: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build next-internal package
+        run: pnpm exec turbo build --filter=@generaltranslation/next-internal
+
+      - name: Install test dependencies
+        working-directory: packages/next-internal/tests/latest
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: packages/next-internal/tests/latest
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        working-directory: packages/next-internal/tests/latest
+        run: npx playwright test
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: packages/next-internal/tests/latest/playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-results
+          path: packages/next-internal/tests/latest/test-results/
+          retention-days: 30
