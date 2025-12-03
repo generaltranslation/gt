@@ -1,4 +1,4 @@
-name: next-internal tests
+name: next-internal cron
 
 on:
   pull_request:

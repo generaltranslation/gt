@@ -7,6 +7,9 @@ test.describe('getRootParam function', () => {
     // Verify the page loads without module resolution errors
     await expect(page.locator('h1')).toBeVisible();
     await expect(page.locator('h1')).toContainText('Locale Test Page');
+
+    // This should trigger a failure
+    expect(1).toBe(0);
   });
 
   test('should have getRootParam function available', async ({ page }) => {
