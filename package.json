@@ -57,6 +57,7 @@
   },
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
+    "@generaltranslation/next-internal": "link:packages/next-internal",
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
   }

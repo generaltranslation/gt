@@ -1,0 +1,130 @@
+name: next-internal cron
+
+on:
+  schedule:
+    # Run daily at 6am GMT (cron format: minute hour day month weekday)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  CI: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build next-internal package
+        run: pnpm exec turbo build --filter=@generaltranslation/next-internal
+
+      - name: Install test dependencies
+        working-directory: packages/next-internal/tests/latest
+        run: pnpm i
+
+      - name: Install Playwright Browsers
+        working-directory: packages/next-internal/tests/latest
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        working-directory: packages/next-internal/tests/latest
+        run: npx playwright test
+
+      - name: Get Next.js version
+        if: always()
+        id: next_version
+        working-directory: packages/next-internal/tests/latest
+        run: echo "version=$(npm view next version)" >> $GITHUB_OUTPUT
+
+      - name: Upload Playwright Report
+        id: upload-playwright
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: packages/next-internal/tests/latest/playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        id: upload-test-results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: packages/next-internal/tests/latest/test-results/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Send Slack notification on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🚨 next-internal Tests Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *next-internal Playwright tests have failed!*\n\n📋 *Details:*\n• Workflow: `${{ github.workflow }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.head_ref || github.ref_name }}`\n• Next.js Version: `${{ steps.next_version.outputs.version }}`\n• Commit: `${{ github.sha }}`"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn", 
+                    "text": "🔍 *Check the test results and artifacts for debugging.*"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Run"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "📊 HTML Report"
+                      },
+                      "url": "${{ steps.upload-playwright.outputs.artifact-url }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "🔍 Test Results"
+                      },
+                      "url": "${{ steps.upload-test-results.outputs.artifact-url }}"
+                    }
+                  ]
+                }
+              ]
+            }

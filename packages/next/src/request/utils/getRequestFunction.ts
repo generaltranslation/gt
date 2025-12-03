@@ -3,6 +3,10 @@ import {
   createCustomGetRequestFunctionWarning,
   createGetRequestFunctionWarning,
 } from '../../errors/ssg';
+import { getRootParam } from '@generaltranslation/next-internal';
+import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
+import { isValidLocale } from 'generaltranslation';
+import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
 
 /**
  * Given a function type, return the associated request function
@@ -11,6 +15,12 @@ import {
 export function getRequestFunction(
   functionName: RequestFunctions
 ): () => Promise<RequestFunctionReturnType> {
+  if (
+    process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION === 'true'
+  ) {
+    return handleExperimentalLocaleResolution(functionName);
+  }
+
   const { error: moduleError, module } = getModule(functionName);
   if (moduleError) {
     return async () => undefined;
@@ -37,6 +47,33 @@ export function getRequestFunction(
 }
 
 /* ========== HELPERS ========== */
+/**
+ * Special handler for when experimentalLocaleResolution is enabled
+ */
+function handleExperimentalLocaleResolution(
+  functionName: RequestFunctions
+): () => Promise<RequestFunctionReturnType> {
+  // handle getLocale
+  if (functionName === 'getLocale') {
+    return async () => {
+      try {
+        const unverifiedLocale = getRootParam(
+          process.env
+            ._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
+            defaultExperimentalLocaleResolutionParam
+        );
+        return unverifiedLocale && isValidLocale(unverifiedLocale)
+          ? unverifiedLocale
+          : undefined;
+      } catch (error) {
+        console.warn(experimentalLocaleResolutionError + error);
+        return undefined;
+      }
+    };
+  }
+  // disable other request functions
+  return async () => undefined;
+}
 /**
  * Given a function name, returns the module for the function
  * @param functionName

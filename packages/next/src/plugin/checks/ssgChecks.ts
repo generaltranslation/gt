@@ -9,7 +9,7 @@ import withGTConfigProps, {
 import { RequestFunctionPaths } from '../../config-dir/utils/resolveRequestFunctionPaths';
 import { StaticRequestFunctions } from '../../request/types';
 
-export default function ssgChecks(
+export function ssgChecks(
   mergedConfig: withGTConfigProps,
   requestFunctionPaths: RequestFunctionPaths
 ) {
