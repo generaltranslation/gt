@@ -61,6 +61,7 @@ jobs:
         run: echo "version=$(npm view next version)" >> $GITHUB_OUTPUT
 
       - name: Upload Playwright Report
+        id: upload-playwright
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -69,6 +70,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Test Results
+        id: upload-test-results
         uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -76,13 +78,6 @@ jobs:
           path: packages/next-internal/tests/latest/test-results/
           retention-days: 30
           if-no-files-found: ignore
-
-      - name: Generate artifact URLs
-        id: artifact_urls
-        if: always()
-        run: |
-          echo "playwright_report_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_OUTPUT
-          echo "test_results_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_OUTPUT
 
       - name: Send Slack notification on failure
         if: failure()
@@ -98,7 +93,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 *next-internal Playwright tests have failed!*\n\n📋 *Details:*\n• Workflow: `${{ github.workflow }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.ref_name }}`\n• Next.js Version: `${{ steps.next_version.outputs.version }}`\n• Commit: `${{ github.sha }}`"
+                    "text": "🚨 *next-internal Playwright tests have failed!*\n\n📋 *Details:*\n• Workflow: `${{ github.workflow }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.head_ref || github.ref_name }}`\n• Next.js Version: `${{ steps.next_version.outputs.version }}`\n• Commit: `${{ github.sha }}`"
                   }
                 },
                 {
@@ -123,9 +118,17 @@ jobs:
                       "type": "button",
                       "text": {
                         "type": "plain_text",
-                        "text": "📊 Artifacts"
+                        "text": "📊 HTML Report"
                       },
-                      "url": "${{ steps.artifact_urls.outputs.playwright_report_url }}"
+                      "url": "${{ steps.upload-playwright.outputs.artifact-url }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "🔍 Test Results"
+                      },
+                      "url": "${{ steps.upload-test-results.outputs.artifact-url }}"
                     }
                   ]
                 }
