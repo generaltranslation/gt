@@ -19,6 +19,12 @@ export default defineConfig({
   outputDir: 'test-results/',
   // Opt out of parallel tests on CI for stability
   workers: process.env.CI ? 1 : undefined,
+  
+  // Generate HTML report
+  reporter: [
+    ['html', { outputFolder: 'playwright-report' }],
+    ['list'] // Also show results in console
+  ],
 
   // Run your local dev server before starting the tests:
   // https://playwright.dev/docs/test-advanced#launching-a-development-web-server-during-the-tests
