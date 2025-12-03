@@ -591,6 +591,8 @@ export function withGTConfig(
         mergedConfig.experimentalEnableSSG?.toString() || 'false',
       _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION:
         mergedConfig.experimentalLocaleResolution?.toString() || 'false',
+      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM:
+        mergedConfig.experimentalLocaleResolutionParam,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
