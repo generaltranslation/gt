@@ -15,6 +15,7 @@ import {
   defaultResetLocaleCookieName,
 } from '../../utils/cookies';
 import { CompilerOptions } from './withGTConfigProps';
+import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
 
 type DefaultGTConfigProps = {
   config: string;
@@ -75,7 +76,7 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
   disableSSGWarnings: false,
   experimentalEnableSSG: false,
   experimentalLocaleResolution: false,
-  experimentalLocaleResolutionParam: 'locale',
+  experimentalLocaleResolutionParam: defaultExperimentalLocaleResolutionParam,
 } as const;
 
 // exported separately because it's only used in production

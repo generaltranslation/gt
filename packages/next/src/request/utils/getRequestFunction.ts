@@ -3,6 +3,9 @@ import {
   createCustomGetRequestFunctionWarning,
   createGetRequestFunctionWarning,
 } from '../../errors/ssg';
+import { getRootParam } from '@generaltranslation/next-internal';
+import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
+import { isValidLocale } from 'generaltranslation';
 
 /**
  * Given a function type, return the associated request function
@@ -11,6 +14,21 @@ import {
 export function getRequestFunction(
   functionName: RequestFunctions
 ): () => Promise<RequestFunctionReturnType> {
+  if (
+    functionName === 'getLocale' &&
+    process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION === 'true'
+  ) {
+    return async () => {
+      const unverifiedLocale = getRootParam(
+        process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
+          defaultExperimentalLocaleResolutionParam
+      );
+      return unverifiedLocale && isValidLocale(unverifiedLocale)
+        ? unverifiedLocale
+        : undefined;
+    };
+  }
+
   const { error: moduleError, module } = getModule(functionName);
   if (moduleError) {
     return async () => undefined;

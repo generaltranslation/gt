@@ -441,6 +441,9 @@ importers:
       '@generaltranslation/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@generaltranslation/next-internal':
+        specifier: workspace:*
+        version: link:../next-internal
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales

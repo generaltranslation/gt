@@ -79,6 +79,7 @@ import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
  * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
  * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
  * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Whether to use special server side locale resolution logic (required for Cached Components).
+ * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - The parameter to use for experimental locale resolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -398,7 +399,13 @@ export function withGTConfig(
   ssgChecks(mergedConfig, requestFunctionPaths);
 
   // Run cache component checks
-  cacheComponentsChecks(mergedConfig, nextConfig);
+  cacheComponentsChecks({
+    mergedConfig,
+    nextConfig,
+    requestFunctionPaths,
+    localTranslationsEnabled: !!customLoadTranslationsPath,
+    localDictionaryEnabled: !!customLoadDictionaryPath,
+  });
 
   // ---------- DERIVED CONFIG ATTRIBUTES ---------- //
 

@@ -1,5 +1,5 @@
 // ---- ERRORS ---- //
-export const cacheComponentLegacySsgConflictError =
+export const cacheComponentsLegacySsgConflictError =
   'gt-next Error: experimentalLocaleResolution and the deprecated experimentalEnableSSG are enabled. Only one of these can be enabled at a time.';
 
 // ---- WARNINGS ---- //
@@ -8,3 +8,12 @@ export const cacheComponentsMissingExperimentalLocaleResolutionWarning =
 
 export const cacheComponentsExperimentalFeatureWarning =
   'gt-next: You are using an experimental feature: experimentalLocaleResolution. This is a new feature and may be subject to change.';
+
+export const cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWarning =
+  'gt-next: experimentalLocaleResolution is enabled. Your provided getLocale function will be ignored.';
+
+export const cacheComponentsNonLocalTranslationsWarning =
+  'gt-next Error: cacheComponents is enabled, but you are not storing translations locally. Prerendering step may fail. Please follow these instructions to store translations locally: https://generaltranslation.com/en-US/docs/next/guides/local-tx';
+
+export const experimentalLocaleResolutionWithoutCacheComponentsWarning =
+  'gt-next: experimentalLocaleResolution is enabled, but cacheComponents disabled. experimentalLocaleResolution is meant to be used with cacheComponents. If this is intentional, ignore this warning.';
