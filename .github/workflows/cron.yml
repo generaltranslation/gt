@@ -44,7 +44,7 @@ jobs:
 
       - name: Install test dependencies
         working-directory: packages/next-internal/tests/latest
-        run: npm ci
+        run: pnpm i
 
       - name: Install Playwright Browsers
         working-directory: packages/next-internal/tests/latest
