@@ -389,10 +389,10 @@ function resolveSpec(
       path.resolve(configDir, explicitPath),
       path.resolve(path.dirname(filePath), explicitPath),
     ];
-    const match = specs.find((spec) =>
+    const foundSpec = specs.find((spec) =>
       candidates.some((candidate) => samePath(candidate, spec.absPath))
     );
-    if (match) return match;
+    if (foundSpec) return foundSpec;
     warnings.add(
       `OpenAPI reference ${refDescription} in ${filePath} points to an unconfigured spec (${explicitPath}). Skipping localization for this reference.`
     );
