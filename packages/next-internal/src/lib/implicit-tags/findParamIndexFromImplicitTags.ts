@@ -9,7 +9,7 @@ import { ImplicitTag } from './types';
  * ```ts
  * const implicitTags = ['_N_T_/[locale]/fr', '_N_T_/page/homepage'];
  * const index = findParamIndexFromImplicitTags(implicitTags, 'locale');
- * console.log(index); // 0
+ * console.log(index); // 1
  * ```
  */
 export function findParamIndexFromImplicitTags(
