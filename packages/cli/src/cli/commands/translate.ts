@@ -1,5 +1,4 @@
 import { EnqueueFilesResult } from 'generaltranslation/types';
-import * as fs from 'node:fs';
 import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import {
@@ -18,12 +17,7 @@ import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
-import {
-  ensureNestedObject,
-  getDownloadedVersions,
-  saveDownloadedVersions,
-} from '../../fs/config/downloadedVersions.js';
-import { hashStringSync } from '../../utils/hash.js';
+import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -137,44 +131,5 @@ export async function postProcessTranslations(
   }
 
   // Record postprocessed content hashes for newly downloaded files
-  const downloadedMeta = getDownloadedMeta();
-  if (includeFiles && includeFiles.size > 0 && downloadedMeta.size > 0) {
-    const downloadedVersions = getDownloadedVersions(settings.configDirectory);
-    let lockUpdated = false;
-
-    for (const filePath of includeFiles) {
-      const meta = downloadedMeta.get(filePath);
-      if (!meta) continue;
-      if (!fs.existsSync(filePath)) continue;
-
-      const content = fs.readFileSync(filePath, 'utf8');
-      const hash = hashStringSync(content);
-
-      ensureNestedObject(downloadedVersions.entries, [
-        meta.branchId,
-        meta.fileId,
-        meta.versionId,
-        meta.locale,
-      ]);
-
-      const existing =
-        downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
-          meta.locale
-        ] || {};
-
-      if (existing.postProcessHash !== hash) {
-        downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
-          meta.locale
-        ] = {
-          ...existing,
-          postProcessHash: hash,
-        };
-        lockUpdated = true;
-      }
-    }
-
-    if (lockUpdated) {
-      saveDownloadedVersions(settings.configDirectory, downloadedVersions);
-    }
-  }
+  persistPostProcessHashes(settings, includeFiles, getDownloadedMeta());
 }
