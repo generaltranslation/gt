@@ -113,7 +113,7 @@ test.describe('getRootParam function', () => {
     await expect(page.locator('h1')).toContainText(
       'Dashboard Settings Test Page'
     );
-    
+
     // This test should extract 'it' from URL /it/settings with route pattern (dashboard)/[locale]/settings
     await expect(page.locator('[data-testid="locale-result"]')).toContainText(
       '"it"'

@@ -6,7 +6,9 @@ export default function DashboardSettingsPage() {
   return (
     <div>
       <h1>Dashboard Settings Test Page</h1>
-      <div data-testid='locale-result'>{locale !== undefined ? JSON.stringify(locale) : 'undefined'}</div>
+      <div data-testid='locale-result'>
+        {locale !== undefined ? JSON.stringify(locale) : 'undefined'}
+      </div>
     </div>
   );
 }
