@@ -1,6 +1,12 @@
 name: next-internal tests
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - 'packages/*/CHANGELOG.md'
+      - 'packages/*/package.json'
+      - '.changeset/**'
   schedule:
     # Run daily at 6am GMT (cron format: minute hour day month weekday)
     - cron: '0 6 * * *'
@@ -48,6 +54,12 @@ jobs:
         working-directory: packages/next-internal/tests/latest
         run: npx playwright test
 
+      - name: Get Next.js version
+        if: always()
+        id: next_version
+        working-directory: packages/next-internal/tests/latest
+        run: echo "version=$(npm view next version)" >> $GITHUB_OUTPUT
+
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -64,3 +76,58 @@ jobs:
           path: packages/next-internal/tests/latest/test-results/
           retention-days: 30
           if-no-files-found: ignore
+
+      - name: Generate artifact URLs
+        id: artifact_urls
+        if: always()
+        run: |
+          echo "playwright_report_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_OUTPUT
+          echo "test_results_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_OUTPUT
+
+      - name: Send Slack notification on failure
+        # if: failure() # Commented out for testing
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🚨 next-internal Tests Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *next-internal Playwright tests have failed!*\n\n📋 *Details:*\n• Workflow: `${{ github.workflow }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.ref_name }}`\n• Next.js Version: `${{ steps.next_version.outputs.version }}`\n• Commit: `${{ github.sha }}`"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn", 
+                    "text": "🔍 *Check the test results and artifacts for debugging.*"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Run"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "📊 Artifacts"
+                      },
+                      "url": "${{ steps.artifact_urls.outputs.playwright_report_url }}"
+                    }
+                  ]
+                }
+              ]
+            }
