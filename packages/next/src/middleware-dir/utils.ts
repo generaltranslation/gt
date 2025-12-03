@@ -1,4 +1,4 @@
-// import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';
 
@@ -18,8 +18,6 @@ export type ResponseConfig = {
   localeCookieName: string;
   resetLocaleCookieName: string;
   localeHeaderName: string;
-  NextRequest: any;
-  NextResponse: any;
 };
 
 export function getResponse({
@@ -34,9 +32,7 @@ export function getResponse({
   localeCookieName,
   resetLocaleCookieName,
   localeHeaderName,
-  NextRequest,
-  NextResponse,
-}: ResponseConfig): any {
+}: ResponseConfig): NextResponse<unknown> {
   // Get Response
   let response;
   if (type === 'next') {
@@ -262,7 +258,7 @@ function inDefaultLocalePaths(
  * Gets the locale from the request using various sources
  */
 export function getLocaleFromRequest(
-  req: any,
+  req: NextRequest,
   defaultLocale: string,
   approvedLocales: string[],
   localeRouting: boolean,
@@ -272,9 +268,7 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  gt: GT,
-  NextRequest: any,
-  NextResponse: any
+  gt: GT
 ): {
   userLocale: string;
   pathnameLocale: string | undefined;
