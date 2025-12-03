@@ -8,6 +8,8 @@ import { gt } from '../utils/gt.js';
 import { FileReference, SubmitUserEditDiff } from 'generaltranslation/types';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
+import { hashStringSync } from '../utils/hash.js';
+import { logger } from '../console/logger.js';
 
 /**
  * Collects local user edits by diffing the latest downloaded server translation version
@@ -58,6 +60,19 @@ export async function collectAndSendUserEditDiffs(
         ]?.[uploadedFile.versionId]?.[locale];
 
       if (!downloadedVersion) continue;
+
+      // Skip if local file matches the last postprocessed content hash
+      if (downloadedVersion.postprocessHash) {
+        try {
+          const localContent = await fs.promises.readFile(outputPath, 'utf8');
+          const localHash = hashStringSync(localContent);
+          if (localHash === downloadedVersion.postprocessHash) {
+            continue;
+          }
+        } catch {
+          // If hash check fails, fall through to diff
+        }
+      }
 
       candidates.push({
         branchId: uploadedFile.branchId,
