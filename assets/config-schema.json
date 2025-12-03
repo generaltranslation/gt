@@ -299,6 +299,32 @@
       },
       "additionalProperties": false
     },
+    "openapi": {
+      "type": "object",
+      "description": "OpenAPI localization settings. Currently only Mintlify is supported.",
+      "properties": {
+        "framework": {
+          "type": "string",
+          "enum": ["mintlify"],
+          "description": "Enables Mintlify-specific OpenAPI processing."
+        },
+        "files": {
+          "type": "array",
+          "description": "Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "translateFields": {
+          "type": "array",
+          "description": "JSONPaths to translate within OpenAPI specs. Defaults to ['$..summary', '$..description'] when omitted.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["framework", "files"],
+      "additionalProperties": false
+    },
     "sharedStaticAssets": {
       "type": "object",
       "description": "Configuration for moving shared static assets to a single directory and rewriting references in source files.",
