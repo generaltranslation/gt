@@ -3,7 +3,7 @@ import withGTConfigProps from '../../config-dir/props/withGTConfigProps';
 import {
   cacheComponentsExperimentalFeatureWarning,
   cacheComponentsMissingExperimentalLocaleResolutionWarning,
-  cacheComponentSsgConflictError as cacheComponentLegacySsgConflictError,
+  cacheComponentLegacySsgConflictError,
 } from '../../errors/cacheComponents';
 
 export function cacheComponentsChecks(

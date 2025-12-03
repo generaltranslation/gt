@@ -1,5 +1,5 @@
 // ---- ERRORS ---- //
-export const cacheComponentSsgConflictError =
+export const cacheComponentLegacySsgConflictError =
   'gt-next Error: experimentalLocaleResolution and the deprecated experimentalEnableSSG are enabled. Only one of these can be enabled at a time.';
 
 // ---- WARNINGS ---- //
