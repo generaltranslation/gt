@@ -2,6 +2,13 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // Exclude Playwright tests from Vitest
+    exclude: [
+      '**/node_modules/**',
+      '**/tests/latest/**', // Exclude entire Playwright test directory
+      '**/*.spec.ts', // Exclude Playwright spec files
+      '**/e2e/**', // Exclude e2e directories
+    ],
     // Enable parallel execution
     pool: 'threads',
     poolOptions: {

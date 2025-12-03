@@ -1,12 +1,6 @@
 name: next-internal tests
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'packages/next-internal/**'
-      - 'packages/next-internal/tests/**'
-      - '.github/workflows/playwright.yml'
   schedule:
     # Run daily at 6am GMT (cron format: minute hour day month weekday)
     - cron: '0 6 * * *'

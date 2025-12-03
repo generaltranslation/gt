@@ -21,8 +21,10 @@
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run && pnpm run test:e2e",
+    "test:watch": "vitest",
+    "test:e2e": "pnpm run test:e2e:install && cd tests/latest && pnpm run test:e2e",
+    "test:e2e:install": "cd tests/latest && npx playwright install --with-deps"
   },
   "repository": {
     "type": "git",
