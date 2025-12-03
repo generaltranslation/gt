@@ -16,6 +16,8 @@ import { noFilesError, noVersionIdError } from '../../console/index.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
 import { logErrorAndExit } from '../../console/logging.js';
+import { getDownloadedMeta } from '../../state/recentDownloads.js';
+import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -127,4 +129,7 @@ export async function postProcessTranslations(
   if (settings.options?.copyFiles) {
     await copyFile(settings);
   }
+
+  // Record postprocessed content hashes for newly downloaded files
+  persistPostProcessHashes(settings, includeFiles, getDownloadedMeta());
 }
