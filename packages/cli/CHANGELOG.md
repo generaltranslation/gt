@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.17
+
+### Patch Changes
+
+- [#848](https://github.com/generaltranslation/gt/pull/848) [`db4ab5c`](https://github.com/generaltranslation/gt/commit/db4ab5cad2726d78dc7c4e4dd7f3a83adaa1fcfb) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding OpenAPI handling via `gt.config.json`
+
 ## 2.5.16
 
 ### Patch Changes
