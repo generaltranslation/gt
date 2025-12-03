@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.19
+
+### Patch Changes
+
+- [#853](https://github.com/generaltranslation/gt/pull/853) [`02abd0a`](https://github.com/generaltranslation/gt/commit/02abd0a970a09c514744982f06169f385dfdd972) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Including hash of post-processed files in `gt-lock.json` to avoid unnecessary saves when calling `save-local`
+
 ## 2.5.18
 
 ### Patch Changes
