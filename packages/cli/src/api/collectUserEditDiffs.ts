@@ -62,11 +62,11 @@ export async function collectAndSendUserEditDiffs(
       if (!downloadedVersion) continue;
 
       // Skip if local file matches the last postprocessed content hash
-      if (downloadedVersion.postprocessHash) {
+      if (downloadedVersion.postProcessHash) {
         try {
           const localContent = await fs.promises.readFile(outputPath, 'utf8');
           const localHash = hashStringSync(localContent);
-          if (localHash === downloadedVersion.postprocessHash) {
+          if (localHash === downloadedVersion.postProcessHash) {
             continue;
           }
         } catch {

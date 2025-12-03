@@ -80,7 +80,7 @@ describe('collectAndSendUserEditDiffs', () => {
             version1: {
               ja: {
                 updatedAt: new Date().toISOString(),
-                postprocessHash: hashStringSync(translatedContent),
+                postProcessHash: hashStringSync(translatedContent),
               },
             },
           },
@@ -100,7 +100,7 @@ describe('collectAndSendUserEditDiffs', () => {
 
     const lock = getDownloadedVersions(settings.configDirectory);
     expect(
-      lock.entries.branch1?.file1?.version1?.ja?.postprocessHash
+      lock.entries.branch1?.file1?.version1?.ja?.postProcessHash
     ).toBeDefined();
 
     await collectAndSendUserEditDiffs(files as any, settings);
@@ -134,7 +134,7 @@ describe('collectAndSendUserEditDiffs', () => {
             version1: {
               ja: {
                 updatedAt: new Date().toISOString(),
-                postprocessHash: hashStringSync('original content'),
+                postProcessHash: hashStringSync('original content'),
               },
             },
           },

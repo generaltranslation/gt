@@ -162,12 +162,12 @@ export async function postProcessTranslations(
           meta.locale
         ] || {};
 
-      if (existing.postprocessHash !== hash) {
+      if (existing.postProcessHash !== hash) {
         downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
           meta.locale
         ] = {
           ...existing,
-          postprocessHash: hash,
+          postProcessHash: hash,
         };
         lockUpdated = true;
       }
