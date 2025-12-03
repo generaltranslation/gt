@@ -4,10 +4,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@generaltranslation/next-internal': link:packages/next-internal
+
 importers:
 
   .:
     dependencies:
+      '@generaltranslation/next-internal':
+        specifier: link:packages/next-internal
+        version: link:packages/next-internal
       lefthook:
         specifier: ^1.12.3
         version: 1.13.4
@@ -442,7 +448,7 @@ importers:
         specifier: workspace:*
         version: link:../compiler
       '@generaltranslation/next-internal':
-        specifier: workspace:*
+        specifier: link:../next-internal
         version: link:../next-internal
       '@generaltranslation/supported-locales':
         specifier: workspace:*
@@ -455,7 +461,7 @@ importers:
         version: link:../react
       next:
         specifier: '>=13.0.0 <15.2.1 || >15.2.2'
-        version: 15.5.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 15.5.2(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.1.1
@@ -480,7 +486,7 @@ importers:
     dependencies:
       next:
         specifier: '>=13.0.0 <15.2.1 || >15.2.2'
-        version: 16.0.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 16.0.3(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.1.1
@@ -488,6 +494,9 @@ importers:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.1.1(react@19.1.1)
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.57.0
+        version: 1.57.0
       '@types/node':
         specifier: '>=20.0.0 <23.0.0'
         version: 20.19.17
@@ -497,6 +506,9 @@ importers:
       '@types/react-dom':
         specifier: '>=18.0.0 <20.0.0'
         version: 19.1.9(@types/react@19.1.15)
+      playwright:
+        specifier: ^1.57.0
+        version: 1.57.0
       prettier:
         specifier: ^3.0.0
         version: 3.6.2
@@ -814,7 +826,7 @@ importers:
         version: link:../../../packages/cli
       next:
         specifier: 16.0.3
-        version: 16.0.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 16.0.3(@playwright/test@1.57.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -860,7 +872,7 @@ importers:
         version: link:../../../packages/cli
       next:
         specifier: 16.0.3
-        version: 16.0.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 16.0.3(@playwright/test@1.57.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2982,6 +2994,11 @@ packages:
   '@pkgr/core@0.2.9':
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@playwright/test@1.57.0':
+    resolution: {integrity: sha512-6TyEnHgd6SArQO8UO2OMTxshln3QMWBtPGrOCgs3wVEmQmwyuNtB10IZMfmYDE0riwNR1cu4q+pPcxMVtaG3TA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@pnpm/config.env-replace@1.1.0':
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
@@ -6350,6 +6367,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -8393,6 +8415,16 @@ packages:
 
   player.style@0.2.0:
     resolution: {integrity: sha512-Ngoaz49TClptMr8HDA2IFmjT3Iq6R27QEUH/C+On33L59RSF3dCLefBYB1Au2RDZQJ6oVFpc1sXaPVpp7fEzzA==}
+
+  playwright-core@1.57.0:
+    resolution: {integrity: sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.57.0:
+    resolution: {integrity: sha512-ilYQj1s8sr2ppEJ2YVadYBN0Mb3mdo9J0wQ+UuDhzYqURwSoW4n1Xs5vs7ORwgDGmyEh33tRMeS8KhdkMoLXQw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pluralize-esm@9.0.5:
     resolution: {integrity: sha512-Kb2dcpMsIutFw2hYrN0EhsAXOUJTd6FVMIxvNAkZCMQLVt9NGZqQczvGpYDxNWCZeCWLHUPxQIBudWzt1h7VVA==}
@@ -12928,6 +12960,10 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
+  '@playwright/test@1.57.0':
+    dependencies:
+      playwright: 1.57.0
+
   '@pnpm/config.env-replace@1.1.0': {}
 
   '@pnpm/network.ca-file@1.0.2':
@@ -16974,6 +17010,9 @@ snapshots:
 
   fs.realpath@1.0.0: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -18720,7 +18759,7 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  next@15.5.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  next@15.5.2(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       '@next/env': 15.5.2
       '@swc/helpers': 0.5.15
@@ -18738,12 +18777,13 @@ snapshots:
       '@next/swc-linux-x64-musl': 15.5.2
       '@next/swc-win32-arm64-msvc': 15.5.2
       '@next/swc-win32-x64-msvc': 15.5.2
+      '@playwright/test': 1.57.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@16.0.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  next@16.0.3(@playwright/test@1.57.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@next/env': 16.0.3
       '@swc/helpers': 0.5.15
@@ -18761,12 +18801,13 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.0.3
       '@next/swc-win32-arm64-msvc': 16.0.3
       '@next/swc-win32-x64-msvc': 16.0.3
+      '@playwright/test': 1.57.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@16.0.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  next@16.0.3(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       '@next/env': 16.0.3
       '@swc/helpers': 0.5.15
@@ -18784,6 +18825,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.0.3
       '@next/swc-win32-arm64-msvc': 16.0.3
       '@next/swc-win32-x64-msvc': 16.0.3
+      '@playwright/test': 1.57.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -19278,6 +19320,14 @@ snapshots:
       media-chrome: 4.13.1(react@19.1.1)
     transitivePeerDependencies:
       - react
+
+  playwright-core@1.57.0: {}
+
+  playwright@1.57.0:
+    dependencies:
+      playwright-core: 1.57.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pluralize-esm@9.0.5: {}
 

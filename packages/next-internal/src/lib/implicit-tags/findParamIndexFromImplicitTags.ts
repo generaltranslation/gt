@@ -21,6 +21,11 @@ export function findParamIndexFromImplicitTags(
   const encodedTag = implicitTags.find((tag) => tag.includes(encodedParam));
   if (!encodedTag) return -1;
 
-  // include the _N_T_/ prefix in the index
-  return encodedTag.split('/').indexOf(encodedParam);
+  // Filter out route groups from the pattern to match the actual URL structure
+  // Route groups like (dashboard) exist in patterns but not in actual URLs
+  const segments = encodedTag.split('/');
+  const filteredSegments = segments.filter(
+    (tag) => !tag.startsWith('(') && !tag.endsWith(')')
+  );
+  return filteredSegments.indexOf(encodedParam);
 }

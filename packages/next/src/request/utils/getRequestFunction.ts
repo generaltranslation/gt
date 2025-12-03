@@ -6,6 +6,7 @@ import {
 import { getRootParam } from '@generaltranslation/next-internal';
 import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
 import { isValidLocale } from 'generaltranslation';
+import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
 
 /**
  * Given a function type, return the associated request function
@@ -55,13 +56,19 @@ function handleExperimentalLocaleResolution(
   // handle getLocale
   if (functionName === 'getLocale') {
     return async () => {
-      const unverifiedLocale = getRootParam(
-        process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
-          defaultExperimentalLocaleResolutionParam
-      );
-      return unverifiedLocale && isValidLocale(unverifiedLocale)
-        ? unverifiedLocale
-        : undefined;
+      try {
+        const unverifiedLocale = getRootParam(
+          process.env
+            ._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
+            defaultExperimentalLocaleResolutionParam
+        );
+        return unverifiedLocale && isValidLocale(unverifiedLocale)
+          ? unverifiedLocale
+          : undefined;
+      } catch (error) {
+        console.warn(experimentalLocaleResolutionError + error);
+        return undefined;
+      }
     };
   }
   // disable other request functions
