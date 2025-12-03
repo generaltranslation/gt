@@ -35,7 +35,8 @@ import {
   resolveRequestFunctionPaths,
 } from './config-dir/utils/resolveRequestFunctionPaths';
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
-import ssgChecks from './plugin/checks/ssgChecks';
+import { ssgChecks } from './plugin/checks/ssgChecks';
+import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -77,6 +78,7 @@ import ssgChecks from './plugin/checks/ssgChecks';
  * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
  * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
  * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
+ * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Whether to use special server side locale resolution logic (required for Cached Components).
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -333,9 +335,6 @@ export function withGTConfig(
     );
   }
 
-  // Run SSG checks
-  ssgChecks(mergedConfig, requestFunctionPaths);
-
   // ----------- LOCALE STANDARDIZATION ----------- //
 
   // Check if using Services
@@ -394,6 +393,12 @@ export function withGTConfig(
       })
     );
   }
+
+  // Run SSG checks
+  ssgChecks(mergedConfig, requestFunctionPaths);
+
+  // Run cache component checks
+  cacheComponentsChecks(mergedConfig, nextConfig);
 
   // ---------- DERIVED CONFIG ATTRIBUTES ---------- //
 
@@ -584,6 +589,8 @@ export function withGTConfig(
         mergedConfig.disableSSGWarnings?.toString() || 'false',
       _GENERALTRANSLATION_ENABLE_SSG:
         mergedConfig.experimentalEnableSSG?.toString() || 'false',
+      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION:
+        mergedConfig.experimentalLocaleResolution?.toString() || 'false',
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {

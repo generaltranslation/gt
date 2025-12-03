@@ -89,6 +89,8 @@ type withGTConfigProps = {
   _usingPlugin?: boolean;
   // SSG
   experimentalEnableSSG?: boolean;
+  // Using special server side locale resolution logic
+  experimentalLocaleResolution?: boolean;
   /** @deprecated */
   disableSSGWarnings?: boolean;
   // Request function paths

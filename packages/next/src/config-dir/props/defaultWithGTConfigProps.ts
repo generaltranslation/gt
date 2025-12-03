@@ -42,6 +42,7 @@ type DefaultGTConfigProps = {
   experimentalCompilerOptions: CompilerOptions;
   disableSSGWarnings: boolean;
   experimentalEnableSSG: boolean;
+  experimentalLocaleResolution: boolean;
 };
 
 const defaultWithGTConfigProps: DefaultGTConfigProps = {
@@ -72,6 +73,7 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
   },
   disableSSGWarnings: false,
   experimentalEnableSSG: false,
+  experimentalLocaleResolution: false,
 } as const;
 
 // exported separately because it's only used in production
