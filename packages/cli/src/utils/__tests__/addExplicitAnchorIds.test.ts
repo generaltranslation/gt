@@ -525,6 +525,38 @@ More content.
         '```markdown\n## Fake Heading In Code Block\nThis is just an example\n```'
       );
     });
+
+    it('should ignore code blocks when AST parsing fails (fallback path)', () => {
+      const input = `## Real Heading
+
+This is real content.
+
+{ this will break mdx parsing
+
+\`\`\`markdown
+## Fake Heading In Code Block
+This is just an example
+\`\`\`
+
+## Another Real Heading
+`;
+
+      // Parsing fails due to the broken MDX expression above, forcing the string fallback
+      const sourceHeadingMap = extractHeadingInfo(input);
+      const result = addExplicitAnchorIds(input, sourceHeadingMap);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.addedIds).toEqual([
+        { heading: 'Real Heading', id: 'real-heading' },
+        { heading: 'Another Real Heading', id: 'another-real-heading' },
+      ]);
+
+      expect(result.content).toContain('## Real Heading \\{#real-heading\\}');
+      expect(result.content).toContain(
+        '## Another Real Heading \\{#another-real-heading\\}'
+      );
+      expect(result.content).not.toContain('\\{#fake-heading-in-code-block\\}');
+    });
   });
 
   describe('Special Characters - Both Modes', () => {

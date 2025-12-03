@@ -36,6 +36,62 @@ function extractHeadingText(heading: Heading): string {
   return text;
 }
 
+/**
+ * Simple line-by-line heading extractor that skips fenced code blocks.
+ * Used as a fallback when MDX parsing fails.
+ */
+function extractHeadingsWithFallback(mdxContent: string): HeadingInfo[] {
+  const headings: HeadingInfo[] = [];
+  const lines = mdxContent.split('\n');
+
+  let position = 0;
+  let inFence = false;
+  let fenceChar: string | null = null;
+
+  for (const line of lines) {
+    const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceString = fenceMatch[2];
+      if (!inFence) {
+        inFence = true;
+        fenceChar = fenceString;
+      } else if (
+        fenceChar &&
+        fenceString[0] === fenceChar[0] &&
+        fenceString.length >= fenceChar.length
+      ) {
+        inFence = false;
+        fenceChar = null;
+      }
+      continue;
+    }
+
+    if (inFence) {
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (!headingMatch) {
+      continue;
+    }
+
+    const hashes = headingMatch[1];
+    const rawText = headingMatch[2];
+    const { cleanedText, explicitId } = parseHeadingContent(rawText);
+
+    if (cleanedText || explicitId) {
+      headings.push({
+        text: cleanedText,
+        level: hashes.length,
+        slug: explicitId ?? generateSlug(cleanedText),
+        position: position++,
+      });
+    }
+  }
+
+  return headings;
+}
+
 function parseHeadingContent(text: string): {
   cleanedText: string;
   explicitId?: string;
@@ -94,25 +150,8 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
     console.warn(
       `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
     );
-    // Fallback: simple regex-based extraction to keep IDs usable
-    const fallbackHeadings: HeadingInfo[] = [];
-    const headingRegex = /^(#{1,6})\s+(.*)$/gm;
-    let position = 0;
-    let match: RegExpExecArray | null;
-    while ((match = headingRegex.exec(mdxContent)) !== null) {
-      const hashes = match[1];
-      const rawText = match[2];
-      const { cleanedText, explicitId } = parseHeadingContent(rawText);
-      if (cleanedText || explicitId) {
-        fallbackHeadings.push({
-          text: cleanedText,
-          level: hashes.length,
-          slug: explicitId ?? generateSlug(cleanedText),
-          position: position++,
-        });
-      }
-    }
-    return fallbackHeadings;
+    // Fallback: line-by-line extraction skipping fenced code blocks
+    return extractHeadingsWithFallback(mdxContent);
   }
 
   let position = 0;
@@ -352,32 +391,63 @@ function applyInlineIdsStringFallback(
   escapeAnchors: boolean
 ): string {
   let headingIndex = 0;
-  return translatedContent.replace(
-    /^(#{1,6}\s+)(.*)$/gm,
-    (match, prefix: string, text: string) => {
-      const id = idMappings.get(headingIndex++);
-      if (!id) {
-        return match;
+  let inFence = false;
+  let fenceChar: string | null = null;
+
+  const processedLines = translatedContent.split('\n').map((line) => {
+    const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceString = fenceMatch[2];
+      if (!inFence) {
+        inFence = true;
+        fenceChar = fenceString;
+      } else if (
+        fenceChar &&
+        fenceString[0] === fenceChar[0] &&
+        fenceString.length >= fenceChar.length
+      ) {
+        inFence = false;
+        fenceChar = null;
       }
-
-      const hasEscaped = /\\\{#[^}]+\\\}\s*$/.test(text);
-      const hasUnescaped = /\{#[^}]+\}\s*$/.test(text);
-
-      if (hasEscaped) {
-        return match;
-      }
-
-      if (hasUnescaped) {
-        if (!escapeAnchors) {
-          return match;
-        }
-        return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\\\{#$1\\\\}')}`;
-      }
-
-      const suffix = escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
-      return `${prefix}${text}${suffix}`;
+      return line;
     }
-  );
+
+    if (inFence) {
+      return line;
+    }
+
+    const headingMatch = line.match(/^(#{1,6}\s+)(.*)$/);
+    if (!headingMatch) {
+      return line;
+    }
+
+    const prefix = headingMatch[1];
+    const text = headingMatch[2];
+    const id = idMappings.get(headingIndex++);
+
+    if (!id) {
+      return line;
+    }
+
+    const hasEscaped = /\\\{#[^}]+\\\}\s*$/.test(text);
+    const hasUnescaped = /\{#[^}]+\}\s*$/.test(text);
+
+    if (hasEscaped) {
+      return line;
+    }
+
+    if (hasUnescaped) {
+      if (!escapeAnchors) {
+        return line;
+      }
+      return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\\\{#$1\\\\}')}`;
+    }
+
+    const suffix = escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
+    return `${prefix}${text}${suffix}`;
+  });
+
+  return processedLines.join('\n');
 }
 
 /**
