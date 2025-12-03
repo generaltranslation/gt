@@ -9,6 +9,9 @@ export const cacheComponentsMissingExperimentalLocaleResolutionWarning =
 export const cacheComponentsExperimentalFeatureWarning =
   'gt-next: You are using an experimental feature: experimentalLocaleResolution. This is a new feature and may be subject to change.';
 
+export const cacheComponentsExperimentalFeatureDisableGetRequestFunctionWarning =
+  'gt-next: Because experimentalLocaleResolution is enabled, functions getRegion and getDomain are disabled.';
+
 export const cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWarning =
   'gt-next: experimentalLocaleResolution is enabled. Your provided getLocale function will be ignored.';
 

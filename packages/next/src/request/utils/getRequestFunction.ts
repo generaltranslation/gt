@@ -15,18 +15,9 @@ export function getRequestFunction(
   functionName: RequestFunctions
 ): () => Promise<RequestFunctionReturnType> {
   if (
-    functionName === 'getLocale' &&
     process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION === 'true'
   ) {
-    return async () => {
-      const unverifiedLocale = getRootParam(
-        process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
-          defaultExperimentalLocaleResolutionParam
-      );
-      return unverifiedLocale && isValidLocale(unverifiedLocale)
-        ? unverifiedLocale
-        : undefined;
-    };
+    return handleExperimentalLocaleResolution(functionName);
   }
 
   const { error: moduleError, module } = getModule(functionName);
@@ -55,6 +46,27 @@ export function getRequestFunction(
 }
 
 /* ========== HELPERS ========== */
+/**
+ * Special handler for when experimentalLocaleResolution is enabled
+ */
+function handleExperimentalLocaleResolution(
+  functionName: RequestFunctions
+): () => Promise<RequestFunctionReturnType> {
+  // handle getLocale
+  if (functionName === 'getLocale') {
+    return async () => {
+      const unverifiedLocale = getRootParam(
+        process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
+          defaultExperimentalLocaleResolutionParam
+      );
+      return unverifiedLocale && isValidLocale(unverifiedLocale)
+        ? unverifiedLocale
+        : undefined;
+    };
+  }
+  // disable other request functions
+  return async () => undefined;
+}
 /**
  * Given a function name, returns the module for the function
  * @param functionName

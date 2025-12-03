@@ -7,6 +7,7 @@ import {
   cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWarning,
   cacheComponentsNonLocalTranslationsWarning,
   experimentalLocaleResolutionWithoutCacheComponentsWarning,
+  cacheComponentsExperimentalFeatureDisableGetRequestFunctionWarning,
 } from '../../errors/cacheComponents';
 import { RequestFunctionPaths } from '../../config-dir/utils/resolveRequestFunctionPaths';
 
@@ -44,6 +45,11 @@ export function cacheComponentsChecks({
 
   // Warn that this is an experimental feature
   console.warn(cacheComponentsExperimentalFeatureWarning);
+
+  // Warn that getRegion and getDomain are disabled
+  console.warn(
+    cacheComponentsExperimentalFeatureDisableGetRequestFunctionWarning
+  );
 
   if (mergedConfig.experimentalEnableSSG) {
     // Error if experimentalEnableSSG is enabled (conflicts, and we want to move people away from this legacy feature)
