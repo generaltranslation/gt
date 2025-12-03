@@ -15,6 +15,8 @@ This package serves as the single abstraction layer for all Next.js internal int
 
 This is an internal package not intended for direct consumption by end users. It should only be used by other packages within the `@generaltranslation` ecosystem.
 
+Due to the nature of interacting with internal files, each function exported should use a try catch to handle error logic.
+
 ## Development
 
 ```bash
