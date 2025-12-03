@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.18
+
+### Patch Changes
+
+- [#851](https://github.com/generaltranslation/gt/pull/851) [`cf5f0e3`](https://github.com/generaltranslation/gt/commit/cf5f0e3f1537c304b7ea5703714ffb4956a7f6f4) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip anchor ID fallback in codeblocks to avoid adding anchors to comments
+
 ## 2.5.17
 
 ### Patch Changes
