@@ -18,7 +18,7 @@ export const REQUEST_FUNCTION_ALIASES = {
   getStaticDomain: 'gt-next/internal/static/_getDomain',
 } as const;
 
-type RequestFunctionPaths = Partial<
+export type RequestFunctionPaths = Partial<
   Record<RequestFunctions | StaticRequestFunctions, string>
 >;
 
@@ -36,9 +36,7 @@ export function resolveRequestFunctionPaths(
     ...REQUEST_FUNCTIONS,
     ...STATIC_REQUEST_FUNCTIONS,
   ]) {
-    const configKey = REQUEST_FUNCTION_TO_CONFIG_KEY[
-      functionName
-    ] as keyof withGTConfigProps;
+    const configKey = REQUEST_FUNCTION_TO_CONFIG_KEY[functionName];
     const path =
       typeof mergedConfig[configKey] === 'string'
         ? mergedConfig[configKey]

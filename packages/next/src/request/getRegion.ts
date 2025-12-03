@@ -1,9 +1,7 @@
 import { getRequestFunction } from './utils/getRequestFunction';
-import isSSR from './utils/isSSR';
+import { legacyGetRegionFunction } from './utils/legacyGetRegionFunction';
 
 let getRegionFunction: () => Promise<string | undefined>;
-let getStaticRegionFunction: () => Promise<string | undefined>;
-let getRegionFunctionWrapper: () => Promise<string | undefined>;
 /**
  * @internal
  *
@@ -16,17 +14,15 @@ let getRegionFunctionWrapper: () => Promise<string | undefined>;
  * console.log(region); // "US" or undefined
  */
 export async function getRegion(): Promise<string | undefined> {
-  if (getRegionFunctionWrapper) return await getRegionFunctionWrapper();
+  if (getRegionFunction) return await getRegionFunction();
 
-  getRegionFunction = getRequestFunction('getRegion', true);
-  getStaticRegionFunction = getRequestFunction('getRegion', false);
+  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
+    // Support new behavior
+    getRegionFunction = getRequestFunction('getRegion');
+  } else {
+    // Support legacy behavior
+    getRegionFunction = legacyGetRegionFunction();
+  }
 
-  getRegionFunctionWrapper = async () => {
-    const region = isSSR()
-      ? await getRegionFunction()
-      : await getStaticRegionFunction();
-    return region;
-  };
-
-  return await getRegionFunctionWrapper();
+  return await getRegionFunction();
 }

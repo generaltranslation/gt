@@ -1,0 +1,63 @@
+{
+  "name": "@generaltranslation/next-internal",
+  "version": "0.0.0",
+  "description": "Internal utilities for Next.js GT integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "next": ">=13.0.0 <15.2.1 || >15.2.2",
+    "react": ">=16.8.0 <20.0.0",
+    "react-dom": ">=16.8.0 <20.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "transpile": "tsc",
+    "build": "pnpm run transpile",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run && pnpm run test:e2e",
+    "test:watch": "vitest",
+    "test:e2e": "pnpm run test:e2e:install && cd tests/latest && pnpm run test:e2e",
+    "test:e2e:install": "cd tests/latest && npx playwright install --with-deps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": ">=20.0.0 <23.0.0",
+    "@types/react": ">=18.0.0 <20.0.0",
+    "@types/react-dom": ">=18.0.0 <20.0.0",
+    "playwright": "^1.57.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^1.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "keywords": [
+    "react",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n",
+    "l10n"
+  ]
+}

@@ -3,6 +3,9 @@
  */
 export type RequestFunctionReturnType = string | undefined;
 
+/**
+ * @deprecated
+ */
 export const STATIC_REQUEST_FUNCTIONS = [
   'getStaticLocale',
   'getStaticRegion',
@@ -16,4 +19,8 @@ export const REQUEST_FUNCTIONS = [
 ] as const;
 
 export type RequestFunctions = (typeof REQUEST_FUNCTIONS)[number];
+
+/**
+ * @deprecated
+ */
 export type StaticRequestFunctions = (typeof STATIC_REQUEST_FUNCTIONS)[number];

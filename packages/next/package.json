@@ -15,6 +15,7 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
     "@generaltranslation/compiler": "workspace:*",
+    "@generaltranslation/next-internal": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*"
   },
