@@ -82,8 +82,8 @@ describe('processOpenApi', () => {
 
     const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
     const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedSource).toContain("/openapi.demo.json POST /foo");
-    expect(updatedTranslated).toContain("/es/openapi.demo.json POST /foo");
+    expect(updatedSource).toContain('/openapi.demo.json POST /foo');
+    expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
   });
 
   it('uses the first configured spec when the operation exists in multiple files', async () => {
@@ -127,10 +127,23 @@ describe('processOpenApi', () => {
 
   it('handles nested spec paths with transforms and emits root-relative paths', async () => {
     const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
-    const specPath = path.join(tmpDir, 'openapi', 'dirA', 'dirAa', 'openapi.json');
+    const specPath = path.join(
+      tmpDir,
+      'openapi',
+      'dirA',
+      'dirAa',
+      'openapi.json'
+    );
     fs.mkdirSync(path.dirname(specPath), { recursive: true });
     fs.writeFileSync(specPath, JSON.stringify(spec));
-    const localizedSpecPath = path.join(tmpDir, 'es', 'openapi', 'dirA', 'dirAa', 'openapi.json');
+    const localizedSpecPath = path.join(
+      tmpDir,
+      'es',
+      'openapi',
+      'dirA',
+      'dirAa',
+      'openapi.json'
+    );
     fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
     fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
 
@@ -141,7 +154,9 @@ describe('processOpenApi', () => {
     fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
     fs.writeFileSync(translatedMdxPath, '---\nopenapi: POST /foo\n---\n');
 
-    const settings = createSettings(tmpDir, ['./openapi/dirA/dirAa/openapi.json']);
+    const settings = createSettings(tmpDir, [
+      './openapi/dirA/dirAa/openapi.json',
+    ]);
     settings.files = {
       resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
       placeholderPaths: {
@@ -159,6 +174,8 @@ describe('processOpenApi', () => {
     await processOpenApi(settings);
 
     const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedTranslated).toContain('/es/openapi/dirA/dirAa/openapi.json POST /foo');
+    expect(updatedTranslated).toContain(
+      '/es/openapi/dirA/dirAa/openapi.json POST /foo'
+    );
   });
 });

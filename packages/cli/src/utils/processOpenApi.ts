@@ -315,7 +315,8 @@ function rewriteFrontmatter(
           configDir,
           parsedValue.specPath || spec.configPath
         );
-        const newValue = `${localizedSpecPath} ${parsedValue.schemaName}`.trim();
+        const newValue =
+          `${localizedSpecPath} ${parsedValue.schemaName}`.trim();
         if (newValue !== parsed['openapi-schema']) {
           parsed['openapi-schema'] = newValue;
           changed = true;
@@ -439,7 +440,10 @@ function resolveLocalizedSpecPath(
   const chosenAbs = mapping || spec.absPath;
   const rel = normalizeSlashes(path.relative(configDir, chosenAbs));
   const rooted = `/${rel.replace(/^\/+/, '')}`;
-  return formatSpecPathForFrontmatter(rooted, originalPathText || spec.configPath);
+  return formatSpecPathForFrontmatter(
+    rooted,
+    originalPathText || spec.configPath
+  );
 }
 
 function formatSpecPathForFrontmatter(
