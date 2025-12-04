@@ -2,4 +2,4 @@
 'generaltranslation': patch
 ---
 
-fix: compatibility for maxChars
+chore: compatibility for maxChars
