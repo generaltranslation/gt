@@ -17,6 +17,8 @@ export interface TranslationContent {
   id?: string;
   /** Optional context from options: t("text", {context: "nav"}) → "nav" */
   context?: string;
+  /** Optional maxChars from options: t("text", {maxChars: 10}) → 10 */
+  maxChars?: number;
 }
 
 /**

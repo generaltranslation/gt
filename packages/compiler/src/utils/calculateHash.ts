@@ -15,22 +15,24 @@ export default function hashSource({
   source,
   context,
   id,
+  maxChars,
   dataFormat,
 }: {
   source: JsxChildren | string;
   context?: string;
   id?: string;
+  maxChars?: number;
   dataFormat: DataFormat;
 }): string {
   // No change needed for ICU or I18NEXT
   if (dataFormat === 'ICU' || dataFormat === 'I18NEXT') {
-    return _hashSource({ source, context, id, dataFormat });
+    return _hashSource({ source, context, id, maxChars, dataFormat });
   }
   // For Jsx, we set hash to empty string if it contains a static component
   if (containsStatic(source)) {
     return '';
   }
-  return _hashSource({ source, context, id, dataFormat });
+  return _hashSource({ source, context, id, maxChars, dataFormat });
 }
 
 /* =============================================== */
