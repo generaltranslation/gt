@@ -23,11 +23,13 @@ export type ActionType = 'standard' | 'fast' | string;
  *
  * @param context - The context of the request.
  * @param id - The id of the request.
+ * @param maxChars - The maxChars of the request.
  * @param hash - The hash of the request.
  */
 export type EntryMetadata = {
   context?: string;
   id?: string;
+  maxChars?: number;
   hash?: string;
   dataFormat?: DataFormat;
   sourceLocale?: string;

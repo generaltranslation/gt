@@ -18,6 +18,7 @@ import {
   warnAsyncUseGT,
   warnSyncGetGT,
   warnInvalidIcuSync,
+  warnInvalidMaxCharsSync,
 } from '../../../console/index.js';
 import generateModule from '@babel/generator';
 import traverseModule from '@babel/traverse';
@@ -103,7 +104,7 @@ function processTranslationCall(
 
       // get metadata and id from options
       const options = tPath.parent.arguments[1];
-      const metadata: Record<string, string> = {};
+      const metadata: Record<string, string | number> = {};
       if (options && options.type === 'ObjectExpression') {
         options.properties.forEach((prop) => {
           if (
@@ -126,9 +127,31 @@ function processTranslationCall(
                   )
                 );
               }
-              if (result.isStatic && result.value && !ignoreAdditionalData) {
-                // Map $id and $context to id and context
-                metadata[mapAttributeName(attribute)] = result.value;
+              if (
+                result.isStatic &&
+                result.value != null &&
+                !ignoreAdditionalData
+              ) {
+                const mappedKey = mapAttributeName(attribute);
+                if (attribute === '$maxChars') {
+                  if (
+                    typeof result.value === 'string' &&
+                    isNaN(Number(result.value))
+                  ) {
+                    errors.push(
+                      warnInvalidMaxCharsSync(
+                        file,
+                        generate(prop).code,
+                        `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                      )
+                    );
+                    // Don't add invalid maxChars to metadata
+                  } else if (typeof result.value === 'string') {
+                    metadata[mappedKey] = Number(result.value);
+                  }
+                } else {
+                  metadata[mappedKey] = result.value;
+                }
               }
             }
           }

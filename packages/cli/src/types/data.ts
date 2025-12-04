@@ -1,6 +1,7 @@
 export type Entry = string;
 export type DictionaryMetadata = {
   context?: string;
+  maxChars?: number;
   variablesOptions?: Record<string, any>;
   [key: string]: any;
 };

@@ -76,6 +76,7 @@ export async function createDictionaryUpdates(
 
     // Map $context to context
     const context = props?.$context;
+    const maxChars = props?.$maxChars;
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
@@ -84,6 +85,7 @@ export async function createDictionaryUpdates(
         source: entry,
         ...(context && { context }),
         ...(id && { id }),
+        ...(maxChars && { maxChars }),
         dataFormat: 'ICU',
       }),
     };
