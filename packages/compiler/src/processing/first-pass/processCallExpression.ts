@@ -132,14 +132,15 @@ function handleUseGTCallback(
   }
 
   // Track the function call
-  registerUseGTCallback(
+  registerUseGTCallback({
     identifier,
     state,
-    useGTCallbackParams.content!,
-    useGTCallbackParams.context,
-    useGTCallbackParams.id,
-    useGTCallbackParams.hash
-  );
+    content: useGTCallbackParams.content!,
+    context: useGTCallbackParams.context,
+    id: useGTCallbackParams.id,
+    maxChars: useGTCallbackParams.maxChars,
+    hash: useGTCallbackParams.hash,
+  });
 }
 
 /**
@@ -159,7 +160,10 @@ function handleUseTranslationsCallback(
   }
 
   // Track the function call
-  regsiterUseTranslationsCallback(identifier, state);
+  regsiterUseTranslationsCallback({
+    identifier,
+    state,
+  });
 }
 
 /**
@@ -180,7 +184,10 @@ function handleUseMessagesCallback(
   }
 
   // Track the function call
-  registerUseMessagesCallback(identifier, state);
+  registerUseMessagesCallback({
+    identifier,
+    state,
+  });
 }
 
 /**
@@ -236,7 +243,7 @@ function handleReactInvocation(
   }
 
   // Validate the arguments
-  const { errors, _hash, id, context, children } =
+  const { errors, _hash, id, context, children, maxChars } =
     validateTranslationComponentArgs(callExpr, canonicalName, state);
 
   if (errors.length > 0) {
@@ -251,6 +258,7 @@ function handleReactInvocation(
       source: children!,
       ...(context && { context }),
       ...(id && { id }),
+      ...(maxChars && { maxChars }),
       dataFormat: 'JSX',
     });
 

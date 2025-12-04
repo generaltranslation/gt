@@ -10,7 +10,7 @@ import { createErrorLocation } from '../../utils/errors';
 
 /**
  * inject parameters into invocation of translation function
- * - useGT(messages=[{hash, message, id, context}])
+ * - useGT(messages=[{hash, message, id, context, maxChars}])
  */
 export function injectCallbackDeclaratorFunctionParameters(
   varDeclarator: t.VariableDeclarator,
@@ -139,6 +139,14 @@ function injectUseGTParameters(
                 t.objectProperty(
                   t.identifier('context'),
                   t.stringLiteral(content.context)
+                ),
+              ]
+            : []),
+          ...(content.maxChars
+            ? [
+                t.objectProperty(
+                  t.identifier('maxChars'),
+                  t.numericLiteral(content.maxChars)
                 ),
               ]
             : []),
