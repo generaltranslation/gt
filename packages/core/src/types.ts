@@ -16,6 +16,7 @@ import {
   Content,
 } from './types-dir/jsx/content';
 import { ActionType, EntryMetadata, Entry } from './types-dir/api/entry';
+import { HashMetadata } from './id/types';
 export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 
 export {
@@ -36,6 +37,7 @@ export {
   EntryMetadata as EntryMetadata,
   Entry as Entry,
   Content,
+  HashMetadata,
 };
 
 export type {
