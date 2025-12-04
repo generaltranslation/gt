@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.0.6
+
+### Patch Changes
+
+- [#857](https://github.com/generaltranslation/gt/pull/857) [`997a5df`](https://github.com/generaltranslation/gt/commit/997a5df6ac355b49a77e768935f9017af689de21) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: compatibility for maxChars
+
 ## 8.0.5
 
 ### Patch Changes
