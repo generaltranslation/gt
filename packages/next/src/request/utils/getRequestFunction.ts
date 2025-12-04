@@ -5,8 +5,8 @@ import {
 } from '../../errors/ssg';
 import { getRootParam } from '@generaltranslation/next-internal';
 import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
-import { isValidLocale } from 'generaltranslation';
 import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
+import getI18NConfig from '../../config-dir/getI18NConfig';
 
 /**
  * Given a function type, return the associated request function
@@ -62,7 +62,9 @@ function handleExperimentalLocaleResolution(
             ._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
             defaultExperimentalLocaleResolutionParam
         );
-        return unverifiedLocale && isValidLocale(unverifiedLocale)
+        const I18NConfig = getI18NConfig();
+        const gt = I18NConfig.getGTClass();
+        return unverifiedLocale && gt.isValidLocale(unverifiedLocale)
           ? unverifiedLocale
           : undefined;
       } catch (error) {
