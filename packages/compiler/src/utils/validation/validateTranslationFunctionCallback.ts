@@ -207,7 +207,7 @@ function validateExpressionIsNumericLiteral(expr: t.Expression): {
   }
 
   // validate is integer
-  if (candidateValue !== undefined && Number.isInteger(candidateValue)) {
+  if (candidateValue !== undefined && !Number.isInteger(candidateValue)) {
     return { errors: ['Expression is not an integer'] };
   }
   return { errors: [], value: candidateValue };
