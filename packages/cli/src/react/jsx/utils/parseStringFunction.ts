@@ -113,7 +113,9 @@ function processTranslationCall(
           ) {
             const attribute = prop.key.name;
             if (
-              GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
+              GT_ATTRIBUTES_WITH_SUGAR.includes(
+                attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
+              ) &&
               t.isExpression(prop.value)
             ) {
               const result = isStaticExpression(prop.value);
@@ -136,7 +138,9 @@ function processTranslationCall(
                 if (attribute === '$maxChars') {
                   if (
                     typeof result.value === 'string' &&
-                    isNaN(Number(result.value))
+                    (isNaN(Number(result.value)) ||
+                      !t.isNumericLiteral(prop.value) ||
+                      Number(result.value) < 0)
                   ) {
                     errors.push(
                       warnInvalidMaxCharsSync(
@@ -145,11 +149,12 @@ function processTranslationCall(
                         `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
                       )
                     );
-                    // Don't add invalid maxChars to metadata
                   } else if (typeof result.value === 'string') {
+                    // Add the maxChars value to the metadata
                     metadata[mappedKey] = Number(result.value);
                   }
                 } else {
+                  // Add the $context or $id or other attributes value to the metadata
                   metadata[mappedKey] = result.value;
                 }
               }

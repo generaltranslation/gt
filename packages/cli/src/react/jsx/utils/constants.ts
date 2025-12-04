@@ -31,14 +31,18 @@ export const VARIABLE_COMPONENTS = [
   STATIC_COMPONENT,
 ];
 
-export const GT_ATTRIBUTES_WITH_SUGAR = ['$id', '$context', '$maxChars'];
+export const GT_ATTRIBUTES_WITH_SUGAR = [
+  '$id',
+  '$context',
+  '$maxChars',
+] as const;
 
 export const GT_ATTRIBUTES = [
   'id',
   'context',
   'maxChars',
   ...GT_ATTRIBUTES_WITH_SUGAR,
-];
+] as const;
 
 export function mapAttributeName(attrName: string): string {
   if (attrName === '$id') return 'id';
