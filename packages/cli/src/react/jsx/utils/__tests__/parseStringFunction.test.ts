@@ -678,7 +678,7 @@ describe('parseStrings', () => {
     const code = `
       import { useGT } from 'generaltranslation';
       const gt = useGT();
-      const result = gt("hello world", { $maxChars: -5 });
+      const result = gt("hello world", { $maxChars: 5 });
     `;
     const ast = parseCode(code);
     const params = createMockParams();
@@ -707,7 +707,7 @@ describe('parseStrings', () => {
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
-        maxChars: -5,
+        maxChars: 5,
       },
     });
     expect(params.errors).toHaveLength(0);
