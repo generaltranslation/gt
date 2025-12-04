@@ -140,7 +140,8 @@ function processTranslationCall(
                     typeof result.value === 'string' &&
                     (isNaN(Number(result.value)) ||
                       !t.isNumericLiteral(prop.value) ||
-                      Number(result.value) < 0)
+                      Number(result.value) < 0 ||
+                      !Number.isInteger(Number(result.value)))
                   ) {
                     errors.push(
                       warnInvalidMaxCharsSync(

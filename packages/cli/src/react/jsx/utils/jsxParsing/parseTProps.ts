@@ -61,7 +61,8 @@ export function parseTProps({
                 typeof staticAnalysis.value === 'string' &&
                 (isNaN(Number(staticAnalysis.value)) ||
                   !t.isNumericLiteral(expr) ||
-                  Number(staticAnalysis.value) < 0)
+                  Number(staticAnalysis.value) < 0 ||
+                  !Number.isInteger(Number(staticAnalysis.value)))
               ) {
                 componentErrors.push(
                   warnInvalidMaxCharsSync(

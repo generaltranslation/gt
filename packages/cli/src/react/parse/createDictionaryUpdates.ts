@@ -79,7 +79,12 @@ export async function createDictionaryUpdates(
     }
 
     // Validate maxChars
-    if (props?.$maxChars && (isNaN(props.$maxChars) || props.$maxChars < 0)) {
+    if (
+      props?.$maxChars &&
+      (isNaN(props.$maxChars) ||
+        props.$maxChars < 0 ||
+        !Number.isInteger(props.$maxChars))
+    ) {
       errors.push(
         warnInvalidMaxCharsSync(dictionaryPath, String(props.$maxChars), id)
       );
