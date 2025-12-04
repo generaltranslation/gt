@@ -5,7 +5,6 @@ import {
 } from '../../errors/ssg';
 import { getRootParam } from '@generaltranslation/next-internal';
 import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
-import { isValidLocale } from 'generaltranslation';
 import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 
