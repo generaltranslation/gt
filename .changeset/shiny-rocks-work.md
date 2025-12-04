@@ -2,4 +2,4 @@
 '@generaltranslation/compiler': patch
 ---
 
-chore: max char compatability
+chore: max char compatibility
