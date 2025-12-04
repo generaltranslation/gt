@@ -25,6 +25,7 @@ import { GT } from 'generaltranslation';
 type TranslationRequestMetadata = {
   hash: string;
   context?: string;
+  maxChars?: number;
   [attr: string]: any;
 };
 
