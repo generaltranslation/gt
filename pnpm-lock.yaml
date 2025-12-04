@@ -4,16 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@generaltranslation/next-internal': link:packages/next-internal
-
 importers:
 
   .:
     dependencies:
-      '@generaltranslation/next-internal':
-        specifier: link:packages/next-internal
-        version: link:packages/next-internal
       lefthook:
         specifier: ^1.12.3
         version: 1.13.4
@@ -448,7 +442,7 @@ importers:
         specifier: workspace:*
         version: link:../compiler
       '@generaltranslation/next-internal':
-        specifier: link:../next-internal
+        specifier: workspace:*
         version: link:../next-internal
       '@generaltranslation/supported-locales':
         specifier: workspace:*
