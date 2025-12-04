@@ -18,6 +18,7 @@ import {
   warnAsyncUseGT,
   warnSyncGetGT,
   warnInvalidIcuSync,
+  warnInvalidMaxCharsSync,
 } from '../../../console/index.js';
 import generateModule from '@babel/generator';
 import traverseModule from '@babel/traverse';
@@ -103,7 +104,7 @@ function processTranslationCall(
 
       // get metadata and id from options
       const options = tPath.parent.arguments[1];
-      const metadata: Record<string, string> = {};
+      const metadata: Record<string, string | number> = {};
       if (options && options.type === 'ObjectExpression') {
         options.properties.forEach((prop) => {
           if (
@@ -112,7 +113,9 @@ function processTranslationCall(
           ) {
             const attribute = prop.key.name;
             if (
-              GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
+              GT_ATTRIBUTES_WITH_SUGAR.includes(
+                attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
+              ) &&
               t.isExpression(prop.value)
             ) {
               const result = isStaticExpression(prop.value);
@@ -126,9 +129,35 @@ function processTranslationCall(
                   )
                 );
               }
-              if (result.isStatic && result.value && !ignoreAdditionalData) {
-                // Map $id and $context to id and context
-                metadata[mapAttributeName(attribute)] = result.value;
+              if (
+                result.isStatic &&
+                result.value != null &&
+                !ignoreAdditionalData
+              ) {
+                const mappedKey = mapAttributeName(attribute);
+                if (attribute === '$maxChars') {
+                  if (
+                    typeof result.value === 'string' &&
+                    (isNaN(Number(result.value)) ||
+                      !t.isNumericLiteral(prop.value) ||
+                      Number(result.value) < 0 ||
+                      !Number.isInteger(Number(result.value)))
+                  ) {
+                    errors.push(
+                      warnInvalidMaxCharsSync(
+                        file,
+                        generate(prop).code,
+                        `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                      )
+                    );
+                  } else if (typeof result.value === 'string') {
+                    // Add the maxChars value to the metadata
+                    metadata[mappedKey] = Number(result.value);
+                  }
+                } else {
+                  // Add the $context or $id or other attributes value to the metadata
+                  metadata[mappedKey] = result.value;
+                }
               }
             }
           }

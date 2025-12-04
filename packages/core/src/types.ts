@@ -97,6 +97,7 @@ export type {
 } from './types-dir/transformations';
 
 export type Metadata = {
+  maxChars?: number;
   context?: string;
   id?: string;
   sourceLocale?: string;

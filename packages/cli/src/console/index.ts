@@ -110,6 +110,17 @@ export const warnNonStaticExpressionSync = (
     location
   );
 
+export const warnInvalidMaxCharsSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid maxChars value: ${colorizeContent(value)}. Change the value to a valid number to ensure this content is translated.`,
+    location
+  );
+
 export const warnInvalidIcuSync = (
   file: string,
   value: string,

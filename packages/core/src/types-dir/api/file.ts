@@ -16,6 +16,7 @@ export type FileMetadata = {
   filePath: string;
   fileFormat: FileFormat;
   context?: string;
+  maxChars?: number;
   sourceLocale?: string;
   hash?: string;
 };
