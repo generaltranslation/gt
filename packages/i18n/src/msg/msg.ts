@@ -75,6 +75,7 @@ export function msg<T extends string>(
       source: message,
       ...(options?.$context && { context: options.$context }),
       ...(options?.$id && { id: options.$id }),
+      ...(options?.$maxChars && { maxChars: options.$maxChars }),
       dataFormat: 'ICU',
     });
   const encodedOptions: EncodedTranslationOptions = {
