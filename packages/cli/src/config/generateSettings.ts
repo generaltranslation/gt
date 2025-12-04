@@ -178,15 +178,11 @@ export async function generateSettings(
 
   mergedOptions.openapi = undefined;
   if (openapiFilesConfig?.framework === 'mintlify') {
-    const resolvedOpenapi =
-      mergedOptions.files.resolvedPaths.openapi ?? [];
+    const resolvedOpenapi = mergedOptions.files.resolvedPaths.openapi ?? [];
     const openapiSourceGlobs =
       resolvedOpenapi.length > 0
         ? resolvedOpenapi.map((filePath) =>
-            path
-              .relative(cwd, filePath)
-              .split(path.sep)
-              .join('/')
+            path.relative(cwd, filePath).split(path.sep).join('/')
           )
         : (openapiFilesConfig.include || []).map((pattern) =>
             pattern.replace(/\[locale\]/g, mergedOptions.defaultLocale)
