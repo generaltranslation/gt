@@ -1,5 +1,14 @@
 # gt-react
 
+## 10.8.6
+
+### Patch Changes
+
+- Updated dependencies [[`997a5df`](https://github.com/generaltranslation/gt/commit/997a5df6ac355b49a77e768935f9017af689de21)]:
+  - generaltranslation@8.0.6
+  - @generaltranslation/react-core@1.2.6
+  - @generaltranslation/supported-locales@2.0.29
+
 ## 10.8.5
 
 ### Patch Changes
