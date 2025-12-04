@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.10.1
+
+### Patch Changes
+
+- [#855](https://github.com/generaltranslation/gt/pull/855) [`a46a1ff`](https://github.com/generaltranslation/gt/commit/a46a1ff63b24636d28807407da4574ac1e987293) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: experimental locale resolution validation
+
 ## 6.10.0
 
 ### Minor Changes
