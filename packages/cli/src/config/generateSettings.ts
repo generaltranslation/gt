@@ -164,15 +164,42 @@ export async function generateSettings(
   ]
     .filter(([, schema]) => schema.composite)
     .map(([key]) => key);
-  mergedOptions.files = mergedOptions.files
+  const filesConfig = mergedOptions.files as FilesOptions | undefined;
+  const openapiFilesConfig = filesConfig?.openapi;
+  mergedOptions.files = filesConfig
     ? resolveFiles(
-        mergedOptions.files as FilesOptions,
+        filesConfig,
         mergedOptions.defaultLocale,
         mergedOptions.locales,
         cwd,
         compositePatterns
       )
     : { resolvedPaths: {}, placeholderPaths: {}, transformPaths: {} };
+
+  mergedOptions.openapi = undefined;
+  if (openapiFilesConfig?.framework === 'mintlify') {
+    const resolvedOpenapi =
+      mergedOptions.files.resolvedPaths.openapi ?? [];
+    const openapiSourceGlobs =
+      resolvedOpenapi.length > 0
+        ? resolvedOpenapi.map((filePath) =>
+            path
+              .relative(cwd, filePath)
+              .split(path.sep)
+              .join('/')
+          )
+        : (openapiFilesConfig.include || []).map((pattern) =>
+            pattern.replace(/\[locale\]/g, mergedOptions.defaultLocale)
+          );
+
+    if (openapiSourceGlobs.length) {
+      mergedOptions.openapi = {
+        framework: 'mintlify',
+        files: Array.from(new Set(openapiSourceGlobs)),
+        translateFields: openapiFilesConfig.translateFields,
+      };
+    }
+  }
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),

@@ -69,6 +69,34 @@ export async function upload(
     allFiles.push(...jsonFiles);
   }
 
+  // Process OpenAPI files (JSON content but isolated config)
+  if (filePaths.openapi) {
+    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+      logErrorAndExit(noSupportedFormatError);
+    }
+
+    const openapiFiles = filePaths.openapi.map((filePath) => {
+      const content = readFile(filePath);
+
+      const parsedJson = parseJson(
+        content,
+        filePath,
+        additionalOptions,
+        options.defaultLocale
+      );
+
+      const relativePath = getRelative(filePath);
+      return {
+        content: parsedJson,
+        fileName: relativePath,
+        fileFormat: 'JSON' as FileFormat,
+        dataFormat,
+        locale: options.defaultLocale,
+      };
+    });
+    allFiles.push(...openapiFiles);
+  }
+
   // Process YAML files
   if (filePaths.yaml) {
     if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
@@ -96,7 +124,8 @@ export async function upload(
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (fileType === 'json' || fileType === 'yaml') continue;
+    if (fileType === 'json' || fileType === 'yaml' || fileType === 'openapi')
+      continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         const content = readFile(filePath);

@@ -1,5 +1,6 @@
 export const SUPPORTED_FILE_EXTENSIONS = [
   'json',
+  'openapi',
   'mdx',
   'md',
   'ts',
@@ -11,6 +12,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
 
 export const FILE_EXT_TO_EXT_LABEL = {
   json: 'JSON',
+  openapi: 'OpenAPI',
   mdx: 'MDX',
   md: 'Markdown',
   ts: 'TypeScript',

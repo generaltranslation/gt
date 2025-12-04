@@ -19,8 +19,8 @@ function createSettings(tmpDir: string, openapiFiles: string[]): Settings {
     stageTranslations: false,
     publish: false,
     files: {
-      resolvedPaths: { mdx: [], json: [] },
-      placeholderPaths: { mdx: [], json: [] },
+      resolvedPaths: { mdx: [], openapi: [] },
+      placeholderPaths: { mdx: [], openapi: [] },
       transformPaths: {},
     },
     parsingOptions: { conditionNames: [] },
@@ -64,14 +64,14 @@ describe('processOpenApi', () => {
     settings.files = {
       resolvedPaths: {
         mdx: [sourceMdxPath],
-        json: [specPath],
+        openapi: [specPath],
       },
       placeholderPaths: {
         mdx: [path.join(tmpDir, '[locale]', 'openapiPage.mdx')],
-        json: [specPath],
+        openapi: [specPath],
       },
       transformPaths: {
-        json: {
+        openapi: {
           match: 'openapi.demo.json$',
           replace: '{locale}/openapi.demo.json',
         },
@@ -106,13 +106,16 @@ describe('processOpenApi', () => {
 
     const settings = createSettings(tmpDir, ['./spec-a.json', './spec-b.json']);
     settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specAPath, specBPath] },
+      resolvedPaths: {
+        mdx: [sourceMdxPath],
+        openapi: [specAPath, specBPath],
+      },
       placeholderPaths: {
         mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specAPath, specBPath],
+        openapi: [specAPath, specBPath],
       },
       transformPaths: {
-        json: {
+        openapi: {
           match: 'spec-a.json$|spec-b.json$',
           replace: '{locale}/$&',
         },
@@ -158,13 +161,13 @@ describe('processOpenApi', () => {
       './openapi/dirA/dirAa/openapi.json',
     ]);
     settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
+      resolvedPaths: { mdx: [sourceMdxPath], openapi: [specPath] },
       placeholderPaths: {
         mdx: [path.join(tmpDir, '[locale]', 'nested', 'page.mdx')],
-        json: [specPath],
+        openapi: [specPath],
       },
       transformPaths: {
-        json: {
+        openapi: {
           match: 'openapi/dirA/dirAa/openapi.json$',
           replace: '{locale}/openapi/dirA/dirAa/openapi.json',
         },
@@ -201,13 +204,13 @@ describe('processOpenApi', () => {
 
     const settings = createSettings(tmpDir, ['./openapi.demo.json']);
     settings.files = {
-      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
+      resolvedPaths: { mdx: [sourceMdxPath], openapi: [specPath] },
       placeholderPaths: {
         mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
-        json: [specPath],
+        openapi: [specPath],
       },
       transformPaths: {
-        json: {
+        openapi: {
           match: 'openapi.demo.json$',
           replace: '{locale}/openapi.demo.json',
         },

@@ -33,9 +33,20 @@ export type Options = {
   }>;
 };
 
+type BaseFileConfig = {
+  include: string[];
+  exclude?: string[];
+  transform?: string | TransformOption | TransformOption[];
+};
+
 export type OpenApiConfig = {
   framework: 'mintlify';
   files: string[];
+  translateFields?: string[];
+};
+
+export type OpenApiFilesConfig = BaseFileConfig & {
+  framework: 'mintlify';
   translateFields?: string[];
 };
 
@@ -153,12 +164,9 @@ export type TransformFiles = {
 
 // Update FilesOptions to fix the error
 export type FilesOptions = {
-  [K in SupportedFileExtension]?: {
-    include: string[];
-    exclude?: string[];
-    transform?: string | TransformOption | TransformOption[];
-  };
+  [K in Exclude<SupportedFileExtension, 'openapi'>]?: BaseFileConfig;
 } & {
+  openapi?: OpenApiFilesConfig;
   gt?: {
     output: string; // Output glob: /path/[locale].json
   };

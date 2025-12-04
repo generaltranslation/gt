@@ -254,9 +254,11 @@ describe('generateSettings - openapi jsonSchema defaults', () => {
 
   it('adds default translate fields when jsonSchema entries are missing', async () => {
     const settings = await generateSettings({
-      openapi: {
-        framework: 'mintlify',
-        files: ['./openapi.json', './discovery-openapi.json'],
+      files: {
+        openapi: {
+          framework: 'mintlify',
+          include: ['./openapi.json', './discovery-openapi.json'],
+        },
       },
     });
 

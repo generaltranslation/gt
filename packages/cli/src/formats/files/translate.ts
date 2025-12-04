@@ -26,25 +26,27 @@ export async function aggregateFiles(
   }
 
   const { resolvedPaths: filePaths } = settings.files;
+  const hasJsonLikeFiles =
+    (filePaths.json && filePaths.json.length > 0) ||
+    (filePaths.openapi && filePaths.openapi.length > 0);
 
-  // Process JSON files
-  if (filePaths.json) {
+  let dataFormat: DataFormat | undefined;
+  if (hasJsonLikeFiles) {
     const { library, additionalModules } = determineLibrary();
 
-    // Determine dataFormat for JSONs
-    let dataFormat: DataFormat;
     if (library === 'next-intl') {
       dataFormat = 'ICU';
     } else if (library === 'i18next') {
-      if (additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
-      } else {
-        dataFormat = 'I18NEXT';
-      }
+      dataFormat = additionalModules.includes('i18next-icu')
+        ? 'ICU'
+        : 'I18NEXT';
     } else {
       dataFormat = 'JSX';
     }
+  }
 
+  // Process JSON files
+  if (filePaths.json) {
     const jsonFiles = filePaths.json
       .map((filePath) => {
         const content = readFile(filePath);
@@ -83,6 +85,47 @@ export async function aggregateFiles(
         return true;
       });
     allFiles.push(...jsonFiles.filter((file) => file !== null));
+  }
+
+  // Process OpenAPI files (JSON content but isolated config)
+  if (filePaths.openapi) {
+    const openapiFiles = filePaths.openapi
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+
+        try {
+          JSON.parse(content);
+        } catch (e: any) {
+          logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
+          return null;
+        }
+
+        const parsedJson = parseJson(
+          content,
+          filePath,
+          settings.options || {},
+          settings.defaultLocale
+        );
+
+        return {
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(parsedJson),
+          content: parsedJson,
+          fileName: relativePath,
+          fileFormat: 'JSON' as const,
+          dataFormat: dataFormat || 'JSX',
+        } satisfies FileToUpload;
+      })
+      .filter((file) => {
+        if (!file) return false;
+        if (typeof file.content !== 'string' || !file.content.trim()) {
+          logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
+          return false;
+        }
+        return true;
+      });
+    allFiles.push(...openapiFiles.filter((file) => file !== null));
   }
 
   // Process YAML files
@@ -127,7 +170,8 @@ export async function aggregateFiles(
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (fileType === 'json' || fileType === 'yaml') continue;
+    if (fileType === 'json' || fileType === 'yaml' || fileType === 'openapi')
+      continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType]
         .map((filePath) => {

@@ -144,6 +144,46 @@
           "required": ["include"],
           "additionalProperties": false
         },
+        "openapi": {
+          "type": "object",
+          "description": "OpenAPI specification files configuration",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "enum": ["mintlify"],
+              "description": "Enables Mintlify-specific OpenAPI processing."
+            },
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the OpenAPI specification files you want to translate",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "examples": [["openapi/[locale]/**/*.json", "specs/[locale]/*.json"]]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the OpenAPI files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              }
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "examples": ["{locale}/openapi.json"]
+            },
+            "translateFields": {
+              "type": "array",
+              "description": "JSONPaths to translate within OpenAPI specs. Defaults to ['$..summary', '$..description'] when omitted.",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["framework", "include"],
+          "additionalProperties": false
+        },
         "mdx": {
           "type": "object",
           "description": "MDX (Markdown component) files configuration",
@@ -297,32 +337,6 @@
           "additionalProperties": false
         }
       },
-      "additionalProperties": false
-    },
-    "openapi": {
-      "type": "object",
-      "description": "OpenAPI localization settings. Currently only Mintlify is supported.",
-      "properties": {
-        "framework": {
-          "type": "string",
-          "enum": ["mintlify"],
-          "description": "Enables Mintlify-specific OpenAPI processing."
-        },
-        "files": {
-          "type": "array",
-          "description": "Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
-        },
-        "translateFields": {
-          "type": "array",
-          "description": "JSONPaths to translate within OpenAPI specs. Defaults to ['$..summary', '$..description'] when omitted.",
-          "items": { "type": "string" }
-        }
-      },
-      "required": ["framework", "files"],
       "additionalProperties": false
     },
     "sharedStaticAssets": {
