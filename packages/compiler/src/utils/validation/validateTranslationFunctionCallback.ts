@@ -210,5 +210,11 @@ function validateExpressionIsNumericLiteral(expr: t.Expression): {
   if (candidateValue !== undefined && !Number.isInteger(candidateValue)) {
     return { errors: ['Expression is not an integer'] };
   }
+
+  // no value found
+  if (candidateValue === undefined) {
+    return { errors: ['Expression is not a number literal'] };
+  }
+
   return { errors: [], value: candidateValue };
 }

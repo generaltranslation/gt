@@ -120,7 +120,6 @@ export enum USEGT_CALLBACK_OPTIONS {
   $context = '$context',
   $maxChars = '$maxChars',
   $_hash = '$_hash',
-  $_maxChars = '$_maxChars',
 }
 
 /**
