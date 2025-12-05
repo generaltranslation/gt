@@ -46,87 +46,13 @@ export async function aggregateFiles(
   }
 
   // Process JSON files
-  if (filePaths.json) {
-    const jsonFiles = filePaths.json
-      .map((filePath) => {
-        const content = readFile(filePath);
-        const relativePath = getRelative(filePath);
-
-        // Pre-validate JSON parseability
-        try {
-          JSON.parse(content);
-        } catch (e: any) {
-          logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
-          return null;
-        }
-
-        const parsedJson = parseJson(
-          content,
-          filePath,
-          settings.options || {},
-          settings.defaultLocale
-        );
-
-        return {
-          fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(parsedJson),
-          content: parsedJson,
-          fileName: relativePath,
-          fileFormat: 'JSON' as const,
-          dataFormat,
-        } satisfies FileToUpload;
-      })
-      .filter((file) => {
-        if (!file) return false;
-        if (typeof file.content !== 'string' || !file.content.trim()) {
-          logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
-          return false;
-        }
-        return true;
-      });
-    allFiles.push(...jsonFiles.filter((file) => file !== null));
-  }
-
-  // Process OpenAPI files (JSON content but isolated config)
-  if (filePaths.openapi) {
-    const openapiFiles = filePaths.openapi
-      .map((filePath) => {
-        const content = readFile(filePath);
-        const relativePath = getRelative(filePath);
-
-        try {
-          JSON.parse(content);
-        } catch (e: any) {
-          logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
-          return null;
-        }
-
-        const parsedJson = parseJson(
-          content,
-          filePath,
-          settings.options || {},
-          settings.defaultLocale
-        );
-
-        return {
-          fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(parsedJson),
-          content: parsedJson,
-          fileName: relativePath,
-          fileFormat: 'JSON' as const,
-          dataFormat: dataFormat || 'JSX',
-        } satisfies FileToUpload;
-      })
-      .filter((file) => {
-        if (!file) return false;
-        if (typeof file.content !== 'string' || !file.content.trim()) {
-          logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
-          return false;
-        }
-        return true;
-      });
-    allFiles.push(...openapiFiles.filter((file) => file !== null));
-  }
+  const jsonFiles = filePaths.json
+    ? collectJsonLikeFiles(filePaths.json, settings, dataFormat)
+    : [];
+  const openapiFiles = filePaths.openapi
+    ? collectJsonLikeFiles(filePaths.openapi, settings, dataFormat)
+    : [];
+  allFiles.push(...jsonFiles, ...openapiFiles);
 
   // Process YAML files
   if (filePaths.yaml) {
@@ -221,4 +147,49 @@ export async function aggregateFiles(
   }
 
   return allFiles;
+}
+
+// Shared ingestion for JSON-like files (plain JSON and OpenAPI specs)
+function collectJsonLikeFiles(
+  filePaths: string[],
+  settings: Settings,
+  dataFormat?: DataFormat
+): FileToUpload[] {
+  return filePaths
+    .map((filePath) => {
+      const content = readFile(filePath);
+      const relativePath = getRelative(filePath);
+
+      // Pre-validate JSON parseability
+      try {
+        JSON.parse(content);
+      } catch (e: any) {
+        logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
+        return null;
+      }
+
+      const parsedJson = parseJson(
+        content,
+        filePath,
+        settings.options || {},
+        settings.defaultLocale
+      );
+
+      return {
+        fileId: hashStringSync(relativePath),
+        versionId: hashStringSync(parsedJson),
+        content: parsedJson,
+        fileName: relativePath,
+        fileFormat: 'JSON' as const,
+        dataFormat: dataFormat || 'JSX',
+      } satisfies FileToUpload;
+    })
+    .filter((file) => {
+      if (!file) return false;
+      if (typeof file.content !== 'string' || !file.content.trim()) {
+        logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
+        return false;
+      }
+      return true;
+    }) as FileToUpload[];
 }
