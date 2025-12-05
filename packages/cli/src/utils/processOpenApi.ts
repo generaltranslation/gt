@@ -56,12 +56,12 @@ export default async function processOpenApi(
   settings: Settings,
   includeFiles?: Set<string>
 ) {
-  if (settings.openapi?.framework !== 'mintlify') return;
-  if (!settings.openapi.files?.length) return;
+  const openapiConfig = settings.options?.mintlify?.openapi;
+  if (!openapiConfig || !openapiConfig.files?.length) return;
   if (!settings.files) return;
 
   const configDir = path.dirname(settings.config);
-  const specAnalyses = buildSpecAnalyses(settings.openapi.files, configDir);
+  const specAnalyses = buildSpecAnalyses(openapiConfig.files, configDir);
   if (!specAnalyses.length) return;
 
   const warnings = new Set<string>();
