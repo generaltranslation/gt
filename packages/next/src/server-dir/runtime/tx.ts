@@ -17,6 +17,7 @@ import { RuntimeTranslationOptions } from 'gt-react/internal';
  * @param {Object} [options] - Translation options.
  * @param {string} [options.locale] - The target locale for translation. Defaults to the current locale if not provided.
  * @param {string} [options.context] - Additional context for the translation process, which may influence the translation's outcome.
+ * @param {number} [options.maxChars] - The maximum number of characters to translate.
  * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
  * @param {Object} [options.variableOptions] - Options for formatting numbers and dates using `Intl.NumberFormat` or `Intl.DateTimeFormat`.
  *
@@ -43,7 +44,12 @@ export default async function tx(
   if (!message || typeof message !== 'string') return '';
 
   // Compatibility with different options
-  const { $locale, $context: context, ...variables } = options;
+  const {
+    $locale,
+    $context: context,
+    $maxChars: maxChars,
+    ...variables
+  } = options;
 
   // ----- SET UP ----- //
 
@@ -70,6 +76,7 @@ export default async function tx(
   const hash = hashSource({
     source: message,
     ...(context && { context }),
+    ...(maxChars && { maxChars }),
     dataFormat: 'ICU',
   });
 
@@ -91,7 +98,7 @@ export default async function tx(
     const target = (await I18NConfig.translateIcu({
       source: message,
       targetLocale: locale,
-      options: { ...variables, hash, context },
+      options: { ...variables, hash, context, maxChars },
     })) as string;
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {

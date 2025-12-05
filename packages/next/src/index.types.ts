@@ -70,6 +70,7 @@ export const GTProvider: typeof _GTProvider = () => {
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {any} [context] - Additional context for translation key generation.
+ * @param {number} [maxChars] - The maximum number of characters to translate.
  *
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
  *

@@ -32,6 +32,7 @@ type RenderMessageParams = {
 type InitResult = {
   id?: string;
   context?: string;
+  maxChars?: number;
   _hash?: string;
   variables: Record<string, any>;
   calculateHash: () => string;
@@ -44,6 +45,7 @@ type Translator = {
     options?: InlineTranslationOptions & {
       $id?: string;
       $context?: string;
+      $maxChars?: number;
       $_hash?: string;
     }
   ) => string;
@@ -118,13 +120,20 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     message: string,
     options: Record<string, any> & {
       $context?: string;
+      $maxChars?: number;
       $id?: string;
       $_hash?: string;
     } = {}
   ): InitResult | null {
     if (!message || typeof message !== 'string') return null;
 
-    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
+    const {
+      $id: id,
+      $context: context,
+      $maxChars: maxChars,
+      $_hash: _hash,
+      ...variables
+    } = options;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
       return renderMessageHelper({
@@ -140,11 +149,20 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       hashSource({
         source: message,
         ...(context && { context }),
+        ...(maxChars && { maxChars }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
 
-    return { id, context, _hash, variables, calculateHash, renderMessage };
+    return {
+      id,
+      context,
+      maxChars,
+      _hash,
+      variables,
+      calculateHash,
+      renderMessage,
+    };
   }
 
   function getTranslationData(
@@ -169,17 +187,19 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   function scheduleTranslateOnDemand(args: {
     source: string;
     context?: string;
+    maxChars?: number;
     id?: string;
     hash: string;
     renderMessage: RenderFn;
   }) {
-    const { source, context, id, hash, renderMessage } = args;
+    const { source, context, maxChars, id, hash, renderMessage } = args;
     try {
       I18NConfig.translateIcu({
         source,
         targetLocale: locale,
         options: {
           ...(context && { context }),
+          ...(maxChars && { maxChars }),
           ...(id && { id }),
           hash,
         },
@@ -218,7 +238,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       const init = initializeT(message, options);
       if (!init) return;
 
-      const { id, context, _hash, calculateHash } = init;
+      const { id, context, maxChars, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
@@ -232,6 +252,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           targetLocale: locale,
           options: {
             ...(context && { context }),
+            ...(maxChars && { maxChars }),
             ...(id && { id }),
             hash,
           },
@@ -249,13 +270,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     message: string,
     options: Record<string, any> & {
       $context?: string;
+      $maxChars?: number;
       $id?: string;
       $_hash?: string;
     } = {}
   ): string => {
     const init = initializeT(message, options);
     if (!init) return '';
-    const { id, context, _hash, calculateHash, renderMessage } = init;
+    const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
 
     // Early: no translation needed
     if (!translationRequired) return renderMessage(message, [defaultLocale]);
@@ -291,6 +313,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     scheduleTranslateOnDemand({
       source: message,
       context,
+      maxChars,
       id,
       hash,
       renderMessage,
@@ -313,7 +336,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       return t(encodedMsg, options) as T extends string ? string : T;
     }
 
-    const { $_hash, $_source, $context, $id, ...decodedVariables } =
+    const { $_hash, $_source, $context, $id, $maxChars, ...decodedVariables } =
       decodedOptions;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
@@ -375,6 +398,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     scheduleTranslateOnDemand({
       source: $_source,
       context: $context,
+      maxChars: $maxChars,
       id: $id,
       hash: $_hash,
       renderMessage,

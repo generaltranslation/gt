@@ -111,13 +111,20 @@ export default function useCreateInternalUseGTFunction({
     message: string,
     options: Record<string, any> & {
       $context?: string;
+      $maxChars?: number;
       $id?: string;
       $_hash?: string;
     } = {}
   ) {
     if (!message || typeof message !== 'string') return null;
 
-    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
+    const {
+      $id: id,
+      $context: context,
+      $maxChars: maxChars,
+      $_hash: _hash,
+      ...variables
+    } = options;
 
     // Update renderContent to use actual variables
     const renderMessage = (
@@ -139,6 +146,7 @@ export default function useCreateInternalUseGTFunction({
       hashSource({
         source: message,
         ...(context && { context }),
+        ...(maxChars && { maxChars }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
@@ -146,6 +154,7 @@ export default function useCreateInternalUseGTFunction({
     return {
       id,
       context,
+      maxChars,
       _hash,
       variables,
       calculateHash,
@@ -202,7 +211,7 @@ export default function useCreateInternalUseGTFunction({
       // Setup
       const init = initializeT(message, options);
       if (!init) return;
-      const { id, context, _hash, calculateHash } = init;
+      const { id, context, maxChars, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
@@ -220,6 +229,7 @@ export default function useCreateInternalUseGTFunction({
         metadata: {
           ...(context && { context }),
           ...(id && { id }),
+          ...(maxChars && { maxChars }),
           hash,
         },
       });
@@ -236,7 +246,7 @@ export default function useCreateInternalUseGTFunction({
     // ----- SET UP ----- //
     const init = initializeT(message, options);
     if (!init) return '';
-    const { id, context, _hash, calculateHash, renderMessage } = init;
+    const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
 
     // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
     // Check: translation required
@@ -287,6 +297,7 @@ export default function useCreateInternalUseGTFunction({
       metadata: {
         ...(context && { context }),
         ...(id && { id }),
+        ...(maxChars && { maxChars }),
         hash: hash || '',
       },
     });
@@ -313,9 +324,18 @@ export default function useCreateInternalUseGTFunction({
 
     // Disaggregate options and construct render function
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
-      decodedOptions;
+    const {
+      $_hash,
+      $_source,
+      $context,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      $hash,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      $id,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      $maxChars,
+      ...decodedVariables
+    } = decodedOptions;
 
     const renderMessage = (
       msg: string,
@@ -374,6 +394,7 @@ export default function useCreateInternalUseGTFunction({
       targetLocale: locale,
       metadata: {
         ...($context && { context: $context }),
+        ...($maxChars && { maxChars: $maxChars }),
         hash: $_hash,
       },
     });
