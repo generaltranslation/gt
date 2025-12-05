@@ -34,9 +34,12 @@ export type Options = {
 };
 
 export type OpenApiConfig = {
-  framework: 'mintlify';
   files: string[];
   translateFields?: string[];
+};
+
+export type MintlifyOptions = {
+  openapi?: OpenApiConfig;
 };
 
 export type TranslateFlags = {
@@ -211,8 +214,8 @@ export type AdditionalOptions = {
   yamlSchema?: {
     [fileGlob: string]: YamlSchema;
   };
-  // Optional OpenAPI handling (e.g., Mintlify)
-  openapi?: OpenApiConfig;
+  // Optional Mintlify-specific options container
+  mintlify?: MintlifyOptions;
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   excludeStaticUrls?: string[]; // A list of file globs to include for static url localization

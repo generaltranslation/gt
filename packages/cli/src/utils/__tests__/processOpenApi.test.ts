@@ -26,9 +26,10 @@ function createSettings(tmpDir: string, openapiFiles: string[]): Settings {
     parsingOptions: { conditionNames: [] },
     branchOptions: { enabled: false, remoteName: 'origin' },
     options: {
-      openapi: {
-        framework: 'mintlify',
-        files: openapiFiles,
+      mintlify: {
+        openapi: {
+          files: openapiFiles,
+        },
       },
     },
   } as Settings;

@@ -56,10 +56,8 @@ export default async function processOpenApi(
   settings: Settings,
   includeFiles?: Set<string>
 ) {
-  const openapiConfig = settings.options?.openapi;
-
-  if (openapiConfig?.framework !== 'mintlify') return;
-  if (!openapiConfig.files?.length) return;
+  const openapiConfig = settings.options?.mintlify?.openapi;
+  if (!openapiConfig || !openapiConfig.files?.length) return;
   if (!settings.files) return;
 
   const configDir = path.dirname(settings.config);

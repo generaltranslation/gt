@@ -484,30 +484,32 @@
           },
           "additionalProperties": false
         },
-        "openapi": {
+        "mintlify": {
           "type": "object",
-          "description": "OpenAPI localization settings. Currently only Mintlify is supported.",
+          "description": "Mintlify-specific options.",
           "properties": {
-            "framework": {
-              "type": "string",
-              "enum": ["mintlify"],
-              "description": "Enables Mintlify-specific OpenAPI processing."
-            },
-            "files": {
-              "type": "array",
-              "description": "Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.",
-              "items": {
-                "type": "string"
+            "openapi": {
+              "type": "object",
+              "description": "OpenAPI localization settings for Mintlify. Framework defaults to mintlify.",
+              "properties": {
+                "files": {
+                  "type": "array",
+                  "description": "Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "translateFields": {
+                  "type": "array",
+                  "description": "JSONPaths to translate within OpenAPI specs.",
+                  "items": { "type": "string" }
+                }
               },
-              "minItems": 1
-            },
-            "translateFields": {
-              "type": "array",
-              "description": "JSONPaths to translate within OpenAPI specs.",
-              "items": { "type": "string" }
+              "required": ["files"],
+              "additionalProperties": false
             }
           },
-          "required": ["framework", "files"],
           "additionalProperties": false
         },
         "docsUrlPattern": {
