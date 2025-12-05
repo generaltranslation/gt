@@ -38,22 +38,24 @@ async function Resolver({ children }: { children: React.ReactNode }) {
  * ```
  *
  * @param {string} [context] - A context for the translation.
+ * @param {number} [maxChars] - The maximum number of characters to translate.
  * @param {string} [locale] - The locale to use for the translation.
  * @returns {Promise<any>} The translated content.
  */
 async function Tx({
   children,
   context,
+  maxChars,
   locale,
   ...options
 }: TxProps): Promise<any> {
   // ----- SET UP ----- //
 
   // Compatibility with different options
-  const { $context, $locale } = options;
+  const { $context, $locale, $maxChars } = options;
   context = context ?? $context;
   locale = locale ?? $locale;
-
+  maxChars = maxChars ?? $maxChars;
   const I18NConfig = getI18NConfig();
   locale ||= await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
@@ -92,6 +94,7 @@ async function Tx({
   const hash = hashSource({
     source: childrenAsObjects,
     ...(context && { context }),
+    ...(maxChars && { maxChars }),
     dataFormat: 'JSX',
   });
 
@@ -144,6 +147,7 @@ async function Tx({
         options: {
           hash,
           ...(context && { context }),
+          ...(maxChars && { maxChars }),
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
         },
       });

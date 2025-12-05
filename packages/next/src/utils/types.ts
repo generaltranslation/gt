@@ -10,5 +10,6 @@ export type GTProviderProps = {
 export type TxProps = Record<string, any> & {
   children: any;
   context?: string;
+  maxChars?: number;
   locale?: string;
 };

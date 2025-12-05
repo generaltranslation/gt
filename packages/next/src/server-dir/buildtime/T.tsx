@@ -36,6 +36,7 @@ import { hashSource } from 'generaltranslation/id';
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {any} [context] - Additional context for translation key generation.
+ * @param {number} [maxChars] - The maximum number of characters to translate.
  *
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
  *
@@ -45,12 +46,14 @@ async function T({
   children,
   id,
   context,
+  maxChars,
   _hash,
   ...options
 }: {
   children: any;
   id?: string;
   context?: string;
+  maxChars?: number;
   _hash?: string;
   [key: string]: any;
 }): Promise<any> {
@@ -65,6 +68,7 @@ async function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
+  maxChars = maxChars ?? options?.$maxChars;
 
   // ----- TAG CHILDREN ----- //
 
@@ -114,6 +118,7 @@ async function T({
     hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
+      ...(maxChars && { maxChars }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -165,6 +170,7 @@ async function T({
         hashSource({
           source: childrenAsObjects,
           ...(context && { context }),
+          ...(maxChars && { maxChars }),
           ...(id && { id }),
           dataFormat: 'JSX',
         });
@@ -176,6 +182,7 @@ async function T({
           ...(id && { id }),
           hash,
           ...(context && { context }),
+          ...(maxChars && { maxChars }),
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
         },
       });
