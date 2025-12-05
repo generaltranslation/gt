@@ -12,6 +12,8 @@ pub struct TranslationContent {
   pub id: Option<String>,
   /// Optional context from options: t("text", {context: "nav"}) → Some("nav")
   pub context: Option<String>,
+  /// Optional max chars from options: t("text", {maxChars: 10}) → Some(10)
+  pub max_chars: Option<i32>,
 }
 
 /// Content extracted from JSX translation components like <T>
@@ -174,12 +176,14 @@ impl StringCollector {
     hash: String,
     id: Option<String>,
     context: Option<String>,
+    max_chars: Option<i32>,
   ) -> TranslationContent {
     TranslationContent {
       message,
       hash,
       id,
       context,
+      max_chars,
     }
   }
 
@@ -233,6 +237,26 @@ impl StringCollector {
     })))
   }
 
+  // Helper: Generate a key-value pair for an object literal with a number value
+  fn generate_key_value_pair_number(key: &str, value: i32, span: Span) -> PropOrSpread {
+    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+      key: PropName::Ident(
+        Ident {
+          span,
+          sym: key.into(),
+          optional: false,
+          ctxt: Default::default(),
+        }
+        .into(),
+      ),
+      value: Box::new(Expr::Lit(Lit::Num(Number {
+        span,
+        value: value.into(),
+        raw: None,
+      }))),
+    })))
+  }
+
   /// Create an object literal for a single content item: {message: "text", hash: "abc", ...}
   fn create_content_object(&self, content: &TranslationContent, span: Span) -> ObjectLit {
     let mut props = vec![
@@ -250,6 +274,11 @@ impl StringCollector {
     // Add optional context property
     if let Some(context) = &content.context {
       props.push(Self::generate_key_value_pair("$context", context, span));
+    }
+
+    // Add optional max chars property
+    if let Some(max_chars) = &content.max_chars {
+      props.push(Self::generate_key_value_pair_number("$maxChars", *max_chars, span));
     }
 
     ObjectLit { span, props }
@@ -342,6 +371,7 @@ mod tests {
       hash: "abc123".to_string(),
       id: Some("greeting".to_string()),
       context: None,
+      max_chars: None,
     };
 
     collector.set_translation_content(counter_id, content);
@@ -373,6 +403,7 @@ mod tests {
         hash: "hash1".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -383,6 +414,7 @@ mod tests {
         hash: "hash2".to_string(),
         id: Some("second".to_string()),
         context: Some("test".to_string()),
+        max_chars: None,
       },
     );
 
@@ -418,6 +450,7 @@ mod tests {
         hash: "hash1".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -428,6 +461,7 @@ mod tests {
         hash: "hash3".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -454,12 +488,14 @@ mod tests {
         hash: "hash1".to_string(),
         id: Some("greeting".to_string()),
         context: None,
+        max_chars: None,
       },
       TranslationContent {
         message: "World".to_string(),
         hash: "hash2".to_string(),
         id: None,
         context: Some("global".to_string()),
+        max_chars: None,
       },
     ];
 
@@ -483,6 +519,7 @@ mod tests {
         hash: "hash".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -570,6 +607,7 @@ mod tests {
       "content-hash".to_string(),
       Some("content-id".to_string()),
       None,
+      None,
     );
 
     let content2 = StringCollector::create_translation_content(
@@ -577,6 +615,7 @@ mod tests {
       "content-hash-2".to_string(),
       None,
       Some("test-context".to_string()),
+      None,
     );
 
     let jsx = StringCollector::create_translation_jsx("jsx-hash".to_string());
@@ -623,12 +662,14 @@ mod tests {
         hash: "content-hash".to_string(),
         id: Some("greeting".to_string()),
         context: None,
+        max_chars: None,
       },
       TranslationContent {
         message: "World".to_string(),
         hash: "content-hash-2".to_string(),
         id: None,
         context: Some("global".to_string()),
+        max_chars: None,
       },
     ];
 
@@ -648,12 +689,14 @@ mod tests {
       "test-hash".to_string(),
       Some("test-id".to_string()),
       Some("test-context".to_string()),
+      None,
     );
 
     assert_eq!(content.message, "Test message");
     assert_eq!(content.hash, "test-hash");
     assert_eq!(content.id, Some("test-id".to_string()));
     assert_eq!(content.context, Some("test-context".to_string()));
+    assert_eq!(content.max_chars, None);
 
     // Test TranslationJsx creation
     let jsx = StringCollector::create_translation_jsx("jsx-hash".to_string());
@@ -741,6 +784,7 @@ mod tests {
         } else {
           None
         },
+        None,
       );
       collector.set_translation_content(counter_id, content);
     }
@@ -762,6 +806,7 @@ mod tests {
       } else {
         assert_eq!(call.content[i].context, None);
       }
+      assert_eq!(call.content[i].max_chars, None);
     }
   }
 
@@ -802,6 +847,7 @@ mod tests {
         "hash1".to_string(),
         Some("id1".to_string()),
         None,
+        None,
       ),
     );
 
@@ -812,6 +858,7 @@ mod tests {
         "hash2".to_string(),
         None,
         Some("context2".to_string()),
+        None,
       ),
     );
 
@@ -863,6 +910,7 @@ mod tests {
         "hash1-1".to_string(),
         Some("id1-1".to_string()),
         None,
+        None,
       ),
     );
     collector.set_translation_content(
@@ -872,6 +920,7 @@ mod tests {
         "hash1-2".to_string(),
         None,
         Some("ctx1-2".to_string()),
+        None,
       ),
     );
     collector.set_translation_jsx(
@@ -889,6 +938,7 @@ mod tests {
       StringCollector::create_translation_content(
         "Call2 Only Content".to_string(),
         "hash2".to_string(),
+        None,
         None,
         None,
       ),

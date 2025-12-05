@@ -49,6 +49,56 @@ pub fn extract_attribute_from_jsx_attr(
   })
 }
 
+pub fn extract_max_chars_from_jsx_attr(
+  element: &JSXElement,
+  attribute_name: &str,
+) -> Option<i32> {
+  element.opening.attrs.iter().find_map(|attr| {
+    if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+      if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+        if ident.sym.as_ref() == attribute_name {
+          match &jsx_attr.value {
+            // Direct number literal: maxChars="42" or maxChars={42}
+            Some(JSXAttrValue::Lit(Lit::Num(num))) => {
+              if num.value >= 0.0 && num.value.fract() == 0.0 {
+                Some(num.value as i32)
+              } else {
+                None
+              }
+            }
+            // Expression container: maxChars={42} only (no negatives)
+            Some(JSXAttrValue::JSXExprContainer(expr_container)) => {
+              match &expr_container.expr {
+                JSXExpr::Expr(expr) => match expr.as_ref() {
+                  // Positive integer only: maxChars={42}
+                  Expr::Lit(Lit::Num(num)) => {
+                    if num.value >= 0.0 && num.value.fract() == 0.0 {
+                      Some(num.value as i32)
+                    } else {
+                      None
+                    }
+                  }
+                  // Reject negative numbers: maxChars={-42}
+                  Expr::Unary(_) => None,
+                  _ => None,
+                },
+                _ => None,
+              }
+            }
+            _ => None,
+          }
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    } else {
+      None
+    }
+  })
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
