@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.21
+
+### Patch Changes
+
+- [#868](https://github.com/generaltranslation/gt/pull/868) [`34499ce`](https://github.com/generaltranslation/gt/commit/34499ce8407d4b96dea1b4db7a92225e8118fc56) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Removing `"openapi"` top level config, adding as option under `"options.mintlify.openapi"`. Also adding a `jsonSchema` preset for `openapi`.
+
 ## 2.5.20
 
 ### Patch Changes
