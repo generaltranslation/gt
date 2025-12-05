@@ -7,7 +7,7 @@ use crate::hash::{
   HtmlContentProps, SanitizedChild, SanitizedChildren, SanitizedElement, SanitizedGtProp,
   SanitizedVariable, VariableType,
 };
-use crate::visitor::jsx_utils::extract_attribute_from_jsx_attr;
+use crate::visitor::jsx_utils::{extract_attribute_from_jsx_attr, extract_max_chars_from_jsx_attr};
 use crate::TransformVisitor;
 use std::collections::BTreeMap;
 use swc_core::ecma::{ast::*, atoms::Atom};
@@ -50,6 +50,10 @@ impl<'a> JsxTraversal<'a> {
       let context = extract_attribute_from_jsx_attr(element, "context")
         .or_else(|| extract_attribute_from_jsx_attr(element, "$context"));
 
+      // Get the max chars from the element
+      let max_chars = extract_max_chars_from_jsx_attr(element, "maxChars")
+        .or_else(|| extract_max_chars_from_jsx_attr(element, "$maxChars"));
+
       // Get the id from the element
       // Check if sanitized children contain static components - if so, return empty hash
       let has_static = JsxHasher::contains_static(&sanitized_children);
@@ -60,6 +64,7 @@ impl<'a> JsxTraversal<'a> {
         source: Some(Box::new(sanitized_children)),
         id,
         context,
+        max_chars,
         data_format: Some("JSX".to_string()),
       };
       // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
@@ -92,6 +97,7 @@ impl<'a> JsxTraversal<'a> {
         source: Some(Box::new(empty_children)),
         id: None,
         context: None,
+        max_chars: None,
         data_format: Some("JSX".to_string()),
       };
 

@@ -103,6 +103,8 @@ pub struct SanitizedData {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub context: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
+  pub max_chars: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub data_format: Option<String>,
 }
 
@@ -371,6 +373,7 @@ mod tests {
       source: Some(Box::new(children.clone())),
       id: None,
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
 
@@ -393,18 +396,21 @@ mod tests {
       source: Some(Box::new(children.clone())),
       id: None,
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
     let data2 = SanitizedData {
       source: Some(Box::new(children.clone())),
       id: None,
       context: Some("context".to_string()),
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
     let data3 = SanitizedData {
       source: Some(Box::new(children)),
       id: Some("id".to_string()),
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
 
@@ -429,6 +435,7 @@ mod tests {
       source: Some(Box::new(children)),
       id: None,
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
 
@@ -461,6 +468,7 @@ mod tests {
       source: Some(Box::new(empty_children)),
       id: None,
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
 
@@ -498,6 +506,7 @@ mod tests {
       source: Some(Box::new(children.clone())),
       id: None,
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
 
@@ -519,6 +528,7 @@ mod tests {
       source: Some(Box::new(children2)),
       id: None,
       context: None,
+      max_chars: None,
       data_format: Some("JSX".to_string()),
     };
 

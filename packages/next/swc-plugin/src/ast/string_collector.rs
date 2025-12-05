@@ -12,6 +12,8 @@ pub struct TranslationContent {
   pub id: Option<String>,
   /// Optional context from options: t("text", {context: "nav"}) → Some("nav")
   pub context: Option<String>,
+  /// Optional max chars from options: t("text", {maxChars: 10}) → Some(10)
+  pub max_chars: Option<i32>,
 }
 
 /// Content extracted from JSX translation components like <T>
@@ -174,12 +176,14 @@ impl StringCollector {
     hash: String,
     id: Option<String>,
     context: Option<String>,
+    max_chars: Option<i32>,
   ) -> TranslationContent {
     TranslationContent {
       message,
       hash,
       id,
       context,
+      max_chars,
     }
   }
 
@@ -233,6 +237,26 @@ impl StringCollector {
     })))
   }
 
+  // Helper: Generate a key-value pair for an object literal with a number value
+  fn generate_key_value_pair_number(key: &str, value: i32, span: Span) -> PropOrSpread {
+    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+      key: PropName::Ident(
+        Ident {
+          span,
+          sym: key.into(),
+          optional: false,
+          ctxt: Default::default(),
+        }
+        .into(),
+      ),
+      value: Box::new(Expr::Lit(Lit::Num(Number {
+        span,
+        value: value.into(),
+        raw: None,
+      }))),
+    })))
+  }
+
   /// Create an object literal for a single content item: {message: "text", hash: "abc", ...}
   fn create_content_object(&self, content: &TranslationContent, span: Span) -> ObjectLit {
     let mut props = vec![
@@ -250,6 +274,11 @@ impl StringCollector {
     // Add optional context property
     if let Some(context) = &content.context {
       props.push(Self::generate_key_value_pair("$context", context, span));
+    }
+
+    // Add optional max chars property
+    if let Some(max_chars) = &content.max_chars {
+      props.push(Self::generate_key_value_pair_number("$maxChars", *max_chars, span));
     }
 
     ObjectLit { span, props }
@@ -342,6 +371,7 @@ mod tests {
       hash: "abc123".to_string(),
       id: Some("greeting".to_string()),
       context: None,
+      max_chars: None,
     };
 
     collector.set_translation_content(counter_id, content);
@@ -373,6 +403,7 @@ mod tests {
         hash: "hash1".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -383,6 +414,7 @@ mod tests {
         hash: "hash2".to_string(),
         id: Some("second".to_string()),
         context: Some("test".to_string()),
+        max_chars: None,
       },
     );
 
@@ -418,6 +450,7 @@ mod tests {
         hash: "hash1".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -428,6 +461,7 @@ mod tests {
         hash: "hash3".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -454,12 +488,14 @@ mod tests {
         hash: "hash1".to_string(),
         id: Some("greeting".to_string()),
         context: None,
+        max_chars: None,
       },
       TranslationContent {
         message: "World".to_string(),
         hash: "hash2".to_string(),
         id: None,
         context: Some("global".to_string()),
+        max_chars: None,
       },
     ];
 
@@ -483,6 +519,7 @@ mod tests {
         hash: "hash".to_string(),
         id: None,
         context: None,
+        max_chars: None,
       },
     );
 
@@ -570,6 +607,7 @@ mod tests {
       "content-hash".to_string(),
       Some("content-id".to_string()),
       None,
+      None,
     );
 
     let content2 = StringCollector::create_translation_content(
@@ -577,6 +615,7 @@ mod tests {
       "content-hash-2".to_string(),
       None,
       Some("test-context".to_string()),
+      None,
     );
 
     let jsx = StringCollector::create_translation_jsx("jsx-hash".to_string());
@@ -623,12 +662,14 @@ mod tests {
         hash: "content-hash".to_string(),
         id: Some("greeting".to_string()),
         context: None,
+        max_chars: None,
       },
       TranslationContent {
         message: "World".to_string(),
         hash: "content-hash-2".to_string(),
         id: None,
         context: Some("global".to_string()),
+        max_chars: None,
       },
     ];
 
@@ -648,12 +689,14 @@ mod tests {
       "test-hash".to_string(),
       Some("test-id".to_string()),
       Some("test-context".to_string()),
+      None,
     );
 
     assert_eq!(content.message, "Test message");
     assert_eq!(content.hash, "test-hash");
     assert_eq!(content.id, Some("test-id".to_string()));
     assert_eq!(content.context, Some("test-context".to_string()));
+    assert_eq!(content.max_chars, None);
 
     // Test TranslationJsx creation
     let jsx = StringCollector::create_translation_jsx("jsx-hash".to_string());
@@ -663,6 +706,170 @@ mod tests {
     // Test TranslationHash creation
     let hash = StringCollector::create_translation_hash("simple-hash".to_string());
     assert_eq!(hash.hash, "simple-hash");
+  }
+
+  #[test]
+  fn test_translation_content_with_max_chars() {
+    // Test creation with max_chars
+    let content_with_max_chars = StringCollector::create_translation_content(
+      "Test with max chars".to_string(),
+      "test-hash-max".to_string(),
+      Some("test-id".to_string()),
+      None,
+      Some(50),
+    );
+
+    assert_eq!(content_with_max_chars.message, "Test with max chars");
+    assert_eq!(content_with_max_chars.hash, "test-hash-max");
+    assert_eq!(content_with_max_chars.id, Some("test-id".to_string()));
+    assert_eq!(content_with_max_chars.context, None);
+    assert_eq!(content_with_max_chars.max_chars, Some(50));
+
+    // Test creation with all fields including max_chars
+    let content_complete = StringCollector::create_translation_content(
+      "Complete test".to_string(),
+      "complete-hash".to_string(),
+      Some("complete-id".to_string()),
+      Some("complete-context".to_string()),
+      Some(100),
+    );
+
+    assert_eq!(content_complete.message, "Complete test");
+    assert_eq!(content_complete.hash, "complete-hash");
+    assert_eq!(content_complete.id, Some("complete-id".to_string()));
+    assert_eq!(content_complete.context, Some("complete-context".to_string()));
+    assert_eq!(content_complete.max_chars, Some(100));
+  }
+
+  #[test]
+  fn test_string_collector_with_max_chars() {
+    let mut collector = StringCollector::new();
+
+    let counter_id = collector.increment_counter();
+    collector.initialize_aggregator(counter_id);
+
+    // Test setting content with max_chars
+    let content_with_max_chars = StringCollector::create_translation_content(
+      "Message with limit".to_string(),
+      "hash-limit".to_string(),
+      Some("limit-id".to_string()),
+      None,
+      Some(25),
+    );
+
+    collector.set_translation_content(counter_id, content_with_max_chars);
+
+    // Verify the content was stored correctly
+    let stored_data = collector.get_translation_data(counter_id).unwrap();
+    assert_eq!(stored_data.content.len(), 1);
+    assert_eq!(stored_data.content[0].message, "Message with limit");
+    assert_eq!(stored_data.content[0].max_chars, Some(25));
+
+    // Test setting multiple contents with different max_chars values
+    let content_no_limit = StringCollector::create_translation_content(
+      "No limit message".to_string(),
+      "hash-no-limit".to_string(),
+      None,
+      Some("test-context".to_string()),
+      None,
+    );
+
+    collector.set_translation_content(counter_id, content_no_limit);
+
+    let content_high_limit = StringCollector::create_translation_content(
+      "High limit message".to_string(),
+      "hash-high-limit".to_string(),
+      Some("high-id".to_string()),
+      Some("high-context".to_string()),
+      Some(200),
+    );
+
+    collector.set_translation_content(counter_id, content_high_limit);
+
+    // Verify all contents are stored with correct max_chars
+    let final_data = collector.get_translation_data(counter_id).unwrap();
+    assert_eq!(final_data.content.len(), 3);
+    
+    // Check first content (has max_chars)
+    assert_eq!(final_data.content[0].max_chars, Some(25));
+    
+    // Check second content (no max_chars)
+    assert_eq!(final_data.content[1].max_chars, None);
+    
+    // Check third content (has high max_chars)
+    assert_eq!(final_data.content[2].max_chars, Some(200));
+  }
+
+  #[test]
+  fn test_content_object_generation_with_max_chars() {
+    let collector = StringCollector::new();
+    
+    // Test object creation with max_chars
+    let content_with_max_chars = TranslationContent {
+      message: "Test message".to_string(),
+      hash: "test-hash".to_string(),
+      id: Some("test-id".to_string()),
+      context: Some("test-context".to_string()),
+      max_chars: Some(42),
+    };
+
+    let span = swc_core::common::DUMMY_SP;
+    let obj = collector.create_content_object(&content_with_max_chars, span);
+
+    // Should have 5 properties: message, $hash, $id, $context, $maxChars
+    assert_eq!(obj.props.len(), 5);
+
+    // Verify the max_chars property is included as a number
+    let max_chars_prop = obj.props.iter().find(|prop| {
+      if let PropOrSpread::Prop(p) = prop {
+        if let Prop::KeyValue(kv) = p.as_ref() {
+          if let PropName::Ident(ident) = &kv.key {
+            return ident.sym.as_ref() == "$maxChars";
+          }
+        }
+      }
+      false
+    });
+
+    assert!(max_chars_prop.is_some(), "Should have $maxChars property");
+    
+    if let Some(PropOrSpread::Prop(prop)) = max_chars_prop {
+      if let Prop::KeyValue(kv) = prop.as_ref() {
+        if let Expr::Lit(Lit::Num(num)) = kv.value.as_ref() {
+          assert_eq!(num.value, 42.0, "Max chars should be 42");
+        } else {
+          panic!("Max chars value should be a number literal");
+        }
+      }
+    }
+
+    // Test object creation without max_chars
+    let content_without_max_chars = TranslationContent {
+      message: "Test message".to_string(),
+      hash: "test-hash".to_string(),
+      id: Some("test-id".to_string()),
+      context: None,
+      max_chars: None,
+    };
+
+    let obj_no_max = collector.create_content_object(&content_without_max_chars, span);
+
+    // Should have 3 properties: message, $hash, $id (no $maxChars)
+    assert_eq!(obj_no_max.props.len(), 3);
+
+    // Verify no max_chars property is present
+    let has_max_chars = obj_no_max.props.iter().any(|prop| {
+      if let PropOrSpread::Prop(p) = prop {
+        if let Prop::KeyValue(kv) = p.as_ref() {
+          if let PropName::Ident(ident) = &kv.key {
+            return ident.sym.as_ref() == "$maxChars";
+          }
+        }
+      }
+      false
+    });
+
+    assert!(!has_max_chars, "Should not have $maxChars property when None");
   }
 
   #[test]
@@ -741,6 +948,7 @@ mod tests {
         } else {
           None
         },
+        None,
       );
       collector.set_translation_content(counter_id, content);
     }
@@ -762,6 +970,7 @@ mod tests {
       } else {
         assert_eq!(call.content[i].context, None);
       }
+      assert_eq!(call.content[i].max_chars, None);
     }
   }
 
@@ -802,6 +1011,7 @@ mod tests {
         "hash1".to_string(),
         Some("id1".to_string()),
         None,
+        None,
       ),
     );
 
@@ -812,6 +1022,7 @@ mod tests {
         "hash2".to_string(),
         None,
         Some("context2".to_string()),
+        None,
       ),
     );
 
@@ -863,6 +1074,7 @@ mod tests {
         "hash1-1".to_string(),
         Some("id1-1".to_string()),
         None,
+        None,
       ),
     );
     collector.set_translation_content(
@@ -872,6 +1084,7 @@ mod tests {
         "hash1-2".to_string(),
         None,
         Some("ctx1-2".to_string()),
+        None,
       ),
     );
     collector.set_translation_jsx(
@@ -889,6 +1102,7 @@ mod tests {
       StringCollector::create_translation_content(
         "Call2 Only Content".to_string(),
         "hash2".to_string(),
+        None,
         None,
         None,
       ),
