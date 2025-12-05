@@ -78,8 +78,22 @@ pub fn extract_max_chars_from_jsx_attr(
                       None
                     }
                   }
-                  // Reject negative numbers: maxChars={-42}
-                  Expr::Unary(_) => None,
+                  // Handle unary expressions: accept +42, reject -42
+                  Expr::Unary(unary_expr) => {
+                    if unary_expr.op == UnaryOp::Plus {
+                      if let Expr::Lit(Lit::Num(num)) = unary_expr.arg.as_ref() {
+                        if num.value >= 0.0 && num.value.fract() == 0.0 {
+                          Some(num.value as i32)
+                        } else {
+                          None
+                        }
+                      } else {
+                        None
+                      }
+                    } else {
+                      None
+                    }
+                  }
                   _ => None,
                 },
                 _ => None,
