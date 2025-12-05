@@ -193,9 +193,6 @@ export type Settings = {
   branchOptions: BranchOptions;
   // Optional shared static assets config
   sharedStaticAssets?: SharedStaticAssetsConfig;
-
-  // Optional OpenAPI handling
-  openapi?: OpenApiConfig;
 };
 
 export type BranchOptions = {
@@ -214,6 +211,8 @@ export type AdditionalOptions = {
   yamlSchema?: {
     [fileGlob: string]: YamlSchema;
   };
+  // Optional OpenAPI handling (e.g., Mintlify)
+  openapi?: OpenApiConfig;
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   excludeStaticUrls?: string[]; // A list of file globs to include for static url localization
@@ -241,7 +240,7 @@ export type SharedStaticAssetsConfig = {
 };
 
 export type JsonSchema = {
-  preset?: 'mintlify';
+  preset?: 'mintlify' | 'openapi';
 
   // exactly 1 of include or composite must be provided; not both
 
