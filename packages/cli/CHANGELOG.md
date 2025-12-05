@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.22
+
+### Patch Changes
+
+- [#870](https://github.com/generaltranslation/gt/pull/870) [`4291258`](https://github.com/generaltranslation/gt/commit/42912587a51da045c0b578ac71699fda4a8fcc26) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Persist style of YAML frontmatter when applying Mintlify OpenAPI postprocessing
+
 ## 2.5.21
 
 ### Patch Changes
