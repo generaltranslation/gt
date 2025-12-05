@@ -3,7 +3,7 @@ import path from 'node:path';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
-import YAML from 'yaml';
+import YAML, { isMap, isScalar } from 'yaml';
 import type { Root, Content, Yaml } from 'mdast';
 import { logger } from '../console/logger.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
@@ -266,19 +266,18 @@ function rewriteFrontmatter(
   const end = yamlNode.position.end.offset as number;
   const frontmatterRaw: string = yamlNode.value || '';
 
-  let parsed: any;
-  try {
-    parsed = YAML.parse(frontmatterRaw, { prettyErrors: false }) || {};
-  } catch {
-    return null;
-  }
-
-  if (!parsed || typeof parsed !== 'object') return null;
+  const doc = YAML.parseDocument(frontmatterRaw, {
+    prettyErrors: false,
+    keepSourceTokens: true,
+  });
+  if (doc.errors?.length) return null;
+  if (!isMap(doc.contents)) return null;
 
   let changed = false;
 
-  if (typeof parsed.openapi === 'string') {
-    const parsedValue = parseOpenApiValue(parsed.openapi);
+  const openapiNode = doc.get('openapi', true);
+  if (isScalar(openapiNode) && typeof openapiNode.value === 'string') {
+    const parsedValue = parseOpenApiValue(openapiNode.value);
     if (parsedValue) {
       const matchKey =
         parsedValue.kind === 'operation'
@@ -307,16 +306,17 @@ function rewriteFrontmatter(
           parsedValue.specPath || spec.configPath
         );
         const newValue = `${localizedSpecPath} ${descriptor}`.trim();
-        if (newValue !== parsed.openapi) {
-          parsed.openapi = newValue;
+        if (newValue !== openapiNode.value) {
+          doc.set('openapi', newValue);
           changed = true;
         }
       }
     }
   }
 
-  if (typeof parsed['openapi-schema'] === 'string') {
-    const parsedValue = parseSchemaValue(parsed['openapi-schema']);
+  const schemaNode = doc.get('openapi-schema', true);
+  if (isScalar(schemaNode) && typeof schemaNode.value === 'string') {
+    const parsedValue = parseSchemaValue(schemaNode.value);
     if (parsedValue) {
       const spec = resolveSpec(
         parsedValue.specPath,
@@ -337,8 +337,8 @@ function rewriteFrontmatter(
         );
         const newValue =
           `${localizedSpecPath} ${parsedValue.schemaName}`.trim();
-        if (newValue !== parsed['openapi-schema']) {
-          parsed['openapi-schema'] = newValue;
+        if (newValue !== schemaNode.value) {
+          doc.set('openapi-schema', newValue);
           changed = true;
         }
       }
@@ -347,7 +347,7 @@ function rewriteFrontmatter(
 
   if (!changed) return null;
 
-  const fmString = YAML.stringify(parsed).trimEnd();
+  const fmString = doc.toString().trimEnd();
   const rebuilt = `${content.slice(0, start)}---\n${fmString}\n---${content.slice(end)}`;
   return { changed, content: rebuilt };
 }
