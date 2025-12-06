@@ -70,10 +70,14 @@ export default function useCreateInternalUseTranslationsFunction(
       ) => {
         try {
           // (1) Try to format message
-          return gt.formatMessage(message, {
+          const formattedMessage = gt.formatMessage(message, {
             locales,
             variables: options,
           });
+          const cutoffMessage = gt.formatCutoff(formattedMessage, {
+            maxChars: metadata?.$maxChars ?? options.$maxChars,
+          });
+          return cutoffMessage;
         } catch (error) {
           if (environment === 'production') {
             console.warn(
@@ -101,7 +105,10 @@ export default function useCreateInternalUseTranslationsFunction(
           }
 
           // (3) Fallback to original message (unformatted)
-          return message; // fallback to original message (unformatted)}
+          const cutoffMessage = gt.formatCutoff(message, {
+            maxChars: metadata?.$maxChars ?? options.$maxChars,
+          });
+          return cutoffMessage; // fallback to original message (unformatted)}
         }
       };
 
