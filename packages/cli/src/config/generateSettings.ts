@@ -197,28 +197,6 @@ export async function generateSettings(
 
   // Add additional options if provided
   if (mergedOptions.options) {
-    // Auto-add jsonSchema include paths for configured OpenAPI specs (Mintlify)
-    if (
-      mergedOptions.openapi?.framework === 'mintlify' &&
-      Array.isArray(mergedOptions.openapi.files) &&
-      mergedOptions.openapi.files.length
-    ) {
-      const translateFields =
-        mergedOptions.openapi.translateFields?.length &&
-        mergedOptions.openapi.translateFields.length > 0
-          ? mergedOptions.openapi.translateFields
-          : ['$..summary', '$..description'];
-
-      mergedOptions.options.jsonSchema = mergedOptions.options.jsonSchema || {};
-      for (const specFile of mergedOptions.openapi.files) {
-        if (!mergedOptions.options.jsonSchema[specFile]) {
-          mergedOptions.options.jsonSchema[specFile] = {
-            include: translateFields,
-          };
-        }
-      }
-    }
-
     if (mergedOptions.options.jsonSchema) {
       for (const fileGlob of Object.keys(mergedOptions.options.jsonSchema)) {
         const jsonSchema = mergedOptions.options.jsonSchema[fileGlob];

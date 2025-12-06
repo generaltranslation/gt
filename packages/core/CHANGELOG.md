@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.0
+
+### Minor Changes
+
+- [#872](https://github.com/generaltranslation/gt/pull/872) [`3e8ceb4`](https://github.com/generaltranslation/gt/commit/3e8ceb4526530d38eae469b05e8bf273d5ca05ac) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: formatCutoff()
+
 ## 8.0.6
 
 ### Patch Changes
