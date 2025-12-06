@@ -1,4 +1,4 @@
-import { createInvalidCutoffStyleError } from 'src/errors/formattingErrors';
+import { createInvalidCutoffStyleError } from '../../../errors/formattingErrors';
 import { libraryDefaultLocale } from '../../../settings/settings';
 import {
   DEFAULT_CUTOFF_FORMAT_STYLE,
@@ -47,7 +47,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
         ? locales
         : [locales || libraryDefaultLocale];
       const canonicalLocales = Intl.getCanonicalLocales(localesList);
-      this.locale = !canonicalLocales.length
+      this.locale = canonicalLocales.length
         ? canonicalLocales[0]
         : libraryDefaultLocale;
     } catch {
@@ -64,7 +64,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
 
     // Resolve terminator options
     let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
-    if (options.maxChars === 0 || options.maxChars === undefined) {
+    if (options.maxChars !== undefined && options.maxChars !== 0) {
       // TODO: need more sophisticated locale negotiation if we want to add support for region/script/etc.-specific terminators in the future
       const languageCode = new Intl.Locale(this.locale).language;
       presetTerminatorOptions =
