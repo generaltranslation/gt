@@ -1,4 +1,4 @@
-import { libraryDefaultLocale } from 'src/internal';
+import { libraryDefaultLocale } from '../settings/settings';
 import { CutoffFormatConstructor } from '../formatting/custom-formats/CutoffFormat/CutoffFormat';
 import {
   ConstructorType,
