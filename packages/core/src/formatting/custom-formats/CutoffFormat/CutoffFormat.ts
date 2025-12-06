@@ -40,12 +40,18 @@ export class CutoffFormatConstructor implements CutoffFormat {
    * const format = new CutoffFormat('en', { maxChars: -3 });
    * format.format('Hello, world!'); // '...ld!'
    */
-  constructor(locales: string | string[], options: CutoffFormatOptions = {}) {
+  constructor(
+    locales: Intl.LocalesArgument,
+    options: CutoffFormatOptions = {}
+  ) {
     // Determine locale (this replicates Intl.NumberFormat behavior including silent failure)
     try {
-      const localesList = Array.isArray(locales)
-        ? locales
-        : [locales || libraryDefaultLocale];
+      // Normalize locales to string
+      const localesList = !locales
+        ? [libraryDefaultLocale]
+        : Array.isArray(locales)
+          ? locales.map((l) => String(l))
+          : [String(locales)];
       const canonicalLocales = Intl.getCanonicalLocales(localesList);
       this.locale = canonicalLocales.length
         ? canonicalLocales[0]
