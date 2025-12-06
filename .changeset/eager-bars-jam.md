@@ -1,5 +1,0 @@
----
-'generaltranslation': minor
----
-
-feat: formatCutoff()
