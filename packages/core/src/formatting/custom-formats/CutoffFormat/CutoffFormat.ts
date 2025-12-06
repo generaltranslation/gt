@@ -72,7 +72,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
     // Resolve terminator options
     let style: CutoffFormatStyle | undefined;
     let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
-    if (options.maxChars !== undefined && options.maxChars !== 0) {
+    if (options.maxChars !== undefined) {
       style = options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE;
       // TODO: need more sophisticated locale negotiation if we want to add support for region/script/etc.-specific terminators in the future
       const languageCode = new Intl.Locale(this.locale).language;
@@ -80,12 +80,21 @@ export class CutoffFormatConstructor implements CutoffFormat {
         TERMINATOR_MAP[style][languageCode] ||
         TERMINATOR_MAP[style][DEFAULT_TERMINATOR_KEY];
     }
-    const terminator: ResolvedTerminatorOptions['terminator'] =
+    let terminator: ResolvedTerminatorOptions['terminator'] =
       options.terminator ?? presetTerminatorOptions?.terminator;
-    const separator: ResolvedTerminatorOptions['separator'] =
+    let separator: ResolvedTerminatorOptions['separator'] =
       terminator != null
         ? (options.separator ?? presetTerminatorOptions?.separator)
         : undefined;
+    // Remove terminator and separator if maxChars does have enough space
+    const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
+    if (
+      options.maxChars !== undefined &&
+      Math.abs(options.maxChars) <= additionLength
+    ) {
+      terminator = undefined;
+      separator = undefined;
+    }
 
     this.options = {
       maxChars: options.maxChars,
@@ -125,20 +134,23 @@ export class CutoffFormatConstructor implements CutoffFormat {
    */
   formatToParts(value: string): PrependedCutoffParts | PostpendedCutoffParts {
     const { maxChars, terminator, separator } = this.options;
-
-    // Empty string -> empty string
-    if (maxChars === 0) {
-      return [''];
-    }
+    const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
+    const adjustedChars =
+      maxChars === undefined || maxChars === value.length
+        ? maxChars
+        : maxChars >= 0
+          ? Math.max(0, maxChars - additionLength)
+          : Math.min(0, maxChars + additionLength);
 
     const slicedValue =
-      maxChars !== undefined && maxChars > 0
-        ? value.slice(0, maxChars)
-        : value.slice(maxChars);
+      adjustedChars !== undefined && adjustedChars > -1
+        ? value.slice(0, adjustedChars)
+        : value.slice(adjustedChars);
 
     // No cutoff, no terminator -> value only
     if (
       maxChars == null ||
+      adjustedChars == null ||
       terminator == null ||
       value.length <= Math.abs(maxChars)
     ) {
@@ -146,7 +158,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
     }
 
     // Postpended cutoff
-    if (maxChars > 0) {
+    if (adjustedChars > 0) {
       return separator != null
         ? [slicedValue, separator, terminator]
         : [slicedValue, terminator];

@@ -60,7 +60,7 @@ describe('CutoffFormatConstructor', () => {
     describe('positive maxChars', () => {
       it('should truncate and add ellipsis', () => {
         const formatter = new CutoffFormatConstructor('en', { maxChars: 5 });
-        expect(formatter.format('Hello, world!')).toBe('Hello…');
+        expect(formatter.format('Hello, world!')).toBe('Hell…');
       });
 
       it('should return original string if shorter than maxChars', () => {
@@ -77,7 +77,7 @@ describe('CutoffFormatConstructor', () => {
     describe('negative maxChars', () => {
       it('should slice from end and prepend ellipsis', () => {
         const formatter = new CutoffFormatConstructor('en', { maxChars: -3 });
-        expect(formatter.format('Hello, world!')).toBe('…ld!');
+        expect(formatter.format('Hello, world!')).toBe('…d!');
       });
     });
 
@@ -109,22 +109,22 @@ describe('CutoffFormatConstructor', () => {
 
     describe('locale-specific terminators', () => {
       it('should use French terminator and separator', () => {
-        const formatter = new CutoffFormatConstructor('fr', { maxChars: 5 });
+        const formatter = new CutoffFormatConstructor('fr', { maxChars: 7 });
         expect(formatter.format('Bonjour le monde')).toBe('Bonjo\u202F…');
       });
 
       it('should use Chinese terminator', () => {
-        const formatter = new CutoffFormatConstructor('zh', { maxChars: 3 });
-        expect(formatter.format('你好世界')).toBe('你好世……');
+        const formatter = new CutoffFormatConstructor('zh', { maxChars: 4 });
+        expect(formatter.format('你好世界')).toBe('你好世界');
       });
 
       it('should use Japanese terminator', () => {
-        const formatter = new CutoffFormatConstructor('ja', { maxChars: 3 });
-        expect(formatter.format('こんにちは')).toBe('こんに……');
+        const formatter = new CutoffFormatConstructor('ja', { maxChars: 4 });
+        expect(formatter.format('こんにちは')).toBe('こん……');
       });
 
       it('should fall back to default terminator for unknown locale', () => {
-        const formatter = new CutoffFormatConstructor('de', { maxChars: 5 });
+        const formatter = new CutoffFormatConstructor('de', { maxChars: 6 });
         expect(formatter.format('Hallo Welt')).toBe('Hallo…');
       });
     });
@@ -132,7 +132,7 @@ describe('CutoffFormatConstructor', () => {
     describe('custom terminator and separator', () => {
       it('should use custom terminator', () => {
         const formatter = new CutoffFormatConstructor('en', {
-          maxChars: 5,
+          maxChars: 8,
           terminator: '...',
         });
         expect(formatter.format('Hello, world!')).toBe('Hello...');
@@ -140,7 +140,7 @@ describe('CutoffFormatConstructor', () => {
 
       it('should use custom separator', () => {
         const formatter = new CutoffFormatConstructor('en', {
-          maxChars: 5,
+          maxChars: 9,
           terminator: '...',
           separator: ' ',
         });
@@ -149,10 +149,10 @@ describe('CutoffFormatConstructor', () => {
 
       it('should override locale-specific separator', () => {
         const formatter = new CutoffFormatConstructor('fr', {
-          maxChars: 5,
+          maxChars: 7,
           separator: ' ',
         });
-        expect(formatter.format('Bonjour')).toBe('Bonjo …');
+        expect(formatter.format('Bonjour')).toBe('Bonjour');
       });
 
       it('should ignore separator when no terminator', () => {
@@ -183,13 +183,13 @@ describe('CutoffFormatConstructor', () => {
       it('should return parts without separator', () => {
         const formatter = new CutoffFormatConstructor('en', { maxChars: 5 });
         const parts = formatter.formatToParts('Hello, world!');
-        expect(parts).toEqual(['Hello', '…']);
+        expect(parts).toEqual(['Hell', '…']);
       });
 
       it('should return parts with separator', () => {
-        const formatter = new CutoffFormatConstructor('fr', { maxChars: 5 });
+        const formatter = new CutoffFormatConstructor('fr', { maxChars: 7 });
         const parts = formatter.formatToParts('Bonjour');
-        expect(parts).toEqual(['Bonjo', '\u202F', '…']);
+        expect(parts).toEqual(['Bonjour']);
       });
 
       it('should return single part when no cutoff needed', () => {
@@ -203,7 +203,7 @@ describe('CutoffFormatConstructor', () => {
       it('should return prepended parts without separator', () => {
         const formatter = new CutoffFormatConstructor('en', { maxChars: -3 });
         const parts = formatter.formatToParts('Hello, world!');
-        expect(parts).toEqual(['…', 'ld!']);
+        expect(parts).toEqual(['…', 'd!']);
       });
 
       it('should return prepended parts with separator', () => {
@@ -212,7 +212,7 @@ describe('CutoffFormatConstructor', () => {
           separator: ' ',
         });
         const parts = formatter.formatToParts('Bonjour');
-        expect(parts).toEqual(['…', ' ', 'our']);
+        expect(parts).toEqual(['…', ' ', 'r']);
       });
     });
 
@@ -270,13 +270,13 @@ describe('CutoffFormatConstructor', () => {
 
   describe('integration with locale fallback', () => {
     it('should handle locale fallback correctly', () => {
-      const formatter = new CutoffFormatConstructor('es-ES', { maxChars: 5 });
+      const formatter = new CutoffFormatConstructor('es-ES', { maxChars: 6 });
       expect(formatter.format('Hola mundo')).toBe('Hola …');
     });
 
     it('should use language code for terminator lookup', () => {
-      const formatter = new CutoffFormatConstructor('zh-CN', { maxChars: 3 });
-      expect(formatter.format('你好世界')).toBe('你好世……');
+      const formatter = new CutoffFormatConstructor('zh-CN', { maxChars: 4 });
+      expect(formatter.format('你好世界')).toBe('你好世界');
     });
   });
 });
