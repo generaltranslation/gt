@@ -54,17 +54,20 @@ export class CutoffFormatConstructor implements CutoffFormat {
       this.locale = libraryDefaultLocale;
     }
 
-    // Resolve style
-    const style: CutoffFormatStyle | undefined =
-      options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE;
-    if (!TERMINATOR_MAP[style]) {
-      // Follows Intl.NumberFormat behavior of throwing an error when currency is invalid
-      throw new Error(createInvalidCutoffStyleError(style));
+    // Follows Intl.NumberFormat behavior of throwing an error when currency is invalid
+    if (!TERMINATOR_MAP[options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE]) {
+      throw new Error(
+        createInvalidCutoffStyleError(
+          options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE
+        )
+      );
     }
 
     // Resolve terminator options
+    let style: CutoffFormatStyle | undefined;
     let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
     if (options.maxChars !== undefined && options.maxChars !== 0) {
+      style = options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE;
       // TODO: need more sophisticated locale negotiation if we want to add support for region/script/etc.-specific terminators in the future
       const languageCode = new Intl.Locale(this.locale).language;
       presetTerminatorOptions =
@@ -122,10 +125,17 @@ export class CutoffFormatConstructor implements CutoffFormat {
       return [''];
     }
 
-    const slicedValue = value.slice(0, maxChars);
+    const slicedValue =
+      maxChars !== undefined && maxChars > 0
+        ? value.slice(0, maxChars)
+        : value.slice(maxChars);
 
     // No cutoff, no terminator -> value only
-    if (maxChars == null || terminator == null) {
+    if (
+      maxChars == null ||
+      terminator == null ||
+      value.length <= Math.abs(maxChars)
+    ) {
       return [slicedValue];
     }
 

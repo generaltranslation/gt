@@ -32,7 +32,7 @@ export interface ResolvedCutoffFormatOptions
   extends CutoffFormatOptions,
     ResolvedTerminatorOptions {
   maxChars: number | undefined;
-  style: CutoffFormatStyle;
+  style: CutoffFormatStyle | undefined;
   terminator: string | undefined;
   separator: string | undefined;
 }
