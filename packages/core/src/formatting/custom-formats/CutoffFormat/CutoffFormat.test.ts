@@ -279,4 +279,202 @@ describe('CutoffFormatConstructor', () => {
       expect(formatter.format('你好世界')).toBe('你好世界');
     });
   });
+
+  describe('edge cases and boundary conditions', () => {
+    describe('terminator length equals or exceeds maxChars', () => {
+      it('should return empty string when maxChars equals terminator length', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 1,
+          terminator: '…',
+        });
+        expect(formatter.format('Hello')).toBe('');
+      });
+
+      it('should return empty string when maxChars is less than terminator length', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 2,
+          terminator: '...',
+        });
+        expect(formatter.format('Hello')).toBe('');
+      });
+
+      it('should return empty string when maxChars equals terminator + separator length', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 4,
+          terminator: '...',
+          separator: ' ',
+        });
+        expect(formatter.format('Hello')).toBe('');
+      });
+
+      it('should handle negative maxChars with long terminator', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: -1,
+          terminator: '…',
+        });
+        expect(formatter.format('Hello')).toBe('');
+      });
+    });
+
+    describe('zero and minimal adjustedChars scenarios', () => {
+      it('should handle adjustedChars of exactly 0', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 3,
+          terminator: '...',
+        });
+        expect(formatter.format('Hello')).toBe('');
+      });
+
+      it('should handle adjustedChars of 1 with positive maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 4,
+          terminator: '...',
+        });
+        expect(formatter.format('Hello')).toBe('H...');
+      });
+
+      it('should handle adjustedChars of -1 with negative maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: -4,
+          terminator: '...',
+        });
+        expect(formatter.format('Hello')).toBe('...o');
+      });
+    });
+
+    describe('very long terminators and separators', () => {
+      it('should handle very long custom terminator', () => {
+        const longTerminator = '... (truncated) ...';
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 25,
+          terminator: longTerminator,
+        });
+        expect(formatter.format('This is a very long string')).toBe(
+          'This i... (truncated) ...'
+        );
+      });
+
+      it('should handle long separator with long terminator', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 15,
+          terminator: '...',
+          separator: ' [MORE] ',
+        });
+        expect(formatter.format('Hello world')).toBe('Hello world');
+      });
+
+      it('should return empty string when terminator + separator exceeds maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 5,
+          terminator: '...',
+          separator: ' [MORE] ',
+        });
+        expect(formatter.format('Hello')).toBe('Hello');
+      });
+    });
+
+    describe('boundary conditions with exact lengths', () => {
+      it('should handle string length exactly matching maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 5 });
+        expect(formatter.format('Hello')).toBe('Hello');
+      });
+
+      it('should handle string length one character longer than maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 5 });
+        expect(formatter.format('Hello!')).toBe('Hell…');
+      });
+
+      it('should handle string length one character shorter than maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 6 });
+        expect(formatter.format('Hello')).toBe('Hello');
+      });
+
+      it('should handle negative maxChars with exact string length', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: -5 });
+        expect(formatter.format('Hello')).toBe('Hello');
+      });
+    });
+
+    describe('unicode and special characters', () => {
+      it('should handle mixed unicode and ASCII', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 6 });
+        expect(formatter.format('Hello 世界')).toBe('Hello…');
+      });
+
+      it('should handle newlines and tabs in input', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 8 });
+        expect(formatter.format('Line1\nLine2\tTab')).toBe('Line1\nL…');
+      });
+
+      it('should handle unicode terminator with unicode input', () => {
+        const formatter = new CutoffFormatConstructor('zh', { maxChars: 5 });
+        expect(formatter.format('这是一个测试字符串')).toBe('这是一……');
+      });
+
+      it('should handle zero-width characters', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 6 });
+        const textWithZeroWidth = 'He\u200Bllo\u200CWor\u200Dld';
+        expect(formatter.format(textWithZeroWidth)).toBe('He\u200Bll…');
+      });
+    });
+
+    describe('formatToParts edge cases', () => {
+      it('should return correct parts when adjustedChars is 0', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 3,
+          terminator: '...',
+        });
+        expect(formatter.formatToParts('Hello')).toEqual(['']);
+      });
+      it('should return correct parts when adjustedChars is less than 0', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 2,
+          terminator: '...',
+        });
+        expect(formatter.formatToParts('Hello')).toEqual(['']);
+      });
+
+      it('should return correct parts for negative adjustedChars', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: -4,
+          terminator: '...',
+        });
+        expect(formatter.formatToParts('Hello')).toEqual(['...', 'o']);
+      });
+
+      it('should return truncated part when terminator is removed due to length', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 2,
+          terminator: '...',
+        });
+        expect(formatter.formatToParts('Hello')).toEqual(['']);
+      });
+    });
+
+    describe('extreme values', () => {
+      it('should handle very large maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: 10000,
+        });
+        expect(formatter.format('Short string')).toBe('Short string');
+      });
+
+      it('should handle very large negative maxChars', () => {
+        const formatter = new CutoffFormatConstructor('en', {
+          maxChars: -10000,
+        });
+        expect(formatter.format('Short string')).toBe('Short string');
+      });
+
+      it('should handle maxChars of 1 with single character string', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: 1 });
+        expect(formatter.format('H')).toBe('H');
+      });
+
+      it('should handle maxChars of -1 with single character string', () => {
+        const formatter = new CutoffFormatConstructor('en', { maxChars: -1 });
+        expect(formatter.format('H')).toBe('H');
+      });
+    });
+  });
 });

@@ -18,7 +18,7 @@ import {
 export class CutoffFormatConstructor implements CutoffFormat {
   private locale: string;
   private options: ResolvedCutoffFormatOptions;
-
+  private additionLength: number;
   /**
    * Constructor
    * @param {string | string[]} locales - The locales to use for formatting.
@@ -86,11 +86,11 @@ export class CutoffFormatConstructor implements CutoffFormat {
       terminator != null
         ? (options.separator ?? presetTerminatorOptions?.separator)
         : undefined;
-    // Remove terminator and separator if maxChars does have enough space
-    const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
+    // // Remove terminator and separator if maxChars does have enough space
+    this.additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
     if (
       options.maxChars !== undefined &&
-      Math.abs(options.maxChars) <= additionLength
+      Math.abs(options.maxChars) < this.additionLength
     ) {
       terminator = undefined;
       separator = undefined;
@@ -134,14 +134,15 @@ export class CutoffFormatConstructor implements CutoffFormat {
    */
   formatToParts(value: string): PrependedCutoffParts | PostpendedCutoffParts {
     const { maxChars, terminator, separator } = this.options;
-    const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
+
+    // Slice our value
+    // const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
     const adjustedChars =
-      maxChars === undefined || maxChars === value.length
+      maxChars === undefined || Math.abs(maxChars) >= value.length
         ? maxChars
         : maxChars >= 0
-          ? Math.max(0, maxChars - additionLength)
-          : Math.min(0, maxChars + additionLength);
-
+          ? Math.max(0, maxChars - this.additionLength)
+          : Math.min(0, maxChars + this.additionLength);
     const slicedValue =
       adjustedChars !== undefined && adjustedChars > -1
         ? value.slice(0, adjustedChars)
@@ -151,6 +152,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
     if (
       maxChars == null ||
       adjustedChars == null ||
+      adjustedChars === 0 ||
       terminator == null ||
       value.length <= Math.abs(maxChars)
     ) {
