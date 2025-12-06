@@ -242,7 +242,7 @@ describe('generateSettings - composite patterns', () => {
   });
 });
 
-describe('generateSettings - openapi jsonSchema defaults', () => {
+describe('generateSettings - openapi config', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(resolveFiles).mockReturnValue({
@@ -252,19 +252,16 @@ describe('generateSettings - openapi jsonSchema defaults', () => {
     });
   });
 
-  it('adds default translate fields when jsonSchema entries are missing', async () => {
+  it('does not auto-add jsonSchema entries for openapi files', async () => {
     const settings = await generateSettings({
-      openapi: {
-        framework: 'mintlify',
-        files: ['./openapi.json', './discovery-openapi.json'],
+      options: {
+        openapi: {
+          framework: 'mintlify',
+          files: ['./openapi.json', './discovery-openapi.json'],
+        },
       },
     });
 
-    expect(settings.options?.jsonSchema?.['./openapi.json']).toEqual({
-      include: ['$..summary', '$..description'],
-    });
-    expect(settings.options?.jsonSchema?.['./discovery-openapi.json']).toEqual({
-      include: ['$..summary', '$..description'],
-    });
+    expect(settings.options?.jsonSchema).toBeUndefined();
   });
 });

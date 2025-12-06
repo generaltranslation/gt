@@ -1,39 +1,85 @@
+import { libraryDefaultLocale } from '../settings/settings';
+import { CutoffFormatConstructor } from '../formatting/custom-formats/CutoffFormat/CutoffFormat';
+import {
+  ConstructorType,
+  CustomIntlConstructors,
+  CustomIntlType,
+  IntlCacheObject,
+} from './types';
+
+/**
+ * Object mapping constructor names to their respective constructor functions
+ * Includes all native Intl constructors plus custom ones like CutoffFormat
+ */
+const CustomIntl: CustomIntlType = {
+  Collator: Intl.Collator,
+  DateTimeFormat: Intl.DateTimeFormat,
+  DisplayNames: Intl.DisplayNames,
+  ListFormat: Intl.ListFormat,
+  Locale: Intl.Locale,
+  NumberFormat: Intl.NumberFormat,
+  PluralRules: Intl.PluralRules,
+  RelativeTimeFormat: Intl.RelativeTimeFormat,
+  Segmenter: Intl.Segmenter,
+  CutoffFormat: CutoffFormatConstructor,
+};
+
+/**
+ * Cache for Intl and custom format instances to avoid repeated instantiation
+ * Uses a two-level structure: constructor name -> cache key -> instance
+ */
 class IntlCache {
-  private cache: Map<string, any>;
+  private cache: IntlCacheObject;
 
   constructor() {
-    // Create separate caches for each Intl constructor
-    this.cache = new Map();
+    this.cache = {};
   }
 
-  private _generateKey(
-    constructor: string,
-    locales: string | string[],
-    options = {}
-  ) {
-    // Handle both string and array locales
-    const localeKey = Array.isArray(locales) ? locales.join(',') : locales;
-    // Sort option keys to ensure consistent key generation
+  /**
+   * Generates a consistent cache key from locales and options
+   * Handles all LocalesArgument types (string, Locale, array, undefined)
+   */
+  private _generateKey(locales: Intl.LocalesArgument, options = {}) {
+    // Normalize locales to string representation
+    const localeKey = !locales
+      ? 'undefined'
+      : Array.isArray(locales)
+        ? locales.map((l) => String(l)).join(',')
+        : String(locales);
+
+    // Sort option keys to ensure consistent key generation regardless of property order
     const sortedOptions = options
       ? JSON.stringify(options, Object.keys(options).sort())
       : '{}';
-    return `${constructor}:${localeKey}:${sortedOptions}`;
+    return `${localeKey}:${sortedOptions}`;
   }
 
-  get<K extends keyof typeof Intl>(
+  /**
+   * Gets a cached Intl instance or creates a new one if not found
+   * @param constructor The name of the Intl constructor to use
+   * @param args Constructor arguments (locales, options)
+   * @returns Cached or newly created Intl instance
+   */
+  get<K extends keyof CustomIntlConstructors>(
     constructor: K,
-    locales: string | string[],
-    options = {}
-  ): /* @ts-expect-error constructors must be valid */
-  InstanceType<(typeof Intl)[K]> {
-    const key = this._generateKey(constructor, locales, options);
-    if (!this.cache.has(key)) {
-      // Create a new Intl object if not in cache
-      const intlObject = new (Intl[constructor] as any)(locales, options);
-      this.cache.set(key, intlObject);
+    ...args: ConstructorParameters<CustomIntlConstructors[K]>
+  ): InstanceType<ConstructorType<K>> {
+    const [locales = libraryDefaultLocale, options = {}] = args;
+    const key = this._generateKey(locales, options);
+    let intlObject = this.cache[constructor]?.[key];
+
+    if (intlObject === undefined) {
+      // Create new instance and cache it
+      intlObject = new CustomIntl[constructor](...args);
+      if (!this.cache[constructor]) this.cache[constructor] = {};
+      this.cache[constructor][key] = intlObject;
     }
-    return this.cache.get(key);
+
+    return intlObject;
   }
 }
 
+/**
+ * Global instance of the Intl cache for use throughout the application
+ */
 export const intlCache = new IntlCache();
