@@ -57,14 +57,20 @@ export default async function tx(
   const locale = $locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
+  const gt = I18NConfig.getGTClass();
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
   const renderContent = (message: string, locales: string[]) => {
-    return formatMessage(message, {
+    const formattedMessage = gt.formatMessage(message, {
       locales,
       variables,
     });
+    const cutoffMessage = gt.formatCutoff(formattedMessage, {
+      locales,
+      maxChars,
+    });
+    return cutoffMessage;
   };
 
   // ----- CHECK IF TRANSLATION REQUIRED ----- //
