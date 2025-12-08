@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as t from '@babel/types';
+import generate from '@babel/generator';
 import {
   validateUseGTCallback,
   validateUseTranslationsCallback,
@@ -110,9 +111,13 @@ describe('validateTranslationFunctionCallback', () => {
 
         const result = validateUseGTCallback(callExpr, state);
 
-        // When an identifier is passed, validateDeclareStatic doesn't add errors
-        // So the validation passes but content is undefined
-        expect(result.errors).toHaveLength(0);
+        // When an identifier is passed, validateDeclareStatic adds errors
+        expect(result.errors).toHaveLength(3);
+        expect(result.errors).toEqual([
+          'Variables are not allowed',
+          'Expression is not a string literal',
+          'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.',
+        ]);
         expect(result.content).toBeUndefined();
       });
 
@@ -130,8 +135,14 @@ describe('validateTranslationFunctionCallback', () => {
         const result = validateUseGTCallback(callExpr, state);
 
         // Template literal with expressions that don't contain declareStatic
-        // passes validation but content is undefined
-        expect(result.errors).toHaveLength(0);
+        // fails validation
+        expect(result.errors).toHaveLength(4);
+        expect(result.errors).toEqual([
+          'Variables are not allowed',
+          'Expression does not use an allowed call expression',
+          'Expression is not a string literal',
+          'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.',
+        ]);
         expect(result.content).toBeUndefined();
       });
     });
