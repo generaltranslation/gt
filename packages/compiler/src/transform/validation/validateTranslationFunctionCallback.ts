@@ -92,7 +92,8 @@ export function validateUseGTCallback(
  * Validate useTranslations_callback / getTranslations_callback
  * - always valid (arguments can be dynamic)
  */
-export function validateUseTranslationsCallback(callExpr: t.CallExpression): {
+// eslint-disable-next-line no-unused-vars
+export function validateUseTranslationsCallback(_callExpr: t.CallExpression): {
   errors: string[];
 } {
   const errors: string[] = [];
@@ -103,7 +104,8 @@ export function validateUseTranslationsCallback(callExpr: t.CallExpression): {
  * Validate useMessages_callback / getMessages_callback
  * - always valid
  */
-export function validateUseMessagesCallback(callExpr: t.CallExpression): {
+// eslint-disable-next-line no-unused-vars
+export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
   errors: string[];
 } {
   const errors: string[] = [];

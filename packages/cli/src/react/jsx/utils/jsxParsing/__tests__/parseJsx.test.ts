@@ -1638,7 +1638,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
     // If updates were generated, verify they have the correct structure
     if (updates.length > 0) {
-      updates.forEach(update => {
+      updates.forEach((update) => {
         expect(update.dataFormat).toBe('JSX');
         expect(Array.isArray(update.source)).toBe(true);
       });
