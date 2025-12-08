@@ -49,6 +49,70 @@ pub fn extract_attribute_from_jsx_attr(
   })
 }
 
+pub fn extract_max_chars_from_jsx_attr(
+  element: &JSXElement,
+  attribute_name: &str,
+) -> Option<i32> {
+  element.opening.attrs.iter().find_map(|attr| {
+    if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+      if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+        if ident.sym.as_ref() == attribute_name {
+          match &jsx_attr.value {
+            // Direct number literal: maxChars="42" or maxChars={42}
+            Some(JSXAttrValue::Lit(Lit::Num(num))) => {
+              if num.value.fract() == 0.0 {
+                Some(num.value.abs() as i32)
+              } else {
+                None
+              }
+            }
+            // Expression container: maxChars={42} only (no negatives)
+            Some(JSXAttrValue::JSXExprContainer(expr_container)) => {
+              match &expr_container.expr {
+                JSXExpr::Expr(expr) => match expr.as_ref() {
+                  // Integer (take absolute value): maxChars={42}
+                  Expr::Lit(Lit::Num(num)) => {
+                    if num.value.fract() == 0.0 {
+                      Some(num.value.abs() as i32)
+                    } else {
+                      None
+                    }
+                  }
+                  // Handle unary expressions: accept +42 and -42 (take absolute value)
+                  Expr::Unary(unary_expr) => {
+                    if unary_expr.op == UnaryOp::Plus || unary_expr.op == UnaryOp::Minus {
+                      if let Expr::Lit(Lit::Num(num)) = unary_expr.arg.as_ref() {
+                        if num.value.fract() == 0.0 {
+                          Some(num.value.abs() as i32)
+                        } else {
+                          None
+                        }
+                      } else {
+                        None
+                      }
+                    } else {
+                      None
+                    }
+                  }
+                  _ => None,
+                },
+                _ => None,
+              }
+            }
+            _ => None,
+          }
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    } else {
+      None
+    }
+  })
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -510,6 +574,204 @@ mod tests {
       // Should return None for non-existent
       let missing_result = extract_attribute_from_jsx_attr(&element, "missing");
       assert_eq!(missing_result, None);
+    }
+  }
+
+  mod extract_max_chars_from_jsx_attr {
+    use super::*;
+
+    // Helper to create JSX attribute with number literal value
+    fn create_number_attr(name: &str, value: f64) -> JSXAttrOrSpread {
+      JSXAttrOrSpread::JSXAttr(JSXAttr {
+        span: DUMMY_SP,
+        name: JSXAttrName::Ident(
+          Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(name),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }
+          .into(),
+        ),
+        value: Some(JSXAttrValue::Lit(Lit::Num(Number {
+          span: DUMMY_SP,
+          value,
+          raw: None,
+        }))),
+      })
+    }
+
+    // Helper to create JSX attribute with unary expression
+    fn create_unary_attr(name: &str, op: UnaryOp, value: f64) -> JSXAttrOrSpread {
+      let unary_expr = Expr::Unary(UnaryExpr {
+        span: DUMMY_SP,
+        op,
+        arg: Box::new(Expr::Lit(Lit::Num(Number {
+          span: DUMMY_SP,
+          value,
+          raw: None,
+        }))),
+      });
+      create_expr_attr(name, unary_expr)
+    }
+
+    #[test]
+    fn extracts_positive_integer_from_literal() {
+      let attrs = vec![create_number_attr("maxChars", 42.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(42));
+    }
+
+    #[test]
+    fn extracts_zero_from_literal() {
+      let attrs = vec![create_number_attr("maxChars", 0.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(0));
+    }
+
+    #[test]
+    fn converts_negative_number_literal_to_positive() {
+      let attrs = vec![create_number_attr("maxChars", -5.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(5));
+    }
+
+    #[test]
+    fn rejects_decimal_number_literal() {
+      let attrs = vec![create_number_attr("maxChars", 3.14)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn extracts_positive_integer_from_expression() {
+      let expr = Expr::Lit(Lit::Num(Number {
+        span: DUMMY_SP,
+        value: 100.0,
+        raw: None,
+      }));
+      let attrs = vec![create_expr_attr("maxChars", expr)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(100));
+    }
+
+    #[test]
+    fn converts_negative_number_from_expression_to_positive() {
+      let expr = Expr::Lit(Lit::Num(Number {
+        span: DUMMY_SP,
+        value: -10.0,
+        raw: None,
+      }));
+      let attrs = vec![create_expr_attr("maxChars", expr)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(10));
+    }
+
+    #[test]
+    fn rejects_decimal_from_expression() {
+      let expr = Expr::Lit(Lit::Num(Number {
+        span: DUMMY_SP,
+        value: 2.5,
+        raw: None,
+      }));
+      let attrs = vec![create_expr_attr("maxChars", expr)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn accepts_positive_unary_expression() {
+      let attrs = vec![create_unary_attr("maxChars", UnaryOp::Plus, 50.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(50));
+    }
+
+    #[test]
+    fn converts_negative_unary_expression_to_positive() {
+      let attrs = vec![create_unary_attr("maxChars", UnaryOp::Minus, 20.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(20));
+    }
+
+    #[test]
+    fn rejects_decimal_in_positive_unary() {
+      let attrs = vec![create_unary_attr("maxChars", UnaryOp::Plus, 1.5)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn returns_none_for_missing_attribute() {
+      let attrs = vec![create_number_attr("className", 42.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn returns_none_for_wrong_attribute_name() {
+      let attrs = vec![create_number_attr("maxChars", 42.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "minChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn handles_different_attribute_names() {
+      // Test with $maxChars
+      let attrs = vec![create_number_attr("$maxChars", 25.0)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "$maxChars");
+      assert_eq!(result, Some(25));
+    }
+
+    #[test]
+    fn rejects_string_values() {
+      let attrs = vec![create_string_attr("maxChars", "42")];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn rejects_non_number_expressions() {
+      let expr = Expr::Lit(Lit::Str(Str {
+        span: DUMMY_SP,
+        value: Atom::new("not-a-number"),
+        raw: None,
+      }));
+      let attrs = vec![create_expr_attr("maxChars", expr)];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn handles_element_with_no_attributes() {
+      let element = create_jsx_element("div", vec![]);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, None);
+    }
+
+    #[test]
+    fn extracts_first_matching_attribute() {
+      let attrs = vec![
+        create_number_attr("maxChars", 10.0),
+        create_number_attr("maxChars", 20.0), // Duplicate
+      ];
+      let element = create_jsx_element("div", attrs);
+      let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
+      assert_eq!(result, Some(10));
     }
   }
 }

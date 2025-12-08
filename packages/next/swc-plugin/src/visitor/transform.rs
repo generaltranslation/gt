@@ -172,7 +172,7 @@ impl TransformVisitor {
     let options = call_expr.args.get(1);
 
     // Get context and id
-    let (context, id) = extract_id_and_context_from_options(options);
+    let (context, id, max_chars) = extract_id_and_context_from_options(options);
 
     // Calculate hash for the call expression
     let (hash, _) = self.calculate_hash_for_call_expr(string, options);
@@ -181,7 +181,7 @@ impl TransformVisitor {
       if let Some(hash) = hash {
         // Construct the translation content object
         let translation_content =
-          StringCollector::create_translation_content(message, hash.clone(), id, context);
+          StringCollector::create_translation_content(message, hash.clone(), id, context, max_chars);
 
         // Add the translation content to the string collector
         self
@@ -355,7 +355,7 @@ impl TransformVisitor {
     }
 
     // Extract the options content
-    let (id, context) = extract_id_and_context_from_options(options);
+    let (id, context, max_chars) = extract_id_and_context_from_options(options);
 
     // Construct the json object
     use crate::hash::{SanitizedChild, SanitizedChildren, SanitizedData};
@@ -365,6 +365,7 @@ impl TransformVisitor {
       )))),
       id,
       context,
+      max_chars,
       data_format: Some("ICU".to_string()),
     };
     // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
