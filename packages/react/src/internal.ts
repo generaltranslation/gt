@@ -32,6 +32,8 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  Static,
+  declareStatic,
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/internal';
@@ -93,7 +95,13 @@ export type {
 };
 
 // Constant exports
-export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
+export {
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+  reactHasUse,
+  declareStatic,
+  Static,
+};
 
 // Function exports
 export {

@@ -103,7 +103,6 @@ export async function createInlineUpdates(
       update.metadata.hash = hash;
     })
   );
-
   return { updates, errors, warnings: [...warnings] };
 }
 

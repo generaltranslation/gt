@@ -56,11 +56,17 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     'gt-react',
     'gt-next',
   ],
-  'gt-react': ['gt-i18n', '@generaltranslation/react-core', 'gt-react'],
+  'gt-react': [
+    'gt-i18n',
+    '@generaltranslation/react-core',
+    'gt-react',
+    'gt-react-native', // allow for cross-library compatibility (gt-react/gt-react-native only)
+  ],
   'gt-react-native': [
     'gt-i18n',
     '@generaltranslation/react-core',
     'gt-react-native',
+    'gt-react', // allow for cross-library compatibility (gt-react/gt-react-native only)
   ],
   '@generaltranslation/react-core': [
     'gt-i18n',

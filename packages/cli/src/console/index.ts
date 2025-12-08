@@ -6,6 +6,7 @@ import {
   colorizeLine,
   colorizeFunctionName,
 } from './colors.js';
+import { formatCode } from './formatting.js';
 
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
@@ -14,6 +15,8 @@ const withWillErrorInNextVersion = (message: string): string =>
 const withStaticError = (message: string): string =>
   `<Static> rules violation: ${message}`;
 
+const withDeclareStaticError = (message: string): string =>
+  `declareStatic() rules violation: ${message}`;
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
@@ -230,6 +233,32 @@ export const warnRecursiveFunctionCallSync = (
     file,
     withStaticError(
       `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function cannot use recursive calls to construct its result.`
+    ),
+    location
+  );
+
+export const warnDeclareStaticNotWrappedSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeclareStaticError(
+      `Could not resolve ${colorizeFunctionName(formatCode(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    ),
+    location
+  );
+
+export const warnDeclareStaticNoResultsSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeclareStaticError(
+      `Could not resolve ${colorizeFunctionName(formatCode(functionName))}. DeclareStatic cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );

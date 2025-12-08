@@ -40,6 +40,7 @@ export enum GT_FUNCTIONS_WITH_CALLBACKS {
  */
 export enum GT_OTHER_FUNCTIONS {
   msg = 'msg',
+  declareStatic = 'declareStatic',
 }
 
 /**

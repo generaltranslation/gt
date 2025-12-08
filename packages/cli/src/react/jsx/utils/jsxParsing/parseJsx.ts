@@ -971,15 +971,20 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    const { importAliases } = getPathsAndAliases(ast, pkgs);
+    let { importAliases } = getPathsAndAliases(ast, pkgs);
 
     // Collect all imports in this file to track cross-file function calls
-    let importedFunctionsMap: Map<string, string>;
+    let importedFunctionsMap: Map<string, string> = new Map();
     traverse(ast, {
       Program(path) {
         importedFunctionsMap = buildImportMap(path);
       },
     });
+    importAliases = {
+      ...importAliases,
+      ...(importedFunctionsMap &&
+        Object.fromEntries(importedFunctionsMap.entries())),
+    };
 
     const reExports: string[] = [];
 
@@ -1375,7 +1380,7 @@ function processReturnExpression({
       );
       return null;
     }
-    // Function is found locally
+    // Function is found
     return resolveStaticFunctionInvocationFromBinding({
       importAliases,
       calleeBinding,
@@ -1409,7 +1414,7 @@ function processReturnExpression({
       );
       return null;
     }
-    // Function is found locally
+    // Function is found
     return resolveStaticFunctionInvocationFromBinding({
       importAliases,
       calleeBinding,
