@@ -57,7 +57,7 @@ export default function useCreateInternalUseTranslationsFunction(
       // Get entry and metadata
       const { entry, metadata } = getEntryAndMetadata(value);
 
-      // ----- SET UP ----- //w
+      // ----- SET UP ----- //
 
       // Check: reject invalid content
       if (!entry || typeof entry !== 'string') return '';
