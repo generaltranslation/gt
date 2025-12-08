@@ -12,6 +12,7 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   context?: string;
   hash?: string;
   id?: string;
+  maxChars?: number;
 } {
   const errors: string[] = [];
 
@@ -47,30 +48,41 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   // Validate second argument
   let context: string | undefined;
   let id: string | undefined;
+  let maxChars: number | undefined;
   let hash: string | undefined;
   if (callExpr.arguments.length === 1) return { errors, content };
   if (t.isObjectExpression(callExpr.arguments[1])) {
     const contextProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
-      USEGT_CALLBACK_OPTIONS.$context
+      USEGT_CALLBACK_OPTIONS.$context,
+      'string'
     );
     errors.push(...contextProperty.errors);
     context = contextProperty.value;
     const idProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
-      USEGT_CALLBACK_OPTIONS.$id
+      USEGT_CALLBACK_OPTIONS.$id,
+      'string'
     );
     errors.push(...idProperty.errors);
     id = idProperty.value;
+    const maxCharsProperty = validatePropertyFromObjectExpression(
+      callExpr.arguments[1],
+      USEGT_CALLBACK_OPTIONS.$maxChars,
+      'number'
+    );
+    errors.push(...maxCharsProperty.errors);
+    maxChars = maxCharsProperty.value;
     const hashProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
-      USEGT_CALLBACK_OPTIONS.$_hash
+      USEGT_CALLBACK_OPTIONS.$_hash,
+      'string'
     );
     errors.push(...hashProperty.errors);
     hash = hashProperty.value;
   }
 
-  return { errors, content, context, id, hash };
+  return { errors, content, context, id, hash, maxChars };
 }
 
 /**
@@ -107,9 +119,20 @@ export function validateUseMessagesCallback(callExpr: t.CallExpression): {
  */
 function validatePropertyFromObjectExpression(
   objExpr: t.ObjectExpression,
-  name: string
-): { errors: string[]; value?: string } {
-  const result: { errors: string[]; value?: string } = { errors: [] };
+  name: string,
+  type: 'string'
+): { errors: string[]; value?: string };
+function validatePropertyFromObjectExpression(
+  objExpr: t.ObjectExpression,
+  name: string,
+  type: 'number'
+): { errors: string[]; value?: number };
+function validatePropertyFromObjectExpression(
+  objExpr: t.ObjectExpression,
+  name: string,
+  type: 'string' | 'number'
+): { errors: string[]; value?: string | number } {
+  const result: { errors: string[]; value?: string | number } = { errors: [] };
   let value: t.ObjectProperty | undefined;
   for (const property of objExpr.properties) {
     if (!t.isObjectProperty(property)) {
@@ -133,13 +156,16 @@ function validatePropertyFromObjectExpression(
   // validate value
   if (!t.isExpression(value.value)) {
     result.errors.push(
-      `useGT_callback / getGT_callback must have a string literal for its ${name} field. Variable content is not allowed.`
+      `useGT_callback / getGT_callback must have a static for its ${name} field. Variable content is not allowed.`
     );
     return result;
   }
 
   // extract value
-  const validatedValue = validateExpressionIsStringLiteral(value.value);
+  const validatedValue =
+    type === 'string'
+      ? validateExpressionIsStringLiteral(value.value)
+      : validateExpressionIsNumericLiteral(value.value);
   result.errors.push(...validatedValue.errors);
   result.value = validatedValue.value;
 
@@ -160,4 +186,32 @@ function validateExpressionIsStringLiteral(expr: t.Expression): {
     return { errors: [], value: expr.quasis[0]?.value.cooked };
   }
   return { errors: ['Expression is not a string literal'] };
+}
+
+/**
+ * Validate that an expression is a number literal
+ */
+function validateExpressionIsNumericLiteral(expr: t.Expression): {
+  errors: string[];
+  value?: number;
+} {
+  let candidateValue: number | undefined;
+  if (t.isNumericLiteral(expr)) {
+    candidateValue = expr.value;
+  } else if (t.isUnaryExpression(expr) && t.isNumericLiteral(expr.argument)) {
+    // Note: taking the absolute value of the number literal
+    candidateValue = expr.argument.value;
+  }
+
+  // validate is integer
+  if (candidateValue !== undefined && !Number.isInteger(candidateValue)) {
+    return { errors: ['Expression is not an integer'] };
+  }
+
+  // no value found
+  if (candidateValue === undefined) {
+    return { errors: ['Expression is not a number literal'] };
+  }
+
+  return { errors: [], value: candidateValue };
 }
