@@ -31,6 +31,7 @@ import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
+import { isNumberLiteral } from './isNumberLiteral.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -137,11 +138,10 @@ function processTranslationCall(
                 const mappedKey = mapAttributeName(attribute);
                 if (attribute === '$maxChars') {
                   if (
-                    typeof result.value === 'string' &&
-                    (isNaN(Number(result.value)) ||
-                      !t.isNumericLiteral(prop.value) ||
-                      Number(result.value) < 0 ||
-                      !Number.isInteger(Number(result.value)))
+                    (typeof result.value === 'string' &&
+                      (isNaN(Number(result.value)) ||
+                        !isNumberLiteral(prop.value))) ||
+                    !Number.isInteger(Number(result.value))
                   ) {
                     errors.push(
                       warnInvalidMaxCharsSync(
@@ -152,7 +152,7 @@ function processTranslationCall(
                     );
                   } else if (typeof result.value === 'string') {
                     // Add the maxChars value to the metadata
-                    metadata[mappedKey] = Number(result.value);
+                    metadata[mappedKey] = Math.abs(Number(result.value));
                   }
                 } else {
                   // Add the $context or $id or other attributes value to the metadata

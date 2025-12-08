@@ -81,9 +81,7 @@ export async function createDictionaryUpdates(
     // Validate maxChars
     if (
       props?.$maxChars &&
-      (isNaN(props.$maxChars) ||
-        props.$maxChars < 0 ||
-        !Number.isInteger(props.$maxChars))
+      (isNaN(props.$maxChars) || !Number.isInteger(props.$maxChars))
     ) {
       errors.push(
         warnInvalidMaxCharsSync(dictionaryPath, String(props.$maxChars), id)
@@ -97,7 +95,7 @@ export async function createDictionaryUpdates(
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
-      ...(maxChars && { maxChars }),
+      ...(maxChars && { maxChars: Math.abs(maxChars) }),
       // This hash isn't actually used by the GT API, just for consistency sake
       hash: hashSource({
         source: entry,

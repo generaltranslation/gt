@@ -10,6 +10,7 @@ import {
   warnInvalidMaxCharsSync,
   warnVariablePropSync,
 } from '../../../../console/index.js';
+import { isNumberLiteral } from '../isNumberLiteral.js';
 
 // Parse the props of a <T> component
 export function parseTProps({
@@ -60,8 +61,7 @@ export function parseTProps({
               if (
                 typeof staticAnalysis.value === 'string' &&
                 (isNaN(Number(staticAnalysis.value)) ||
-                  !t.isNumericLiteral(expr) ||
-                  Number(staticAnalysis.value) < 0 ||
+                  (t.isExpression(expr) && !isNumberLiteral(expr)) ||
                   !Number.isInteger(Number(staticAnalysis.value)))
               ) {
                 componentErrors.push(
@@ -73,8 +73,8 @@ export function parseTProps({
                 );
               } else {
                 // Add the maxChars value to the metadata
-                metadata[mapAttributeName(attrName)] = Number(
-                  staticAnalysis.value
+                metadata[mapAttributeName(attrName)] = Math.abs(
+                  Number(staticAnalysis.value)
                 );
               }
             } else {
