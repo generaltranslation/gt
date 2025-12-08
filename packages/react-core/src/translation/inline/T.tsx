@@ -101,7 +101,7 @@ function T({
     const hash: string = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
-      ...(maxChars && { maxChars }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -176,7 +176,7 @@ function T({
           id,
           hash,
           context,
-          maxChars,
+          ...(maxChars != null && { maxChars }),
         },
       });
       if (!translatedChildren) return renderDefault();

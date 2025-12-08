@@ -154,7 +154,7 @@ export default function useCreateInternalUseGTFunction({
       hashSource({
         source: message,
         ...(context && { context }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
@@ -237,7 +237,7 @@ export default function useCreateInternalUseGTFunction({
         metadata: {
           ...(context && { context }),
           ...(id && { id }),
-          ...(maxChars && { maxChars }),
+          ...(maxChars != null && { maxChars }),
           hash,
         },
       });
@@ -305,7 +305,7 @@ export default function useCreateInternalUseGTFunction({
       metadata: {
         ...(context && { context }),
         ...(id && { id }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars }),
         hash: hash || '',
       },
     });
@@ -402,7 +402,7 @@ export default function useCreateInternalUseGTFunction({
       targetLocale: locale,
       metadata: {
         ...(context && { context }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars }),
         hash: $_hash,
       },
     });

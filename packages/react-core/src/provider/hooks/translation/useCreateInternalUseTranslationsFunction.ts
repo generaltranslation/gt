@@ -136,7 +136,9 @@ export default function useCreateInternalUseTranslationsFunction(
         hashSource({
           source: entry,
           ...(metadata?.$context && { context: metadata.$context }),
-          ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
+          ...(metadata?.$maxChars != null && {
+            maxChars: Math.abs(metadata.$maxChars),
+          }),
           id,
           dataFormat: 'ICU',
         });
@@ -172,7 +174,9 @@ export default function useCreateInternalUseTranslationsFunction(
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),
-          ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
+          ...(metadata?.$maxChars != null && {
+            maxChars: metadata.$maxChars,
+          }),
           id,
           hash: hash || getHash(),
         },
