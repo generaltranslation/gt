@@ -14,8 +14,10 @@ import {
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
+import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
+const generate = generateModule.default || generateModule;
 
 // Nested arrays of strings (deprecated - kept for backwards compatibility)
 export type StringTree = (string | StringTree)[];
@@ -72,10 +74,14 @@ export function handleStaticExpression(
     }
 
     // Call has no results
+    const code =
+      expr.arguments.length > 0
+        ? generate(expr.arguments[0]).code
+        : 'no arguments';
     errors.push(
       warnDeclareStaticNoResultsSync(
         file,
-        expr.arguments.length > 0 ? expr.arguments[0].toString() : 'no arguments',
+        code,
         `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
       )
     );
@@ -220,10 +226,14 @@ export function getDeclareStaticVariants(
 ): string[] | null {
   // Must be declareStatic(...) or an alias of it
   if (!t.isIdentifier(call.callee)) {
+    const code =
+      call.arguments.length > 0
+        ? generate(call.arguments[0]).code
+        : 'no arguments';
     errors.push(
       warnDeclareStaticNotWrappedSync(
         file,
-        call.arguments.length > 0 ? call.arguments[0].toString() : 'no arguments',
+        code,
         `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
       )
     );
