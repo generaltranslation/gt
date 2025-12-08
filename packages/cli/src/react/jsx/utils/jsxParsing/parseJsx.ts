@@ -151,6 +151,7 @@ export function buildJSXTree({
   scopeNode,
   importedFunctionsMap,
   pkgs,
+  inStatic,
 }: {
   importAliases: Record<string, string>;
   node: any;
@@ -166,6 +167,7 @@ export function buildJSXTree({
   scopeNode: NodePath;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  inStatic: boolean;
 }): JsxTree {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -190,6 +192,7 @@ export function buildJSXTree({
         scopeNode,
         importedFunctionsMap,
         pkgs,
+        inStatic,
       });
     }
 
@@ -201,6 +204,28 @@ export function buildJSXTree({
         result: staticAnalysis.value,
       };
     }
+
+    // Static children are bound by slightly different rules
+    if (inStatic) {
+      return buildJSXTree({
+        importAliases,
+        node: expr,
+        unwrappedExpressions,
+        visited,
+        callStack,
+        updates,
+        errors: errors,
+        warnings: warnings,
+        file,
+        insideT,
+        parsingOptions,
+        scopeNode,
+        importedFunctionsMap,
+        pkgs,
+        inStatic,
+      });
+    }
+
     // Keep existing behavior for non-static expressions
     const code = generate(node).code;
     unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
@@ -305,6 +330,7 @@ export function buildJSXTree({
                 scopeNode,
                 importedFunctionsMap,
                 pkgs,
+                inStatic,
               });
             }
           }
@@ -318,34 +344,41 @@ export function buildJSXTree({
         if (visited === null) {
           visited = new Set();
         }
-        return resolveStaticComponentChildren({
+        return buildJSXTree({
           importAliases,
-          scopeNode,
-          children: element.children,
+          node: element,
           unwrappedExpressions,
           visited,
+          callStack,
           updates,
           errors,
           warnings,
           file,
-          callStack,
+          insideT: true,
           parsingOptions,
+          scopeNode,
           importedFunctionsMap,
           pkgs,
-          props,
+          inStatic: true,
         });
+        // return resolveStaticComponentChildren({
+        //   importAliases,
+        //   scopeNode,
+        //   children: element.children,
+        //   unwrappedExpressions,
+        //   visited,
+        //   updates,
+        //   errors,
+        //   warnings,
+        //   file,
+        //   callStack,
+        //   parsingOptions,
+        //   importedFunctionsMap,
+        //   pkgs,
+        //   props,
+        // });
       }
 
-      // I do not see why this is being called, i am disabling this for now:
-      // parseJSXElement({
-      //   importAliases,
-      //   node: element,
-      //   updates,
-      //   errors,
-      //   warnings,
-      //   file,
-      //   parsingOptions,
-      // });
       return {
         nodeType: 'element',
         // if componentType is undefined, use typeName
@@ -372,6 +405,7 @@ export function buildJSXTree({
           scopeNode,
           importedFunctionsMap,
           pkgs,
+          inStatic,
         })
       )
       .filter((child) => child !== null && child !== '');
@@ -409,6 +443,7 @@ export function buildJSXTree({
           scopeNode,
           importedFunctionsMap,
           pkgs,
+          inStatic,
         })
       )
       .filter((child: any) => child !== null && child !== '');
@@ -544,6 +579,7 @@ export function parseJSXElement({
     insideT: false,
     parsingOptions,
     importedFunctionsMap,
+    inStatic: false,
   });
 
   // Strip the outer <T> component if necessary
@@ -610,6 +646,7 @@ export function parseJSXElement({
 }
 
 /**
+ * Entry point for Static children
  * Resolves an invocation inside of a <Static> component. It will resolve the function, and build
  * a jsx tree for each return inside of the function definition.
  *
@@ -1450,6 +1487,7 @@ function processReturnExpression({
       scopeNode,
       importedFunctionsMap,
       pkgs,
+      inStatic: true,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1495,6 +1533,7 @@ function processReturnExpression({
       scopeNode,
       importedFunctionsMap,
       pkgs,
+      inStatic: true,
     });
   }
 }
