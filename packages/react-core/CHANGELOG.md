@@ -1,5 +1,18 @@
 # @generaltranslation/react-core
 
+## 1.3.0
+
+### Minor Changes
+
+- [#859](https://github.com/generaltranslation/gt/pull/859) [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: max chars
+
+### Patch Changes
+
+- Updated dependencies [[`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab), [`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - gt-i18n@0.2.0
+  - generaltranslation@8.1.1
+  - @generaltranslation/supported-locales@2.0.31
+
 ## 1.2.7
 
 ### Patch Changes
