@@ -92,7 +92,7 @@ async function Tx({
   const hash = hashSource({
     source: childrenAsObjects,
     ...(context && { context }),
-    ...(maxChars && { maxChars }),
+    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: 'JSX',
   });
 

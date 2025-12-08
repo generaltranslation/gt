@@ -115,7 +115,7 @@ async function T({
     hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
-      ...(maxChars && { maxChars }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -167,7 +167,7 @@ async function T({
         hashSource({
           source: childrenAsObjects,
           ...(context && { context }),
-          ...(maxChars && { maxChars }),
+          ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
           ...(id && { id }),
           dataFormat: 'JSX',
         });

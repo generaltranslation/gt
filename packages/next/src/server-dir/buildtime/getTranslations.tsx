@@ -209,7 +209,9 @@ export async function getTranslations(id?: string): Promise<
       const hash = hashSource({
         source: entry,
         ...(metadata?.$context && { context: metadata.$context }),
-        ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
+        ...(metadata?.$maxChars != null && {
+          maxChars: Math.abs(metadata.$maxChars),
+        }),
         id,
         dataFormat: 'ICU',
       });

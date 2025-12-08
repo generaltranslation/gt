@@ -1,4 +1,3 @@
-import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
@@ -82,7 +81,7 @@ export default async function tx(
   const hash = hashSource({
     source: message,
     ...(context && { context }),
-    ...(maxChars && { maxChars }),
+    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: 'ICU',
   });
 

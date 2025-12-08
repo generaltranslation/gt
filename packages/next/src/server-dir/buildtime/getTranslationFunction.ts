@@ -162,7 +162,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       hashSource({
         source: message,
         ...(context && { context }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
