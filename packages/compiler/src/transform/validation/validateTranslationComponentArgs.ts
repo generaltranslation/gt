@@ -6,6 +6,7 @@ import { validateExpressionIsStringLiteral } from '../../utils/validation/valida
 import { JsxChildren } from 'generaltranslation/types';
 import { constructJsxChildren } from '../jsx-children';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
+import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
 /**
  * Given a translation component, validate the arguments
  */
@@ -18,6 +19,7 @@ export function validateTranslationComponentArgs(
   _hash?: string;
   id?: string;
   context?: string;
+  maxChars?: number;
   children?: JsxChildren;
 } {
   // Check that there are at least 2 arguments (identifier, args)
@@ -61,6 +63,7 @@ function validateTComponentArgs(
   _hash?: string;
   id?: string;
   context?: string;
+  maxChars?: number;
   children?: JsxChildren;
 } {
   const errors: string[] = [];
@@ -75,6 +78,11 @@ function validateTComponentArgs(
   errors.push(...contextValidation.errors);
   const context = contextValidation.value;
 
+  // Validate maxChars
+  const maxCharsValidation = validateNumberProperty(args, 'maxChars');
+  errors.push(...maxCharsValidation.errors);
+  const maxChars = maxCharsValidation.value;
+
   // Validate hash
   const hashValidation = validateStringProperty(args, '_hash');
   errors.push(...hashValidation.errors);
@@ -85,7 +93,7 @@ function validateTComponentArgs(
   errors.push(...childrenValidation.errors);
   const children = childrenValidation.value;
 
-  return { errors, id, context, _hash, children };
+  return { errors, id, context, _hash, maxChars, children };
 }
 
 /**
@@ -119,6 +127,8 @@ export function validateChildrenProperty(
 
   return { errors, value };
 }
+
+// String Literal Functions
 
 /**
  * Will validate and retrieve property from object expression and also try prefixing with a $
@@ -192,4 +202,95 @@ function getStringLiteralFromExpression(
       return expr.quasis[0]?.value.cooked || '';
     }
   }
+}
+
+// Number Literal Functions
+
+/**
+ * Will validate and retrieve property from object expression and also try prefixing with a $
+ */
+function validateNumberProperty(
+  args: t.ObjectExpression,
+  name: string
+): {
+  errors: string[];
+  value?: number;
+} {
+  const errors: string[] = [];
+
+  // Get the property
+  const property =
+    getObjectPropertyFromObjectExpression(args, name) ||
+    getObjectPropertyFromObjectExpression(args, '$' + name);
+  if (!property) {
+    return { errors };
+  }
+
+  // Validate property
+  const validation = validateObjectPropertyIsNumberLiteral(property, name);
+  errors.push(...validation.errors);
+  const value = validation.value;
+
+  return { errors, value };
+}
+
+/**
+ * Validate that an object property is a number literal
+ */
+function validateObjectPropertyIsNumberLiteral(
+  arg: t.SpreadElement | t.ObjectMethod | t.ObjectProperty,
+  name: string
+): {
+  errors: string[];
+  value?: number;
+} {
+  const errors: string[] = [];
+
+  // Validate the property is a string literal from an expression
+  if (
+    !t.isObjectProperty(arg) ||
+    !t.isExpression(arg.value) ||
+    !validateExpressionIsNumericLiteral(arg.value)
+  ) {
+    errors.push(
+      `The <${GT_COMPONENT_TYPES.T}> component must have a number literal in its ${name} field`
+    );
+    return { errors };
+  }
+
+  // Get the number literal
+  const value = getNumberLiteralFromExpression(arg.value);
+
+  // Validate it is an integer
+  if (value !== undefined && !validateNumberLiteralIsInteger(value)) {
+    errors.push(
+      `The <${GT_COMPONENT_TYPES.T}> component must have an integer in its ${name} field`
+    );
+    return { errors };
+  }
+
+  return { errors, value };
+}
+
+/**
+ * Given an expression, return the number literal (throws an error if not a number literal)
+ */
+function getNumberLiteralFromExpression(
+  expr: t.Expression
+): number | undefined {
+  if (t.isNumericLiteral(expr)) {
+    return expr.value;
+  }
+  // handle numbers with unary operators
+  if (t.isUnaryExpression(expr) && t.isNumericLiteral(expr.argument)) {
+    // On purpose, we are taking the absolute value of the number literal
+    return expr.argument.value;
+  }
+}
+
+/**
+ * Validate that a number literal is an integer
+ */
+function validateNumberLiteralIsInteger(value: number): boolean {
+  return Number.isInteger(value);
 }

@@ -24,6 +24,9 @@ export function injectHashes(
         metadata.$_hash = hashSource({
           source: entry,
           ...(metadata?.$context && { context: metadata.$context }),
+          ...(metadata?.$maxChars != null && {
+            maxChars: Math.abs(metadata.$maxChars),
+          }),
           id: wholeId,
           dataFormat: 'ICU',
         });

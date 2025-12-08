@@ -22,6 +22,7 @@ type RenderMessageParams = {
   locales: string[];
   fallback?: string;
   id?: string;
+  maxChars?: number;
 };
 
 export default function useCreateInternalUseGTFunction({
@@ -72,13 +73,17 @@ export default function useCreateInternalUseGTFunction({
     locales,
     fallback,
     id,
+    maxChars,
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
-      return gt.formatMessage(message, {
+      const formattedMessage = gt.formatMessage(message, {
         locales,
         variables,
       });
+      // Apply cutoff formatting
+      const cutoffMessage = gt.formatCutoff(formattedMessage, { maxChars });
+      return cutoffMessage;
     } catch (error) {
       if (environment === 'production') {
         console.warn(createStringRenderWarning(message, id), 'Error: ', error);
@@ -99,11 +104,13 @@ export default function useCreateInternalUseGTFunction({
           locales,
           variables,
           id,
+          maxChars,
         });
       }
 
       // (3) Fallback to original message (unformatted)
-      return message; // fallback to original message (unformatted)
+      const cutoffMessage = gt.formatCutoff(message, { maxChars });
+      return cutoffMessage; // fallback to original message (unformatted)
     }
   }
 
@@ -111,13 +118,20 @@ export default function useCreateInternalUseGTFunction({
     message: string,
     options: Record<string, any> & {
       $context?: string;
+      $maxChars?: number;
       $id?: string;
       $_hash?: string;
     } = {}
   ) {
     if (!message || typeof message !== 'string') return null;
 
-    const { $id: id, $context: context, $_hash: _hash, ...variables } = options;
+    const {
+      $id: id,
+      $context: context,
+      $maxChars: maxChars,
+      $_hash: _hash,
+      ...variables
+    } = options;
 
     // Update renderContent to use actual variables
     const renderMessage = (
@@ -131,6 +145,7 @@ export default function useCreateInternalUseGTFunction({
         variables,
         id,
         fallback,
+        maxChars,
       });
     };
 
@@ -139,6 +154,7 @@ export default function useCreateInternalUseGTFunction({
       hashSource({
         source: message,
         ...(context && { context }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
@@ -146,6 +162,7 @@ export default function useCreateInternalUseGTFunction({
     return {
       id,
       context,
+      maxChars,
       _hash,
       variables,
       calculateHash,
@@ -202,7 +219,7 @@ export default function useCreateInternalUseGTFunction({
       // Setup
       const init = initializeT(message, options);
       if (!init) return;
-      const { id, context, _hash, calculateHash } = init;
+      const { id, context, maxChars, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
@@ -220,6 +237,7 @@ export default function useCreateInternalUseGTFunction({
         metadata: {
           ...(context && { context }),
           ...(id && { id }),
+          ...(maxChars != null && { maxChars }),
           hash,
         },
       });
@@ -236,7 +254,7 @@ export default function useCreateInternalUseGTFunction({
     // ----- SET UP ----- //
     const init = initializeT(message, options);
     if (!init) return '';
-    const { id, context, _hash, calculateHash, renderMessage } = init;
+    const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
 
     // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
     // Check: translation required
@@ -287,6 +305,7 @@ export default function useCreateInternalUseGTFunction({
       metadata: {
         ...(context && { context }),
         ...(id && { id }),
+        ...(maxChars != null && { maxChars }),
         hash: hash || '',
       },
     });
@@ -313,9 +332,17 @@ export default function useCreateInternalUseGTFunction({
 
     // Disaggregate options and construct render function
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const { $_hash, $_source, $context, $hash, $id, ...decodedVariables } =
-      decodedOptions;
+    const {
+      $_hash,
+      $_source,
+      $context: context,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      $hash,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      $id,
+      $maxChars: maxChars,
+      ...decodedVariables
+    } = decodedOptions;
 
     const renderMessage = (
       msg: string,
@@ -327,6 +354,7 @@ export default function useCreateInternalUseGTFunction({
         locales,
         variables: decodedVariables,
         fallback,
+        maxChars,
       });
     };
 
@@ -373,7 +401,8 @@ export default function useCreateInternalUseGTFunction({
       source: $_source,
       targetLocale: locale,
       metadata: {
-        ...($context && { context: $context }),
+        ...(context && { context }),
+        ...(maxChars != null && { maxChars }),
         hash: $_hash,
       },
     });

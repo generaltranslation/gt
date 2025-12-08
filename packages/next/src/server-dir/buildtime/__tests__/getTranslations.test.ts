@@ -88,6 +88,7 @@ vi.mock('generaltranslation', () => ({
     resolveAliasLocale: vi.fn((locale) => locale),
     isValidLocale: vi.fn(() => true),
     formatMessage: mockFormatMessage, // Use the same mock function
+    formatCutoff: vi.fn((value) => value), // Add formatCutoff mock here too
   })),
   getLocaleProperties: vi.fn(),
   determineLocale: vi.fn(
@@ -149,6 +150,7 @@ describe('getTranslations', () => {
       setDictionaryTranslations: vi.fn(),
       getGTClass: vi.fn(() => ({
         formatMessage: mockFormatMessage,
+        formatCutoff: vi.fn((value) => value), // Add formatCutoff mock
         determineLocale: vi.fn(
           (preferred, available) => preferred[0] || available[0]
         ),

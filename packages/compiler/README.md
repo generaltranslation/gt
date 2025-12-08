@@ -44,7 +44,7 @@ const dynamic = gt(isError ? errorMsg : successMsg);
 // ✅ Correct usage
 const msg = gt('Hello world!');
 const welcome = gt('Welcome to our app');
-const error = gt('Something went wrong', { context: 'error' });
+const error = gt('Something went wrong', { $context: 'error' });
 ```
 
 ### 2. Compile-Time Hash Generation

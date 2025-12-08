@@ -54,7 +54,7 @@ export function hashSource(
     ...sanitizedData,
     ...(id && { id }),
     ...(context && { context }),
-    ...(maxChars && { maxChars }),
+    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
   };
   const stringifiedData = stringify(sanitizedData);
   return hashFunction(stringifiedData);

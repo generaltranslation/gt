@@ -25,6 +25,7 @@ import { GT } from 'generaltranslation';
 type TranslationRequestMetadata = {
   hash: string;
   context?: string;
+  maxChars?: number;
   [attr: string]: any;
 };
 
@@ -338,14 +339,24 @@ export default function useRuntimeTranslation({
               ? {
                   dataFormat: 'JSX',
                   source: params.source as JsxChildren,
-                  metadata: params.metadata,
+                  metadata: {
+                    ...params.metadata,
+                    ...(params.metadata.maxChars != null && {
+                      maxChars: Math.abs(params.metadata.maxChars),
+                    }),
+                  },
                   resolve,
                   reject: () => {}, // no-op; we no longer reject
                 }
               : {
                   dataFormat: 'ICU',
                   source: params.source as string,
-                  metadata: params.metadata,
+                  metadata: {
+                    ...params.metadata,
+                    ...(params.metadata.maxChars != null && {
+                      maxChars: Math.abs(params.metadata.maxChars),
+                    }),
+                  },
                   resolve,
                   reject: () => {}, // no-op; we no longer reject
                 };
