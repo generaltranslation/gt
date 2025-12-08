@@ -93,11 +93,13 @@ export async function createInlineUpdates(
   // Post-process to add a hash to each update
   await Promise.all(
     updates.map(async (update) => {
-      const context = update.metadata.context;
       const hash = hashSource({
         source: update.source,
-        ...(context && { context }),
+        ...(update.metadata.context && { context: update.metadata.context }),
         ...(update.metadata.id && { id: update.metadata.id }),
+        ...(update.metadata.maxChars != null && {
+          maxChars: update.metadata.maxChars,
+        }),
         dataFormat: update.dataFormat,
       });
       update.metadata.hash = hash;

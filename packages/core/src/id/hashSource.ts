@@ -25,6 +25,7 @@ export function hashString(string: string): string {
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} context - The context for the children
  * @param {string} id - The id for the JSX Children object
+ * @param {number} maxChars - The maxChars for the JSX Children object
  * @param {string} dataFormat - The data format of the sources
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.

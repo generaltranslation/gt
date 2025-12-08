@@ -10,11 +10,15 @@ import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
 import { logger } from '../../console/logger.js';
 import { randomUUID } from 'node:crypto';
 import { isValidIcu } from '../jsx/evaluateJsx.js';
-import { warnInvalidIcuSync } from '../../console/index.js';
+import {
+  warnInvalidIcuSync,
+  warnInvalidMaxCharsSync,
+} from '../../console/index.js';
 import { exitSync } from '../../console/logging.js';
 
 export async function createDictionaryUpdates(
   dictionaryPath: string,
+  errors: string[],
   warnings: string[],
   esbuildConfig?: BuildOptions
 ): Promise<Updates> {
@@ -74,16 +78,30 @@ export async function createDictionaryUpdates(
       continue;
     }
 
+    // Validate maxChars
+    if (
+      props?.$maxChars &&
+      (isNaN(props.$maxChars) || !Number.isInteger(props.$maxChars))
+    ) {
+      errors.push(
+        warnInvalidMaxCharsSync(dictionaryPath, String(props.$maxChars), id)
+      );
+      continue;
+    }
+
     // Map $context to context
     const context = props?.$context;
+    const maxChars = props?.$maxChars;
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       // This hash isn't actually used by the GT API, just for consistency sake
       hash: hashSource({
         source: entry,
         ...(context && { context }),
         ...(id && { id }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         dataFormat: 'ICU',
       }),
     };
