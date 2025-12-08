@@ -1,5 +1,24 @@
 # gtx-cli
 
+## 2.5.23
+
+### Patch Changes
+
+- Updated dependencies [[`3e8ceb4`](https://github.com/generaltranslation/gt/commit/3e8ceb4526530d38eae469b05e8bf273d5ca05ac)]:
+  - generaltranslation@8.1.0
+
+## 2.5.22
+
+### Patch Changes
+
+- [#870](https://github.com/generaltranslation/gt/pull/870) [`4291258`](https://github.com/generaltranslation/gt/commit/42912587a51da045c0b578ac71699fda4a8fcc26) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Persist style of YAML frontmatter when applying Mintlify OpenAPI postprocessing
+
+## 2.5.21
+
+### Patch Changes
+
+- [#868](https://github.com/generaltranslation/gt/pull/868) [`34499ce`](https://github.com/generaltranslation/gt/commit/34499ce8407d4b96dea1b4db7a92225e8118fc56) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Removing `"openapi"` top level config, adding as option under `"options.mintlify.openapi"`. Also adding a `jsonSchema` preset for `openapi`.
+
 ## 2.5.20
 
 ### Patch Changes

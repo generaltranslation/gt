@@ -1,7 +1,15 @@
 import { JsonSchema, YamlSchema } from '../types/index.js';
 
 export function generatePreset(
-  preset: string,
+  preset: JsonSchema['preset'],
+  type: 'json'
+): JsonSchema;
+export function generatePreset(
+  preset: YamlSchema['preset'],
+  type: 'yaml'
+): YamlSchema;
+export function generatePreset(
+  preset: string | undefined,
   type: 'json' | 'yaml'
 ): JsonSchema | YamlSchema {
   if (type === 'json') {
@@ -43,6 +51,10 @@ export function generatePreset(
               },
             },
           },
+        };
+      case 'openapi':
+        return {
+          include: ['$..summary', '$..description'],
         };
       default:
         return {};

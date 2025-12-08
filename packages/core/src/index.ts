@@ -13,6 +13,7 @@ import {
   _formatDateTime,
   _formatMessage,
   _formatListToParts,
+  _formatCutoff,
 } from './formatting/format';
 import {
   Content,
@@ -100,6 +101,7 @@ import type {
 } from './translate/createBranch';
 import _createBranch from './translate/createBranch';
 import type { FileReference } from './types-dir/api/file';
+import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -1027,6 +1029,47 @@ export class GT {
   // -------------- Formatting -------------- //
 
   /**
+   * Formats a string with cutoff behavior, applying a terminator when the string exceeds the maximum character limit.
+   *
+   * This method uses the GT instance's rendering locales by default for locale-specific terminator selection,
+   * but can be overridden with custom locales in the options.
+   *
+   * @param {string} value - The string value to format with cutoff behavior.
+   * @param {Object} [options] - Configuration options for cutoff formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for terminator selection. Defaults to instance's rendering locales.
+   * @param {number} [options.maxChars] - The maximum number of characters to display.
+   * - Undefined values are treated as no cutoff.
+   * - Negative values follow .slice() behavior and terminator will be added before the value.
+   * - 0 will result in an empty string.
+   * - If cutoff results in an empty string, no terminator is added.
+   * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
+   * @param {string} [options.terminator] - Optional override the terminator to use.
+   * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
+   * - If no terminator is provided, then separator is ignored.
+   * @returns {string} The formatted string with terminator applied if cutoff occurs.
+   *
+   * @example
+   * const gt = new GT({ targetLocale: 'en-US' });
+   * gt.formatCutoff('Hello, world!', { maxChars: 8 });
+   * // Returns: 'Hello, w...'
+   *
+   * @example
+   * gt.formatCutoff('Hello, world!', { maxChars: -3 });
+   * // Returns: '...ld!'
+   */
+  formatCutoff(
+    value: string,
+    options?: {
+      locales?: string | string[];
+    } & CutoffFormatOptions
+  ): string {
+    return formatCutoff(value, {
+      locales: this._renderingLocales,
+      ...options,
+    });
+  }
+
+  /**
    * Formats a message according to the specified locales and options.
    *
    * @param {string} message - The message to format.
@@ -1546,6 +1589,52 @@ export class GT {
 // ============================================================ //
 
 // -------------- Formatting -------------- //
+
+/**
+ * Formats a string with cutoff behavior, applying a terminator when the string exceeds the maximum character limit.
+ *
+ * This standalone function provides cutoff formatting functionality without requiring a GT instance.
+ * The locales parameter is required for proper terminator selection based on the target language.
+ *
+ * @param {string} value - The string value to format with cutoff behavior.
+ * @param {Object} [options] - Configuration options for cutoff formatting.
+ * @param {string | string[]} [options.locales] - The locales to use for terminator selection.
+ * @param {number} [options.maxChars] - The maximum number of characters to display.
+ * - Undefined values are treated as no cutoff.
+ * - Negative values follow .slice() behavior and terminator will be added before the value.
+ * - 0 will result in an empty string.
+ * - If cutoff results in an empty string, no terminator is added.
+ * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
+ * @param {string} [options.terminator] - Optional override the terminator to use.
+ * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
+ * - If no terminator is provided, then separator is ignored.
+ * @returns {string} The formatted string with terminator applied if cutoff occurs.
+ *
+ * @example
+ * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: 8 });
+ * // Returns: 'Hello, w...'
+ *
+ * @example
+ * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: -3 });
+ * // Returns: '...ld!'
+ *
+ * @example
+ * formatCutoff('Very long text that needs cutting', {
+ *   locales: 'en-US',
+ *   maxChars: 15,
+ *   style: 'ellipsis',
+ *   separator: ' '
+ * });
+ * // Returns: 'Very long text ...'
+ */
+export function formatCutoff(
+  value: string,
+  options?: {
+    locales?: string | string[];
+  } & CutoffFormatOptions
+): string {
+  return _formatCutoff({ value, locales: options?.locales, options });
+}
 
 /**
  * Formats a message according to the specified locales and options.

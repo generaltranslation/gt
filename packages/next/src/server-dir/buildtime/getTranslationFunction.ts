@@ -27,6 +27,7 @@ type RenderMessageParams = {
   locales: string[];
   fallback?: string;
   id?: string;
+  maxChars?: number;
 };
 
 type InitResult = {
@@ -82,13 +83,19 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     locales,
     fallback,
     id,
+    maxChars,
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
-      return gt.formatMessage(message, {
+      const formattedMessage = gt.formatMessage(message, {
         locales,
         variables,
       });
+      const cutoffMessage = gt.formatCutoff(formattedMessage, {
+        locales,
+        maxChars,
+      });
+      return cutoffMessage;
     } catch (error) {
       if (process.env.NODE_ENV === 'production') {
         console.warn(createStringRenderWarning(message, id), 'Error: ', error);
@@ -109,11 +116,16 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           locales,
           variables,
           id,
+          maxChars,
         });
       }
 
       // (3) Fallback to original message (unformatted)
-      return message; // fallback to original message (unformatted)
+      const cutoffMessage = gt.formatCutoff(message, {
+        locales,
+        maxChars,
+      });
+      return cutoffMessage; // fallback to original message (unformatted)
     }
   }
   function initializeT(
@@ -142,6 +154,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         variables,
         id,
         fallback,
+        maxChars,
       });
     };
 
@@ -149,7 +162,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       hashSource({
         source: message,
         ...(context && { context }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
@@ -345,6 +358,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         locales,
         variables: decodedVariables,
         fallback,
+        maxChars: $maxChars,
       });
     };
 

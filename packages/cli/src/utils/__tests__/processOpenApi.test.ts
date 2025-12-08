@@ -25,9 +25,12 @@ function createSettings(tmpDir: string, openapiFiles: string[]): Settings {
     },
     parsingOptions: { conditionNames: [] },
     branchOptions: { enabled: false, remoteName: 'origin' },
-    openapi: {
-      framework: 'mintlify',
-      files: openapiFiles,
+    options: {
+      mintlify: {
+        openapi: {
+          files: openapiFiles,
+        },
+      },
     },
   } as Settings;
 }
@@ -218,5 +221,56 @@ describe('processOpenApi', () => {
 
     const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
     expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
+  });
+
+  it('preserves flow-style frontmatter formatting when updating openapi', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
+    const specPath = path.join(tmpDir, 'openapi.demo.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+    const localizedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.json');
+    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
+    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
+
+    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
+    fs.writeFileSync(
+      sourceMdxPath,
+      '---\nopenapi: POST /foo\nkeywords: ["agent job", "create"]\n---\n'
+    );
+    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
+    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
+    fs.writeFileSync(
+      translatedMdxPath,
+      '---\nopenapi: POST /foo\nkeywords: ["tarea de agente", "crear"]\n---\n'
+    );
+
+    const settings = createSettings(tmpDir, ['./openapi.demo.json']);
+    settings.files = {
+      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
+      placeholderPaths: {
+        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
+        json: [specPath],
+      },
+      transformPaths: {
+        json: {
+          match: 'openapi.demo.json$',
+          replace: '{locale}/openapi.demo.json',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
+    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
+    expect(updatedSource).toContain('/openapi.demo.json POST /foo');
+    expect(updatedSource).toMatch(
+      /keywords:\s*\[\s*"agent job",\s*"create"\s*\]/
+    );
+    expect(updatedSource).not.toMatch(/keywords:\\s*\\n\\s*- /);
+    expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
+    expect(updatedTranslated).toMatch(
+      /keywords:\s*\[\s*"tarea de agente",\s*"crear"\s*\]/
+    );
+    expect(updatedTranslated).not.toMatch(/keywords:\\s*\\n\\s*- /);
   });
 });

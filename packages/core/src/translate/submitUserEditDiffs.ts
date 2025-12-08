@@ -14,7 +14,7 @@ export type SubmitUserEditDiff = {
   branchId: string;
   versionId: string;
   fileId: string;
-  localContent?: string;
+  localContent: string;
 };
 
 export type SubmitUserEditDiffsPayload = {

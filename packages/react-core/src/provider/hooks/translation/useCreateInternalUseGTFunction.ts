@@ -22,6 +22,7 @@ type RenderMessageParams = {
   locales: string[];
   fallback?: string;
   id?: string;
+  maxChars?: number;
 };
 
 export default function useCreateInternalUseGTFunction({
@@ -72,13 +73,17 @@ export default function useCreateInternalUseGTFunction({
     locales,
     fallback,
     id,
+    maxChars,
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
-      return gt.formatMessage(message, {
+      const formattedMessage = gt.formatMessage(message, {
         locales,
         variables,
       });
+      // Apply cutoff formatting
+      const cutoffMessage = gt.formatCutoff(formattedMessage, { maxChars });
+      return cutoffMessage;
     } catch (error) {
       if (environment === 'production') {
         console.warn(createStringRenderWarning(message, id), 'Error: ', error);
@@ -99,11 +104,13 @@ export default function useCreateInternalUseGTFunction({
           locales,
           variables,
           id,
+          maxChars,
         });
       }
 
       // (3) Fallback to original message (unformatted)
-      return message; // fallback to original message (unformatted)
+      const cutoffMessage = gt.formatCutoff(message, { maxChars });
+      return cutoffMessage; // fallback to original message (unformatted)
     }
   }
 
@@ -138,6 +145,7 @@ export default function useCreateInternalUseGTFunction({
         variables,
         id,
         fallback,
+        maxChars,
       });
     };
 
@@ -146,7 +154,7 @@ export default function useCreateInternalUseGTFunction({
       hashSource({
         source: message,
         ...(context && { context }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
         dataFormat: 'ICU',
       });
@@ -229,7 +237,7 @@ export default function useCreateInternalUseGTFunction({
         metadata: {
           ...(context && { context }),
           ...(id && { id }),
-          ...(maxChars && { maxChars }),
+          ...(maxChars != null && { maxChars }),
           hash,
         },
       });
@@ -297,7 +305,7 @@ export default function useCreateInternalUseGTFunction({
       metadata: {
         ...(context && { context }),
         ...(id && { id }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars }),
         hash: hash || '',
       },
     });
@@ -327,13 +335,12 @@ export default function useCreateInternalUseGTFunction({
     const {
       $_hash,
       $_source,
-      $context,
+      $context: context,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
       $hash,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
       $id,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-      $maxChars,
+      $maxChars: maxChars,
       ...decodedVariables
     } = decodedOptions;
 
@@ -347,6 +354,7 @@ export default function useCreateInternalUseGTFunction({
         locales,
         variables: decodedVariables,
         fallback,
+        maxChars,
       });
     };
 
@@ -393,8 +401,8 @@ export default function useCreateInternalUseGTFunction({
       source: $_source,
       targetLocale: locale,
       metadata: {
-        ...($context && { context: $context }),
-        ...($maxChars && { maxChars: $maxChars }),
+        ...(context && { context }),
+        ...(maxChars != null && { maxChars }),
         hash: $_hash,
       },
     });

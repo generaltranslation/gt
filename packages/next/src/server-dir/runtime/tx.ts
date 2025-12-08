@@ -1,4 +1,3 @@
-import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
@@ -57,14 +56,20 @@ export default async function tx(
   const locale = $locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
+  const gt = I18NConfig.getGTClass();
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
   const renderContent = (message: string, locales: string[]) => {
-    return formatMessage(message, {
+    const formattedMessage = gt.formatMessage(message, {
       locales,
       variables,
     });
+    const cutoffMessage = gt.formatCutoff(formattedMessage, {
+      locales,
+      maxChars,
+    });
+    return cutoffMessage;
   };
 
   // ----- CHECK IF TRANSLATION REQUIRED ----- //
@@ -76,7 +81,7 @@ export default async function tx(
   const hash = hashSource({
     source: message,
     ...(context && { context }),
-    ...(maxChars && { maxChars }),
+    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: 'ICU',
   });
 

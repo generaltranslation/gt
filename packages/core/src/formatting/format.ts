@@ -5,6 +5,43 @@ import IntlMessageFormat from 'intl-messageformat';
 import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
 import { formattingLogger } from '../logging/logger';
 import { JsxChildren } from '../types';
+import {
+  CutoffFormatOptions,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  CutoffFormatStyle,
+} from './custom-formats/CutoffFormat/types';
+
+/**
+ * Formats a string value with cutoff behavior according to the specified locales and options.
+ *
+ * @param {Object} params - The parameters for the cutoff formatting.
+ * @param {string} params.value - The string value to format with cutoff behavior.
+ * @param {string | string[]} [params.locales='en'] - The locales to use for formatting.
+ * @param {CutoffFormatOptions} [params.options={}] - Additional options for cutoff formatting.
+ * @param {number} [params.options.maxChars] - The maximum number of characters to display.
+ * @param {CutoffFormatStyle} [params.options.style='ellipsis'] - The style of the terminator.
+ * @param {string} [params.options.terminator] - Optional override for the terminator to use.
+ * @param {string} [params.options.separator] - Optional override for the separator between terminator and value.
+ *
+ * @returns {string} The formatted string with terminator applied if cutoff occurs.
+ * @internal
+ *
+ * @example
+ * _formatCutoff({ value: 'Hello, world!', options: { maxChars: 8 } }); // Returns 'Hello, w...'
+ *
+ * Will fallback to an empty string if formatting fails.
+ */
+export function _formatCutoff({
+  value,
+  locales = libraryDefaultLocale,
+  options = {},
+}: {
+  value: string;
+  locales?: string | string[];
+  options?: CutoffFormatOptions;
+}): string {
+  return intlCache.get('CutoffFormat', locales, options).format(value);
+}
 
 /**
  * Formats a message according to the specified locales and options.
@@ -16,6 +53,7 @@ import { JsxChildren } from '../types';
  * @internal
  *
  * Will fallback to an empty string
+ * TODO: add this to custom formats
  */
 export function _formatMessage(
   message: string,

@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
@@ -35,7 +35,6 @@ import reactUse from '../../utils/use';
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {any} [context] - Additional context for translation key generation.
- * @param {number} [maxChars] - Maximum number of characters to translate.
  *
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
  *
@@ -45,14 +44,12 @@ function T({
   children,
   id,
   context,
-  maxChars,
   _hash,
   ...options
 }: {
   children: any;
   id?: string;
   context?: string;
-  maxChars?: number;
   _hash?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
@@ -61,7 +58,7 @@ function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
-  maxChars = maxChars ?? options?.$maxChars;
+  const maxChars = options?.$maxChars;
 
   const {
     translations,
@@ -104,7 +101,7 @@ function T({
     const hash: string = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
-      ...(maxChars && { maxChars }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -179,7 +176,7 @@ function T({
           id,
           hash,
           context,
-          maxChars,
+          ...(maxChars != null && { maxChars }),
         },
       });
       if (!translatedChildren) return renderDefault();
