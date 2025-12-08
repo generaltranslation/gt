@@ -35,6 +35,7 @@ import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEn
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
 import { Static, declareStatic } from './variables/Static';
 
+export * from 'gt-i18n/fallbacks';
 export {
   addGTIdentifier,
   writeChildrenAsObjects,

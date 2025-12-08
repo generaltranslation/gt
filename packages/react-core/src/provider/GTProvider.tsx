@@ -120,7 +120,7 @@ export default function GTProvider({
         sourceLocale: defaultLocale,
         targetLocale: locale,
         projectId,
-        baseUrl: runtimeUrl,
+        baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
     [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]

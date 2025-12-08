@@ -15,8 +15,6 @@ import {
   invalidCanonicalLocalesError,
   invalidLocalesError,
   projectIdMissingWarn,
-  ssgInvalidNextVersionError,
-  ssgMissingGetStaticLocaleFunctionError,
   standardizedCanonicalLocalesWarning,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -37,6 +35,8 @@ import {
   resolveRequestFunctionPaths,
 } from './config-dir/utils/resolveRequestFunctionPaths';
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
+import { ssgChecks } from './plugin/checks/ssgChecks';
+import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -64,6 +64,8 @@ import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath'
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {string|undefined} [getLocalePath="getLocale"] - The path to the custom getLocale function.
+ * @param {string|undefined} [getRegionPath="getRegion"] - The path to the custom getRegion function.
+ * @param {string|undefined} [getDomainPath="getDomain"] - The path to the custom getDomain function.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
@@ -72,10 +74,12 @@ import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath'
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
- * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings.
- * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function.
- * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function.
- * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function.
+ * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
+ * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
+ * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
+ * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
+ * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Whether to use special server side locale resolution logic (required for Cached Components).
+ * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - The parameter to use for experimental locale resolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -391,6 +395,18 @@ export function withGTConfig(
     );
   }
 
+  // Run SSG checks
+  ssgChecks(mergedConfig, requestFunctionPaths);
+
+  // Run cache component checks
+  cacheComponentsChecks({
+    mergedConfig,
+    nextConfig,
+    requestFunctionPaths,
+    localTranslationsEnabled: !!customLoadTranslationsPath,
+    localDictionaryEnabled: !!customLoadDictionaryPath,
+  });
+
   // ---------- DERIVED CONFIG ATTRIBUTES ---------- //
 
   // Local dictionary flag
@@ -504,22 +520,6 @@ export function withGTConfig(
     }
   }
 
-  // Check: if using SSG, error ons missing getStaticLocale function
-  if (
-    mergedConfig.experimentalEnableSSG &&
-    !requestFunctionPaths.getStaticLocale
-  ) {
-    throw new Error(ssgMissingGetStaticLocaleFunctionError);
-  }
-
-  // Check: if using SSG, error on invalid Next.js version
-  if (
-    mergedConfig.experimentalEnableSSG &&
-    rootParamStability === 'unsupported'
-  ) {
-    throw new Error(ssgInvalidNextVersionError);
-  }
-
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
 
@@ -592,11 +592,14 @@ export function withGTConfig(
         requestFunctionPaths.getStaticRegion ? 'true' : 'false',
       _GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED:
         requestFunctionPaths.getStaticDomain ? 'true' : 'false',
-      _GENERALTRANSLATION_ROOT_PARAMS_STABILITY: rootParamStability,
       _GENERALTRANSLATION_DISABLE_SSG_WARNINGS:
         mergedConfig.disableSSGWarnings?.toString() || 'false',
       _GENERALTRANSLATION_ENABLE_SSG:
         mergedConfig.experimentalEnableSSG?.toString() || 'false',
+      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION:
+        mergedConfig.experimentalLocaleResolution?.toString() || 'false',
+      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM:
+        mergedConfig.experimentalLocaleResolutionParam,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {

@@ -4,10 +4,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@generaltranslation/next-internal': link:packages/next-internal
+
 importers:
 
   .:
     dependencies:
+      '@generaltranslation/next-internal':
+        specifier: link:packages/next-internal
+        version: link:packages/next-internal
       lefthook:
         specifier: ^1.12.3
         version: 1.13.4
@@ -79,7 +85,7 @@ importers:
         specifier: ^7.25.7
         version: 7.28.4
       '@clack/prompts':
-        specifier: ^1.0.0-alpha.6
+        specifier: 1.0.0-alpha.6
         version: 1.0.0-alpha.6
       '@formatjs/icu-messageformat-parser':
         specifier: ^2.11.4
@@ -310,6 +316,43 @@ importers:
         specifier: ^5.6.2
         version: 5.9.2
 
+  packages/i18n:
+    dependencies:
+      '@generaltranslation/supported-locales':
+        specifier: workspace:*
+        version: link:../supported-locales
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@rollup/plugin-commonjs':
+        specifier: ^28.0.1
+        version: 28.0.6(rollup@4.52.3)
+      '@rollup/plugin-node-resolve':
+        specifier: ^16.0.1
+        version: 16.0.1(rollup@4.52.3)
+      '@rollup/plugin-terser':
+        specifier: ^0.4.4
+        version: 0.4.4(rollup@4.52.3)
+      '@rollup/plugin-typescript':
+        specifier: ^12.1.1
+        version: 12.1.4(rollup@4.52.3)(tslib@2.8.1)(typescript@5.9.2)
+      '@types/node':
+        specifier: ^20.14.9
+        version: 20.19.17
+      rollup:
+        specifier: ^4.24.0
+        version: 4.52.3
+      rollup-plugin-dts:
+        specifier: ^6.1.1
+        version: 6.2.3(rollup@4.52.3)(typescript@5.9.2)
+      tslib:
+        specifier: ^2.8.0
+        version: 2.8.1
+      typescript:
+        specifier: ^5.6.2
+        version: 5.9.2
+
   packages/locadex:
     dependencies:
       '@clack/prompts':
@@ -404,6 +447,9 @@ importers:
       '@generaltranslation/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@generaltranslation/next-internal':
+        specifier: link:../next-internal
+        version: link:../next-internal
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
@@ -415,7 +461,7 @@ importers:
         version: link:../react
       next:
         specifier: '>=13.0.0 <15.2.1 || >15.2.2'
-        version: 15.5.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 15.5.2(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.1.1
@@ -435,6 +481,43 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.2
+
+  packages/next-internal:
+    dependencies:
+      next:
+        specifier: '>=13.0.0 <15.2.1 || >15.2.2'
+        version: 16.0.3(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      react:
+        specifier: '>=16.8.0 <20.0.0'
+        version: 19.1.1
+      react-dom:
+        specifier: '>=16.8.0 <20.0.0'
+        version: 19.1.1(react@19.1.1)
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.57.0
+        version: 1.57.0
+      '@types/node':
+        specifier: '>=20.0.0 <23.0.0'
+        version: 20.19.17
+      '@types/react':
+        specifier: '>=18.0.0 <20.0.0'
+        version: 19.1.15
+      '@types/react-dom':
+        specifier: '>=18.0.0 <20.0.0'
+        version: 19.1.9(@types/react@19.1.15)
+      playwright:
+        specifier: ^1.57.0
+        version: 1.57.0
+      prettier:
+        specifier: ^3.0.0
+        version: 3.6.2
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.2
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.17)(jsdom@27.0.0(bufferutil@4.0.9)(postcss@8.5.6))(lightningcss@1.30.1)(terser@5.44.0)
 
   packages/next-lint:
     dependencies:
@@ -542,6 +625,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../i18n
       react:
         specifier: '>=16.8.0'
         version: 19.1.1
@@ -740,7 +826,7 @@ importers:
         version: link:../../../packages/cli
       next:
         specifier: 16.0.3
-        version: 16.0.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 16.0.3(@playwright/test@1.57.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -786,7 +872,7 @@ importers:
         version: link:../../../packages/cli
       next:
         specifier: 16.0.3
-        version: 16.0.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 16.0.3(@playwright/test@1.57.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2908,6 +2994,11 @@ packages:
   '@pkgr/core@0.2.9':
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@playwright/test@1.57.0':
+    resolution: {integrity: sha512-6TyEnHgd6SArQO8UO2OMTxshln3QMWBtPGrOCgs3wVEmQmwyuNtB10IZMfmYDE0riwNR1cu4q+pPcxMVtaG3TA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@pnpm/config.env-replace@1.1.0':
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
@@ -6276,6 +6367,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -8319,6 +8415,16 @@ packages:
 
   player.style@0.2.0:
     resolution: {integrity: sha512-Ngoaz49TClptMr8HDA2IFmjT3Iq6R27QEUH/C+On33L59RSF3dCLefBYB1Au2RDZQJ6oVFpc1sXaPVpp7fEzzA==}
+
+  playwright-core@1.57.0:
+    resolution: {integrity: sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.57.0:
+    resolution: {integrity: sha512-ilYQj1s8sr2ppEJ2YVadYBN0Mb3mdo9J0wQ+UuDhzYqURwSoW4n1Xs5vs7ORwgDGmyEh33tRMeS8KhdkMoLXQw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pluralize-esm@9.0.5:
     resolution: {integrity: sha512-Kb2dcpMsIutFw2hYrN0EhsAXOUJTd6FVMIxvNAkZCMQLVt9NGZqQczvGpYDxNWCZeCWLHUPxQIBudWzt1h7VVA==}
@@ -10783,7 +10889,7 @@ snapshots:
       '@babel/helper-plugin-utils': 7.27.1
       debug: 4.4.3(supports-color@5.5.0)
       lodash.debounce: 4.0.8
-      resolve: 1.22.10
+      resolve: 1.22.11
     transitivePeerDependencies:
       - supports-color
 
@@ -12492,7 +12598,7 @@ snapshots:
       '@rushstack/ts-command-line': 4.23.2(@types/node@24.8.0)
       lodash: 4.17.21
       minimatch: 3.0.8
-      resolve: 1.22.10
+      resolve: 1.22.11
       semver: 7.5.4
       source-map: 0.6.1
       typescript: 5.4.2
@@ -12510,7 +12616,7 @@ snapshots:
       '@rushstack/ts-command-line': 5.0.3(@types/node@24.8.0)
       lodash: 4.17.21
       minimatch: 10.0.3
-      resolve: 1.22.10
+      resolve: 1.22.11
       semver: 7.5.4
       source-map: 0.6.1
       typescript: 5.8.2
@@ -12522,7 +12628,7 @@ snapshots:
       '@microsoft/tsdoc': 0.15.1
       ajv: 8.12.0
       jju: 1.4.0
-      resolve: 1.22.10
+      resolve: 1.22.11
 
   '@microsoft/tsdoc@0.15.1': {}
 
@@ -12853,6 +12959,10 @@ snapshots:
     optional: true
 
   '@pkgr/core@0.2.9': {}
+
+  '@playwright/test@1.57.0':
+    dependencies:
+      playwright: 1.57.0
 
   '@pnpm/config.env-replace@1.1.0': {}
 
@@ -13437,7 +13547,7 @@ snapshots:
       '@types/resolve': 1.20.2
       deepmerge: 4.3.1
       is-module: 1.0.0
-      resolve: 1.22.10
+      resolve: 1.22.11
     optionalDependencies:
       rollup: 4.52.3
 
@@ -13459,7 +13569,7 @@ snapshots:
   '@rollup/plugin-typescript@12.1.4(rollup@4.52.3)(tslib@2.8.1)(typescript@5.9.2)':
     dependencies:
       '@rollup/pluginutils': 5.3.0(rollup@4.52.3)
-      resolve: 1.22.10
+      resolve: 1.22.11
       typescript: 5.9.2
     optionalDependencies:
       rollup: 4.52.3
@@ -13551,7 +13661,7 @@ snapshots:
       fs-extra: 7.0.1
       import-lazy: 4.0.0
       jju: 1.4.0
-      resolve: 1.22.10
+      resolve: 1.22.11
       semver: 7.5.4
     optionalDependencies:
       '@types/node': 24.8.0
@@ -13564,14 +13674,14 @@ snapshots:
       fs-extra: 11.3.2
       import-lazy: 4.0.0
       jju: 1.4.0
-      resolve: 1.22.10
+      resolve: 1.22.11
       semver: 7.5.4
     optionalDependencies:
       '@types/node': 24.8.0
 
   '@rushstack/rig-package@0.5.3':
     dependencies:
-      resolve: 1.22.10
+      resolve: 1.22.11
       strip-json-comments: 3.1.1
 
   '@rushstack/terminal@0.14.4(@types/node@24.8.0)':
@@ -16900,6 +17010,9 @@ snapshots:
 
   fs.realpath@1.0.0: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -18646,7 +18759,7 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  next@15.5.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  next@15.5.2(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       '@next/env': 15.5.2
       '@swc/helpers': 0.5.15
@@ -18664,12 +18777,13 @@ snapshots:
       '@next/swc-linux-x64-musl': 15.5.2
       '@next/swc-win32-arm64-msvc': 15.5.2
       '@next/swc-win32-x64-msvc': 15.5.2
+      '@playwright/test': 1.57.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@16.0.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  next@16.0.3(@playwright/test@1.57.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@next/env': 16.0.3
       '@swc/helpers': 0.5.15
@@ -18687,6 +18801,31 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.0.3
       '@next/swc-win32-arm64-msvc': 16.0.3
       '@next/swc-win32-x64-msvc': 16.0.3
+      '@playwright/test': 1.57.0
+      sharp: 0.34.5
+    transitivePeerDependencies:
+      - '@babel/core'
+      - babel-plugin-macros
+
+  next@16.0.3(@playwright/test@1.57.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+    dependencies:
+      '@next/env': 16.0.3
+      '@swc/helpers': 0.5.15
+      caniuse-lite: 1.0.30001754
+      postcss: 8.4.31
+      react: 19.1.1
+      react-dom: 19.1.1(react@19.1.1)
+      styled-jsx: 5.1.6(react@19.1.1)
+    optionalDependencies:
+      '@next/swc-darwin-arm64': 16.0.3
+      '@next/swc-darwin-x64': 16.0.3
+      '@next/swc-linux-arm64-gnu': 16.0.3
+      '@next/swc-linux-arm64-musl': 16.0.3
+      '@next/swc-linux-x64-gnu': 16.0.3
+      '@next/swc-linux-x64-musl': 16.0.3
+      '@next/swc-win32-arm64-msvc': 16.0.3
+      '@next/swc-win32-x64-msvc': 16.0.3
+      '@playwright/test': 1.57.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -18722,7 +18861,7 @@ snapshots:
   normalize-package-data@2.5.0:
     dependencies:
       hosted-git-info: 2.8.9
-      resolve: 1.22.10
+      resolve: 1.22.11
       semver: 5.7.2
       validate-npm-package-license: 3.0.4
 
@@ -19181,6 +19320,14 @@ snapshots:
       media-chrome: 4.13.1(react@19.1.1)
     transitivePeerDependencies:
       - react
+
+  playwright-core@1.57.0: {}
+
+  playwright@1.57.0:
+    dependencies:
+      playwright-core: 1.57.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pluralize-esm@9.0.5: {}
 
@@ -19898,7 +20045,6 @@ snapshots:
       is-core-module: 2.16.1
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
-    optional: true
 
   resolve@2.0.0-next.5:
     dependencies:

@@ -1,5 +1,105 @@
 # locadex
 
+## 1.0.51
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gtx-cli@2.5.23
+
+## 1.0.50
+
+### Patch Changes
+
+- Updated dependencies [[`4291258`](https://github.com/generaltranslation/gt/commit/42912587a51da045c0b578ac71699fda4a8fcc26)]:
+  - gtx-cli@2.5.22
+
+## 1.0.49
+
+### Patch Changes
+
+- Updated dependencies [[`34499ce`](https://github.com/generaltranslation/gt/commit/34499ce8407d4b96dea1b4db7a92225e8118fc56)]:
+  - gtx-cli@2.5.21
+
+## 1.0.48
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gtx-cli@2.5.20
+
+## 1.0.47
+
+### Patch Changes
+
+- Updated dependencies [[`02abd0a`](https://github.com/generaltranslation/gt/commit/02abd0a970a09c514744982f06169f385dfdd972)]:
+  - gtx-cli@2.5.19
+
+## 1.0.46
+
+### Patch Changes
+
+- Updated dependencies [[`cf5f0e3`](https://github.com/generaltranslation/gt/commit/cf5f0e3f1537c304b7ea5703714ffb4956a7f6f4)]:
+  - gtx-cli@2.5.18
+
+## 1.0.45
+
+### Patch Changes
+
+- Updated dependencies [[`db4ab5c`](https://github.com/generaltranslation/gt/commit/db4ab5cad2726d78dc7c4e4dd7f3a83adaa1fcfb)]:
+  - gtx-cli@2.5.17
+
+## 1.0.44
+
+### Patch Changes
+
+- Updated dependencies [[`b135cbe`](https://github.com/generaltranslation/gt/commit/b135cbed44b259619697d9a429ba61c434bed7b5)]:
+  - gtx-cli@2.5.16
+
+## 1.0.43
+
+### Patch Changes
+
+- Updated dependencies [[`3a3d45b`](https://github.com/generaltranslation/gt/commit/3a3d45be0b454fb017ad4b75a772df1c8aaee65e)]:
+  - gtx-cli@2.5.15
+
+## 1.0.42
+
+### Patch Changes
+
+- Updated dependencies [[`0772b57`](https://github.com/generaltranslation/gt/commit/0772b5714f1cfe8af5f5edcdf6bcb28125a1536f), [`79225fb`](https://github.com/generaltranslation/gt/commit/79225fb3bbea3bb7a453cc237c619b67dd0dd3da)]:
+  - gtx-cli@2.5.14
+
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [[`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678)]:
+  - gtx-cli@2.5.13
+
+## 1.0.40
+
+### Patch Changes
+
+- [#816](https://github.com/generaltranslation/gt/pull/816) [`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add gt-i18n, a pure js library for translation
+
+- Updated dependencies [[`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605)]:
+  - gtx-cli@2.5.12
+
+## 1.0.39
+
+### Patch Changes
+
+- Updated dependencies [[`35197d0`](https://github.com/generaltranslation/gt/commit/35197d075670411dcdd2ddc93fd5eaf021cd924b)]:
+  - gtx-cli@2.5.11
+
+## 1.0.38
+
+### Patch Changes
+
+- Updated dependencies [[`a9bdf21`](https://github.com/generaltranslation/gt/commit/a9bdf21d9ec80edc190b32b963dfe19c5fe2ea33)]:
+  - gtx-cli@2.5.10
+
 ## 1.0.37
 
 ### Patch Changes

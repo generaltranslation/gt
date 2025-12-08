@@ -2141,16 +2141,58 @@ import Component2 from '/snippets/excluded.mdx';
         await localizeStaticImports(settings as any);
       });
     });
+
+    describe('docsImportRewrites and markdown imports', () => {
+      it('applies explicit rewrites on .md imports for non-default locale', async () => {
+        const fileContent = `import SystemTableCloud from '@site/docs/_snippets/_system_table_cloud.md';`;
+        const expected = `import SystemTableCloud from '@site/i18n/ja/docusaurus-plugin-content-docs/current/_snippets/_system_table_cloud.md';`;
+
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+        vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
+          expect(content).toBe(expected);
+          return Promise.resolve();
+        });
+
+        const mockFileMapping = {
+          ja: { 'system.md': '/path/to/ja/system.md' },
+        };
+        vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+        const settings = {
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: ['system'],
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options: {
+            experimentalLocalizeStaticImports: true,
+            docsImportRewrites: [
+              {
+                match: '@site/docs',
+                replace:
+                  '@site/i18n/[locale]/docusaurus-plugin-content-docs/current',
+              },
+            ],
+          },
+        };
+
+        await localizeStaticImports(settings as any);
+      });
+    });
   });
 
   describe('invalid MDX error handling', () => {
-    it('should return original content unchanged when MDX starts with closing tag', async () => {
+    it('should use fallback processing when MDX starts with closing tag', async () => {
       const invalidFileContent = `</Component>
 import ValidComponent from '/components/en/valid.mdx'`;
+      const expectedContent = `</Component>
+import ValidComponent from '/components/ja/valid.mdx'`;
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        expect(content).toBe(expectedContent); // Should use fallback string processing
         return Promise.resolve();
       });
 
@@ -2176,14 +2218,17 @@ import ValidComponent from '/components/en/valid.mdx'`;
       await localizeStaticImports(settings as any);
     });
 
-    it('should return original content unchanged when MDX has unclosed JSX tags', async () => {
+    it('should use fallback processing when MDX has unclosed JSX tags', async () => {
       const invalidFileContent = `<Card title="Test">
 import Component from '/components/en/test.mdx'
+<!-- Missing closing tag for Card -->`;
+      const expectedContent = `<Card title="Test">
+import Component from '/components/ja/test.mdx'
 <!-- Missing closing tag for Card -->`;
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        expect(content).toBe(expectedContent); // Should use fallback string processing
         return Promise.resolve();
       });
 
@@ -2209,7 +2254,7 @@ import Component from '/components/en/test.mdx'
       await localizeStaticImports(settings as any);
     });
 
-    it('should return original content unchanged when MDX has nested unclosed tags', async () => {
+    it('should use fallback processing when MDX has nested unclosed tags', async () => {
       const invalidFileContent = `<Card>
   <Button>
     <Icon name="test"
@@ -2217,10 +2262,17 @@ import Component from '/components/en/test.mdx'
 </Card>
 
 import Component from '/components/en/test.mdx'`;
+      const expectedContent = `<Card>
+  <Button>
+    <Icon name="test"
+  </Button>
+</Card>
+
+import Component from '/components/ja/test.mdx'`;
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        expect(content).toBe(expectedContent); // Should use fallback string processing
         return Promise.resolve();
       });
 
@@ -2246,16 +2298,21 @@ import Component from '/components/en/test.mdx'`;
       await localizeStaticImports(settings as any);
     });
 
-    it('should return original content unchanged when MDX has mismatched JSX tags', async () => {
+    it('should use fallback processing when MDX has mismatched JSX tags', async () => {
       const invalidFileContent = `<Card title="Test">
   import Component from '/components/en/test.mdx'
+</NotCard>
+
+Some content here`;
+      const expectedContent = `<Card title="Test">
+  import Component from '/components/ja/test.mdx'
 </NotCard>
 
 Some content here`;
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        expect(content).toBe(expectedContent); // Should use fallback string processing
         return Promise.resolve();
       });
 
@@ -2281,14 +2338,17 @@ Some content here`;
       await localizeStaticImports(settings as any);
     });
 
-    it('should return original content unchanged when MDX has invalid JSX attributes', async () => {
+    it('should use fallback processing when MDX has invalid JSX attributes', async () => {
       const invalidFileContent = `<Card title=invalid-attribute>
   import Component from '/components/en/test.mdx'
+</Card>`;
+      const expectedContent = `<Card title=invalid-attribute>
+  import Component from '/components/ja/test.mdx'
 </Card>`;
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        expect(content).toBe(expectedContent); // Should use fallback string processing
         return Promise.resolve();
       });
 
@@ -2314,7 +2374,7 @@ Some content here`;
       await localizeStaticImports(settings as any);
     });
 
-    it('should return original content unchanged when MDX has complex invalid syntax', async () => {
+    it('should use fallback processing when MDX has complex invalid syntax', async () => {
       const invalidFileContent = `import Component from '/components/en/valid.mdx'
 
 <Card>
@@ -2322,10 +2382,17 @@ Some content here`;
     import AnotherComponent from '/components/en/another.mdx'
   </different-closing-tag>
 </Card`;
+      const expectedContent = `import Component from '/components/ja/valid.mdx'
+
+<Card>
+  <nested-tag without-proper-closing>
+    import AnotherComponent from '/components/ja/another.mdx'
+  </different-closing-tag>
+</Card`;
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(invalidFileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
-        expect(content).toBe(invalidFileContent); // Should remain unchanged due to parsing error
+        expect(content).toBe(expectedContent); // Should use fallback string processing
         return Promise.resolve();
       });
 

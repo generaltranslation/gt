@@ -19,6 +19,8 @@ import {
   decodeOptions,
   Static,
   declareStatic,
+  mFallback,
+  gtFallback,
 } from 'gt-react/internal';
 import {
   DictionaryTranslationOptions,
@@ -75,4 +77,6 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  mFallback,
+  gtFallback,
 };

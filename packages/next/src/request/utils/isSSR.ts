@@ -1,6 +1,9 @@
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 import { ssrDetectionFailedWarning } from '../../errors';
 
+/**
+ * @deprecated
+ */
 export default function isSSR() {
   const isSSR = true;
   if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {

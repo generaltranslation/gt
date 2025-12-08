@@ -19,5 +19,10 @@
     "jsx": "react-jsx"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/__tests__/**/*", "../../seeds"]
+  "exclude": ["node_modules", "dist", "**/__tests__/**/*", "../../seeds"],
+  "references": [
+    {
+      "path": "../core"
+    }
+  ]
 }

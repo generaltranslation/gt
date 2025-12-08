@@ -1,5 +1,99 @@
 # gtx-cli
 
+## 2.5.23
+
+### Patch Changes
+
+- Updated dependencies [[`3e8ceb4`](https://github.com/generaltranslation/gt/commit/3e8ceb4526530d38eae469b05e8bf273d5ca05ac)]:
+  - generaltranslation@8.1.0
+
+## 2.5.22
+
+### Patch Changes
+
+- [#870](https://github.com/generaltranslation/gt/pull/870) [`4291258`](https://github.com/generaltranslation/gt/commit/42912587a51da045c0b578ac71699fda4a8fcc26) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Persist style of YAML frontmatter when applying Mintlify OpenAPI postprocessing
+
+## 2.5.21
+
+### Patch Changes
+
+- [#868](https://github.com/generaltranslation/gt/pull/868) [`34499ce`](https://github.com/generaltranslation/gt/commit/34499ce8407d4b96dea1b4db7a92225e8118fc56) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Removing `"openapi"` top level config, adding as option under `"options.mintlify.openapi"`. Also adding a `jsonSchema` preset for `openapi`.
+
+## 2.5.20
+
+### Patch Changes
+
+- Updated dependencies [[`997a5df`](https://github.com/generaltranslation/gt/commit/997a5df6ac355b49a77e768935f9017af689de21)]:
+  - generaltranslation@8.0.6
+
+## 2.5.19
+
+### Patch Changes
+
+- [#853](https://github.com/generaltranslation/gt/pull/853) [`02abd0a`](https://github.com/generaltranslation/gt/commit/02abd0a970a09c514744982f06169f385dfdd972) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Including hash of post-processed files in `gt-lock.json` to avoid unnecessary saves when calling `save-local`
+
+## 2.5.18
+
+### Patch Changes
+
+- [#851](https://github.com/generaltranslation/gt/pull/851) [`cf5f0e3`](https://github.com/generaltranslation/gt/commit/cf5f0e3f1537c304b7ea5703714ffb4956a7f6f4) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip anchor ID fallback in codeblocks to avoid adding anchors to comments
+
+## 2.5.17
+
+### Patch Changes
+
+- [#848](https://github.com/generaltranslation/gt/pull/848) [`db4ab5c`](https://github.com/generaltranslation/gt/commit/db4ab5cad2726d78dc7c4e4dd7f3a83adaa1fcfb) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding OpenAPI handling via `gt.config.json`
+
+## 2.5.16
+
+### Patch Changes
+
+- [#843](https://github.com/generaltranslation/gt/pull/843) [`b135cbe`](https://github.com/generaltranslation/gt/commit/b135cbed44b259619697d9a429ba61c434bed7b5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Job polling correctly resolves locale aliases
+
+## 2.5.15
+
+### Patch Changes
+
+- [#838](https://github.com/generaltranslation/gt/pull/838) [`3a3d45b`](https://github.com/generaltranslation/gt/commit/3a3d45be0b454fb017ad4b75a772df1c8aaee65e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding fallback when localizing static imports
+
+## 2.5.14
+
+### Patch Changes
+
+- [#837](https://github.com/generaltranslation/gt/pull/837) [`0772b57`](https://github.com/generaltranslation/gt/commit/0772b5714f1cfe8af5f5edcdf6bcb28125a1536f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Making experimentalAddHeaderAnchorIds independent of experimentalLocalizeStaticUrls and fetching anchor IDs from source files when present
+
+- [#835](https://github.com/generaltranslation/gt/pull/835) [`79225fb`](https://github.com/generaltranslation/gt/commit/79225fb3bbea3bb7a453cc237c619b67dd0dd3da) Thanks [@brian-lou](https://github.com/brian-lou)! - When using --force translate, also force files to re-download
+
+## 2.5.13
+
+### Patch Changes
+
+- [#833](https://github.com/generaltranslation/gt/pull/833) [`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678) Thanks [@brian-lou](https://github.com/brian-lou)! - Add txt file translation support
+
+- Updated dependencies [[`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678)]:
+  - generaltranslation@8.0.5
+
+## 2.5.12
+
+### Patch Changes
+
+- [#816](https://github.com/generaltranslation/gt/pull/816) [`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add gt-i18n, a pure js library for translation
+
+- Updated dependencies [[`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605)]:
+  - generaltranslation@8.0.4
+
+## 2.5.11
+
+### Patch Changes
+
+- [#827](https://github.com/generaltranslation/gt/pull/827) [`35197d0`](https://github.com/generaltranslation/gt/commit/35197d075670411dcdd2ddc93fd5eaf021cd924b) Thanks [@brian-lou](https://github.com/brian-lou)! - Pin @clack/prompts version
+
+## 2.5.10
+
+### Patch Changes
+
+- [#825](https://github.com/generaltranslation/gt/pull/825) [`a9bdf21`](https://github.com/generaltranslation/gt/commit/a9bdf21d9ec80edc190b32b963dfe19c5fe2ea33) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix init write files
+
 ## 2.5.9
 
 ### Patch Changes

@@ -241,3 +241,27 @@ describe('generateSettings - composite patterns', () => {
     expect(resolveFiles).not.toHaveBeenCalled();
   });
 });
+
+describe('generateSettings - openapi config', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(resolveFiles).mockReturnValue({
+      resolvedPaths: {},
+      placeholderPaths: {},
+      transformPaths: {},
+    });
+  });
+
+  it('does not auto-add jsonSchema entries for openapi files', async () => {
+    const settings = await generateSettings({
+      options: {
+        openapi: {
+          framework: 'mintlify',
+          files: ['./openapi.json', './discovery-openapi.json'],
+        },
+      },
+    });
+
+    expect(settings.options?.jsonSchema).toBeUndefined();
+  });
+});

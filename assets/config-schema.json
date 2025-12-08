@@ -326,231 +326,272 @@
       },
       "required": ["include", "outDir"],
       "additionalProperties": false
-    }
-  },
-  "options": {
-    "type": "object",
-    "description": "Additional configuration options",
-    "properties": {
-      "jsonSchema": {
-        "type": "object",
-        "description": "JSON schema configuration for specific file globs",
-        "patternProperties": {
-          ".*": {
-            "type": "object",
-            "description": "JSON schema options for files matching this glob pattern",
-            "properties": {
-              "preset": {
-                "type": "string",
-                "enum": ["mintlify"],
-                "description": "Preset configuration to use"
-              },
-              "include": {
-                "type": "array",
-                "description": "Array of JSONPaths to include (mutually exclusive with composite)",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "composite": {
-                "type": "object",
-                "description": "Composite configuration (mutually exclusive with include)",
-                "patternProperties": {
-                  ".*": {
-                    "type": "object",
-                    "description": "Source object options for this JSONPath",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": ["array", "object"],
-                        "description": "Type of the source object"
-                      },
-                      "include": {
-                        "type": "array",
-                        "description": "Array of relative JSONPaths to include in the translated JSON",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "key": {
-                        "type": "string",
-                        "description": "Relative JSONPath to the key to distinguish between source and target locales (required for array type)"
-                      },
-                      "experimentalSort": {
-                        "type": "string",
-                        "enum": ["locales"],
-                        "description": "Optional sorting behavior for array type. When set to 'locale', items are ordered to match your locales array."
-                      },
-                      "localeProperty": {
-                        "type": "string",
-                        "description": "Specific locale property to use for the key for target locales",
-                        "default": "code"
-                      },
-                      "transform": {
-                        "type": "object",
-                        "description": "Optional config for transforming specific fields in the source item",
-                        "patternProperties": {
-                          ".*": {
-                            "type": "object",
-                            "description": "Transform configuration for this JSONPath",
-                            "properties": {
-                              "match": {
-                                "type": "string",
-                                "description": "Regex to match strings to replace"
-                              },
-                              "replace": {
-                                "type": "string",
-                                "description": "String or regex pattern to replace the match with"
-                              }
-                            },
-                            "required": ["replace"],
-                            "additionalProperties": false
+    },
+    "options": {
+      "type": "object",
+      "description": "Additional configuration options",
+      "properties": {
+        "jsonSchema": {
+          "type": "object",
+          "description": "JSON schema configuration for specific file globs",
+          "patternProperties": {
+            ".*": {
+              "type": "object",
+              "description": "JSON schema options for files matching this glob pattern",
+              "properties": {
+                "preset": {
+                  "type": "string",
+                  "enum": ["mintlify", "openapi"],
+                  "description": "Preset configuration to use"
+                },
+                "include": {
+                  "type": "array",
+                  "description": "Array of JSONPaths to include (mutually exclusive with composite)",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "composite": {
+                  "type": "object",
+                  "description": "Composite configuration (mutually exclusive with include)",
+                  "patternProperties": {
+                    ".*": {
+                      "type": "object",
+                      "description": "Source object options for this JSONPath",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["array", "object"],
+                          "description": "Type of the source object"
+                        },
+                        "include": {
+                          "type": "array",
+                          "description": "Array of relative JSONPaths to include in the translated JSON",
+                          "items": {
+                            "type": "string"
                           }
                         },
-                        "additionalProperties": false
-                      }
-                    },
-                    "required": ["type", "include"],
-                    "additionalProperties": false
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "oneOf": [
-              {
-                "required": ["include"],
-                "not": {
-                  "required": ["composite"]
-                }
-              },
-              {
-                "required": ["composite"],
-                "not": {
-                  "required": ["include"]
-                }
-              }
-            ],
-            "additionalProperties": false
-          }
-        },
-        "additionalProperties": false
-      },
-      "yamlSchema": {
-        "type": "object",
-        "description": "YAML schema configuration for specific file globs",
-        "patternProperties": {
-          ".*": {
-            "type": "object",
-            "description": "YAML schema options for files matching this glob pattern",
-            "properties": {
-              "preset": {
-                "type": "string",
-                "enum": ["mintlify"],
-                "description": "Preset configuration to use"
-              },
-              "include": {
-                "type": "array",
-                "description": "Array of YAML paths to include for translation",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "transform": {
-                "type": "object",
-                "description": "Optional config for transforming specific fields",
-                "patternProperties": {
-                  ".*": {
-                    "type": "object",
-                    "description": "Transform configuration for this YAMLPath",
-                    "properties": {
-                      "match": {
-                        "type": "string",
-                        "description": "Regex to match strings to replace"
+                        "key": {
+                          "type": "string",
+                          "description": "Relative JSONPath to the key to distinguish between source and target locales (required for array type)"
+                        },
+                        "experimentalSort": {
+                          "type": "string",
+                          "enum": ["locales"],
+                          "description": "Optional sorting behavior for array type. When set to 'locale', items are ordered to match your locales array."
+                        },
+                        "localeProperty": {
+                          "type": "string",
+                          "description": "Specific locale property to use for the key for target locales",
+                          "default": "code"
+                        },
+                        "transform": {
+                          "type": "object",
+                          "description": "Optional config for transforming specific fields in the source item",
+                          "patternProperties": {
+                            ".*": {
+                              "type": "object",
+                              "description": "Transform configuration for this JSONPath",
+                              "properties": {
+                                "match": {
+                                  "type": "string",
+                                  "description": "Regex to match strings to replace"
+                                },
+                                "replace": {
+                                  "type": "string",
+                                  "description": "String or regex pattern to replace the match with"
+                                }
+                              },
+                              "required": ["replace"],
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
                       },
-                      "replace": {
-                        "type": "string",
-                        "description": "String or regex pattern to replace the match with"
-                      }
-                    },
-                    "required": ["replace"],
-                    "additionalProperties": false
+                      "required": ["type", "include"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "oneOf": [
+                {
+                  "required": ["include"],
+                  "not": {
+                    "required": ["composite"]
                   }
                 },
-                "additionalProperties": false
-              }
+                {
+                  "required": ["composite"],
+                  "not": {
+                    "required": ["include"]
+                  }
+                }
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "yamlSchema": {
+          "type": "object",
+          "description": "YAML schema configuration for specific file globs",
+          "patternProperties": {
+            ".*": {
+              "type": "object",
+              "description": "YAML schema options for files matching this glob pattern",
+              "properties": {
+                "preset": {
+                  "type": "string",
+                  "enum": ["mintlify"],
+                  "description": "Preset configuration to use"
+                },
+                "include": {
+                  "type": "array",
+                  "description": "Array of YAML paths to include for translation",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "transform": {
+                  "type": "object",
+                  "description": "Optional config for transforming specific fields",
+                  "patternProperties": {
+                    ".*": {
+                      "type": "object",
+                      "description": "Transform configuration for this YAMLPath",
+                      "properties": {
+                        "match": {
+                          "type": "string",
+                          "description": "Regex to match strings to replace"
+                        },
+                        "replace": {
+                          "type": "string",
+                          "description": "String or regex pattern to replace the match with"
+                        }
+                      },
+                      "required": ["replace"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "mintlify": {
+          "type": "object",
+          "description": "Mintlify-specific options.",
+          "properties": {
+            "openapi": {
+              "type": "object",
+              "description": "OpenAPI localization settings for Mintlify. Framework defaults to mintlify.",
+              "properties": {
+                "files": {
+                  "type": "array",
+                  "description": "Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "translateFields": {
+                  "type": "array",
+                  "description": "JSONPaths to translate within OpenAPI specs.",
+                  "items": { "type": "string" }
+                }
+              },
+              "required": ["files"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "docsUrlPattern": {
+          "type": "string",
+          "description": "Pattern for localizing static URLs in markdown files (e.g., '/docs/[locale]' or '/[locale]')",
+          "examples": ["/docs/[locale]", "/[locale]"]
+        },
+        "docsImportPattern": {
+          "type": "string",
+          "description": "Pattern for localizing static imports in markdown files (e.g., '/docs/[locale]/foo.md' or '/[locale]/foo.md')",
+          "examples": ["/docs/[locale]/foo.md", "/[locale]/foo.md"]
+        },
+        "docsImportRewrites": {
+          "type": "array",
+          "description": "Explicit rewrites for import prefixes before pattern-based localization (e.g., map '@site/docs' to '@site/i18n/[locale]/docusaurus-plugin-content-docs/current')",
+          "items": {
+            "type": "object",
+            "properties": {
+              "match": { "type": "string" },
+              "replace": { "type": "string" }
             },
+            "required": ["match", "replace"],
             "additionalProperties": false
           }
         },
-        "additionalProperties": false
-      },
-      "docsUrlPattern": {
-        "type": "string",
-        "description": "Pattern for localizing static URLs in markdown files (e.g., '/docs/[locale]' or '/[locale]')",
-        "examples": ["/docs/[locale]", "/[locale]"]
-      },
-      "docsImportPattern": {
-        "type": "string",
-        "description": "Pattern for localizing static imports in markdown files (e.g., '/docs/[locale]/foo.md' or '/[locale]/foo.md')",
-        "examples": ["/docs/[locale]/foo.md", "/[locale]/foo.md"]
-      },
-      "docsHideDefaultLocaleImport": {
-        "type": "boolean",
-        "description": "If true, hide the default locale in the import path",
-        "default": false
-      },
-      "copyFiles": {
-        "type": "array",
-        "description": "Array of files to copy to the target locale",
-        "items": {
-          "type": "string"
+        "docsHideDefaultLocaleImport": {
+          "type": "boolean",
+          "description": "If true, hide the default locale in the import path",
+          "default": false
         },
-        "examples": [["static/images/**/*.png", "public/assets/**/*.pdf"]]
-      },
-      "experimentalLocalizeStaticImports": {
-        "type": "boolean",
-        "description": "Inserts locale in static import paths in md/mdx files",
-        "default": false
-      },
-      "experimentalLocalizeStaticUrls": {
-        "type": "boolean",
-        "description": "Inserts locale in static url paths in md/mdx files",
-        "default": false
-      },
-      "experimentalHideDefaultLocale": {
-        "type": "boolean",
-        "description": "Hides the default locale in the import path",
-        "default": false
-      },
-      "experimentalFlattenJsonFiles": {
-        "type": "boolean",
-        "description": "Flattens JSON files into a single file",
-        "default": false
-      },
-      "baseDomain": {
-        "type": "string",
-        "format": "uri",
-        "description": "The base http:// url where the project is hosted",
-        "examples": ["https://example.com", "https://docs.example.com"]
-      },
-      "experimentalClearLocaleDirs": {
-        "type": "boolean",
-        "description": "If true, clear locale directories before writing translations (default: false)",
-        "default": false
-      },
-      "clearLocaleDirsExclude": {
-        "type": "array",
-        "description": "Array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., './snippets/[locale]/preserved/**' or './[locales]/static/**')",
-        "items": {
-          "type": "string"
+        "copyFiles": {
+          "type": "array",
+          "description": "Array of files to copy to the target locale",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["static/images/**/*.png", "public/assets/**/*.pdf"]]
         },
-        "examples": [
-          ["./snippets/[locale]/preserved/**", "./[locales]/static/**"]
-        ]
-      }
-    },
-    "additionalProperties": false
+        "experimentalLocalizeStaticImports": {
+          "type": "boolean",
+          "description": "Inserts locale in static import paths in md/mdx files",
+          "default": false
+        },
+        "experimentalLocalizeStaticUrls": {
+          "type": "boolean",
+          "description": "Inserts locale in static url paths in md/mdx files",
+          "default": false
+        },
+        "experimentalHideDefaultLocale": {
+          "type": "boolean",
+          "description": "Hides the default locale in the import path",
+          "default": false
+        },
+        "experimentalFlattenJsonFiles": {
+          "type": "boolean",
+          "description": "Flattens JSON files into a single file",
+          "default": false
+        },
+        "baseDomain": {
+          "type": "string",
+          "format": "uri",
+          "description": "The base http:// url where the project is hosted",
+          "examples": ["https://example.com", "https://docs.example.com"]
+        },
+        "experimentalClearLocaleDirs": {
+          "type": "boolean",
+          "description": "If true, clear locale directories before writing translations (default: false)",
+          "default": false
+        },
+        "clearLocaleDirsExclude": {
+          "type": "array",
+          "description": "Array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., './snippets/[locale]/preserved/**' or './[locales]/static/**')",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            ["./snippets/[locale]/preserved/**", "./[locales]/static/**"]
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "required": ["defaultLocale", "locales"],
   "additionalProperties": true,

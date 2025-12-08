@@ -142,6 +142,3 @@ export const createStringRenderWarning = (
   id: string | undefined
 ) =>
   `${PACKAGE_NAME} Warning: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
-
-export const msgStringFormatWarning = (message: string) =>
-  `${PACKAGE_NAME} Warning: error formatting string. Expect translation resolution to fail. Original message: "${message}"`;

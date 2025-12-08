@@ -32,13 +32,18 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+<<<<<<< HEAD
   Static,
   declareStatic,
+=======
+  mFallback,
+  gtFallback,
+>>>>>>> main
 } from '@generaltranslation/react-core/internal';
 
 import {
   MFunctionType,
-  TFunctionType,
+  GTFunctionType,
   Dictionary,
   RenderMethod,
   TranslatedChildren,
@@ -87,12 +92,13 @@ export type {
   RenderVariable,
   VariableProps,
   MFunctionType,
-  TFunctionType,
+  GTFunctionType,
   _Message,
   _Messages,
 };
 
 // Constant exports
+<<<<<<< HEAD
 export {
   getDefaultRenderSettings,
   defaultLocaleCookieName,
@@ -104,6 +110,9 @@ export {
   decodeMsg,
   decodeOptions,
 };
+=======
+export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
+>>>>>>> main
 
 // Function exports
 export {
@@ -131,4 +140,10 @@ export {
   injectFallbacks,
   injectAndMerge,
   collectUntranslatedEntries,
+  msg,
+  decodeMsg,
+  decodeOptions,
+  mFallback,
+  gtFallback,
+  getDefaultRenderSettings,
 };

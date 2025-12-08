@@ -37,6 +37,79 @@ function extractHeadingText(heading: Heading): string {
 }
 
 /**
+ * Simple line-by-line heading extractor that skips fenced code blocks.
+ * Used as a fallback when MDX parsing fails.
+ */
+function extractHeadingsWithFallback(mdxContent: string): HeadingInfo[] {
+  const headings: HeadingInfo[] = [];
+  const lines = mdxContent.split('\n');
+
+  let position = 0;
+  let inFence = false;
+  let fenceChar: string | null = null;
+
+  for (const line of lines) {
+    const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceString = fenceMatch[2];
+      if (!inFence) {
+        inFence = true;
+        fenceChar = fenceString;
+      } else if (
+        fenceChar &&
+        fenceString[0] === fenceChar[0] &&
+        fenceString.length >= fenceChar.length
+      ) {
+        inFence = false;
+        fenceChar = null;
+      }
+      continue;
+    }
+
+    if (inFence) {
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (!headingMatch) {
+      continue;
+    }
+
+    const hashes = headingMatch[1];
+    const rawText = headingMatch[2];
+    const { cleanedText, explicitId } = parseHeadingContent(rawText);
+
+    if (cleanedText || explicitId) {
+      headings.push({
+        text: cleanedText,
+        level: hashes.length,
+        slug: explicitId ?? generateSlug(cleanedText),
+        position: position++,
+      });
+    }
+  }
+
+  return headings;
+}
+
+function parseHeadingContent(text: string): {
+  cleanedText: string;
+  explicitId?: string;
+} {
+  // Support both {#id} and escaped \{#id\} forms
+  const anchorMatch = text.match(/(\\\{#([^}]+)\\\}|\{#([^}]+)\})\s*$/);
+
+  if (!anchorMatch) {
+    return { cleanedText: text };
+  }
+
+  const explicitId = anchorMatch[2] || anchorMatch[3];
+  const cleanedText = text.replace(anchorMatch[0], '').trimEnd();
+
+  return { cleanedText, explicitId };
+}
+
+/**
  * Checks if a heading is already wrapped in a div with id
  */
 function hasExplicitId(heading: Heading, ast: Root): boolean {
@@ -77,16 +150,18 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
     console.warn(
       `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
     );
-    return [];
+    // Fallback: line-by-line extraction skipping fenced code blocks
+    return extractHeadingsWithFallback(mdxContent);
   }
 
   let position = 0;
   visit(processedAst, 'heading', (heading: Heading) => {
     const headingText = extractHeadingText(heading);
-    if (headingText) {
-      const slug = generateSlug(headingText);
+    const { cleanedText, explicitId } = parseHeadingContent(headingText);
+    if (cleanedText || explicitId) {
+      const slug = explicitId ?? generateSlug(cleanedText);
       headings.push({
-        text: headingText,
+        text: cleanedText,
         level: heading.depth,
         slug,
         position: position++,
@@ -156,6 +231,10 @@ export function addExplicitAnchorIds(
     };
   }
 
+  const translatedIsMdx = translatedPath
+    ? translatedPath.toLowerCase().endsWith('.mdx')
+    : true; // default to mdx-style escaping when unknown
+
   // Apply IDs to translated content
   let content: string;
   if (useDivWrapping) {
@@ -165,7 +244,7 @@ export function addExplicitAnchorIds(
       idMappings
     );
   } else {
-    content = applyInlineIds(translatedContent, idMappings);
+    content = applyInlineIds(translatedContent, idMappings, translatedIsMdx);
   }
 
   return {
@@ -180,8 +259,22 @@ export function addExplicitAnchorIds(
  */
 function applyInlineIds(
   translatedContent: string,
-  idMappings: Map<number, string>
+  idMappings: Map<number, string>,
+  escapeAnchors: boolean
 ): string {
+  const escapeInlineAnchors = (content: string): string => {
+    if (!escapeAnchors) return content;
+    return content.replace(
+      /\{#([A-Za-z0-9-_]+)\}/g,
+      (match, id, offset, str) => {
+        if (offset > 0 && str[offset - 1] === '\\') {
+          return match;
+        }
+        return `\\{#${id}\\}`;
+      }
+    );
+  };
+
   // Parse the translated content
   let processedAst: Root;
   try {
@@ -196,7 +289,11 @@ function applyInlineIds(
     console.warn(
       `Failed to parse translated MDX content: ${error instanceof Error ? error.message : String(error)}`
     );
-    return translatedContent;
+    return applyInlineIdsStringFallback(
+      translatedContent,
+      idMappings,
+      escapeAnchors
+    );
   }
 
   // Apply IDs to headings based on position
@@ -208,6 +305,20 @@ function applyInlineIds(
     if (id) {
       // Skip if heading already has explicit ID
       if (hasExplicitId(heading, processedAst)) {
+        if (escapeAnchors) {
+          // Normalize existing inline IDs to escaped form
+          const lastChild = heading.children[heading.children.length - 1];
+          if (lastChild?.type === 'text') {
+            const match = lastChild.value.match(/\{#([^}]+)\}\s*$/);
+            const alreadyEscaped = lastChild.value.match(/\\\{#[^}]+\\\}\s*$/);
+            if (match && !alreadyEscaped) {
+              const anchorId = match[1];
+              const base = lastChild.value.replace(/\s*\{#[^}]+\}\s*$/, '');
+              lastChild.value = `${base} \\{#${anchorId}\\}`;
+              actuallyModifiedContent = true;
+            }
+          }
+        }
         headingIndex++;
         return;
       }
@@ -215,12 +326,12 @@ function applyInlineIds(
       // Add the ID to the heading
       const lastChild = heading.children[heading.children.length - 1];
       if (lastChild?.type === 'text') {
-        lastChild.value += ` \\{#${id}\\}`;
+        lastChild.value += escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
       } else {
         // If last child is not text, add a new text node
         heading.children.push({
           type: 'text',
-          value: ` \\{#${id}\\}`,
+          value: escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`,
         });
       }
       actuallyModifiedContent = true;
@@ -230,7 +341,8 @@ function applyInlineIds(
 
   // If we didn't modify any headings, return original content
   if (!actuallyModifiedContent) {
-    return translatedContent;
+    const escaped = escapeInlineAnchors(translatedContent);
+    return escaped;
   }
 
   // Convert the modified AST back to MDX string
@@ -268,6 +380,74 @@ function applyInlineIds(
     );
     return translatedContent;
   }
+}
+
+/**
+ * Fallback string-based inline ID application when AST parsing fails
+ */
+function applyInlineIdsStringFallback(
+  translatedContent: string,
+  idMappings: Map<number, string>,
+  escapeAnchors: boolean
+): string {
+  let headingIndex = 0;
+  let inFence = false;
+  let fenceChar: string | null = null;
+
+  const processedLines = translatedContent.split('\n').map((line) => {
+    const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceString = fenceMatch[2];
+      if (!inFence) {
+        inFence = true;
+        fenceChar = fenceString;
+      } else if (
+        fenceChar &&
+        fenceString[0] === fenceChar[0] &&
+        fenceString.length >= fenceChar.length
+      ) {
+        inFence = false;
+        fenceChar = null;
+      }
+      return line;
+    }
+
+    if (inFence) {
+      return line;
+    }
+
+    const headingMatch = line.match(/^(#{1,6}\s+)(.*)$/);
+    if (!headingMatch) {
+      return line;
+    }
+
+    const prefix = headingMatch[1];
+    const text = headingMatch[2];
+    const id = idMappings.get(headingIndex++);
+
+    if (!id) {
+      return line;
+    }
+
+    const hasEscaped = /\\\{#[^}]+\\\}\s*$/.test(text);
+    const hasUnescaped = /\{#[^}]+\}\s*$/.test(text);
+
+    if (hasEscaped) {
+      return line;
+    }
+
+    if (hasUnescaped) {
+      if (!escapeAnchors) {
+        return line;
+      }
+      return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\\\{#$1\\\\}')}`;
+    }
+
+    const suffix = escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
+    return `${prefix}${text}${suffix}`;
+  });
+
+  return processedLines.join('\n');
 }
 
 /**

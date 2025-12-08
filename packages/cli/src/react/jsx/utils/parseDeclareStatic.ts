@@ -75,7 +75,7 @@ export function handleStaticExpression(
     errors.push(
       warnDeclareStaticNoResultsSync(
         file,
-        expr.arguments[0].toString(),
+        expr.arguments.length > 0 ? expr.arguments[0].toString() : 'no arguments',
         `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
       )
     );
@@ -223,7 +223,7 @@ export function getDeclareStaticVariants(
     errors.push(
       warnDeclareStaticNotWrappedSync(
         file,
-        call.arguments[0].toString(),
+        call.arguments.length > 0 ? call.arguments[0].toString() : 'no arguments',
         `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
       )
     );

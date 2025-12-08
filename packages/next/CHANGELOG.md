@@ -1,5 +1,71 @@
 # gt-next
 
+## 6.10.3
+
+### Patch Changes
+
+- Updated dependencies [[`3e8ceb4`](https://github.com/generaltranslation/gt/commit/3e8ceb4526530d38eae469b05e8bf273d5ca05ac)]:
+  - generaltranslation@8.1.0
+  - @generaltranslation/compiler@1.1.8
+  - gt-react@10.8.7
+  - @generaltranslation/supported-locales@2.0.30
+
+## 6.10.2
+
+### Patch Changes
+
+- Updated dependencies [[`997a5df`](https://github.com/generaltranslation/gt/commit/997a5df6ac355b49a77e768935f9017af689de21)]:
+  - generaltranslation@8.0.6
+  - @generaltranslation/compiler@1.1.7
+  - gt-react@10.8.6
+  - @generaltranslation/supported-locales@2.0.29
+
+## 6.10.1
+
+### Patch Changes
+
+- [#855](https://github.com/generaltranslation/gt/pull/855) [`a46a1ff`](https://github.com/generaltranslation/gt/commit/a46a1ff63b24636d28807407da4574ac1e987293) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: experimental locale resolution validation
+
+## 6.10.0
+
+### Minor Changes
+
+- [#842](https://github.com/generaltranslation/gt/pull/842) [`3f19da3`](https://github.com/generaltranslation/gt/commit/3f19da3fd8b3e1813bef63471c0e5419cefc4c1d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: use cache
+
+### Patch Changes
+
+- Updated dependencies [[`3f19da3`](https://github.com/generaltranslation/gt/commit/3f19da3fd8b3e1813bef63471c0e5419cefc4c1d)]:
+  - @generaltranslation/next-internal@0.1.0
+
+## 6.9.5
+
+### Patch Changes
+
+- Updated dependencies [[`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678)]:
+  - generaltranslation@8.0.5
+  - @generaltranslation/compiler@1.1.6
+  - gt-react@10.8.5
+  - @generaltranslation/supported-locales@2.0.28
+
+## 6.9.4
+
+### Patch Changes
+
+- Updated dependencies [[`73d78b2`](https://github.com/generaltranslation/gt/commit/73d78b20e067fd291080856d33dd1bd2656b3399)]:
+  - gt-react@10.8.4
+
+## 6.9.3
+
+### Patch Changes
+
+- [#816](https://github.com/generaltranslation/gt/pull/816) [`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add gt-i18n, a pure js library for translation
+
+- Updated dependencies [[`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605)]:
+  - @generaltranslation/supported-locales@2.0.27
+  - @generaltranslation/compiler@1.1.5
+  - gt-react@10.8.3
+  - generaltranslation@8.0.4
+
 ## 6.9.2
 
 ### Patch Changes

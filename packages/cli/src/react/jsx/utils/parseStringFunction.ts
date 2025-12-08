@@ -90,7 +90,7 @@ function processTranslationCall(
       );
       if (result) {
         const strings = nodeToStrings(result);
-        if (!ignoreDynamicContent) {
+        if (!ignoreInvalidIcu) {
           for (const string of strings) {
             const { isValid, error } = isValidIcu(string);
             if (!isValid) {

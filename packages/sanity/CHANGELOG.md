@@ -1,5 +1,33 @@
 # gt-sanity
 
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [[`3e8ceb4`](https://github.com/generaltranslation/gt/commit/3e8ceb4526530d38eae469b05e8bf273d5ca05ac)]:
+  - generaltranslation@8.1.0
+
+## 1.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`997a5df`](https://github.com/generaltranslation/gt/commit/997a5df6ac355b49a77e768935f9017af689de21)]:
+  - generaltranslation@8.0.6
+
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678)]:
+  - generaltranslation@8.0.5
+
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [[`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605)]:
+  - generaltranslation@8.0.4
+
 ## 1.1.3
 
 ### Patch Changes

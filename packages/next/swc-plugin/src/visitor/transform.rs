@@ -264,7 +264,7 @@ impl TransformVisitor {
   pub fn process_gt_import_declaration(&mut self, import_decl: &ImportDecl) {
     let src_value = import_decl.src.value.as_ref();
     match src_value {
-      "gt-next" | "gt-next/client" | "gt-next/server" => {
+      "gt-next" | "gt-next/client" | "gt-next/server" | "gt-i18n" => {
         // Process named imports: import { T, Var, useGT } from 'gt-next'
         for specifier in &import_decl.specifiers {
           match specifier {

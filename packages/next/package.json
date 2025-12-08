@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.9.2",
+  "version": "6.10.3",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -15,6 +15,7 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
     "@generaltranslation/compiler": "workspace:*",
+    "@generaltranslation/next-internal": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*"
   },

@@ -90,8 +90,9 @@ export class PollTranslationJobsStep extends WorkflowStep<
       (typeof jobData.jobData)[number] & { jobId: string }
     >();
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${job.targetLocale}`;
-      jobMap.set(key, { ...job, jobId });
+      const jobLocale = this.gt.resolveAliasLocale(job.targetLocale);
+      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${jobLocale}`;
+      jobMap.set(key, { ...job, jobId, targetLocale: jobLocale });
     });
 
     // Build a map of jobs for quick lookup:
@@ -106,11 +107,12 @@ export class PollTranslationJobsStep extends WorkflowStep<
       }
     >();
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
+      const jobLocale = this.gt.resolveAliasLocale(job.targetLocale);
       jobFileMap.set(jobId, {
         branchId: job.branchId,
         fileId: job.fileId,
         versionId: job.versionId,
-        locale: job.targetLocale,
+        locale: jobLocale,
       });
     });
 

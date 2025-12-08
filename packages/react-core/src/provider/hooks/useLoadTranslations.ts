@@ -3,6 +3,7 @@ import fetchTranslations from '../../utils/fetchTranslations';
 import { CustomLoader, Translations } from '../../types-dir/types';
 import { useEffect, useState } from 'react';
 import { GT } from 'generaltranslation';
+import { defaultCacheUrl } from 'generaltranslation/internal';
 
 export function useLoadTranslations({
   _translations,
@@ -20,7 +21,7 @@ export function useLoadTranslations({
   loadTranslationsType: string;
   loadTranslations?: CustomLoader;
   locale: string;
-  cacheUrl: string;
+  cacheUrl: string | null;
   projectId: string;
   _versionId?: string;
   gt: GT;
@@ -74,7 +75,7 @@ export function useLoadTranslations({
         case 'default':
           try {
             result = await fetchTranslations({
-              cacheUrl,
+              cacheUrl: cacheUrl || defaultCacheUrl,
               projectId,
               locale,
               versionId: _versionId,

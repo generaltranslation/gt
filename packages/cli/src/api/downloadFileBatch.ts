@@ -176,8 +176,14 @@ export async function downloadFileBatch(
 
         // Write the file to disk
         await fs.promises.writeFile(outputPath, data);
-        // Track as downloaded
-        recordDownloaded(outputPath);
+        // Track as downloaded with metadata for downstream postprocessing
+        recordDownloaded(outputPath, {
+          branchId,
+          fileId,
+          versionId,
+          locale,
+          inputPath,
+        });
 
         result.successful.push(requestedFile);
         if (branchId && fileId && versionId && locale) {

@@ -17,7 +17,7 @@ import useSetLocale from './hooks/useSetLocale';
 import LocaleSelector from './ui/LocaleSelector';
 import useLocaleSelector from './hooks/useLocaleSelector';
 import RegionSelector from './ui/RegionSelector';
-import {
+import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
@@ -32,6 +32,8 @@ import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './provider/hooks/translation/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './provider/hooks/translation/useCreateInternalUseTranslationsFunction';
 import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
+
+export * from 'gt-i18n/fallbacks';
 
 export {
   Var,

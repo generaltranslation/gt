@@ -7,6 +7,14 @@ import {
 } from 'generaltranslation/types';
 import React from 'react';
 
+export type {
+  GTFunctionType,
+  MFunctionType,
+  InlineTranslationOptions,
+  DictionaryTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-i18n/types';
+
 /**
  * TaggedElement is a React element with a GTProp property.
  */
@@ -85,18 +93,6 @@ export type CustomLoader = (locale: string) => Promise<any>;
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
-export type DictionaryTranslationOptions = Record<string, any>;
-export type InlineTranslationOptions = DictionaryTranslationOptions & {
-  $context?: string;
-  $id?: string;
-  $_hash?: string;
-  $_source?: string;
-};
-
-export type RuntimeTranslationOptions = {
-  locale?: string;
-} & Omit<InlineTranslationOptions, 'id'>;
-
 export type VariableProps = {
   variableType: VariableType;
   variableValue: any;
@@ -120,12 +116,3 @@ export type _Message = {
   $_hash?: string;
 };
 export type _Messages = _Message[];
-
-export type MFunctionType = <T extends string | null | undefined>(
-  encodedMsg: T,
-  options?: Record<string, any>
-) => T extends string ? string : T;
-export type TFunctionType = (
-  message: string,
-  options?: InlineTranslationOptions
-) => string;

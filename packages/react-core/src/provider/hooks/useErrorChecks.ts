@@ -22,9 +22,9 @@ export function useErrorChecks({
 }: {
   devApiKey?: string;
   projectId: string;
-  runtimeUrl: string;
+  runtimeUrl: string | null;
   loadTranslationsType: string;
-  cacheUrl: string;
+  cacheUrl: string | null;
   locales: string[];
   environment: 'development' | 'production' | 'test';
 }) {

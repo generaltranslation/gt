@@ -24,6 +24,8 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  mFallback,
+  gtFallback,
 } from 'gt-react/client';
 import {
   gtProviderUseClientError,
@@ -72,4 +74,6 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  mFallback,
+  gtFallback,
 };

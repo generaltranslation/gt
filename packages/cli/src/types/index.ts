@@ -26,7 +26,20 @@ export type Options = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
-  experimentalAddHeaderAnchorIds?: 'mintlify';
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
+  docsImportRewrites?: Array<{
+    match: string;
+    replace: string;
+  }>;
+};
+
+export type OpenApiConfig = {
+  files: string[];
+  translateFields?: string[];
+};
+
+export type MintlifyOptions = {
+  openapi?: OpenApiConfig;
 };
 
 export type TranslateFlags = {
@@ -52,9 +65,13 @@ export type TranslateFlags = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
-  experimentalAddHeaderAnchorIds?: 'mintlify';
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
+  docsImportRewrites?: Array<{
+    match: string;
+    replace: string;
+  }>;
 };
 
 export type WrapOptions = {
@@ -197,6 +214,8 @@ export type AdditionalOptions = {
   yamlSchema?: {
     [fileGlob: string]: YamlSchema;
   };
+  // Optional Mintlify-specific options container
+  mintlify?: MintlifyOptions;
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   excludeStaticUrls?: string[]; // A list of file globs to include for static url localization
@@ -207,10 +226,14 @@ export type AdditionalOptions = {
   clearLocaleDirsExclude?: string[]; // array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., "./snippets/[locale]/preserved/**" or "./[locales]/static/**")
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
-  experimentalAddHeaderAnchorIds?: 'mintlify'; // Format for anchor IDs when experimentalLocalizeStaticUrls is enabled: 'mintlify' for div wrapping, undefined for inline {#id}
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for div wrapping, 'default' or undefined for inline {#id}. Can run independently of static url localization
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
   baseDomain?: string; // The base http:// url where the project is hosted
+  docsImportRewrites?: Array<{
+    match: string; // prefix to match, e.g. '@site/docs'
+    replace: string; // replacement prefix, can include [locale] or [defaultLocale]
+  }>;
 };
 
 export type SharedStaticAssetsConfig = {
@@ -220,7 +243,7 @@ export type SharedStaticAssetsConfig = {
 };
 
 export type JsonSchema = {
-  preset?: 'mintlify';
+  preset?: 'mintlify' | 'openapi';
 
   // exactly 1 of include or composite must be provided; not both
 

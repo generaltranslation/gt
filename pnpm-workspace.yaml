@@ -3,10 +3,15 @@ packages:
   - test-apps/**/*
 
 minimumReleaseAge: 1440
+
 minimumReleaseAgeExclude:
   - '@generaltranslation/*'
   - gt-next
   - gt-react
   - gt-sanity
+  - gt-i18n
   - gtx-cli
   - generaltranslation
+
+overrides:
+  '@generaltranslation/next-internal': link:packages/next-internal

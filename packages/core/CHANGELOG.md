@@ -1,5 +1,29 @@
 # generaltranslation
 
+## 8.1.0
+
+### Minor Changes
+
+- [#872](https://github.com/generaltranslation/gt/pull/872) [`3e8ceb4`](https://github.com/generaltranslation/gt/commit/3e8ceb4526530d38eae469b05e8bf273d5ca05ac) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: formatCutoff()
+
+## 8.0.6
+
+### Patch Changes
+
+- [#857](https://github.com/generaltranslation/gt/pull/857) [`997a5df`](https://github.com/generaltranslation/gt/commit/997a5df6ac355b49a77e768935f9017af689de21) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: compatibility for maxChars
+
+## 8.0.5
+
+### Patch Changes
+
+- [#833](https://github.com/generaltranslation/gt/pull/833) [`30a04f9`](https://github.com/generaltranslation/gt/commit/30a04f955c64013daf2a32480fb33b3d4e08d678) Thanks [@brian-lou](https://github.com/brian-lou)! - Add txt file translation support
+
+## 8.0.4
+
+### Patch Changes
+
+- [#816](https://github.com/generaltranslation/gt/pull/816) [`e42a442`](https://github.com/generaltranslation/gt/commit/e42a44280442e588b82b3fe1aff52f1e53aa8605) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add gt-i18n, a pure js library for translation
+
 ## 8.0.3
 
 ### Patch Changes

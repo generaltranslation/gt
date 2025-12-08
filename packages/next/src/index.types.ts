@@ -30,6 +30,8 @@ import {
   _Messages,
   Static as _Static,
   declareStatic as _declareStatic,
+  mFallback,
+  gtFallback,
 } from 'gt-react/internal';
 
 /**
@@ -464,4 +466,4 @@ export {
   RuntimeTranslationOptions,
 };
 
-export { msg, decodeMsg, decodeOptions };
+export { msg, decodeMsg, decodeOptions, mFallback, gtFallback };

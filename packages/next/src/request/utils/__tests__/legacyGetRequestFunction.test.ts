@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupGetRequestFunctionMocks } from '../__mocks__/mockGetRequestFunction';
 
-// Set up comprehensive mocking for getRequestFunction and all its dependencies
+// Set up comprehensive mocking for legacyGetRequestFunction and all its dependencies
 setupGetRequestFunctionMocks();
 
-describe('getRequestFunction', () => {
+describe('legacyGetRequestFunction', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -20,25 +20,31 @@ describe('getRequestFunction', () => {
   });
 
   describe('basic functionality', () => {
-    it('should export getRequestFunction as a function', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
-      expect(typeof getRequestFunction).toBe('function');
+    it('should export legacyGetRequestFunction as a function', async () => {
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
+      expect(typeof legacyGetRequestFunction).toBe('function');
     });
 
     it('should accept valid function names', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
-      expect(() => getRequestFunction('getLocale', true)).not.toThrow();
-      expect(() => getRequestFunction('getRegion', true)).not.toThrow();
-      expect(() => getRequestFunction('getDomain', true)).not.toThrow();
+      expect(() => legacyGetRequestFunction('getLocale', true)).not.toThrow();
+      expect(() => legacyGetRequestFunction('getRegion', true)).not.toThrow();
+      expect(() => legacyGetRequestFunction('getDomain', true)).not.toThrow();
     });
 
     it('should return functions for each valid input', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
-      const localeFunction = getRequestFunction('getLocale', true);
-      const regionFunction = getRequestFunction('getRegion', true);
-      const domainFunction = getRequestFunction('getDomain', true);
+      const localeFunction = legacyGetRequestFunction('getLocale', true);
+      const regionFunction = legacyGetRequestFunction('getRegion', true);
+      const domainFunction = legacyGetRequestFunction('getDomain', true);
 
       expect(typeof localeFunction).toBe('function');
       expect(typeof regionFunction).toBe('function');
@@ -48,11 +54,13 @@ describe('getRequestFunction', () => {
 
   describe('SSR mode', () => {
     it('should use default functions when no custom functions are enabled', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
-      const localeFunction = getRequestFunction('getLocale', true);
-      const regionFunction = getRequestFunction('getRegion', true);
-      const domainFunction = getRequestFunction('getDomain', true);
+      const localeFunction = legacyGetRequestFunction('getLocale', true);
+      const regionFunction = legacyGetRequestFunction('getRegion', true);
+      const domainFunction = legacyGetRequestFunction('getDomain', true);
 
       expect(typeof localeFunction).toBe('function');
       expect(typeof regionFunction).toBe('function');
@@ -76,11 +84,13 @@ describe('getRequestFunction', () => {
       process.env._GENERALTRANSLATION_STATIC_GET_REGION_ENABLED = 'true';
       process.env._GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED = 'true';
 
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
-      const localeFunction = getRequestFunction('getLocale', false);
-      const regionFunction = getRequestFunction('getRegion', false);
-      const domainFunction = getRequestFunction('getDomain', false);
+      const localeFunction = legacyGetRequestFunction('getLocale', false);
+      const regionFunction = legacyGetRequestFunction('getRegion', false);
+      const domainFunction = legacyGetRequestFunction('getDomain', false);
 
       expect(typeof localeFunction).toBe('function');
       expect(typeof regionFunction).toBe('function');
@@ -90,11 +100,13 @@ describe('getRequestFunction', () => {
     it('should force SSR when _GENERALTRANSLATION_ENABLE_SSG is false', async () => {
       process.env._GENERALTRANSLATION_ENABLE_SSG = 'false';
 
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
       // Even when requesting SSG (false), should use SSR due to env var
-      const regionFunction = getRequestFunction('getRegion', false);
-      const domainFunction = getRequestFunction('getDomain', false);
+      const regionFunction = legacyGetRequestFunction('getRegion', false);
+      const domainFunction = legacyGetRequestFunction('getDomain', false);
 
       expect(typeof regionFunction).toBe('function');
       expect(typeof domainFunction).toBe('function');
@@ -108,11 +120,13 @@ describe('getRequestFunction', () => {
     });
 
     it('should use static function names in SSG mode', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
-      const localeFunction = getRequestFunction('getLocale', false);
-      const regionFunction = getRequestFunction('getRegion', false);
-      const domainFunction = getRequestFunction('getDomain', false);
+      const localeFunction = legacyGetRequestFunction('getLocale', false);
+      const regionFunction = legacyGetRequestFunction('getRegion', false);
+      const domainFunction = legacyGetRequestFunction('getDomain', false);
 
       expect(typeof localeFunction).toBe('function');
       expect(typeof regionFunction).toBe('function');
@@ -122,10 +136,12 @@ describe('getRequestFunction', () => {
 
   describe('error handling', () => {
     it('should handle module loading errors gracefully', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
       // Even with potential module loading issues, should return a function
-      const localeFunction = getRequestFunction('getLocale', true);
+      const localeFunction = legacyGetRequestFunction('getLocale', true);
       expect(typeof localeFunction).toBe('function');
 
       // The function should return mocked values
@@ -134,12 +150,14 @@ describe('getRequestFunction', () => {
     });
 
     it('should return mocked values when modules are mocked', async () => {
-      const { getRequestFunction } = await import('../getRequestFunction');
+      const { legacyGetRequestFunction } = await import(
+        '../legacyGetRequestFunction'
+      );
 
       // All functions should return functions that resolve to mocked values
-      const localeFunction = getRequestFunction('getLocale', true);
-      const regionFunction = getRequestFunction('getRegion', true);
-      const domainFunction = getRequestFunction('getDomain', true);
+      const localeFunction = legacyGetRequestFunction('getLocale', true);
+      const regionFunction = legacyGetRequestFunction('getRegion', true);
+      const domainFunction = legacyGetRequestFunction('getDomain', true);
 
       const localeResult = await localeFunction();
       const regionResult = await regionFunction();

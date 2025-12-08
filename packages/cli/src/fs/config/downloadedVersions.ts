@@ -9,6 +9,7 @@ const LEGACY_DOWNLOADED_VERSIONS_FILE = 'downloaded-versions.json';
 export type DownloadedVersionEntry = {
   fileName?: string;
   updatedAt?: string;
+  postProcessHash?: string;
 };
 
 export type DownloadedVersions = {

@@ -1,9 +1,10 @@
 // Functions provided to other GT libraries
 
-import { DataFormat, JsxChild, JsxChildren, Variable } from '../types';
+import { JsxChild, JsxChildren, Variable } from '../types';
 import stringify from 'fast-json-stable-stringify';
 import CryptoJS from 'crypto-js';
 import isVariable from '../utils/isVariable';
+import { HashMetadata } from './types';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -33,21 +34,16 @@ export function hashSource(
     source,
     context,
     id,
+    maxChars,
     dataFormat,
   }: {
     source: JsxChildren | string;
-    context?: string;
-    id?: string;
-    dataFormat: DataFormat;
-  },
+  } & HashMetadata,
   hashFunction: (string: string) => string = hashString
 ): string {
   let sanitizedData: {
     source?: SanitizedChildren;
-    id?: string;
-    context?: string;
-    dataFormat?: string;
-  } = {};
+  } & HashMetadata = { dataFormat };
   if (dataFormat === 'JSX') {
     sanitizedData.source = sanitizeJsxChildren(source);
   } else {
@@ -57,7 +53,7 @@ export function hashSource(
     ...sanitizedData,
     ...(id && { id }),
     ...(context && { context }),
-    ...(dataFormat && { dataFormat }),
+    ...(maxChars && { maxChars }),
   };
   const stringifiedData = stringify(sanitizedData);
   return hashFunction(stringifiedData);

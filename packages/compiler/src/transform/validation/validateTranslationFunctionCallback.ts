@@ -244,6 +244,8 @@ function validateDeclareStatic(
     };
   }
 
+  // Fallthrough: expression type not supported (e.g., plain identifiers/variables)
+  errors.push('Variables are not allowed');
   return { errors };
 }
 

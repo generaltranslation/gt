@@ -1,6 +1,5 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { RenderMethod } from 'gt-react/internal';
-import { RequestFunctions, StaticRequestFunctions } from '../../request/types';
 
 export type HeadersAndCookies = {
   localeHeaderName?: string;
@@ -33,21 +32,19 @@ export type CompilerOptions = {
   disableBuildChecks?: boolean;
 };
 
-export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
-  getLocale: 'getLocalePath',
-  getRegion: 'getRegionPath',
-  getDomain: 'getDomainPath',
+export const DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getStaticLocale: 'getStaticLocalePath',
   getStaticRegion: 'getStaticRegionPath',
   getStaticDomain: 'getStaticDomainPath',
 } as const;
 
-type RequestFunctionPaths = Partial<
-  Record<
-    (typeof REQUEST_FUNCTION_TO_CONFIG_KEY)[keyof typeof REQUEST_FUNCTION_TO_CONFIG_KEY],
-    string
-  >
->;
+export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
+  getLocale: 'getLocalePath',
+  getRegion: 'getRegionPath',
+  getDomain: 'getDomainPath',
+  ...DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY,
+} as const;
+
 type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
@@ -92,8 +89,22 @@ type withGTConfigProps = {
   _usingPlugin?: boolean;
   // SSG
   experimentalEnableSSG?: boolean;
+  // Using special server side locale resolution logic
+  experimentalLocaleResolution?: boolean;
+  experimentalLocaleResolutionParam?: string;
+  /** @deprecated */
   disableSSGWarnings?: boolean;
+  // Request function paths
+  getLocalePath?: string;
+  getRegionPath?: string;
+  getDomainPath?: string;
+  /** @deprecated use getLocalePath instead */
+  getStaticLocalePath?: string;
+  /** @deprecated use getRegionPath instead */
+  getStaticRegionPath?: string;
+  /** @deprecated use getDomainPath instead */
+  getStaticDomainPath?: string;
   [key: string]: any;
-} & RequestFunctionPaths;
+};
 
 export default withGTConfigProps;
