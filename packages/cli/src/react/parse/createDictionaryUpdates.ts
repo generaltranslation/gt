@@ -95,13 +95,13 @@ export async function createDictionaryUpdates(
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
-      ...(maxChars && { maxChars: Math.abs(maxChars) }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       // This hash isn't actually used by the GT API, just for consistency sake
       hash: hashSource({
         source: entry,
         ...(context && { context }),
         ...(id && { id }),
-        ...(maxChars && { maxChars }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         dataFormat: 'ICU',
       }),
     };

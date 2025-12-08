@@ -97,7 +97,9 @@ export async function createInlineUpdates(
         source: update.source,
         ...(update.metadata.context && { context: update.metadata.context }),
         ...(update.metadata.id && { id: update.metadata.id }),
-        ...(update.metadata.maxChars && { maxChars: update.metadata.maxChars }),
+        ...(update.metadata.maxChars != null && {
+          maxChars: update.metadata.maxChars,
+        }),
         dataFormat: update.dataFormat,
       });
       update.metadata.hash = hash;
