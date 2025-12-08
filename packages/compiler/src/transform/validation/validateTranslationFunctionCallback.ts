@@ -246,6 +246,11 @@ function validateDeclareStatic(
     };
   }
 
+  // 4. String literal / number literal
+  if (t.isStringLiteral(expr)) {
+    return { errors };
+  }
+
   // Fallthrough: expression type not supported (e.g., plain identifiers/variables)
   errors.push('Variables are not allowed');
   return { errors };
