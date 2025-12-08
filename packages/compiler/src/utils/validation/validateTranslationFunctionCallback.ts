@@ -199,10 +199,7 @@ function validateExpressionIsNumericLiteral(expr: t.Expression): {
   if (t.isNumericLiteral(expr)) {
     candidateValue = expr.value;
   } else if (t.isUnaryExpression(expr) && t.isNumericLiteral(expr.argument)) {
-    // validate non negative
-    if (expr.operator === '-') {
-      return { errors: ['Expression is not a non negative number literal'] };
-    }
+    // Note: taking the absolute value of the number literal
     candidateValue = expr.argument.value;
   }
 

@@ -269,14 +269,6 @@ function validateObjectPropertyIsNumberLiteral(
     return { errors };
   }
 
-  // Validate it is non negative
-  if (value !== undefined && !validateNumberLiteralIsNonNegative(value)) {
-    errors.push(
-      `The <${GT_COMPONENT_TYPES.T}> component must have a non negative number in its ${name} field`
-    );
-    return { errors };
-  }
-
   return { errors, value };
 }
 
@@ -291,7 +283,8 @@ function getNumberLiteralFromExpression(
   }
   // handle numbers with unary operators
   if (t.isUnaryExpression(expr) && t.isNumericLiteral(expr.argument)) {
-    return expr.operator === '-' ? -expr.argument.value : expr.argument.value;
+    // On purpose, we are taking the absolute value of the number literal
+    return expr.argument.value;
   }
 }
 
@@ -300,11 +293,4 @@ function getNumberLiteralFromExpression(
  */
 function validateNumberLiteralIsInteger(value: number): boolean {
   return Number.isInteger(value);
-}
-
-/**
- * Validate that a number literal is non negative
- */
-function validateNumberLiteralIsNonNegative(value: number): boolean {
-  return value >= 0;
 }

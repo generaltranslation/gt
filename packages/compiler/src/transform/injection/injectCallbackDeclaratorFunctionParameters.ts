@@ -142,7 +142,7 @@ function injectUseGTParameters(
                 ),
               ]
             : []),
-          ...(content.maxChars
+          ...(content.maxChars != null
             ? [
                 t.objectProperty(
                   t.identifier('maxChars'),

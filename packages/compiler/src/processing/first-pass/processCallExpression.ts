@@ -258,7 +258,7 @@ function handleReactInvocation(
       source: children!,
       ...(context && { context }),
       ...(id && { id }),
-      ...(maxChars && { maxChars }),
+      ...(maxChars != null && { maxChars }),
       dataFormat: 'JSX',
     });
 
