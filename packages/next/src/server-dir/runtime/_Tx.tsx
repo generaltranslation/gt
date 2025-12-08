@@ -50,10 +50,10 @@ async function Tx({
   // ----- SET UP ----- //
 
   // Compatibility with different options
-  const { $context, $locale } = options;
+  const { $context, $locale, $maxChars } = options;
   context = context ?? $context;
   locale = locale ?? $locale;
-
+  const maxChars = $maxChars;
   const I18NConfig = getI18NConfig();
   locale ||= await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
@@ -92,6 +92,7 @@ async function Tx({
   const hash = hashSource({
     source: childrenAsObjects,
     ...(context && { context }),
+    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: 'JSX',
   });
 
@@ -144,6 +145,7 @@ async function Tx({
         options: {
           hash,
           ...(context && { context }),
+          ...(maxChars && { maxChars }),
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
         },
       });

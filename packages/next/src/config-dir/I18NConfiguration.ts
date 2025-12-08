@@ -452,7 +452,12 @@ export default class I18NConfiguration {
           dataFormat,
           source,
           targetLocale,
-          metadata: options,
+          metadata: {
+            ...options,
+            ...(options.maxChars != null && {
+              maxChars: Math.abs(options.maxChars),
+            }),
+          },
           resolve,
           reject,
         });
@@ -516,7 +521,12 @@ export default class I18NConfiguration {
           dataFormat: 'JSX',
           source,
           targetLocale,
-          metadata: options,
+          metadata: {
+            ...options,
+            ...(options.maxChars != null && {
+              maxChars: Math.abs(options.maxChars),
+            }),
+          },
           resolve,
           reject,
         });

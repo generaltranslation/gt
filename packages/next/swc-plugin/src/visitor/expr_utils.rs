@@ -26,15 +26,48 @@ pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
   }
 }
 
+
+// Helper function to extract positive integers from expressions
+pub fn extract_number_from_expr(expr: &Expr) -> Option<i32> {
+  match expr {
+    Expr::Lit(Lit::Num(n)) => {
+      if n.value.fract() == 0.0 {
+        Some(n.value.abs() as i32)
+      } else {
+        None
+      }
+    }
+    // Handle unary expressions: accept +42 and -42 (take absolute value)
+    Expr::Unary(unary_expr) => {
+      if unary_expr.op == UnaryOp::Plus || unary_expr.op == UnaryOp::Minus {
+        if let Expr::Lit(Lit::Num(num)) = unary_expr.arg.as_ref() {
+          if num.value.fract() == 0.0 {
+            Some(num.value.abs() as i32)
+          } else {
+            None
+          }
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }
+    // Add more cases as needed for other expression types
+    _ => None,
+  }
+}
+
 // Helper function to extract id and context from options
 pub fn extract_id_and_context_from_options(
   options: Option<&ExprOrSpread>,
-) -> (Option<String>, Option<String>) {
-  let (id, context) = match options {
+) -> (Option<String>, Option<String>, Option<i32>) {
+  let (id, context, max_chars) = match options {
     Some(options) => match options.expr.as_ref() {
       Expr::Object(obj) => {
         let mut id_value = None;
         let mut context_value = None;
+        let mut max_chars_value = None;
 
         for prop in &obj.props {
           if let PropOrSpread::Prop(prop) = prop {
@@ -47,6 +80,9 @@ pub fn extract_id_and_context_from_options(
                   "$context" => {
                     context_value = extract_string_from_expr(&key_value.value);
                   }
+                  "$maxChars" => {
+                    max_chars_value = extract_number_from_expr(&key_value.value);
+                  }
                   _ => {}
                 }
               }
@@ -54,13 +90,13 @@ pub fn extract_id_and_context_from_options(
           }
         }
 
-        (id_value, context_value)
+        (id_value, context_value, max_chars_value)
       }
-      _ => (None, None),
+      _ => (None, None, None),
     },
-    None => (None, None),
+    None => (None, None, None),
   };
-  (id, context)
+  (id, context, max_chars)
 }
 
 pub fn create_string_prop(key: &str, value: &str, span: Span) -> PropOrSpread {

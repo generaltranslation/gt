@@ -16,11 +16,21 @@ export function collectUntranslatedEntries(
   id: string = ''
 ): {
   source: string;
-  metadata: { $id: string; $context?: string; $_hash: string };
+  metadata: {
+    $id: string;
+    $context?: string;
+    $maxChars?: number;
+    $_hash: string;
+  };
 }[] {
   const untranslatedEntries: {
     source: string;
-    metadata: { $id: string; $context?: string; $_hash: string };
+    metadata: {
+      $id: string;
+      $context?: string;
+      $maxChars?: number;
+      $_hash: string;
+    };
   }[] = [];
   Object.entries(dictionary).forEach(([key, value]) => {
     const wholeId = id ? `${id}.${key}` : key;
@@ -33,6 +43,7 @@ export function collectUntranslatedEntries(
           metadata: {
             $id: wholeId,
             $context: metadata?.$context,
+            $maxChars: metadata?.$maxChars,
             $_hash: metadata?.$_hash || '',
           },
         });

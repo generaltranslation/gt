@@ -34,7 +34,9 @@ export function isDictionaryEntry(
       value.length === 2 &&
       (typeof value[1] !== 'object' ||
         value[1] === null ||
-        (!('$context' in value[1]) && !('$_hash' in value[1])))
+        (!('$context' in value[1]) &&
+          !('$maxChars' in value[1]) &&
+          !('$_hash' in value[1])))
     ) {
       return false;
     }

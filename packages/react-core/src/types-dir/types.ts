@@ -39,6 +39,7 @@ export type TaggedChildren = TaggedChild[] | TaggedChild;
 export type Entry = string;
 export type MetaEntry = {
   $context?: string;
+  $maxChars?: number;
   $_hash?: string;
   [key: string]: unknown;
 };
@@ -113,6 +114,7 @@ export type _Message = {
   message: string;
   $id?: string;
   $context?: string;
+  $maxChars?: number;
   $_hash?: string;
 };
 export type _Messages = _Message[];
