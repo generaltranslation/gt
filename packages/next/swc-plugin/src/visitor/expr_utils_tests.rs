@@ -134,16 +134,16 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_number_from_expr_rejects_negatives() {
-        // Test negative integer
+    fn test_extract_number_from_expr_converts_negatives_to_positive() {
+        // Test negative integer literal - should return absolute value
         let negative_num = Expr::Lit(Lit::Num(Number {
             span: DUMMY_SP,
             value: -42.0,
             raw: None,
         }));
-        assert_eq!(extract_number_from_expr(&negative_num), None);
+        assert_eq!(extract_number_from_expr(&negative_num), Some(42));
 
-        // Test negative unary expression
+        // Test negative unary expression - should return absolute value
         let negative_unary = Expr::Unary(UnaryExpr {
             span: DUMMY_SP,
             op: UnaryOp::Minus,
@@ -153,12 +153,12 @@ mod tests {
                 raw: None,
             }))),
         });
-        assert_eq!(extract_number_from_expr(&negative_unary), None);
+        assert_eq!(extract_number_from_expr(&negative_unary), Some(25));
     }
 
     #[test]
     fn test_extract_number_from_expr_rejects_decimals() {
-        // Test positive decimal
+        // Test positive decimal - should be rejected
         let decimal_num = Expr::Lit(Lit::Num(Number {
             span: DUMMY_SP,
             value: 3.14,
@@ -166,7 +166,7 @@ mod tests {
         }));
         assert_eq!(extract_number_from_expr(&decimal_num), None);
 
-        // Test negative decimal
+        // Test negative decimal - should be rejected (because it's decimal, not because it's negative)
         let negative_decimal = Expr::Lit(Lit::Num(Number {
             span: DUMMY_SP,
             value: -2.5,
@@ -174,7 +174,7 @@ mod tests {
         }));
         assert_eq!(extract_number_from_expr(&negative_decimal), None);
 
-        // Test decimal in positive unary
+        // Test decimal in positive unary - should be rejected
         let decimal_unary = Expr::Unary(UnaryExpr {
             span: DUMMY_SP,
             op: UnaryOp::Plus,
@@ -185,6 +185,18 @@ mod tests {
             }))),
         });
         assert_eq!(extract_number_from_expr(&decimal_unary), None);
+
+        // Test decimal in negative unary - should be rejected
+        let negative_decimal_unary = Expr::Unary(UnaryExpr {
+            span: DUMMY_SP,
+            op: UnaryOp::Minus,
+            arg: Box::new(Expr::Lit(Lit::Num(Number {
+                span: DUMMY_SP,
+                value: 1.5,
+                raw: None,
+            }))),
+        });
+        assert_eq!(extract_number_from_expr(&negative_decimal_unary), None);
     }
 
     #[test]

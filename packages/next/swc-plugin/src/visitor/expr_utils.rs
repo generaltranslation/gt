@@ -31,18 +31,18 @@ pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
 pub fn extract_number_from_expr(expr: &Expr) -> Option<i32> {
   match expr {
     Expr::Lit(Lit::Num(n)) => {
-      if n.value >= 0.0 && n.value.fract() == 0.0 {
-        Some(n.value as i32)
+      if n.value.fract() == 0.0 {
+        Some(n.value.abs() as i32)
       } else {
         None
       }
     }
-    // Handle unary expressions: accept +42, reject -42
+    // Handle unary expressions: accept +42 and -42 (take absolute value)
     Expr::Unary(unary_expr) => {
-      if unary_expr.op == UnaryOp::Plus {
+      if unary_expr.op == UnaryOp::Plus || unary_expr.op == UnaryOp::Minus {
         if let Expr::Lit(Lit::Num(num)) = unary_expr.arg.as_ref() {
-          if num.value >= 0.0 && num.value.fract() == 0.0 {
-            Some(num.value as i32)
+          if num.value.fract() == 0.0 {
+            Some(num.value.abs() as i32)
           } else {
             None
           }

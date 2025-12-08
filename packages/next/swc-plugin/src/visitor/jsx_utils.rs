@@ -60,8 +60,8 @@ pub fn extract_max_chars_from_jsx_attr(
           match &jsx_attr.value {
             // Direct number literal: maxChars="42" or maxChars={42}
             Some(JSXAttrValue::Lit(Lit::Num(num))) => {
-              if num.value >= 0.0 && num.value.fract() == 0.0 {
-                Some(num.value as i32)
+              if num.value.fract() == 0.0 {
+                Some(num.value.abs() as i32)
               } else {
                 None
               }
@@ -70,20 +70,20 @@ pub fn extract_max_chars_from_jsx_attr(
             Some(JSXAttrValue::JSXExprContainer(expr_container)) => {
               match &expr_container.expr {
                 JSXExpr::Expr(expr) => match expr.as_ref() {
-                  // Positive integer only: maxChars={42}
+                  // Integer (take absolute value): maxChars={42}
                   Expr::Lit(Lit::Num(num)) => {
-                    if num.value >= 0.0 && num.value.fract() == 0.0 {
-                      Some(num.value as i32)
+                    if num.value.fract() == 0.0 {
+                      Some(num.value.abs() as i32)
                     } else {
                       None
                     }
                   }
-                  // Handle unary expressions: accept +42, reject -42
+                  // Handle unary expressions: accept +42 and -42 (take absolute value)
                   Expr::Unary(unary_expr) => {
-                    if unary_expr.op == UnaryOp::Plus {
+                    if unary_expr.op == UnaryOp::Plus || unary_expr.op == UnaryOp::Minus {
                       if let Expr::Lit(Lit::Num(num)) = unary_expr.arg.as_ref() {
-                        if num.value >= 0.0 && num.value.fract() == 0.0 {
-                          Some(num.value as i32)
+                        if num.value.fract() == 0.0 {
+                          Some(num.value.abs() as i32)
                         } else {
                           None
                         }
@@ -632,11 +632,11 @@ mod tests {
     }
 
     #[test]
-    fn rejects_negative_number_literal() {
+    fn converts_negative_number_literal_to_positive() {
       let attrs = vec![create_number_attr("maxChars", -5.0)];
       let element = create_jsx_element("div", attrs);
       let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
-      assert_eq!(result, None);
+      assert_eq!(result, Some(5));
     }
 
     #[test]
@@ -661,7 +661,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_negative_number_from_expression() {
+    fn converts_negative_number_from_expression_to_positive() {
       let expr = Expr::Lit(Lit::Num(Number {
         span: DUMMY_SP,
         value: -10.0,
@@ -670,7 +670,7 @@ mod tests {
       let attrs = vec![create_expr_attr("maxChars", expr)];
       let element = create_jsx_element("div", attrs);
       let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
-      assert_eq!(result, None);
+      assert_eq!(result, Some(10));
     }
 
     #[test]
@@ -695,11 +695,11 @@ mod tests {
     }
 
     #[test]
-    fn rejects_negative_unary_expression() {
+    fn converts_negative_unary_expression_to_positive() {
       let attrs = vec![create_unary_attr("maxChars", UnaryOp::Minus, 20.0)];
       let element = create_jsx_element("div", attrs);
       let result = extract_max_chars_from_jsx_attr(&element, "maxChars");
-      assert_eq!(result, None);
+      assert_eq!(result, Some(20));
     }
 
     #[test]
