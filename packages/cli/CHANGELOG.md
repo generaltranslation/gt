@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.26
+
+### Patch Changes
+
+- [#878](https://github.com/generaltranslation/gt/pull/878) [`5624f1c`](https://github.com/generaltranslation/gt/commit/5624f1c074ff9cb2065ed85dbb30fae24939f53e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Updating Mintlify preset to include `experimentalSort`
+
 ## 2.5.25
 
 ### Patch Changes
