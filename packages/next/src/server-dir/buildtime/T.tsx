@@ -65,6 +65,7 @@ async function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
+  const maxChars = options?.$maxChars;
 
   // ----- TAG CHILDREN ----- //
 
@@ -114,6 +115,7 @@ async function T({
     hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -165,6 +167,7 @@ async function T({
         hashSource({
           source: childrenAsObjects,
           ...(context && { context }),
+          ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
           ...(id && { id }),
           dataFormat: 'JSX',
         });
@@ -176,6 +179,7 @@ async function T({
           ...(id && { id }),
           hash,
           ...(context && { context }),
+          ...(maxChars && { maxChars }),
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
         },
       });

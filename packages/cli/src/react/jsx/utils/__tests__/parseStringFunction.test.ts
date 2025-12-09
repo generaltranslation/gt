@@ -479,6 +479,324 @@ describe('parseStrings', () => {
     expect(params.errors).toHaveLength(0);
   });
 
+  it('should handle $maxChars parameter correctly', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const result = gt("hello, {name}", {name: "John", $maxChars: 10});
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello, {name}',
+      metadata: {
+        maxChars: 10,
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle $maxChars with other metadata attributes', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const result = gt("hello world", { $id: 'greeting', $context: 'homepage', $maxChars: 25 });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {
+        id: 'greeting',
+        context: 'homepage',
+        maxChars: 25,
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should add errors for invalid $maxChars values (string)', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const result = gt("hello world", { $maxChars: "invalid" });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors.length).toBeGreaterThan(0);
+    expect(params.errors[0]).toContain('Found invalid maxChars value');
+  });
+
+  it('should add errors for invalid $maxChars values (boolean)', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const result = gt("hello world", { $maxChars: true });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {},
+    });
+    expect(params.errors.length).toBeGreaterThan(0);
+    expect(params.errors[0]).toContain('Found invalid maxChars value');
+  });
+
+  it('should handle $maxChars with zero value', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const result = gt("hello world", { $maxChars: 0 });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {
+        maxChars: 0,
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle $maxChars with negative values', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const result = gt("hello world", { $maxChars: -5 });
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello world',
+      metadata: {
+        maxChars: 5,
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle $maxChars with getGT() in async functions', () => {
+    const code = `
+      import { getGT } from 'generaltranslation';
+      async function test() {
+        const gt = await getGT();
+        gt("hello, {name}", {name: "John", $maxChars: 15});
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'getGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'getGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'hello, {name}',
+      metadata: {
+        maxChars: 15,
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle $maxChars with variable aliases', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      
+      function test() {
+        const translate = useGT();
+        const gt = translate;
+        gt("Limited text", { $maxChars: 50 });
+      }
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'Limited text',
+      metadata: {
+        maxChars: 50,
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
   it('should add errors for non-static metadata expressions', () => {
     const code = `
       import { useGT } from 'generaltranslation';

@@ -17,7 +17,12 @@ export function injectTranslations(
   translations: Translations,
   missingTranslations: {
     source: string;
-    metadata: { $id: string; $context?: string; $_hash: string };
+    metadata: {
+      $id: string;
+      $context?: string;
+      $maxChars?: number;
+      $_hash: string;
+    };
   }[],
   prefixToRemove: string = ''
 ): { dictionary: Dictionary; updateDictionary: boolean } {

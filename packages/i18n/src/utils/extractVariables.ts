@@ -13,6 +13,7 @@ export function extractVariables<T extends BaseTranslationOptions>(
       ([key]) =>
         key !== '$id' &&
         key !== '$context' &&
+        key !== '$maxChars' &&
         key !== '$hash' && // this is already being done in @gt/react-core
         key !== '$_hash' &&
         key !== '$_source'

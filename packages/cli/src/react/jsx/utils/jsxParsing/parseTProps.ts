@@ -6,7 +6,11 @@ const generate = generateModule.default || generateModule;
 
 import { GT_ATTRIBUTES, mapAttributeName } from '../constants.js';
 import { isStaticExpression } from '../../evaluateJsx.js';
-import { warnVariablePropSync } from '../../../../console/index.js';
+import {
+  warnInvalidMaxCharsSync,
+  warnVariablePropSync,
+} from '../../../../console/index.js';
+import { isNumberLiteral } from '../isNumberLiteral.js';
 
 // Parse the props of a <T> component
 export function parseTProps({
@@ -35,8 +39,10 @@ export function parseTProps({
         const expr = attr.value.expression;
         const code = generate(expr).code;
 
-        // Only check for static expressions on id and context props
-        if (GT_ATTRIBUTES.includes(attrName)) {
+        // Only check for static expressions on id and context and maxChars props
+        if (
+          GT_ATTRIBUTES.includes(attrName as (typeof GT_ATTRIBUTES)[number])
+        ) {
           const staticAnalysis = isStaticExpression(expr);
           if (!staticAnalysis.isStatic) {
             componentErrors.push(
@@ -50,7 +56,31 @@ export function parseTProps({
           }
           // Use the static value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
-            metadata[mapAttributeName(attrName)] = staticAnalysis.value;
+            // Check for invalid maxChars values
+            if (attrName === '$maxChars' || attrName === 'maxChars') {
+              if (
+                typeof staticAnalysis.value === 'string' &&
+                (isNaN(Number(staticAnalysis.value)) ||
+                  (t.isExpression(expr) && !isNumberLiteral(expr)) ||
+                  !Number.isInteger(Number(staticAnalysis.value)))
+              ) {
+                componentErrors.push(
+                  warnInvalidMaxCharsSync(
+                    file,
+                    code,
+                    `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+                  )
+                );
+              } else {
+                // Add the maxChars value to the metadata
+                metadata[mapAttributeName(attrName)] = Math.abs(
+                  Number(staticAnalysis.value)
+                );
+              }
+            } else {
+              // Add the $context or $id or other attributes value to the metadata
+              metadata[mapAttributeName(attrName)] = staticAnalysis.value;
+            }
           } else {
             // Only store the code if we couldn't extract a static value
             metadata[attrName] = code;

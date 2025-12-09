@@ -1,5 +1,20 @@
 # gtx-cli
 
+## 2.5.25
+
+### Patch Changes
+
+- [#876](https://github.com/generaltranslation/gt/pull/876) [`28bd6d5`](https://github.com/generaltranslation/gt/commit/28bd6d5f1ed50658da2e3adc5b59a40804b00b02) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding experimental alphabetical sort for JSONs with locales as keys
+
+## 2.5.24
+
+### Patch Changes
+
+- [#860](https://github.com/generaltranslation/gt/pull/860) [`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: support for max char
+
+- Updated dependencies [[`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - generaltranslation@8.1.1
+
 ## 2.5.23
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # gt-next
 
+## 6.11.0
+
+### Minor Changes
+
+- [#859](https://github.com/generaltranslation/gt/pull/859) [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: max chars
+
+### Patch Changes
+
+- Updated dependencies [[`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71), [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab), [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab)]:
+  - generaltranslation@8.1.1
+  - gt-react@10.9.0
+  - @generaltranslation/compiler@1.1.9
+  - @generaltranslation/supported-locales@2.0.31
+
 ## 6.10.3
 
 ### Patch Changes

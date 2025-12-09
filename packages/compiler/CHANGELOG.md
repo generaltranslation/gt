@@ -1,5 +1,14 @@
 # @generaltranslation/compiler
 
+## 1.1.9
+
+### Patch Changes
+
+- [#859](https://github.com/generaltranslation/gt/pull/859) [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: max char compatibility
+
+- Updated dependencies [[`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - generaltranslation@8.1.1
+
 ## 1.1.8
 
 ### Patch Changes
