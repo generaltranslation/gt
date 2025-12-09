@@ -16,12 +16,13 @@ describe('parseStrings', () => {
   const createMockParams = () => ({
     updates: [] as Updates,
     errors: [] as string[],
+    warnings: new Set<string>(),
     file: 'test.tsx',
   });
 
   it('should handle direct msg() calls', () => {
     const code = `
-      import { msg } from 'generaltranslation';
+      import { msg } from 'gt-next';
       msg('hello world');
     `;
     const ast = parseCode(code);
@@ -40,6 +41,7 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
+            params.warnings,
             params.file
           );
         }
@@ -53,6 +55,40 @@ describe('parseStrings', () => {
       metadata: {},
     });
     expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle nested m msg calls', () => {
+    const code = `
+      import { msg, useMessages } from 'gt-react';
+      const m = useMessages();
+      m(msg("hello world"));
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors).toHaveLength(0);
+    expect(params.warnings).toHaveLength(0);
   });
 
   it('should handle useGT() translation calls', () => {
