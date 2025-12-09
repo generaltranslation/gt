@@ -21,6 +21,7 @@ export function generatePreset(
             '$.navigation.languages': {
               type: 'array',
               key: '$.language',
+              experimentalSort: 'localesAlphabetical',
               include: [
                 '$..group',
                 '$..tab',
