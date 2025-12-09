@@ -719,149 +719,6 @@ export function parseJSXElement({
   }
 }
 
-// /**
-//  * Entry point for Static children
-//  * Resolves an invocation inside of a <Static> component. It will resolve the function, and build
-//  * a jsx tree for each return inside of the function definition.
-//  *
-//  * function getOtherSubject() {
-//  *   return <div>Jane</div>;
-//  * }
-//  *
-//  * function getSubject() {
-//  *   if (condition) return getOtherSubject();
-//  *   return <div>John</div>;
-//  * }
-//  * ...
-//  * <Static>
-//  *   {getSubject()}
-//  * </Static>
-//  */
-// function resolveStaticComponentChildren({
-//   importAliases,
-//   scopeNode,
-//   children,
-//   unwrappedExpressions,
-//   visited,
-//   updates,
-//   errors,
-//   warnings,
-//   file,
-//   callStack,
-//   parsingOptions,
-//   importedFunctionsMap,
-//   pkgs,
-//   props,
-// }: {
-//   importAliases: Record<string, string>;
-//   scopeNode: NodePath;
-//   children: (
-//     | t.JSXExpressionContainer
-//     | t.JSXText
-//     | t.JSXElement
-//     | t.JSXFragment
-//     | t.JSXSpreadChild
-//   )[];
-//   unwrappedExpressions: string[];
-//   visited: Set<string>;
-//   callStack: string[];
-//   updates: Updates;
-//   errors: string[];
-//   warnings: Set<string>;
-//   file: string;
-//   parsingOptions: ParsingConfigOptions;
-//   importedFunctionsMap: Map<string, string>;
-//   pkgs: GTLibrary[];
-//   props: { [key: string]: any };
-// }): ElementNode {
-//   const result = {
-//     nodeType: 'element' as const,
-//     type: STATIC_COMPONENT,
-//     props,
-//   };
-//   let found = false;
-
-//   // Create children array if necessary
-//   if (children.length) {
-//     result.props.children = [];
-//   }
-
-//   for (const child of children) {
-//     // Ignore whitespace outside of jsx container
-//     if (t.isJSXText(child) && child.value.trim() === '') {
-//       result.props.children.push(child.value);
-//       continue;
-//     }
-//     // Must be an expression container with a function invocation
-//     if (
-//       !t.isJSXExpressionContainer(child) ||
-//       !(
-//         (t.isCallExpression(child.expression) &&
-//           t.isIdentifier(child.expression.callee)) ||
-//         (t.isAwaitExpression(child.expression) &&
-//           t.isCallExpression(child.expression.argument) &&
-//           t.isIdentifier(child.expression.argument.callee))
-//       ) ||
-//       found // There can only be one invocation inside of a <Static> component
-//     ) {
-//       errors.push(
-//         warnInvalidStaticChildSync(
-//           file,
-//           `${child.loc?.start?.line}:${child.loc?.start?.column}`
-//         )
-//       );
-//       continue;
-//     }
-
-//     // Set found to true
-//     found = true;
-
-//     // Get callee and binding from scope
-//     const callee = (
-//       t.isAwaitExpression(child.expression)
-//         ? (child.expression.argument as t.CallExpression).callee
-//         : (child.expression as t.CallExpression).callee
-//     ) as t.Identifier;
-//     const calleeBinding = scopeNode.scope.getBinding(callee.name);
-
-//     if (!calleeBinding) {
-//       warnings.add(
-//         warnFunctionNotFoundSync(
-//           file,
-//           callee.name,
-//           `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
-//         )
-//       );
-//       continue;
-//     }
-
-//     // Function is found locally, return wrapped in an expression
-//     const staticFunctionInvocation = resolveStaticFunctionInvocationFromBinding(
-//       {
-//         importAliases,
-//         calleeBinding,
-//         callee,
-//         visited,
-//         callStack,
-//         file,
-//         updates,
-//         errors,
-//         warnings,
-//         unwrappedExpressions,
-//         pkgs,
-//         parsingOptions,
-//         importedFunctionsMap,
-//       }
-//     );
-//     result.props.children.push({
-//       nodeType: 'expression',
-//       result: staticFunctionInvocation,
-//     });
-//   }
-
-//   return result;
-// }
-
 function resolveStaticFunctionInvocationFromBinding({
   importAliases,
   calleeBinding,
@@ -1082,7 +939,7 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    let { importAliases } = getPathsAndAliases(ast, pkgs);
+    const { importAliases } = getPathsAndAliases(ast, pkgs);
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string> = new Map();
@@ -1091,12 +948,7 @@ function processFunctionInFile({
         importedFunctionsMap = buildImportMap(path);
       },
     });
-    // This breaks imports
-    // importAliases = {
-    //   ...importAliases,
-    //   ...(importedFunctionsMap &&
-    //     Object.fromEntries(importedFunctionsMap.entries())),
-    // };
+
     const reExports: string[] = [];
 
     const warnDuplicateFuncDef = (path: NodePath) => {
