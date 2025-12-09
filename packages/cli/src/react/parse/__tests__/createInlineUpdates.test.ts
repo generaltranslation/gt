@@ -79,9 +79,6 @@ async function createTest(dirPath: string) {
       }
 
       // no updates were generated (file may not have T components)
-      if (result.warnings.length > 0) {
-        console.log('warnings', result.warnings);
-      }
       expect(result.warnings).toHaveLength(0);
       expect(result.errors).toHaveLength(0);
       expect(result.updates).not.toHaveLength(0);
