@@ -1520,6 +1520,60 @@ describe('mergeJson', () => {
       ]);
     });
 
+    it('should order locales alphabetically with default locale first', () => {
+      const originalContent = JSON.stringify({
+        navigation: {
+          languages: [
+            { language: 'en', tab: 'Home' },
+            { language: 'ja', tab: 'ホーム' },
+          ],
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/navigation/languages': {
+              '/1': {
+                '/tab': 'Zuhause',
+              },
+            },
+          }),
+          targetLocale: 'de',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'docs.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$.tab'],
+                  key: '$.language',
+                  experimentalSort: 'localesAlphabetical',
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'ja',
+        ['en', 'de', 'ja']
+      );
+
+      const parsed = JSON.parse(result[0]);
+      const languages = parsed.navigation.languages;
+      expect(languages.map((lang: any) => lang.language)).toEqual([
+        'ja',
+        'de',
+        'en',
+      ]);
+    });
+
     it('should preserve non-translatable fields during merge', () => {
       const originalContent = JSON.stringify({
         items: [

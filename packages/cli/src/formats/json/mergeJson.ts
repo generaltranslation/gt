@@ -353,25 +353,10 @@ function sortByLocaleOrder(
   sourceObjectPointer: string,
   defaultLocale: string
 ): any[] {
-  if (
-    sourceObjectOptions.experimentalSort !== 'locales' ||
-    !localeOrder.length ||
-    !sourceObjectOptions.key
-  ) {
+  const sortMode = sourceObjectOptions.experimentalSort;
+  if (!sortMode || !sourceObjectOptions.key) {
     return items;
   }
-
-  const orderedLocaleList = [
-    defaultLocale,
-    ...localeOrder.filter((locale) => locale !== defaultLocale),
-  ];
-  const localeOrderValues = orderedLocaleList.map((locale) =>
-    getIdentifyingLocaleProperty(
-      locale,
-      sourceObjectPointer,
-      sourceObjectOptions
-    )
-  );
 
   const itemsWithLocale = items.map((item) => {
     let localeValue: string | undefined;
@@ -393,24 +378,79 @@ function sortByLocaleOrder(
     return { item, localeValue };
   });
 
-  const orderedItems: any[] = [];
-  const remainingItems = [...itemsWithLocale];
-
-  for (const localeValue of localeOrderValues) {
-    for (let i = 0; i < remainingItems.length; ) {
-      const entry = remainingItems[i];
-      if (entry.localeValue === localeValue) {
-        orderedItems.push(entry.item);
-        remainingItems.splice(i, 1);
-        continue;
-      }
-      i += 1;
+  if (sortMode === 'locales') {
+    if (!localeOrder.length) {
+      return items;
     }
+
+    const orderedLocaleList = [
+      defaultLocale,
+      ...localeOrder.filter((locale) => locale !== defaultLocale),
+    ];
+    const localeOrderValues = orderedLocaleList.map((locale) =>
+      getIdentifyingLocaleProperty(
+        locale,
+        sourceObjectPointer,
+        sourceObjectOptions
+      )
+    );
+
+    const orderedItems: any[] = [];
+    const remainingItems = [...itemsWithLocale];
+
+    for (const localeValue of localeOrderValues) {
+      for (let i = 0; i < remainingItems.length; ) {
+        const entry = remainingItems[i];
+        if (entry.localeValue === localeValue) {
+          orderedItems.push(entry.item);
+          remainingItems.splice(i, 1);
+          continue;
+        }
+        i += 1;
+      }
+    }
+
+    remainingItems.forEach((entry) => orderedItems.push(entry.item));
+
+    return orderedItems;
   }
 
-  remainingItems.forEach((entry) => orderedItems.push(entry.item));
+  if (sortMode === 'localesAlphabetical') {
+    const defaultLocaleValue = getIdentifyingLocaleProperty(
+      defaultLocale,
+      sourceObjectPointer,
+      sourceObjectOptions
+    );
 
-  return orderedItems;
+    const defaultItems: typeof itemsWithLocale = [];
+    const sortableItems: typeof itemsWithLocale = [];
+    const remainingItems: typeof itemsWithLocale = [];
+
+    for (const entry of itemsWithLocale) {
+      if (entry.localeValue === defaultLocaleValue) {
+        defaultItems.push(entry);
+        continue;
+      }
+      if (entry.localeValue) {
+        sortableItems.push(entry);
+        continue;
+      }
+      remainingItems.push(entry);
+    }
+
+    sortableItems.sort((a, b) => {
+      if (!a.localeValue || !b.localeValue) {
+        return 0;
+      }
+      return a.localeValue.localeCompare(b.localeValue);
+    });
+
+    return [...defaultItems, ...sortableItems, ...remainingItems].map(
+      (entry) => entry.item
+    );
+  }
+
+  return items;
 }
 
 /**
