@@ -11,7 +11,6 @@ import addGTIdentifierToSyntaxTree from './addGTIdentifierToSyntaxTree.js';
 import {
   warnHasUnwrappedExpressionSync,
   warnNestedTComponent,
-  warnInvalidStaticChildSync,
   warnFunctionNotFoundSync,
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
@@ -35,12 +34,7 @@ import { buildImportMap } from '../buildImportMap.js';
 import { getPathsAndAliases } from '../getPathsAndAliases.js';
 import { parseTProps } from './parseTProps.js';
 import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
-import {
-  MultiplicationNode,
-  JsxTree,
-  isElementNode,
-  ElementNode,
-} from './types.js';
+import { MultiplicationNode, JsxTree, isElementNode } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../constants.js';
@@ -140,6 +134,7 @@ export function buildJSXTree({
   importAliases,
   node,
   unwrappedExpressions,
+  inStatic,
   visited,
   callStack,
   updates,
@@ -151,12 +146,12 @@ export function buildJSXTree({
   scopeNode,
   importedFunctionsMap,
   pkgs,
+  helperPath,
 }: {
   importAliases: Record<string, string>;
   node: any;
   callStack: string[];
   unwrappedExpressions: string[];
-  visited: Set<string> | null;
   updates: Updates;
   errors: string[];
   warnings: Set<string>;
@@ -166,15 +161,38 @@ export function buildJSXTree({
   scopeNode: NodePath;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
-}): JsxTree {
+  inStatic: boolean;
+  visited: Set<string> | null;
+  helperPath: NodePath;
+}): JsxTree | MultiplicationNode {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
       return null;
     }
 
+    if (inStatic) {
+      return processStaticExpression({
+        unwrappedExpressions,
+        scopeNode,
+        expressionNodePath: helperPath.get(
+          'expression'
+        ) as NodePath<t.Expression>,
+        importAliases,
+        visited: visited!,
+        callStack,
+        updates,
+        errors,
+        warnings,
+        file,
+        parsingOptions,
+        importedFunctionsMap,
+        pkgs,
+      });
+    }
+
     const expr = node.expression;
-    if (t.isJSXElement(expr)) {
+    if (t.isJSXElement(expr) || t.isJSXFragment(expr)) {
       return buildJSXTree({
         importAliases,
         node: expr,
@@ -182,14 +200,16 @@ export function buildJSXTree({
         visited,
         callStack,
         updates,
-        errors: errors,
-        warnings: warnings,
+        errors,
+        warnings,
         file,
         insideT,
         parsingOptions,
         scopeNode,
         importedFunctionsMap,
         pkgs,
+        inStatic,
+        helperPath: helperPath.get('expression'),
       });
     }
 
@@ -201,6 +221,7 @@ export function buildJSXTree({
         result: staticAnalysis.value,
       };
     }
+
     // Keep existing behavior for non-static expressions
     const code = generate(node).code;
     unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
@@ -244,7 +265,10 @@ export function buildJSXTree({
     const elementIsPlural = componentType === 'Plural';
     const elementIsBranch = componentType === 'Branch';
 
-    element.openingElement.attributes.forEach((attr) => {
+    element.openingElement.attributes.forEach((attr, index) => {
+      const helperAttribute = helperPath
+        .get('openingElement')
+        .get('attributes')[index];
       if (t.isJSXAttribute(attr)) {
         const attrName = attr.name.name;
         let attrValue = null;
@@ -252,47 +276,33 @@ export function buildJSXTree({
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
           } else if (t.isJSXExpressionContainer(attr.value)) {
+            const helperValue = helperAttribute.get(
+              'value'
+            ) as NodePath<t.JSXExpressionContainer>;
             // Check if this is an HTML content prop (title, placeholder, alt, etc.)
             const isHtmlContentProp = Object.values(
               HTML_CONTENT_PROPS
             ).includes(attrName as any);
 
-            if (isHtmlContentProp) {
-              // For HTML content props, only accept static string expressions
-              const staticAnalysis = isStaticExpression(
-                attr.value.expression,
-                true
-              );
+            // If its a plural or branch prop
+            if (
+              (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
+              (elementIsBranch && attrName !== 'branch')
+            ) {
+              // Make sure that variable strings like {`I have ${count} book`} are invalid!
               if (
-                staticAnalysis.isStatic &&
-                staticAnalysis.value !== undefined
+                t.isTemplateLiteral(attr.value.expression) &&
+                !isStaticExpression(attr.value.expression, true).isStatic
               ) {
-                attrValue = staticAnalysis.value;
+                unwrappedExpressions.push(generate(attr.value).code);
               }
-              // Otherwise attrValue stays null and won't be included
-            } else {
-              // For non-HTML-content props, validate plural/branch then build tree
-              if (
-                (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
-                (elementIsBranch && attrName !== 'branch')
-              ) {
-                // Make sure that variable strings like {`I have ${count} book`} are invalid!
-                if (
-                  t.isTemplateLiteral(attr.value.expression) &&
-                  !isStaticExpression(attr.value.expression, true).isStatic
-                ) {
-                  unwrappedExpressions.push(generate(attr.value).code);
-                }
-                // If it's an array, flag as an unwrapped expression
-                if (t.isArrayExpression(attr.value.expression)) {
-                  unwrappedExpressions.push(
-                    generate(attr.value.expression).code
-                  );
-                }
+              // If it's an array, flag as an unwrapped expression
+              if (t.isArrayExpression(attr.value.expression)) {
+                unwrappedExpressions.push(generate(attr.value.expression).code);
               }
               attrValue = buildJSXTree({
                 importAliases,
-                node: attr.value.expression,
+                node: attr.value,
                 unwrappedExpressions,
                 visited,
                 callStack,
@@ -305,7 +315,23 @@ export function buildJSXTree({
                 scopeNode,
                 importedFunctionsMap,
                 pkgs,
+                inStatic,
+                helperPath: helperValue,
               });
+            }
+            // For HTML content props, only accept static string expressions
+            else if (isHtmlContentProp) {
+              const staticAnalysis = isStaticExpression(
+                attr.value.expression,
+                true
+              );
+              if (
+                staticAnalysis.isStatic &&
+                staticAnalysis.value !== undefined
+              ) {
+                attrValue = staticAnalysis.value;
+              }
+              // Otherwise attrValue stays null and won't be included
             }
           }
         }
@@ -315,37 +341,44 @@ export function buildJSXTree({
 
     if (elementIsVariable) {
       if (componentType === STATIC_COMPONENT) {
+        const helperElement = helperPath.get('children');
+        const results = {
+          nodeType: 'element' as const,
+          type: STATIC_COMPONENT,
+          props,
+        };
+        // Create children array if necessary
+        if (element.children.length) {
+          results.props.children = [];
+        }
         if (visited === null) {
           visited = new Set();
         }
-        return resolveStaticComponentChildren({
-          importAliases,
-          scopeNode,
-          children: element.children,
-          unwrappedExpressions,
-          visited,
-          updates,
-          errors,
-          warnings,
-          file,
-          callStack,
-          parsingOptions,
-          importedFunctionsMap,
-          pkgs,
-          props,
-        });
+        for (let index = 0; index < element.children.length; index++) {
+          const helperChild = helperElement[index];
+          const result = buildJSXTree({
+            importAliases,
+            node: helperChild.node,
+            unwrappedExpressions,
+            visited,
+            callStack,
+            updates,
+            errors,
+            warnings,
+            file,
+            insideT: true,
+            parsingOptions,
+            scopeNode,
+            importedFunctionsMap,
+            pkgs,
+            inStatic: true,
+            helperPath: helperChild,
+          });
+          results.props.children.push(result);
+        }
+        return results;
       }
 
-      // I do not see why this is being called, i am disabling this for now:
-      // parseJSXElement({
-      //   importAliases,
-      //   node: element,
-      //   updates,
-      //   errors,
-      //   warnings,
-      //   file,
-      //   parsingOptions,
-      // });
       return {
         nodeType: 'element',
         // if componentType is undefined, use typeName
@@ -355,8 +388,8 @@ export function buildJSXTree({
       };
     }
 
-    const children: JsxTree[] = element.children
-      .map((child) =>
+    const children: (JsxTree | MultiplicationNode)[] = element.children
+      .map((child, index) =>
         buildJSXTree({
           importAliases,
           node: child,
@@ -372,6 +405,8 @@ export function buildJSXTree({
           scopeNode,
           importedFunctionsMap,
           pkgs,
+          inStatic,
+          helperPath: helperPath.get('children')[index],
         })
       )
       .filter((child) => child !== null && child !== '');
@@ -393,7 +428,7 @@ export function buildJSXTree({
   // If it's a JSX fragment
   else if (t.isJSXFragment(node)) {
     const children = node.children
-      .map((child: any) =>
+      .map((child: any, index: number) =>
         buildJSXTree({
           importAliases,
           node: child,
@@ -409,6 +444,8 @@ export function buildJSXTree({
           scopeNode,
           importedFunctionsMap,
           pkgs,
+          inStatic,
+          helperPath: helperPath.get('children')[index],
         })
       )
       .filter((child: any) => child !== null && child !== '');
@@ -459,6 +496,66 @@ export function buildJSXTree({
       return staticAnalysis.value;
     }
     return generate(node).code;
+  } else if (
+    (t.isCallExpression(node) && t.isIdentifier(node.callee)) ||
+    (t.isAwaitExpression(node) &&
+      t.isCallExpression(node.argument) &&
+      t.isIdentifier(node.argument.callee))
+  ) {
+    if (inStatic) {
+      const callExpression = (
+        node.type === 'AwaitExpression' ? node.argument : node
+      ) as t.CallExpression;
+      const callee = callExpression.callee as t.Identifier;
+      const calleeBinding = scopeNode.scope.getBinding(callee.name);
+      if (!calleeBinding) {
+        warnings.add(
+          warnFunctionNotFoundSync(
+            file,
+            callee.name,
+            `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
+          )
+        );
+        return null;
+      }
+      return resolveStaticFunctionInvocationFromBinding({
+        importAliases,
+        calleeBinding,
+        callee,
+        visited: visited!, // we know this is true bc of inStatic
+        callStack,
+        file,
+        updates,
+        errors,
+        warnings,
+        unwrappedExpressions,
+        pkgs,
+        parsingOptions,
+        importedFunctionsMap,
+      });
+    } else {
+      unwrappedExpressions.push(generate(node).code);
+    }
+  } else if (t.isParenthesizedExpression(node)) {
+    const child = node.expression;
+    return buildJSXTree({
+      importAliases,
+      node: child,
+      unwrappedExpressions,
+      visited,
+      callStack,
+      updates,
+      errors,
+      warnings,
+      file,
+      insideT,
+      parsingOptions,
+      scopeNode,
+      importedFunctionsMap,
+      pkgs,
+      inStatic,
+      helperPath: helperPath.get('expression'),
+    });
   }
   // If it's some other JS expression
   else if (
@@ -469,10 +566,15 @@ export function buildJSXTree({
     t.isLogicalExpression(node) ||
     t.isConditionalExpression(node)
   ) {
-    return generate(node).code;
+    unwrappedExpressions.push(generate(node).code);
   } else {
-    return generate(node).code;
+    if (node === undefined) {
+      unwrappedExpressions.push(node);
+    } else {
+      unwrappedExpressions.push(generate(node).code);
+    }
   }
+  return null;
 }
 // end buildJSXTree
 
@@ -544,7 +646,9 @@ export function parseJSXElement({
     insideT: false,
     parsingOptions,
     importedFunctionsMap,
-  });
+    inStatic: false,
+    helperPath: scopeNode,
+  }) as JsxTree;
 
   // Strip the outer <T> component if necessary
   const jsxTree =
@@ -607,148 +711,6 @@ export function parseJSXElement({
       metadata: { ...structuredClone(metadata) },
     });
   }
-}
-
-/**
- * Resolves an invocation inside of a <Static> component. It will resolve the function, and build
- * a jsx tree for each return inside of the function definition.
- *
- * function getOtherSubject() {
- *   return <div>Jane</div>;
- * }
- *
- * function getSubject() {
- *   if (condition) return getOtherSubject();
- *   return <div>John</div>;
- * }
- * ...
- * <Static>
- *   {getSubject()}
- * </Static>
- */
-function resolveStaticComponentChildren({
-  importAliases,
-  scopeNode,
-  children,
-  unwrappedExpressions,
-  visited,
-  updates,
-  errors,
-  warnings,
-  file,
-  callStack,
-  parsingOptions,
-  importedFunctionsMap,
-  pkgs,
-  props,
-}: {
-  importAliases: Record<string, string>;
-  scopeNode: NodePath;
-  children: (
-    | t.JSXExpressionContainer
-    | t.JSXText
-    | t.JSXElement
-    | t.JSXFragment
-    | t.JSXSpreadChild
-  )[];
-  unwrappedExpressions: string[];
-  visited: Set<string>;
-  callStack: string[];
-  updates: Updates;
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  parsingOptions: ParsingConfigOptions;
-  importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibrary[];
-  props: { [key: string]: any };
-}): ElementNode {
-  const result = {
-    nodeType: 'element' as const,
-    type: STATIC_COMPONENT,
-    props,
-  };
-  let found = false;
-
-  // Create children array if necessary
-  if (children.length) {
-    result.props.children = [];
-  }
-
-  for (const child of children) {
-    // Ignore whitespace outside of jsx container
-    if (t.isJSXText(child) && child.value.trim() === '') {
-      result.props.children.push(child.value);
-      continue;
-    }
-    // Must be an expression container with a function invocation
-    if (
-      !t.isJSXExpressionContainer(child) ||
-      !(
-        (t.isCallExpression(child.expression) &&
-          t.isIdentifier(child.expression.callee)) ||
-        (t.isAwaitExpression(child.expression) &&
-          t.isCallExpression(child.expression.argument) &&
-          t.isIdentifier(child.expression.argument.callee))
-      ) ||
-      found // There can only be one invocation inside of a <Static> component
-    ) {
-      errors.push(
-        warnInvalidStaticChildSync(
-          file,
-          `${child.loc?.start?.line}:${child.loc?.start?.column}`
-        )
-      );
-      continue;
-    }
-
-    // Set found to true
-    found = true;
-
-    // Get callee and binding from scope
-    const callee = (
-      t.isAwaitExpression(child.expression)
-        ? (child.expression.argument as t.CallExpression).callee
-        : (child.expression as t.CallExpression).callee
-    ) as t.Identifier;
-    const calleeBinding = scopeNode.scope.getBinding(callee.name);
-
-    if (!calleeBinding) {
-      warnings.add(
-        warnFunctionNotFoundSync(
-          file,
-          callee.name,
-          `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
-        )
-      );
-      continue;
-    }
-
-    // Function is found locally, return wrapped in an expression
-    const staticFunctionInvocation = resolveStaticFunctionInvocationFromBinding(
-      {
-        importAliases,
-        calleeBinding,
-        callee,
-        visited,
-        callStack,
-        file,
-        updates,
-        errors,
-        warnings,
-        unwrappedExpressions,
-        pkgs,
-        parsingOptions,
-        importedFunctionsMap,
-      }
-    );
-    result.props.children.push({
-      nodeType: 'expression',
-      result: staticFunctionInvocation,
-    });
-  }
-
-  return result;
 }
 
 function resolveStaticFunctionInvocationFromBinding({
@@ -971,7 +933,7 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    let { importAliases } = getPathsAndAliases(ast, pkgs);
+    const { importAliases } = getPathsAndAliases(ast, pkgs);
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string> = new Map();
@@ -980,11 +942,6 @@ function processFunctionInFile({
         importedFunctionsMap = buildImportMap(path);
       },
     });
-    importAliases = {
-      ...importAliases,
-      ...(importedFunctionsMap &&
-        Object.fromEntries(importedFunctionsMap.entries())),
-    };
 
     const reExports: string[] = [];
 
@@ -1161,9 +1118,8 @@ function processFunctionDeclarationNodePath({
         return;
       }
       result.branches.push(
-        processReturnExpression({
+        processStaticExpression({
           unwrappedExpressions,
-          functionName,
           pkgs,
           callStack,
           scopeNode: returnNodePath,
@@ -1243,9 +1199,8 @@ function processVariableDeclarationNodePath({
   if (bodyNodePath.isExpression()) {
     // process expression return
     result.branches.push(
-      processReturnExpression({
+      processStaticExpression({
         unwrappedExpressions,
-        functionName,
         pkgs,
         scopeNode: arrowFunctionPath,
         expressionNodePath: bodyNodePath,
@@ -1272,9 +1227,8 @@ function processVariableDeclarationNodePath({
           return;
         }
         result.branches.push(
-          processReturnExpression({
+          processStaticExpression({
             unwrappedExpressions,
-            functionName,
             pkgs,
             scopeNode: returnPath,
             expressionNodePath: returnNodePath,
@@ -1307,9 +1261,9 @@ function processVariableDeclarationNodePath({
 }
 
 /**
- * Process a expression being returned from a function
+ * Process a <Static> expression
  */
-function processReturnExpression({
+function processStaticExpression({
   unwrappedExpressions,
   scopeNode,
   expressionNodePath,
@@ -1322,10 +1276,8 @@ function processReturnExpression({
   file,
   parsingOptions,
   importedFunctionsMap,
-  functionName,
   pkgs,
 }: {
-  functionName: string;
   unwrappedExpressions: string[];
   /* TODO: remove scopeNode, we can just reuse expressionNodePath here */
   scopeNode: NodePath;
@@ -1347,7 +1299,7 @@ function processReturnExpression({
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(expressionNodePath.node)) {
     // ex: return (value)
-    return processReturnExpression({
+    return processStaticExpression({
       unwrappedExpressions,
       importAliases,
       scopeNode,
@@ -1359,7 +1311,6 @@ function processReturnExpression({
       warnings,
       file,
       parsingOptions,
-      functionName,
       importedFunctionsMap,
       pkgs,
     });
@@ -1450,6 +1401,8 @@ function processReturnExpression({
       scopeNode,
       importedFunctionsMap,
       pkgs,
+      inStatic: true,
+      helperPath: expressionNodePath,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1460,7 +1413,7 @@ function processReturnExpression({
       nodeType: 'multiplication' as const,
       branches: [consequentNodePath, alternateNodePath].map(
         (expressionNodePath) =>
-          processReturnExpression({
+          processStaticExpression({
             unwrappedExpressions,
             importAliases,
             scopeNode,
@@ -1472,7 +1425,6 @@ function processReturnExpression({
             warnings,
             file,
             parsingOptions,
-            functionName,
             importedFunctionsMap,
             pkgs,
           })
@@ -1495,6 +1447,8 @@ function processReturnExpression({
       scopeNode,
       importedFunctionsMap,
       pkgs,
+      inStatic: true,
+      helperPath: expressionNodePath,
     });
   }
 }

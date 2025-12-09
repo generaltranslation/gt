@@ -6,7 +6,7 @@ import {
   colorizeLine,
   colorizeFunctionName,
 } from './colors.js';
-import { formatCode } from './formatting.js';
+import { formatCodeClamp } from './formatting.js';
 
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
@@ -177,16 +177,6 @@ export const withLocation = (
 ): string =>
   `${colorizeFilepath(file)}${location ? ` (${colorizeLine(location)})` : ''}: ${message}`;
 
-export const warnInvalidStaticChildSync = (
-  file: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    'Found invalid <Static> invocation. Children must be an expression container with a function invocation. Callee must be a single identifier. (Example: <T> <Static> {getSubject()} </Static> </T>)',
-    location
-  );
-
 export const warnFunctionNotFoundSync = (
   file: string,
   functionName: string,
@@ -245,7 +235,7 @@ export const warnDeclareStaticNotWrappedSync = (
   withLocation(
     file,
     withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCode(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
     ),
     location
   );
@@ -258,7 +248,7 @@ export const warnDeclareStaticNoResultsSync = (
   withLocation(
     file,
     withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCode(functionName))}. DeclareStatic cannot use undefined values or looped calls to construct its result.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );
