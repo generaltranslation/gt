@@ -42,10 +42,13 @@ export type MintlifyOptions = {
   openapi?: OpenApiConfig;
 };
 
-export type TranslateFlags = {
+export type SharedFlags = {
   config?: string;
   apiKey?: string;
   projectId?: string;
+};
+
+export type TranslateFlags = SharedFlags & {
   versionId?: string;
   jsconfig?: string;
   dictionary?: string;

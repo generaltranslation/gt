@@ -17,6 +17,7 @@ import {
   SupportedLibraries,
   SetupOptions,
   TranslateFlags,
+  SharedFlags,
 } from '../types/index.js';
 import { DataFormat } from '../types/data.js';
 import { generateSettings } from '../config/generateSettings.js';
@@ -33,7 +34,7 @@ import { getPackageManager } from '../utils/packageManager.js';
 import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
 import { upload } from '../formats/files/upload.js';
-import { attachTranslateFlags } from './flags.js';
+import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
 import { handleSetupProject } from './commands/setupProject.js';
 import {
@@ -133,18 +134,18 @@ export class BaseCLI {
   }
 
   protected setupSendDiffsCommand(): void {
-    this.program
-      .command('save-local')
-      .description(
-        'Save local edits for all configured files by sending diffs (no translation enqueued)'
-      )
-      .action(async () => {
-        displayHeader('Saving local edits...');
-        const config = findFilepath(['gt.config.json']);
-        const settings = await generateSettings({ config });
-        await saveLocalEdits(settings);
-        logger.endCommand('Saved local edits');
-      });
+    attachSharedFlags(
+      this.program
+        .command('save-local')
+        .description(
+          'Save local edits for all configured files by sending diffs (no translation enqueued)'
+        )
+    ).action(async (initOptions: SharedFlags) => {
+      displayHeader('Saving local edits...');
+      const settings = await generateSettings(initOptions);
+      await saveLocalEdits(settings);
+      logger.endCommand('Saved local edits');
+    });
   }
 
   protected async handleSetupProject(
