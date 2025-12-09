@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.25
+
+### Patch Changes
+
+- [#876](https://github.com/generaltranslation/gt/pull/876) [`28bd6d5`](https://github.com/generaltranslation/gt/commit/28bd6d5f1ed50658da2e3adc5b59a40804b00b02) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding experimental alphabetical sort for JSONs with locales as keys
+
 ## 2.5.24
 
 ### Patch Changes
