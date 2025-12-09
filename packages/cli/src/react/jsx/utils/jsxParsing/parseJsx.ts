@@ -34,16 +34,10 @@ import { buildImportMap } from '../buildImportMap.js';
 import { getPathsAndAliases } from '../getPathsAndAliases.js';
 import { parseTProps } from './parseTProps.js';
 import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
-import {
-  MultiplicationNode,
-  JsxTree,
-  isElementNode,
-  ElementNode,
-} from './types.js';
+import { MultiplicationNode, JsxTree, isElementNode } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../constants.js';
-import { logger } from '../../../../console/logger.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
