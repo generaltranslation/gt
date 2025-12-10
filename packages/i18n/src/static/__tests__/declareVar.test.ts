@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '@formatjs/icu-messageformat-parser';
 import { IntlMessageFormat } from 'intl-messageformat';
-import { sanitizeVar } from '../sanitizeVar';
+import { declareVar } from '../declareVar';
 
-describe('sanitizeVar', () => {
+describe('declareVar', () => {
   // Helper function to test that a sanitized string doesn't break ICU parsing
   const testICUSafety = (input: string, description: string) => {
     it(`should safely escape: ${description}`, () => {
-      const sanitized = sanitizeVar(input);
+      const sanitized = declareVar(input);
 
       // The sanitized output should be parseable as ICU
       expect(() => parse(sanitized)).not.toThrow();
@@ -67,7 +67,7 @@ describe('sanitizeVar', () => {
       ];
 
       inputs.forEach((input) => {
-        const sanitized = sanitizeVar(input);
+        const sanitized = declareVar(input);
         const ast = parse(sanitized);
 
         // The AST should be a select statement with our escaped content
@@ -79,7 +79,7 @@ describe('sanitizeVar', () => {
     });
 
     it('should handle variable name option', () => {
-      const result = sanitizeVar('test value', { $name: 'test{name}' });
+      const result = declareVar('test value', { $name: 'test{name}' });
       expect(() => parse(result)).not.toThrow();
 
       const ast = parse(result);
@@ -87,7 +87,7 @@ describe('sanitizeVar', () => {
     });
 
     it('should work with null/undefined variable when name is provided', () => {
-      const result = sanitizeVar('', { $name: 'variable name' });
+      const result = declareVar('', { $name: 'variable name' });
       expect(() => parse(result)).not.toThrow();
     });
   });
@@ -95,7 +95,7 @@ describe('sanitizeVar', () => {
   describe('IntlMessageFormat integration', () => {
     it('should render original string for simple case', () => {
       const originalText = 'Hello {world} with <tags>';
-      const sanitized = sanitizeVar(originalText);
+      const sanitized = declareVar(originalText);
 
       const msg = new IntlMessageFormat(sanitized, 'en');
       const output = msg.format({ _gt_: 'placeholder' });
@@ -105,7 +105,7 @@ describe('sanitizeVar', () => {
 
     it('should render original string for complex ICU syntax', () => {
       const originalText = '{count, plural, one{# item} other{# items}}';
-      const sanitized = sanitizeVar(originalText);
+      const sanitized = declareVar(originalText);
 
       const msg = new IntlMessageFormat(sanitized, 'en');
       const output = msg.format({ _gt_: 'placeholder' });
@@ -115,7 +115,7 @@ describe('sanitizeVar', () => {
 
     it('should render original string with quotes and special chars', () => {
       const originalText = "User's data: {id: 123} <status>active</status>";
-      const sanitized = sanitizeVar(originalText);
+      const sanitized = declareVar(originalText);
 
       const msg = new IntlMessageFormat(sanitized, 'en');
       const output = msg.format({ _gt_: 'placeholder' });
