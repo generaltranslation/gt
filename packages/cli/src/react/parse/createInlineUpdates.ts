@@ -12,7 +12,6 @@ import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import { GTLibrary, GT_LIBRARIES_UPSTREAM } from '../jsx/utils/constants.js';
-import path from 'node:path';
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -31,7 +30,6 @@ export async function createInlineUpdates(
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
 
   for (const file of files) {
-    const relativeFilePath = path.relative(process.cwd(), file) || file;
     const code = await fs.promises.readFile(file, 'utf8');
     let ast;
     try {
@@ -62,8 +60,7 @@ export async function createInlineUpdates(
         errors,
         warnings,
         file,
-        parsingOptions,
-        relativeFilePath
+        parsingOptions
       );
     }
 
@@ -80,8 +77,7 @@ export async function createInlineUpdates(
         errors,
         warnings,
         file,
-        parsingOptions,
-        filepath: relativeFilePath,
+        parsingOptions
       });
     }
 

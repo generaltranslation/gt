@@ -668,13 +668,12 @@ export function parseStrings(
   updates: Updates,
   errors: string[],
   warnings: Set<string>,
-  file: string = '',
-  parsingOptions: ParsingConfigOptions = { conditionNames: [] },
-  filepath?: string
+  file: string,
+  parsingOptions: ParsingConfigOptions
 ): void {
   const filePath = file;
   const normalizedFilepath =
-    (filepath ?? pathModule.relative(process.cwd(), filePath)) || filePath;
+    pathModule.relative(process.cwd(), filePath) || filePath;
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 

@@ -44,6 +44,7 @@ import {
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../constants.js';
+import path from 'node:path';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -78,7 +79,6 @@ export function parseTranslationComponent({
   file,
   parsingOptions,
   pkgs,
-  filepath = file,
 }: {
   ast: any;
   pkgs: GTLibrary[];
@@ -91,7 +91,6 @@ export function parseTranslationComponent({
   warnings: Set<string>;
   file: string;
   parsingOptions: ParsingConfigOptions;
-  filepath?: string;
 }) {
   // First, collect all imports in this file to track cross-file function calls
   const importedFunctionsMap: Map<string, string> = buildImportMap(
@@ -123,8 +122,7 @@ export function parseTranslationComponent({
       warnings,
       file,
       parsingOptions,
-      importedFunctionsMap,
-      filepath,
+      importedFunctionsMap
     });
   }
 }
@@ -492,7 +490,6 @@ export function parseJSXElement({
   parsingOptions,
   scopeNode,
   importedFunctionsMap,
-  filepath,
 }: {
   importAliases: Record<string, string>;
   node: t.JSXElement;
@@ -505,7 +502,6 @@ export function parseJSXElement({
   parsingOptions: ParsingConfigOptions;
   scopeNode: NodePath<t.JSXElement>;
   importedFunctionsMap: Map<string, string>;
-  filepath: string;
 }) {
   const openingElement = node.openingElement;
   const name = openingElement.name;
@@ -521,7 +517,8 @@ export function parseJSXElement({
   const componentErrors: string[] = [];
   const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
-  metadata.filePaths = [filepath];
+  const normalizedFilepath = path.relative(process.cwd(), file) || file;
+  metadata.filePaths = [normalizedFilepath];
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
   const unwrappedExpressions: string[] = [];
