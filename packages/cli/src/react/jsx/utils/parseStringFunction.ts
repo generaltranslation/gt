@@ -72,7 +72,6 @@ function processTranslationCall(
   errors: string[],
   warnings: Set<string>,
   file: string,
-  filepath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean
@@ -166,11 +165,12 @@ function processTranslationCall(
         });
       }
 
+      const relativeFilepath = pathModule.relative(process.cwd(), file) || file;
       if (!metadata.filePaths) {
-        metadata.filePaths = [filepath];
+        metadata.filePaths = [relativeFilepath];
       } else if (Array.isArray(metadata.filePaths)) {
-        if (!metadata.filePaths.includes(filepath)) {
-          metadata.filePaths.push(filepath);
+        if (!metadata.filePaths.includes(relativeFilepath)) {
+          metadata.filePaths.push(relativeFilepath);
         }
       }
 
@@ -279,7 +279,6 @@ function handleFunctionCall(
   errors: string[],
   warnings: Set<string>,
   file: string,
-  filepath: string,
   importMap: Map<string, string>,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
@@ -297,7 +296,6 @@ function handleFunctionCall(
       errors,
       warnings,
       file,
-      filepath,
       ignoreAdditionalData,
       ignoreDynamicContent,
       ignoreInvalidIcu
@@ -316,21 +314,20 @@ function handleFunctionCall(
 
       if (calleeBinding && calleeBinding.path.isFunction()) {
         const functionPath = calleeBinding.path;
-        processFunctionIfMatches(
-          callee.name,
-          argIndex,
-          functionPath.node,
-          functionPath,
-          updates,
-          errors,
-          warnings,
-          file,
-          filepath,
-          ignoreAdditionalData,
-          ignoreDynamicContent,
-          ignoreInvalidIcu,
-          parsingOptions
-        );
+          processFunctionIfMatches(
+            callee.name,
+            argIndex,
+            functionPath.node,
+            functionPath,
+            updates,
+            errors,
+            warnings,
+            file,
+            ignoreAdditionalData,
+            ignoreDynamicContent,
+            ignoreInvalidIcu,
+            parsingOptions
+          );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
       else if (
@@ -341,21 +338,20 @@ function handleFunctionCall(
           t.isFunctionExpression(calleeBinding.path.node.init))
       ) {
         const initPath = calleeBinding.path.get('init') as NodePath;
-        processFunctionIfMatches(
-          callee.name,
-          argIndex,
-          calleeBinding.path.node.init,
-          initPath,
-          updates,
-          errors,
-          warnings,
-          file,
-          filepath,
-          ignoreAdditionalData,
-          ignoreDynamicContent,
-          ignoreInvalidIcu,
-          parsingOptions
-        );
+          processFunctionIfMatches(
+            callee.name,
+            argIndex,
+            calleeBinding.path.node.init,
+            initPath,
+            updates,
+            errors,
+            warnings,
+            file,
+            ignoreAdditionalData,
+            ignoreDynamicContent,
+            ignoreInvalidIcu,
+            parsingOptions
+          );
       }
       // If not found locally, check if it's an imported function
       else if (importMap.has(callee.name)) {
@@ -400,7 +396,6 @@ function processFunctionIfMatches(
   errors: string[],
   warnings: Set<string>,
   filePath: string,
-  filepath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
@@ -418,7 +413,6 @@ function processFunctionIfMatches(
         errors,
         warnings,
         filePath,
-        filepath,
         ignoreAdditionalData,
         ignoreDynamicContent,
         ignoreInvalidIcu,
@@ -443,7 +437,6 @@ function findFunctionParameterUsage(
   errors: string[],
   warnings: Set<string>,
   file: string,
-  filepath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
@@ -475,7 +468,6 @@ function findFunctionParameterUsage(
             errors,
             warnings,
             file,
-            filepath,
             importMap,
             ignoreAdditionalData,
             ignoreDynamicContent,
@@ -523,9 +515,6 @@ function processFunctionInFile(
     return;
   }
   visited.add(filePath);
-  const normalizedFilepath =
-    pathModule.relative(process.cwd(), filePath) || filePath;
-
   try {
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
@@ -550,7 +539,6 @@ function processFunctionInFile(
             errors,
             warnings,
             filePath,
-            normalizedFilepath,
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
@@ -578,7 +566,6 @@ function processFunctionInFile(
             errors,
             warnings,
             filePath,
-            normalizedFilepath,
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
@@ -671,9 +658,6 @@ export function parseStrings(
   file: string,
   parsingOptions: ParsingConfigOptions
 ): void {
-  const filePath = file;
-  const normalizedFilepath =
-    pathModule.relative(process.cwd(), filePath) || filePath;
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 
@@ -696,8 +680,7 @@ export function parseStrings(
           updates,
           errors,
           warnings,
-          filePath,
-          normalizedFilepath,
+          file,
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu
@@ -721,7 +704,7 @@ export function parseStrings(
       ) {
         errors.push(
           warnAsyncUseGT(
-            filePath,
+            file,
             `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
           )
         );
@@ -733,7 +716,7 @@ export function parseStrings(
       ) {
         errors.push(
           warnSyncGetGT(
-            filePath,
+            file,
             `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
           )
         );
@@ -778,8 +761,7 @@ export function parseStrings(
               updates,
               errors,
               warnings,
-              filePath,
-              normalizedFilepath,
+              file,
               importMap,
               ignoreAdditionalData,
               ignoreDynamicContent,
