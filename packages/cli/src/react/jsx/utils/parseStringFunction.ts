@@ -314,20 +314,20 @@ function handleFunctionCall(
 
       if (calleeBinding && calleeBinding.path.isFunction()) {
         const functionPath = calleeBinding.path;
-          processFunctionIfMatches(
-            callee.name,
-            argIndex,
-            functionPath.node,
-            functionPath,
-            updates,
-            errors,
-            warnings,
-            file,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions
-          );
+        processFunctionIfMatches(
+          callee.name,
+          argIndex,
+          functionPath.node,
+          functionPath,
+          updates,
+          errors,
+          warnings,
+          file,
+          ignoreAdditionalData,
+          ignoreDynamicContent,
+          ignoreInvalidIcu,
+          parsingOptions
+        );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
       else if (
@@ -338,20 +338,20 @@ function handleFunctionCall(
           t.isFunctionExpression(calleeBinding.path.node.init))
       ) {
         const initPath = calleeBinding.path.get('init') as NodePath;
-          processFunctionIfMatches(
-            callee.name,
-            argIndex,
-            calleeBinding.path.node.init,
-            initPath,
-            updates,
-            errors,
-            warnings,
-            file,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions
-          );
+        processFunctionIfMatches(
+          callee.name,
+          argIndex,
+          calleeBinding.path.node.init,
+          initPath,
+          updates,
+          errors,
+          warnings,
+          file,
+          ignoreAdditionalData,
+          ignoreDynamicContent,
+          ignoreInvalidIcu,
+          parsingOptions
+        );
       }
       // If not found locally, check if it's an imported function
       else if (importMap.has(callee.name)) {
