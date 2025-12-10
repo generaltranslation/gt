@@ -18,7 +18,9 @@ describe('parseStrings', () => {
   const createMockParams = () => ({
     updates: [] as Updates,
     errors: [] as string[],
+    warnings: new Set<string>(),
     file: FILE_PATH,
+    parsingOptions: { conditionNames: [] },
   });
 
   it('should handle direct msg() calls', () => {
@@ -42,7 +44,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -82,7 +86,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -125,7 +131,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -164,7 +172,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -202,7 +212,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -235,7 +247,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -269,7 +283,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -303,7 +319,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -340,7 +358,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -384,7 +404,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -429,7 +451,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -468,7 +492,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -508,7 +534,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -547,7 +575,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -588,7 +618,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -626,7 +658,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -664,7 +698,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -703,7 +739,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -744,7 +782,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -787,7 +827,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -827,7 +869,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -859,7 +903,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -903,7 +949,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -953,7 +1001,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -967,6 +1017,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'outer scope',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'outer',
           },
         },
@@ -1019,7 +1070,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1032,6 +1085,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'direct call',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'direct',
           },
         },
@@ -1039,18 +1093,20 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'aliased call',
           metadata: {
+            filePaths: [FILE_PATH],
             context: 'page',
           },
         },
         {
           dataFormat: 'ICU',
           source: 'template literal',
-          metadata: {},
+          metadata: { filePaths: [FILE_PATH] },
         },
         {
           dataFormat: 'ICU',
           source: 'multi meta',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'multi',
             context: 'form',
           },
@@ -1095,7 +1151,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1151,7 +1209,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1196,7 +1256,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1243,7 +1305,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1256,6 +1320,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'original call',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'original',
           },
         },
@@ -1263,6 +1328,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'alias call',
           metadata: {
+            filePaths: [FILE_PATH],
             context: 'page',
           },
         },
@@ -1270,6 +1336,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'deep alias call',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'deep',
           },
         },
@@ -1311,7 +1378,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1351,7 +1420,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1391,7 +1462,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1428,7 +1501,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1460,7 +1535,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1493,7 +1570,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1529,7 +1608,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1566,7 +1647,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1618,7 +1701,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1656,7 +1741,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1693,7 +1780,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1732,7 +1821,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1769,7 +1860,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1807,7 +1900,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1840,7 +1935,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1875,7 +1972,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1910,7 +2009,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1944,7 +2045,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1978,7 +2081,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -2015,7 +2120,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -2059,7 +2166,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -2096,7 +2205,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -2135,7 +2246,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },

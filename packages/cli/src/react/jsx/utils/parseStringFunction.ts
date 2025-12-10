@@ -165,12 +165,15 @@ function processTranslationCall(
         });
       }
 
-      const relativeFilepath = pathModule.relative(process.cwd(), file) || file;
-      if (!metadata.filePaths) {
-        metadata.filePaths = [relativeFilepath];
-      } else if (Array.isArray(metadata.filePaths)) {
-        if (!metadata.filePaths.includes(relativeFilepath)) {
-          metadata.filePaths.push(relativeFilepath);
+      const relativeFilepath =
+        (file && pathModule.relative(process.cwd(), file)) || file || '';
+      if (relativeFilepath) {
+        if (!metadata.filePaths) {
+          metadata.filePaths = [relativeFilepath];
+        } else if (Array.isArray(metadata.filePaths)) {
+          if (!metadata.filePaths.includes(relativeFilepath)) {
+            metadata.filePaths.push(relativeFilepath);
+          }
         }
       }
 
