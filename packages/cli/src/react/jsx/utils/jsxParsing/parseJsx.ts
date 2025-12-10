@@ -44,6 +44,7 @@ import {
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../constants.js';
+import path from 'node:path';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -516,6 +517,8 @@ export function parseJSXElement({
   const componentErrors: string[] = [];
   const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
+  const relativeFilepath = path.relative(process.cwd(), file);
+  metadata.filePaths = [relativeFilepath];
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
   const unwrappedExpressions: string[] = [];

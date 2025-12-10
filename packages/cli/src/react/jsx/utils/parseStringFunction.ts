@@ -27,6 +27,7 @@ const generate = generateModule.default || generateModule;
 const traverse = traverseModule.default || traverseModule;
 
 import fs from 'node:fs';
+import pathModule from 'node:path';
 import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
@@ -105,7 +106,7 @@ function processTranslationCall(
 
       // get metadata and id from options
       const options = tPath.parent.arguments[1];
-      const metadata: Record<string, string | number> = {};
+      const metadata: Record<string, string | number | string[]> = {};
       if (options && options.type === 'ObjectExpression') {
         options.properties.forEach((prop) => {
           if (
@@ -162,6 +163,17 @@ function processTranslationCall(
             }
           }
         });
+      }
+
+      const relativeFilepath = pathModule.relative(process.cwd(), file);
+      if (relativeFilepath) {
+        if (!metadata.filePaths) {
+          metadata.filePaths = [relativeFilepath];
+        } else if (Array.isArray(metadata.filePaths)) {
+          if (!metadata.filePaths.includes(relativeFilepath)) {
+            metadata.filePaths.push(relativeFilepath);
+          }
+        }
       }
 
       updates.push({

@@ -13,10 +13,14 @@ describe('parseStrings', () => {
     });
   };
 
+  const FILE_PATH = 'test.tsx';
+
   const createMockParams = () => ({
     updates: [] as Updates,
     errors: [] as string[],
-    file: 'test.tsx',
+    warnings: new Set<string>(),
+    file: FILE_PATH,
+    parsingOptions: { conditionNames: [] },
   });
 
   it('should handle direct msg() calls', () => {
@@ -40,18 +44,23 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {},
-    });
+    expect(params.updates).toMatchObject([
+      {
+        dataFormat: 'ICU',
+        source: 'hello world',
+        metadata: {},
+      },
+    ]);
+    expect(params.updates[0].metadata.filePaths).toEqual([FILE_PATH]);
     expect(params.errors).toHaveLength(0);
   });
 
@@ -77,20 +86,24 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
-      dataFormat: 'ICU',
-      source: 'hello world',
-      metadata: {
-        id: 'greeting',
+    expect(params.updates).toMatchObject([
+      {
+        dataFormat: 'ICU',
+        source: 'hello world',
+        metadata: {
+          id: 'greeting',
+        },
       },
-    });
+    ]);
     expect(params.errors).toHaveLength(0);
   });
 
@@ -118,14 +131,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -157,14 +172,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -195,7 +212,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -228,7 +247,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -262,7 +283,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -296,7 +319,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -333,14 +358,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -377,14 +404,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -422,14 +451,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -461,14 +492,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -501,14 +534,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello, {name}',
       metadata: {
@@ -540,14 +575,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -581,14 +618,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -619,14 +658,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -657,14 +698,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -696,14 +739,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -737,14 +782,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello, {name}',
       metadata: {
@@ -780,14 +827,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'Limited text',
       metadata: {
@@ -820,7 +869,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -852,14 +903,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -896,14 +949,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {
@@ -946,7 +1001,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -954,12 +1011,13 @@ describe('parseStrings', () => {
 
     // TODO: Should theoretically be 2 updates, but we don't support this yet
     expect(params.updates).toHaveLength(1);
-    expect(params.updates).toEqual(
+    expect(params.updates).toMatchObject(
       expect.arrayContaining([
         {
           dataFormat: 'ICU',
           source: 'outer scope',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'outer',
           },
         },
@@ -1012,19 +1070,22 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(4);
-    expect(params.updates).toEqual(
+    expect(params.updates).toMatchObject(
       expect.arrayContaining([
         {
           dataFormat: 'ICU',
           source: 'direct call',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'direct',
           },
         },
@@ -1032,18 +1093,20 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'aliased call',
           metadata: {
+            filePaths: [FILE_PATH],
             context: 'page',
           },
         },
         {
           dataFormat: 'ICU',
           source: 'template literal',
-          metadata: {},
+          metadata: { filePaths: [FILE_PATH] },
         },
         {
           dataFormat: 'ICU',
           source: 'multi meta',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'multi',
             context: 'form',
           },
@@ -1088,21 +1151,23 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(2);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'helper message',
       metadata: {
         id: 'helper',
       },
     });
-    expect(params.updates[1]).toEqual({
+    expect(params.updates[1]).toMatchObject({
       dataFormat: 'ICU',
       source: 'helper message',
       metadata: {
@@ -1144,14 +1209,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'direct usage',
       metadata: {
@@ -1189,14 +1256,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'destructured test',
       metadata: {
@@ -1236,19 +1305,22 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(3);
-    expect(params.updates).toEqual(
+    expect(params.updates).toMatchObject(
       expect.arrayContaining([
         {
           dataFormat: 'ICU',
           source: 'original call',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'original',
           },
         },
@@ -1256,6 +1328,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'alias call',
           metadata: {
+            filePaths: [FILE_PATH],
             context: 'page',
           },
         },
@@ -1263,6 +1336,7 @@ describe('parseStrings', () => {
           dataFormat: 'ICU',
           source: 'deep alias call',
           metadata: {
+            filePaths: [FILE_PATH],
             id: 'deep',
           },
         },
@@ -1304,7 +1378,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1344,7 +1420,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1352,7 +1430,7 @@ describe('parseStrings', () => {
 
     // Should complete without hanging and find at least one translation
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'circular test',
       metadata: {
@@ -1384,14 +1462,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -1421,7 +1501,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1453,7 +1535,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1486,14 +1570,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(3);
-    expect(params.updates).toEqual([
+    expect(params.updates).toMatchObject([
       { dataFormat: 'ICU', source: 'hello', metadata: {} },
       { dataFormat: 'ICU', source: 'world', metadata: {} },
       { dataFormat: 'ICU', source: 'goodbye', metadata: {} },
@@ -1522,14 +1608,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'aliased msg call',
       metadata: {},
@@ -1559,14 +1647,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'should work',
       metadata: {},
@@ -1611,14 +1701,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(4);
-    expect(params.updates).toEqual([
+    expect(params.updates).toMatchObject([
       { dataFormat: 'ICU', source: 'function context', metadata: {} },
       { dataFormat: 'ICU', source: 'arrow function', metadata: {} },
       { dataFormat: 'ICU', source: 'conditional context', metadata: {} },
@@ -1649,14 +1741,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(2);
-    expect(params.updates).toEqual([
+    expect(params.updates).toMatchObject([
       { dataFormat: 'ICU', source: 'direct call', metadata: {} },
       { dataFormat: 'ICU', source: 'encode call', metadata: {} },
     ]);
@@ -1686,14 +1780,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -1725,14 +1821,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -1762,14 +1860,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -1800,7 +1900,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1833,7 +1935,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1868,7 +1972,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1903,7 +2009,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1937,7 +2045,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -1971,7 +2081,9 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
@@ -2008,14 +2120,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -2052,14 +2166,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -2089,14 +2205,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
@@ -2128,14 +2246,16 @@ describe('parseStrings', () => {
             path,
             params.updates,
             params.errors,
-            params.file
+            params.warnings,
+            params.file,
+            params.parsingOptions
           );
         }
       },
     });
 
     expect(params.updates).toHaveLength(1);
-    expect(params.updates[0]).toEqual({
+    expect(params.updates[0]).toMatchObject({
       dataFormat: 'ICU',
       source: 'hello world',
       metadata: {},
