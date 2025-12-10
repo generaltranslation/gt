@@ -667,15 +667,12 @@ export function parseStrings(
   path: NodePath,
   updates: Updates,
   errors: string[],
-  warningsInput: Set<string> | string,
+  warnings: Set<string>,
   file: string = '',
   parsingOptions: ParsingConfigOptions = { conditionNames: [] },
   filepath?: string
 ): void {
-  const warnings =
-    warningsInput instanceof Set ? warningsInput : new Set<string>();
-  const filePath =
-    typeof warningsInput === 'string' && !file ? warningsInput : file;
+  const filePath = file;
   const normalizedFilepath =
     (filepath ?? pathModule.relative(process.cwd(), filePath)) || filePath;
   // First, collect all imports in this file to track cross-file function calls
