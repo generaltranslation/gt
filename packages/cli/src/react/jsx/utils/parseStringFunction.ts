@@ -165,8 +165,7 @@ function processTranslationCall(
         });
       }
 
-      const relativeFilepath =
-        (file && pathModule.relative(process.cwd(), file)) || file || '';
+      const relativeFilepath = pathModule.relative(process.cwd(), file);
       if (relativeFilepath) {
         if (!metadata.filePaths) {
           metadata.filePaths = [relativeFilepath];

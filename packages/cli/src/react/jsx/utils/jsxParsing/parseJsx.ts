@@ -517,7 +517,7 @@ export function parseJSXElement({
   const componentErrors: string[] = [];
   const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
-  const relativeFilepath = path.relative(process.cwd(), file) || file || '';
+  const relativeFilepath = path.relative(process.cwd(), file);
   metadata.filePaths = [relativeFilepath];
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
