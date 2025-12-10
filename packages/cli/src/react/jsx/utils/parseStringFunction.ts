@@ -517,7 +517,8 @@ function processFunctionInFile(
   if (visited.has(filePath)) {
     return;
   }
-  visited.add(filePath);
+  
+
   try {
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
