@@ -41,6 +41,7 @@ export default async function _uploadSourceFiles(
             fileFormat: source.fileFormat,
             locale: source.locale,
             dataFormat: source.dataFormat,
+            formatMetadata: source.formatMetadata,
             fileId: source.fileId,
             versionId: source.versionId,
             branchId: source.branchId,

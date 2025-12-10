@@ -58,7 +58,9 @@ export async function collectFiles(
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
         fileId: TEMPLATE_FILE_ID,
-        versionId: hashStringSync(JSON.stringify(fileData)),
+        versionId: hashStringSync(
+          JSON.stringify({ data: fileData, metadata: fileMetadata })
+        ),
       } satisfies FileToUpload);
     }
   }
