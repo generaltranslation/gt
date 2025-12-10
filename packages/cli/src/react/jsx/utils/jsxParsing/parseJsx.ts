@@ -122,7 +122,7 @@ export function parseTranslationComponent({
       warnings,
       file,
       parsingOptions,
-      importedFunctionsMap
+      importedFunctionsMap,
     });
   }
 }
