@@ -102,6 +102,7 @@ export type Metadata = {
   id?: string;
   sourceLocale?: string;
   actionType?: 'standard' | 'fast' | string;
+  filePaths?: string[];
   [key: string]: any;
 };
 

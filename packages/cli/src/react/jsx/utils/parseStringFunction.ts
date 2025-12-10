@@ -27,6 +27,7 @@ const generate = generateModule.default || generateModule;
 const traverse = traverseModule.default || traverseModule;
 
 import fs from 'node:fs';
+import pathModule from 'node:path';
 import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
@@ -71,6 +72,7 @@ function processTranslationCall(
   errors: string[],
   warnings: Set<string>,
   file: string,
+  filepath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean
@@ -105,7 +107,7 @@ function processTranslationCall(
 
       // get metadata and id from options
       const options = tPath.parent.arguments[1];
-      const metadata: Record<string, string | number> = {};
+      const metadata: Record<string, string | number | string[]> = {};
       if (options && options.type === 'ObjectExpression') {
         options.properties.forEach((prop) => {
           if (
@@ -162,6 +164,14 @@ function processTranslationCall(
             }
           }
         });
+      }
+
+      if (!metadata.filePaths) {
+        metadata.filePaths = [filepath];
+      } else if (Array.isArray(metadata.filePaths)) {
+        if (!metadata.filePaths.includes(filepath)) {
+          metadata.filePaths.push(filepath);
+        }
       }
 
       updates.push({
@@ -269,6 +279,7 @@ function handleFunctionCall(
   errors: string[],
   warnings: Set<string>,
   file: string,
+  filepath: string,
   importMap: Map<string, string>,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
@@ -286,6 +297,7 @@ function handleFunctionCall(
       errors,
       warnings,
       file,
+      filepath,
       ignoreAdditionalData,
       ignoreDynamicContent,
       ignoreInvalidIcu
@@ -313,6 +325,7 @@ function handleFunctionCall(
           errors,
           warnings,
           file,
+          filepath,
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
@@ -337,6 +350,7 @@ function handleFunctionCall(
           errors,
           warnings,
           file,
+          filepath,
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu,
@@ -386,6 +400,7 @@ function processFunctionIfMatches(
   errors: string[],
   warnings: Set<string>,
   filePath: string,
+  filepath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
@@ -403,6 +418,7 @@ function processFunctionIfMatches(
         errors,
         warnings,
         filePath,
+        filepath,
         ignoreAdditionalData,
         ignoreDynamicContent,
         ignoreInvalidIcu,
@@ -427,6 +443,7 @@ function findFunctionParameterUsage(
   errors: string[],
   warnings: Set<string>,
   file: string,
+  filepath: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
   ignoreInvalidIcu: boolean,
@@ -458,6 +475,7 @@ function findFunctionParameterUsage(
             errors,
             warnings,
             file,
+            filepath,
             importMap,
             ignoreAdditionalData,
             ignoreDynamicContent,
@@ -505,6 +523,8 @@ function processFunctionInFile(
     return;
   }
   visited.add(filePath);
+  const normalizedFilepath =
+    pathModule.relative(process.cwd(), filePath) || filePath;
 
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -530,6 +550,7 @@ function processFunctionInFile(
             errors,
             warnings,
             filePath,
+            normalizedFilepath,
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
@@ -557,6 +578,7 @@ function processFunctionInFile(
             errors,
             warnings,
             filePath,
+            normalizedFilepath,
             ignoreAdditionalData,
             ignoreDynamicContent,
             ignoreInvalidIcu,
@@ -645,10 +667,17 @@ export function parseStrings(
   path: NodePath,
   updates: Updates,
   errors: string[],
-  warnings: Set<string>,
-  file: string,
-  parsingOptions: ParsingConfigOptions
+  warningsInput: Set<string> | string,
+  file: string = '',
+  parsingOptions: ParsingConfigOptions = { conditionNames: [] },
+  filepath?: string
 ): void {
+  const warnings =
+    warningsInput instanceof Set ? warningsInput : new Set<string>();
+  const filePath =
+    typeof warningsInput === 'string' && !file ? warningsInput : file;
+  const normalizedFilepath =
+    (filepath ?? pathModule.relative(process.cwd(), filePath)) || filePath;
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 
@@ -671,7 +700,8 @@ export function parseStrings(
           updates,
           errors,
           warnings,
-          file,
+          filePath,
+          normalizedFilepath,
           ignoreAdditionalData,
           ignoreDynamicContent,
           ignoreInvalidIcu
@@ -695,7 +725,7 @@ export function parseStrings(
       ) {
         errors.push(
           warnAsyncUseGT(
-            file,
+            filePath,
             `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
           )
         );
@@ -707,7 +737,7 @@ export function parseStrings(
       ) {
         errors.push(
           warnSyncGetGT(
-            file,
+            filePath,
             `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
           )
         );
@@ -752,7 +782,8 @@ export function parseStrings(
               updates,
               errors,
               warnings,
-              file,
+              filePath,
+              normalizedFilepath,
               importMap,
               ignoreAdditionalData,
               ignoreDynamicContent,

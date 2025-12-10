@@ -17,6 +17,7 @@ export type GTJsonFormatMetadata = Record<
     approved_at?: string | null;
     approved_by?: string | null;
     hash?: string;
+    filePaths?: string[];
   }
 >;
 
