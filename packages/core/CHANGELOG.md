@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.2
+
+### Patch Changes
+
+- [#880](https://github.com/generaltranslation/gt/pull/880) [`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Hotfix: sending format metadata to the API during build time translation
+
 ## 8.1.1
 
 ### Patch Changes
