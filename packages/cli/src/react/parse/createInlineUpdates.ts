@@ -106,6 +106,8 @@ export async function createInlineUpdates(
     })
   );
 
+  mergeUpdatesByHash(updates);
+
   return { updates, errors, warnings: [...warnings] };
 }
 
@@ -115,4 +117,43 @@ export async function createInlineUpdates(
  */
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
+}
+
+export function mergeUpdatesByHash(updates: Updates): void {
+  const mergedByHash = new Map<string, (typeof updates)[number]>();
+  const noHashUpdates: (typeof updates)[number][] = [];
+
+  for (const update of updates) {
+    const hash = update.metadata.hash;
+    if (!hash) {
+      noHashUpdates.push(update);
+      continue;
+    }
+
+    const existing = mergedByHash.get(hash);
+    if (!existing) {
+      mergedByHash.set(hash, update);
+      continue;
+    }
+
+    const existingPaths = Array.isArray(existing.metadata.filePaths)
+      ? existing.metadata.filePaths.slice()
+      : [];
+    const newPaths = Array.isArray(update.metadata.filePaths)
+      ? update.metadata.filePaths
+      : [];
+
+    for (const p of newPaths) {
+      if (!existingPaths.includes(p)) {
+        existingPaths.push(p);
+      }
+    }
+
+    if (existingPaths.length) {
+      existing.metadata.filePaths = existingPaths;
+    }
+  }
+
+  const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];
+  updates.splice(0, updates.length, ...mergedUpdates);
 }
