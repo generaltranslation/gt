@@ -14,6 +14,7 @@ import {
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
+  warnTemplateLiteralSync,
   warnAsyncUseGT,
   warnSyncGetGT,
   warnInvalidIcuSync,
@@ -81,23 +82,105 @@ function processTranslationCall(
   ) {
     const arg = tPath.parent.arguments[0];
     if (t.isExpression(arg)) {
-      const result = handleStaticExpression(
-        arg,
-        tPath,
-        file,
-        parsingOptions,
-        errors
-      );
-      if (result) {
-        const strings = nodeToStrings(result);
-        if (!ignoreInvalidIcu) {
+      if (!ignoreDynamicContent) {
+        const result = handleStaticExpression(
+          arg,
+          tPath,
+          file,
+          parsingOptions,
+          errors
+        );
+        if (result) {
+          const strings = nodeToStrings(result);
+          if (!ignoreInvalidIcu) {
+            for (const string of strings) {
+              const { isValid, error } = isValidIcu(string);
+              if (!isValid) {
+                warnings.add(
+                  warnInvalidIcuSync(
+                    file,
+                    string,
+                    error ?? 'Unknown error',
+                    `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+                  )
+                );
+                return;
+              }
+            }
+          }
+
+          // get metadata and id from options
+          const options = tPath.parent.arguments[1];
+          const metadata: Record<string, string> = {};
+          if (options && options.type === 'ObjectExpression') {
+            options.properties.forEach((prop) => {
+              if (
+                prop.type === 'ObjectProperty' &&
+                prop.key.type === 'Identifier'
+              ) {
+                const attribute = prop.key.name;
+                if (
+                  GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
+                  t.isExpression(prop.value)
+                ) {
+                  const result = isStaticExpression(prop.value);
+                  if (!result.isStatic) {
+                    errors.push(
+                      warnNonStaticExpressionSync(
+                        file,
+                        attribute,
+                        generate(prop.value).code,
+                        `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                      )
+                    );
+                  }
+                  if (
+                    result.isStatic &&
+                    result.value &&
+                    !ignoreAdditionalData
+                  ) {
+                    // Map $id and $context to id and context
+                    metadata[mapAttributeName(attribute)] = result.value;
+                  }
+                }
+              }
+            });
+          }
           for (const string of strings) {
-            const { isValid, error } = isValidIcu(string);
+            updates.push({
+              dataFormat: 'ICU',
+              source: string,
+              metadata: { ...metadata },
+            });
+          }
+          return;
+        }
+        // Nothing returned, push error
+        errors.push(
+          warnNonStringSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      } else {
+        // ignore dynamic content flag is triggered, check strings are valid ICU
+
+        if (
+          arg.type === 'StringLiteral' ||
+          (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
+        ) {
+          const source =
+            arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
+
+          // Validate is ICU
+          if (!ignoreInvalidIcu) {
+            const { isValid, error } = isValidIcu(source);
             if (!isValid) {
               warnings.add(
                 warnInvalidIcuSync(
                   file,
-                  string,
+                  source,
                   error ?? 'Unknown error',
                   `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
                 )
@@ -105,59 +188,73 @@ function processTranslationCall(
               return;
             }
           }
-        }
 
-        // get metadata and id from options
-        const options = tPath.parent.arguments[1];
-        const metadata: Record<string, string> = {};
-        if (options && options.type === 'ObjectExpression') {
-          options.properties.forEach((prop) => {
-            if (
-              prop.type === 'ObjectProperty' &&
-              prop.key.type === 'Identifier'
-            ) {
-              const attribute = prop.key.name;
+          // get metadata and id from options
+          const options = tPath.parent.arguments[1];
+          const metadata: Record<string, string> = {};
+          if (options && options.type === 'ObjectExpression') {
+            options.properties.forEach((prop) => {
               if (
-                GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
-                t.isExpression(prop.value)
+                prop.type === 'ObjectProperty' &&
+                prop.key.type === 'Identifier'
               ) {
-                const result = isStaticExpression(prop.value);
-                if (!result.isStatic) {
-                  errors.push(
-                    warnNonStaticExpressionSync(
-                      file,
-                      attribute,
-                      generate(prop.value).code,
-                      `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-                    )
-                  );
-                }
-                if (result.isStatic && result.value && !ignoreAdditionalData) {
-                  // Map $id and $context to id and context
-                  metadata[mapAttributeName(attribute)] = result.value;
+                const attribute = prop.key.name;
+                if (
+                  GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
+                  t.isExpression(prop.value)
+                ) {
+                  const result = isStaticExpression(prop.value);
+                  if (!result.isStatic) {
+                    errors.push(
+                      warnNonStaticExpressionSync(
+                        file,
+                        attribute,
+                        generate(prop.value).code,
+                        `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                      )
+                    );
+                  }
+                  if (
+                    result.isStatic &&
+                    result.value &&
+                    !ignoreAdditionalData
+                  ) {
+                    // Map $id and $context to id and context
+                    metadata[mapAttributeName(attribute)] = result.value;
+                  }
                 }
               }
-            }
-          });
-        }
-        for (const string of strings) {
+            });
+          }
+
           updates.push({
             dataFormat: 'ICU',
-            source: string,
-            metadata: { ...metadata },
+            source,
+            metadata,
           });
+        } else if (t.isTemplateLiteral(arg)) {
+          // warn if template literal
+          if (!ignoreDynamicContent) {
+            errors.push(
+              warnTemplateLiteralSync(
+                file,
+                generate(arg).code,
+                `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+              )
+            );
+          }
+        } else {
+          if (!ignoreDynamicContent) {
+            errors.push(
+              warnNonStringSync(
+                file,
+                generate(arg).code,
+                `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+              )
+            );
+          }
         }
-        return;
       }
-    }
-    if (!ignoreDynamicContent) {
-      errors.push(
-        warnNonStringSync(
-          file,
-          generate(arg).code,
-          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-        )
-      );
     }
   }
 }
