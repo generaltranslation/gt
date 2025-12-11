@@ -12,8 +12,8 @@
   "dependencies": {
     "gt-react": "latest",
     "gtx-cli": "latest",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.2.2",
+    "react-dom": "^19.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
