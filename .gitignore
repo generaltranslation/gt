@@ -14,3 +14,4 @@ dist/
 .claude/
 tsconfig.tsbuildinfo
 target/
+packages/*/.rollup.cache/
