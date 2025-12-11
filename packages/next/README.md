@@ -16,89 +16,82 @@ Install `gt-next` via npm:
 
 ```bash
 npm install gt-next
-npm install gt-next-cli --save-dev
+npm install gtx-cli --save-dev
 ```
 
 ## Getting Started
 
-### Step 1: Configure Your Environment Variables
+Follow the [Quick Start Guide](https://generaltranslation.com/docs/next) or run the setup wizard: `npx gtx-cli init`.
 
-Add the following environment variables to your `.env` file:
-
-```bash
-GT_API_KEY="your-api-key"
-GT_PROJECT_ID="your-project-id"
-```
-
-- Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://generaltranslation.com).
-
-### 2. Add the `withGTConfig()` plugin
-
-Add `withGTConfig()` to your `next.config.js` file.
-You can specify the languages you want to support by passing an array of [locale codes](https://generaltranslation.com/docs/platform/locale-strings#supported-locales).
-
-```js
-import { withGTConfig } from 'gt-next/config';
-
-const nextConfig = {};
-
-export default withGTConfig(nextConfig, {
-  locales: ['pt', 'es'], // Support for Portuguese and Spanish
-  swcPluginOptions: {
-    logLevel: 'silent', // Control warning output
-    compileTimeHash: false, // Enable compile-time optimizations
-  },
-});
-```
-
-### 3. Add the `<T>` component
-
-Wrap any nested JSX content in the `<T>` component to make it translatable.
-For more information, check out this [guide on using `<T>` components](https://generaltranslation.com/docs/next/reference/t-reference).
+Translate everything inside of the `<T>` component.
 
 ```jsx
-import { T } from 'gt-next';
-
-export default function Example() {
-  return (
-    <T>
-      <p>This gets translated.</p>
-    </T>
-  );
-}
+<T>
+  <p>This gets translated!</p>
+  <div>This also gets translated!</divs>
+</T>
 ```
-
-Use the `<Var>` component to designate JSX content that should not be translated.
-
-```jsx
-import { T, Var } from 'gt-next';
-
-export default function Example() {
-  return (
-    <T>
-      <p>
-        This gets translated. <Var>This does not.</Var>
-      </p>
-    </T>
-  );
-}
-```
-
-**Tip:**
-To save time, run the setup command.
-It will scan your codebase for translatable JSX and insert the `<T>` tags for you.
-
-```bash
-npx gt-next-cli setup
-```
-
-**Strings:**
-For strings, you can use `useGT()` or `getGT()` for translation.
-For more information, check out [this guide](https://generaltranslation.com/docs/next/tutorials/translating-strings).
 
 ## Documentation
 
 Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](generaltranslation.com/docs).
+
+## Features
+
+### Jsx Translation
+
+```jsx
+<T>
+  Translate anything inside of a {'<T>'} component!
+  <div>Including nested structures</div>
+</T>
+```
+
+### Inline string translation
+
+```jsx
+function MyComponent() {
+  const gt = useGT();
+  return <>{gt('Strings as well!')}</>;
+}
+```
+
+### Dictionary translation
+
+```json
+{
+  "key": "Hello, World!"
+}
+```
+
+```jsx
+function MyComponent() {
+  const t = useTranslations();
+  return <>{t('key')}</>;
+}
+```
+
+### Pluralization
+
+Support for pluralization and conditional branching
+
+```jsx
+<T>
+  <Plural
+    n={count}
+    singular="There is 1 person"
+    plural={<>There are <Num>{count}</Num> people}
+  />
+</T>
+```
+
+### Formatting
+
+Support for number, currency, date time, and dynamic variables
+
+```jsx
+<Num options={{ style: 'currency', currency: 'EUR' }}>{1000}</Num>
+```
 
 ## Contributing
 
