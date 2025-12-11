@@ -7,7 +7,7 @@ import { visit } from 'unist-util-visit';
 import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logger } from '../console/logger.js';
 import escapeHtmlInTextNodes from 'gt-remark';
-import { decode as decodeHtmlEntities } from 'html-entities';
+import { decode } from 'html-entities';
 
 /**
  * Generates a slug from heading text
@@ -459,8 +459,7 @@ function applyDivWrappedIds(
   translatedHeadings: HeadingInfo[],
   idMappings: Map<number, string>
 ): string {
-  const normalizeForComparison = (text: string) =>
-    decodeHtmlEntities(text).trim();
+  const normalizeForComparison = (text: string) => decode(text).trim();
 
   // Extract all heading lines from the translated markdown
   const lines = translatedContent.split('\n');
