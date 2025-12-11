@@ -7,24 +7,7 @@ import { visit } from 'unist-util-visit';
 import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logger } from '../console/logger.js';
 import escapeHtmlInTextNodes from 'gt-remark';
-
-function decodeHtmlEntities(text: string): string {
-  const entityMap: Record<string, string> = {
-    amp: '&',
-    lt: '<',
-    gt: '>',
-    quot: '"',
-    apos: "'",
-    nbsp: ' ',
-  };
-
-  return text
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
-      String.fromCharCode(parseInt(code, 16))
-    )
-    .replace(/&([a-zA-Z]+);/g, (match, name) => entityMap[name] ?? match);
-}
+import { decode as decodeHtmlEntities } from 'html-entities';
 
 /**
  * Generates a slug from heading text

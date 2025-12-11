@@ -102,6 +102,7 @@
     "fast-json-stable-stringify": "^2.1.0",
     "generaltranslation": "workspace:*",
     "gt-remark": "^1.0.1",
+    "html-entities": "^2.6.0",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
