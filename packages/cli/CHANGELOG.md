@@ -1,5 +1,18 @@
 # gtx-cli
 
+## 2.5.28
+
+### Patch Changes
+
+- [#883](https://github.com/generaltranslation/gt/pull/883) [`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Send file paths in translation metadata
+
+- [#885](https://github.com/generaltranslation/gt/pull/885) [`22ef3ec`](https://github.com/generaltranslation/gt/commit/22ef3ecb9c2a41a5d982684cc2d45834be11ae5b) Thanks [@brian-lou](https://github.com/brian-lou)! - Add shared flags to CLI save-local command
+
+- [#886](https://github.com/generaltranslation/gt/pull/886) [`8ba1edf`](https://github.com/generaltranslation/gt/commit/8ba1edfa838fe9209ae6fa5fe154e7c991be9aa6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify anchor IDs containing escaped characters
+
+- Updated dependencies [[`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8)]:
+  - generaltranslation@8.1.3
+
 ## 2.5.27
 
 ### Patch Changes
