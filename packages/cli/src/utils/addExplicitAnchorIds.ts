@@ -8,6 +8,24 @@ import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logger } from '../console/logger.js';
 import escapeHtmlInTextNodes from 'gt-remark';
 
+function decodeHtmlEntities(text: string): string {
+  const entityMap: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+  };
+
+  return text
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
+      String.fromCharCode(parseInt(code, 16))
+    )
+    .replace(/&([a-zA-Z]+);/g, (match, name) => entityMap[name] ?? match);
+}
+
 /**
  * Generates a slug from heading text
  */
@@ -458,6 +476,9 @@ function applyDivWrappedIds(
   translatedHeadings: HeadingInfo[],
   idMappings: Map<number, string>
 ): string {
+  const normalizeForComparison = (text: string) =>
+    decodeHtmlEntities(text).trim();
+
   // Extract all heading lines from the translated markdown
   const lines = translatedContent.split('\n');
   const headingLines: Array<{ line: string; level: number; index: number }> =
@@ -494,7 +515,13 @@ function applyDivWrappedIds(
           .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links, keep text
           .trim();
 
-        return cleanLineText === heading.text && hl.level === heading.level;
+        const normalizedLineText = normalizeForComparison(cleanLineText);
+        const normalizedHeadingText = normalizeForComparison(heading.text);
+
+        return (
+          normalizedLineText === normalizedHeadingText &&
+          hl.level === heading.level
+        );
       });
 
       if (matchingLine) {
