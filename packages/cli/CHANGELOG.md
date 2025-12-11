@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.29
+
+### Patch Changes
+
+- [#892](https://github.com/generaltranslation/gt/pull/892) [`48b2771`](https://github.com/generaltranslation/gt/commit/48b2771aa7666e8f94f485f86acf32525d26bd3f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fixing handling of OpenAPI paths for Mintlify
+
 ## 2.5.28
 
 ### Patch Changes
