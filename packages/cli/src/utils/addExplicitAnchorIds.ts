@@ -7,6 +7,7 @@ import { visit } from 'unist-util-visit';
 import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logger } from '../console/logger.js';
 import escapeHtmlInTextNodes from 'gt-remark';
+import { decode } from 'html-entities';
 
 /**
  * Generates a slug from heading text
@@ -494,7 +495,13 @@ function applyDivWrappedIds(
           .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links, keep text
           .trim();
 
-        return cleanLineText === heading.text && hl.level === heading.level;
+        const normalizedLineText = decode(cleanLineText).trim();
+        const normalizedHeadingText = decode(heading.text).trim();
+
+        return (
+          normalizedLineText === normalizedHeadingText &&
+          hl.level === heading.level
+        );
       });
 
       if (matchingLine) {
