@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.11.3
+
+### Patch Changes
+
+- [#888](https://github.com/generaltranslation/gt/pull/888) [`6314624`](https://github.com/generaltranslation/gt/commit/6314624cd6d537e236e7208b1097dc137befab66) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: readme
+
+- Updated dependencies [[`6314624`](https://github.com/generaltranslation/gt/commit/6314624cd6d537e236e7208b1097dc137befab66)]:
+  - gt-react@10.9.3
+
 ## 6.11.2
 
 ### Patch Changes
