@@ -368,7 +368,16 @@ function parseOpenApiValue(value: string): ParsedOpenApiValue | null {
 
   let cursor = 0;
   let specPath: string | undefined;
-  if (tokens[0].toLowerCase().endsWith('.json')) {
+  const first = tokens[0];
+  const second = tokens[1];
+  const methodCandidate = second?.toUpperCase();
+  const firstLooksLikeSpec =
+    first.toLowerCase().endsWith('.json') ||
+    (second &&
+      (second.toLowerCase() === 'webhook' ||
+        (methodCandidate && HTTP_METHODS.has(methodCandidate))));
+
+  if (firstLooksLikeSpec) {
     specPath = tokens[0];
     cursor = 1;
   }
@@ -377,10 +386,12 @@ function parseOpenApiValue(value: string): ParsedOpenApiValue | null {
   const keyword = tokens[cursor];
   if (keyword.toLowerCase() === 'webhook') {
     const name = tokens.slice(cursor + 1).join(' ');
+    if (!name) return null;
     return { kind: 'webhook', specPath, name };
   }
 
   const method = keyword.toUpperCase();
+  if (!HTTP_METHODS.has(method)) return null;
   const operationPath = tokens.slice(cursor + 1).join(' ');
   if (!operationPath) return null;
   return { kind: 'operation', specPath, method, operationPath };
@@ -425,15 +436,51 @@ function resolveSpec(
   if (!specs.length) return null;
 
   if (explicitPath) {
-    const normalizedExplicit = explicitPath.replace(/^\.?\/+/, '');
+    const normalizedExplicit = normalizeSlashes(
+      explicitPath.replace(/^\.?\/+/, '')
+    );
     const candidates = [
       path.resolve(configDir, normalizedExplicit),
       path.resolve(path.dirname(filePath), normalizedExplicit),
     ];
-    const foundSpec = specs.find((spec) =>
-      candidates.some((candidate) => samePath(candidate, spec.absPath))
-    );
+    const foundSpec = specs.find((spec) => {
+      const normalizedSpecPath = normalizeSlashes(spec.absPath);
+      return candidates.some((candidate) =>
+        samePath(candidate, normalizedSpecPath)
+      );
+    });
     if (foundSpec) return foundSpec;
+
+    const explicitWithoutExt = stripExtension(normalizedExplicit);
+    const explicitBase = path.basename(normalizedExplicit);
+    const explicitBaseWithoutExt = stripExtension(explicitBase);
+    const matches = specs.filter((spec) => {
+      const configPath = normalizeSlashes(spec.configPath).replace(
+        /^\.?\/+/,
+        ''
+      );
+      const configBase = path.basename(configPath);
+      const configPathNoExt = stripExtension(configPath);
+      const configBaseNoExt = stripExtension(configBase);
+      return (
+        configPath === normalizedExplicit ||
+        configPathNoExt === explicitWithoutExt ||
+        configBase === explicitBase ||
+        configBaseNoExt === explicitBaseWithoutExt
+      );
+    });
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) {
+      warnings.add(
+        `OpenAPI reference ${refDescription} in ${filePath} matches multiple specs (${matches
+          .map((m) => m.configPath)
+          .join(
+            ', '
+          )}). Using the first configured match (${matches[0].configPath}).`
+      );
+      return matches[0];
+    }
+
     warnings.add(
       `OpenAPI reference ${refDescription} in ${filePath} points to an unconfigured spec (${explicitPath}). Skipping localization for this reference.`
     );
@@ -455,16 +502,15 @@ function resolveSpec(
   if (matches.length === 1) return matches[0];
   if (matches.length > 1) {
     warnings.add(
-      `OpenAPI reference ${refDescription} in ${filePath} is available in multiple specs. Using the first configured file (${matches[0].configPath}).`
+      `OpenAPI reference ${refDescription} in ${filePath} is available in multiple specs. Skipping localization for this reference.`
     );
-    return matches[0];
+    return null;
   }
 
-  // Not found anywhere, fall back to first configured spec
   warnings.add(
-    `OpenAPI reference ${refDescription} in ${filePath} was not found in any configured spec. Using ${specs[0].configPath}.`
+    `OpenAPI reference ${refDescription} in ${filePath} was not found in any configured spec. Skipping localization for this reference.`
   );
-  return specs[0];
+  return null;
 }
 
 /**
@@ -527,6 +573,12 @@ function formatOpenApiDescriptor(value: ParsedOpenApiValue): string {
 function describeOpenApiRef(value: ParsedOpenApiValue): string {
   if (value.kind === 'webhook') return `webhook ${value.name}`;
   return `${value.method.toUpperCase()} ${value.operationPath}`;
+}
+
+/** Remove a single trailing file extension while preserving directory segments. */
+function stripExtension(p: string): string {
+  const parsed = path.parse(p);
+  return normalizeSlashes(path.join(parsed.dir, parsed.name));
 }
 
 /** Normalize separators for stable comparisons and output. */
