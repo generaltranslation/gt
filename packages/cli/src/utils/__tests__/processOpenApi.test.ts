@@ -89,7 +89,7 @@ describe('processOpenApi', () => {
     expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
   });
 
-  it('uses the first configured spec when the operation exists in multiple files', async () => {
+  it('skips ambiguous operations when multiple specs match and leaves frontmatter unchanged', async () => {
     const specA = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
     const specB = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
 
@@ -124,8 +124,80 @@ describe('processOpenApi', () => {
 
     await processOpenApi(settings);
 
+    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
     const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
-    expect(updatedTranslated).toContain('/es/spec-a.json GET /dup');
+    expect(updatedSource).toContain('openapi: GET /dup');
+    expect(updatedTranslated).toContain('openapi: GET /dup');
+    expect(updatedTranslated).not.toContain('/es/spec-a.json');
+  });
+
+  it('respects explicit spec identifiers without extensions and localizes correctly', async () => {
+    const specV1 = {
+      openapi: '3.0.0',
+      paths: { '/batch/scrape/{id}': { delete: {} } },
+    };
+    const specV2 = {
+      openapi: '3.0.0',
+      paths: { '/batch/scrape/{id}': { delete: {} } },
+    };
+
+    const specDir = path.join(tmpDir, 'api-reference');
+    const specV1Path = path.join(specDir, 'v1-openapi.json');
+    const specV2Path = path.join(specDir, 'v2-openapi.json');
+    fs.mkdirSync(specDir, { recursive: true });
+    fs.writeFileSync(specV1Path, JSON.stringify(specV1));
+    fs.writeFileSync(specV2Path, JSON.stringify(specV2));
+
+    const localizedSpecDir = path.join(tmpDir, 'es', 'api-reference');
+    const localizedSpecV1Path = path.join(localizedSpecDir, 'v1-openapi.json');
+    const localizedSpecV2Path = path.join(localizedSpecDir, 'v2-openapi.json');
+    fs.mkdirSync(localizedSpecDir, { recursive: true });
+    fs.writeFileSync(localizedSpecV1Path, JSON.stringify(specV1));
+    fs.writeFileSync(localizedSpecV2Path, JSON.stringify(specV2));
+
+    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
+    fs.writeFileSync(
+      sourceMdxPath,
+      "---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n"
+    );
+    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
+    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
+    fs.writeFileSync(
+      translatedMdxPath,
+      "---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n"
+    );
+
+    const settings = createSettings(tmpDir, [
+      './api-reference/v1-openapi.json',
+      './api-reference/v2-openapi.json',
+    ]);
+    settings.files = {
+      resolvedPaths: {
+        mdx: [sourceMdxPath],
+        json: [specV1Path, specV2Path],
+      },
+      placeholderPaths: {
+        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
+        json: [specV1Path, specV2Path],
+      },
+      transformPaths: {
+        json: {
+          match: 'api-reference/v1-openapi.json$|api-reference/v2-openapi.json$',
+          replace: '{locale}/$&',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
+    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
+    expect(updatedSource).toContain(
+      '/api-reference/v2-openapi.json DELETE /batch/scrape/{id}'
+    );
+    expect(updatedTranslated).toContain(
+      '/es/api-reference/v2-openapi.json DELETE /batch/scrape/{id}'
+    );
   });
 
   it('handles nested spec paths with transforms and emits root-relative paths', async () => {
