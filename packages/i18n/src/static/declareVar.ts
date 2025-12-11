@@ -1,4 +1,4 @@
-import { VAR_NAME } from './constants';
+import { VAR_NAME } from './utils/constants';
 import { sanitizeVar } from './sanitizeVar';
 
 /**

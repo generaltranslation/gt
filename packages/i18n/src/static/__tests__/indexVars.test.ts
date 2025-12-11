@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '@formatjs/icu-messageformat-parser';
 import { indexVars } from '../indexVars';
+import { declareVar } from '../declareVar';
 
 describe('indexVars', () => {
   it('should add numeric identifiers to GT placeholders', () => {
@@ -163,5 +164,104 @@ describe('indexVars', () => {
     expect(result).toBe(
       'Visit https://example.com/_gt_/page for {_gt_1, select, other {info}} about _gt_ systems'
     );
+  });
+
+  describe('indexVars with declareVar integration', () => {
+    it('should index variables in strings with single declareVar invocation', () => {
+      const declaredVar = declareVar('Hello World');
+      const input = `Welcome to ${declaredVar} application`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'Welcome to {_gt_1, select, other {Hello World}} application'
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should index multiple declareVar invocations', () => {
+      const firstVar = declareVar('John');
+      const secondVar = declareVar('Developer');
+      const input = `Hello ${firstVar}, you are a ${secondVar}!`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'Hello {_gt_1, select, other {John}}, you are a {_gt_2, select, other {Developer}}!'
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should handle declareVar with complex content', () => {
+      const complexVar = declareVar(
+        '{count, plural, one{# item} other{# items}}'
+      );
+      const input = `You have ${complexVar} in your cart`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        "You have {_gt_1, select, other {'{count, plural, one{# item} other{# items}}'}} in your cart"
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should handle declareVar with named variables', () => {
+      const namedVar = declareVar('User Profile', { $name: 'profile_section' });
+      const input = `Navigate to ${namedVar} page`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'Navigate to {_gt_1, select, other {User Profile} _gt_var_name_ {profile_section}} page'
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should handle mixed declareVar and manual ICU placeholders', () => {
+      const declaredVar = declareVar('dynamic content');
+      const input = `Welcome {_gt_, select, other {user}}! Here is ${declaredVar} and {_gt_, select, other {more info}}`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'Welcome {_gt_1, select, other {user}}! Here is {_gt_2, select, other {dynamic content}} and {_gt_3, select, other {more info}}'
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should handle nested scenarios with declareVar inside ICU plurals', () => {
+      const innerVar = declareVar('message');
+      const input = `{count, plural, =0 {No ${innerVar}} =1 {One ${innerVar}} other {# messages}}`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        '{count, plural, =0 {No {_gt_1, select, other {message}}} =1 {One {_gt_2, select, other {message}}} other {# messages}}'
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should handle declareVar with special characters and maintain validity', () => {
+      const specialVar = declareVar("Text with 'quotes' and {braces}");
+      const emojiVar = declareVar('🚀 Rocket Launch 🌟');
+      const input = `Status: ${specialVar} Event: ${emojiVar}`;
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        "Status: {_gt_1, select, other {Text with ''quotes'' and '{braces}'}} Event: {_gt_2, select, other {🚀 Rocket Launch 🌟}}"
+      );
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('should handle complex real-world scenario with multiple declareVar calls', () => {
+      const userName = declareVar('John Doe', { $name: 'user_name' });
+      const itemCount = declareVar('{count, number}', { $name: 'item_count' });
+      const timestamp = declareVar('{date, date, short}', {
+        $name: 'last_login',
+      });
+
+      const input = `Welcome back ${userName}! You have ${itemCount} items. Last login: ${timestamp}`;
+      const result = indexVars(input);
+
+      const expected =
+        "Welcome back {_gt_1, select, other {John Doe} _gt_var_name_ {user_name}}! You have {_gt_2, select, other {'{count, number}'} _gt_var_name_ {item_count}} items. Last login: {_gt_3, select, other {'{date, date, short}'} _gt_var_name_ {last_login}}";
+      expect(result).toBe(expected);
+      expect(() => parse(result)).not.toThrow();
+    });
   });
 });

@@ -1,8 +1,13 @@
 import {
   MessageFormatElement,
   parse,
+  ParserOptions,
   TYPE,
 } from '@formatjs/icu-messageformat-parser';
+
+type TraverseIcuOptions = ParserOptions & {
+  recurseIntoVisited?: boolean;
+};
 
 /**
  * Given an ICU string, traverse the AST and call the visitor function for each element that matches the type T
@@ -14,14 +19,14 @@ export function traverseIcu<T extends MessageFormatElement>({
   icuString,
   shouldVisit,
   visitor,
-  recurseIntoVisited = true,
+  options: { recurseIntoVisited = true, ...otherOptions },
 }: {
   icuString: string;
   shouldVisit: (element: MessageFormatElement) => element is T;
   visitor: (element: T) => void;
-  recurseIntoVisited?: boolean;
+  options: TraverseIcuOptions;
 }): void {
-  const ast = parse(icuString);
+  const ast = parse(icuString, otherOptions);
   handleChildren(ast);
 
   function handleChildren(children: MessageFormatElement[]): void {

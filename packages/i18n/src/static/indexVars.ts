@@ -5,7 +5,7 @@ import {
   TYPE,
 } from '@formatjs/icu-messageformat-parser';
 
-import { VAR_IDENTIFIER } from './constants';
+import { VAR_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
 
 // Used for temporarily tracking variable indices in the AST
@@ -45,7 +45,11 @@ export function indexVars(icuString: string): string {
 
   // Helper function to check if the child is a variable
   function shouldVisit(child: MessageFormatElement): child is Variable {
-    return child.type === TYPE.select && VAR_FLAG_REGEX.test(child.value);
+    return (
+      child.type === TYPE.select &&
+      VAR_FLAG_REGEX.test(child.value) &&
+      !!child.options.other
+    );
   }
 
   // Helper function to update the variable index
@@ -63,7 +67,9 @@ export function indexVars(icuString: string): string {
     icuString: escapedIcuString,
     shouldVisit,
     visitor,
-    recurseIntoVisited: false,
+    options: {
+      recurseIntoVisited: false,
+    },
   });
 
   // Reconstruct the ICU string, now with identifiers, filter out the escape suffix
