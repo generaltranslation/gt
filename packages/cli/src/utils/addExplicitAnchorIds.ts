@@ -459,8 +459,6 @@ function applyDivWrappedIds(
   translatedHeadings: HeadingInfo[],
   idMappings: Map<number, string>
 ): string {
-  const normalizeForComparison = (text: string) => decode(text).trim();
-
   // Extract all heading lines from the translated markdown
   const lines = translatedContent.split('\n');
   const headingLines: Array<{ line: string; level: number; index: number }> =
@@ -497,8 +495,8 @@ function applyDivWrappedIds(
           .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links, keep text
           .trim();
 
-        const normalizedLineText = normalizeForComparison(cleanLineText);
-        const normalizedHeadingText = normalizeForComparison(heading.text);
+        const normalizedLineText = decode(cleanLineText).trim();
+        const normalizedHeadingText = decode(heading.text).trim();
 
         return (
           normalizedLineText === normalizedHeadingText &&
