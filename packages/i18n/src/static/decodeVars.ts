@@ -35,6 +35,11 @@ interface Variable extends SelectElement {
  * decodeVars('Hi {_gt_, select, other {Brian}}, my name is {name}') => 'Hi Brian, my name is {name}'
  */
 export function decodeVars(icuString: string): string {
+  // Check if the string contains _gt_
+  if (!icuString.includes(VAR_IDENTIFIER)) {
+    return icuString;
+  }
+
   // Check if the child is a variable
   function shouldVisit(child: MessageFormatElement): child is Variable {
     return (

@@ -13,7 +13,7 @@ export function sanitizeVar(string: string): string {
  * {_gt_, select, other {string_here}}
  *
  * Escapes ICU special characters by:
- * 1. Doubling all single quotes (U+0027 ' and U+2019 ')
+ * 1. Doubling all single quotes (U+0027 ')
  * 2. Adding a single quote before the first special character ({}<>)
  * 3. Adding a single quote after the last special character ({}<>)
  */

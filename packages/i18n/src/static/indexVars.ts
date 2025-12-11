@@ -26,6 +26,11 @@ interface Variable extends SelectElement {
  * indexVars('Hello {_gt_} {_gt_} World') => 'Hello {_gt_1_} {_gt_2_} World'
  */
 export function indexVars(icuString: string): string {
+  // Check if the string contains _gt_
+  if (!icuString.includes(VAR_IDENTIFIER)) {
+    return icuString;
+  }
+
   // Unfortunately when serializing AST, we lose whitespace formatting, so we need to use this workaround
   // Escape all _gt_ by appending _escape_ suffix and a numeric index
   const splitIcuString = icuString.split(VAR_IDENTIFIER);
