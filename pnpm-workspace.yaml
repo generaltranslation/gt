@@ -12,6 +12,10 @@ minimumReleaseAgeExclude:
   - gt-i18n
   - gtx-cli
   - generaltranslation
+  - next
+  - '@next/*'
+  - 'react'
+  - 'react-dom'
 
 overrides:
   '@generaltranslation/next-internal': link:packages/next-internal
