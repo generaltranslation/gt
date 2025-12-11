@@ -158,13 +158,13 @@ describe('processOpenApi', () => {
     const sourceMdxPath = path.join(tmpDir, 'page.mdx');
     fs.writeFileSync(
       sourceMdxPath,
-      "---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n"
+      '---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n'
     );
     const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
     fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
     fs.writeFileSync(
       translatedMdxPath,
-      "---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n"
+      '---\nopenapi: v2-openapi DELETE /batch/scrape/{id}\n---\n'
     );
 
     const settings = createSettings(tmpDir, [
@@ -182,7 +182,8 @@ describe('processOpenApi', () => {
       },
       transformPaths: {
         json: {
-          match: 'api-reference/v1-openapi.json$|api-reference/v2-openapi.json$',
+          match:
+            'api-reference/v1-openapi.json$|api-reference/v2-openapi.json$',
           replace: '{locale}/$&',
         },
       },

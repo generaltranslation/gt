@@ -445,7 +445,9 @@ function resolveSpec(
     ];
     const foundSpec = specs.find((spec) => {
       const normalizedSpecPath = normalizeSlashes(spec.absPath);
-      return candidates.some((candidate) => samePath(candidate, normalizedSpecPath));
+      return candidates.some((candidate) =>
+        samePath(candidate, normalizedSpecPath)
+      );
     });
     if (foundSpec) return foundSpec;
 
@@ -472,7 +474,9 @@ function resolveSpec(
       warnings.add(
         `OpenAPI reference ${refDescription} in ${filePath} matches multiple specs (${matches
           .map((m) => m.configPath)
-          .join(', ')}). Using the first configured match (${matches[0].configPath}).`
+          .join(
+            ', '
+          )}). Using the first configured match (${matches[0].configPath}).`
       );
       return matches[0];
     }
