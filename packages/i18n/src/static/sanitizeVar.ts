@@ -1,4 +1,14 @@
 /**
+ * Sanitizes ICU syntax
+ */
+export function sanitizeVar(string: string): string {
+  const escapedICU = escapeICUSyntax(string);
+  return escapedICU;
+}
+
+/**
+ * Escape icu syntax
+ *
  * Sanitize arbitrary string so it does not break the following ICU message syntax:
  * {_gt_, select, other {string_here}}
  *
@@ -7,7 +17,7 @@
  * 2. Adding a single quote before the first special character ({}<>)
  * 3. Adding a single quote after the last special character ({}<>)
  */
-export function sanitizeVar(string: string): string {
+function escapeICUSyntax(string: string): string {
   // First, double all single quotes (both ASCII and Unicode)
   let result = string.replace(/['\']/g, "''");
 

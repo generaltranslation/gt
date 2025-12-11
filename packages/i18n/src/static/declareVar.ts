@@ -1,3 +1,4 @@
+import { VAR_NAME } from './constants';
 import { sanitizeVar } from './sanitizeVar';
 
 /**
@@ -20,7 +21,7 @@ export function declareVar(
   let nameSection = '';
   if (options?.$name) {
     const sanitizedName = sanitizeVar(options.$name);
-    nameSection = ` _gt_var_name_ {${sanitizedName}}`;
+    nameSection = ` ${VAR_NAME} {${sanitizedName}}`;
   }
 
   // interpolate
