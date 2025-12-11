@@ -13,6 +13,17 @@ const nodeBuiltins = [
   'dns', 'dgram', 'module', 'process'
 ];
 
+// Get all dependencies except the ones we want to bundle
+import { readFileSync } from 'fs';
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+const allDependencies = Object.keys(packageJson.dependencies || {});
+
+// Only bundle @clack/prompts, keep everything else external
+const dependenciesToBundle = ['@clack/prompts'];
+const externalDependencies = allDependencies.filter(dep => 
+  !dependenciesToBundle.includes(dep)
+);
+
 export default {
   input: 'src/main.ts',
   output: {
@@ -42,5 +53,5 @@ export default {
     //   mangle: false, // Keep function names for better stack traces
     // }),
   ],
-  external: nodeBuiltins, // Keep Node.js built-ins external
+  external: [...nodeBuiltins, ...externalDependencies], // Keep Node.js built-ins and most dependencies external
 };
