@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.31
+
+### Patch Changes
+
+- [#895](https://github.com/generaltranslation/gt/pull/895) [`a64277c`](https://github.com/generaltranslation/gt/commit/a64277cd1d633899f4ac0977b389ccfa00660512) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for cli execution independent of package resolution
+
 ## 2.5.30
 
 ### Patch Changes
