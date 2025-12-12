@@ -127,28 +127,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-        name: Install pnpm
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Setup Rust
-        if: steps.gt_next_changed.outputs.changed == 'true'
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-wasip1
-
       - name: Check if CLI changed
-        id: cli_changed
+        id: gtx_cli_changed
         shell: bash
         run: |
           if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/cli/"; then
@@ -157,20 +137,43 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
+      - uses: pnpm/action-setup@v4
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
+        name: Install pnpm
+
+      - name: Setup Node.js
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Bun
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
       - name: Install dependencies
-        if: steps.cli_changed.outputs.changed == 'true'
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
         run: pnpm install
 
       - name: Build packages
-        if: steps.cli_changed.outputs.changed == 'true'
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
         run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!cli-test-app'
 
       - name: Build CLI binaries
-        if: steps.cli_changed.outputs.changed == 'true'
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
         run: cd packages/cli && pnpm run build:bin:clean
 
       - name: Test CLI in test environment
-        if: steps.cli_changed.outputs.changed == 'true'
+        if: steps.gtx_cli_changed.outputs.changed == 'true'
         shell: bash
         run: cd test-apps/cli-test-app && npx gtx-cli --help
 
