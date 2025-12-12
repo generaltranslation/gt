@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.5.30-alpha.5",
+  "version": "2.5.30-alpha.6",
   "main": "dist/index.js",
   "bin": "dist/router.js",
   "files": [
