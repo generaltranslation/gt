@@ -50,7 +50,7 @@ function routeToBinary(): void {
     try {
       const stats = statSync(binaryPath);
       const isExecutable = !!(stats.mode & parseInt('100', 8)); // Check owner execute bit
-      
+
       if (!isExecutable) {
         chmodSync(binaryPath, 0o755); // Make executable
       }
