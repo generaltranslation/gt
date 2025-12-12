@@ -28,11 +28,7 @@ export async function collectFiles(
       library
     );
     if (updates.length > 0) {
-      if (
-        !options.dryRun &&
-        !settings.publish &&
-        !settings.files?.placeholderPaths.gt
-      ) {
+      if (!settings.publish && !settings.files?.placeholderPaths.gt) {
         logErrorAndExit(invalidConfigurationError);
       }
       // Convert updates to a file object
