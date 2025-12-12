@@ -1,17 +1,25 @@
 {
   "name": "gtx-cli",
-  "version": "2.5.29",
+  "version": "2.5.30-alpha.0",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
     "dist",
+    "binaries",
     "CHANGELOG.md"
   ],
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && pnpm run build:exe",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
+    "build:exe": "mkdir -p binaries && pnpm run build:exe:all",
+    "build:exe:all": "pnpm run build:exe:darwin-x64 && pnpm run build:exe:darwin-arm64 && pnpm run build:exe:linux-x64 && pnpm run build:exe:linux-arm64 && pnpm run build:exe:windows-x64",
+    "build:exe:darwin-x64": "bun build src/main.ts --compile --target=bun-darwin-x64 --outfile=binaries/gtx-cli-darwin-x64 --external \"\"",
+    "build:exe:darwin-arm64": "bun build src/main.ts --compile --target=bun-darwin-arm64 --outfile=binaries/gtx-cli-darwin-arm64 --external \"\"",
+    "build:exe:linux-x64": "bun build src/main.ts --compile --target=bun-linux-x64 --outfile=binaries/gtx-cli-linux-x64 --external \"\"",
+    "build:exe:linux-arm64": "bun build src/main.ts --compile --target=bun-linux-arm64 --outfile=binaries/gtx-cli-linux-arm64 --external \"\"",
+    "build:exe:windows-x64": "bun build src/main.ts --compile --target=bun-windows-x64 --outfile=binaries/gtx-cli-win32-x64.exe --external \"\"",
     "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
