@@ -5,6 +5,8 @@ import { determineLibrary } from './fs/determineFramework.js';
 import { Command } from 'commander';
 
 export function main(program: Command) {
+  program.name('gtx-cli');
+
   const { library, additionalModules } = determineLibrary();
   let cli: BaseCLI;
   if (library === 'gt-next') {
