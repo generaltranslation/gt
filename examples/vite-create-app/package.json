@@ -12,7 +12,7 @@
   "dependencies": {
     "gt-react": "latest",
     "gtx-cli": "latest",
-    "react": "^19.2.2",
+    "react": "^19.2.3",
     "react-dom": "^19.2.2"
   },
   "devDependencies": {

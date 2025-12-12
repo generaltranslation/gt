@@ -9,8 +9,8 @@
     "@testing-library/user-event": "^13.5.0",
     "gt-react": "latest",
     "gtx-cli": "latest",
-    "react": "^19.2.2",
-    "react-dom": "^19.2.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
