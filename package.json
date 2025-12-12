@@ -12,7 +12,7 @@
     "lint": "turbo run lint --filter='./packages/*'",
     "lint:fix": "turbo run lint:fix --filter='./packages/*'",
     "transpile": "turbo run transpile --filter='./packages/*'",
-    "release": "changeset publish && pnpm --filter gtx-cli run release:bin",
+    "release": "changeset publish && pnpm run release:bin --filter gtx-cli",
     "build:clean": "turbo run build:clean --filter='./packages/*'",
     "build:release": "turbo run build:release --filter='./packages/*'",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
