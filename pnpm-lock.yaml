@@ -833,6 +833,31 @@ importers:
       react-dom:
         specifier: 19.2.1
         version: 19.2.1(react@19.2.1)
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.1.13
+      '@types/node':
+        specifier: ^20
+        version: 20.19.17
+      '@types/react':
+        specifier: ^19
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.1.9(@types/react@19.2.7)
+      eslint:
+        specifier: ^9
+        version: 9.36.0(jiti@2.6.0)
+      eslint-config-next:
+        specifier: ^15.4.10
+        version: 15.5.2(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2)
+      tailwindcss:
+        specifier: ^4
+        version: 4.1.13
+      typescript:
+        specifier: ^5
+        version: 5.9.2
 
   test-apps/next/base:
     dependencies:
@@ -12958,7 +12983,7 @@ snapshots:
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
       '@emnapi/core': 1.5.0
-      '@emnapi/runtime': 1.5.0
+      '@emnapi/runtime': 1.7.1
       '@tybys/wasm-util': 0.10.1
     optional: true
 
@@ -14688,7 +14713,7 @@ snapshots:
 
   '@tailwindcss/oxide@4.1.13':
     dependencies:
-      detect-libc: 2.1.1
+      detect-libc: 2.1.2
       tar: 7.5.1
     optionalDependencies:
       '@tailwindcss/oxide-android-arm64': 4.1.13
@@ -14884,7 +14909,6 @@ snapshots:
   '@types/react-dom@19.1.9(@types/react@19.2.7)':
     dependencies:
       '@types/react': 19.2.7
-    optional: true
 
   '@types/react-is@19.0.0':
     dependencies:
@@ -16284,8 +16308,7 @@ snapshots:
 
   detect-libc@2.1.1: {}
 
-  detect-libc@2.1.2:
-    optional: true
+  detect-libc@2.1.2: {}
 
   detect-newline@4.0.1: {}
 
@@ -17822,7 +17845,7 @@ snapshots:
 
   is-bun-module@2.0.0:
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
 
   is-callable@1.2.7: {}
 
@@ -20788,8 +20811,7 @@ snapshots:
 
   semver@7.7.2: {}
 
-  semver@7.7.3:
-    optional: true
+  semver@7.7.3: {}
 
   send@1.2.0:
     dependencies:
