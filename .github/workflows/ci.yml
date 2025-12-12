@@ -141,6 +141,12 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Rust
+        if: steps.gt_next_changed.outputs.changed == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
       - name: Check if CLI changed
         id: cli_changed
         shell: bash
