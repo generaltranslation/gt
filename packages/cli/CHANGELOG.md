@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.33
+
+### Patch Changes
+
+- [#901](https://github.com/generaltranslation/gt/pull/901) [`6320663`](https://github.com/generaltranslation/gt/commit/6320663e032aa4b8a337e08423a5be7215260e87) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: release error
+
 ## 2.5.32
 
 ### Patch Changes
