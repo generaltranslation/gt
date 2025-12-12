@@ -11,8 +11,8 @@
   "dependencies": {
     "gt-react": "latest",
     "gtx-cli": "latest",
-    "next": "15.5.8",
-    "react": "^19.2.2",
+    "next": "15.5.9",
+    "react": "^19.2.3",
     "react-dom": "^19.2.2"
   },
   "devDependencies": {
