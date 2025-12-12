@@ -36,13 +36,15 @@ function routeToBinary(): void {
   const binaryName = detectPlatform();
 
   if (!binaryName) {
-    return;
+    console.error(`Unsupported platform: ${process.platform}-${process.arch}`);
+    process.exit(1);
   }
 
   const binaryPath = join(__dirname, '..', '..', 'binaries', binaryName);
 
   if (!existsSync(binaryPath)) {
-    return;
+    console.error(`Binary not found at: ${binaryPath}`);
+    process.exit(1);
   }
 
   // Check and fix execute permissions if needed (Unix-like systems only)
@@ -66,7 +68,8 @@ function routeToBinary(): void {
   });
 
   child.on('close', (code) => {
-    process.exit(code);
+    // code might be null
+    process.exit(code ?? 1);
   });
 
   child.on('error', () => {
