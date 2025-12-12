@@ -11,7 +11,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/generate-version.js && tsc",
-    "build:clean": "sh ../../scripts/clean.sh && pnpm restore-bin-release && rm -rf binaries && pnpm run build",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm bin:restore && rm -rf binaries && pnpm run build",
     "build:release": "pnpm run build:clean",
     "build:bin": "node scripts/generate-version.js && tsc && sh scripts/build-exe.sh all",
     "build:bin:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build:bin",
@@ -27,12 +27,12 @@
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run release:normal && pnpm run release:bin",
     "release:normal": "pnpm run build:clean && pnpm publish",
-    "release:bin": "pnpm run prep-bin-release && pnpm run build:bin:clean && pnpm publish --tag bin --no-git-checks && pnpm run restore-bin-release && pnpm run build:clean",
+    "release:bin": "pnpm run bin:prep && pnpm run build:bin:clean && pnpm publish --tag bin --no-git-checks && pnpm run bin:restore && pnpm run build:clean",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
-    "prep-bin-release": "node scripts/prepare-binary-release.js",
-    "restore-bin-release": "node scripts/restore-package-json.js"
+    "bin:restore": "node scripts/restore-package-json.js",
+    "bin:prep": "node scripts/prepare-binary-release.js"
   },
   "exports": {
     ".": {
