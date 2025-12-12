@@ -25,14 +25,14 @@ export async function handleSetupProject(
   fileVersionData: FileTranslationData | undefined;
   branchData: BranchData | undefined;
 } | null> {
+  if (!settings.locales) {
+    return logErrorAndExit(noLocalesError);
+  }
+  if (!settings.defaultLocale) {
+    return logErrorAndExit(noDefaultLocaleError);
+  }
   // Validate required settings are present if not in dry run
   if (!options.dryRun) {
-    if (!settings.locales) {
-      return logErrorAndExit(noLocalesError);
-    }
-    if (!settings.defaultLocale) {
-      return logErrorAndExit(noDefaultLocaleError);
-    }
     if (!settings.apiKey) {
       return logErrorAndExit(noApiKeyError);
     }
