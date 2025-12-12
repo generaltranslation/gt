@@ -41,6 +41,7 @@ export async function getPackageJson(
 }
 
 export function getCLIVersion(): string {
+  console.log('getCLIVersion');
   let packageJsonPath = fromPackageRoot('package.json');
 
   if (!fs.existsSync(packageJsonPath)) {
@@ -52,10 +53,10 @@ export function getCLIVersion(): string {
   }
   try {
     const result = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
-    logger.error('CLI version: ' + result);
+    console.log('CLI version: ' + result);
     return result;
   } catch (error) {
-    logger.error(chalk.red('Error getting CLI version: ' + String(error)));
+    console.log(chalk.red('Error getting CLI version: ' + String(error)));
     return 'unknown';
   }
 }
