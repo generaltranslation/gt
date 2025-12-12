@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.30
+
+### Patch Changes
+
+- [#896](https://github.com/generaltranslation/gt/pull/896) [`443ee73`](https://github.com/generaltranslation/gt/commit/443ee73395a514eec448b03810cb871062bf5b2a) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix dry-run error conditions
+
 ## 2.5.29
 
 ### Patch Changes
