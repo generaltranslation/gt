@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.32
+
+### Patch Changes
+
+- [#899](https://github.com/generaltranslation/gt/pull/899) [`94edf07`](https://github.com/generaltranslation/gt/commit/94edf07fb5a05130da967ffb1e76577667e9dff0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: bin release
+
 ## 2.5.31
 
 ### Patch Changes
