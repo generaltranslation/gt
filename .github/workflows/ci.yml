@@ -175,7 +175,7 @@ jobs:
       - name: Test CLI in test environment
         if: steps.gtx_cli_changed.outputs.changed == 'true'
         shell: bash
-        run: cd test-apps/cli-test-app && pnpm gtx-cli --help
+        run: cd test-apps/cli-test-app && pnpm install && pnpm gtx-cli --help
 
   run-tests:
     needs: [tests, test-builds, test-cli-binaries]
