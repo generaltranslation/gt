@@ -5,7 +5,7 @@
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, chmodSync, statSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,6 +43,21 @@ function routeToBinary(): void {
 
   if (!existsSync(binaryPath)) {
     return;
+  }
+
+  // Check and fix execute permissions if needed (Unix-like systems only)
+  if (process.platform !== 'win32') {
+    try {
+      const stats = statSync(binaryPath);
+      const isExecutable = !!(stats.mode & parseInt('100', 8)); // Check owner execute bit
+      
+      if (!isExecutable) {
+        chmodSync(binaryPath, 0o755); // Make executable
+      }
+    } catch (error) {
+      // If we can't check/fix permissions, continue anyway
+      // The spawn might still work or give a more meaningful error
+    }
   }
 
   // Spawn the appropriate binary with all arguments
