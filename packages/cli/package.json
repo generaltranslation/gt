@@ -2,7 +2,7 @@
   "name": "gtx-cli",
   "version": "2.5.30-alpha.10",
   "main": "dist/index.js",
-  "bin": "dist/routers/router.js",
+  "bin": "dist/main.js",
   "files": [
     "dist",
     "binaries",
@@ -11,7 +11,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/generate-version.js && tsc",
-    "build:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm restore-bin-release && rm -rf binaries && pnpm run build",
     "build:release": "pnpm run build:clean",
     "build:bin": "tsc && sh scripts/build-exe.sh all",
     "build:bin:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build:bin",

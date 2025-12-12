@@ -1,3 +1,6 @@
+#!/usr/bin/env node
+
+// Non-binary router - directly runs main.ts
 import { main } from './index.js';
 import dotenv from 'dotenv';
 import { program } from 'commander';

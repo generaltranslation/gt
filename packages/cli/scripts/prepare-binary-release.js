@@ -16,7 +16,7 @@ const binaryVersion = `${originalVersion}-bin.0`;
 
 // Modify package.json for binary release
 packageJson.version = binaryVersion;
-packageJson.bin = 'dist/routers/bin-router.js';
+packageJson.bin = 'dist/bin/bin-main.js';
 
 // Write modified package.json
 writeFileSync(
