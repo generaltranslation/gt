@@ -14,6 +14,8 @@ type TraverseIcuOptions = ParserOptions & {
  * @param icu - The ICU string to traverse
  * @param shouldVisit - A function that returns true if the element should be visited
  * @param visitor - A function that is called for each element that matches the type T
+ *
+ * @note This function is a heavy operation, use sparingly
  */
 export function traverseIcu<T extends MessageFormatElement>({
   icuString,

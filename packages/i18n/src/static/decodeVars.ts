@@ -31,7 +31,7 @@ interface Variable extends SelectElement {
 }
 
 /**
- * Given an encoded ICU string, decode all the variables
+ * Given an encoded ICU string, interpolate only _gt_ variables
  * decodeVars('Hi {_gt_, select, other {Brian}}, my name is {name}') => 'Hi Brian, my name is {name}'
  */
 export function decodeVars(icuString: string): string {
