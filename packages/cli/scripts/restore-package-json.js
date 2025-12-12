@@ -15,9 +15,11 @@ const originalVersion = packageJson.version.replace(/-bin\.0$/, '');
 
 // Restore package.json fields
 packageJson.version = originalVersion;
-packageJson.bin = 'dist/router.js';
+packageJson.bin = 'dist/routers/router.js';
 
 // Write restored package.json
-writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
-
-console.log(`Restored package.json: ${packageJson.version} with bin: ${packageJson.bin}`);
+writeFileSync(
+  packageJsonPath,
+  JSON.stringify(packageJson, null, 2) + '\n',
+  'utf8'
+);
