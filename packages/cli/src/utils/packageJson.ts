@@ -42,6 +42,7 @@ export async function getPackageJson(
 
 export function getCLIVersion(): string {
   console.log('getCLIVersion');
+  logger.error('getCLIVersion -- logger');
   let packageJsonPath = fromPackageRoot('package.json');
 
   if (!fs.existsSync(packageJsonPath)) {
