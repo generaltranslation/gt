@@ -157,7 +157,7 @@ jobs:
 
       - name: Build packages
         if: steps.cli_changed.outputs.changed == 'true'
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!cli-test-app'
 
       - name: Build CLI binaries
         if: steps.cli_changed.outputs.changed == 'true'
