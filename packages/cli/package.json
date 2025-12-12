@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.5.30-alpha.6",
+  "version": "2.5.30-alpha.7",
   "main": "dist/index.js",
   "bin": "dist/router.js",
   "files": [
@@ -11,7 +11,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && pnpm run build:exe",
-    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build",
     "build:release": "pnpm run build:clean",
     "build:exe": "sh scripts/build-exe.sh all",
     "build:exe:darwin-x64": "sh scripts/build-exe.sh darwin-x64",
@@ -26,6 +26,7 @@
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:bin": "pnpm run build:clean && pnpm publish --tag bin",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest"
   },
   "exports": {

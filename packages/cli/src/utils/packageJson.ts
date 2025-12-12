@@ -51,8 +51,11 @@ export function getCLIVersion(): string {
     }
   }
   try {
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
+    const result = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
+    logger.error('CLI version: ' + result);
+    return result;
   } catch (error) {
+    logger.error(chalk.red('Error getting CLI version: ' + String(error)));
     return 'unknown';
   }
 }
