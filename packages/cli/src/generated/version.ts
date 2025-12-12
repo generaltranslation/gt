@@ -1,2 +1,2 @@
 // This file is auto-generated. Do not edit manually.
-export const PACKAGE_VERSION = '2.5.30-alpha.10';
+export const PACKAGE_VERSION = '2.5.29-bin.0';
