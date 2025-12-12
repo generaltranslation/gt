@@ -11,7 +11,7 @@ const packageJsonPath = join(__dirname, '..', 'package.json');
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
 // Restore original version (remove -bin.0 suffix)
-const originalVersion = packageJson.version.replace(/-bin\.0$/, '');
+const originalVersion = packageJson.version.replace(/-bin\.\d+$/, '');
 
 // Restore package.json fields
 packageJson.version = originalVersion;

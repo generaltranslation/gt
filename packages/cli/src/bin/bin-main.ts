@@ -39,7 +39,7 @@ function routeToBinary(): void {
     return;
   }
 
-  const binaryPath = join(__dirname, '..', 'binaries', binaryName);
+  const binaryPath = join(__dirname, '..', '..', 'binaries', binaryName);
 
   if (!existsSync(binaryPath)) {
     return;
