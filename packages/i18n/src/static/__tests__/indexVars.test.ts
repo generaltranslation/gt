@@ -14,6 +14,16 @@ describe('indexVars', () => {
     );
   });
 
+  it('should maintain gt metadata', () => {
+    const input =
+      'Hello {_gt_, select, other {John} _gt_var_name {John}} and {_gt_, select, other {Jane}}';
+    const result = indexVars(input);
+
+    expect(result).toBe(
+      'Hello {_gt_1, select, other {John} _gt_var_name {John}} and {_gt_2, select, other {Jane}}'
+    );
+  });
+
   it('should handle single GT placeholder', () => {
     const input = '{_gt_, select, other {Hello World}}';
     const result = indexVars(input);
