@@ -3,7 +3,7 @@ import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
-import { fromPackageRoot } from '../fs/getPackageResource.js';
+import { fromBinariesRoot, fromPackageRoot } from '../fs/getPackageResource.js';
 import { exitSync } from '../console/logging.js';
 
 // search for package.json such that we can run init in non-js projects
@@ -41,10 +41,14 @@ export async function getPackageJson(
 }
 
 export function getCLIVersion(): string {
-  const packageJsonPath = fromPackageRoot('package.json');
+  let packageJsonPath = fromPackageRoot('package.json');
 
   if (!fs.existsSync(packageJsonPath)) {
-    return 'unknown';
+    // Try binaries behavior instead
+    packageJsonPath = fromBinariesRoot('package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+      return 'unknown';
+    }
   }
   try {
     return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
