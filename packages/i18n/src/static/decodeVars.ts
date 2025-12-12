@@ -5,7 +5,7 @@ import {
   SelectElement,
   TYPE,
 } from '@formatjs/icu-messageformat-parser/types';
-import { VAR_IDENTIFIER } from './utils/constants';
+import { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
 
 type Location = {
@@ -31,8 +31,12 @@ interface Variable extends SelectElement {
 }
 
 /**
- * Given an encoded ICU string, interpolate only _gt_ variables
- * decodeVars('Hi {_gt_, select, other {Brian}}, my name is {name}') => 'Hi Brian, my name is {name}'
+ * Given an encoded ICU string, interpolate only _gt_ variables that have been marked with declareVar()
+ * @example
+ * const encodedIcu = "Hi" + declareVar("Brian") + ", my name is {name}"
+ * // 'Hi {_gt_, select, other {Brian}}, my name is {name}'
+ * decodeVars(encodedIcu)
+ * // 'Hi Brian, my name is {name}'
  */
 export function decodeVars(icuString: string): string {
   // Check if the string contains _gt_

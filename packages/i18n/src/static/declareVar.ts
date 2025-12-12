@@ -1,29 +1,42 @@
-import { VAR_NAME } from './utils/constants';
+import { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './utils/constants';
 import { sanitizeVar } from './sanitizeVar';
 
 /**
- * Given an arbitrary string, sanitize it so it does not break the following ICU message syntax:
- * {_gt_, select, other {string_here}}
+ * Mark as a non-translatable string. Use within a declareStatic() call to mark content as not statically analyzable (e.g., not possible to know before runtime).
  * @param variable - The variable to sanitize.
  * @param options - The options for the sanitization.
  * @param options.$name - The name of the variable.
  * @returns The sanitized variable.
+ *
+ * @example
+ * ```jsx
+ *
+ * function staticFunction() {
+ *   if (condition) {
+ *     return declareVar(Math.random())
+ *   }
+ *   return 'John Doe';
+ * }
+ *
+ * const gt = useGT();
+ * gt(`My name is ${declareStatic(staticFunction())}`);
+ * ```
  */
 export function declareVar(
-  variable: string,
+  variable: string | number | boolean | null | undefined,
   options?: { $name?: string }
 ): string {
   // variable section
-  const sanitizedVariable = sanitizeVar(variable);
-  const variableSection = `, other {${sanitizedVariable}}`;
+  const sanitizedVariable = sanitizeVar(String(variable ?? ''));
+  const variableSection = ` other {${sanitizedVariable}}`;
 
   // name section
   let nameSection = '';
   if (options?.$name) {
     const sanitizedName = sanitizeVar(options.$name);
-    nameSection = ` ${VAR_NAME} {${sanitizedName}}`;
+    nameSection = ` ${VAR_NAME_IDENTIFIER} {${sanitizedName}}`;
   }
 
   // interpolate
-  return `{_gt_, select${variableSection}${nameSection}}`;
+  return `{${VAR_IDENTIFIER}, select,${variableSection}${nameSection}}`;
 }

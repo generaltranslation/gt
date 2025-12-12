@@ -122,5 +122,15 @@ describe('declareVar', () => {
 
       expect(output).toBe(originalText);
     });
+
+  });
+
+  describe('exact output validation', () => {
+    it('should handle null/undefined variable', () => {
+      const originalText = undefined;
+      const sanitized = declareVar(originalText);
+
+      expect(sanitized).toBe('{_gt_, select, other {}}');
+    });
   });
 });

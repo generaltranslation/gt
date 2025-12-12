@@ -209,7 +209,7 @@ describe('indexVars', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        'Navigate to {_gt_1, select, other {User Profile} _gt_var_name_ {profile_section}} page'
+        'Navigate to {_gt_1, select, other {User Profile} _gt_var_name {profile_section}} page'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -259,7 +259,7 @@ describe('indexVars', () => {
       const result = indexVars(input);
 
       const expected =
-        "Welcome back {_gt_1, select, other {John Doe} _gt_var_name_ {user_name}}! You have {_gt_2, select, other {'{count, number}'} _gt_var_name_ {item_count}} items. Last login: {_gt_3, select, other {'{date, date, short}'} _gt_var_name_ {last_login}}";
+        "Welcome back {_gt_1, select, other {John Doe} _gt_var_name {user_name}}! You have {_gt_2, select, other {'{count, number}'} _gt_var_name {item_count}} items. Last login: {_gt_3, select, other {'{date, date, short}'} _gt_var_name {last_login}}";
       expect(result).toBe(expected);
       expect(() => parse(result)).not.toThrow();
     });
