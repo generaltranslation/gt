@@ -27,7 +27,7 @@
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run release:normal && pnpm run release:bin",
     "release:normal": "pnpm run build:clean && pnpm publish",
-    "release:bin": "pnpm run prep-bin-release && pnpm run build:bin:clean && pnpm publish --tag bin && pnpm run restore-bin-release && pnpm run build:clean",
+    "release:bin": "pnpm run prep-bin-release && pnpm run build:bin:clean && pnpm publish --tag bin --no-git-checks && pnpm run restore-bin-release && pnpm run build:clean",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
