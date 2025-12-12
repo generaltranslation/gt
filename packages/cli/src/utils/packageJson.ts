@@ -3,8 +3,8 @@ import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
-import { fromBinariesRoot, fromPackageRoot } from '../fs/getPackageResource.js';
 import { exitSync } from '../console/logging.js';
+import { PACKAGE_VERSION } from '../generated/version.js';
 
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(
@@ -41,26 +41,9 @@ export async function getPackageJson(
 }
 
 export function getCLIVersion(): string {
-  console.log('getCLIVersion');
-  logger.error('getCLIVersion -- logger');
-  let packageJsonPath = fromPackageRoot('package.json');
-
-  if (!fs.existsSync(packageJsonPath)) {
-    // Try binaries behavior instead
-    packageJsonPath = fromBinariesRoot('package.json');
-    if (!fs.existsSync(packageJsonPath)) {
-      return 'unknown';
-    }
-  }
-  try {
-    const result = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
-    console.log('CLI version: ' + result);
-    return result;
-  } catch (error) {
-    console.log(chalk.red('Error getting CLI version: ' + String(error)));
-    return 'unknown';
-  }
+  return PACKAGE_VERSION;
 }
+
 export async function updatePackageJson(
   packageJson: Record<string, any>,
   cwd: string = process.cwd()

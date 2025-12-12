@@ -10,7 +10,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "tsc && pnpm run build:exe",
+    "build": "node scripts/generate-version.js && tsc && pnpm run build:exe",
     "build:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build",
     "build:release": "pnpm run build:clean",
     "build:exe": "sh scripts/build-exe.sh all",
