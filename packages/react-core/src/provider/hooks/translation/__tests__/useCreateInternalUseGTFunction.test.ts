@@ -551,4 +551,276 @@ describe('useCreateInternalUseGTFunction', () => {
       expect(result).toBe('Translated message');
     });
   });
+
+  describe('new interpolation functionality', () => {
+    describe('messages without fallbacks (default language)', () => {
+      it('should handle messages directly without extractVars when no fallback', () => {
+        const mockGT = {
+          formatMessage: vi.fn((message) => 'Formatted default message'),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false, // Default language - no fallback
+        });
+
+        const message =
+          'I play with my friend {_gt_, select, other {Brian}} at the {_gt_, select, other {park}}';
+        const result = _gtFunction(message);
+
+        // Should call formatMessage with original message and only _gt_: 'other' variable
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          message, // Original message, not condensed since no fallback
+          expect.objectContaining({
+            locales: ['en'],
+            variables: expect.objectContaining({
+              _gt_: 'other',
+            }),
+          })
+        );
+        expect(result).toBe('Formatted default message');
+      });
+
+      it('should handle complex variables in default language with user variables', () => {
+        const mockGT = {
+          formatMessage: vi.fn(() => 'You have 5 items in your cart'),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        const message =
+          'You have {_gt_, select, other {{count, plural, one{# item} other{# items}}}} in your {_gt_, select, other {cart}}';
+        const result = _gtFunction(message, { count: 5 });
+
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          message,
+          expect.objectContaining({
+            variables: expect.objectContaining({
+              count: 5,
+              _gt_: 'other',
+            }),
+          })
+        );
+        expect(result).toBe('You have 5 items in your cart');
+      });
+    });
+
+    describe('messages with fallbacks (translated languages)', () => {
+      it('should extract variables from fallback and use condenseVars on translated message', () => {
+        // Mock to simulate translation formatting failure, then fallback success
+        const mockGT = {
+          formatMessage: vi
+            .fn()
+            .mockImplementationOnce(() => {
+              throw new Error('Translation failed');
+            })
+            .mockImplementationOnce((message) => {
+              return 'Successfully formatted fallback';
+            }),
+        } as any;
+
+        const translations = {
+          'hash-hello-world':
+            '我在{_gt_2, select, other {}}与我的朋友{_gt_1, select, other {}}一起玩',
+        };
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translations,
+        });
+
+        // This should trigger fallback behavior
+        const result = _gtFunction('Hello World');
+
+        // First call: translation attempt with condensed target (because no fallback vars yet)
+        expect(mockGT.formatMessage).toHaveBeenNthCalledWith(
+          1,
+          '我在{_gt_2, select, other {}}与我的朋友{_gt_1, select, other {}}一起玩',
+          expect.objectContaining({
+            locales: ['es', 'en'],
+            variables: expect.objectContaining({
+              _gt_: 'other',
+            }),
+          })
+        );
+
+        // Second call: fallback with original message
+        expect(mockGT.formatMessage).toHaveBeenNthCalledWith(
+          2,
+          'Hello World', // fallback to original message
+          expect.objectContaining({
+            locales: ['es', 'en'], // Both locales in fallback scenario
+            variables: expect.objectContaining({
+              _gt_: 'other',
+            }),
+          })
+        );
+
+        expect(result).toBe('Successfully formatted fallback');
+      });
+
+      it('should demonstrate the actual workflow with real fallback scenario', () => {
+        const translations = {
+          'hash-hello-world':
+            '我在{_gt_2, select, other {}}与我的朋友{_gt_1, select, other {}}一起玩',
+        };
+
+        // Mock that succeeds on translation (no fallback needed)
+        const mockGT = {
+          formatMessage: vi.fn((message) => {
+            if (message.includes('我在')) {
+              return '我在公园与我的朋友Brian一起玩'; // Successful Chinese translation
+            }
+            return message;
+          }),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translations,
+        });
+
+        const result = _gtFunction('Hello World');
+
+        // Should call formatMessage with the translation
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          '我在{_gt_2, select, other {}}与我的朋友{_gt_1, select, other {}}一起玩',
+          expect.objectContaining({
+            locales: ['es', 'en'],
+            variables: expect.objectContaining({
+              _gt_: 'other',
+            }),
+          })
+        );
+
+        expect(result).toBe('我在公园与我的朋友Brian一起玩');
+      });
+
+      it('should handle basic error scenarios and fallback correctly', () => {
+        const mockGT = {
+          formatMessage: vi
+            .fn()
+            .mockImplementationOnce(() => {
+              throw new Error('Translation formatting failed');
+            })
+            .mockImplementationOnce(() => {
+              return 'Fallback message rendered';
+            }),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          environment: 'development',
+          translations: {
+            'hash-hello-world': 'Problematic translation',
+          },
+        });
+
+        const result = _gtFunction('Hello World');
+
+        // Should try translation first, then fall back
+        expect(mockGT.formatMessage).toHaveBeenCalledTimes(2);
+        expect(result).toBe('Fallback message rendered');
+      });
+    });
+
+    describe('condenseVars functionality integration', () => {
+      it('should only use condenseVars when declaredVars are present', () => {
+        const mockGT = {
+          formatMessage: vi.fn(() => 'Simple message'),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        // Message with no _gt_ variables
+        const result = _gtFunction('Simple message without variables');
+
+        // Should NOT use condenseVars since no variables are present
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          'Simple message without variables', // Original message, not condensed
+          expect.objectContaining({
+            variables: expect.objectContaining({
+              _gt_: 'other',
+            }),
+          })
+        );
+      });
+
+      it('should handle edge case with empty declaredVars', () => {
+        const mockGT = {
+          formatMessage: vi.fn(() => 'Empty vars message'),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        // Message that produces empty extractVars result
+        const result = _gtFunction(
+          'Message with {other, select, other {content}}'
+        );
+
+        // Should not use condenseVars since extractVars returns empty object
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          'Message with {other, select, other {content}}', // Original, not condensed
+          expect.objectContaining({
+            variables: expect.objectContaining({
+              _gt_: 'other',
+            }),
+          })
+        );
+      });
+    });
+
+    describe('error handling with new functionality', () => {
+      it('should handle errors gracefully and fall back to original message', () => {
+        const mockGT = {
+          formatMessage: vi
+            .fn()
+            .mockImplementationOnce(() => {
+              throw new Error('Translation format error');
+            })
+            .mockImplementationOnce(() => {
+              return 'Fallback rendered successfully';
+            }),
+        } as any;
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          environment: 'development',
+          translations: {
+            'hash-hello-world': 'Problematic translation',
+          },
+        });
+
+        const result = _gtFunction('Hello World');
+
+        expect(result).toBe('Fallback rendered successfully');
+        expect(mockGT.formatMessage).toHaveBeenCalledTimes(2);
+      });
+    });
+  });
 });

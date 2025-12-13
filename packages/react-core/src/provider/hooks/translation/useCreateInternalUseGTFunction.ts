@@ -82,10 +82,6 @@ export default function useCreateInternalUseGTFunction({
     try {
       // (1) Try to format message
       const declaredVars = extractVars(fallback || '');
-      console.log('message', message);
-      console.log('fallback', fallback);
-      console.log('declaredVars', declaredVars);
-      console.log('condenseVars', condenseVars(message));
       const formattedMessage = gt.formatMessage(
         Object.keys(declaredVars).length ? condenseVars(message) : message,
         {
@@ -299,8 +295,6 @@ export default function useCreateInternalUseGTFunction({
       console.warn(createStringTranslationError(message, id, 'gt'));
       return renderMessage(message, [defaultLocale]);
     }
-
-    console.log('registerIcuForTranslation', message, indexVars(message));
 
     registerIcuForTranslation({
       source: indexVars(message),
