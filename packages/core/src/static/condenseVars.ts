@@ -1,23 +1,15 @@
 import {
   ArgumentElement,
-  MessageFormatElement,
-  SelectElement,
   TYPE,
 } from '@formatjs/icu-messageformat-parser/types';
 import { printAST } from '@formatjs/icu-messageformat-parser/printer';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
-
-interface GTIndexedSelectElement extends SelectElement {
-  value: `${typeof VAR_IDENTIFIER}${number}`;
-}
-
+import { GTIndexedSelectElement } from './utils/types';
+import { isGTIndexedSelectElement } from './utils/traverseHelpers';
 interface GTIndexedArgumentElement extends ArgumentElement {
   value: `${typeof VAR_IDENTIFIER}${number}`;
 }
-
-// Regex  for _gt_# select
-const GT_INDEXED_IDENTIFIER_REGEX = new RegExp(`^${VAR_IDENTIFIER}\\d+$`);
 
 /**
  * Given an indexed ICU string, condenses any select to an argument
@@ -31,16 +23,6 @@ export function condenseVars(icuString: string): string {
     return icuString;
   }
 
-  // Visit any _gt_# select
-  function shouldVisit(
-    child: MessageFormatElement
-  ): child is GTIndexedSelectElement {
-    return (
-      child.type === TYPE.select &&
-      GT_INDEXED_IDENTIFIER_REGEX.test(child.value)
-    );
-  }
-
   // Replace with argument
   function visitor(child: GTIndexedSelectElement): void {
     (child as unknown as GTIndexedArgumentElement).type = TYPE.argument;
@@ -49,7 +31,7 @@ export function condenseVars(icuString: string): string {
 
   const ast = traverseIcu({
     icuString,
-    shouldVisit,
+    shouldVisit: isGTIndexedSelectElement,
     visitor,
     options: { recurseIntoVisited: false },
   });

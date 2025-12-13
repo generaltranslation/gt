@@ -88,7 +88,7 @@ describe('static condenseVars', () => {
     it('should not process selects without _gt_ prefix', () => {
       const input = '{gt_1, select, other {value}}';
       const result = condenseVars(input);
-      expect(result).toBe('{gt_1,select,other{value}}');
+      expect(result).toBe('{gt_1, select, other {value}}');
     });
 
     it('should not process selects with invalid suffix', () => {
