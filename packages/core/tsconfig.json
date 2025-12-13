@@ -20,6 +20,6 @@
     },
     "lib": ["ES2023"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "../i18n/src/static/__tests__/decodeVars.test.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
