@@ -43,7 +43,7 @@ export default function useCreateInternalUseGTFunction({
   registerIcuForTranslation: TranslateIcuCallback;
   environment: 'development' | 'production' | 'test';
 }): {
-  _tFunction: (
+  _gtFunction: (
     message: string,
     options?: InlineTranslationOptions,
     preloadedTranslations?: Translations
@@ -228,7 +228,7 @@ export default function useCreateInternalUseGTFunction({
     return preloadedTranslations;
   };
 
-  const _tFunction = (
+  const _gtFunction = (
     message: string,
     options: InlineTranslationOptions = {},
     preloadedTranslations: Translations | undefined
@@ -304,7 +304,7 @@ export default function useCreateInternalUseGTFunction({
 
     const decodedOptions = decodeOptions(encodedMsg);
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return _tFunction(
+      return _gtFunction(
         encodedMsg,
         options,
         preloadedTranslations
@@ -382,7 +382,7 @@ export default function useCreateInternalUseGTFunction({
   };
 
   return {
-    _tFunction,
+    _gtFunction,
     _mFunction,
     _filterMessagesForPreload,
     _preloadMessages,
