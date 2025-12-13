@@ -27,9 +27,11 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
   _Messages,
   Static as _Static,
-  declareStatic as _declareStatic,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -192,27 +194,6 @@ Var._gtt = 'variable-variable';
  * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {
-  throw new Error(typesFileError);
-};
-
-/**
- * declareStatic() is a powerful but dangerous function which marks its argument as statically analyzable for the compiler and CLI tool.
- *
- * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not statically analyzable.
- *
- * @example
- * ```jsx
- * function getSubject() {
- *   return (Math.random() > 0.5) ? "Alice" : "Brian";
- * }
- * ...
- * gt(`My name is ${declareStatic(getSubject())}`);
- * ```
- *
- * @param {T extends string | null | undefined} string - String returning function invocation to declare as static.
- * @returns {T} The result of the function invocation.
- */
-export const declareStatic: typeof _declareStatic = () => {
   throw new Error(typesFileError);
 };
 
@@ -466,4 +447,13 @@ export {
   RuntimeTranslationOptions,
 };
 
-export { msg, decodeMsg, decodeOptions, mFallback, gtFallback };
+export {
+  msg,
+  decodeMsg,
+  decodeOptions,
+  mFallback,
+  gtFallback,
+  declareStatic,
+  declareVar,
+  decodeVars,
+};

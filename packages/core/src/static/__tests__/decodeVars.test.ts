@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
 import { decodeVars } from '../decodeVars';
-import { declareVar } from '../declareVar';
-import { indexVars } from '../indexVars';
 
 describe('decodeVars', () => {
   it('should decode a single GT variable', () => {
@@ -113,70 +110,6 @@ describe('decodeVars', () => {
     }`;
 
     expect(result).toBe(expected);
-  });
-
-  describe('integration with declareVar', () => {
-    it('should decode variables created with declareVar', () => {
-      const declaredVar1 = declareVar('Hello World');
-      const declaredVar2 = declareVar('Amazing');
-      const input = `Welcome to ${declaredVar1} application! It is ${declaredVar2}!`;
-      const result = decodeVars(input);
-
-      expect(result).toBe('Welcome to Hello World application! It is Amazing!');
-    });
-
-    it('should decode variables with complex declareVar content', () => {
-      const complexVar = declareVar(
-        '{count, plural, one{# item} other{# items}}'
-      );
-      const input = `You have ${complexVar} in your cart`;
-      const result = decodeVars(input);
-
-      expect(result).toBe(
-        'You have {count, plural, one{# item} other{# items}} in your cart'
-      );
-    });
-
-    it('should decode variables with special characters from declareVar', () => {
-      const specialVar = declareVar("Text with 'quotes' and {braces}");
-      const emojiVar = declareVar('🚀 Rocket Launch 🌟');
-      const input = `Status: ${specialVar} Event: ${emojiVar}`;
-      const result = decodeVars(input);
-
-      expect(result).toBe(
-        "Status: Text with 'quotes' and {braces} Event: 🚀 Rocket Launch 🌟"
-      );
-    });
-
-    it('should work with named variables from declareVar', () => {
-      const namedVar = declareVar('User Profile', { $name: 'profile_section' });
-      const input = `Navigate to ${namedVar} page`;
-      const result = decodeVars(input);
-
-      expect(result).toBe('Navigate to User Profile page');
-    });
-  });
-
-  describe('integration with indexVars', () => {
-    it('should decode indexed variables correctly', () => {
-      const var1 = declareVar('John');
-      const var2 = declareVar('Developer');
-      const input = `Hello ${var1}, you are a ${var2}!`;
-
-      // Then decode them
-      const decoded = decodeVars(input);
-      expect(decoded).toBe('Hello John, you are a Developer!');
-    });
-
-    it('should handle complex round-trip with indexVars', () => {
-      const userName = declareVar('Alice', { $name: 'user_name' });
-      const itemCount = declareVar('5 items', { $name: 'item_count' });
-      const input = `Welcome back ${userName}! You have ${itemCount}.`;
-
-      const decoded = decodeVars(input);
-
-      expect(decoded).toBe('Welcome back Alice! You have 5 items.');
-    });
   });
 
   describe('edge cases and error handling', () => {

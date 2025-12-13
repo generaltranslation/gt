@@ -5,8 +5,8 @@ import {
   SelectElement,
   TYPE,
 } from '@formatjs/icu-messageformat-parser/types';
-import { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
+import { VAR_IDENTIFIER } from './utils/constants';
 
 type Location = {
   start: number;

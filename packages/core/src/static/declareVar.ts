@@ -1,16 +1,10 @@
 import { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './utils/constants';
-import { sanitizeVar } from './sanitizeVar';
+import { sanitizeVar } from './utils/sanitizeVar';
 
 /**
  * Mark as a non-translatable string. Use within a declareStatic() call to mark content as not statically analyzable (e.g., not possible to know before runtime).
- * @param variable - The variable to sanitize.
- * @param options - The options for the sanitization.
- * @param options.$name - The name of the variable.
- * @returns The sanitized variable.
  *
  * @example
- * ```jsx
- *
  * function staticFunction() {
  *   if (condition) {
  *     return declareVar(Math.random())
@@ -20,7 +14,11 @@ import { sanitizeVar } from './sanitizeVar';
  *
  * const gt = useGT();
  * gt(`My name is ${declareStatic(staticFunction())}`);
- * ```
+ *
+ * @param {string | number | boolean | null | undefined} variable - The variable to sanitize.
+ * @param {Object} [options] - The options for the sanitization.
+ * @param {string} [options.$name] - The name of the variable.
+ * @returns {string} The sanitized value.
  */
 export function declareVar(
   variable: string | number | boolean | null | undefined,
