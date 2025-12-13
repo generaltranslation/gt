@@ -12,7 +12,6 @@ import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 
 // Used for temporarily tracking variable indices in the AST
 const VAR_FLAG_SUFFIX = '_flag';
-const VAR_FLAG_REGEX = new RegExp(`^${VAR_IDENTIFIER}\\d+${VAR_FLAG_SUFFIX}$`);
 
 interface GTFlaggedSelectElement extends SelectElement {
   type: TYPE.select;
@@ -66,26 +65,17 @@ export function indexVars(icuString: string): string {
     const { start, end, otherStart, otherEnd } = variableLocations[i];
     // Before the variable
     result.push(icuString.slice(current, start));
-    console.log("'" + icuString.slice(current, start) + "'");
     // Replace the variable with the new identifier (+1 is for the curly brace)
     result.push(icuString.slice(start, start + VAR_IDENTIFIER.length + 1));
-    console.log(
-      "'" + icuString.slice(start, start + VAR_IDENTIFIER.length + 1) + "'"
-    );
+
     // Add the new identifier
     result.push(String(i + 1));
-    console.log("'" + String(i + 1) + "'");
     // After the variable
     result.push(icuString.slice(start + VAR_IDENTIFIER.length + 1, otherStart));
-    console.log(
-      "'" + icuString.slice(start + VAR_IDENTIFIER.length + 1, otherStart) + "'"
-    );
     // Before the other option
     result.push('{}');
-    console.log("'{}'");
     // The other option
     result.push(icuString.slice(otherEnd, end));
-    console.log("'" + icuString.slice(otherEnd, end) + "'");
     current = end;
   }
   result.push(icuString.slice(current, icuString.length));
