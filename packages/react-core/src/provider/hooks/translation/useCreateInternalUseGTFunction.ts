@@ -15,6 +15,7 @@ import {
 import { decodeMsg, decodeOptions } from '../../../messages/messages';
 import {
   extractVars,
+  condenseVars,
   indexVars,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
@@ -81,15 +82,21 @@ export default function useCreateInternalUseGTFunction({
     try {
       // (1) Try to format message
       const declaredVars = extractVars(fallback || '');
+      console.log('message', message);
+      console.log('fallback', fallback);
       console.log('declaredVars', declaredVars);
-      const formattedMessage = gt.formatMessage(message, {
-        locales,
-        variables: {
-          ...variables,
-          ...declaredVars,
-          [VAR_IDENTIFIER]: 'other',
-        },
-      });
+      console.log('condenseVars', condenseVars(message));
+      const formattedMessage = gt.formatMessage(
+        Object.keys(declaredVars).length ? condenseVars(message) : message,
+        {
+          locales,
+          variables: {
+            ...variables,
+            ...declaredVars,
+            [VAR_IDENTIFIER]: 'other',
+          },
+        }
+      );
       return formattedMessage;
     } catch (error) {
       if (environment === 'production') {
