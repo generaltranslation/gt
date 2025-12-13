@@ -5,8 +5,8 @@ import {
   TYPE,
 } from '@formatjs/icu-messageformat-parser/types';
 import { printAST } from '@formatjs/icu-messageformat-parser/printer';
-import { traverseIcu } from './traverseIcu';
-import { VAR_IDENTIFIER } from './constants';
+import { traverseIcu } from './utils/traverseIcu';
+import { VAR_IDENTIFIER } from './utils/constants';
 
 interface GTIndexedSelectElement extends SelectElement {
   value: `${typeof VAR_IDENTIFIER}${number}`;
@@ -26,6 +26,11 @@ const GT_INDEXED_IDENTIFIER_REGEX = new RegExp(`^${VAR_IDENTIFIER}\\d+$`);
  * @returns {string} The condensed ICU string.
  */
 export function condenseVars(icuString: string): string {
+  // Check if the string contains _gt_
+  if (!icuString.includes(VAR_IDENTIFIER)) {
+    return icuString;
+  }
+
   // Visit any _gt_# select
   function shouldVisit(
     child: MessageFormatElement
