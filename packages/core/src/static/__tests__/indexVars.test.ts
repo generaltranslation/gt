@@ -9,7 +9,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      'Hello {_gt_1,select,other{John}} and {_gt_2,select,other{Jane}}'
+      'Hello {_gt_1, select, other {}} and {_gt_2, select, other {}}'
     );
   });
 
@@ -19,7 +19,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      'Hello {_gt_1,select,other{John} _gt_var_name{John}} and {_gt_2,select,other{Jane}}'
+      'Hello {_gt_1, select, other {} _gt_var_name {John}} and {_gt_2, select, other {}}'
     );
   });
 
@@ -27,7 +27,7 @@ describe('indexVars', () => {
     const input = '{_gt_, select, other {Hello World}}';
     const result = indexVars(input);
 
-    expect(result).toBe('{_gt_1,select,other{Hello World}}');
+    expect(result).toBe('{_gt_1, select, other {}}');
   });
 
   it('should handle GT placeholders at start and end', () => {
@@ -36,7 +36,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '{_gt_1,select,other{Start}} middle text {_gt_2,select,other{End}}'
+      '{_gt_1, select, other {}} middle text {_gt_2, select, other {}}'
     );
   });
 
@@ -46,7 +46,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '{count,plural,one{{_gt_1,select,other{item}}} other{{_gt_2,select,other{items}}}}'
+      '{count, plural, one {{_gt_1, select, other {}}} other {{_gt_2, select, other {}}}}'
     );
   });
 
@@ -56,7 +56,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '{gender,select,male{He has {_gt_1,select,other{book}}} female{She has {_gt_2,select,other{book}}} other{They have {_gt_3,select,other{book}}}}'
+      '{gender, select, male {He has {_gt_1, select, other {}}} female {She has {_gt_2, select, other {}}} other {They have {_gt_3, select, other {}}}}'
     );
   });
 
@@ -66,7 +66,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '<bold>{_gt_1,select,other{important}}</bold> and {_gt_2,select,other{normal}}'
+      '<bold>{_gt_1, select, other {}}</bold> and {_gt_2, select, other {}}'
     );
   });
 
@@ -76,7 +76,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '{count, number} items and {date, date, short} with {_gt_1,select,other{variable}}'
+      '{count, number} items and {date, date, short} with {_gt_1, select, other {}}'
     );
   });
 
@@ -104,7 +104,11 @@ describe('indexVars', () => {
     }`;
 
     const result = indexVars(input);
-    const expected = 'Welcome {_gt_1,select,other{user}}! You have {count,plural,=0{no {_gt_2,select,other{messages}}} =1{one {_gt_3,select,other{message}}} other{# {_gt_4,select,other{messages}}}}';
+    const expected = `Welcome {_gt_1, select, other {}}! You have {count, plural, 
+      =0 {no {_gt_2, select, other {}}}
+      =1 {one {_gt_3, select, other {}}}
+      other {# {_gt_4, select, other {}}}
+    }`;
 
     expect(result).toBe(expected);
   });
@@ -127,7 +131,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      'This is _gt_ text with {_gt_1,select,other{placeholder}} and more _gt_ content'
+      'This is _gt_ text with {_gt_1, select, other {}} and more _gt_ content'
     );
   });
 
@@ -137,7 +141,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '{_gt_1,select,other{This contains _gt_ text}} and {_gt_2,select,other{More _gt_ here}}'
+      '{_gt_1, select, other {}} and {_gt_2, select, other {}}'
     );
   });
 
@@ -147,7 +151,7 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '{_gt_user,select,male{Mr} female{Ms} other{}} with {_gt_1,select,other{name}} and {user_gt_, number}'
+      '{_gt_user, select, male {Mr} female {Ms} other {}} with {_gt_1, select, other {}} and {user_gt_, number}'
     );
   });
 
@@ -157,17 +161,79 @@ describe('indexVars', () => {
     const result = indexVars(input);
 
     expect(result).toBe(
-      '_gt_ prefix {_gt_1,select,other{Hello _gt_ world}} _gt_ middle {_gt_2,select,other{content}} _gt_ suffix'
+      '_gt_ prefix {_gt_1, select, other {}} _gt_ middle {_gt_2, select, other {}} _gt_ suffix'
     );
   });
 
   it('should handle _gt_ in URLs and other contexts', () => {
     const input =
-      'Visit https://example.com/_gt_/page for {_gt_,select,other{info}} about _gt_ systems';
+      'Visit https://example.com/_gt_/page for {_gt_, select, other {info}} about _gt_ systems';
     const result = indexVars(input);
 
     expect(result).toBe(
-      'Visit https://example.com/_gt_/page for {_gt_1,select,other{info}} about _gt_ systems'
+      'Visit https://example.com/_gt_/page for {_gt_1, select, other {}} about _gt_ systems'
     );
+  });
+
+  describe('collapsing other field for _gt_ variables', () => {
+    it('should collapse other field for simple _gt_ variables', () => {
+      const input =
+        'I play with {_gt_, select, other {toys}} at the {_gt_, select, other {park}}';
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'I play with {_gt_1, select, other {}} at the {_gt_2, select, other {}}'
+      );
+    });
+
+    it('should collapse other field while preserving _gt_var_name', () => {
+      const input =
+        'I play with {_gt_, select, other {toys}} at the {_gt_, select, other {park} _gt_var_name {some name}}';
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'I play with {_gt_1, select, other {}} at the {_gt_2, select, other {} _gt_var_name {some name}}'
+      );
+    });
+
+    it('should collapse multiple _gt_ variables with mixed metadata', () => {
+      const input =
+        'Welcome {_gt_, select, other {user} _gt_var_name {username}}! You have {_gt_, select, other {5 messages}} in your {_gt_, select, other {inbox}}';
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'Welcome {_gt_1, select, other {} _gt_var_name {username}}! You have {_gt_2, select, other {}} in your {_gt_3, select, other {}}'
+      );
+    });
+
+    it('should handle nested _gt_ variables with collapsed other fields', () => {
+      const input =
+        '{count, plural, =0 {No {_gt_, select, other {messages}}} =1 {One {_gt_, select, other {message}}} other {# {_gt_, select, other {messages}}}}';
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        '{count, plural, =0 {No {_gt_1, select, other {}}} =1 {One {_gt_2, select, other {}}} other {# {_gt_3, select, other {}}}}'
+      );
+    });
+
+    it('should collapse other field in complex scenarios with multiple variable names', () => {
+      const input =
+        'The {_gt_, select, other {quick brown fox} _gt_var_name {animal}} jumps over the {_gt_, select, other {lazy dog} _gt_var_name {target}}';
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        'The {_gt_1, select, other {} _gt_var_name {animal}} jumps over the {_gt_2, select, other {} _gt_var_name {target}}'
+      );
+    });
+
+    it('should handle mixed collapsing with regular ICU variables unchanged', () => {
+      const input =
+        '{count, number} items: {_gt_, select, other {dynamic content}} and {type, select, urgent {URGENT} normal {Normal} other {Unknown}}';
+      const result = indexVars(input);
+
+      expect(result).toBe(
+        '{count, number} items: {_gt_1, select, other {}} and {type, select, urgent {URGENT} normal {Normal} other {Unknown}}'
+      );
+    });
   });
 });

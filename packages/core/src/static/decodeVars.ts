@@ -7,16 +7,16 @@ import {
 } from '@formatjs/icu-messageformat-parser/types';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
-import { GTUnindexedSelectElement } from './utils/types';
+import {
+  GTUnindexedSelectElement,
+  GTUnindexedSelectElementWithLocation,
+} from './utils/types';
+import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 
 type Location = {
   start: number;
   end: number;
   value: string;
-};
-
-type GTUnindexedSelectElementWithLocation = GTUnindexedSelectElement & {
-  location: NonNullable<SelectElement['location']>;
 };
 
 const VAR_IDENTIFIER_TEST = new RegExp(`^${VAR_IDENTIFIER}$`);
@@ -34,28 +34,12 @@ export function decodeVars(icuString: string): string {
     return icuString;
   }
 
-  // Check if the child is a variable
-  function isGTUnindexedSelectOption(
-    child: MessageFormatElement
-  ): child is GTUnindexedSelectElementWithLocation {
-    return (
-      child.type === TYPE.select &&
-      VAR_IDENTIFIER_TEST.test(child.value) &&
-      !!child.location &&
-      child.options.other &&
-      child.options.other.value &&
-      (child.options.other.value.length === 0 ||
-        (child.options.other.value.length > 0 &&
-          child.options.other.value[0].type === TYPE.literal))
-    );
-  }
-
   // Record the location of the variable
   const variableLocations: Location[] = [];
-  function visitor(child: GTUnindexedSelectElementWithLocation): void {
+  function visitor(child: GTUnindexedSelectElement): void {
     variableLocations.push({
-      start: child.location.start.offset,
-      end: child.location.end.offset,
+      start: child.location?.start.offset ?? 0,
+      end: child.location?.end.offset ?? 0,
       value:
         child.options.other.value.length > 0
           ? child.options.other.value[0].value
@@ -66,7 +50,7 @@ export function decodeVars(icuString: string): string {
   // Find all variable identifiers
   traverseIcu({
     icuString,
-    shouldVisit: isGTUnindexedSelectOption,
+    shouldVisit: isGTUnindexedSelectElement,
     visitor,
     options: {
       recurseIntoVisited: false,
