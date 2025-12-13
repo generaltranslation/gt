@@ -17,6 +17,12 @@ import {
   decodeOptions,
   reactHasUse,
 } from 'gt-react/internal';
+import {
+  extractVars,
+  condenseVars,
+  VAR_IDENTIFIER,
+  indexVars,
+} from 'generaltranslation/internal';
 import use from '../../utils/use';
 
 type RenderFn = (msg: string, locales: string[], fallback?: string) => string;
@@ -39,7 +45,7 @@ type InitResult = {
 };
 
 type Translator = {
-  t: (
+  gt: (
     message: string,
     options?: InlineTranslationOptions & {
       $id?: string;
@@ -59,7 +65,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
-  const gt = I18NConfig.getGTClass();
+  const gtClass = I18NConfig.getGTClass();
 
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
@@ -83,10 +89,18 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
-      return gt.formatMessage(message, {
-        locales,
-        variables,
-      });
+      const declaredVars = extractVars(fallback || '');
+      return gtClass.formatMessage(
+        Object.keys(declaredVars).length ? condenseVars(message) : message,
+        {
+          locales,
+          variables: {
+            ...variables,
+            ...declaredVars,
+            [VAR_IDENTIFIER]: 'other',
+          },
+        }
+      );
     } catch (error) {
       if (process.env.NODE_ENV === 'production') {
         console.warn(createStringRenderWarning(message, id), 'Error: ', error);
@@ -114,7 +128,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       return message; // fallback to original message (unformatted)
     }
   }
-  function initializeT(
+  function initializeGT(
     message: string,
     options: Record<string, any> & {
       $context?: string;
@@ -138,7 +152,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     const calculateHash = () =>
       hashSource({
-        source: message,
+        source: indexVars(message),
         ...(context && { context }),
         ...(id && { id }),
         dataFormat: 'ICU',
@@ -215,7 +229,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       ...options
     }: _Message): Promise<void> => {
       if (!message) return;
-      const init = initializeT(message, options);
+      const init = initializeGT(message, options);
       if (!init) return;
 
       const { id, context, _hash, calculateHash } = init;
@@ -243,9 +257,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     await Promise.all(_messages.map(preload));
   }
 
-  // ---------- t() ---------- /
+  // ---------- gt() ---------- /
 
-  const t = (
+  const gt = (
     message: string,
     options: Record<string, any> & {
       $context?: string;
@@ -253,7 +267,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $_hash?: string;
     } = {}
   ): string => {
-    const init = initializeT(message, options);
+    const init = initializeGT(message, options);
     if (!init) return '';
     const { id, context, _hash, calculateHash, renderMessage } = init;
 
@@ -310,7 +324,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
     // Fallback to t() if not an encoded message
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return t(encodedMsg, options) as T extends string ? string : T;
+      return gt(encodedMsg, options) as T extends string ? string : T;
     }
 
     const { $_hash, $_source, $context, $id, ...decodedVariables } =
@@ -386,7 +400,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       : T;
   };
 
-  return { t, m };
+  return { gt: gt, m };
 }
 
 // ---------------- Public API (kept stable) ---------------- //
@@ -403,8 +417,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 export async function getGT(
   _messages?: _Messages
 ): Promise<(message: string, options?: InlineTranslationOptions) => string> {
-  const { t } = await createTranslator(_messages);
-  return t;
+  const { gt } = await createTranslator(_messages);
+  return gt;
 }
 
 /**

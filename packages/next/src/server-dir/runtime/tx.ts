@@ -4,6 +4,12 @@ import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { RuntimeTranslationOptions } from 'gt-react/internal';
+import {
+  extractVars,
+  condenseVars,
+  indexVars,
+  VAR_IDENTIFIER,
+} from 'generaltranslation/internal';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -54,11 +60,19 @@ export default async function tx(
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
-  const renderContent = (message: string, locales: string[]) => {
-    return formatMessage(message, {
-      locales,
-      variables,
-    });
+  const renderContent = (content: string, locales: string[]) => {
+    const declaredVars = extractVars(message);
+    return formatMessage(
+      content !== message ? condenseVars(content) : content,
+      {
+        locales,
+        variables: {
+          ...variables,
+          ...declaredVars,
+          [VAR_IDENTIFIER]: 'other',
+        },
+      }
+    );
   };
 
   // ----- CHECK IF TRANSLATION REQUIRED ----- //
@@ -68,7 +82,7 @@ export default async function tx(
   // ----- CALCULATE HASH ----- //
 
   const hash = hashSource({
-    source: message,
+    source: indexVars(message),
     ...(context && { context }),
     dataFormat: 'ICU',
   });
