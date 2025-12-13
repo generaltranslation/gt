@@ -23,6 +23,7 @@ import { collectUntranslatedEntries } from '../../../dictionaries/collectUntrans
 import { injectTranslations } from '../../../dictionaries/injectTranslations';
 import { injectFallbacks } from '../../../dictionaries/injectFallbacks';
 import { injectAndMerge } from '../../../dictionaries/injectAndMerge';
+import { indexVars } from 'generaltranslation/internal';
 
 export function useCreateInternalUseTranslationsObjFunction(
   dictionary: Dictionary,
@@ -131,7 +132,7 @@ export function useCreateInternalUseTranslationsObjFunction(
               return [
                 id,
                 await registerIcuForTranslation({
-                  source,
+                  source: indexVars(source),
                   targetLocale: locale,
                   metadata: {
                     ...(metadata?.$context && { context: metadata.$context }),

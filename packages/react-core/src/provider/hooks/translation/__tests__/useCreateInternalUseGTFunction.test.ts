@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GT } from 'generaltranslation';
 import useCreateInternalUseGTFunction from '../useCreateInternalUseGTFunction';
 import { Translations } from '../../../../types-dir/types';
+import { VAR_IDENTIFIER } from 'generaltranslation/internal';
 
 // Mock the dependencies
 vi.mock('generaltranslation/id', () => ({
@@ -16,9 +17,16 @@ vi.mock('generaltranslation/id', () => ({
 }));
 
 vi.mock('../../../../errors-dir/createErrors', () => ({
-  createStringRenderError: vi.fn((message, id) => `Render error: ${message} (ID: ${id})`),
-  createStringRenderWarning: vi.fn((message, id) => `Render warning: ${message} (ID: ${id})`),
-  createStringTranslationError: vi.fn((message, id, type) => `Translation error: ${message} (ID: ${id}, Type: ${type})`),
+  createStringRenderError: vi.fn(
+    (message, id) => `Render error: ${message} (ID: ${id})`
+  ),
+  createStringRenderWarning: vi.fn(
+    (message, id) => `Render warning: ${message} (ID: ${id})`
+  ),
+  createStringTranslationError: vi.fn(
+    (message, id, type) =>
+      `Translation error: ${message} (ID: ${id}, Type: ${type})`
+  ),
 }));
 
 vi.mock('../../../../messages/messages', () => ({
@@ -63,7 +71,9 @@ describe('useCreateInternalUseGTFunction', () => {
       }),
     } as any;
 
-    mockRegisterIcuForTranslation = vi.fn().mockResolvedValue('Translated message');
+    mockRegisterIcuForTranslation = vi
+      .fn()
+      .mockResolvedValue('Translated message');
 
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -102,7 +112,7 @@ describe('useCreateInternalUseGTFunction', () => {
         expect(result).toBe('Hello World');
         expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello World', {
           locales: ['en'],
-          variables: {},
+          variables: { [VAR_IDENTIFIER]: 'other' },
         });
       });
 
@@ -122,7 +132,7 @@ describe('useCreateInternalUseGTFunction', () => {
         expect(result).toBe('Hola Mundo');
         expect(mockGT.formatMessage).toHaveBeenCalledWith('Hola Mundo', {
           locales: ['es', 'en'],
-          variables: {},
+          variables: { [VAR_IDENTIFIER]: 'other' },
         });
       });
 
@@ -142,7 +152,7 @@ describe('useCreateInternalUseGTFunction', () => {
         expect(result).toBe('Hello World');
         expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello World', {
           locales: ['en'],
-          variables: {},
+          variables: { [VAR_IDENTIFIER]: 'other' },
         });
       });
     });
@@ -160,7 +170,7 @@ describe('useCreateInternalUseGTFunction', () => {
         expect(result).toBe('Hello John');
         expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello {name}', {
           locales: ['en'],
-          variables: { name: 'John' },
+          variables: { name: 'John', [VAR_IDENTIFIER]: 'other' },
         });
       });
 
@@ -180,7 +190,7 @@ describe('useCreateInternalUseGTFunction', () => {
         expect(result).toBe('Hola John');
         expect(mockGT.formatMessage).toHaveBeenCalledWith('Hola {name}', {
           locales: ['es', 'en'],
-          variables: { name: 'John' },
+          variables: { name: 'John', [VAR_IDENTIFIER]: 'other' },
         });
       });
 
@@ -196,13 +206,20 @@ describe('useCreateInternalUseGTFunction', () => {
           name: 'Alice',
           count: 5,
           type: 'messages',
+          [VAR_IDENTIFIER]: 'other',
         };
 
-        const result = _gtFunction('Hello {name}, you have {count} {type}', variables);
-        expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello {name}, you have {count} {type}', {
-          locales: ['en'],
-          variables,
-        });
+        const result = _gtFunction(
+          'Hello {name}, you have {count} {type}',
+          variables
+        );
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          'Hello {name}, you have {count} {type}',
+          {
+            locales: ['en'],
+            variables,
+          }
+        );
       });
     });
 
@@ -287,7 +304,7 @@ describe('useCreateInternalUseGTFunction', () => {
         };
 
         _gtFunction('Hello {name}', options);
-        
+
         expect(mockRegisterIcuForTranslation).toHaveBeenCalledWith({
           source: 'Hello {name}',
           targetLocale: 'es',
@@ -323,7 +340,8 @@ describe('useCreateInternalUseGTFunction', () => {
 
       it('should handle formatting errors with fallback', () => {
         const mockGTWithError = {
-          formatMessage: vi.fn()
+          formatMessage: vi
+            .fn()
             .mockImplementationOnce(() => {
               throw new Error('Formatting failed');
             })
@@ -420,7 +438,7 @@ describe('useCreateInternalUseGTFunction', () => {
       ];
 
       const result = _filterMessagesForPreload(messages);
-      
+
       // Should only include messages that don't have translations
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -438,8 +456,8 @@ describe('useCreateInternalUseGTFunction', () => {
       });
 
       const messages = [
-        { 
-          message: 'Hello World', 
+        {
+          message: 'Hello World',
           $id: 'greeting',
           $context: 'homepage',
         },
@@ -525,7 +543,11 @@ describe('useCreateInternalUseGTFunction', () => {
       expect(Object.keys(preloaded)).toHaveLength(2);
 
       // 3. Use translation function with preloaded data
-      const result = hook._gtFunction('Hello World', { $id: 'greeting' }, preloaded);
+      const result = hook._gtFunction(
+        'Hello World',
+        { $id: 'greeting' },
+        preloaded
+      );
       expect(result).toBe('Translated message');
     });
   });
