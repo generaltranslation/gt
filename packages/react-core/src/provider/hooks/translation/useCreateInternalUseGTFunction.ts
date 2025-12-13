@@ -107,7 +107,7 @@ export default function useCreateInternalUseGTFunction({
     }
   }
 
-  function initializeT(
+  function initializeGT(
     message: string,
     options: Record<string, any> & {
       $context?: string;
@@ -181,7 +181,7 @@ export default function useCreateInternalUseGTFunction({
   const _filterMessagesForPreload = (_messages: _Messages): _Messages => {
     const result = [];
     for (const { message, ...options } of _messages) {
-      const init = initializeT(message, options);
+      const init = initializeGT(message, options);
       if (!init) continue;
       const { id, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
@@ -200,7 +200,7 @@ export default function useCreateInternalUseGTFunction({
     const preloadedTranslations: Translations = {};
     const preload = async ({ message, ...options }: _Message) => {
       // Setup
-      const init = initializeT(message, options);
+      const init = initializeGT(message, options);
       if (!init) return;
       const { id, context, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
@@ -234,7 +234,7 @@ export default function useCreateInternalUseGTFunction({
     preloadedTranslations: Translations | undefined
   ) => {
     // ----- SET UP ----- //
-    const init = initializeT(message, options);
+    const init = initializeGT(message, options);
     if (!init) return '';
     const { id, context, _hash, calculateHash, renderMessage } = init;
 
