@@ -9,7 +9,46 @@ import { FileReference, SubmitUserEditDiff } from 'generaltranslation/types';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
-import { logger } from '../console/logger.js';
+import {
+  DownloadedVersionEntry,
+  DownloadedVersions,
+} from '../fs/config/downloadedVersions.js';
+
+type LatestDownloadedVersion = {
+  versionId: string;
+  entry: DownloadedVersionEntry;
+};
+
+const findLatestDownloadedVersion = (
+  downloadedVersions: DownloadedVersions,
+  branchId: string,
+  fileId: string,
+  locale: string
+): LatestDownloadedVersion | null => {
+  const versionsForFile =
+    downloadedVersions.entries?.[branchId]?.[fileId] ?? undefined;
+  if (!versionsForFile) return null;
+
+  let latest: LatestDownloadedVersion | null = null;
+
+  for (const [versionId, locales] of Object.entries(versionsForFile)) {
+    const entry = locales?.[locale];
+    if (!entry) continue;
+
+    const updatedAt = entry.updatedAt
+      ? Date.parse(entry.updatedAt)
+      : Number.NEGATIVE_INFINITY;
+    const latestUpdatedAt = latest?.entry.updatedAt
+      ? Date.parse(latest.entry.updatedAt)
+      : Number.NEGATIVE_INFINITY;
+
+    if (!latest || updatedAt > latestUpdatedAt) {
+      latest = { versionId, entry };
+    }
+  }
+
+  return latest;
+};
 
 /**
  * Collects local user edits by diffing the latest downloaded server translation version
@@ -54,12 +93,15 @@ export async function collectAndSendUserEditDiffs(
       if (!outputPath) continue;
       if (!fs.existsSync(outputPath)) continue;
 
-      const downloadedVersion =
-        downloadedVersions.entries?.[uploadedFile.branchId]?.[
-          uploadedFile.fileId
-        ]?.[uploadedFile.versionId]?.[locale];
+      const latestDownloaded = findLatestDownloadedVersion(
+        downloadedVersions,
+        uploadedFile.branchId,
+        uploadedFile.fileId,
+        locale
+      );
 
-      if (!downloadedVersion) continue;
+      if (!latestDownloaded) continue;
+      const downloadedVersion = latestDownloaded.entry;
 
       // Skip if local file matches the last postprocessed content hash
       if (downloadedVersion.postProcessHash) {
@@ -78,7 +120,7 @@ export async function collectAndSendUserEditDiffs(
         branchId: uploadedFile.branchId,
         fileName: uploadedFile.fileName,
         fileId: uploadedFile.fileId,
-        versionId: uploadedFile.versionId,
+        versionId: latestDownloaded.versionId,
         locale: locale,
         outputPath,
       });
