@@ -37,7 +37,5 @@ export function condenseVars(icuString: string): string {
   });
 
   // Serialize
-  // Can call parse here because this action should never be applied to a hash calculation
-  // This means we don't have to worry about whitespace formatting being lost
   return printAST(ast);
 }

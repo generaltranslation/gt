@@ -16,3 +16,15 @@ export interface GTIndexedSelectElement extends SelectElement {
     [key: string]: PluralOrSelectOption;
   };
 }
+
+interface GTUnindexedSelectOption extends PluralOrSelectOption {
+  value: Array<LiteralElement>;
+}
+
+export interface GTUnindexedSelectElement extends SelectElement {
+  value: typeof VAR_IDENTIFIER;
+  options: {
+    other: GTUnindexedSelectOption;
+    [key: string]: PluralOrSelectOption;
+  };
+}

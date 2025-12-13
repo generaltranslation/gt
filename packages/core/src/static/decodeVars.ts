@@ -7,6 +7,7 @@ import {
 } from '@formatjs/icu-messageformat-parser/types';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
+import { GTUnindexedSelectElement } from './utils/types';
 
 type Location = {
   start: number;
@@ -14,22 +15,11 @@ type Location = {
   value: string;
 };
 
-const VAR_IDENTIFIER_TEST = new RegExp(`^${VAR_IDENTIFIER}$`);
-
-interface GTUnindexedSelectOption extends PluralOrSelectOption {
-  value: Array<LiteralElement>;
-}
-
-interface GTUnindexedSelectElement extends SelectElement {
-  type: TYPE.select;
-  value: typeof VAR_IDENTIFIER;
-  options: {
-    other: GTUnindexedSelectOption;
-    [key: string]: PluralOrSelectOption;
-  };
+type GTUnindexedSelectElementWithLocation = GTUnindexedSelectElement & {
   location: NonNullable<SelectElement['location']>;
-}
+};
 
+const VAR_IDENTIFIER_TEST = new RegExp(`^${VAR_IDENTIFIER}$`);
 /**
  * Given an encoded ICU string, interpolate only _gt_ variables that have been marked with declareVar()
  * @example
@@ -47,7 +37,7 @@ export function decodeVars(icuString: string): string {
   // Check if the child is a variable
   function isGTUnindexedSelectOption(
     child: MessageFormatElement
-  ): child is GTUnindexedSelectElement {
+  ): child is GTUnindexedSelectElementWithLocation {
     return (
       child.type === TYPE.select &&
       VAR_IDENTIFIER_TEST.test(child.value) &&
@@ -62,7 +52,7 @@ export function decodeVars(icuString: string): string {
 
   // Record the location of the variable
   const variableLocations: Location[] = [];
-  function visitor(child: GTUnindexedSelectElement): void {
+  function visitor(child: GTUnindexedSelectElementWithLocation): void {
     variableLocations.push({
       start: child.location.start.offset,
       end: child.location.end.offset,
