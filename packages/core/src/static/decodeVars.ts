@@ -1,16 +1,6 @@
-import {
-  LiteralElement,
-  MessageFormatElement,
-  PluralOrSelectOption,
-  SelectElement,
-  TYPE,
-} from '@formatjs/icu-messageformat-parser/types';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
-import {
-  GTUnindexedSelectElement,
-  GTUnindexedSelectElementWithLocation,
-} from './utils/types';
+import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 
 type Location = {
@@ -19,7 +9,6 @@ type Location = {
   value: string;
 };
 
-const VAR_IDENTIFIER_TEST = new RegExp(`^${VAR_IDENTIFIER}$`);
 /**
  * Given an encoded ICU string, interpolate only _gt_ variables that have been marked with declareVar()
  * @example
