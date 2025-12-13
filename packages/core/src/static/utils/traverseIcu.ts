@@ -14,6 +14,7 @@ type TraverseIcuOptions = ParserOptions & {
  * @param icu - The ICU string to traverse
  * @param shouldVisit - A function that returns true if the element should be visited
  * @param visitor - A function that is called for each element that matches the type T
+ * @returns The modified AST of the ICU string
  *
  * @note This function is a heavy operation, use sparingly
  */
@@ -27,9 +28,10 @@ export function traverseIcu<T extends MessageFormatElement>({
   shouldVisit: (element: MessageFormatElement) => element is T;
   visitor: (element: T) => void;
   options: TraverseIcuOptions;
-}): void {
+}): MessageFormatElement[] {
   const ast = parse(icuString, otherOptions);
   handleChildren(ast);
+  return ast;
 
   function handleChildren(children: MessageFormatElement[]): void {
     children.map(handleChild);
