@@ -58,10 +58,8 @@
     "definition": "dist/index.d.ts"
   },
   "dependencies": {
-    "@formatjs/icu-messageformat-parser": "^2.11.4",
     "@generaltranslation/supported-locales": "workspace:*",
-    "generaltranslation": "workspace:*",
-    "intl-messageformat": "^10.7.16"
+    "generaltranslation": "workspace:*"
   },
   "exports": {
     ".": {

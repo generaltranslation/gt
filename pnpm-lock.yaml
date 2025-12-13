@@ -321,18 +321,12 @@ importers:
 
   packages/i18n:
     dependencies:
-      '@formatjs/icu-messageformat-parser':
-        specifier: ^2.11.4
-        version: 2.11.4
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
-      intl-messageformat:
-        specifier: ^10.7.16
-        version: 10.7.16
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: ^28.0.1
