@@ -16,15 +16,15 @@ type Location = {
 
 const VAR_IDENTIFIER_TEST = new RegExp(`^${VAR_IDENTIFIER}$`);
 
-interface VariableOther extends PluralOrSelectOption {
+interface GTUnindexedSelectOption extends PluralOrSelectOption {
   value: Array<LiteralElement>;
 }
 
-interface Variable extends SelectElement {
+interface GTUnindexedSelectElement extends SelectElement {
   type: TYPE.select;
   value: typeof VAR_IDENTIFIER;
   options: {
-    other: VariableOther;
+    other: GTUnindexedSelectOption;
     [key: string]: PluralOrSelectOption;
   };
   location: NonNullable<SelectElement['location']>;
@@ -45,7 +45,9 @@ export function decodeVars(icuString: string): string {
   }
 
   // Check if the child is a variable
-  function shouldVisit(child: MessageFormatElement): child is Variable {
+  function isGTUnindexedSelectOption(
+    child: MessageFormatElement
+  ): child is GTUnindexedSelectElement {
     return (
       child.type === TYPE.select &&
       VAR_IDENTIFIER_TEST.test(child.value) &&
@@ -60,7 +62,7 @@ export function decodeVars(icuString: string): string {
 
   // Record the location of the variable
   const variableLocations: Location[] = [];
-  function visitor(child: Variable): void {
+  function visitor(child: GTUnindexedSelectElement): void {
     variableLocations.push({
       start: child.location.start.offset,
       end: child.location.end.offset,
@@ -74,7 +76,7 @@ export function decodeVars(icuString: string): string {
   // Find all variable identifiers
   traverseIcu({
     icuString,
-    shouldVisit,
+    shouldVisit: isGTUnindexedSelectOption,
     visitor,
     options: {
       recurseIntoVisited: false,
