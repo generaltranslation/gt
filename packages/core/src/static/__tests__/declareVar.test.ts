@@ -142,7 +142,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        'Welcome to {_gt_1,select,other{Hello World}} application'
+        'Welcome to {_gt_1, select, other {}} application'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -154,7 +154,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        'Hello {_gt_1,select,other{John}}, you are a {_gt_2,select,other{Developer}}!'
+        'Hello {_gt_1, select, other {}}, you are a {_gt_2, select, other {}}!'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -167,7 +167,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        "You have {_gt_1,select,other{'{count, plural, one{# item} other{# items}}'}} in your cart"
+        "You have {_gt_1, select, other {}} in your cart"
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -178,7 +178,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        'Navigate to {_gt_1,select,other{User Profile} _gt_var_name{profile_section}} page'
+        'Navigate to {_gt_1, select, other {} _gt_var_name {profile_section}} page'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -189,7 +189,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        'Welcome {_gt_1,select,other{user}}! Here is {_gt_2,select,other{dynamic content}} and {_gt_3,select,other{more info}}'
+        'Welcome {_gt_1, select, other {}}! Here is {_gt_2, select, other {}} and {_gt_3, select, other {}}'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -200,7 +200,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        '{count,plural,=0{No {_gt_1,select,other{message}}} =1{One {_gt_2,select,other{message}}} other{# messages}}'
+        '{count, plural, =0 {No {_gt_1, select, other {}}} =1 {One {_gt_2, select, other {}}} other {# messages}}'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -212,7 +212,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        "Status: {_gt_1,select,other{Text with 'quotes' and '{braces}'}} Event: {_gt_2,select,other{🚀 Rocket Launch 🌟}}"
+        "Status: {_gt_1, select, other {}} Event: {_gt_2, select, other {}}"
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -228,7 +228,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       const expected =
-        "Welcome back {_gt_1,select,other{John Doe} _gt_var_name{user_name}}! You have {_gt_2,select,other{'{count, number}'} _gt_var_name{item_count}} items. Last login: {_gt_3,select,other{'{date, date, short}'} _gt_var_name{last_login}}";
+        "Welcome back {_gt_1, select, other {} _gt_var_name {user_name}}! You have {_gt_2, select, other {} _gt_var_name {item_count}} items. Last login: {_gt_3, select, other {} _gt_var_name {last_login}}";
       expect(result).toBe(expected);
       expect(() => parse(result)).not.toThrow();
     });
