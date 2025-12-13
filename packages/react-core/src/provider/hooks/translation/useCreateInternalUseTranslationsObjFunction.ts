@@ -37,7 +37,7 @@ export function useCreateInternalUseTranslationsObjFunction(
   dialectTranslationRequired: boolean,
   developmentApiEnabled: boolean,
   registerIcuForTranslation: TranslateIcuCallback,
-  tFunction: (id: string, options: DictionaryTranslationOptions) => string
+  gtFunction: (id: string, options: DictionaryTranslationOptions) => string
 ) {
   [
     dictionary,
@@ -71,7 +71,7 @@ export function useCreateInternalUseTranslationsObjFunction(
       }
       // Check: if subTreeTranslation is a dictionaryEntry
       if (isDictionaryEntry(subtree)) {
-        return tFunction(id, options);
+        return gtFunction(id, options);
       }
       // Check: if is default locale
       if (!translationRequired) {

@@ -22,6 +22,7 @@ import {
   extractVars,
   indexVars,
   VAR_IDENTIFIER,
+  condenseVars,
 } from 'generaltranslation/internal';
 
 export default function useCreateInternalUseTranslationsFunction(
@@ -76,14 +77,17 @@ export default function useCreateInternalUseTranslationsFunction(
         try {
           // (1) Try to format message
           const declaredVars = extractVars(fallback || '');
-          return gt.formatMessage(message, {
-            locales,
-            variables: {
-              ...options,
-              ...declaredVars,
-              [VAR_IDENTIFIER]: 'other',
-            },
-          });
+          return gt.formatMessage(
+            Object.keys(declaredVars).length ? condenseVars(message) : message,
+            {
+              locales,
+              variables: {
+                ...options,
+                ...declaredVars,
+                [VAR_IDENTIFIER]: 'other',
+              },
+            }
+          );
         } catch (error) {
           if (environment === 'production') {
             console.warn(
