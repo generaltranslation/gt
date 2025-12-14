@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 import { isStaticExpression, isValidIcu } from '../evaluateJsx.js';
 import {
   GT_ATTRIBUTES_WITH_SUGAR,
-  MSG_TRANSLATION_HOOK,
+  MSG_TRANSLATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
   mapAttributeName,
@@ -722,7 +722,7 @@ export function parseStrings(
 
   for (const refPath of referencePaths) {
     // Handle msg() calls directly without variable assignment
-    if (originalName === MSG_TRANSLATION_HOOK) {
+    if (originalName === MSG_TRANSLATION_FUNCTION) {
       const ignoreAdditionalData = false;
       const ignoreDynamicContent = false;
       const ignoreInvalidIcu = false;

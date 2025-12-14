@@ -12,6 +12,7 @@ import {
   warnDeclareStaticNoResultsSync,
   warnDeclareStaticNotWrappedSync,
 } from '../../../console/index.js';
+import { DECLARE_STATIC_FUNCTION } from './constants.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -245,33 +246,31 @@ export function getDeclareStaticVariants(
   const calleeBinding = tPath.scope.getBinding(calleeName);
 
   // If it's not literally named 'declareStatic', check if it's imported from GT
-  if (calleeName !== 'declareStatic') {
-    if (!calleeBinding) {
+  if (!calleeBinding) {
+    return null;
+  }
+
+  // Check if it's imported from a GT package
+  if (calleeBinding.path.isImportSpecifier()) {
+    const imported = calleeBinding.path.node.imported;
+    const originalName = t.isIdentifier(imported)
+      ? imported.name
+      : imported.value;
+
+    // Only proceed if the original name is 'declareStatic'
+    if (originalName !== DECLARE_STATIC_FUNCTION) {
       return null;
     }
-
-    // Check if it's imported from a GT package
-    if (calleeBinding.path.isImportSpecifier()) {
-      const imported = calleeBinding.path.node.imported;
-      const originalName = t.isIdentifier(imported)
-        ? imported.name
-        : imported.value;
-
-      // Only proceed if the original name is 'declareStatic'
-      if (originalName !== 'declareStatic') {
-        return null;
-      }
-    } else {
-      // Not an import specifier, so it's not declareStatic
-      errors.push(
-        warnDeclareStaticNotWrappedSync(
-          file,
-          calleeName,
-          `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
-        )
-      );
-      return null;
-    }
+  } else {
+    // Not an import specifier, so it's not declareStatic
+    errors.push(
+      warnDeclareStaticNotWrappedSync(
+        file,
+        calleeName,
+        `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
+      )
+    );
+    return null;
   }
 
   if (call.arguments.length !== 1) return null;

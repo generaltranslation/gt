@@ -6,7 +6,7 @@ import {
   INLINE_TRANSLATION_HOOK_ASYNC,
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
-  MSG_TRANSLATION_HOOK,
+  MSG_TRANSLATION_FUNCTION,
   TRANSLATION_COMPONENT,
   GTLibrary,
 } from '../../jsx/utils/constants.js';
@@ -66,7 +66,7 @@ export function getPathsAndAliases(
             name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
             name.original === INLINE_MESSAGE_HOOK ||
             name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-            name.original === MSG_TRANSLATION_HOOK
+            name.original === MSG_TRANSLATION_FUNCTION
           ) {
             inlineTranslationPaths.push({
               localName: name.local,
@@ -112,7 +112,7 @@ export function getPathsAndAliases(
                 name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
                 name.original === INLINE_MESSAGE_HOOK ||
                 name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-                name.original === MSG_TRANSLATION_HOOK
+                name.original === MSG_TRANSLATION_FUNCTION
               ) {
                 inlineTranslationPaths.push({
                   localName: name.local,
