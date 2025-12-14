@@ -141,9 +141,7 @@ describe('declareVar', () => {
       const input = `Welcome to ${declaredVar} application`;
       const result = indexVars(input);
 
-      expect(result).toBe(
-        'Welcome to {_gt_1, select, other {}} application'
-      );
+      expect(result).toBe('Welcome to {_gt_1, select, other {}} application');
       expect(() => parse(result)).not.toThrow();
     });
 
@@ -166,9 +164,7 @@ describe('declareVar', () => {
       const input = `You have ${complexVar} in your cart`;
       const result = indexVars(input);
 
-      expect(result).toBe(
-        "You have {_gt_1, select, other {}} in your cart"
-      );
+      expect(result).toBe('You have {_gt_1, select, other {}} in your cart');
       expect(() => parse(result)).not.toThrow();
     });
 
@@ -212,7 +208,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       expect(result).toBe(
-        "Status: {_gt_1, select, other {}} Event: {_gt_2, select, other {}}"
+        'Status: {_gt_1, select, other {}} Event: {_gt_2, select, other {}}'
       );
       expect(() => parse(result)).not.toThrow();
     });
@@ -228,7 +224,7 @@ describe('declareVar', () => {
       const result = indexVars(input);
 
       const expected =
-        "Welcome back {_gt_1, select, other {} _gt_var_name {user_name}}! You have {_gt_2, select, other {} _gt_var_name {item_count}} items. Last login: {_gt_3, select, other {} _gt_var_name {last_login}}";
+        'Welcome back {_gt_1, select, other {} _gt_var_name {user_name}}! You have {_gt_2, select, other {} _gt_var_name {item_count}} items. Last login: {_gt_3, select, other {} _gt_var_name {last_login}}';
       expect(result).toBe(expected);
       expect(() => parse(result)).not.toThrow();
     });

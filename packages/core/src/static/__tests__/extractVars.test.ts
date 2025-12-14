@@ -70,15 +70,27 @@ describe('static extractVars', () => {
 
   describe('multiple unindexed variables', () => {
     it('should index multiple unindexed variables sequentially', () => {
-      const input = '{_gt_, select, other {first}} then {_gt_, select, other {second}} then {_gt_, select, other {third}}';
+      const input =
+        '{_gt_, select, other {first}} then {_gt_, select, other {second}} then {_gt_, select, other {third}}';
       const result = extractVars(input);
-      expect(result).toEqual({ _gt_1: 'first', _gt_2: 'second', _gt_3: 'third' });
+      expect(result).toEqual({
+        _gt_1: 'first',
+        _gt_2: 'second',
+        _gt_3: 'third',
+      });
     });
 
     it('should handle many unindexed variables', () => {
-      const input = '{_gt_, select, other {one}} {_gt_, select, other {two}} {_gt_, select, other {three}} {_gt_, select, other {four}} {_gt_, select, other {five}}';
+      const input =
+        '{_gt_, select, other {one}} {_gt_, select, other {two}} {_gt_, select, other {three}} {_gt_, select, other {four}} {_gt_, select, other {five}}';
       const result = extractVars(input);
-      expect(result).toEqual({ _gt_1: 'one', _gt_2: 'two', _gt_3: 'three', _gt_4: 'four', _gt_5: 'five' });
+      expect(result).toEqual({
+        _gt_1: 'one',
+        _gt_2: 'two',
+        _gt_3: 'three',
+        _gt_4: 'four',
+        _gt_5: 'five',
+      });
     });
 
     it('should handle unindexed variables with spacing variations', () => {
@@ -211,16 +223,17 @@ describe('static extractVars', () => {
   describe('integration with formatMessage', () => {
     it('should extract variables from source and use them in target formatting', () => {
       const gt = new GT();
-      
+
       // Source message with unindexed variables
-      const source = 'I play with my friend {_gt_, select, other {Brian}} at the {_gt_, select, other {park}}';
-      
+      const source =
+        'I play with my friend {_gt_, select, other {Brian}} at the {_gt_, select, other {park}}';
+
       // Target message with collapsed indexed variables (no select syntax)
       const target = 'Je joue avec mon ami {_gt_1} au {_gt_2}';
-      
+
       // Extract and index variables from the source
       const declaredVars = extractVars(source);
-      
+
       // Format the target message with extracted variables
       const result = gt.formatMessage(target, {
         locales: ['fr'],
@@ -228,10 +241,10 @@ describe('static extractVars', () => {
           ...declaredVars,
         },
       });
-      
+
       // Should result in the properly translated message
       expect(result).toBe('Je joue avec mon ami Brian au park');
-      
+
       // Verify that the extracted variables are correct
       expect(declaredVars).toEqual({
         _gt_1: 'Brian',
@@ -241,42 +254,46 @@ describe('static extractVars', () => {
 
     it('should handle more complex source-to-target translation with multiple variables', () => {
       const gt = new GT();
-      
-      const source = 'Welcome {_gt_, select, other {John}}! You have {_gt_, select, other {5 messages}} in your {_gt_, select, other {inbox}}';
+
+      const source =
+        'Welcome {_gt_, select, other {John}}! You have {_gt_, select, other {5 messages}} in your {_gt_, select, other {inbox}}';
       const target = 'Bienvenue {_gt_1} ! Vous avez {_gt_2} dans votre {_gt_3}';
-      
+
       const declaredVars = extractVars(source);
-      
+
       const result = gt.formatMessage(target, {
         locales: ['fr'],
         variables: {
           ...declaredVars,
         },
       });
-      
-      expect(result).toBe('Bienvenue John ! Vous avez 5 messages dans votre inbox');
+
+      expect(result).toBe(
+        'Bienvenue John ! Vous avez 5 messages dans votre inbox'
+      );
       expect(declaredVars).toEqual({
         _gt_1: 'John',
-        _gt_2: '5 messages', 
+        _gt_2: '5 messages',
         _gt_3: 'inbox',
       });
     });
 
     it('should handle empty other fields in source correctly', () => {
       const gt = new GT();
-      
-      const source = 'Hello {_gt_, select, other {}} world {_gt_, select, other {test}}';
+
+      const source =
+        'Hello {_gt_, select, other {}} world {_gt_, select, other {test}}';
       const target = 'Bonjour {_gt_1} monde {_gt_2}';
-      
+
       const declaredVars = extractVars(source);
-      
+
       const result = gt.formatMessage(target, {
         locales: ['fr'],
         variables: {
           ...declaredVars,
         },
       });
-      
+
       expect(result).toBe('Bonjour  monde test');
       expect(declaredVars).toEqual({
         _gt_1: '',
