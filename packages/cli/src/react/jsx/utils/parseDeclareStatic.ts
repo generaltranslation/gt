@@ -284,10 +284,6 @@ function getDeclareStaticVariants(
 
   // Handle await expression: declareStatic(await time())
   if (t.isAwaitExpression(arg)) {
-    // Unwrap the await and check if it's a call expression
-    if (!t.isCallExpression(arg.argument)) {
-      return null;
-    }
     // Resolve the inner call's possible string outcomes
     return resolveCallStringVariants(
       arg.argument,
@@ -297,16 +293,12 @@ function getDeclareStaticVariants(
       errors
     );
   }
-
-  // Handle direct call expression: declareStatic(time())
-  if (!t.isCallExpression(arg)) return null;
-
   // Resolve the inner call's possible string outcomes
   return resolveCallStringVariants(arg, tPath, file, parsingOptions, errors);
 }
 
 function resolveCallStringVariants(
-  call: t.CallExpression,
+  expression: t.Expression,
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
@@ -314,32 +306,34 @@ function resolveCallStringVariants(
 ): string[] | null {
   const results = new Set<string>();
 
-  // Handle inline arrow functions: declareStatic((() => "day")())
-  // TODO: this makes no sense
-  if (t.isArrowFunctionExpression(call.callee)) {
-    const body = call.callee.body;
+  // // Handle inline arrow functions: declareStatic((() => "day")())
+  // if (
+  //   t.isCallExpression(expression) &&
+  //   t.isParenthesizedExpression(expression.callee) &&
+  //   t.isArrowFunctionExpression(expression.callee.expression)
+  // ) {
+  //   const body = expression.callee.expression.body;
 
-    if (t.isStringLiteral(body)) {
-      results.add(body.value);
-    } else if (t.isConditionalExpression(body)) {
-      collectConditionalStringVariants(body, results);
-    }
+  //   if (t.isStringLiteral(body)) {
+  //     results.add(body.value);
+  //   } else if (t.isConditionalExpression(body)) {
+  //     collectConditionalStringVariants(body, results);
+  //   }
 
-    return results.size ? [...results] : null;
-  }
+  //   return results.size ? [...results] : null;
+  // }
 
-  // Handle explicit conditional expression call:
-  // declareStatic(cond ? "day" : "night")
-  // TODO: this makes no sense
-  if (t.isConditionalExpression(call.callee)) {
-    collectConditionalStringVariants(call.callee, results);
-    logger.info('results' + results);
-    return results.size ? [...results] : null;
-  }
+  // // Handle explicit conditional expression call:
+  // // declareStatic(cond ? "day" : "night")
+  // // TODO: this makes no sense
+  // if (t.isConditionalExpression(expression)) {
+  //   collectConditionalStringVariants(expression, results);
+  //   return results.size ? [...results] : null;
+  // }
 
   // Handle function identifier calls: declareStatic(time())
-  if (t.isIdentifier(call.callee)) {
-    const functionName = call.callee.name;
+  if (t.isCallExpression(expression) && t.isIdentifier(expression.callee)) {
+    const functionName = expression.callee.name;
 
     // Use Binding to resolve the function
     const calleeBinding = tPath.scope.getBinding(functionName);
@@ -407,14 +401,18 @@ function resolveCallStringVariants(
         warnFunctionNotFoundSync(
           file,
           functionName,
-          `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
+          `${expression.callee.loc?.start?.line}:${expression.callee.loc?.start?.column}`
         )
       );
       return null;
     }
   }
 
-  // If we get here: cannot analyze this call statically
+  // If we get here: analyze this call statically
+  const node = parseStringExpression(expression, tPath, file, parsingOptions);
+  if (node) {
+    return nodeToStrings(node);
+  }
   return null;
 }
 
