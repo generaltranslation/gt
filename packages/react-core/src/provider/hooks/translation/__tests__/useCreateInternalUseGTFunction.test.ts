@@ -69,6 +69,7 @@ describe('useCreateInternalUseGTFunction', () => {
         }
         return message;
       }),
+      formatCutoff: vi.fn((message, options) => message),
     } as any;
 
     mockRegisterIcuForTranslation = vi
@@ -323,6 +324,7 @@ describe('useCreateInternalUseGTFunction', () => {
           formatMessage: vi.fn(() => {
             throw new Error('Formatting failed');
           }),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -346,6 +348,7 @@ describe('useCreateInternalUseGTFunction', () => {
               throw new Error('Formatting failed');
             })
             .mockImplementationOnce(() => 'Fallback message'),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -557,6 +560,7 @@ describe('useCreateInternalUseGTFunction', () => {
       it('should handle messages directly without extractVars when no fallback', () => {
         const mockGT = {
           formatMessage: vi.fn((message) => 'Formatted default message'),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -586,6 +590,7 @@ describe('useCreateInternalUseGTFunction', () => {
       it('should handle complex variables in default language with user variables', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'You have 5 items in your cart'),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -624,6 +629,7 @@ describe('useCreateInternalUseGTFunction', () => {
             .mockImplementationOnce((message) => {
               return 'Successfully formatted fallback';
             }),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const translations = {
@@ -682,6 +688,7 @@ describe('useCreateInternalUseGTFunction', () => {
             }
             return message;
           }),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -717,6 +724,7 @@ describe('useCreateInternalUseGTFunction', () => {
             .mockImplementationOnce(() => {
               return 'Fallback message rendered';
             }),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -741,6 +749,7 @@ describe('useCreateInternalUseGTFunction', () => {
       it('should only use condenseVars when declaredVars are present', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'Simple message'),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -767,6 +776,7 @@ describe('useCreateInternalUseGTFunction', () => {
       it('should handle edge case with empty declaredVars', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'Empty vars message'),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
@@ -804,6 +814,7 @@ describe('useCreateInternalUseGTFunction', () => {
             .mockImplementationOnce(() => {
               return 'Fallback rendered successfully';
             }),
+          formatCutoff: vi.fn((message, options) => message),
         } as any;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
