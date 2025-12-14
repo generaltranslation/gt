@@ -127,7 +127,10 @@ function handleUseGTCallback(
   // Check for violations
   const useGTCallbackParams = validateUseGTCallback(callExpr, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
-  if (useGTCallbackParams.errors.length > 0) {
+  if (
+    useGTCallbackParams.errors.length > 0 ||
+    useGTCallbackParams.content === undefined
+  ) {
     return;
   }
 
@@ -135,7 +138,7 @@ function handleUseGTCallback(
   registerUseGTCallback({
     identifier,
     state,
-    content: useGTCallbackParams.content!,
+    content: useGTCallbackParams.content,
     context: useGTCallbackParams.context,
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,
