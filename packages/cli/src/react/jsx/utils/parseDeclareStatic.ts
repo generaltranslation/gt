@@ -1,8 +1,9 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
+import { logger } from '../../../console/logger.js';
 import { ParsingConfigOptions } from '../../../types/parsing.js';
 import { parseStringExpression, nodeToStrings } from './parseString.js';
-import { Node } from './types.js';
+import { StringNode } from './types.js';
 import { buildImportMap } from './buildImportMap.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { parse } from '@babel/parser';
@@ -35,7 +36,7 @@ const resolveImportPathCache = new Map<string, string | null>();
  * Key: `${filePath}::${functionName}`
  * Value: Node result or null
  */
-const processFunctionCache = new Map<string, Node | null>();
+const processFunctionCache = new Map<string, StringNode | null>();
 
 /**
  * Checks if an expression is static or uses declareStatic
@@ -52,7 +53,7 @@ export function handleStaticExpression(
   file: string,
   parsingOptions: ParsingConfigOptions,
   errors: string[]
-): Node | null {
+): StringNode | null {
   if (!expr) {
     return null;
   }
@@ -97,7 +98,7 @@ export function handleStaticExpression(
 
   // Handle template literals
   if (t.isTemplateLiteral(expr)) {
-    const parts: Node[] = [];
+    const parts: StringNode[] = [];
     for (let index = 0; index < expr.quasis.length; index++) {
       const quasi = expr.quasis[index];
       const text = quasi.value.cooked ?? quasi.value.raw ?? '';
@@ -218,13 +219,14 @@ export function handleStaticExpression(
  *
  * Returns null if it can't be resolved.
  */
-export function getDeclareStaticVariants(
+function getDeclareStaticVariants(
   call: t.CallExpression,
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
   errors: string[]
 ): string[] | null {
+  // --- Validate Callee --- //
   // Must be declareStatic(...) or an alias of it
   if (!t.isIdentifier(call.callee)) {
     const code =
@@ -273,6 +275,8 @@ export function getDeclareStaticVariants(
     return null;
   }
 
+  // --- Validate Arguments --- //
+
   if (call.arguments.length !== 1) return null;
 
   const arg = call.arguments[0];
@@ -301,7 +305,7 @@ export function getDeclareStaticVariants(
   return resolveCallStringVariants(arg, tPath, file, parsingOptions, errors);
 }
 
-export function resolveCallStringVariants(
+function resolveCallStringVariants(
   call: t.CallExpression,
   tPath: NodePath,
   file: string,
@@ -310,7 +314,8 @@ export function resolveCallStringVariants(
 ): string[] | null {
   const results = new Set<string>();
 
-  // Handle inline arrow functions: declareStatic(() => "day")
+  // Handle inline arrow functions: declareStatic((() => "day")())
+  // TODO: this makes no sense
   if (t.isArrowFunctionExpression(call.callee)) {
     const body = call.callee.body;
 
@@ -324,9 +329,11 @@ export function resolveCallStringVariants(
   }
 
   // Handle explicit conditional expression call:
-  // declareStatic((cond ? "day" : "night")())
+  // declareStatic(cond ? "day" : "night")
+  // TODO: this makes no sense
   if (t.isConditionalExpression(call.callee)) {
     collectConditionalStringVariants(call.callee, results);
+    logger.info('results' + results);
     return results.size ? [...results] : null;
   }
 
@@ -419,13 +426,13 @@ function resolveFunctionCallFromBinding(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions
-): Node | null {
+): StringNode | null {
   if (!calleeBinding) {
     return null;
   }
 
   const bindingPath = calleeBinding.path;
-  const branches: Node[] = [];
+  const branches: StringNode[] = [];
 
   // Handle function declarations: function time() { return "day"; }
   if (bindingPath.isFunctionDeclaration()) {
@@ -522,14 +529,14 @@ function resolveFunctionInFile(
   functionName: string,
   parsingOptions: ParsingConfigOptions,
   errors: string[]
-): Node | null {
+): StringNode | null {
   // Check cache first
   const cacheKey = `${filePath}::${functionName}`;
   if (processFunctionCache.has(cacheKey)) {
     return processFunctionCache.get(cacheKey) ?? null;
   }
 
-  let result: Node | null = null;
+  let result: StringNode | null = null;
 
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -632,7 +639,7 @@ function resolveFunctionInFile(
       // Handle function declarations: function woah() { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName && result === null) {
-          const branches: Node[] = [];
+          const branches: StringNode[] = [];
           path.traverse({
             Function(innerPath) {
               // Skip nested functions
@@ -684,7 +691,7 @@ function resolveFunctionInFile(
           }
 
           const bodyPath = init.get('body');
-          const branches: Node[] = [];
+          const branches: StringNode[] = [];
 
           // Handle expression body: () => "day"
           if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {

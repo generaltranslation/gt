@@ -1,7 +1,7 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../types/parsing.js';
-import { Node } from './types.js';
+import { StringNode } from './types.js';
 import { buildImportMap } from './buildImportMap.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { parse } from '@babel/parser';
@@ -9,11 +9,17 @@ import fs from 'node:fs';
 import {
   warnDeclareStaticNoResultsSync,
   warnFunctionNotFoundSync,
+  warnInvalidDeclareVarNameSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
+import { DECLARE_VAR_FUNCTION, GT_LIBRARIES, GTLibrary } from './constants.js';
+import { declareVar } from 'generaltranslation/internal';
+import { isStaticExpression } from '../evaluateJsx.js';
+import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
+const generate = generateModule.default || generateModule;
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -23,7 +29,7 @@ const resolveImportPathCache = new Map<string, string | null>();
 /**
  * Cache for processed functions to avoid re-parsing the same files.
  */
-const processFunctionCache = new Map<string, Node | null>();
+const processFunctionCache = new Map<string, StringNode | null>();
 
 /**
  * Processes a string expression node and resolves any function calls within it
@@ -46,7 +52,7 @@ export function parseStringExpression(
   file: string,
   parsingOptions: ParsingConfigOptions,
   warnings: Set<string> = new Set()
-): Node | null {
+): StringNode | null {
   // Handle string literals
   if (t.isStringLiteral(node)) {
     return { type: 'text', text: node.value };
@@ -69,7 +75,7 @@ export function parseStringExpression(
 
   // Handle template literals
   if (t.isTemplateLiteral(node)) {
-    const parts: Node[] = [];
+    const parts: StringNode[] = [];
 
     for (let index = 0; index < node.quasis.length; index++) {
       const quasi = node.quasis[index];
@@ -225,6 +231,56 @@ export function parseStringExpression(
       }
 
       const importPath = importedFunctionsMap.get(functionName)!;
+
+      // Handle declareVar function
+      if (
+        originalName === DECLARE_VAR_FUNCTION &&
+        GT_LIBRARIES.includes(importPath as GTLibrary)
+      ) {
+        // check for name field eg declareVar('test', { $name: 'test' })
+        if (
+          node.arguments.length > 1 &&
+          t.isObjectExpression(node.arguments[1])
+        ) {
+          const name = node.arguments[1].properties
+            .filter((prop) => t.isObjectProperty(prop))
+            .find(
+              (prop) => t.isIdentifier(prop.key) && prop.key.name === '$name'
+            )?.value;
+          if (name) {
+            if (!t.isExpression(name)) {
+              warnings.add(
+                warnInvalidDeclareVarNameSync(
+                  file,
+                  generate(name).code,
+                  `${node.arguments[1].loc?.start?.line}:${node.arguments[1].loc?.start?.column}`
+                )
+              );
+              return null;
+            }
+            const staticResult = isStaticExpression(name);
+            if (!staticResult.isStatic) {
+              warnings.add(
+                warnInvalidDeclareVarNameSync(
+                  file,
+                  generate(name).code,
+                  `${node.arguments[1].loc?.start?.line}:${node.arguments[1].loc?.start?.column}`
+                )
+              );
+              return null;
+            }
+            return {
+              type: 'text',
+              text: declareVar('', { $name: staticResult.value }),
+            };
+          }
+        }
+        return {
+          type: 'text',
+          text: declareVar(''),
+        };
+      }
+
       const filePath = resolveImportPath(
         file,
         importPath,
@@ -296,13 +352,13 @@ function resolveFunctionCall(
   file: string,
   parsingOptions: ParsingConfigOptions,
   warnings: Set<string>
-): Node | null {
+): StringNode | null {
   if (!calleeBinding) {
     return null;
   }
 
   const bindingPath = calleeBinding.path;
-  const branches: Node[] = [];
+  const branches: StringNode[] = [];
 
   // Handle function declarations: function time() { return "day"; }
   if (bindingPath.isFunctionDeclaration()) {
@@ -408,14 +464,14 @@ function resolveFunctionInFile(
   functionName: string,
   parsingOptions: ParsingConfigOptions,
   warnings: Set<string>
-): Node | null {
+): StringNode | null {
   // Check cache first
   const cacheKey = `${filePath}::${functionName}`;
   if (processFunctionCache.has(cacheKey)) {
     return processFunctionCache.get(cacheKey) ?? null;
   }
 
-  let result: Node | null = null;
+  let result: StringNode | null = null;
 
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -518,7 +574,7 @@ function resolveFunctionInFile(
       // Handle function declarations: function interjection() { ... }
       FunctionDeclaration(path) {
         if (path.node.id?.name === functionName && result === null) {
-          const branches: Node[] = [];
+          const branches: StringNode[] = [];
           path.traverse({
             Function(innerPath) {
               // Skip nested functions
@@ -571,7 +627,7 @@ function resolveFunctionInFile(
           }
 
           const bodyPath = init.get('body');
-          const branches: Node[] = [];
+          const branches: StringNode[] = [];
 
           // Handle expression body: () => "day"
           if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
@@ -654,7 +710,7 @@ function resolveFunctionInFile(
  * Converts a Node tree to an array of all possible string combinations
  * This is a helper function for compatibility with existing code
  */
-export function nodeToStrings(node: Node | null): string[] {
+export function nodeToStrings(node: StringNode | null): string[] {
   if (node === null) {
     return [];
   }

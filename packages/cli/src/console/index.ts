@@ -199,6 +199,17 @@ export const warnFunctionNotFoundSync = (
     location
   );
 
+export const warnInvalidDeclareVarNameSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid declareVar() $name tag. Must be a static expression. Received: ${colorizeContent(value)}.`,
+    location
+  );
+
 export const warnDuplicateFunctionDefinitionSync = (
   file: string,
   functionName: string,

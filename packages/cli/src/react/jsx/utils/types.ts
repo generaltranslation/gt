@@ -1,20 +1,25 @@
 // ===== Tree Construction ===== //
 // Used for parseDeclareStatic.ts
-type Node = TextNode | SequenceNode | ChoiceNode;
+type StringNode = StringTextNode | StringSequenceNode | StringChoiceNode;
 
-type TextNode = {
+type StringTextNode = {
   type: 'text';
   text: string;
 };
 
-type SequenceNode = {
+type StringSequenceNode = {
   type: 'sequence';
-  nodes: Node[];
+  nodes: StringNode[];
 };
 
-type ChoiceNode = {
+type StringChoiceNode = {
   type: 'choice';
-  nodes: Node[];
+  nodes: StringNode[];
 };
 
-export type { Node, TextNode, SequenceNode, ChoiceNode };
+export type {
+  StringNode,
+  StringTextNode,
+  StringSequenceNode,
+  StringChoiceNode,
+};
