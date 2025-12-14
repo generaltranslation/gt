@@ -71,6 +71,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
 
+  console.log('translations', translations);
+
   // --------- HELPERS --------- //
   /**
    * @description Format message and fallback:
@@ -190,7 +192,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     const { source, context, id, hash, renderMessage } = args;
     try {
       I18NConfig.translateIcu({
-        source,
+        source: indexVars(source),
         targetLocale: locale,
         options: {
           ...(context && { context }),
@@ -203,10 +205,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           createTranslationLoadingWarning({
             ...(id && { id }),
             source: renderMessage(source, [defaultLocale]),
-            translation: renderMessage(result as string, [
-              locale,
-              defaultLocale,
-            ]),
+            translation: renderMessage(
+              result as string,
+              [locale, defaultLocale],
+              source
+            ),
           })
         );
       });
@@ -242,7 +245,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
       try {
         preloadedTranslations![hash] = (await I18NConfig.translateIcu({
-          source: message,
+          source: indexVars(message),
           targetLocale: locale,
           options: {
             ...(context && { context }),

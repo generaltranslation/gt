@@ -251,7 +251,7 @@ export async function getTranslations(id?: string): Promise<
     try {
       // Translate on demand
       I18NConfig.translateIcu({
-        source: entry,
+        source: indexVars(entry),
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
@@ -365,7 +365,7 @@ export async function getTranslations(id?: string): Promise<
 
       // (3.a) Translate
       I18NConfig.translateIcu({
-        source,
+        source: indexVars(source),
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),

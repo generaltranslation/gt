@@ -103,7 +103,7 @@ export default async function tx(
   // New translation required
   try {
     const target = (await I18NConfig.translateIcu({
-      source: message,
+      source: indexVars(message),
       targetLocale: locale,
       options: { ...variables, hash, context },
     })) as string;
