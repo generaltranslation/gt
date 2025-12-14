@@ -74,8 +74,6 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
 
-  console.log('translations', translations);
-
   // --------- HELPERS --------- //
   /**
    * @description Format message and fallback:

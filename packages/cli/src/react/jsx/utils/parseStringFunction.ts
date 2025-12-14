@@ -35,6 +35,7 @@ import { buildImportMap } from './buildImportMap.js';
 import { handleStaticExpression } from './parseDeclareStatic.js';
 import { nodeToStrings } from './parseString.js';
 import { isNumberLiteral } from './isNumberLiteral.js';
+import { indexVars } from 'generaltranslation/internal';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -98,7 +99,7 @@ function processTranslationCall(
         errors
       );
       if (result) {
-        const strings = nodeToStrings(result);
+        const strings = nodeToStrings(result).map(indexVars);
         if (!ignoreInvalidIcu) {
           for (const string of strings) {
             const { isValid, error } = isValidIcu(string);
