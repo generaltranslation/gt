@@ -14,7 +14,7 @@ export type GTContextType = {
   gt: GT;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  _tFunction: (
+  _gtFunction: (
     message: string,
     options?: InlineTranslationOptions,
     preloadedTranslations?: Translations

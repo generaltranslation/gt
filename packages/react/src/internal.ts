@@ -32,8 +32,10 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
-  Static,
   declareStatic,
+  declareVar,
+  decodeVars,
+  Static,
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/internal';
@@ -95,16 +97,11 @@ export type {
 };
 
 // Constant exports
-export {
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-  reactHasUse,
-  declareStatic,
-  Static,
-};
+export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
 
 // Function exports
 export {
+  Static,
   addGTIdentifier,
   writeChildrenAsObjects,
   isVariableObject,
@@ -132,6 +129,9 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
   mFallback,
   gtFallback,
   getDefaultRenderSettings,

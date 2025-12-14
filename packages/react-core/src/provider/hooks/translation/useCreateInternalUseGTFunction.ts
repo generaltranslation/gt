@@ -13,6 +13,12 @@ import {
   createStringTranslationError,
 } from '../../../errors-dir/createErrors';
 import { decodeMsg, decodeOptions } from '../../../messages/messages';
+import {
+  extractVars,
+  condenseVars,
+  indexVars,
+  VAR_IDENTIFIER,
+} from 'generaltranslation/internal';
 
 type MReturnType<T> = T extends string ? string : T;
 
@@ -43,7 +49,7 @@ export default function useCreateInternalUseGTFunction({
   registerIcuForTranslation: TranslateIcuCallback;
   environment: 'development' | 'production' | 'test';
 }): {
-  _tFunction: (
+  _gtFunction: (
     message: string,
     options?: InlineTranslationOptions,
     preloadedTranslations?: Translations
@@ -75,10 +81,19 @@ export default function useCreateInternalUseGTFunction({
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
-      return gt.formatMessage(message, {
-        locales,
-        variables,
-      });
+      const declaredVars = extractVars(fallback || '');
+      const formattedMessage = gt.formatMessage(
+        Object.keys(declaredVars).length ? condenseVars(message) : message,
+        {
+          locales,
+          variables: {
+            ...variables,
+            ...declaredVars,
+            [VAR_IDENTIFIER]: 'other',
+          },
+        }
+      );
+      return formattedMessage;
     } catch (error) {
       if (environment === 'production') {
         console.warn(createStringRenderWarning(message, id), 'Error: ', error);
@@ -107,7 +122,7 @@ export default function useCreateInternalUseGTFunction({
     }
   }
 
-  function initializeT(
+  function initializeGT(
     message: string,
     options: Record<string, any> & {
       $context?: string;
@@ -137,7 +152,7 @@ export default function useCreateInternalUseGTFunction({
     // Calculate hash
     const calculateHash = () =>
       hashSource({
-        source: message,
+        source: indexVars(message),
         ...(context && { context }),
         ...(id && { id }),
         dataFormat: 'ICU',
@@ -181,7 +196,7 @@ export default function useCreateInternalUseGTFunction({
   const _filterMessagesForPreload = (_messages: _Messages): _Messages => {
     const result = [];
     for (const { message, ...options } of _messages) {
-      const init = initializeT(message, options);
+      const init = initializeGT(message, options);
       if (!init) continue;
       const { id, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
@@ -200,7 +215,7 @@ export default function useCreateInternalUseGTFunction({
     const preloadedTranslations: Translations = {};
     const preload = async ({ message, ...options }: _Message) => {
       // Setup
-      const init = initializeT(message, options);
+      const init = initializeGT(message, options);
       if (!init) return;
       const { id, context, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
@@ -215,7 +230,7 @@ export default function useCreateInternalUseGTFunction({
       // Await the creation of the translation
       // Should update the translations object
       preloadedTranslations[hash] = await registerIcuForTranslation({
-        source: message,
+        source: indexVars(message),
         targetLocale: locale,
         metadata: {
           ...(context && { context }),
@@ -228,13 +243,13 @@ export default function useCreateInternalUseGTFunction({
     return preloadedTranslations;
   };
 
-  const _tFunction = (
+  const _gtFunction = (
     message: string,
     options: InlineTranslationOptions = {},
     preloadedTranslations: Translations | undefined
   ) => {
     // ----- SET UP ----- //
-    const init = initializeT(message, options);
+    const init = initializeGT(message, options);
     if (!init) return '';
     const { id, context, _hash, calculateHash, renderMessage } = init;
 
@@ -277,12 +292,12 @@ export default function useCreateInternalUseGTFunction({
     }
 
     if (!developmentApiEnabled) {
-      console.warn(createStringTranslationError(message, id, 't'));
+      console.warn(createStringTranslationError(message, id, 'gt'));
       return renderMessage(message, [defaultLocale]);
     }
 
     registerIcuForTranslation({
-      source: message,
+      source: indexVars(message),
       targetLocale: locale,
       metadata: {
         ...(context && { context }),
@@ -304,7 +319,7 @@ export default function useCreateInternalUseGTFunction({
 
     const decodedOptions = decodeOptions(encodedMsg);
     if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
-      return _tFunction(
+      return _gtFunction(
         encodedMsg,
         options,
         preloadedTranslations
@@ -370,7 +385,7 @@ export default function useCreateInternalUseGTFunction({
     }
 
     registerIcuForTranslation({
-      source: $_source,
+      source: indexVars($_source),
       targetLocale: locale,
       metadata: {
         ...($context && { context: $context }),
@@ -382,7 +397,7 @@ export default function useCreateInternalUseGTFunction({
   };
 
   return {
-    _tFunction,
+    _gtFunction,
     _mFunction,
     _filterMessagesForPreload,
     _preloadMessages,

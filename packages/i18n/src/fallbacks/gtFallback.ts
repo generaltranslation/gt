@@ -3,6 +3,7 @@ import logger from '../logs/logger';
 import { formatMessage } from './utils/formatMessage';
 import { extractVariables } from '../utils/extractVariables';
 import { interpolationFailureWarning } from '../logs/warnings';
+import { VAR_IDENTIFIER } from 'generaltranslation/internal';
 
 /**
  * A fallback function for the gt() function that decodes and interpolates.
@@ -39,16 +40,12 @@ export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
   // Remove any gt related options
   const variables = extractVariables(options);
 
-  // No decoded options, fallback to decodeMsg
-  if (Object.keys(variables).length === 0) {
-    return encodedMsg as T extends string ? string : T;
-  }
-
   try {
     // Interpolate the message
-    return formatMessage(encodedMsg, variables) as T extends string
-      ? string
-      : T;
+    return formatMessage(encodedMsg, {
+      ...variables,
+      [VAR_IDENTIFIER]: 'other',
+    }) as T extends string ? string : T;
   } catch {
     // Fallback to decodeMsg
     logger.warn(interpolationFailureWarning);

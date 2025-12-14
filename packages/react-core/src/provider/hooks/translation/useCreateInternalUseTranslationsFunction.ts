@@ -18,6 +18,12 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { GT } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
+import {
+  extractVars,
+  indexVars,
+  VAR_IDENTIFIER,
+  condenseVars,
+} from 'generaltranslation/internal';
 
 export default function useCreateInternalUseTranslationsFunction(
   gt: GT,
@@ -70,10 +76,18 @@ export default function useCreateInternalUseTranslationsFunction(
       ) => {
         try {
           // (1) Try to format message
-          return gt.formatMessage(message, {
-            locales,
-            variables: options,
-          });
+          const declaredVars = extractVars(fallback || '');
+          return gt.formatMessage(
+            Object.keys(declaredVars).length ? condenseVars(message) : message,
+            {
+              locales,
+              variables: {
+                ...options,
+                ...declaredVars,
+                [VAR_IDENTIFIER]: 'other',
+              },
+            }
+          );
         } catch (error) {
           if (environment === 'production') {
             console.warn(
@@ -127,7 +141,7 @@ export default function useCreateInternalUseTranslationsFunction(
       let hash = '';
       const getHash = () =>
         hashSource({
-          source: entry,
+          source: indexVars(entry),
           ...(metadata?.$context && { context: metadata.$context }),
           id,
           dataFormat: 'ICU',
@@ -160,7 +174,7 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Translate Content
       registerIcuForTranslation({
-        source: entry,
+        source: indexVars(entry),
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),

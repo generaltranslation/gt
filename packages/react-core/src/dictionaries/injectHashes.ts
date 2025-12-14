@@ -3,6 +3,7 @@ import { isDictionaryEntry } from './isDictionaryEntry';
 import { Dictionary } from '../types-dir/types';
 import getEntryAndMetadata from './getEntryAndMetadata';
 import { set } from './indexDict';
+import { indexVars } from 'generaltranslation/internal';
 
 /**
  * @description Given a dictionary, adds hashes to all dictionary entries
@@ -22,7 +23,7 @@ export function injectHashes(
       if (!metadata?.$_hash) {
         metadata ||= {};
         metadata.$_hash = hashSource({
-          source: entry,
+          source: indexVars(entry),
           ...(metadata?.$context && { context: metadata.$context }),
           id: wholeId,
           dataFormat: 'ICU',

@@ -2,8 +2,12 @@ import { EncodedTranslationOptions, InlineTranslationOptions } from '../types';
 import { hashSource } from 'generaltranslation/id';
 import { icuMessageContainsVariables } from './utils/icuMessageContainsVariables';
 import { formatMessage } from 'generaltranslation';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { encode } from 'generaltranslation/internal';
+import {
+  encode,
+  libraryDefaultLocale,
+  indexVars,
+  VAR_IDENTIFIER,
+} from 'generaltranslation/internal';
 import { interpolationFailureWarning } from '../logs/warnings';
 import logger from '../logs/logger';
 import { extractVariables } from '../utils/extractVariables';
@@ -52,19 +56,17 @@ export function msg<T extends string>(
 
   // Interpolate string
   let interpolatedString: string = message;
-  if (
-    icuMessageContainsVariables(message) &&
-    Object.keys(variables || {}).length > 0
-  ) {
-    try {
-      interpolatedString = formatMessage(message, {
-        locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
-        variables,
-      });
-    } catch (error) {
-      logger.warn(interpolationFailureWarning + ' Error: ' + error);
-      return message;
-    }
+  try {
+    interpolatedString = formatMessage(message, {
+      locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+      variables: {
+        ...variables,
+        [VAR_IDENTIFIER]: 'other',
+      },
+    });
+  } catch (error) {
+    logger.warn(interpolationFailureWarning + ' Error: ' + error);
+    return message;
   }
 
   // Encode options
@@ -72,7 +74,7 @@ export function msg<T extends string>(
   const $_hash =
     options.$_hash ||
     hashSource({
-      source: message,
+      source: indexVars(message),
       ...(options?.$context && { context: options.$context }),
       ...(options?.$id && { id: options.$id }),
       dataFormat: 'ICU',

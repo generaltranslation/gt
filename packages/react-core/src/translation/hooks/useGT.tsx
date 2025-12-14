@@ -24,7 +24,7 @@ export default function useGT(_messages?: _Messages) {
     translationRequired,
     _preloadMessages,
     _filterMessagesForPreload,
-    _tFunction,
+    _gtFunction,
     locale,
   } = useGTContext(
     `useGT(): No context provided. You're trying to get the gt() function from the useGT() hook, which can be called within a <GTProvider>.`
@@ -55,7 +55,7 @@ export default function useGT(_messages?: _Messages) {
       $_hash?: string;
     } = {}
   ): string {
-    return _tFunction(string, options, preloadedTranslations);
+    return _gtFunction(string, options, preloadedTranslations);
   }
 
   /**
@@ -70,7 +70,7 @@ export default function useGT(_messages?: _Messages) {
    * // With a context and a custom identifier:
    * gt('My name is {name}', { name: "John", $context: 'name is a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
    */
-  const gt = useCallback(_gt, [preloadedTranslations, _tFunction]);
+  const gt = useCallback(_gt, [preloadedTranslations, _gtFunction]);
 
   return gt;
 }

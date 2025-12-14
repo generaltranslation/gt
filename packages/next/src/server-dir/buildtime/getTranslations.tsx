@@ -33,6 +33,12 @@ import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
 import { getSubtree } from 'gt-react/internal';
 import setDictionary from '../../dictionary/setDictionary';
+import {
+  extractVars,
+  condenseVars,
+  VAR_IDENTIFIER,
+  indexVars,
+} from 'generaltranslation/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -127,10 +133,18 @@ export async function getTranslations(id?: string): Promise<
     ) => {
       try {
         // (1) Try to format message
-        return gt.formatMessage(message, {
-          locales,
-          variables: options,
-        });
+        const declaredVars = extractVars(fallback || '');
+        return gt.formatMessage(
+          Object.keys(declaredVars).length ? condenseVars(message) : message,
+          {
+            locales,
+            variables: {
+              ...options,
+              ...declaredVars,
+              [VAR_IDENTIFIER]: 'other',
+            },
+          }
+        );
       } catch (error) {
         if (process.env.NODE_ENV === 'production') {
           console.warn(
@@ -198,7 +212,7 @@ export async function getTranslations(id?: string): Promise<
     const getHash = () => {
       if (metadata?.$_hash) return metadata.$_hash;
       const hash = hashSource({
-        source: entry,
+        source: indexVars(entry),
         ...(metadata?.$context && { context: metadata.$context }),
         id,
         dataFormat: 'ICU',
@@ -237,7 +251,7 @@ export async function getTranslations(id?: string): Promise<
     try {
       // Translate on demand
       I18NConfig.translateIcu({
-        source: entry,
+        source: indexVars(entry),
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
@@ -351,7 +365,7 @@ export async function getTranslations(id?: string): Promise<
 
       // (3.a) Translate
       I18NConfig.translateIcu({
-        source,
+        source: indexVars(source),
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
