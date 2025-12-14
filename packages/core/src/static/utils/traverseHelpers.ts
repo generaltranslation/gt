@@ -4,9 +4,9 @@ import {
 } from './regex';
 import { GTIndexedSelectElement, GTUnindexedSelectElement } from './types';
 import {
-  MessageFormatElement,
+  type MessageFormatElement,
   TYPE,
-} from '@formatjs/icu-messageformat-parser/types';
+} from '@formatjs/icu-messageformat-parser/types.js';
 
 // Visit any _gt_# select
 export function isGTIndexedSelectElement(

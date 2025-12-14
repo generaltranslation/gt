@@ -1,10 +1,9 @@
 import { VAR_IDENTIFIER } from './constants';
-import {
+import type {
   PluralOrSelectOption,
   LiteralElement,
   SelectElement,
-  Location,
-} from '@formatjs/icu-messageformat-parser/types';
+} from '@formatjs/icu-messageformat-parser/types.js';
 
 interface GTIndexedSelectOption extends PluralOrSelectOption {
   value: Array<LiteralElement>;

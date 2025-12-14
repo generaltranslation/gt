@@ -1,8 +1,8 @@
 import {
-  ArgumentElement,
+  type ArgumentElement,
   TYPE,
-} from '@formatjs/icu-messageformat-parser/types';
-import { printAST } from '@formatjs/icu-messageformat-parser/printer';
+} from '@formatjs/icu-messageformat-parser/types.js';
+import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
 import { GTIndexedSelectElement } from './utils/types';
