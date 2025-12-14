@@ -102,6 +102,8 @@ export default [
       'fast-json-stable-stringify',
       'intl-messageformat',
       '@formatjs/icu-messageformat-parser',
+      '@formatjs/icu-messageformat-parser/types.js',
+      '@formatjs/icu-messageformat-parser/printer.js',
     ], // External dependencies not bundled in
   },
 
