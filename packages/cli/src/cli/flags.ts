@@ -3,7 +3,7 @@ import findFilepath from '../fs/findFilepath.js';
 
 const DEFAULT_TIMEOUT = 600;
 
-export function attachTranslateFlags(command: Command) {
+export function attachSharedFlags(command: Command) {
   command
     .option(
       '-c, --config <path>',
@@ -11,7 +11,12 @@ export function attachTranslateFlags(command: Command) {
       findFilepath(['gt.config.json'])
     )
     .option('--api-key <key>', 'API key for General Translation cloud service')
-    .option('--project-id <id>', 'General Translation project ID')
+    .option('--project-id <id>', 'General Translation project ID');
+  return command;
+}
+
+export function attachTranslateFlags(command: Command) {
+  attachSharedFlags(command)
     .option('--version-id <id>', 'General Translation version ID')
     .option(
       '--default-language, --default-locale <locale>',

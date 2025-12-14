@@ -18,6 +18,7 @@
     "next-create-app",
     "next-starter",
     "next-pages-router",
-    "vite-create-app"
+    "vite-create-app",
+    "cli-test-app"
   ]
 }

@@ -1,5 +1,23 @@
 # generaltranslation
 
+## 8.1.3
+
+### Patch Changes
+
+- [#883](https://github.com/generaltranslation/gt/pull/883) [`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Send file paths in translation metadata
+
+## 8.1.2
+
+### Patch Changes
+
+- [#880](https://github.com/generaltranslation/gt/pull/880) [`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Hotfix: sending format metadata to the API during build time translation
+
+## 8.1.1
+
+### Patch Changes
+
+- [#860](https://github.com/generaltranslation/gt/pull/860) [`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: support for max char
+
 ## 8.1.0
 
 ### Minor Changes

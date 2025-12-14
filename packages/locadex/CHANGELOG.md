@@ -1,5 +1,75 @@
 # locadex
 
+## 1.0.61
+
+### Patch Changes
+
+- Updated dependencies [[`6320663`](https://github.com/generaltranslation/gt/commit/6320663e032aa4b8a337e08423a5be7215260e87)]:
+  - gtx-cli@2.5.33
+
+## 1.0.60
+
+### Patch Changes
+
+- Updated dependencies [[`94edf07`](https://github.com/generaltranslation/gt/commit/94edf07fb5a05130da967ffb1e76577667e9dff0)]:
+  - gtx-cli@2.5.32
+
+## 1.0.59
+
+### Patch Changes
+
+- Updated dependencies [[`a64277c`](https://github.com/generaltranslation/gt/commit/a64277cd1d633899f4ac0977b389ccfa00660512)]:
+  - gtx-cli@2.5.31
+
+## 1.0.58
+
+### Patch Changes
+
+- Updated dependencies [[`443ee73`](https://github.com/generaltranslation/gt/commit/443ee73395a514eec448b03810cb871062bf5b2a)]:
+  - gtx-cli@2.5.30
+
+## 1.0.57
+
+### Patch Changes
+
+- Updated dependencies [[`48b2771`](https://github.com/generaltranslation/gt/commit/48b2771aa7666e8f94f485f86acf32525d26bd3f)]:
+  - gtx-cli@2.5.29
+
+## 1.0.56
+
+### Patch Changes
+
+- Updated dependencies [[`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8), [`22ef3ec`](https://github.com/generaltranslation/gt/commit/22ef3ecb9c2a41a5d982684cc2d45834be11ae5b), [`8ba1edf`](https://github.com/generaltranslation/gt/commit/8ba1edfa838fe9209ae6fa5fe154e7c991be9aa6)]:
+  - gtx-cli@2.5.28
+
+## 1.0.55
+
+### Patch Changes
+
+- Updated dependencies [[`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd)]:
+  - gtx-cli@2.5.27
+
+## 1.0.54
+
+### Patch Changes
+
+- Updated dependencies [[`5624f1c`](https://github.com/generaltranslation/gt/commit/5624f1c074ff9cb2065ed85dbb30fae24939f53e)]:
+  - gtx-cli@2.5.26
+
+## 1.0.53
+
+### Patch Changes
+
+- Updated dependencies [[`28bd6d5`](https://github.com/generaltranslation/gt/commit/28bd6d5f1ed50658da2e3adc5b59a40804b00b02)]:
+  - gtx-cli@2.5.25
+
+## 1.0.52
+
+### Patch Changes
+
+- Updated dependencies [[`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - gtx-cli@2.5.24
+
 ## 1.0.51
 
 ### Patch Changes

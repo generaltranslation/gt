@@ -10,6 +10,7 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $context?: string;
   $id?: string;
   $_hash?: string;
+  $maxChars?: number;
   /** @deprecated use {@link EncodedTranslationOptions} instead */
   $_source?: string;
 };
@@ -24,6 +25,7 @@ export type InlineResolveOptions = BaseTranslationOptions;
 export type EncodedTranslationOptions = BaseTranslationOptions & {
   $context?: string;
   $id?: string;
+  $maxChars?: number;
   $_hash: string;
   $_source: string;
 };

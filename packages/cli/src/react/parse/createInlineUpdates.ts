@@ -93,16 +93,21 @@ export async function createInlineUpdates(
   // Post-process to add a hash to each update
   await Promise.all(
     updates.map(async (update) => {
-      const context = update.metadata.context;
       const hash = hashSource({
         source: update.source,
-        ...(context && { context }),
+        ...(update.metadata.context && { context: update.metadata.context }),
         ...(update.metadata.id && { id: update.metadata.id }),
+        ...(update.metadata.maxChars != null && {
+          maxChars: update.metadata.maxChars,
+        }),
         dataFormat: update.dataFormat,
       });
       update.metadata.hash = hash;
     })
   );
+
+  mergeUpdatesByHash(updates);
+
   return { updates, errors, warnings: [...warnings] };
 }
 
@@ -112,4 +117,43 @@ export async function createInlineUpdates(
  */
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
+}
+
+export function mergeUpdatesByHash(updates: Updates): void {
+  const mergedByHash = new Map<string, (typeof updates)[number]>();
+  const noHashUpdates: (typeof updates)[number][] = [];
+
+  for (const update of updates) {
+    const hash = update.metadata.hash;
+    if (!hash) {
+      noHashUpdates.push(update);
+      continue;
+    }
+
+    const existing = mergedByHash.get(hash);
+    if (!existing) {
+      mergedByHash.set(hash, update);
+      continue;
+    }
+
+    const existingPaths = Array.isArray(existing.metadata.filePaths)
+      ? existing.metadata.filePaths.slice()
+      : [];
+    const newPaths = Array.isArray(update.metadata.filePaths)
+      ? update.metadata.filePaths
+      : [];
+
+    for (const p of newPaths) {
+      if (!existingPaths.includes(p)) {
+        existingPaths.push(p);
+      }
+    }
+
+    if (existingPaths.length) {
+      existing.metadata.filePaths = existingPaths;
+    }
+  }
+
+  const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];
+  updates.splice(0, updates.length, ...mergedUpdates);
 }

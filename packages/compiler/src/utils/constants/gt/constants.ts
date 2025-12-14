@@ -119,6 +119,7 @@ export const PLURAL_FORMS = new Set([
 export enum USEGT_CALLBACK_OPTIONS {
   $id = '$id',
   $context = '$context',
+  $maxChars = '$maxChars',
   $_hash = '$_hash',
 }
 

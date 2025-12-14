@@ -20,7 +20,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     environment:
-      name: "release"
+      name: 'release'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -32,8 +32,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -54,7 +59,7 @@ jobs:
         uses: changesets/action@v1
         with:
           publish: pnpm run release
-          commit: "[ci] release"
-          title: "[ci] release"
+          commit: '[ci] release'
+          title: '[ci] release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

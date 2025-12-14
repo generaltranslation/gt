@@ -4,6 +4,7 @@ import { formatMessage } from './utils/formatMessage';
 import { extractVariables } from '../utils/extractVariables';
 import { interpolationFailureWarning } from '../logs/warnings';
 import { VAR_IDENTIFIER } from 'generaltranslation/internal';
+import { formatCutoff } from 'generaltranslation';
 
 /**
  * A fallback function for the gt() function that decodes and interpolates.
@@ -42,10 +43,15 @@ export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
 
   try {
     // Interpolate the message
-    return formatMessage(encodedMsg, {
+    const interpolatedMessage = formatMessage(encodedMsg, {
       ...variables,
       [VAR_IDENTIFIER]: 'other',
-    }) as T extends string ? string : T;
+    });
+    // Apply cutoff formatting
+    const cutoffMessage = formatCutoff(interpolatedMessage, {
+      maxChars: options.$maxChars,
+    });
+    return cutoffMessage as T extends string ? string : T;
   } catch {
     // Fallback to decodeMsg
     logger.warn(interpolationFailureWarning);

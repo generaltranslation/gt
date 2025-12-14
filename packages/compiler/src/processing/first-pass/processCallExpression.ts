@@ -132,15 +132,15 @@ function handleUseGTCallback(
   }
 
   // Track the function call
-  registerUseGTCallback(
+  registerUseGTCallback({
     identifier,
     state,
-    useGTCallbackParams.content ?? '', // content will only be undefined if it is a declareStatic function invocation
-    // Todo: update this logic to store a flag to skip injection on the second pass
-    useGTCallbackParams.context,
-    useGTCallbackParams.id,
-    useGTCallbackParams.hash
-  );
+    content: useGTCallbackParams.content!,
+    context: useGTCallbackParams.context,
+    id: useGTCallbackParams.id,
+    maxChars: useGTCallbackParams.maxChars,
+    hash: useGTCallbackParams.hash,
+  });
 }
 
 /**
@@ -160,7 +160,10 @@ function handleUseTranslationsCallback(
   }
 
   // Track the function call
-  regsiterUseTranslationsCallback(identifier, state);
+  regsiterUseTranslationsCallback({
+    identifier,
+    state,
+  });
 }
 
 /**
@@ -181,7 +184,10 @@ function handleUseMessagesCallback(
   }
 
   // Track the function call
-  registerUseMessagesCallback(identifier, state);
+  registerUseMessagesCallback({
+    identifier,
+    state,
+  });
 }
 
 /**
@@ -237,7 +243,7 @@ function handleReactInvocation(
   }
 
   // Validate the arguments
-  const { errors, _hash, id, context, children } =
+  const { errors, _hash, id, context, children, maxChars } =
     validateTranslationComponentArgs(callExpr, canonicalName, state);
 
   if (errors.length > 0) {
@@ -252,6 +258,7 @@ function handleReactInvocation(
       source: children!,
       ...(context && { context }),
       ...(id && { id }),
+      ...(maxChars != null && { maxChars }),
       dataFormat: 'JSX',
     });
 

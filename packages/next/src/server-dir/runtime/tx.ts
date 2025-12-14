@@ -1,4 +1,3 @@
-import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
@@ -23,6 +22,7 @@ import {
  * @param {Object} [options] - Translation options.
  * @param {string} [options.locale] - The target locale for translation. Defaults to the current locale if not provided.
  * @param {string} [options.context] - Additional context for the translation process, which may influence the translation's outcome.
+ * @param {number} [options.maxChars] - The maximum number of characters to translate.
  * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
  * @param {Object} [options.variableOptions] - Options for formatting numbers and dates using `Intl.NumberFormat` or `Intl.DateTimeFormat`.
  *
@@ -49,7 +49,12 @@ export default async function tx(
   if (!message || typeof message !== 'string') return '';
 
   // Compatibility with different options
-  const { $locale, $context: context, ...variables } = options;
+  const {
+    $locale,
+    $context: context,
+    $maxChars: maxChars,
+    ...variables
+  } = options;
 
   // ----- SET UP ----- //
 
@@ -57,12 +62,13 @@ export default async function tx(
   const locale = $locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
+  const gt = I18NConfig.getGTClass();
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
   const renderContent = (content: string, locales: string[]) => {
     const declaredVars = extractVars(message);
-    return formatMessage(
+    const formattedMessage = gt.formatMessage(
       content !== message ? condenseVars(content) : content,
       {
         locales,
@@ -73,6 +79,11 @@ export default async function tx(
         },
       }
     );
+    const cutoffMessage = gt.formatCutoff(formattedMessage, {
+      locales,
+      maxChars,
+    });
+    return cutoffMessage;
   };
 
   // ----- CHECK IF TRANSLATION REQUIRED ----- //
@@ -84,6 +95,7 @@ export default async function tx(
   const hash = hashSource({
     source: indexVars(message),
     ...(context && { context }),
+    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: 'ICU',
   });
 
@@ -105,7 +117,7 @@ export default async function tx(
     const target = (await I18NConfig.translateIcu({
       source: indexVars(message),
       targetLocale: locale,
-      options: { ...variables, hash, context },
+      options: { ...variables, hash, context, maxChars },
     })) as string;
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {

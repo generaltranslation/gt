@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
@@ -58,6 +58,7 @@ function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
+  const maxChars = options?.$maxChars;
 
   const {
     translations,
@@ -100,11 +101,19 @@ function T({
     const hash: string = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
+      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
     return [childrenAsObjects, hash];
-  }, [taggedChildren, context, id, translationRequired, translationEntry]);
+  }, [
+    taggedChildren,
+    context,
+    id,
+    maxChars,
+    translationRequired,
+    translationEntry,
+  ]);
 
   // get translation entry on hash
   if (typeof translationEntry === 'undefined') {
@@ -167,6 +176,7 @@ function T({
           id,
           hash,
           context,
+          ...(maxChars != null && { maxChars }),
         },
       });
       if (!translatedChildren) return renderDefault();
@@ -188,6 +198,7 @@ function T({
           id,
           hash,
           context,
+          maxChars,
         ],
         () => getTranslationPromise()
       )

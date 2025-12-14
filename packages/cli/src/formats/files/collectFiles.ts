@@ -28,11 +28,7 @@ export async function collectFiles(
       library
     );
     if (updates.length > 0) {
-      if (
-        !options.dryRun &&
-        !settings.publish &&
-        !settings.files?.placeholderPaths.gt
-      ) {
+      if (!settings.publish && !settings.files?.placeholderPaths.gt) {
         logErrorAndExit(invalidConfigurationError);
       }
       // Convert updates to a file object
@@ -58,7 +54,9 @@ export async function collectFiles(
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
         fileId: TEMPLATE_FILE_ID,
-        versionId: hashStringSync(JSON.stringify(fileData)),
+        versionId: hashStringSync(
+          JSON.stringify({ data: fileData, metadata: fileMetadata })
+        ),
       } satisfies FileToUpload);
     }
   }

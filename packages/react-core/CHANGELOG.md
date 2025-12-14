@@ -1,5 +1,36 @@
 # @generaltranslation/react-core
 
+## 1.3.2
+
+### Patch Changes
+
+- Updated dependencies [[`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8)]:
+  - generaltranslation@8.1.3
+  - gt-i18n@0.2.2
+  - @generaltranslation/supported-locales@2.0.33
+
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd)]:
+  - generaltranslation@8.1.2
+  - gt-i18n@0.2.1
+  - @generaltranslation/supported-locales@2.0.32
+
+## 1.3.0
+
+### Minor Changes
+
+- [#859](https://github.com/generaltranslation/gt/pull/859) [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: max chars
+
+### Patch Changes
+
+- Updated dependencies [[`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab), [`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - gt-i18n@0.2.0
+  - generaltranslation@8.1.1
+  - @generaltranslation/supported-locales@2.0.31
+
 ## 1.2.7
 
 ### Patch Changes

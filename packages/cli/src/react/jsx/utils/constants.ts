@@ -35,13 +35,23 @@ export const VARIABLE_COMPONENTS = [
   STATIC_COMPONENT,
 ];
 
-export const GT_ATTRIBUTES_WITH_SUGAR = ['$id', '$context'];
+export const GT_ATTRIBUTES_WITH_SUGAR = [
+  '$id',
+  '$context',
+  '$maxChars',
+] as const;
 
-export const GT_ATTRIBUTES = ['id', 'context', ...GT_ATTRIBUTES_WITH_SUGAR];
+export const GT_ATTRIBUTES = [
+  'id',
+  'context',
+  'maxChars',
+  ...GT_ATTRIBUTES_WITH_SUGAR,
+] as const;
 
 export function mapAttributeName(attrName: string): string {
   if (attrName === '$id') return 'id';
   if (attrName === '$context') return 'context';
+  if (attrName === '$maxChars') return 'maxChars';
   return attrName;
 }
 

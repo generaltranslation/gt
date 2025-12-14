@@ -77,7 +77,7 @@ export default function useCreateInternalUseTranslationsFunction(
         try {
           // (1) Try to format message
           const declaredVars = extractVars(fallback || '');
-          return gt.formatMessage(
+          const formattedMessage = gt.formatMessage(
             Object.keys(declaredVars).length ? condenseVars(message) : message,
             {
               locales,
@@ -88,6 +88,10 @@ export default function useCreateInternalUseTranslationsFunction(
               },
             }
           );
+          const cutoffMessage = gt.formatCutoff(formattedMessage, {
+            maxChars: metadata?.$maxChars ?? options.$maxChars,
+          });
+          return cutoffMessage;
         } catch (error) {
           if (environment === 'production') {
             console.warn(
@@ -115,7 +119,10 @@ export default function useCreateInternalUseTranslationsFunction(
           }
 
           // (3) Fallback to original message (unformatted)
-          return message; // fallback to original message (unformatted)}
+          const cutoffMessage = gt.formatCutoff(message, {
+            maxChars: metadata?.$maxChars ?? options.$maxChars,
+          });
+          return cutoffMessage; // fallback to original message (unformatted)}
         }
       };
 
@@ -143,6 +150,9 @@ export default function useCreateInternalUseTranslationsFunction(
         hashSource({
           source: indexVars(entry),
           ...(metadata?.$context && { context: metadata.$context }),
+          ...(metadata?.$maxChars != null && {
+            maxChars: Math.abs(metadata.$maxChars),
+          }),
           id,
           dataFormat: 'ICU',
         });
@@ -178,6 +188,9 @@ export default function useCreateInternalUseTranslationsFunction(
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),
+          ...(metadata?.$maxChars != null && {
+            maxChars: metadata.$maxChars,
+          }),
           id,
           hash: hash || getHash(),
         },

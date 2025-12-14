@@ -1,5 +1,33 @@
 # gt-i18n
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8)]:
+  - generaltranslation@8.1.3
+  - @generaltranslation/supported-locales@2.0.33
+
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd)]:
+  - generaltranslation@8.1.2
+  - @generaltranslation/supported-locales@2.0.32
+
+## 0.2.0
+
+### Minor Changes
+
+- [#859](https://github.com/generaltranslation/gt/pull/859) [`b585745`](https://github.com/generaltranslation/gt/commit/b585745b64e005a977b837cd1f59be6d61c681ab) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: max char support
+
+### Patch Changes
+
+- Updated dependencies [[`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - generaltranslation@8.1.1
+  - @generaltranslation/supported-locales@2.0.31
+
 ## 0.1.3
 
 ### Patch Changes

@@ -1,5 +1,78 @@
 # gtx-cli
 
+## 2.5.33
+
+### Patch Changes
+
+- [#901](https://github.com/generaltranslation/gt/pull/901) [`6320663`](https://github.com/generaltranslation/gt/commit/6320663e032aa4b8a337e08423a5be7215260e87) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: release error
+
+## 2.5.32
+
+### Patch Changes
+
+- [#899](https://github.com/generaltranslation/gt/pull/899) [`94edf07`](https://github.com/generaltranslation/gt/commit/94edf07fb5a05130da967ffb1e76577667e9dff0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: bin release
+
+## 2.5.31
+
+### Patch Changes
+
+- [#895](https://github.com/generaltranslation/gt/pull/895) [`a64277c`](https://github.com/generaltranslation/gt/commit/a64277cd1d633899f4ac0977b389ccfa00660512) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for cli execution independent of package resolution
+
+## 2.5.30
+
+### Patch Changes
+
+- [#896](https://github.com/generaltranslation/gt/pull/896) [`443ee73`](https://github.com/generaltranslation/gt/commit/443ee73395a514eec448b03810cb871062bf5b2a) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix dry-run error conditions
+
+## 2.5.29
+
+### Patch Changes
+
+- [#892](https://github.com/generaltranslation/gt/pull/892) [`48b2771`](https://github.com/generaltranslation/gt/commit/48b2771aa7666e8f94f485f86acf32525d26bd3f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fixing handling of OpenAPI paths for Mintlify
+
+## 2.5.28
+
+### Patch Changes
+
+- [#883](https://github.com/generaltranslation/gt/pull/883) [`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Send file paths in translation metadata
+
+- [#885](https://github.com/generaltranslation/gt/pull/885) [`22ef3ec`](https://github.com/generaltranslation/gt/commit/22ef3ecb9c2a41a5d982684cc2d45834be11ae5b) Thanks [@brian-lou](https://github.com/brian-lou)! - Add shared flags to CLI save-local command
+
+- [#886](https://github.com/generaltranslation/gt/pull/886) [`8ba1edf`](https://github.com/generaltranslation/gt/commit/8ba1edfa838fe9209ae6fa5fe154e7c991be9aa6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify anchor IDs containing escaped characters
+
+- Updated dependencies [[`e113d8d`](https://github.com/generaltranslation/gt/commit/e113d8d8fb5e37f45a4aa77544e8f4666519bfe8)]:
+  - generaltranslation@8.1.3
+
+## 2.5.27
+
+### Patch Changes
+
+- [#880](https://github.com/generaltranslation/gt/pull/880) [`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Hotfix: sending format metadata to the API during build time translation
+
+- Updated dependencies [[`3dc7b64`](https://github.com/generaltranslation/gt/commit/3dc7b6460cd05ddcb656a247602f4f50b06312fd)]:
+  - generaltranslation@8.1.2
+
+## 2.5.26
+
+### Patch Changes
+
+- [#878](https://github.com/generaltranslation/gt/pull/878) [`5624f1c`](https://github.com/generaltranslation/gt/commit/5624f1c074ff9cb2065ed85dbb30fae24939f53e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Updating Mintlify preset to include `experimentalSort`
+
+## 2.5.25
+
+### Patch Changes
+
+- [#876](https://github.com/generaltranslation/gt/pull/876) [`28bd6d5`](https://github.com/generaltranslation/gt/commit/28bd6d5f1ed50658da2e3adc5b59a40804b00b02) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding experimental alphabetical sort for JSONs with locales as keys
+
+## 2.5.24
+
+### Patch Changes
+
+- [#860](https://github.com/generaltranslation/gt/pull/860) [`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: support for max char
+
+- Updated dependencies [[`37bac4c`](https://github.com/generaltranslation/gt/commit/37bac4ce11689a2f729efbcb2e052205447a7f71)]:
+  - generaltranslation@8.1.1
+
 ## 2.5.23
 
 ### Patch Changes

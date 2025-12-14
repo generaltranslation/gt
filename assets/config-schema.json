@@ -377,8 +377,8 @@
                         },
                         "experimentalSort": {
                           "type": "string",
-                          "enum": ["locales"],
-                          "description": "Optional sorting behavior for array type. When set to 'locale', items are ordered to match your locales array."
+                          "enum": ["locales", "localesAlphabetical"],
+                          "description": "Optional sorting behavior for array type. When set to 'locales', items are ordered to match your locales array. When set to 'localesAlphabetical', the default locale stays first and the remaining locales are sorted alphabetically by locale code."
                         },
                         "localeProperty": {
                           "type": "string",

@@ -136,6 +136,9 @@ export function useCreateInternalUseTranslationsObjFunction(
                   targetLocale: locale,
                   metadata: {
                     ...(metadata?.$context && { context: metadata.$context }),
+                    ...(metadata?.$maxChars != null && {
+                      maxChars: metadata.$maxChars,
+                    }),
                     id,
                     hash: metadata?.$_hash,
                   },

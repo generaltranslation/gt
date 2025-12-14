@@ -134,7 +134,7 @@ export async function getTranslations(id?: string): Promise<
       try {
         // (1) Try to format message
         const declaredVars = extractVars(fallback || '');
-        return gt.formatMessage(
+        const formattedMessage = gt.formatMessage(
           Object.keys(declaredVars).length ? condenseVars(message) : message,
           {
             locales,
@@ -145,6 +145,11 @@ export async function getTranslations(id?: string): Promise<
             },
           }
         );
+        const cutoffMessage = gt.formatCutoff(formattedMessage, {
+          locales,
+          maxChars: metadata?.$maxChars ?? options.$maxChars,
+        });
+        return cutoffMessage;
       } catch (error) {
         if (process.env.NODE_ENV === 'production') {
           console.warn(
@@ -172,7 +177,11 @@ export async function getTranslations(id?: string): Promise<
         }
 
         // (3) Fallback to original message (unformatted)
-        return message; // fallback to original message (unformatted)}
+        const cutoffMessage = gt.formatCutoff(message, {
+          locales,
+          maxChars: metadata?.$maxChars ?? options.$maxChars,
+        });
+        return cutoffMessage; // fallback to original message (unformatted)}
       }
     };
 
@@ -214,6 +223,9 @@ export async function getTranslations(id?: string): Promise<
       const hash = hashSource({
         source: indexVars(entry),
         ...(metadata?.$context && { context: metadata.$context }),
+        ...(metadata?.$maxChars != null && {
+          maxChars: Math.abs(metadata.$maxChars),
+        }),
         id,
         dataFormat: 'ICU',
       });
@@ -255,6 +267,7 @@ export async function getTranslations(id?: string): Promise<
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
+          ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
           id,
           hash: getHash(),
         },
@@ -369,6 +382,7 @@ export async function getTranslations(id?: string): Promise<
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
+          ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
           id,
           hash: metadata?.$_hash,
         },

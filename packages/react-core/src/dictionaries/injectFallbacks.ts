@@ -16,7 +16,12 @@ export function injectFallbacks(
   translationsDictionary: Dictionary,
   missingTranslations: {
     source: string;
-    metadata: { $id: string; $context?: string; $_hash: string };
+    metadata: {
+      $id: string;
+      $context?: string;
+      $maxChars?: number;
+      $_hash: string;
+    };
   }[],
   prefixToRemove: string = ''
 ) {

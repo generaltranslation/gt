@@ -18,6 +18,7 @@ import {
   warnAsyncUseGT,
   warnSyncGetGT,
   warnInvalidIcuSync,
+  warnInvalidMaxCharsSync,
 } from '../../../console/index.js';
 import generateModule from '@babel/generator';
 import traverseModule from '@babel/traverse';
@@ -26,12 +27,14 @@ const generate = generateModule.default || generateModule;
 const traverse = traverseModule.default || traverseModule;
 
 import fs from 'node:fs';
+import pathModule from 'node:path';
 import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
 import { handleStaticExpression } from './parseDeclareStatic.js';
 import { nodeToStrings } from './parseString.js';
+import { isNumberLiteral } from './isNumberLiteral.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -81,106 +84,29 @@ function processTranslationCall(
     tPath.parent.arguments.length > 0
   ) {
     const arg = tPath.parent.arguments[0];
-    if (t.isExpression(arg)) {
-      if (!ignoreDynamicContent) {
-        const result = handleStaticExpression(
-          arg,
-          tPath,
-          file,
-          parsingOptions,
-          errors
-        );
-        if (result) {
-          const strings = nodeToStrings(result);
-          if (!ignoreInvalidIcu) {
-            for (const string of strings) {
-              const { isValid, error } = isValidIcu(string);
-              if (!isValid) {
-                warnings.add(
-                  warnInvalidIcuSync(
-                    file,
-                    string,
-                    error ?? 'Unknown error',
-                    `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-                  )
-                );
-                return;
-              }
-            }
-          }
-
-          // get metadata and id from options
-          const options = tPath.parent.arguments[1];
-          const metadata: Record<string, string> = {};
-          if (options && options.type === 'ObjectExpression') {
-            options.properties.forEach((prop) => {
-              if (
-                prop.type === 'ObjectProperty' &&
-                prop.key.type === 'Identifier'
-              ) {
-                const attribute = prop.key.name;
-                if (
-                  GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
-                  t.isExpression(prop.value)
-                ) {
-                  const result = isStaticExpression(prop.value);
-                  if (!result.isStatic) {
-                    errors.push(
-                      warnNonStaticExpressionSync(
-                        file,
-                        attribute,
-                        generate(prop.value).code,
-                        `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-                      )
-                    );
-                  }
-                  if (
-                    result.isStatic &&
-                    result.value &&
-                    !ignoreAdditionalData
-                  ) {
-                    // Map $id and $context to id and context
-                    metadata[mapAttributeName(attribute)] = result.value;
-                  }
-                }
-              }
-            });
-          }
+    // if (t.isExpression(arg)) {
+    if (
+      !ignoreDynamicContent &&
+      t.isExpression(arg) &&
+      !isStaticExpression(arg).isStatic
+    ) {
+      const result = handleStaticExpression(
+        arg,
+        tPath,
+        file,
+        parsingOptions,
+        errors
+      );
+      if (result) {
+        const strings = nodeToStrings(result);
+        if (!ignoreInvalidIcu) {
           for (const string of strings) {
-            updates.push({
-              dataFormat: 'ICU',
-              source: string,
-              metadata: { ...metadata },
-            });
-          }
-          return;
-        }
-        // Nothing returned, push error
-        errors.push(
-          warnNonStringSync(
-            file,
-            generate(arg).code,
-            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-          )
-        );
-      } else {
-        // ignore dynamic content flag is triggered, check strings are valid ICU
-
-        if (
-          arg.type === 'StringLiteral' ||
-          (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
-        ) {
-          const source =
-            arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
-
-          // Validate is ICU
-          if (!ignoreInvalidIcu) {
-            const { isValid, error } = isValidIcu(source);
+            const { isValid, error } = isValidIcu(string);
             if (!isValid) {
               warnings.add(
                 warnInvalidIcuSync(
                   file,
-                  source,
+                  string,
                   error ?? 'Unknown error',
                   `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
                 )
@@ -188,74 +114,180 @@ function processTranslationCall(
               return;
             }
           }
+        }
 
-          // get metadata and id from options
-          const options = tPath.parent.arguments[1];
-          const metadata: Record<string, string> = {};
-          if (options && options.type === 'ObjectExpression') {
-            options.properties.forEach((prop) => {
+        // get metadata and id from options
+        const options = tPath.parent.arguments[1];
+        const metadata: Record<string, string> = {};
+        if (options && options.type === 'ObjectExpression') {
+          options.properties.forEach((prop) => {
+            if (
+              prop.type === 'ObjectProperty' &&
+              prop.key.type === 'Identifier'
+            ) {
+              const attribute = prop.key.name;
               if (
-                prop.type === 'ObjectProperty' &&
-                prop.key.type === 'Identifier'
+                GT_ATTRIBUTES_WITH_SUGAR.includes(
+                  attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
+                ) &&
+                t.isExpression(prop.value)
               ) {
-                const attribute = prop.key.name;
-                if (
-                  GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
-                  t.isExpression(prop.value)
-                ) {
-                  const result = isStaticExpression(prop.value);
-                  if (!result.isStatic) {
+                const result = isStaticExpression(prop.value);
+                if (!result.isStatic) {
+                  errors.push(
+                    warnNonStaticExpressionSync(
+                      file,
+                      attribute,
+                      generate(prop.value).code,
+                      `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                    )
+                  );
+                }
+                if (result.isStatic && result.value && !ignoreAdditionalData) {
+                  // Map $id and $context to id and context
+                  metadata[mapAttributeName(attribute)] = result.value;
+                }
+              }
+            }
+          });
+        }
+        for (const string of strings) {
+          updates.push({
+            dataFormat: 'ICU',
+            source: string,
+            metadata: { ...metadata },
+          });
+        }
+        return;
+      }
+      // Nothing returned, push error
+      errors.push(
+        warnNonStringSync(
+          file,
+          generate(arg).code,
+          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+        )
+      );
+      // ignore dynamic content flag is triggered, check strings are valid ICU
+    } else if (
+      arg.type === 'StringLiteral' ||
+      (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
+    ) {
+      const source =
+        arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
+
+      // Validate is ICU
+      if (!ignoreInvalidIcu) {
+        const { isValid, error } = isValidIcu(source);
+        if (!isValid) {
+          warnings.add(
+            warnInvalidIcuSync(
+              file,
+              source,
+              error ?? 'Unknown error',
+              `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+            )
+          );
+          return;
+        }
+      }
+
+      // get metadata and id from options
+      const options = tPath.parent.arguments[1];
+      const metadata: Record<string, string | number | string[]> = {};
+      if (options && options.type === 'ObjectExpression') {
+        options.properties.forEach((prop) => {
+          if (
+            prop.type === 'ObjectProperty' &&
+            prop.key.type === 'Identifier'
+          ) {
+            const attribute = prop.key.name;
+            if (
+              GT_ATTRIBUTES_WITH_SUGAR.includes(
+                attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
+              ) &&
+              t.isExpression(prop.value)
+            ) {
+              const result = isStaticExpression(prop.value);
+              if (!result.isStatic) {
+                errors.push(
+                  warnNonStaticExpressionSync(
+                    file,
+                    attribute,
+                    generate(prop.value).code,
+                    `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                  )
+                );
+              }
+              if (result.isStatic && result.value && !ignoreAdditionalData) {
+                const mappedKey = mapAttributeName(attribute);
+                if (attribute === '$maxChars') {
+                  if (
+                    (typeof result.value === 'string' &&
+                      (isNaN(Number(result.value)) ||
+                        !isNumberLiteral(prop.value))) ||
+                    !Number.isInteger(Number(result.value))
+                  ) {
                     errors.push(
-                      warnNonStaticExpressionSync(
+                      warnInvalidMaxCharsSync(
                         file,
-                        attribute,
-                        generate(prop.value).code,
+                        generate(prop).code,
                         `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
                       )
                     );
+                  } else if (typeof result.value === 'string') {
+                    // Add the maxChars value to the metadata
+                    metadata[mappedKey] = Math.abs(Number(result.value));
                   }
-                  if (
-                    result.isStatic &&
-                    result.value &&
-                    !ignoreAdditionalData
-                  ) {
-                    // Map $id and $context to id and context
-                    metadata[mapAttributeName(attribute)] = result.value;
-                  }
+                } else {
+                  // Add the $context or $id or other attributes value to the metadata
+                  metadata[mappedKey] = result.value;
                 }
               }
-            });
+            }
           }
+        });
+      }
 
-          updates.push({
-            dataFormat: 'ICU',
-            source,
-            metadata,
-          });
-        } else if (t.isTemplateLiteral(arg)) {
-          // warn if template literal
-          if (!ignoreDynamicContent) {
-            errors.push(
-              warnTemplateLiteralSync(
-                file,
-                generate(arg).code,
-                `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-              )
-            );
-          }
-        } else {
-          if (!ignoreDynamicContent) {
-            errors.push(
-              warnNonStringSync(
-                file,
-                generate(arg).code,
-                `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-              )
-            );
+      const relativeFilepath = pathModule.relative(process.cwd(), file);
+      if (relativeFilepath) {
+        if (!metadata.filePaths) {
+          metadata.filePaths = [relativeFilepath];
+        } else if (Array.isArray(metadata.filePaths)) {
+          if (!metadata.filePaths.includes(relativeFilepath)) {
+            metadata.filePaths.push(relativeFilepath);
           }
         }
       }
+
+      updates.push({
+        dataFormat: 'ICU',
+        source,
+        metadata,
+      });
+    } else if (t.isTemplateLiteral(arg)) {
+      // warn if template literal
+      if (!ignoreDynamicContent) {
+        errors.push(
+          warnTemplateLiteralSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      }
+    } else {
+      if (!ignoreDynamicContent) {
+        errors.push(
+          warnNonStringSync(
+            file,
+            generate(arg).code,
+            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+          )
+        );
+      }
     }
+    // }
   }
 }
 

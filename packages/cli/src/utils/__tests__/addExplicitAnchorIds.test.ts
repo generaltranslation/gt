@@ -713,6 +713,26 @@ This is just an example
       expect(second.hasChanges).toBe(false);
       expect(second.content).toBe(first.content);
     });
+
+    it('wraps headings containing HTML entities in Mintlify mode', () => {
+      const sourceContent = `## Register the app`;
+      const translatedContent = `## Configurer l&#39;application`;
+      const sourceHeadingMap = extractHeadingInfo(sourceContent);
+      const settings = {
+        options: { experimentalAddHeaderAnchorIds: 'mintlify' as const },
+      };
+
+      const result = addExplicitAnchorIds(
+        translatedContent,
+        sourceHeadingMap,
+        settings as any
+      );
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.content).toContain(
+        '<div id="register-the-app">\n  ## Configurer l&#39;application\n</div>'
+      );
+    });
   });
 
   describe('Header Count Validation', () => {
