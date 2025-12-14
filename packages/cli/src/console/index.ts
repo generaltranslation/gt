@@ -270,7 +270,7 @@ export const warnDeclareStaticNoResultsSync = (
   withLocation(
     file,
     withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic cannot use undefined values or looped calls to construct its result.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );
