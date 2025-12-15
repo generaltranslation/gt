@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.35
+
+### Patch Changes
+
+- [#905](https://github.com/generaltranslation/gt/pull/905) [`e73bf82`](https://github.com/generaltranslation/gt/commit/e73bf820422771a59408eb643e22ef7f99682b9f) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix CLI failure handling
+
 ## 2.5.34
 
 ### Patch Changes
