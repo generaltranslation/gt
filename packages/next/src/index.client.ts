@@ -23,6 +23,9 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
   mFallback,
   gtFallback,
 } from 'gt-react/client';
@@ -72,6 +75,9 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
   mFallback,
   gtFallback,
 };

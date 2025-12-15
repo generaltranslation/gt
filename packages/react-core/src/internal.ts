@@ -33,8 +33,11 @@ import { injectFallbacks } from './dictionaries/injectFallbacks';
 import { injectAndMerge } from './dictionaries/injectAndMerge';
 import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
+import { Static } from './variables/Static';
 
 export * from 'gt-i18n/fallbacks';
+export { declareStatic, declareVar, decodeVars } from 'gt-i18n';
+
 export {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -68,4 +71,5 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
+  Static,
 };

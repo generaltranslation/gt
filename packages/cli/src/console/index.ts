@@ -6,6 +6,7 @@ import {
   colorizeLine,
   colorizeFunctionName,
 } from './colors.js';
+import { formatCodeClamp } from './formatting.js';
 
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
@@ -14,6 +15,8 @@ const withWillErrorInNextVersion = (message: string): string =>
 const withStaticError = (message: string): string =>
   `<Static> rules violation: ${message}`;
 
+const withDeclareStaticError = (message: string): string =>
+  `declareStatic() rules violation: ${message}`;
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
@@ -185,16 +188,6 @@ export const withLocation = (
 ): string =>
   `${colorizeFilepath(file)}${location ? ` (${colorizeLine(location)})` : ''}: ${message}`;
 
-export const warnInvalidStaticChildSync = (
-  file: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    'Found invalid <Static> invocation. Children must be an expression container with a function invocation. Callee must be a single identifier. (Example: <T> <Static> {getSubject()} </Static> </T>)',
-    location
-  );
-
 export const warnFunctionNotFoundSync = (
   file: string,
   functionName: string,
@@ -203,6 +196,17 @@ export const warnFunctionNotFoundSync = (
   withLocation(
     file,
     `Function ${colorizeFunctionName(functionName)} definition could not be resolved. This might affect translation resolution for this ${colorizeComponent('<T>')} component.`,
+    location
+  );
+
+export const warnInvalidDeclareVarNameSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid declareVar() $name tag. Must be a static expression. Received: ${colorizeContent(value)}.`,
     location
   );
 
@@ -241,6 +245,32 @@ export const warnRecursiveFunctionCallSync = (
     file,
     withStaticError(
       `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function cannot use recursive calls to construct its result.`
+    ),
+    location
+  );
+
+export const warnDeclareStaticNotWrappedSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeclareStaticError(
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    ),
+    location
+  );
+
+export const warnDeclareStaticNoResultsSync = (
+  file: string,
+  functionName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeclareStaticError(
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );

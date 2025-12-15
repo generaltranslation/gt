@@ -1,9 +1,4 @@
-import {
-  Options,
-  GenerateSourceOptions,
-  Updates,
-  TranslateFlags,
-} from '../types/index.js';
+import { Updates, TranslateFlags } from '../types/index.js';
 import fs from 'fs';
 import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';

@@ -1,5 +1,26 @@
 # gtx-cli
 
+## 2.5.36
+
+### Patch Changes
+
+- [#806](https://github.com/generaltranslation/gt/pull/806) [`d59dd40`](https://github.com/generaltranslation/gt/commit/d59dd40e7b042e2bb4e718f17f3b2e764165151f) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - feat: declareStatic()
+
+- Updated dependencies [[`d59dd40`](https://github.com/generaltranslation/gt/commit/d59dd40e7b042e2bb4e718f17f3b2e764165151f)]:
+  - generaltranslation@8.1.4
+
+## 2.5.35
+
+### Patch Changes
+
+- [#905](https://github.com/generaltranslation/gt/pull/905) [`e73bf82`](https://github.com/generaltranslation/gt/commit/e73bf820422771a59408eb643e22ef7f99682b9f) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix CLI failure handling
+
+## 2.5.34
+
+### Patch Changes
+
+- [#904](https://github.com/generaltranslation/gt/pull/904) [`51d412f`](https://github.com/generaltranslation/gt/commit/51d412f503bbb838daaaca47fc8165873ce1857e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Assign `save-local` changes to most recent download
+
 ## 2.5.33
 
 ### Patch Changes

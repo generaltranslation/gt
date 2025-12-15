@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 import { isStaticExpression, isValidIcu } from '../evaluateJsx.js';
 import {
   GT_ATTRIBUTES_WITH_SUGAR,
-  MSG_TRANSLATION_HOOK,
+  MSG_TRANSLATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
   mapAttributeName,
@@ -32,7 +32,10 @@ import { parse } from '@babel/parser';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
+import { handleStaticExpression } from './parseDeclareStatic.js';
+import { nodeToStrings } from './parseString.js';
 import { isNumberLiteral } from './isNumberLiteral.js';
+import { indexVars } from 'generaltranslation/internal';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -74,14 +77,100 @@ function processTranslationCall(
   file: string,
   ignoreAdditionalData: boolean,
   ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean
+  ignoreInvalidIcu: boolean,
+  parsingOptions: ParsingConfigOptions
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
     tPath.parent.arguments.length > 0
   ) {
     const arg = tPath.parent.arguments[0];
+    // if (t.isExpression(arg)) {
     if (
+      !ignoreDynamicContent &&
+      t.isExpression(arg) &&
+      !isStaticExpression(arg).isStatic
+    ) {
+      const result = handleStaticExpression(
+        arg,
+        tPath,
+        file,
+        parsingOptions,
+        errors
+      );
+      if (result) {
+        const strings = nodeToStrings(result).map(indexVars);
+        if (!ignoreInvalidIcu) {
+          for (const string of strings) {
+            const { isValid, error } = isValidIcu(string);
+            if (!isValid) {
+              warnings.add(
+                warnInvalidIcuSync(
+                  file,
+                  string,
+                  error ?? 'Unknown error',
+                  `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+                )
+              );
+              return;
+            }
+          }
+        }
+
+        // get metadata and id from options
+        const options = tPath.parent.arguments[1];
+        const metadata: Record<string, string> = {};
+        if (options && options.type === 'ObjectExpression') {
+          options.properties.forEach((prop) => {
+            if (
+              prop.type === 'ObjectProperty' &&
+              prop.key.type === 'Identifier'
+            ) {
+              const attribute = prop.key.name;
+              if (
+                GT_ATTRIBUTES_WITH_SUGAR.includes(
+                  attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
+                ) &&
+                t.isExpression(prop.value)
+              ) {
+                const result = isStaticExpression(prop.value);
+                if (!result.isStatic) {
+                  errors.push(
+                    warnNonStaticExpressionSync(
+                      file,
+                      attribute,
+                      generate(prop.value).code,
+                      `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                    )
+                  );
+                }
+                if (result.isStatic && result.value && !ignoreAdditionalData) {
+                  // Map $id and $context to id and context
+                  metadata[mapAttributeName(attribute)] = result.value;
+                }
+              }
+            }
+          });
+        }
+        for (const string of strings) {
+          updates.push({
+            dataFormat: 'ICU',
+            source: string,
+            metadata: { ...metadata },
+          });
+        }
+        return;
+      }
+      // Nothing returned, push error
+      errors.push(
+        warnNonStringSync(
+          file,
+          generate(arg).code,
+          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+        )
+      );
+      // ignore dynamic content flag is triggered, check strings are valid ICU
+    } else if (
       arg.type === 'StringLiteral' ||
       (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
     ) {
@@ -131,11 +220,7 @@ function processTranslationCall(
                   )
                 );
               }
-              if (
-                result.isStatic &&
-                result.value != null &&
-                !ignoreAdditionalData
-              ) {
+              if (result.isStatic && result.value && !ignoreAdditionalData) {
                 const mappedKey = mapAttributeName(attribute);
                 if (attribute === '$maxChars') {
                   if (
@@ -203,6 +288,7 @@ function processTranslationCall(
         );
       }
     }
+    // }
   }
 }
 
@@ -229,7 +315,7 @@ function extractParameterName(param: t.Node): string | null {
  * @param visited Set to track already visited variables to prevent infinite loops
  * @returns Array of all variable names that reference the original translation callback
  */
-function resolveVariableAliases(
+export function resolveVariableAliases(
   scope: any,
   variableName: string,
   visited: Set<string> = new Set()
@@ -300,7 +386,8 @@ function handleFunctionCall(
       file,
       ignoreAdditionalData,
       ignoreDynamicContent,
-      ignoreInvalidIcu
+      ignoreInvalidIcu,
+      parsingOptions
     );
   } else if (
     tPath.parent.type === 'CallExpression' &&
@@ -668,7 +755,7 @@ export function parseStrings(
 
   for (const refPath of referencePaths) {
     // Handle msg() calls directly without variable assignment
-    if (originalName === MSG_TRANSLATION_HOOK) {
+    if (originalName === MSG_TRANSLATION_FUNCTION) {
       const ignoreAdditionalData = false;
       const ignoreDynamicContent = false;
       const ignoreInvalidIcu = false;
@@ -686,7 +773,8 @@ export function parseStrings(
           file,
           ignoreAdditionalData,
           ignoreDynamicContent,
-          ignoreInvalidIcu
+          ignoreInvalidIcu,
+          parsingOptions
         );
       }
       continue;

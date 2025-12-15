@@ -15,7 +15,7 @@ import {
   validateUseGTCallback,
   validateUseMessagesCallback,
   validateUseTranslationsCallback,
-} from '../../utils/validation/validateTranslationFunctionCallback';
+} from '../../transform/validation/validateTranslationFunctionCallback';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
 import { regsiterUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
 import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
@@ -125,9 +125,12 @@ function handleUseGTCallback(
   identifier: number
 ) {
   // Check for violations
-  const useGTCallbackParams = validateUseGTCallback(callExpr);
+  const useGTCallbackParams = validateUseGTCallback(callExpr, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
-  if (useGTCallbackParams.errors.length > 0) {
+  if (
+    useGTCallbackParams.errors.length > 0 ||
+    useGTCallbackParams.content === undefined
+  ) {
     return;
   }
 
@@ -135,7 +138,7 @@ function handleUseGTCallback(
   registerUseGTCallback({
     identifier,
     state,
-    content: useGTCallbackParams.content!,
+    content: useGTCallbackParams.content,
     context: useGTCallbackParams.context,
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,

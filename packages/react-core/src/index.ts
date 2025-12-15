@@ -9,7 +9,7 @@ import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
 import DateTime from './variables/DateTime';
-import Static from './variables/Static';
+import { Static } from './variables/Static';
 import Plural from './branches/plurals/Plural';
 import Branch from './branches/Branch';
 import useLocales from './hooks/useLocales';
@@ -34,6 +34,8 @@ import useCreateInternalUseTranslationsFunction from './provider/hooks/translati
 import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
 
 export * from 'gt-i18n/fallbacks';
+
+export { declareStatic, declareVar, decodeVars } from 'gt-i18n';
 
 export {
   Var,

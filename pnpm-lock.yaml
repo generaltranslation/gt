@@ -278,6 +278,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@formatjs/icu-messageformat-parser':
+        specifier: ^2.11.4
+        version: 2.11.4
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
@@ -6548,6 +6551,7 @@ packages:
 
   get-random-values-esm@1.0.2:
     resolution: {integrity: sha512-HMSDTgj1HPFAuZG0FqxzHbYt5JeEGDUeT9r1RLXhS6RZQS8rLRjokgjZ0Pd28CN0lhXlRwfH6eviZqZEJ2kIoA==}
+    deprecated: use crypto.getRandomValues() instead
 
   get-random-values@1.2.2:
     resolution: {integrity: sha512-lMyPjQyl0cNNdDf2oR+IQ/fM3itDvpoHy45Ymo2r0L1EjazeSl13SfbKZs7KtZ/3MDCeueiaJiuOEfKqRTsSgA==}

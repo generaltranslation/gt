@@ -18,6 +18,12 @@ import {
 import { hashSource } from 'generaltranslation/id';
 import { GT } from 'generaltranslation';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
+import {
+  extractVars,
+  indexVars,
+  VAR_IDENTIFIER,
+  condenseVars,
+} from 'generaltranslation/internal';
 
 export default function useCreateInternalUseTranslationsFunction(
   gt: GT,
@@ -70,10 +76,18 @@ export default function useCreateInternalUseTranslationsFunction(
       ) => {
         try {
           // (1) Try to format message
-          const formattedMessage = gt.formatMessage(message, {
-            locales,
-            variables: options,
-          });
+          const declaredVars = extractVars(fallback || '');
+          const formattedMessage = gt.formatMessage(
+            Object.keys(declaredVars).length ? condenseVars(message) : message,
+            {
+              locales,
+              variables: {
+                ...options,
+                ...declaredVars,
+                [VAR_IDENTIFIER]: 'other',
+              },
+            }
+          );
           const cutoffMessage = gt.formatCutoff(formattedMessage, {
             maxChars: metadata?.$maxChars ?? options.$maxChars,
           });
@@ -134,7 +148,7 @@ export default function useCreateInternalUseTranslationsFunction(
       let hash = '';
       const getHash = () =>
         hashSource({
-          source: entry,
+          source: indexVars(entry),
           ...(metadata?.$context && { context: metadata.$context }),
           ...(metadata?.$maxChars != null && {
             maxChars: Math.abs(metadata.$maxChars),
@@ -170,7 +184,7 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Translate Content
       registerIcuForTranslation({
-        source: entry,
+        source: indexVars(entry),
         targetLocale: locale,
         metadata: {
           ...(metadata?.$context && { context: metadata.$context }),

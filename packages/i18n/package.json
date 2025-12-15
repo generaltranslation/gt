@@ -1,6 +1,6 @@
 {
   "name": "gt-i18n",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Pure JS i18n library for General Translation",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
@@ -58,8 +58,8 @@
     "definition": "dist/index.d.ts"
   },
   "dependencies": {
-    "generaltranslation": "workspace:*",
-    "@generaltranslation/supported-locales": "workspace:*"
+    "@generaltranslation/supported-locales": "workspace:*",
+    "generaltranslation": "workspace:*"
   },
   "exports": {
     ".": {
