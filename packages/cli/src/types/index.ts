@@ -237,6 +237,7 @@ export type AdditionalOptions = {
     match: string; // prefix to match, e.g. '@site/docs'
     replace: string; // replacement prefix, can include [locale] or [defaultLocale]
   }>;
+  experimentalCanonicalLocaleKeys?: boolean; // For composite JSON schemas with locale keys, force canonical locale even when alias provided
 };
 
 export type SharedStaticAssetsConfig = {

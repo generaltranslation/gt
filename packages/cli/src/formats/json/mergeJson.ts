@@ -13,6 +13,7 @@ import {
 import { JSONPath } from 'jsonpath-plus';
 import { getLocaleProperties } from 'generaltranslation';
 import { replaceLocalePlaceholders } from '../utils.js';
+import { gt } from '../../utils/gt.js';
 
 export function mergeJson(
   originalContent: string,
@@ -37,6 +38,15 @@ export function mergeJson(
     logger.error(`Invalid JSON file: ${inputPath}`);
     return exitSync(1);
   }
+
+  const useCanonicalLocaleKeys =
+    options?.experimentalCanonicalLocaleKeys ?? false;
+  const canonicalDefaultLocale = useCanonicalLocaleKeys
+    ? gt.resolveCanonicalLocale(defaultLocale)
+    : defaultLocale;
+  const canonicalLocaleOrder = useCanonicalLocaleKeys
+    ? localeOrder.map((locale) => gt.resolveCanonicalLocale(locale))
+    : localeOrder;
 
   // Handle include
   if (jsonSchema.include) {
@@ -93,7 +103,7 @@ export function mergeJson(
 
       // Get source item for default locale
       const matchingDefaultLocaleItems = findMatchingItemArray(
-        defaultLocale,
+        canonicalDefaultLocale,
         sourceObjectOptions,
         sourceObjectPointer,
         sourceObjectValue
@@ -134,7 +144,9 @@ export function mergeJson(
 
         // 2. Track all array indecies to remove (will be overwritten)
         const targetItemsToRemove = findMatchingItemArray(
-          target.targetLocale,
+          useCanonicalLocaleKeys
+            ? gt.resolveCanonicalLocale(target.targetLocale)
+            : target.targetLocale,
           sourceObjectOptions,
           sourceObjectPointer,
           sourceObjectValue
@@ -175,7 +187,9 @@ export function mergeJson(
           const mutatedSourceItem = structuredClone(defaultLocaleSourceItem);
           const { identifyingLocaleProperty: targetLocaleKeyProperty } =
             getSourceObjectOptionsArray(
-              target.targetLocale,
+              useCanonicalLocaleKeys
+                ? gt.resolveCanonicalLocale(target.targetLocale)
+                : target.targetLocale,
               sourceObjectPointer,
               sourceObjectOptions
             );
@@ -212,6 +226,14 @@ export function mergeJson(
             defaultLocale
           );
 
+          if (useCanonicalLocaleKeys && defaultLocaleKeyPointer) {
+            JSONPointer.set(
+              mutatedSourceItem,
+              defaultLocaleKeyPointer,
+              targetLocaleKeyProperty
+            );
+          }
+
           itemsToAdd.push(mutatedSourceItem);
         }
       }
@@ -238,9 +260,9 @@ export function mergeJson(
         sortByLocaleOrder(
           filteredSourceObjectValue,
           sourceObjectOptions,
-          localeOrder,
+          canonicalLocaleOrder,
           sourceObjectPointer,
-          defaultLocale
+          canonicalDefaultLocale
         )
       );
     } else {
@@ -253,7 +275,7 @@ export function mergeJson(
       }
       // Validate localeProperty
       const matchingDefaultLocaleItem = findMatchingItemObject(
-        defaultLocale,
+        canonicalDefaultLocale,
         sourceObjectPointer,
         sourceObjectOptions,
         sourceObjectValue
@@ -285,7 +307,9 @@ export function mergeJson(
 
         // 2. Find the source item for the target locale
         const matchingTargetItem = findMatchingItemObject(
-          target.targetLocale,
+          useCanonicalLocaleKeys
+            ? gt.resolveCanonicalLocale(target.targetLocale)
+            : target.targetLocale,
           sourceObjectPointer,
           sourceObjectOptions,
           sourceObjectValue
