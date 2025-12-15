@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.4
+
+### Patch Changes
+
+- [#806](https://github.com/generaltranslation/gt/pull/806) [`d59dd40`](https://github.com/generaltranslation/gt/commit/d59dd40e7b042e2bb4e718f17f3b2e764165151f) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - feat: declareStatic()
+
 ## 8.1.3
 
 ### Patch Changes
