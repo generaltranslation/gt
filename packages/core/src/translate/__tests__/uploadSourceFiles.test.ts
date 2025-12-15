@@ -316,7 +316,7 @@ describe.sequential('_uploadSourceFiles', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      60000
+      1000000
     );
   });
 
