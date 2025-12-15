@@ -3,7 +3,7 @@
 'gt-react': minor
 'gt-i18n': minor
 'gt-next': minor
-'gtx-cli': minor
+'gtx-cli': patch
 '@generaltranslation/compiler': patch
 'generaltranslation': patch
 ---
