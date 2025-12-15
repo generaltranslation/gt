@@ -209,34 +209,21 @@ export class BaseCLI {
   }
 
   protected setupUploadCommand(): void {
-    this.program
-      .command('upload')
-      .description(
-        'Upload source files and translations to the General Translation platform'
-      )
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .option(
-        '--api-key <key>',
-        'API key for General Translation cloud service'
-      )
-      .option('--project-id <id>', 'Project ID for the translation service')
-      .option(
-        '--default-language, --default-locale <locale>',
-        'Default locale (e.g., en)'
-      )
-      .action(async (initOptions: UploadOptions) => {
-        displayHeader('Starting upload...');
-        const settings = await generateSettings(initOptions);
+    attachTranslateFlags(
+      this.program
+        .command('upload')
+        .description(
+          'Upload source files and translations to the General Translation platform'
+        )
+    ).action(async (initOptions: UploadOptions) => {
+      displayHeader('Starting upload...');
+      const settings = await generateSettings(initOptions);
 
-        const options = { ...initOptions, ...settings };
+      const options = { ...initOptions, ...settings };
 
-        await this.handleUploadCommand(options);
-        logger.endCommand('Done!');
-      });
+      await this.handleUploadCommand(options);
+      logger.endCommand('Done!');
+    });
   }
 
   protected setupLoginCommand(): void {

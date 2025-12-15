@@ -19,7 +19,7 @@ export default async function fetchWithTimeout(
   const controller = new AbortController();
   const signal = controller.signal;
 
-  timeout = Math.min(timeout || maxTimeout, maxTimeout);
+  timeout = timeout ? timeout : maxTimeout;
   const timeoutId = timeout
     ? setTimeout(() => controller.abort(), timeout)
     : null;

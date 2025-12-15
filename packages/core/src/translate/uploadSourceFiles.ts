@@ -27,7 +27,7 @@ export default async function _uploadSourceFiles(
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
 ) {
-  const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
+  const timeout = options?.timeout ? options?.timeout : maxTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-files`;
 
   return processBatches(
