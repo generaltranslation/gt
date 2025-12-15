@@ -1,6 +1,6 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
@@ -25,7 +25,7 @@ export default async function _querySourceFile(
   config: TranslationRequestConfig
 ): Promise<FileQueryResult> {
   const { baseUrl } = config;
-  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
   const branchId = query.branchId;
   const versionId = query.versionId;
   const fileId = query.fileId;

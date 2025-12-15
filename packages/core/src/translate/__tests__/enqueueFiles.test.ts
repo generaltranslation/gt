@@ -258,7 +258,7 @@ describe('_enqueueFiles', () => {
     );
   });
 
-  it('should limit timeout to maxTimeout', async () => {
+  it('should limit timeout to defaultTimeout', async () => {
     const mockFiles = [createMockFile()];
     const mockOptions = createMockOptions({ timeout: 1000000 }); // Very large timeout
 
@@ -288,7 +288,7 @@ describe('_enqueueFiles', () => {
 
     await _enqueueFiles(mockFiles, mockOptions, mockConfig);
 
-    // Should use maxTimeout (60000) instead of the large provided timeout
+    // Should use defaultTimeout (60000) instead of the large provided timeout
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),

@@ -1,6 +1,6 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
@@ -64,7 +64,7 @@ export default async function _queryFileData(
   options: CheckFileTranslationsOptions = {},
   config: TranslationRequestConfig
 ): Promise<FileDataResult> {
-  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/info`;
 
   const body = {

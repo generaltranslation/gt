@@ -1,6 +1,6 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../translate/utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from '../translate/utils/validateResponse';
 import handleFetchError from '../translate/utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
@@ -21,7 +21,7 @@ export default async function _getProjectData(
   config: TranslationRequestConfig
 ): Promise<ProjectData> {
   const { baseUrl } = config;
-  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
   const url = `${baseUrl || defaultBaseUrl}/v2/project/info/${encodeURIComponent(projectId)}`;
 
   // Get the project data

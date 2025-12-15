@@ -1,5 +1,5 @@
 import { translationTimeoutError } from '../../logging/errors';
-import { maxTimeout } from '../../settings/settings';
+import { defaultTimeout } from '../../settings/settings';
 
 /**
  * @internal
@@ -19,7 +19,7 @@ export default async function fetchWithTimeout(
   const controller = new AbortController();
   const signal = controller.signal;
 
-  timeout = timeout ? timeout : maxTimeout;
+  timeout = timeout ? timeout : defaultTimeout;
   const timeoutId = timeout
     ? setTimeout(() => controller.abort(), timeout)
     : null;

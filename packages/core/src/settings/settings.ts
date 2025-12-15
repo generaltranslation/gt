@@ -1,2 +1,2 @@
 export const libraryDefaultLocale = 'en' as const;
-export const maxTimeout = 60000;
+export const defaultTimeout = 60000;

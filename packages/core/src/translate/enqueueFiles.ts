@@ -1,7 +1,7 @@
 import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
@@ -31,7 +31,7 @@ export default async function _enqueueFiles(
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
-  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/enqueue`;
 
   const result = await processBatches(
