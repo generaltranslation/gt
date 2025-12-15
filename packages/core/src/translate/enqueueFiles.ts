@@ -31,7 +31,7 @@ export default async function _enqueueFiles(
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
-  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/enqueue`;
 
   const result = await processBatches(

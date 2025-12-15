@@ -21,7 +21,7 @@ export default async function _getProjectData(
   config: TranslationRequestConfig
 ): Promise<ProjectData> {
   const { baseUrl } = config;
-  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${baseUrl || defaultBaseUrl}/v2/project/info/${encodeURIComponent(projectId)}`;
 
   // Get the project data

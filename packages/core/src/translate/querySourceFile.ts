@@ -25,7 +25,7 @@ export default async function _querySourceFile(
   config: TranslationRequestConfig
 ): Promise<FileQueryResult> {
   const { baseUrl } = config;
-  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const branchId = query.branchId;
   const versionId = query.versionId;
   const fileId = query.fileId;

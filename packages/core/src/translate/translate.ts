@@ -31,7 +31,7 @@ export default async function _translate(
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
   let response;
-  const timeout = Math.min(metadata.timeout || defaultTimeout, defaultTimeout);
+  const timeout = metadata.timeout ? metadata.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
 
   // Request the translation

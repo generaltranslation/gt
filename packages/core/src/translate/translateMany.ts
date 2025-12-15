@@ -24,10 +24,9 @@ export default async function _translateMany(
   globalMetadata: { targetLocale: string } & EntryMetadata,
   config: TranslationRequestConfig
 ): Promise<TranslateManyResult> {
-  const timeout = Math.min(
-    globalMetadata.timeout || defaultTimeout,
-    defaultTimeout
-  );
+  const timeout = globalMetadata.timeout
+    ? globalMetadata.timeout
+    : defaultTimeout;
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
 
   // Request the translation

@@ -30,7 +30,7 @@ export default async function _submitUserEditDiffs(
   config: TranslationRequestConfig,
   options: { timeout?: number } = {}
 ): Promise<{ success: boolean }> {
-  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/diffs`;
 
   await processBatches(

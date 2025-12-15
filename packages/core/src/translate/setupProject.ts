@@ -30,7 +30,7 @@ export default async function _setupProject(
   config: TranslationRequestConfig,
   options?: SetupProjectOptions
 ): Promise<SetupProjectResult> {
-  const timeout = options?.timeoutMs ? options?.timeoutMs : defaultTimeout;
+  const timeout = options?.timeoutMs ? options.timeoutMs : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/generate`;
 
   const body = {

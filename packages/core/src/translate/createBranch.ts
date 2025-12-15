@@ -26,7 +26,7 @@ export default async function _createBranch(
   query: CreateBranchQuery,
   config: TranslationRequestConfig
 ): Promise<CreateBranchResult> {
-  const timeout = Math.min(defaultTimeout, defaultTimeout);
+  const timeout = defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/branches/create`;
 
   // Request the creation of the branch

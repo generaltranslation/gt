@@ -26,7 +26,7 @@ export default async function _downloadFileBatch(
   options: DownloadFileBatchOptions,
   config: TranslationRequestConfig
 ) {
-  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/download`;
 
   return processBatches(

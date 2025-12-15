@@ -64,7 +64,7 @@ export default async function _queryFileData(
   options: CheckFileTranslationsOptions = {},
   config: TranslationRequestConfig
 ): Promise<FileDataResult> {
-  const timeout = Math.min(options.timeout || defaultTimeout, defaultTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/info`;
 
   const body = {

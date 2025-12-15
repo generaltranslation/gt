@@ -32,7 +32,7 @@ export async function _checkJobStatus(
   config: TranslationRequestConfig,
   timeoutMs?: number
 ): Promise<CheckJobStatusResult> {
-  const timeout = Math.min(timeoutMs || defaultTimeout, defaultTimeout);
+  const timeout = timeoutMs ? timeoutMs : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/jobs/info`;
 
   let response: Response;

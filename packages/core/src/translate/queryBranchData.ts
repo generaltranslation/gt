@@ -22,7 +22,7 @@ export default async function _queryBranchData(
   query: BranchQuery,
   config: TranslationRequestConfig
 ): Promise<BranchDataResult> {
-  const timeout = Math.min(defaultTimeout, defaultTimeout);
+  const timeout = defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/branches/info`;
 
   // Request the branch data
