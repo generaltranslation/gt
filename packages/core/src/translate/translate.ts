@@ -5,7 +5,7 @@ import {
 } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 
 import { Content } from '../types-dir/jsx/content';
 import { EntryMetadata } from '../types-dir/api/entry';
@@ -31,7 +31,7 @@ export default async function _translate(
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
   let response;
-  const timeout = Math.min(metadata.timeout || maxTimeout, maxTimeout);
+  const timeout = metadata.timeout ? metadata.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
 
   // Request the translation

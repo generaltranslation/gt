@@ -1,6 +1,6 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
@@ -26,7 +26,7 @@ export default async function _createBranch(
   query: CreateBranchQuery,
   config: TranslationRequestConfig
 ): Promise<CreateBranchResult> {
-  const timeout = Math.min(maxTimeout, maxTimeout);
+  const timeout = defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/branches/create`;
 
   // Request the creation of the branch

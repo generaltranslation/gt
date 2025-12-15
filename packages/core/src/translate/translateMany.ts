@@ -1,7 +1,7 @@
 import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import { Entry, EntryMetadata } from '../types-dir/api/entry';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
@@ -24,7 +24,9 @@ export default async function _translateMany(
   globalMetadata: { targetLocale: string } & EntryMetadata,
   config: TranslationRequestConfig
 ): Promise<TranslateManyResult> {
-  const timeout = Math.min(globalMetadata.timeout || maxTimeout, maxTimeout);
+  const timeout = globalMetadata.timeout
+    ? globalMetadata.timeout
+    : defaultTimeout;
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
 
   // Request the translation

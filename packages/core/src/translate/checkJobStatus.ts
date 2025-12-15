@@ -1,7 +1,7 @@
 import { TranslationRequestConfig } from '../types';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
@@ -32,7 +32,7 @@ export async function _checkJobStatus(
   config: TranslationRequestConfig,
   timeoutMs?: number
 ): Promise<CheckJobStatusResult> {
-  const timeout = Math.min(timeoutMs || maxTimeout, maxTimeout);
+  const timeout = timeoutMs ? timeoutMs : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/jobs/info`;
 
   let response: Response;

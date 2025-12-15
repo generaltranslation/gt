@@ -218,7 +218,7 @@ describe.sequential('_translateMany', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      60000
+      99999
     );
   });
 

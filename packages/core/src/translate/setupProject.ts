@@ -1,7 +1,7 @@
 import { TranslationRequestConfig } from '../types';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
@@ -30,7 +30,7 @@ export default async function _setupProject(
   config: TranslationRequestConfig,
   options?: SetupProjectOptions
 ): Promise<SetupProjectResult> {
-  const timeout = Math.min(options?.timeoutMs ?? maxTimeout, maxTimeout);
+  const timeout = options?.timeoutMs ? options.timeoutMs : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/generate`;
 
   const body = {

@@ -57,6 +57,7 @@ export async function collectFiles(
         versionId: hashStringSync(
           JSON.stringify({ data: fileData, metadata: fileMetadata })
         ),
+        locale: settings.defaultLocale,
       } satisfies FileToUpload);
     }
   }

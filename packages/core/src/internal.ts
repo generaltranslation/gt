@@ -6,7 +6,7 @@ export {
 export { libraryDefaultLocale } from './settings/settings';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 import _getPluralForm from './locales/getPluralForm';
-import { maxTimeout } from './settings/settings';
+import { defaultTimeout } from './settings/settings';
 import { _Content, JsxChild, JsxChildren, JsxElement } from './types';
 import { LocaleProperties } from './types';
 import isVariable from './utils/isVariable';
@@ -22,7 +22,7 @@ export {
   LocaleProperties,
   isVariable,
   minifyVariableType,
-  maxTimeout,
+  defaultTimeout,
   encode,
   decode,
 };

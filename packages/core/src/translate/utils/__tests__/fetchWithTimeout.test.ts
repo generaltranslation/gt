@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fetchWithTimeout from '../fetchWithTimeout.js';
-import { maxTimeout } from '../../../settings/settings.js';
+import { defaultTimeout } from '../../../settings/settings.js';
 
 // Mock dependencies
 const mockTranslationTimeoutError = vi.hoisted(() => vi.fn());
@@ -9,7 +9,7 @@ vi.mock('../../../logging/errors.js', () => ({
 }));
 
 vi.mock('../../../settings/settings.js', () => ({
-  maxTimeout: 60000,
+  defaultTimeout: 60000,
 }));
 
 // Mock global fetch
@@ -122,7 +122,7 @@ describe('fetchWithTimeout', () => {
   });
 
   describe('timeout behavior', () => {
-    it('should use maxTimeout when no timeout provided', async () => {
+    it('should use defaultTimeout when no timeout provided', async () => {
       const mockResponse = createMockResponse();
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -133,11 +133,11 @@ describe('fetchWithTimeout', () => {
       expect(result).toBe(mockResponse);
     });
 
-    it('should limit timeout to maxTimeout when provided timeout exceeds it', async () => {
+    it('should limit timeout to defaultTimeout when provided timeout exceeds it', async () => {
       const mockResponse = createMockResponse();
       mockFetch.mockResolvedValue(mockResponse);
 
-      const customTimeout = (maxTimeout as number) + 10000; // Exceeds maxTimeout
+      const customTimeout = (defaultTimeout as number) + 10000; // Exceeds defaultTimeout
       const result = await fetchWithTimeout(
         'https://api.example.com/test',
         { method: 'GET' },
@@ -323,7 +323,7 @@ describe('fetchWithTimeout', () => {
       const mockResponse = createMockResponse();
       mockFetch.mockResolvedValue(mockResponse);
 
-      // Test with timeout less than maxTimeout
+      // Test with timeout less than defaultTimeout
       const smallTimeout = 5000;
       const result = await fetchWithTimeout(
         'https://api.example.com/test',

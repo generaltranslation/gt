@@ -1,7 +1,7 @@
 import { TranslationRequestConfig } from '../types';
 import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from './utils/fetchWithTimeout';
-import { maxTimeout } from '../settings/settings';
+import { defaultTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
@@ -30,7 +30,7 @@ export default async function _uploadTranslations(
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
 ) {
-  const timeout = Math.min(options?.timeout || maxTimeout, maxTimeout);
+  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-translations`;
 
   return processBatches(

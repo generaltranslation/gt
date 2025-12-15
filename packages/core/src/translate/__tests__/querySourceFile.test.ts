@@ -202,7 +202,7 @@ describe.sequential('_querySourceFile', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      60000
+      99999
     );
   });
 
