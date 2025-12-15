@@ -1,5 +1,18 @@
 # @generaltranslation/react-core
 
+## 1.4.0
+
+### Minor Changes
+
+- [#806](https://github.com/generaltranslation/gt/pull/806) [`d59dd40`](https://github.com/generaltranslation/gt/commit/d59dd40e7b042e2bb4e718f17f3b2e764165151f) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - feat: declareStatic()
+
+### Patch Changes
+
+- Updated dependencies [[`d59dd40`](https://github.com/generaltranslation/gt/commit/d59dd40e7b042e2bb4e718f17f3b2e764165151f)]:
+  - gt-i18n@0.3.0
+  - generaltranslation@8.1.4
+  - @generaltranslation/supported-locales@2.0.34
+
 ## 1.3.2
 
 ### Patch Changes
