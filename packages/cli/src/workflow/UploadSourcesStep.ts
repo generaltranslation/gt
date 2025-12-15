@@ -98,6 +98,7 @@ export class UploadSourcesStep extends WorkflowStep<
         fileName: f.fileName,
         fileFormat: f.fileFormat,
         dataFormat: f.dataFormat,
+        locale: f.locale,
       }))
     );
     this.spinner.stop(chalk.green('Files uploaded successfully'));

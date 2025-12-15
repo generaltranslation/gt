@@ -72,6 +72,7 @@ export async function aggregateFiles(
           fileName: relativePath,
           fileFormat: 'JSON' as const,
           dataFormat,
+          locale: settings.defaultLocale,
         } satisfies FileToUpload;
       })
       .filter((file) => {
@@ -112,6 +113,7 @@ export async function aggregateFiles(
           fileFormat,
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(parsedYaml),
+          locale: settings.defaultLocale,
         } satisfies FileToUpload;
       })
       .filter((file) => {
@@ -151,6 +153,7 @@ export async function aggregateFiles(
             fileFormat: fileType.toUpperCase() as FileFormat,
             fileId: hashStringSync(relativePath),
             versionId: hashStringSync(content),
+            locale: settings.defaultLocale,
           } satisfies FileToUpload;
         })
         .filter((file) => {

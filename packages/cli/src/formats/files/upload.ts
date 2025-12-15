@@ -18,7 +18,8 @@ import { uploadFiles } from '../../workflow/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from './fileMapping.js';
 import parseYaml from '../yaml/parseYaml.js';
-import type { FileUpload } from 'generaltranslation/types';
+import type { FileToUpload } from 'generaltranslation/types';
+import { hashStringSync } from '../../utils/hash.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -39,7 +40,7 @@ export async function upload(
   options: Settings & UploadOptions
 ): Promise<void> {
   // Collect all files to translate
-  const allFiles: FileUpload[] = [];
+  const allFiles: FileToUpload[] = [];
   const additionalOptions = options.options || {};
 
   // Process JSON files
@@ -65,7 +66,9 @@ export async function upload(
         fileFormat: 'JSON' as FileFormat,
         dataFormat,
         locale: options.defaultLocale,
-      };
+        fileId: hashStringSync(relativePath),
+        versionId: hashStringSync(parsedJson),
+      } satisfies FileToUpload;
     });
     allFiles.push(...jsonFiles);
   }
@@ -91,7 +94,9 @@ export async function upload(
         fileFormat,
         dataFormat,
         locale: options.defaultLocale,
-      };
+        fileId: hashStringSync(relativePath),
+        versionId: hashStringSync(parsedYaml),
+      } satisfies FileToUpload;
     });
     allFiles.push(...yamlFiles);
   }
@@ -109,7 +114,9 @@ export async function upload(
           fileFormat: fileType.toUpperCase() as FileFormat,
           dataFormat,
           locale: options.defaultLocale,
-        };
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(sanitizedContent),
+        } satisfies FileToUpload;
       });
       allFiles.push(...files);
     }
@@ -147,25 +154,29 @@ export async function upload(
 
   // construct object
   const uploadData = allFiles.map((file) => {
-    const sourceFile: FileUpload = {
+    const sourceFile: FileToUpload = {
       content: file.content,
       fileName: file.fileName,
       fileFormat: file.fileFormat,
       dataFormat: file.dataFormat,
       locale: file.locale,
+      fileId: file.fileId,
+      versionId: file.versionId,
     };
 
-    const translations: FileUpload[] = [];
+    const translations: FileToUpload[] = [];
     for (const locale of locales) {
       const translatedFileName = fileMapping[locale][file.fileName];
       if (translatedFileName && existsSync(translatedFileName)) {
         const translatedContent = readFileSync(translatedFileName, 'utf8');
         translations.push({
           content: translatedContent,
-          fileName: translatedFileName,
+          fileName: file.fileName,
           fileFormat: file.fileFormat,
           dataFormat: file.dataFormat,
           locale,
+          fileId: file.fileId,
+          versionId: file.versionId,
         });
       }
     }

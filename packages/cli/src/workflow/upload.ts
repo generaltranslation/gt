@@ -6,15 +6,7 @@ import { gt } from '../utils/gt.js';
 import { BranchStep } from './BranchStep.js';
 import { UploadSourcesStep } from './UploadSourcesStep.js';
 import { UploadTranslationsStep } from './UploadTranslationsStep.js';
-import type { FileToUpload, FileUpload } from 'generaltranslation/types';
-import { createHash } from 'crypto';
-
-/**
- * Helper: Generate a version ID from file content
- */
-function generateVersionId(content: string): string {
-  return createHash('sha256').update(content).digest('hex').slice(0, 16);
-}
+import type { FileToUpload } from 'generaltranslation/types';
 
 /**
  * Uploads multiple files to the API using a workflow pattern
@@ -24,8 +16,8 @@ function generateVersionId(content: string): string {
  */
 export async function uploadFiles(
   files: {
-    source: FileUpload;
-    translations: FileUpload[];
+    source: FileToUpload;
+    translations: FileToUpload[];
   }[],
   options: Settings
 ) {
@@ -54,17 +46,7 @@ export async function uploadFiles(
       return logErrorAndExit('Failed to resolve git branch information.');
     }
 
-    // Step 2: Convert FileUpload to FileToUpload format and upload source files
-    const filesToUpload: FileToUpload[] = files.map((f) => ({
-      content: f.source.content,
-      fileName: f.source.fileName,
-      fileFormat: f.source.fileFormat,
-      dataFormat: f.source.dataFormat,
-      fileId: f.source.fileName, // Use fileName as fileId
-      versionId: generateVersionId(f.source.content),
-    }));
-
-    await uploadStep.run({ files: filesToUpload, branchData });
+    await uploadStep.run({ files: files.map((f) => f.source), branchData });
     await uploadStep.wait();
 
     // Step 3: Upload translations (if any exist)

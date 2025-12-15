@@ -39,6 +39,7 @@ export type FileToUpload = {
   formatMetadata?: Record<string, any>;
   incomingBranchId?: string;
   checkedOutBranchId?: string;
+  locale: string;
 } & Omit<FileReference, 'branchId'> & { branchId?: string };
 
 /**
@@ -55,5 +56,4 @@ export type FileReference = {
   fileName: string;
   fileFormat: FileFormat;
   dataFormat?: DataFormat;
-  locale?: string;
 };
