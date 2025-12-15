@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.34
+
+### Patch Changes
+
+- [#904](https://github.com/generaltranslation/gt/pull/904) [`51d412f`](https://github.com/generaltranslation/gt/commit/51d412f503bbb838daaaca47fc8165873ce1857e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Assign `save-local` changes to most recent download
+
 ## 2.5.33
 
 ### Patch Changes
