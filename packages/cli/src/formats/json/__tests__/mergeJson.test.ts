@@ -1472,7 +1472,9 @@ describe('mergeJson', () => {
 
       expect(frenchNav).toBeDefined();
       expect(
-        parsed.navigation.languages.find((lang: any) => lang.language === 'fr-ca')
+        parsed.navigation.languages.find(
+          (lang: any) => lang.language === 'fr-ca'
+        )
       ).toBeUndefined();
       expect(frenchNav.tabs[0].tab).toBe('Accueil');
       expect(frenchNav.tabs[0].pages[0]).toBe('docs/fr-ca/index');
