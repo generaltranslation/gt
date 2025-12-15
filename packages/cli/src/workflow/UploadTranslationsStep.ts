@@ -4,12 +4,12 @@ import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../types/branch.js';
-import type { FileReference, FileUpload } from 'generaltranslation/types';
+import type { FileReference, FileToUpload } from 'generaltranslation/types';
 
 type UploadTranslationsInput = {
   files: {
-    source: FileUpload;
-    translations: FileUpload[];
+    source: FileToUpload;
+    translations: FileToUpload[];
   }[];
   branchData: BranchData;
 };
@@ -50,32 +50,22 @@ export class UploadTranslationsStep extends WorkflowStep<
     );
 
     this.spinner.start(
-      `Checking ${totalTranslations} translation file${totalTranslations !== 1 ? 's' : ''} against General Translation API...`
+      `Syncing ${totalTranslations} translation file${totalTranslations !== 1 ? 's' : ''} with General Translation API...`
     );
 
     // Build the query for existing translation files
     const translatedFilesQuery = filesWithTranslations.flatMap((f) =>
       f.translations.map((t) => ({
-        fileId: t.fileId || f.source.fileId || f.source.fileName,
-        versionId: t.versionId || f.source.versionId || '',
-        branchId:
-          t.branchId || f.source.branchId || branchData.currentBranch.id,
+        fileId: t.fileId,
+        versionId: t.versionId,
+        branchId: t.branchId ?? branchData.currentBranch.id,
         locale: t.locale,
       }))
     );
 
-    const translatedFilesQueryWithLocale = translatedFilesQuery.filter(
-      (t) => t.locale !== undefined
-    ) as {
-      fileId: string;
-      versionId: string;
-      branchId: string;
-      locale: string;
-    }[];
-
     // Query for existing translation files
     const fileData = await this.gt.queryFileData({
-      translatedFiles: translatedFilesQueryWithLocale,
+      translatedFiles: translatedFilesQuery,
     });
 
     // Build a map of existing translations: branchId:fileId:versionId:locale
@@ -89,25 +79,15 @@ export class UploadTranslationsStep extends WorkflowStep<
     // Filter out translations that already exist
     const filesToUpload = filesWithTranslations
       .map((f) => {
-        const branchId = f.source.branchId || branchData.currentBranch.id;
-        const fileId = f.source.fileId || f.source.fileName;
-        const versionId = f.source.versionId || '';
-
         const newTranslations = f.translations.filter((t) => {
-          const key = `${t.branchId || branchId}:${t.fileId || fileId}:${t.versionId || versionId}:${t.locale}`;
+          const branchId = t.branchId ?? branchData.currentBranch.id;
+          const key = `${branchId}:${t.fileId}:${t.versionId}:${t.locale}`;
           return !existingTranslationsMap.has(key);
         });
 
         return {
-          source: {
-            ...f.source,
-            branchId,
-            locale: f.source.locale || this.settings.defaultLocale,
-          },
-          translations: newTranslations.map((t) => ({
-            ...t,
-            branchId: t.branchId || branchId,
-          })),
+          source: f.source,
+          translations: newTranslations,
         };
       })
       .filter((f) => f.translations.length > 0);
@@ -129,15 +109,6 @@ export class UploadTranslationsStep extends WorkflowStep<
       (acc, f) => acc + f.translations.length,
       0
     );
-    this.spinner.stop(
-      chalk.dim(
-        `Uploading ${uploadCount} translation files (${skippedCount} already exist)...`
-      )
-    );
-
-    this.spinner.start(
-      `Uploading ${uploadCount} translation file${uploadCount !== 1 ? 's' : ''} to General Translation API...`
-    );
 
     const response = await this.gt.uploadTranslations(filesToUpload, {
       sourceLocale: this.settings.defaultLocale,
@@ -145,7 +116,11 @@ export class UploadTranslationsStep extends WorkflowStep<
     });
 
     this.result = response.uploadedFiles;
-    this.spinner.stop(chalk.green('Translation files uploaded successfully'));
+    this.spinner.stop(
+      chalk.green(
+        `Translation files synced successfully! Uploaded: (${uploadCount}), Skipped: (${skippedCount})`
+      )
+    );
 
     return this.result;
   }
