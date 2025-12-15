@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import { BranchData } from '../types/branch.js';
 import type { FileDataResult, FileReference } from 'generaltranslation/types';
 
-export class UploadStep extends WorkflowStep<
+export class UploadSourcesStep extends WorkflowStep<
   { files: FileToUpload[]; branchData: BranchData },
   FileReference[]
 > {

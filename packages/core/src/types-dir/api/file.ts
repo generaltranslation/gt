@@ -55,4 +55,5 @@ export type FileReference = {
   fileName: string;
   fileFormat: FileFormat;
   dataFormat?: DataFormat;
+  locale?: string;
 };

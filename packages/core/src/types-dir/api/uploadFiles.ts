@@ -35,12 +35,6 @@ export type FileUpload = {
   fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
 
-export type UploadData = {
-  data: { source: FileUpload; translations: FileUpload[] }[];
-  sourceLocale: string;
-  modelProvider?: string;
-};
-
 export type UploadFilesOptions = {
   sourceLocale: string;
   modelProvider?: string;

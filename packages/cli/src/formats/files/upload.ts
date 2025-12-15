@@ -14,10 +14,11 @@ import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { UploadOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
-import { FileUpload, uploadFiles } from '../../api/uploadFiles.js';
+import { uploadFiles } from '../../workflow/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from './fileMapping.js';
 import parseYaml from '../yaml/parseYaml.js';
+import type { FileUpload } from 'generaltranslation/types';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 

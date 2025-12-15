@@ -3,5 +3,5 @@ pre-commit:
   jobs:
     - run: npx eslint --fix {staged_files}
       glob: '**/*.{js,ts,jsx,tsx,json,sh,mjs,yaml,yml}'
-    - run: cd packages/cli && node scripts/generate-version.js && git add src/generated/version.ts
+    - run: node scripts/generate-version.js && git add src/generated/version.ts
       root: packages/cli

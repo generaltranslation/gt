@@ -2,7 +2,7 @@ import { logErrorAndExit } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { FileToUpload } from 'generaltranslation/types';
-import { UploadStep } from './UploadStep.js';
+import { UploadSourcesStep } from './UploadSourcesStep.js';
 import { SetupStep } from './SetupStep.js';
 import { BranchStep } from './BranchStep.js';
 import { BranchData } from '../types/branch.js';
@@ -39,7 +39,7 @@ export async function setupProject(
 
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);
-    const uploadStep = new UploadStep(gt, settings);
+    const uploadStep = new UploadSourcesStep(gt, settings);
     const setupStep = new SetupStep(gt, settings, timeoutMs);
 
     // first run the branch step

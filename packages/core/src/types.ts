@@ -59,6 +59,7 @@ export type {
   Updates,
 } from './types-dir/api/enqueueFiles';
 export type { FileToUpload } from './types-dir/api/file';
+export type { FileUpload } from './types-dir/api/uploadFiles';
 export type {
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
