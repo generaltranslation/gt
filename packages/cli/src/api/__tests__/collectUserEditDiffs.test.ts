@@ -185,4 +185,73 @@ describe('collectAndSendUserEditDiffs', () => {
     expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
+
+  it('uses the latest downloaded version when the uploaded version has changed', async () => {
+    const settings = buildSettings();
+    const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+    fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+    fs.writeFileSync(translatedPath, 'changed content');
+
+    // Lock file only knows about version1, but uploaded file reports version2
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          file1: {
+            version1: {
+              ja: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync('original content'),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    (gt.queryFileData as any).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: 'ja',
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    (gt.downloadFileBatch as any).mockResolvedValue({
+      files: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: 'ja',
+          data: 'server content',
+        },
+      ],
+    });
+
+    (getGitUnifiedDiff as any).mockResolvedValue('mock-diff');
+
+    const files = [
+      {
+        fileName: 'docs/doc.md',
+        fileFormat: 'MD',
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version2',
+      },
+    ];
+
+    await collectAndSendUserEditDiffs(files as any, settings);
+
+    expect(gt.queryFileData).toHaveBeenCalledTimes(1);
+    expect(
+      (gt.queryFileData as any).mock.calls[0][0].translatedFiles[0].versionId
+    ).toBe('version1');
+    expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+  });
 });

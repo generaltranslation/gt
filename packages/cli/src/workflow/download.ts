@@ -115,7 +115,6 @@ export async function downloadTranslations(
           .map(([key, value]) => `- ${value.fileName}`)
           .join('\n')}`
       );
-      return false;
     }
 
     if (!pollResult.success) {
