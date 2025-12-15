@@ -178,8 +178,6 @@ export function handleChildrenWhitespace(
           newChildren.push(newElement);
           break;
         case 'multiplication':
-          // I dont think this case is possible, at least in the array case
-          // Can only be child of element or multiplication nodes
           newChildren.push({
             nodeType: 'multiplication',
             branches: handleChildrenWhitespace(

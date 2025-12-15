@@ -58,8 +58,8 @@
     "definition": "dist/index.d.ts"
   },
   "dependencies": {
-    "generaltranslation": "workspace:*",
-    "@generaltranslation/supported-locales": "workspace:*"
+    "@generaltranslation/supported-locales": "workspace:*",
+    "generaltranslation": "workspace:*"
   },
   "exports": {
     ".": {

@@ -97,7 +97,14 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['crypto-js', 'fast-json-stable-stringify'], // External dependencies not bundled in
+    external: [
+      'crypto-js',
+      'fast-json-stable-stringify',
+      'intl-messageformat',
+      '@formatjs/icu-messageformat-parser',
+      '@formatjs/icu-messageformat-parser/types.js',
+      '@formatjs/icu-messageformat-parser/printer.js',
+    ], // External dependencies not bundled in
   },
 
   // TypeScript declarations for the internal module

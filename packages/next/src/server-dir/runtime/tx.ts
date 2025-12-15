@@ -3,6 +3,12 @@ import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { RuntimeTranslationOptions } from 'gt-react/internal';
+import {
+  extractVars,
+  condenseVars,
+  indexVars,
+  VAR_IDENTIFIER,
+} from 'generaltranslation/internal';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -60,11 +66,19 @@ export default async function tx(
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
-  const renderContent = (message: string, locales: string[]) => {
-    const formattedMessage = gt.formatMessage(message, {
-      locales,
-      variables,
-    });
+  const renderContent = (content: string, locales: string[]) => {
+    const declaredVars = extractVars(message);
+    const formattedMessage = gt.formatMessage(
+      content !== message ? condenseVars(content) : content,
+      {
+        locales,
+        variables: {
+          ...variables,
+          ...declaredVars,
+          [VAR_IDENTIFIER]: 'other',
+        },
+      }
+    );
     const cutoffMessage = gt.formatCutoff(formattedMessage, {
       locales,
       maxChars,
@@ -79,7 +93,7 @@ export default async function tx(
   // ----- CALCULATE HASH ----- //
 
   const hash = hashSource({
-    source: message,
+    source: indexVars(message),
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: 'ICU',
@@ -101,7 +115,7 @@ export default async function tx(
   // New translation required
   try {
     const target = (await I18NConfig.translateIcu({
-      source: message,
+      source: indexVars(message),
       targetLocale: locale,
       options: { ...variables, hash, context, maxChars },
     })) as string;

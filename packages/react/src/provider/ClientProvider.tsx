@@ -151,7 +151,7 @@ export default function ClientProvider({
   // ---------- USE GT() TRANSLATION ---------- //
 
   const {
-    _tFunction,
+    _gtFunction,
     _mFunction,
     _filterMessagesForPreload,
     _preloadMessages,
@@ -209,7 +209,7 @@ export default function ClientProvider({
         registerIcuForTranslation,
         registerJsxForTranslation,
         setLocale,
-        _tFunction,
+        _gtFunction,
         _mFunction,
         _filterMessagesForPreload,
         _preloadMessages,

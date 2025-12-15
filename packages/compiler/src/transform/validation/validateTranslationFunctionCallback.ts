@@ -1,12 +1,22 @@
 import * as t from '@babel/types';
-import { USEGT_CALLBACK_OPTIONS } from '../constants/gt/constants';
+import {
+  GT_OTHER_FUNCTIONS,
+  USEGT_CALLBACK_OPTIONS,
+} from '../../utils/constants/gt/constants';
+import { TransformState } from '../../state/types';
+import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
+import { getTrackedVariable } from '../getTrackedVariable';
 
 /**
  * Validate useGT_callback / getGT_callback
  * - first argument must be a string literal
  * - second argument, if present, $id field + $context field must be a string literal
+ * TODO: Add maxChars validation
  */
-export function validateUseGTCallback(callExpr: t.CallExpression): {
+export function validateUseGTCallback(
+  callExpr: t.CallExpression,
+  state: TransformState
+): {
   errors: string[];
   content?: string;
   context?: string;
@@ -27,30 +37,36 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
   // Validate first argument
   if (!t.isExpression(callExpr.arguments[0])) {
     errors.push(
-      'useGT_callback / getGT_callback must have a string literal as the first argument. Variable content is not allowed.'
+      'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
     );
     return { errors };
   }
 
-  // Get content
+  // Get content and validate that it is a string literal
   const validatedContent = validateExpressionIsStringLiteral(
     callExpr.arguments[0]
   );
-  errors.push(...validatedContent.errors);
   const content = validatedContent.value;
-  if (content === undefined) {
-    errors.push(
-      'useGT_callback / getGT_callback must have a string literal as the first argument. Variable content is not allowed.'
-    );
-    return { errors };
-  }
 
+  if (content === undefined) {
+    // expression is not a string literal. Check if it contains a declareStatic function invocation
+    validateDeclareStatic(callExpr.arguments[0], state, errors);
+    if (errors.length > 0) {
+      errors.push(...validatedContent.errors);
+      errors.push(
+        'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
+      );
+      return { errors };
+    }
+  }
   // Validate second argument
   let context: string | undefined;
   let id: string | undefined;
-  let maxChars: number | undefined;
   let hash: string | undefined;
-  if (callExpr.arguments.length === 1) return { errors, content };
+  let maxChars: number | undefined;
+  if (callExpr.arguments.length === 1) {
+    return { errors, content };
+  }
   if (t.isObjectExpression(callExpr.arguments[1])) {
     const contextProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
@@ -89,7 +105,8 @@ export function validateUseGTCallback(callExpr: t.CallExpression): {
  * Validate useTranslations_callback / getTranslations_callback
  * - always valid (arguments can be dynamic)
  */
-export function validateUseTranslationsCallback(callExpr: t.CallExpression): {
+// eslint-disable-next-line no-unused-vars
+export function validateUseTranslationsCallback(_callExpr: t.CallExpression): {
   errors: string[];
 } {
   const errors: string[] = [];
@@ -100,7 +117,8 @@ export function validateUseTranslationsCallback(callExpr: t.CallExpression): {
  * Validate useMessages_callback / getMessages_callback
  * - always valid
  */
-export function validateUseMessagesCallback(callExpr: t.CallExpression): {
+// eslint-disable-next-line no-unused-vars
+export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
   errors: string[];
 } {
   const errors: string[] = [];
@@ -156,7 +174,7 @@ function validatePropertyFromObjectExpression(
   // validate value
   if (!t.isExpression(value.value)) {
     result.errors.push(
-      `useGT_callback / getGT_callback must have a static for its ${name} field. Variable content is not allowed.`
+      `useGT_callback / getGT_callback must use a string literal for its ${name} field. Variable content is not allowed.`
     );
     return result;
   }
@@ -186,6 +204,122 @@ function validateExpressionIsStringLiteral(expr: t.Expression): {
     return { errors: [], value: expr.quasis[0]?.value.cooked };
   }
   return { errors: ['Expression is not a string literal'] };
+}
+
+/**
+ * Validates if an expression using the declareStatic function correctly
+ */
+function validateDeclareStatic(
+  expr: t.Expression,
+  state: TransformState,
+  errors: string[]
+): { errors: string[] } {
+  if (!expr) {
+    errors.push('Expression is empty');
+    return { errors };
+  }
+
+  // 1. Direct call: declareStatic(node)
+  if (t.isCallExpression(expr)) {
+    // Find the canonical function name
+    const { namespaceName, functionName } = getCalleeNameFromExpression(expr);
+    // Get the canonical function name
+    const { canonicalName, type } = getTrackedVariable(
+      state.scopeTracker,
+      namespaceName,
+      functionName
+    );
+    if (!canonicalName) {
+      errors.push('Expression does not use an allowed call expression');
+      return { errors };
+    }
+    // Validate the function is actually the GT declareStatic function
+    if (
+      type !== 'generaltranslation' ||
+      canonicalName !== GT_OTHER_FUNCTIONS.declareStatic
+    ) {
+      errors.push('Expression does not use an allowed call expression');
+      return { errors };
+    }
+    // Validate that the call expression has exactly one argument and the argument is a call expression
+    validateDeclareStaticExpression(expr, errors);
+    return { errors };
+  }
+
+  // 2. String concatenation: "Hello there " + declareStatic(getName())
+  if (t.isBinaryExpression(expr) && expr.operator === '+') {
+    if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
+      errors.push('Operands must be expressions');
+      return { errors };
+    }
+    validateDeclareStatic(expr.right, state, errors);
+    validateDeclareStatic(expr.left, state, errors);
+    return { errors };
+  }
+
+  // 3. Template literal: `Hello there ${declareStatic(getName())}`
+  if (t.isTemplateLiteral(expr)) {
+    if (
+      !expr.expressions.some(
+        (expression) =>
+          t.isExpression(expression) &&
+          validateDeclareStatic(expression, state, errors).errors.length === 0
+      )
+    ) {
+      errors.push('Expression does not use an allowed call expression');
+    }
+    return {
+      errors,
+    };
+  }
+
+  // 4. String literal / number literal
+  if (t.isStringLiteral(expr)) {
+    return { errors };
+  }
+
+  // Fallthrough: expression type not supported (e.g., plain identifiers/variables)
+  errors.push('Variables are not allowed');
+  return { errors };
+}
+
+/**
+ * Takes in a call expression to check if:
+ * - it has exactly one argument
+ * - the argument is a call expression
+ * Example: declareStatic(getName())
+ */
+function validateDeclareStaticExpression(
+  expr: t.CallExpression,
+  errors: string[]
+): {
+  errors: string[];
+} {
+  // Validate that the function has 1 argument
+  if (expr.arguments.length !== 1) {
+    errors.push('DeclareStatic must have one argument');
+    return { errors };
+  }
+  const [onlyArg] = expr.arguments;
+
+  // Await expression: declareStatic(await ...)
+  if (t.isAwaitExpression(onlyArg)) {
+    // Validate that the awaited expression is a call expression
+    if (!t.isCallExpression(onlyArg.argument)) {
+      errors.push('DeclareStatic must have a call expression as the argument');
+      return { errors };
+    }
+    // Valid: declareStatic(await someFunction())
+    return { errors };
+  }
+
+  // Validate that the argument is a call expression
+  if (!t.isCallExpression(onlyArg)) {
+    errors.push('DeclareStatic must have a call expression as the argument');
+    return { errors };
+  }
+
+  return { errors };
 }
 
 /**

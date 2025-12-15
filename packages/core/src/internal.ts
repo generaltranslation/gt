@@ -27,6 +27,9 @@ export {
   decode,
 };
 
+// static
+export * from './static';
+
 // backwards compatability
 export {
   getNewJsxChild,

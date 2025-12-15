@@ -25,7 +25,7 @@ describe('parseStrings', () => {
 
   it('should handle direct msg() calls', () => {
     const code = `
-      import { msg } from 'generaltranslation';
+      import { msg } from 'gt-next';
       msg('hello world');
     `;
     const ast = parseCode(code);
@@ -62,6 +62,40 @@ describe('parseStrings', () => {
     ]);
     expect(params.updates[0].metadata.filePaths).toEqual([FILE_PATH]);
     expect(params.errors).toHaveLength(0);
+  });
+
+  it('should handle nested m msg calls', () => {
+    const code = `
+      import { msg, useMessages } from 'gt-react';
+      const m = useMessages();
+      m(msg("hello world"));
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useMessages' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useMessages',
+            path,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors).toHaveLength(0);
+    expect(params.warnings).toHaveLength(0);
   });
 
   it('should handle useGT() translation calls', () => {
@@ -1393,14 +1427,14 @@ describe('parseStrings', () => {
   it('should not create infinite loops with circular references', () => {
     const code = `
       import { useGT } from 'generaltranslation';
-      
+
       function test() {
         const translate = useGT();
         let t = translate;
         let a = t;
         // This would create a circular reference if not handled properly
         t = a;
-        
+
         t('circular test', { $id: 'circular' });
       }
     `;
@@ -1435,6 +1469,82 @@ describe('parseStrings', () => {
       source: 'circular test',
       metadata: {
         id: 'circular',
+      },
+    });
+    expect(params.errors).toHaveLength(0);
+  });
+
+  // Test for gt() with template literals with expressions
+  it('should add errors for gt() with template literals with expressions', () => {
+    const code = `
+      import { useGT } from 'generaltranslation';
+      const gt = useGT();
+      const foo = 'world';
+      gt(\`hello \${foo}\`);
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            params.updates,
+            params.errors,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(0);
+    expect(params.errors.length).toBeGreaterThan(0);
+  });
+
+  // Test for useMessages(msg("some string")) - should extract the string
+  it('should handle useMessages with msg() passed as argument', () => {
+    const code = `
+      import { msg, useMessages } from 'gt-react';
+      const m = useMessages();
+      m(msg("some string"));
+    `;
+    const ast = parseCode(code);
+    const params = createMockParams();
+
+    // First parse msg
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'msg' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'msg',
+            path,
+            params.updates,
+            params.errors,
+            params.warnings,
+            params.file
+          );
+        }
+      },
+    });
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0]).toEqual({
+      dataFormat: 'ICU',
+      source: 'some string',
+      metadata: {
+        filePaths: [FILE_PATH],
       },
     });
     expect(params.errors).toHaveLength(0);

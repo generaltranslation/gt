@@ -17,7 +17,6 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
-  Static as _Static,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -28,7 +27,11 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
   _Messages,
+  Static as _Static,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -169,13 +172,26 @@ export const Var: typeof _Var = () => {
 Var._gtt = 'variable-variable';
 
 /**
- * The `<Static>` component allows you to render the output of a function invocation. Such a function MUST return
- * only static content. If the function returns non-static content, the CLI tool will throw an error.
+ * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
  *
- * Currently, this feature does not yet support <Suspense>.
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ *
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * <T>
+ *   <Static>
+ *      {getSubject()}
+ *   </Static>
+ *   is going to school today.
+ * </T>
+ * ```
  *
  * @param {T extends React.ReactNode} children - Static content to render.
- * @returns {T} The static content.
+ * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {
   throw new Error(typesFileError);
@@ -431,4 +447,13 @@ export {
   RuntimeTranslationOptions,
 };
 
-export { msg, decodeMsg, decodeOptions, mFallback, gtFallback };
+export {
+  msg,
+  decodeMsg,
+  decodeOptions,
+  mFallback,
+  gtFallback,
+  declareStatic,
+  declareVar,
+  decodeVars,
+};

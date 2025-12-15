@@ -48,7 +48,7 @@ export default function renderDefaultChildren({
 
     // Branch
     if (generaltranslation?.transformation === 'branch') {
-      // eslint-disable-next-line prefer-const, @typescript-eslint/no-unused-vars, no-unused-vars
+      // eslint-disable-next-line prefer-const, no-unused-vars
       let { children, branch, 'data-_gt': _gt, ...branches } = child.props;
       branches = generaltranslation.branches || {};
       return handleChildren(

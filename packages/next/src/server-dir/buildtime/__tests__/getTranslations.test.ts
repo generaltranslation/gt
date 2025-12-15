@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupGetRequestFunctionMocks } from '../../../request/utils/__mocks__/mockGetRequestFunction';
+import { VAR_IDENTIFIER } from 'generaltranslation/internal';
 
 // Set up comprehensive mocking for getRequestFunction and all its dependencies
 setupGetRequestFunctionMocks();
@@ -215,7 +216,7 @@ describe('getTranslations', () => {
       expect(result).toBe('Hello World');
       expect(mockFormatMessage).toHaveBeenCalledWith(mockEntry, {
         locales: ['en'],
-        variables: {},
+        variables: { [VAR_IDENTIFIER]: 'other' },
       });
     });
 
@@ -235,7 +236,7 @@ describe('getTranslations', () => {
       expect(result).toBe('Hello John!');
       expect(mockFormatMessage).toHaveBeenCalledWith(mockEntry, {
         locales: ['en'],
-        variables: { name: 'John' },
+        variables: { name: 'John', [VAR_IDENTIFIER]: 'other' },
       });
     });
   });
@@ -357,7 +358,9 @@ describe('getTranslations', () => {
       expect(result).toBe('Hello');
       expect(mockFormatMessage).toHaveBeenCalledWith(mockEntry, {
         locales: ['en'],
-        variables: {},
+        variables: {
+          [VAR_IDENTIFIER]: 'other',
+        },
       });
     });
 

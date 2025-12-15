@@ -4,8 +4,7 @@ use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
 use crate::visitor::expr_utils::{
-  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options,
-  extract_string_from_expr, has_prop, inject_new_args,
+  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args, validate_declare_static,
 };
 use swc_core::{
   common::SyntaxContext,
@@ -13,8 +12,8 @@ use swc_core::{
 };
 
 use crate::visitor::analysis::{
-  is_branch_name, is_translation_component_name, is_translation_function_name,
-  is_variable_component_name,
+  is_branch_name, is_declare_static_name, is_translation_component_name,
+  is_translation_function_name, is_variable_component_name,
 };
 
 /// Main transformation visitor for the SWC plugin
@@ -237,6 +236,18 @@ impl TransformVisitor {
     false
   }
 
+  /// Check if a name is declareStatic or an alias of it
+  pub fn is_declare_static(&self, name: &Atom) -> bool {
+    if let Some(variable) = self
+      .import_tracker
+      .scope_tracker
+      .get_translation_variable(name)
+    {
+      return is_declare_static_name(&variable.original_name);
+    }
+    false
+  }
+
   /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
   pub fn should_track_namespace_component(&self, obj: &Atom, prop: &Atom) -> (bool, bool, bool) {
     if self.import_tracker.namespace_imports.contains(obj) {
@@ -272,6 +283,7 @@ impl TransformVisitor {
                 || is_variable_component_name(&original_name)
                 || is_branch_name(&original_name)
                 || is_translation_function_name(&original_name)
+                || is_declare_static_name(&original_name)
               {
                 self
                   .import_tracker
@@ -300,47 +312,112 @@ impl TransformVisitor {
 
   /// Check for violations in a call expression
   pub fn check_call_expr_for_violations(&mut self, arg: &ExprOrSpread, function_name: &str) {
-    match arg.expr.as_ref() {
-      // Template literals: t(`Hello ${name}`)
-      Expr::Tpl(tpl) => {
-        if !tpl.exprs.is_empty() && !self.settings.disable_build_checks {
-          self.statistics.dynamic_content_violations += 1;
-          let warning = create_dynamic_function_warning(
-            self.settings.filename.as_deref(),
-            function_name,
-            "template literals",
-          );
-          self.logger.log_error(&warning);
-        }
-      }
-      // String concatenation: t("Hello " + name)
-      Expr::Bin(BinExpr {
-        op: BinaryOp::Add,
-        left,
-        right,
-        ..
-      }) => {
-        // Check if it's string concatenation (at least one side is a string)
-        let left_is_string = matches!(left.as_ref(), Expr::Lit(Lit::Str(_)));
-        let right_is_string = matches!(right.as_ref(), Expr::Lit(Lit::Str(_)));
+    // First, validate if the expression is a string literal or contains a declareStatic call
+    let mut errors = Vec::new();
+    self.validate_string_literal_or_declare_static(arg.expr.as_ref(), &mut errors);
 
-        if left_is_string || right_is_string {
-          if !self.settings.disable_build_checks {
-            self.statistics.dynamic_content_violations += 1;
-            let warning = create_dynamic_function_warning(
-              self.settings.filename.as_deref(),
-              function_name,
-              "string concatenation",
-            );
-            self.logger.log_error(&warning);
-          }
-        }
+    if !errors.is_empty() {
+      if !self.settings.disable_build_checks {
+        self.statistics.dynamic_content_violations += 1;
+        // Use the first error message for the violation type
+        let default_error = &"invalid expression".to_string();
+        let violation_type = errors.first().unwrap_or(default_error);
+        let warning = create_dynamic_function_warning(
+          self.settings.filename.as_deref(),
+          function_name,
+          violation_type,
+        );
+        self.logger.log_error(&warning);
       }
-      _ => {
-        // Valid usage (string literal, variable, etc.)
-      }
+      return;
     }
   }
+
+
+/**
+ * Validates if an expression is composed only of:
+ * - String literals (including static strings)
+ * - declareStatic() function calls
+ * - Combinations of the above using string concatenation or template literals
+ *
+ * Valid examples:
+ * - "Hello World"
+ * - declareStatic(getName())
+ * - "Hello World" + declareStatic(getName())
+ * - `Hello there ${declareStatic(getName())}`
+ *
+ * Invalid examples:
+ * - variable
+ * - otherFunction()
+ * - `Hello ${variable}`
+ */
+pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut Vec<String>) {
+  match expr {
+    // String literal - always valid
+    Expr::Lit(Lit::Str(_)) => {
+      // Valid
+    }
+
+    // Template literal - check all expressions are declareStatic calls
+    Expr::Tpl(tpl) => {
+      for expr in &tpl.exprs {
+        self.validate_string_literal_or_declare_static(expr.as_ref(), errors);
+      }
+    }
+
+    // Binary operation (e.g., string concatenation) - check both sides
+    Expr::Bin(bin_expr) => {
+      self.validate_string_literal_or_declare_static(bin_expr.left.as_ref(), errors);
+      self.validate_string_literal_or_declare_static(bin_expr.right.as_ref(), errors);
+    }
+
+    // Call expression - must be declareStatic
+    Expr::Call(call_expr) => {
+      if let Callee::Expr(callee_expr) = &call_expr.callee {
+        if let Expr::Ident(ident) = callee_expr.as_ref() {
+          if self.is_declare_static(&ident.sym) {
+            // Validate that the call expression has exactly one argument and the argument is a call expression
+            validate_declare_static(call_expr, errors);
+          } else {
+            errors.push(format!(
+              "Only declareStatic() function calls are allowed, found: {}()",
+              ident.sym
+            ));
+          }
+          // If it's declareStatic, it's valid
+        } else {
+          errors.push(
+            "Only declareStatic() function calls are allowed".to_string()
+          );
+        }
+      } else {
+        errors.push(
+          "Only declareStatic() function calls are allowed".to_string()
+        );
+      }
+    }
+
+    // Parenthesized expression - check the inner expression
+    Expr::Paren(paren_expr) => {
+      self.validate_string_literal_or_declare_static(paren_expr.expr.as_ref(), errors);
+    }
+
+    // Variables are not allowed
+    Expr::Ident(ident) => {
+      errors.push(format!(
+        "Variables are not allowed. Use a string literal or declareStatic() instead. Found: {}",
+        ident.sym
+      ));
+    }
+
+    // Any other expression type is invalid
+    _ => {
+      errors.push(
+        "Expression must be a string literal, declareStatic() call, or a combination of both".to_string()
+      );
+    }
+  }
+}
 
   // Calculate hash for a call expression return the hash and the json string
   pub fn calculate_hash_for_call_expr(
@@ -1354,6 +1431,330 @@ mod tests {
       assert_eq!(
         visitor.statistics.dynamic_content_violations,
         initial_violations
+      );
+    }
+
+    #[test]
+    fn allows_declare_static_calls() {
+      let mut visitor = create_visitor_with_imports();
+      // Track declareStatic import
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+
+      // Create declareStatic(getName()) expression
+      let declare_static_call = Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("declareStatic"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+              span: DUMMY_SP,
+              sym: Atom::new("getName"),
+              optional: false,
+              ctxt: SyntaxContext::empty(),
+            }))),
+            args: vec![],
+            type_args: None,
+            ctxt: SyntaxContext::empty(),
+          })),
+        }],
+        type_args: None,
+        ctxt: SyntaxContext::empty(),
+      });
+
+      let call_expr = create_call_expr("t", declare_static_call);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations
+      );
+    }
+
+    #[test]
+    fn allows_string_concatenation_with_declare_static() {
+      let mut visitor = create_visitor_with_imports();
+      // Track declareStatic import
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+
+      // Create "Hello " + declareStatic(getName())
+      let concat_expr = Expr::Bin(BinExpr {
+        span: DUMMY_SP,
+        op: BinaryOp::Add,
+        left: Box::new(Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP,
+          value: Atom::new("Hello "),
+          raw: None,
+        }))),
+        right: Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("declareStatic"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+          args: vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Call(CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("getName"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+              }))),
+              args: vec![],
+              type_args: None,
+              ctxt: SyntaxContext::empty(),
+            })),
+          }],
+          type_args: None,
+          ctxt: SyntaxContext::empty(),
+        })),
+      });
+
+      let call_expr = create_call_expr("t", concat_expr);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations
+      );
+    }
+
+    #[test]
+    fn allows_template_literal_with_declare_static() {
+      let mut visitor = create_visitor_with_imports();
+      // Track declareStatic import
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+
+      // Create `Hello ${declareStatic(getName())}`
+      let template_expr = Expr::Tpl(Tpl {
+        span: DUMMY_SP,
+        exprs: vec![Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("declareStatic"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+          args: vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Call(CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("getName"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+              }))),
+              args: vec![],
+              type_args: None,
+              ctxt: SyntaxContext::empty(),
+            })),
+          }],
+          type_args: None,
+          ctxt: SyntaxContext::empty(),
+        }))],
+        quasis: vec![
+          TplElement {
+            span: DUMMY_SP,
+            tail: false,
+            cooked: Some(Atom::new("Hello ")),
+            raw: Atom::new("Hello "),
+          },
+          TplElement {
+            span: DUMMY_SP,
+            tail: true,
+            cooked: Some(Atom::new("")),
+            raw: Atom::new(""),
+          },
+        ],
+      });
+
+      let call_expr = create_call_expr("t", template_expr);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations
+      );
+    }
+
+    #[test]
+    fn allows_declare_static_with_alias() {
+      let mut visitor = create_visitor_with_imports();
+      // Track declareStatic import with alias: import { declareStatic as ds }
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("ds"), Atom::new("declareStatic"), 0);
+
+      // Create ds(getName()) expression
+      let declare_static_call = Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("ds"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+              span: DUMMY_SP,
+              sym: Atom::new("getName"),
+              optional: false,
+              ctxt: SyntaxContext::empty(),
+            }))),
+            args: vec![],
+            type_args: None,
+            ctxt: SyntaxContext::empty(),
+          })),
+        }],
+        type_args: None,
+        ctxt: SyntaxContext::empty(),
+      });
+
+      let call_expr = create_call_expr("t", declare_static_call);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations
+      );
+    }
+
+    #[test]
+    fn detects_invalid_function_call_violations() {
+      let mut visitor = create_visitor_with_imports();
+
+      // Create someOtherFunction() expression
+      let invalid_call = Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("someOtherFunction"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![],
+        type_args: None,
+        ctxt: SyntaxContext::empty(),
+      });
+
+      let call_expr = create_call_expr("t", invalid_call);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations + 1
+      );
+    }
+
+    #[test]
+    fn detects_variable_violations() {
+      let mut visitor = create_visitor_with_imports();
+
+      let variable_expr = Expr::Ident(Ident {
+        span: DUMMY_SP,
+        sym: Atom::new("message"),
+        optional: false,
+        ctxt: SyntaxContext::empty(),
+      });
+
+      let call_expr = create_call_expr("t", variable_expr);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations + 1
+      );
+    }
+
+    #[test]
+    fn detects_declare_static_with_invalid_arguments() {
+      let mut visitor = create_visitor_with_imports();
+      // Track declareStatic import
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+
+      // Create declareStatic("string literal") - should fail because arg must be a call expression
+      let declare_static_call = Expr::Call(CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("declareStatic"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP,
+            value: Atom::new("hello"),
+            raw: None,
+          }))),
+        }],
+        type_args: None,
+        ctxt: SyntaxContext::empty(),
+      });
+
+      let call_expr = create_call_expr("t", declare_static_call);
+
+      let initial_violations = visitor.statistics.dynamic_content_violations;
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "t");
+      }
+
+      assert_eq!(
+        visitor.statistics.dynamic_content_violations,
+        initial_violations + 1
       );
     }
   }

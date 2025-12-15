@@ -33,6 +33,12 @@ import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
 import { getSubtree } from 'gt-react/internal';
 import setDictionary from '../../dictionary/setDictionary';
+import {
+  extractVars,
+  condenseVars,
+  VAR_IDENTIFIER,
+  indexVars,
+} from 'generaltranslation/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -127,10 +133,18 @@ export async function getTranslations(id?: string): Promise<
     ) => {
       try {
         // (1) Try to format message
-        const formattedMessage = gt.formatMessage(message, {
-          locales,
-          variables: options,
-        });
+        const declaredVars = extractVars(fallback || '');
+        const formattedMessage = gt.formatMessage(
+          Object.keys(declaredVars).length ? condenseVars(message) : message,
+          {
+            locales,
+            variables: {
+              ...options,
+              ...declaredVars,
+              [VAR_IDENTIFIER]: 'other',
+            },
+          }
+        );
         const cutoffMessage = gt.formatCutoff(formattedMessage, {
           locales,
           maxChars: metadata?.$maxChars ?? options.$maxChars,
@@ -207,7 +221,7 @@ export async function getTranslations(id?: string): Promise<
     const getHash = () => {
       if (metadata?.$_hash) return metadata.$_hash;
       const hash = hashSource({
-        source: entry,
+        source: indexVars(entry),
         ...(metadata?.$context && { context: metadata.$context }),
         ...(metadata?.$maxChars != null && {
           maxChars: Math.abs(metadata.$maxChars),
@@ -249,7 +263,7 @@ export async function getTranslations(id?: string): Promise<
     try {
       // Translate on demand
       I18NConfig.translateIcu({
-        source: entry,
+        source: indexVars(entry),
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
@@ -364,7 +378,7 @@ export async function getTranslations(id?: string): Promise<
 
       // (3.a) Translate
       I18NConfig.translateIcu({
-        source,
+        source: indexVars(source),
         targetLocale: locale,
         options: {
           ...(metadata?.$context && { context: metadata.$context }),
