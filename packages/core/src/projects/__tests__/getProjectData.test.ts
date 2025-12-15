@@ -5,7 +5,7 @@ import validateResponse from '../../translate/utils/validateResponse';
 import handleFetchError from '../../translate/utils/handleFetchError';
 import generateRequestHeaders from '../../translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../types';
-import { ProjectData } from '../../types-dir/project';
+import { ProjectData } from '../../types-dir/api/project';
 
 vi.mock('../../translate/utils/fetchWithTimeout');
 vi.mock('../../translate/utils/validateResponse');
@@ -152,7 +152,7 @@ describe.sequential('_getProjectData', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      60000
+      99999
     );
   });
 

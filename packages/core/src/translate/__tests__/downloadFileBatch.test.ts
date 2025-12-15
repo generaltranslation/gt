@@ -197,7 +197,7 @@ describe.sequential('_downloadFileBatch', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      60000
+      99999
     );
   });
 
