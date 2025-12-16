@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.5
+
+### Patch Changes
+
+- [#908](https://github.com/generaltranslation/gt/pull/908) [`1e7e52f`](https://github.com/generaltranslation/gt/commit/1e7e52f3a77835887ff187ffeb99d6e3dc2a9e6c) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix timeout logic; Refactor upload command
+
 ## 8.1.4
 
 ### Patch Changes

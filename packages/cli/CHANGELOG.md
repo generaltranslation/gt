@@ -1,5 +1,16 @@
 # gtx-cli
 
+## 2.5.37
+
+### Patch Changes
+
+- [#911](https://github.com/generaltranslation/gt/pull/911) [`6af64c0`](https://github.com/generaltranslation/gt/commit/6af64c04fa6e3d6332a206d9b68fa1a46de1c002) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding `experimentalCanonicalLocaleKeys` option to `gt.config.json`. It overrides alias configurations when setting keys in a JSON schema
+
+- [#908](https://github.com/generaltranslation/gt/pull/908) [`1e7e52f`](https://github.com/generaltranslation/gt/commit/1e7e52f3a77835887ff187ffeb99d6e3dc2a9e6c) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix timeout logic; Refactor upload command
+
+- Updated dependencies [[`1e7e52f`](https://github.com/generaltranslation/gt/commit/1e7e52f3a77835887ff187ffeb99d6e3dc2a9e6c)]:
+  - generaltranslation@8.1.5
+
 ## 2.5.36
 
 ### Patch Changes
