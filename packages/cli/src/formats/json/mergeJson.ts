@@ -202,6 +202,12 @@ export function mergeJson(
             translatedKeyJsonPointer,
             translatedValue,
           ] of Object.entries(targetItem || {})) {
+            const valueToSet =
+              useCanonicalLocaleKeys &&
+              defaultLocaleKeyPointer &&
+              translatedKeyJsonPointer === defaultLocaleKeyPointer
+                ? targetLocaleKeyProperty
+                : translatedValue;
             try {
               const value = JSONPointer.get(
                 mutatedSourceItem,
@@ -211,7 +217,7 @@ export function mergeJson(
               JSONPointer.set(
                 mutatedSourceItem,
                 translatedKeyJsonPointer,
-                translatedValue
+                valueToSet
               );
             } catch {
               /* empty */
@@ -225,14 +231,6 @@ export function mergeJson(
             target.targetLocale,
             defaultLocale
           );
-
-          if (useCanonicalLocaleKeys && defaultLocaleKeyPointer) {
-            JSONPointer.set(
-              mutatedSourceItem,
-              defaultLocaleKeyPointer,
-              targetLocaleKeyProperty
-            );
-          }
 
           itemsToAdd.push(mutatedSourceItem);
         }
