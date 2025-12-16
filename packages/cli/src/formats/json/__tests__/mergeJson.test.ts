@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
+import { gt } from '../../../utils/gt.js';
 
 vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
@@ -1406,6 +1407,77 @@ describe('mergeJson', () => {
       expect(englishItem.desc).toBe('English Description');
       expect(germanItem.title).toBe('Deutscher Titel');
       expect(germanItem.desc).toBe('Deutsche Beschreibung');
+    });
+
+    it('should force canonical locale for locale keys when canonical locale flag enabled', () => {
+      const originalContent = JSON.stringify({
+        navigation: {
+          languages: [
+            {
+              language: 'en',
+              tabs: [{ tab: 'Home', pages: ['docs/index'] }],
+            },
+          ],
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/navigation/languages': {
+              '/0': {
+                '/language': 'fr-ca',
+                '/tabs/0/tab': 'Accueil',
+                '/tabs/0/pages/0': 'docs/fr-ca/index',
+              },
+            },
+          }),
+          targetLocale: 'fr-ca',
+        },
+      ];
+
+      const customMapping = {
+        'fr-ca': { code: 'fr-CA' },
+      };
+      gt.setConfig({ sourceLocale: 'en', customMapping });
+
+      const result = mergeJson(
+        originalContent,
+        'docs.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$.tabs[*].tab', '$.tabs[*].pages[*]'],
+                  key: '$.language',
+                },
+              },
+            },
+          },
+          experimentalCanonicalLocaleKeys: true,
+        },
+        targets,
+        'en',
+        ['fr-ca']
+      );
+
+      gt.setConfig({ sourceLocale: 'en', customMapping: undefined as any });
+
+      const parsed = JSON.parse(result[0]);
+      const frenchNav = parsed.navigation.languages.find(
+        (lang: any) => lang.language === 'fr-CA'
+      );
+
+      expect(frenchNav).toBeDefined();
+      expect(
+        parsed.navigation.languages.find(
+          (lang: any) => lang.language === 'fr-ca'
+        )
+      ).toBeUndefined();
+      expect(frenchNav.tabs[0].tab).toBe('Accueil');
+      expect(frenchNav.tabs[0].pages[0]).toBe('docs/fr-ca/index');
     });
 
     it('should order array items to match locales when sort is set to locale', () => {
