@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.12.2
+
+### Patch Changes
+
+- [#914](https://github.com/generaltranslation/gt/pull/914) [`d3c9368`](https://github.com/generaltranslation/gt/commit/d3c93686456d9077fcaa33f384e5287157c4606f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: disable swc plugin (temporary)
+
 ## 6.12.1
 
 ### Patch Changes
