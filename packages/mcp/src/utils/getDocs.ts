@@ -1,10 +1,9 @@
-export const GITHUB_URL =
-  'https://raw.githubusercontent.com/generaltranslation/gt/refs/heads/main/apps/docs/content/docs/en';
+const BASE_URL = 'https://generaltranslation.com';
 
-export const DOCS_URL = 'https://docs.generaltranslation.app';
+export const DOCS_URL = `${BASE_URL}/docs`;
 
 export const getDocs = async (path: string) => {
-  const url = `${GITHUB_URL}/${path}`;
+  const url = `${DOCS_URL}/${path}`;
   console.error(`Fetching document from: ${url}`);
 
   try {
@@ -30,7 +29,10 @@ export const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
  * Fetches content from the docs URL with caching
  * Refreshes cache every 5 minutes
  */
-export async function fetchDocContent(path: string): Promise<string> {
+export async function fetchDocContent(
+  path: string,
+  includeDocsPath: boolean = true
+): Promise<string> {
   const now = Date.now();
 
   // Check if we have a valid cached entry
@@ -38,7 +40,8 @@ export async function fetchDocContent(path: string): Promise<string> {
     return cache[path].content;
   }
 
-  const url = `${DOCS_URL}/${path}`;
+  // Fetch fresh content
+  const url = includeDocsPath ? `${DOCS_URL}/${path}` : `${BASE_URL}/${path}`;
   console.error(`Fetching document from: ${url}`);
 
   try {
