@@ -65,7 +65,7 @@ export function addDocsTools(server: McpServer) {
     async ({ type }) => {
       try {
         const filename = type === 'full' ? 'llms-full.txt' : 'llms.txt';
-        const content = await fetchDocContent(filename);
+        const content = await fetchDocContent(filename, false);
 
         if (!content) {
           return {
