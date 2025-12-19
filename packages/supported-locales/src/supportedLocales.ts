@@ -130,6 +130,7 @@ const supportedLocales = {
   tr: ['tr'], // Turkish
   uk: ['uk'], // Ukrainian
   ur: ['ur'], // Urdu
+  uz: ['uz'], // Uzbek
   vi: ['vi'], // Vietnamese
   zh: [
     // Chinese
