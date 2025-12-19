@@ -68,7 +68,7 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
   experimentalCompilerOptions: {
-    type: 'swc',
+    type: 'none',
     logLevel: 'warn',
     compileTimeHash: true,
     disableBuildChecks: false,
