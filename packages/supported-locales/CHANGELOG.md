@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.0.36
+
+### Patch Changes
+
+- [#916](https://github.com/generaltranslation/gt/pull/916) [`4def431`](https://github.com/generaltranslation/gt/commit/4def4316c4e9fe0de02d091a2320667a0f86284a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: add uzbek
+
 ## 2.0.35
 
 ### Patch Changes
