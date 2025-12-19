@@ -1,5 +1,11 @@
 # @generaltranslation/mcp
 
+## 1.0.4
+
+### Patch Changes
+
+- [#918](https://github.com/generaltranslation/gt/pull/918) [`76c412d`](https://github.com/generaltranslation/gt/commit/76c412dc27c0dea2c4df30b0afe833bb0eef8be6) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix base URL for fetching docs
+
 ## 1.0.3
 
 ### Patch Changes
