@@ -63,3 +63,21 @@ jobs:
           title: '[ci] release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if gtx-cli was published
+        id: check-gtx-cli
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          published_packages='${{ steps.changesets.outputs.publishedPackages }}'
+          
+          if echo "$published_packages" | grep -q '"name": *"gtx-cli"'; then
+            echo "should_release_bin=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_release_bin=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Release gtx-cli binary
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        run: pnpm run release:gtx-cli-bin
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
