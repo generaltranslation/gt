@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.38
+
+### Patch Changes
+
+- [#921](https://github.com/generaltranslation/gt/pull/921) [`1aece7c`](https://github.com/generaltranslation/gt/commit/1aece7c23081a0b26d6d0e58e0fc76ba18b80b47) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Bumping CLI minor version to avoid npm release conflict
+
 ## 2.5.37
 
 ### Patch Changes
