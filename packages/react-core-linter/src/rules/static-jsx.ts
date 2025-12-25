@@ -40,20 +40,45 @@ export const staticJsx = createRule({
         'All dynamic content must be wrapped in a variable component (<Var>, <DateTime>, <Num>, or <Currency>).',
     },
   },
-  defaultOptions: [{ libs: [] as GTLibrary[] }],
+  defaultOptions: [{ libs: GT_LIBRARIES }],
   create(context, [options]) {
     const { libs = GT_LIBRARIES } = options;
 
+    // Track the T component stack
+    const tComponentStack: ('T' | 'no-T')[] = ['no-T'];
     return {
-      JSXOpeningElement(node: TSESTree.JSXOpeningElement) {
-        // Filter out non-T components
-        if (!isTComponent({ context, node, libs })) return;
-
-        // DEBUG: for now just have an error for the T component
+      /**
+       * Flag dynamic content
+       */
+      JSXExpressionContainer(node: TSESTree.JSXExpressionContainer) {
+        // Skip if we're not in a T component
+        console.log('JSXExpressionContainer', tComponentStack);
+        if (tComponentStack[tComponentStack.length - 1] !== 'T') return;
         context.report({
-          node: node.parent,
+          node,
           messageId: 'dynamicContent',
         });
+      },
+      /**
+       * Flag the entrance/exit of a T component
+       */
+      JSXElement(node) {
+        // Filter out non-T components
+        if (!isTComponent({ context, node: node.openingElement, libs })) return;
+        tComponentStack.push('T');
+      },
+      'JSXElement:exit'(node) {
+        if (!isTComponent({ context, node: node.openingElement, libs })) return;
+        tComponentStack.pop();
+      },
+      /**
+       * JSXOpeningElement, JSXOpeningElement:exit handle ignoring arguments
+       */
+      JSXOpeningElement() {
+        tComponentStack.push('no-T');
+      },
+      'JSXOpeningElement:exit'() {
+        tComponentStack.pop();
       },
     };
   },

@@ -4,7 +4,7 @@ export const GT_LIBRARIES = [
   'gt-react-native',
   'gt-i18n',
   '@generaltranslation/react-core',
-] as const;
+];
 
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
 

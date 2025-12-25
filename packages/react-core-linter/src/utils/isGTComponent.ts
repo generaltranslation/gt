@@ -17,7 +17,8 @@ export type IsGTComponentOptions = {
       ]
     >
   >;
-  node: TSESTree.JSXOpeningElement;
+  /** Opening or closing element of the component */
+  node: TSESTree.JSXOpeningElement | TSESTree.JSXClosingElement;
   libs: readonly GTLibrary[];
   targetComponentName: (typeof GT_COMPONENT_NAMES)[number];
 };
@@ -60,22 +61,34 @@ export function isGTComponent({
     return false;
   }
 
-  // Check import source
-  const importSource =
+  // Check name (eg T, Var, etc)
+  // TODO: handle aliases (eg resolve the component name)
+  const resolvedImportName =
     variable.defs[0].node.imported.type === AST_NODE_TYPES.Identifier
       ? variable.defs[0].node.imported.name
       : variable.defs[0].node.imported.value;
-  if (libs.includes(importSource as unknown as GTLibrary)) {
-    return false;
-  }
-
-  // Check name
-  // TODO: handle aliases (eg resolve the component name)
-  const resolvedComponentName = componentName;
-  if (resolvedComponentName !== targetComponentName) {
+  if (resolvedImportName !== targetComponentName) {
     if (doDebug) console.log('not target component', componentName);
     return false;
   }
+
+  // Check import source
+  // TODO: handle TSImportEqualsDeclaration
+  const importDecl = variable.defs[0].parent;
+  if (
+    importDecl.type !== AST_NODE_TYPES.ImportDeclaration ||
+    !libs.includes(importDecl.source.value as unknown as GTLibrary)
+  ) {
+    if (doDebug && importDecl.type === AST_NODE_TYPES.ImportDeclaration)
+      console.log(
+        'not matching import source',
+        importDecl.source.value,
+        libs.includes(importDecl.source.value as unknown as GTLibrary),
+        libs
+      );
+    return false;
+  }
+
   if (doDebug) console.log('is target component', componentName);
   return true;
 }
