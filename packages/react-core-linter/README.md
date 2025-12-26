@@ -3,3 +3,4 @@
 - T component static children
 - string registration functions static args
 - untranslated content warning (off by default)
+- Branch must have branch prop, and plural must have n prop
