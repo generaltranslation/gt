@@ -1387,7 +1387,7 @@ mod tests {
       let mut visitor = create_visitor_with_imports();
       let string_literal = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
-        value: Atom::new("Hello world"),
+        value: Atom::new("Hello world").into(),
         raw: None,
       }));
       let call_expr = create_call_expr("useGT", string_literal);

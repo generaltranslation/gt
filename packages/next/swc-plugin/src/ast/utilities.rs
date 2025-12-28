@@ -65,7 +65,7 @@ pub fn extract_html_content_props(attrs: &[JSXAttrOrSpread]) -> HtmlContentProps
         let prop_name = name_ident.sym.as_ref();
 
         if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
-          let value = str_lit.value.to_string();
+          let value = str_lit.value.to_string_lossy().into_owned();
 
           match prop_name {
             "placeholder" => props.pl = Some(value),

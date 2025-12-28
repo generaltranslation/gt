@@ -4,7 +4,7 @@ pub fn extract_template_string(tpl: &Tpl) -> Option<String> {
   if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
     if let Some(quasi) = tpl.quasis.first() {
       if let Some(cooked) = &quasi.cooked {
-        return Some(cooked.to_string());
+        return Some(cooked.to_string_lossy().into_owned());
       } else {
         return Some(quasi.raw.to_string());
       }
@@ -16,10 +16,10 @@ pub fn extract_template_string(tpl: &Tpl) -> Option<String> {
 pub fn extract_string_from_jsx_attr(jsx_attr: &JSXAttr) -> Option<String> {
   match &jsx_attr.value {
     // New API: JSXAttrValue::Str instead of JSXAttrValue::Lit(Lit::Str(...))
-    Some(JSXAttrValue::Str(str_lit)) => Some(str_lit.value.to_string()),
+    Some(JSXAttrValue::Str(str_lit)) => Some(str_lit.value.to_string_lossy().into_owned()),
     Some(JSXAttrValue::JSXExprContainer(expr_container)) => match &expr_container.expr {
       JSXExpr::Expr(expr) => match expr.as_ref() {
-        Expr::Lit(Lit::Str(str_lit)) => Some(str_lit.value.to_string()),
+        Expr::Lit(Lit::Str(str_lit)) => Some(str_lit.value.to_string_lossy().into_owned()),
         Expr::Tpl(tpl) => extract_template_string(tpl),
         _ => None,
       },
