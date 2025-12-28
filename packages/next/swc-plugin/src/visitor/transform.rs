@@ -262,8 +262,8 @@ impl TransformVisitor {
 
   /// Process GT-Next import declarations to track imports and aliases
   pub fn process_gt_import_declaration(&mut self, import_decl: &ImportDecl) {
-    let src_value = import_decl.src.value.as_ref();
-    match src_value {
+    let src_value = import_decl.src.value.to_string_lossy().into_owned();
+    match src_value.as_str() {
       "gt-next" | "gt-next/client" | "gt-next/server" | "gt-i18n" => {
         // Process named imports: import { T, Var, useGT } from 'gt-next'
         for specifier in &import_decl.specifiers {
@@ -274,7 +274,7 @@ impl TransformVisitor {
               let local_name = local.sym.clone();
               let original_name = match imported {
                 Some(ModuleExportName::Ident(ident)) => ident.sym.clone(),
-                Some(ModuleExportName::Str(str_lit)) => str_lit.value.clone(),
+                Some(ModuleExportName::Str(str_lit)) => Atom::new(str_lit.value.to_string_lossy().into_owned()),
                 None => local_name.clone(),
               };
 
@@ -877,7 +877,7 @@ mod tests {
       specifiers,
       src: Box::new(Str {
         span: DUMMY_SP,
-        value: Atom::new(source),
+        value: Atom::new(source).into(),
         raw: None,
       }),
       type_only: false,
@@ -1225,7 +1225,7 @@ mod tests {
         ),
         value: Some(JSXAttrValue::Str(Str {
           span: DUMMY_SP,
-          value: Atom::new(value),
+          value: Atom::new(value).into(),
           raw: None,
         })),
       })
@@ -1277,7 +1277,7 @@ mod tests {
           assert_eq!(name_ident.sym.as_ref(), "data-test");
         }
         if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
-          assert_eq!(str_lit.value.as_ref(), "test-value");
+          assert_eq!(str_lit.value.to_string_lossy().into_owned(), "test-value");
         }
       } else {
         panic!("Expected JSXAttr");
@@ -1319,13 +1319,13 @@ mod tests {
           TplElement {
             span: DUMMY_SP,
             tail: false,
-            cooked: Some(Atom::new("Hello ")),
+            cooked: Some(Atom::new("Hello ").into()),
             raw: Atom::new("Hello "),
           },
           TplElement {
             span: DUMMY_SP,
             tail: true,
-            cooked: Some(Atom::new("!")),
+            cooked: Some(Atom::new("!").into()),
             raw: Atom::new("!"),
           },
         ],
@@ -1338,7 +1338,7 @@ mod tests {
         op: BinaryOp::Add,
         left: Box::new(Expr::Lit(Lit::Str(Str {
           span: DUMMY_SP,
-          value: Atom::new("Hello "),
+          value: Atom::new("Hello ").into(),
           raw: None,
         }))),
         right: Box::new(Expr::Ident(Ident {
@@ -1499,7 +1499,7 @@ mod tests {
         op: BinaryOp::Add,
         left: Box::new(Expr::Lit(Lit::Str(Str {
           span: DUMMY_SP,
-          value: Atom::new("Hello "),
+          value: Atom::new("Hello ").into(),
           raw: None,
         }))),
         right: Box::new(Expr::Call(CallExpr {
@@ -1585,13 +1585,13 @@ mod tests {
           TplElement {
             span: DUMMY_SP,
             tail: false,
-            cooked: Some(Atom::new("Hello ")),
+            cooked: Some(Atom::new("Hello ").into()),
             raw: Atom::new("Hello "),
           },
           TplElement {
             span: DUMMY_SP,
             tail: true,
-            cooked: Some(Atom::new("")),
+            cooked: Some(Atom::new("").into()),
             raw: Atom::new(""),
           },
         ],
@@ -1737,7 +1737,7 @@ mod tests {
           spread: None,
           expr: Box::new(Expr::Lit(Lit::Str(Str {
             span: DUMMY_SP,
-            value: Atom::new("hello"),
+            value: Atom::new("hello").into(),
             raw: None,
           }))),
         }],
@@ -1799,7 +1799,7 @@ mod tests {
       let mut visitor = create_visitor_with_imports();
       let string_literal = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
-        value: Atom::new("hello"),
+        value: Atom::new("hello").into(),
         raw: None,
       }));
       let var_declarator = create_var_declarator("message", string_literal);

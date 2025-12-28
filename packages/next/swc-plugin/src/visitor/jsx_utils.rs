@@ -120,8 +120,8 @@ mod tests {
       quasis: vec![TplElement {
         span: DUMMY_SP,
         tail: true,
-        cooked: cooked.map(Atom::new),
-        raw: Atom::new(raw),
+        cooked: cooked.map(|s| Atom::new(s.to_string()).into()),
+        raw: Atom::new(raw.to_string()),
       }],
     }
   }
@@ -140,13 +140,13 @@ mod tests {
         TplElement {
           span: DUMMY_SP,
           tail: false,
-          cooked: Some(Atom::new("Hello ")),
+          cooked: Some(Atom::new("Hello ").into()),
           raw: Atom::new("Hello "),
         },
         TplElement {
           span: DUMMY_SP,
           tail: true,
-          cooked: Some(Atom::new("!")),
+          cooked: Some(Atom::new("!").into()),
           raw: Atom::new("!"),
         },
       ],
@@ -168,7 +168,7 @@ mod tests {
       ),
       value: Some(JSXAttrValue::Str(Str {
         span: DUMMY_SP,
-        value: Atom::new(value),
+        value: Atom::new(value).into(),
         raw: None,
       })),
     })
@@ -274,13 +274,13 @@ mod tests {
           TplElement {
             span: DUMMY_SP,
             tail: false,
-            cooked: Some(Atom::new("hello")),
+            cooked: Some(Atom::new("hello").into()),
             raw: Atom::new("hello"),
           },
           TplElement {
             span: DUMMY_SP,
             tail: true,
-            cooked: Some(Atom::new("world")),
+            cooked: Some(Atom::new("world").into()),
             raw: Atom::new("world"),
           },
         ],
@@ -308,7 +308,7 @@ mod tests {
         ),
         value: Some(JSXAttrValue::Str(Str {
           span: DUMMY_SP,
-          value: Atom::new("hello world"),
+          value: Atom::new("hello world").into(),
           raw: None,
         })),
       };
@@ -333,7 +333,7 @@ mod tests {
           span: DUMMY_SP,
           expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Str(Str {
             span: DUMMY_SP,
-            value: Atom::new("from expression"),
+            value: Atom::new("from expression").into(),
             raw: None,
           })))),
         })),
@@ -463,7 +463,7 @@ mod tests {
     fn extracts_attribute_from_expression() {
       let expr = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
-        value: Atom::new("dynamic-id"),
+        value: Atom::new("dynamic-id").into(),
         raw: None,
       }));
       let attrs = vec![create_expr_attr("id", expr)];
@@ -732,7 +732,7 @@ mod tests {
     fn rejects_non_number_expressions() {
       let expr = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
-        value: Atom::new("not-a-number"),
+        value: Atom::new("not-a-number").into(),
         raw: None,
       }));
       let attrs = vec![create_expr_attr("maxChars", expr)];

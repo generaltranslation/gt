@@ -374,7 +374,7 @@ mod tests {
         ),
         value: Some(JSXAttrValue::Str(Str {
           span: DUMMY_SP,
-          value: Atom::new(value),
+          value: Atom::new(value).into(),
           raw: None,
         })),
       })

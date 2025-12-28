@@ -431,7 +431,7 @@ mod tests {
     assert!(tracker.get_variable(&"t2".into()).is_none());
 
     // t2 should be physically removed from data structure
-    assert!(tracker.scoped_variables.get(&"t2".into()).is_none());
+    assert!(tracker.scoped_variables.get(&Atom::new("t2")).is_none());
     assert_eq!(tracker.scoped_variables.len(), 1);
 
     // Scope info should also be cleaned up
