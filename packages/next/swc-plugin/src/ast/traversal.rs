@@ -367,7 +367,7 @@ impl<'a> JsxTraversal<'a> {
       if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           if name_ident.sym.as_ref() == "name" {
-            if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
+            if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
               if !str_lit.value.is_empty() {
                 return str_lit.value.to_string();
               }
@@ -593,7 +593,7 @@ impl<'a> JsxTraversal<'a> {
     value: &JSXAttrValue,
   ) -> Option<SanitizedChild> {
     match value {
-      JSXAttrValue::Lit(Lit::Str(str_lit)) => {
+      JSXAttrValue::Str(str_lit) => {
         let content = str_lit.value.to_string();
         Some(SanitizedChild::Text(content))
       }

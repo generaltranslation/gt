@@ -15,7 +15,8 @@ pub fn extract_template_string(tpl: &Tpl) -> Option<String> {
 
 pub fn extract_string_from_jsx_attr(jsx_attr: &JSXAttr) -> Option<String> {
   match &jsx_attr.value {
-    Some(JSXAttrValue::Lit(Lit::Str(str_lit))) => Some(str_lit.value.to_string()),
+    // New API: JSXAttrValue::Str instead of JSXAttrValue::Lit(Lit::Str(...))
+    Some(JSXAttrValue::Str(str_lit)) => Some(str_lit.value.to_string()),
     Some(JSXAttrValue::JSXExprContainer(expr_container)) => match &expr_container.expr {
       JSXExpr::Expr(expr) => match expr.as_ref() {
         Expr::Lit(Lit::Str(str_lit)) => Some(str_lit.value.to_string()),
@@ -58,15 +59,7 @@ pub fn extract_max_chars_from_jsx_attr(
       if let JSXAttrName::Ident(ident) = &jsx_attr.name {
         if ident.sym.as_ref() == attribute_name {
           match &jsx_attr.value {
-            // Direct number literal: maxChars="42" or maxChars={42}
-            Some(JSXAttrValue::Lit(Lit::Num(num))) => {
-              if num.value.fract() == 0.0 {
-                Some(num.value.abs() as i32)
-              } else {
-                None
-              }
-            }
-            // Expression container: maxChars={42} only (no negatives)
+            // Expression container: maxChars={42} - numbers are only in expression containers now
             Some(JSXAttrValue::JSXExprContainer(expr_container)) => {
               match &expr_container.expr {
                 JSXExpr::Expr(expr) => match expr.as_ref() {
@@ -173,11 +166,11 @@ mod tests {
         }
         .into(),
       ),
-      value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+      value: Some(JSXAttrValue::Str(Str {
         span: DUMMY_SP,
         value: Atom::new(value),
         raw: None,
-      }))),
+      })),
     })
   }
 
@@ -313,11 +306,11 @@ mod tests {
           }
           .into(),
         ),
-        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+        value: Some(JSXAttrValue::Str(Str {
           span: DUMMY_SP,
           value: Atom::new("hello world"),
           raw: None,
-        }))),
+        })),
       };
       let result = extract_string_from_jsx_attr(&attr);
       assert_eq!(result, Some("hello world".to_string()));
@@ -404,11 +397,14 @@ mod tests {
           }
           .into(),
         ),
-        value: Some(JSXAttrValue::Lit(Lit::Num(Number {
+        value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
           span: DUMMY_SP,
-          value: 42.0,
-          raw: None,
-        }))),
+          expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Num(Number {
+            span: DUMMY_SP,
+            value: 42.0,
+            raw: None,
+          })))),
+        })),
       };
       let result = extract_string_from_jsx_attr(&attr);
       assert_eq!(result, None);
@@ -580,25 +576,14 @@ mod tests {
   mod extract_max_chars_from_jsx_attr {
     use super::*;
 
-    // Helper to create JSX attribute with number literal value
+    // Helper to create JSX attribute with number in expression container
     fn create_number_attr(name: &str, value: f64) -> JSXAttrOrSpread {
-      JSXAttrOrSpread::JSXAttr(JSXAttr {
+      let expr = Expr::Lit(Lit::Num(Number {
         span: DUMMY_SP,
-        name: JSXAttrName::Ident(
-          Ident {
-            span: DUMMY_SP,
-            sym: Atom::new(name),
-            optional: false,
-            ctxt: SyntaxContext::empty(),
-          }
-          .into(),
-        ),
-        value: Some(JSXAttrValue::Lit(Lit::Num(Number {
-          span: DUMMY_SP,
-          value,
-          raw: None,
-        }))),
-      })
+        value,
+        raw: None,
+      }));
+      create_expr_attr(name, expr)
     }
 
     // Helper to create JSX attribute with unary expression

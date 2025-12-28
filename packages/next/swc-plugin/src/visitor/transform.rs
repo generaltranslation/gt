@@ -744,11 +744,11 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
         )
         .into(),
       ),
-      value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+      value: Some(JSXAttrValue::Str(Str {
         span: element.opening.span,
         value: value.into(),
         raw: None,
-      }))),
+      })),
     })
   }
 }
@@ -1223,11 +1223,11 @@ mod tests {
           }
           .into(),
         ),
-        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+        value: Some(JSXAttrValue::Str(Str {
           span: DUMMY_SP,
           value: Atom::new(value),
           raw: None,
-        }))),
+        })),
       })
     }
 
@@ -1276,7 +1276,7 @@ mod tests {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           assert_eq!(name_ident.sym.as_ref(), "data-test");
         }
-        if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
+        if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
           assert_eq!(str_lit.value.as_ref(), "test-value");
         }
       } else {
