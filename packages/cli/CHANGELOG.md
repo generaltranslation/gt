@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.40
+
+### Patch Changes
+
+- [#927](https://github.com/generaltranslation/gt/pull/927) [`f0f86f3`](https://github.com/generaltranslation/gt/commit/f0f86f3c2dbb90d43029f64def2b3dc43584bad7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding YAML support for Mintlify OpenAPI configurations
+
 ## 2.5.39
 
 ### Patch Changes
