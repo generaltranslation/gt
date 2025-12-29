@@ -8,6 +8,7 @@ import {
 import {
   isBranchComponent,
   isBranchingComponent,
+  isStaticComponent,
   isTComponent,
   isVariableComponent,
 } from '../../utils/isGTFunction.js';
@@ -99,13 +100,20 @@ export const staticJsx = createRule({
         // Filter out non-T components
         if (isTComponent({ context, node: node.openingElement, libs }))
           scopeStack.push('T');
-        if (isVariableComponent({ context, node: node.openingElement, libs }))
+        else if (
+          isVariableComponent({ context, node: node.openingElement, libs })
+        )
+          scopeStack.push('no-T');
+        else if (
+          isStaticComponent({ context, node: node.openingElement, libs })
+        )
           scopeStack.push('no-T');
       },
       'JSXElement:exit'(node) {
         if (
           isTComponent({ context, node: node.openingElement, libs }) ||
-          isVariableComponent({ context, node: node.openingElement, libs })
+          isVariableComponent({ context, node: node.openingElement, libs }) ||
+          isStaticComponent({ context, node: node.openingElement, libs })
         ) {
           scopeStack.pop();
         }

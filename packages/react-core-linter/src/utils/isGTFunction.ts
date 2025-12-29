@@ -7,6 +7,7 @@ import {
   PLURAL_COMPONENT_NAME,
   BRANCH_COMPONENT_NAME,
   BRANCH_COMPONENT_NAMES,
+  STATIC_COMPONENT_NAME,
 } from './constants.js';
 import { RuleContext, Scope } from '@typescript-eslint/utils/ts-eslint';
 
@@ -99,6 +100,19 @@ export function isTComponent({
     node,
     libs,
     targetName: T_COMPONENT_NAME,
+  });
+}
+
+export function isStaticComponent({
+  context,
+  node,
+  libs,
+}: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
+  return isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: STATIC_COMPONENT_NAME,
   });
 }
 
