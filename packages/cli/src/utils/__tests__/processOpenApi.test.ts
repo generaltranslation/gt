@@ -89,6 +89,47 @@ describe('processOpenApi', () => {
     expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
   });
 
+  it('supports YAML OpenAPI specs for frontmatter rewrites', async () => {
+    const spec = 'openapi: 3.0.0\npaths:\n  /foo:\n    post: {}\n';
+
+    const specPath = path.join(tmpDir, 'openapi.demo.yaml');
+    fs.writeFileSync(specPath, spec);
+    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.demo.yaml');
+    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
+    fs.writeFileSync(translatedSpecPath, spec);
+
+    const sourceMdxPath = path.join(tmpDir, 'openapiYamlPage.mdx');
+    fs.writeFileSync(sourceMdxPath, '---\nopenapi: POST /foo\n---\n');
+    const translatedMdxPath = path.join(tmpDir, 'es', 'openapiYamlPage.mdx');
+    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
+    fs.writeFileSync(translatedMdxPath, '---\nopenapi: POST /foo\n---\n');
+
+    const settings = createSettings(tmpDir, ['./openapi.demo.yaml']);
+    settings.files = {
+      resolvedPaths: {
+        mdx: [sourceMdxPath],
+        yaml: [specPath],
+      },
+      placeholderPaths: {
+        mdx: [path.join(tmpDir, '[locale]', 'openapiYamlPage.mdx')],
+        yaml: [specPath],
+      },
+      transformPaths: {
+        yaml: {
+          match: 'openapi.demo.yaml$',
+          replace: '{locale}/openapi.demo.yaml',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
+    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
+    expect(updatedSource).toContain('/openapi.demo.yaml POST /foo');
+    expect(updatedTranslated).toContain('/es/openapi.demo.yaml POST /foo');
+  });
+
   it('skips ambiguous operations when multiple specs match and leaves frontmatter unchanged', async () => {
     const specA = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
     const specB = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
