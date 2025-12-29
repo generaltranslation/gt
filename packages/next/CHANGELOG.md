@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.12.4
+
+### Patch Changes
+
+- [#925](https://github.com/generaltranslation/gt/pull/925) [`6df7670`](https://github.com/generaltranslation/gt/commit/6df76703afeb2dc1c782f0f2da9d46208975906b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: deprecate swc plugin for nextjs versions earlier than 16.1
+
 ## 6.12.3
 
 ### Patch Changes
