@@ -7,7 +7,7 @@
  */
 
 import type { ESLint, Rule } from 'eslint';
-import { staticJsx } from './rules/static-jsx.js';
+import { staticJsx } from './rules/static-jsx/index.js';
 
 const plugin: ESLint.Plugin = {
   meta: {

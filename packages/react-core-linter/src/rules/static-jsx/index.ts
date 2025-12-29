@@ -4,14 +4,15 @@ import {
   ALLOWED_JSX_EXPRESSIONS,
   GT_LIBRARIES,
   RULE_URL,
-} from '../utils/constants.js';
+} from '../../utils/constants.js';
 import {
   isBranchComponent,
   isBranchingComponent,
   isTComponent,
   isVariableComponent,
-} from '../utils/isGTFunction.js';
-import { isContentBranch } from '../utils/branching-utils.js';
+} from '../../utils/isGTFunction.js';
+import { isContentBranch } from '../../utils/branching-utils.js';
+import { ScopeStack } from './ScopeStack.js';
 
 /**
  * Static JSX applies to children of the <T> component
@@ -53,34 +54,7 @@ export const staticJsx = createRule({
     const { libs = GT_LIBRARIES } = options;
 
     // Track the T component stack
-    const scopeStack: (
-      | 'no-T' // No check
-      | 'T' // Check static
-      | 'Branch' // Check attrs
-      | 'Plural' // Check attrs
-      | 'Branching-Attribute' // Handle JsxExpressionContainers different
-    )[] = ['no-T'];
-    function inTranslatableContent(): boolean {
-      const scope = scopeStack[scopeStack.length - 1];
-      return scope === 'T';
-    }
-    function inBranchingComponent(): boolean {
-      const scope = scopeStack[scopeStack.length - 1];
-      return scope === 'Branch' || scope === 'Plural';
-    }
-    function inBranchingAttribute(): boolean {
-      return scopeStack[scopeStack.length - 1] === 'Branching-Attribute';
-    }
-    function inBranchT(): boolean {
-      return (
-        scopeStack.length >= 2 &&
-        scopeStack[scopeStack.length - 1] === 'T' &&
-        scopeStack[scopeStack.length - 2] === 'Branching-Attribute'
-      );
-    }
-    function getScope() {
-      return scopeStack[scopeStack.length - 1];
-    }
+    const scopeStack = new ScopeStack();
     return {
       /**
        * Flag dynamic content
@@ -89,7 +63,7 @@ export const staticJsx = createRule({
       JSXExpressionContainer(node: TSESTree.JSXExpressionContainer) {
         if (!node.expression) return;
         // Handle T component and branching attribute cases
-        if (inTranslatableContent()) {
+        if (scopeStack.inTranslatableContent()) {
           if (!ALLOWED_JSX_EXPRESSIONS.includes(node.expression.type)) {
             return context.report({
               node,
@@ -97,7 +71,7 @@ export const staticJsx = createRule({
               // TODO: fix by adding <Var>
             });
           }
-        } else if (inBranchingAttribute()) {
+        } else if (scopeStack.inBranchingAttribute()) {
           // Translate as normal
           scopeStack.push('T');
           // Check errors
@@ -115,7 +89,7 @@ export const staticJsx = createRule({
         }
       },
       'JSXExpressionContainer:exit'(node) {
-        if (!node.expression || !inBranchT()) return;
+        if (!node.expression || !scopeStack.inBranchT()) return;
         scopeStack.pop();
       },
       /**
@@ -141,7 +115,7 @@ export const staticJsx = createRule({
        */
       JSXOpeningElement(node) {
         if (
-          inTranslatableContent() &&
+          scopeStack.inTranslatableContent() &&
           isBranchingComponent({ context, node, libs })
         ) {
           if (isBranchComponent({ context, node, libs })) {
@@ -163,26 +137,26 @@ export const staticJsx = createRule({
       JSXAttribute(node: TSESTree.JSXAttribute) {
         // Filter out non-branching attributes, or non-expression containers
         if (
-          !inBranchingComponent() ||
+          !scopeStack.inBranchingComponent() ||
           node.value?.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer
         ) {
           return;
         }
 
         // Filter out branching properties, or non-options (null, literals, etc.)
-        if (!isContentBranch({ tScope: getScope(), node })) return;
+        if (!isContentBranch({ tScope: scopeStack.getScope(), node })) return;
         scopeStack.push('Branching-Attribute');
       },
       'JSXAttribute:exit'(node: TSESTree.JSXAttribute) {
         if (
-          !inBranchingAttribute() ||
+          !scopeStack.inBranchingAttribute() ||
           node.value?.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer
         ) {
           return;
         }
 
         // Filter out branching properties, or non-options (null, literals, etc.)
-        if (!isContentBranch({ tScope: getScope(), node })) return;
+        if (!isContentBranch({ tScope: scopeStack.getScope(), node })) return;
         scopeStack.pop();
       },
     };
