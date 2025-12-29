@@ -367,9 +367,9 @@ impl<'a> JsxTraversal<'a> {
       if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
           if name_ident.sym.as_ref() == "name" {
-            if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
+            if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
               if !str_lit.value.is_empty() {
-                return str_lit.value.to_string();
+                return str_lit.value.to_string_lossy().to_string();
               }
             }
           }
@@ -593,8 +593,8 @@ impl<'a> JsxTraversal<'a> {
     value: &JSXAttrValue,
   ) -> Option<SanitizedChild> {
     match value {
-      JSXAttrValue::Lit(Lit::Str(str_lit)) => {
-        let content = str_lit.value.to_string();
+      JSXAttrValue::Str(str_lit) => {
+        let content = str_lit.value.to_string_lossy().into_owned();
         Some(SanitizedChild::Text(content))
       }
       JSXAttrValue::JSXExprContainer(expr_container) => {
@@ -669,7 +669,7 @@ impl<'a> JsxTraversal<'a> {
               self.build_sanitized_child(&JSXElementChild::JSXElement(element.clone()), true, true)
             }
           }
-          Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string())),
+          Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string_lossy().into_owned())),
           Expr::Lit(Lit::Num(num_lit)) => {
             Some(SanitizedChild::Text(js_number_to_string(num_lit.value)))
           }
@@ -695,7 +695,7 @@ impl<'a> JsxTraversal<'a> {
             if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
               if let Some(quasi) = tpl.quasis.first() {
                 if let Some(cooked) = &quasi.cooked {
-                  let content = cooked.to_string();
+                  let content = cooked.to_string_lossy().into_owned();
                   Some(SanitizedChild::Text(content))
                 } else {
                   let content = quasi.raw.to_string();
@@ -985,7 +985,7 @@ mod tests {
     fn create_string_expr(value: &str) -> JSXExpr {
       JSXExpr::Expr(Box::new(Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
-        value: Atom::new(value),
+        value: Atom::new(value).into(),
         raw: None,
       }))))
     }

@@ -3,6 +3,7 @@ import { babelPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 import {
   createGTCompilerUnavailableWarning,
   disablingCompileTimeHashWarning,
+  swcPluginCompatibilityChangeWarning,
 } from '../../errors/createErrors';
 import { swcPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 
@@ -17,6 +18,7 @@ export function validateCompiler(mergedConfig: withGTConfigProps) {
   const type = mergedConfig.experimentalCompilerOptions.type;
   if (type === 'swc' && !swcPluginCompatible) {
     console.warn(createGTCompilerUnavailableWarning('swc'));
+    console.warn(swcPluginCompatibilityChangeWarning);
     mergedConfig.experimentalCompilerOptions.type = 'none';
   } else if (type === 'babel' && (!babelPluginCompatible || turboPackEnabled)) {
     console.warn(createGTCompilerUnavailableWarning('babel'));

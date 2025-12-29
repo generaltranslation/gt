@@ -181,3 +181,5 @@ export const createStringRenderWarning = (
   id: string | undefined
 ) =>
   `gt-next: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+
+export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support has been disabled for all versions of Next.js prior to ${SWC_PLUGIN_SUPPORT}. Please update to the latest version of Next.js.`;

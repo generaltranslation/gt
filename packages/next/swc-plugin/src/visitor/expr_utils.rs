@@ -48,7 +48,7 @@ pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
 // Helper function to extract string values from expressions
 pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
   match expr {
-    Expr::Lit(Lit::Str(s)) => Some(s.value.to_string()),
+    Expr::Lit(Lit::Str(s)) => Some(s.value.to_string_lossy().into_owned()),
     Expr::Lit(Lit::Num(n)) => Some(n.value.to_string()),
     Expr::Lit(Lit::Bool(b)) => Some(b.value.to_string()),
     Expr::Ident(ident) => Some(ident.sym.to_string()),
@@ -56,7 +56,7 @@ pub fn extract_string_from_expr(expr: &Expr) -> Option<String> {
       if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
         if let Some(quasi) = tpl.quasis.first() {
           if let Some(cooked) = &quasi.cooked {
-            return Some(cooked.to_string());
+            return Some(cooked.to_string_lossy().into_owned());
           } else {
             return Some(quasi.raw.to_string());
           }

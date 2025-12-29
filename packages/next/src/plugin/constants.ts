@@ -1,6 +1,6 @@
 export const BABEL_PLUGIN_SUPPORT = '17.0.0';
 
-export const SWC_PLUGIN_SUPPORT = '15.2.0';
+export const SWC_PLUGIN_SUPPORT = '16.1.0';
 
 export const ROOT_PARAM_STABILITY = {
   unsupported: '0.0.0',

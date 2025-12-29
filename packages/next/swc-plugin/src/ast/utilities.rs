@@ -64,8 +64,8 @@ pub fn extract_html_content_props(attrs: &[JSXAttrOrSpread]) -> HtmlContentProps
       if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
         let prop_name = name_ident.sym.as_ref();
 
-        if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
-          let value = str_lit.value.to_string();
+        if let Some(JSXAttrValue::Str(str_lit)) = &jsx_attr.value {
+          let value = str_lit.value.to_string_lossy().into_owned();
 
           match prop_name {
             "placeholder" => props.pl = Some(value),
@@ -372,11 +372,11 @@ mod tests {
           }
           .into(),
         ),
-        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+        value: Some(JSXAttrValue::Str(Str {
           span: DUMMY_SP,
-          value: Atom::new(value),
+          value: Atom::new(value).into(),
           raw: None,
-        }))),
+        })),
       })
     }
 
