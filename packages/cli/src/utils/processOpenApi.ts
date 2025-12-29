@@ -45,6 +45,7 @@ const HTTP_METHODS = new Set([
   'HEAD',
   'TRACE',
 ]);
+const OPENAPI_SPEC_EXTENSIONS = new Set(['.json', '.yaml', '.yml']);
 
 /**
  * Postprocess Mintlify OpenAPI references to point to locale-specific spec files.
@@ -139,7 +140,7 @@ export default async function processOpenApi(
 /**
  * Resolve configured OpenAPI files to absolute paths and collect the operations,
  * schemas, and webhooks they expose. Warns and skips when files are missing,
- * unsupported (non-JSON), or fail to parse so later steps can continue gracefully.
+ * unsupported (non-JSON/YAML), or fail to parse so later steps can continue gracefully.
  */
 function buildSpecAnalyses(
   openapiFiles: string[],
@@ -153,9 +154,10 @@ function buildSpecAnalyses(
       logger.warn(`OpenAPI file not found: ${configEntry}`);
       continue;
     }
-    if (path.extname(absPath).toLowerCase() !== '.json') {
+    const ext = path.extname(absPath).toLowerCase();
+    if (!OPENAPI_SPEC_EXTENSIONS.has(ext)) {
       logger.warn(
-        `Skipping OpenAPI file (only .json supported): ${configEntry}`
+        `Skipping OpenAPI file (only .json/.yml/.yaml supported): ${configEntry}`
       );
       continue;
     }
@@ -163,9 +165,10 @@ function buildSpecAnalyses(
     let spec: unknown;
     try {
       const raw = fs.readFileSync(absPath, 'utf8');
-      spec = JSON.parse(raw);
+      spec = ext === '.json' ? JSON.parse(raw) : YAML.parse(raw);
     } catch {
-      logger.warn(`Failed to parse OpenAPI JSON: ${configEntry}`);
+      const format = ext === '.json' ? 'JSON' : 'YAML';
+      logger.warn(`Failed to parse OpenAPI ${format}: ${configEntry}`);
       continue;
     }
 
@@ -372,7 +375,7 @@ function parseOpenApiValue(value: string): ParsedOpenApiValue | null {
   const second = tokens[1];
   const methodCandidate = second?.toUpperCase();
   const firstLooksLikeSpec =
-    first.toLowerCase().endsWith('.json') ||
+    hasOpenApiSpecExtension(first) ||
     (second &&
       (second.toLowerCase() === 'webhook' ||
         (methodCandidate && HTTP_METHODS.has(methodCandidate))));
@@ -408,7 +411,7 @@ function parseSchemaValue(value: string): ParsedSchemaValue | null {
   if (!tokens.length) return null;
   let cursor = 0;
   let specPath: string | undefined;
-  if (tokens[0].toLowerCase().endsWith('.json')) {
+  if (hasOpenApiSpecExtension(tokens[0])) {
     specPath = tokens[0];
     cursor = 1;
   }
@@ -579,6 +582,10 @@ function describeOpenApiRef(value: ParsedOpenApiValue): string {
 function stripExtension(p: string): string {
   const parsed = path.parse(p);
   return normalizeSlashes(path.join(parsed.dir, parsed.name));
+}
+
+function hasOpenApiSpecExtension(value: string): boolean {
+  return OPENAPI_SPEC_EXTENSIONS.has(path.extname(value).toLowerCase());
 }
 
 /** Normalize separators for stable comparisons and output. */

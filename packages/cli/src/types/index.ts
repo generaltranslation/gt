@@ -267,7 +267,7 @@ export type JsonSchema = {
 };
 
 export type YamlSchema = {
-  preset?: 'mintlify';
+  preset?: 'mintlify' | 'openapi';
   include?: string[];
   transform?: TransformOptions;
 };
