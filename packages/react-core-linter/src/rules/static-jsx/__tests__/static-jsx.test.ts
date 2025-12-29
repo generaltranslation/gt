@@ -69,6 +69,12 @@ describe('static-jsx rule', () => {
               messageId: 'dynamicContent',
             },
           ],
+          output: `
+            import { T } from '@generaltranslation/react-core';
+            function Component({ name }) {
+              return <T><Var>{name}</Var></T>;
+            }
+          `,
         },
         {
           code: `
@@ -84,6 +90,13 @@ describe('static-jsx rule', () => {
               messageId: 'dynamicContent',
             },
           ],
+          output: `
+            import { T } from '@generaltranslation/react-core';
+            function Component() {
+              const variable = "dynamic";
+              return <T><Var>{variable}</Var></T>;
+            }
+          `,
         },
         {
           code: `
@@ -98,6 +111,12 @@ describe('static-jsx rule', () => {
               messageId: 'dynamicContent',
             },
           ],
+          output: `
+            import { T } from '@generaltranslation/react-core';
+            function Component() {
+              return <T><Var>{someFunction()}</Var></T>;
+            }
+          `,
         },
         {
           code: `

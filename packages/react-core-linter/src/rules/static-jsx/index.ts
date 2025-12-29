@@ -1,4 +1,8 @@
 import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
+import type {
+  RuleFixer,
+  RuleContext,
+} from '@typescript-eslint/utils/ts-eslint';
 import {
   ALLOWED_BRANCH_ATTRIBUTE_JSX_EXPRESSIONS,
   ALLOWED_JSX_EXPRESSIONS,
@@ -16,6 +20,21 @@ import { isContentBranch } from '../../utils/branching-utils.js';
 import { ScopeStack } from './ScopeStack.js';
 
 /**
+ * Creates a fixer that wraps a JSX expression container in a <Var> component
+ */
+function createVarWrapperFix(
+  context: RuleContext<any, any>,
+  fixer: RuleFixer,
+  node: TSESTree.JSXExpressionContainer
+) {
+  // Get the source code of the expression container
+  const sourceCode = context.sourceCode.getText(node);
+  // Wrap in <Var> component
+  const fixedCode = `<Var>${sourceCode}</Var>`;
+  return fixer.replaceText(node, fixedCode);
+}
+
+/**
  * Static JSX applies to children of the <T> component
  */
 const createRule = ESLintUtils.RuleCreator((name) => `${RULE_URL}${name}`);
@@ -27,7 +46,7 @@ export const staticJsx = createRule({
     docs: {
       description: 'The <T> component must only have static children.',
     },
-    fixable: undefined,
+    fixable: 'code',
     schema: [
       {
         type: 'object',
@@ -69,7 +88,9 @@ export const staticJsx = createRule({
             return context.report({
               node,
               messageId: 'dynamicContent',
-              // TODO: fix by adding <Var>
+              fix(fixer) {
+                return createVarWrapperFix(context, fixer, node);
+              },
             });
           }
         } else if (scopeStack.inBranchingAttribute()) {
@@ -84,7 +105,9 @@ export const staticJsx = createRule({
             return context.report({
               node,
               messageId: 'dynamicContent',
-              // TODO: fix by adding <Var>
+              fix(fixer) {
+                return createVarWrapperFix(context, fixer, node);
+              },
             });
           }
         }
