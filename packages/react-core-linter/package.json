@@ -71,6 +71,7 @@
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/rule-tester": "^8.50.1",
     "eslint": "^9.0.0",
     "typescript": "^5.0.0",
     "vitest": "^2.0.0"
