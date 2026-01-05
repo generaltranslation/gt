@@ -452,7 +452,36 @@ function resolveSpec(
         samePath(candidate, normalizedSpecPath)
       );
     });
-    if (foundSpec) return foundSpec;
+    if (foundSpec) {
+      if (specHasMatch(foundSpec, match)) {
+        return foundSpec;
+      }
+
+      const alternatives = specs.filter(
+        (spec) => spec !== foundSpec && specHasMatch(spec, match)
+      );
+      if (alternatives.length === 1) {
+        warnings.add(
+          `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found there. Using ${alternatives[0].configPath} instead.`
+        );
+        return alternatives[0];
+      }
+      if (alternatives.length > 1) {
+        warnings.add(
+          `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found there and matches multiple specs (${alternatives
+            .map((spec) => spec.configPath)
+            .join(
+              ', '
+            )}). Skipping localization for this reference.`
+        );
+        return null;
+      }
+
+      warnings.add(
+        `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found in any configured spec. Skipping localization for this reference.`
+      );
+      return null;
+    }
 
     const explicitWithoutExt = stripExtension(normalizedExplicit);
     const explicitBase = path.basename(normalizedExplicit);
@@ -514,6 +543,19 @@ function resolveSpec(
     `OpenAPI reference ${refDescription} in ${filePath} was not found in any configured spec. Skipping localization for this reference.`
   );
   return null;
+}
+
+function specHasMatch(
+  spec: SpecAnalysis,
+  match: { type: 'operation' | 'webhook' | 'schema'; key: string }
+): boolean {
+  if (match.type === 'schema') {
+    return spec.schemas.has(match.key);
+  }
+  if (match.type === 'webhook') {
+    return spec.webhooks.has(match.key);
+  }
+  return spec.operations.has(match.key);
 }
 
 /**
