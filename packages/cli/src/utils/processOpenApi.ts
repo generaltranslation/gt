@@ -470,9 +470,7 @@ function resolveSpec(
         warnings.add(
           `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found there and matches multiple specs (${alternatives
             .map((spec) => spec.configPath)
-            .join(
-              ', '
-            )}). Skipping localization for this reference.`
+            .join(', ')}). Skipping localization for this reference.`
         );
         return null;
       }
