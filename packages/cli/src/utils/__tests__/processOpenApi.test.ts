@@ -337,6 +337,55 @@ describe('processOpenApi', () => {
     expect(updatedTranslated).toContain('/es/openapi.demo.json POST /foo');
   });
 
+  it('repoints explicit spec paths when entry moves to another spec', async () => {
+    const specA = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specB = { openapi: '3.0.0', paths: { '/bar': { get: {} } } };
+
+    const specAPath = path.join(tmpDir, 'spec-a.json');
+    const specBPath = path.join(tmpDir, 'spec-b.json');
+    fs.writeFileSync(specAPath, JSON.stringify(specA));
+    fs.writeFileSync(specBPath, JSON.stringify(specB));
+    const specALocalized = path.join(tmpDir, 'es', 'spec-a.json');
+    const specBLocalized = path.join(tmpDir, 'es', 'spec-b.json');
+    fs.mkdirSync(path.dirname(specALocalized), { recursive: true });
+    fs.writeFileSync(specALocalized, JSON.stringify(specA));
+    fs.writeFileSync(specBLocalized, JSON.stringify(specB));
+
+    const sourceMdxPath = path.join(tmpDir, 'page.mdx');
+    fs.writeFileSync(
+      sourceMdxPath,
+      '---\nopenapi: /spec-a.json GET /bar\n---\n'
+    );
+    const translatedMdxPath = path.join(tmpDir, 'es', 'page.mdx');
+    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
+    fs.writeFileSync(
+      translatedMdxPath,
+      '---\nopenapi: /spec-a.json GET /bar\n---\n'
+    );
+
+    const settings = createSettings(tmpDir, ['./spec-a.json', './spec-b.json']);
+    settings.files = {
+      resolvedPaths: { mdx: [sourceMdxPath], json: [specAPath, specBPath] },
+      placeholderPaths: {
+        mdx: [path.join(tmpDir, '[locale]', 'page.mdx')],
+        json: [specAPath, specBPath],
+      },
+      transformPaths: {
+        json: {
+          match: 'spec-a.json$|spec-b.json$',
+          replace: '{locale}/$&',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
+    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
+    expect(updatedSource).toContain('/spec-b.json GET /bar');
+    expect(updatedTranslated).toContain('/es/spec-b.json GET /bar');
+  });
+
   it('preserves flow-style frontmatter formatting when updating openapi', async () => {
     const spec = { openapi: '3.0.0', paths: { '/foo': { post: {} } } };
     const specPath = path.join(tmpDir, 'openapi.demo.json');
