@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.41
+
+### Patch Changes
+
+- [#929](https://github.com/generaltranslation/gt/pull/929) [`ca7b778`](https://github.com/generaltranslation/gt/commit/ca7b7785cc28817c154900933ac7be2098a10faf) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Auto-update OpenAPI spec paths when specs are modified
+
 ## 2.5.40
 
 ### Patch Changes
