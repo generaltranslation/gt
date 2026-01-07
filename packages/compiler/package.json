@@ -34,9 +34,6 @@
     "translation",
     "i18n"
   ],
-  "peerDependencies": {
-    "vite": ">=3"
-  },
   "dependencies": {
     "@babel/generator": "^7.23.0",
     "@babel/parser": "^7.23.0",
