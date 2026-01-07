@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.5.42
+
+### Patch Changes
+
+- [#932](https://github.com/generaltranslation/gt/pull/932) [`dcdd751`](https://github.com/generaltranslation/gt/commit/dcdd7516edfe2e51ed633c79bc2045fb14fd938b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: compiler cli deps when installed at the same time caused an bug in npm with the esbuild version
+
+## 2.5.41
+
+### Patch Changes
+
+- [#929](https://github.com/generaltranslation/gt/pull/929) [`ca7b778`](https://github.com/generaltranslation/gt/commit/ca7b7785cc28817c154900933ac7be2098a10faf) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Auto-update OpenAPI spec paths when specs are modified
+
 ## 2.5.40
 
 ### Patch Changes
