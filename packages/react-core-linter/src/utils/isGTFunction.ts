@@ -8,27 +8,53 @@ import {
   BRANCH_COMPONENT_NAME,
   BRANCH_COMPONENT_NAMES,
   STATIC_COMPONENT_NAME,
+  DECLARE_STATIC_FUNCTION_NAME,
+  MSG_FUNCTION_NAME,
 } from './constants.js';
 import { RuleContext, Scope } from '@typescript-eslint/utils/ts-eslint';
 
 export type IsGTFunctionOptions = {
-  context: Readonly<
-    RuleContext<
-      'dynamicContent',
-      [
-        {
-          libs: GTLibrary[];
-        },
-      ]
-    >
-  >;
+  // TODO: better typing
+  context: Readonly<RuleContext<any, any>>;
   /** Opening or closing element of the component */
-  node: TSESTree.JSXOpeningElement | TSESTree.JSXClosingElement;
+  node:
+    | TSESTree.JSXOpeningElement
+    | TSESTree.JSXClosingElement
+    | TSESTree.CallExpression;
   libs: readonly GTLibrary[];
   targetName:
     | (typeof GT_COMPONENT_NAMES)[number]
     | (typeof GT_COMPONENT_NAMES)[number][];
 };
+
+/**
+ * Extract identifier name from a node
+ * @param node - JSXOpeningElement, JSXClosingElement, or CallExpression
+ * @returns
+ *
+ * TODO: handle member expressions
+ */
+
+function getIdentifierName(
+  node:
+    | TSESTree.JSXOpeningElement
+    | TSESTree.JSXClosingElement
+    | TSESTree.CallExpression
+): string | null {
+  if (
+    node.type === AST_NODE_TYPES.JSXOpeningElement ||
+    node.type === AST_NODE_TYPES.JSXClosingElement
+  ) {
+    if (node.name.type === AST_NODE_TYPES.JSXIdentifier) {
+      return node.name.name;
+    }
+  } else if (node.type === AST_NODE_TYPES.CallExpression) {
+    if (node.callee.type === AST_NODE_TYPES.Identifier) {
+      return node.callee.name;
+    }
+  }
+  return null;
+}
 
 export function isGTFunction({
   context,
@@ -36,17 +62,15 @@ export function isGTFunction({
   libs,
   targetName,
 }: IsGTFunctionOptions): boolean {
-  // TODO: handle member expressionss
-  if (node.name.type !== 'JSXIdentifier') return false;
-
-  // Get the name of the component
-  const componentName = node.name.name;
+  // Get the name of the identifier
+  const identifierName = getIdentifierName(node);
+  if (identifierName === null) return false;
 
   // Get the component scope
   let scope: Scope.Scope | null = context.sourceCode.getScope(node);
   let variable: Scope.Variable | undefined;
   while (scope) {
-    variable = scope.set.get(componentName);
+    variable = scope.set.get(identifierName);
     if (variable) break;
     scope = scope.upper;
   }
@@ -165,5 +189,31 @@ export function isBranchingComponent({
     node,
     libs,
     targetName: BRANCH_COMPONENT_NAMES,
+  });
+}
+
+export function isDeclareStaticFunction({
+  context,
+  node,
+  libs,
+}: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
+  return isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: DECLARE_STATIC_FUNCTION_NAME,
+  });
+}
+
+export function isMsgFunction({
+  context,
+  node,
+  libs,
+}: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
+  return isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: MSG_FUNCTION_NAME,
   });
 }

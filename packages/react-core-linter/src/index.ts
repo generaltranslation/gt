@@ -8,6 +8,7 @@
 
 import type { ESLint, Rule } from 'eslint';
 import { staticJsx } from './rules/static-jsx/index.js';
+import { staticString } from './rules/static-string/index.js';
 
 const plugin: ESLint.Plugin = {
   meta: {
@@ -16,15 +17,19 @@ const plugin: ESLint.Plugin = {
   },
   rules: {
     'static-jsx': staticJsx as unknown as Rule.RuleModule,
+    'static-string': staticString as unknown as Rule.RuleModule,
   },
   configs: {
     recommended: {
       plugins: ['@generaltranslation/react-core-linter'],
       rules: {
         '@generaltranslation/react-core-linter/static-jsx': 'error',
+        '@generaltranslation/react-core-linter/static-string': 'error',
       },
     },
   },
 };
+
+plugin
 
 export default plugin;
