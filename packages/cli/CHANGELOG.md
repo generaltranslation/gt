@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.44
+
+### Patch Changes
+
+- [#936](https://github.com/generaltranslation/gt/pull/936) [`45ee200`](https://github.com/generaltranslation/gt/commit/45ee20016ff82ea07008e053e296146a0e925841) Thanks [@brian-lou](https://github.com/brian-lou)! - Create Locadex AI Agent link in gtx-cli init command
+
 ## 2.5.43
 
 ### Patch Changes
