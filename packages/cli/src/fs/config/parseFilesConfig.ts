@@ -9,6 +9,7 @@ import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { logger } from '../../console/logger.js';
 import chalk from 'chalk';
+import micromatch from 'micromatch';
 
 /**
  * Resolves the files from the files object
@@ -174,42 +175,74 @@ export function expandGlobPatterns(
 
     // For each match, create a version with [locale] in the correct positions
     matches.forEach((match) => {
-      // Convert to absolute path to make replacement easier
       const absolutePath = path.resolve(cwd, match);
       const patternPath = path.resolve(cwd, pattern);
       let originalAbsolutePath = absolutePath;
 
       if (localePositions.length > 0) {
-        // Replace all instances of [locale]
-        // but only in path segments where we expect it based on the original pattern
-        const pathParts = absolutePath.split(path.sep);
-        const patternParts = patternPath.split(path.sep);
-
-        for (let i = 0; i < pathParts.length; i++) {
-          if (i < patternParts.length) {
-            if (patternParts[i].includes(localeTag)) {
-              // This segment should have the locale replaced
-              // Create regex from pattern to match the actual path structure
-              const regexPattern = patternParts[i].replace(
-                /\[locale\]/g,
-                `(${locale.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
-              );
-              const regex = new RegExp(regexPattern);
-              pathParts[i] = pathParts[i].replace(
-                regex,
-                patternParts[i].replace(/\[locale\]/g, localeTag)
-              );
-            }
-          }
-        }
-
-        originalAbsolutePath = pathParts.join(path.sep);
+        const placeholderPath = buildPlaceholderPathFromPattern(
+          patternPath,
+          absolutePath,
+          localeTag
+        );
+        originalAbsolutePath = placeholderPath;
       }
 
-      // Convert back to absolute path
       placeholderPaths.push(originalAbsolutePath);
     });
   }
 
   return { resolvedPaths, placeholderPaths };
+}
+
+function buildPlaceholderPathFromPattern(
+  patternPath: string,
+  absolutePath: string,
+  localeTag: string
+): string {
+  if (!patternPath.includes(localeTag)) {
+    return absolutePath;
+  }
+
+  const posixPattern = toPosixPath(patternPath);
+  const posixPath = toPosixPath(absolutePath);
+
+  const baseRegex = micromatch.makeRe(posixPattern, {
+    literalBrackets: true,
+  });
+  const localeRegexSource = baseRegex.source.replace(
+    /\\\[locale\\\]/g,
+    '([^/]+)'
+  );
+  const flags = baseRegex.flags.includes('d')
+    ? baseRegex.flags
+    : `${baseRegex.flags}d`;
+  const matcher = new RegExp(localeRegexSource, flags);
+  const match = matcher.exec(posixPath);
+
+  const matchWithIndices = match as RegExpExecArray & {
+    indices?: Array<[number, number]>;
+  };
+
+  if (!match || !matchWithIndices.indices) {
+    return absolutePath;
+  }
+
+  let placeholderPosixPath = posixPath;
+  const indices = matchWithIndices.indices;
+
+  for (let i = indices.length - 1; i >= 1; i--) {
+    const [start, end] = indices[i];
+    if (start === -1 || end === -1) continue;
+    placeholderPosixPath =
+      placeholderPosixPath.slice(0, start) +
+      localeTag +
+      placeholderPosixPath.slice(end);
+  }
+
+  return path.normalize(placeholderPosixPath);
+}
+
+function toPosixPath(value: string): string {
+  return value.split(path.sep).join(path.posix.sep);
 }
