@@ -147,10 +147,11 @@ main() {
     # Verify installation
     if command_exists "$BINARY_NAME"; then
         info "gtx-cli installed successfully!"
-        info "Run 'gtx --help' to get started."
+        info "Run 'gtx-cli --help' to get started."
     else
         warn "gtx-cli was installed to ${install_path}"
-        warn "Make sure ${INSTALL_DIR} is in your PATH."
+        warn "Add the following to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        warn "  export PATH=\"${INSTALL_DIR}:\$PATH\""
     fi
 }
 
