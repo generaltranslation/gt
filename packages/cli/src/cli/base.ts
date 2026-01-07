@@ -296,7 +296,7 @@ export class BaseCLI {
           packageJson && isPackageInstalled('next', packageJson);
         const useAgent = isUsingNextjs
           ? await promptConfirm({
-              message: `Detected that this project is using Next.js. Would you like to use the Locadex AI Agent to automatically setup your project?`,
+              message: `Detected that this project is using Next.js. Would you like to use the Locadex AI Agent to automatically set up your project?`,
               defaultValue: true,
             })
           : false;
@@ -304,7 +304,7 @@ export class BaseCLI {
         if (useAgent) {
           await setupLocadex(settings);
           logger.endCommand(
-            'Done! The Locadex AI Agent will run in the background and setup your project. See the docs for more information: https://generaltranslation.com/docs'
+            'Done! The Locadex AI Agent will run in the background and set up your project. See the docs for more information: https://generaltranslation.com/docs'
           );
         } else {
           let ranReactSetup = false;
