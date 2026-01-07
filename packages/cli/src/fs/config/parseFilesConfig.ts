@@ -243,10 +243,6 @@ function buildPlaceholderPathFromPattern(
   return path.normalize(placeholderPosixPath);
 }
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function toPosixPath(value: string): string {
   return value.split(path.sep).join(path.posix.sep);
 }
