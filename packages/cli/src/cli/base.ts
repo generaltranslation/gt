@@ -47,6 +47,7 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets from '../utils/sharedStaticAssets.js';
+import { setupLocadex } from '../locadex/setupFlow.js';
 
 export type UploadOptions = {
   config?: string;
@@ -287,40 +288,56 @@ export class BaseCLI {
         findFilepath(['gt.config.json'])
       )
       .action(async (options: SetupOptions) => {
+        const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
         const packageJson = await searchForPackageJson();
+        const isUsingNextjs =
+          packageJson && isPackageInstalled('next', packageJson);
+        const useAgent = isUsingNextjs
+          ? await promptConfirm({
+              message: `Detected that this project is using Next.js. Would you like to use the Locadex AI Agent to automatically set up your project?`,
+              defaultValue: true,
+            })
+          : false;
 
-        let ranReactSetup = false;
-        // so that people can run init in non-js projects
-        if (packageJson && isPackageInstalled('react', packageJson)) {
-          const wrap = await promptConfirm({
-            message: `Detected that this project is using React. Would you like to run the React setup wizard?\nThis will install gt-react|gt-next as a dependency and internationalize your app.`,
-            defaultValue: true,
-          });
+        if (useAgent) {
+          await setupLocadex(settings);
+          logger.endCommand(
+            'Done! The Locadex AI Agent will run in the background and set up your project. See the docs for more information: https://generaltranslation.com/docs'
+          );
+        } else {
+          let ranReactSetup = false;
+          // so that people can run init in non-js projects
+          if (packageJson && isPackageInstalled('react', packageJson)) {
+            const wrap = await promptConfirm({
+              message: `Detected that this project is using React. Would you like to run the React setup wizard?\nThis will install gt-react|gt-next as a dependency and internationalize your app.`,
+              defaultValue: true,
+            });
 
-          if (wrap) {
-            logger.info(
-              `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
-            );
-            await this.handleSetupReactCommand(options);
-            logger.endCommand(
-              `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
+            if (wrap) {
+              logger.info(
+                `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
+              );
+              await this.handleSetupReactCommand(options);
+              logger.endCommand(
+                `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
 Certain aspects of your app may still need manual setup.
 See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
-            );
-            ranReactSetup = true;
+              );
+              ranReactSetup = true;
+            }
           }
-        }
-        if (ranReactSetup) {
-          logger.startCommand('Setting up project config...');
-        }
-        // Configure gt.config.json
-        await this.handleInitCommand(ranReactSetup);
+          if (ranReactSetup) {
+            logger.startCommand('Setting up project config...');
+          }
+          // Configure gt.config.json
+          await this.handleInitCommand(ranReactSetup);
 
-        logger.endCommand(
-          'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
-        );
+          logger.endCommand(
+            'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
+          );
+        }
       });
   }
 
