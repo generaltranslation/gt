@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.43
+
+### Patch Changes
+
+- [#933](https://github.com/generaltranslation/gt/pull/933) [`a9aae8c`](https://github.com/generaltranslation/gt/commit/a9aae8c7d22a074ef490b4f4a563a64ae50cd444) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fixing handling of [locale] placeholder in blob patterns
+
 ## 2.5.42
 
 ### Patch Changes
