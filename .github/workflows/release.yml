@@ -76,8 +76,42 @@ jobs:
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Release gtx-cli binary
+      - name: Extract gtx-cli version
+        id: gtx-cli-version
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
-        run: pnpm run release:gtx-cli-bin
+        run: |
+          published_packages='${{ steps.changesets.outputs.publishedPackages }}'
+          version=$(echo "$published_packages" | grep -A1 '"name": *"gtx-cli"' | grep '"version"' | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Build gtx-cli binaries
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        run: pnpm --filter gtx-cli run build:bin:clean
+
+      - name: Upload gtx-cli binaries to R2
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        uses: ryand56/r2-upload-action@v1.4
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
+          source-dir: packages/cli/binaries
+          destination-dir: cli/v${{ steps.gtx-cli-version.outputs.version }}
+
+      - name: Upload gtx-cli binaries to R2 (latest)
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        uses: ryand56/r2-upload-action@v1.4
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
+          source-dir: packages/cli/binaries
+          destination-dir: cli/latest
+
+      - name: Release gtx-cli binary to npm
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        run: pnpm --filter gtx-cli run bin:prep && pnpm --filter gtx-cli publish --tag bin --no-git-checks && pnpm --filter gtx-cli run bin:restore && pnpm --filter gtx-cli run build:clean
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
