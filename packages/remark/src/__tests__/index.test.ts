@@ -466,7 +466,7 @@ describe('remarkGfmCustom', () => {
       '| JSON | OK | Supports `JSON` |',
     ].join('\n');
     const result = processMarkdown(input);
-    expect(result).toContain('| Format | Support | Notes |');
-    expect(result).toContain('| JSON | OK | Supports `JSON` |');
+    expect(result).toMatch(/\| Format \| Support \| Notes\s*\|/);
+    expect(result).toMatch(/\| JSON\s+\| OK\s+\| Supports `JSON` \|/);
   });
 });
