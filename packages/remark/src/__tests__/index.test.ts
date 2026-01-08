@@ -451,8 +451,12 @@ describe('remarkGfmCustom', () => {
     expect(result).toContain(
       'See https://github.com/ClickHouse/ClickHouse/issues/92752 for details.'
     );
-    expect(result).not.toContain('<https://github.com/ClickHouse/ClickHouse/issues/92752>');
-    expect(result).not.toContain('[https://github.com/ClickHouse/ClickHouse/issues/92752]');
+    expect(result).not.toContain(
+      '<https://github.com/ClickHouse/ClickHouse/issues/92752>'
+    );
+    expect(result).not.toContain(
+      '[https://github.com/ClickHouse/ClickHouse/issues/92752]'
+    );
   });
 
   it('should keep GFM tables working', () => {
