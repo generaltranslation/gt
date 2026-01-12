@@ -31,8 +31,8 @@ const IGNORE_ALWAYS = [
   'inlineMath',
 ];
 
-// Want to ignore braces in headings to avoid escaping fragment ids ( {#my-id} )
-const IGNORE_FOR_BRACES = [...IGNORE_ALWAYS, 'heading'];
+// Want to ignore headings to avoid escaping fragment ids ( {#my-id} )
+const IGNORE_HEADINGS = [...IGNORE_ALWAYS, 'heading'];
 
 // & that is NOT already an entity: &word;  &#123;  &#x1A2B;
 const AMP_NOT_ENTITY = /&(?![a-zA-Z][a-zA-Z0-9]*;|#\d+;|#x[0-9A-Fa-f]+;)/g;
@@ -53,7 +53,6 @@ const escapeHtmlInTextNodes: Plugin<[], Root> = function () {
         [/>/g, '&gt;'],
         [/"/g, '&quot;'],
         [/'/g, '&#39;'],
-        [/_/g, '&#95;'],
       ],
       { ignore: IGNORE_ALWAYS }
     );
@@ -64,8 +63,9 @@ const escapeHtmlInTextNodes: Plugin<[], Root> = function () {
       [
         [/\{/g, '&#123;'],
         [/\}/g, '&#125;'],
+        [/_/g, '&#95;'],
       ],
-      { ignore: IGNORE_FOR_BRACES }
+      { ignore: IGNORE_HEADINGS }
     );
   };
 };
