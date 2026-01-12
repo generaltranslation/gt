@@ -1,5 +1,11 @@
 # gt-remark
 
+## 1.0.4
+
+### Patch Changes
+
+- [#940](https://github.com/generaltranslation/gt/pull/940) [`defee33`](https://github.com/generaltranslation/gt/commit/defee33267734041e58b6c76564f9903c95ba37e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Remove underscore escaping from headers
+
 ## 1.0.3
 
 ### Patch Changes
