@@ -24,7 +24,7 @@ export function getFrameworkDisplayName(
   if (frameworkObject.type === 'react') {
     return 'React';
   }
-  return 'other framework';
+  return 'another framework';
 }
 
 export function getReactFrameworkLibrary(
