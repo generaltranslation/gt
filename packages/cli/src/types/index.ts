@@ -104,19 +104,24 @@ export type GenerateSourceOptions = {
 
 export type Framework = 'gt-next' | 'gt-react';
 
-export type FrameworkObject = {
-  name: 'mintlify';
-  type?: undefined
-} | {
-  name: 'next-app' | 'next-pages' | 'vite' | 'gatsby' | 'redwood' | 'react';
-  type: 'react';
-}
+export type FrameworkObject =
+  | {
+      name: 'mintlify';
+      type?: undefined;
+    }
+  | {
+      name: 'next-app' | 'next-pages' | 'vite' | 'gatsby' | 'redwood' | 'react';
+      type: 'react';
+    };
 export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;
 
 export type FrameworkType = FrameworkObject['type'] | undefined;
 
-export type SupportedFrameworks = FrameworkObject['name']
-export type SupportedReactFrameworks = Extract<FrameworkObject, { type: 'react' }>['name'];
+export type SupportedFrameworks = FrameworkObject['name'];
+export type SupportedReactFrameworks = Extract<
+  FrameworkObject,
+  { type: 'react' }
+>['name'];
 
 export type SupportedLibraries =
   | 'gt-next'

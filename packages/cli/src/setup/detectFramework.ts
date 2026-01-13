@@ -4,7 +4,6 @@ import { searchForPackageJson } from '../utils/packageJson.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-
 /* ----- MAIN ----- */
 
 /**
@@ -21,13 +20,14 @@ import path from 'node:path';
  *             or undefined if no framework is detected
  *   - `type`: The framework category (currently only 'react' for React-based frameworks)
  */
-export async function detectFramework(): Promise<FrameworkObject | { name: undefined, type?: undefined }> {
-  
-    const packageJson = await searchForPackageJson();
+export async function detectFramework(): Promise<
+  FrameworkObject | { name: undefined; type?: undefined }
+> {
+  const packageJson = await searchForPackageJson();
 
-    if (isMintlifyProject(packageJson)) {
-        return { name: 'mintlify' };
-    }
+  if (isMintlifyProject(packageJson)) {
+    return { name: 'mintlify' };
+  }
 
   if (!packageJson) {
     return { name: undefined };
@@ -91,36 +91,41 @@ export async function detectFramework(): Promise<FrameworkObject | { name: undef
  *                       but kept for API consistency with other detection functions)
  * @returns True if the project is identified as a Mintlify project, false otherwise
  */
-export function isMintlifyProject(_packageJson: Record<string, any> | null): boolean {
-    const cwd = process.cwd();
+export function isMintlifyProject(
+  _packageJson: Record<string, any> | null
+): boolean {
+  const cwd = process.cwd();
 
-    // Check for Next.js config files - if present, this is not a Mintlify project
-    const nextConfigFiles = [
-        'next.config.js',
-        'next.config.ts',
-        'next.config.mjs',
-        'next.config.cjs'
-    ];
+  // Check for Next.js config files - if present, this is not a Mintlify project
+  const nextConfigFiles = [
+    'next.config.js',
+    'next.config.ts',
+    'next.config.mjs',
+    'next.config.cjs',
+  ];
 
-    for (const configFile of nextConfigFiles) {
-        if (fs.existsSync(path.join(cwd, configFile))) {
-            return false;
-        }
+  for (const configFile of nextConfigFiles) {
+    if (fs.existsSync(path.join(cwd, configFile))) {
+      return false;
     }
+  }
 
-    // Check for docs.json (preferred format)
-    const docsJsonPath = path.join(cwd, 'docs.json');
-    if (fs.existsSync(docsJsonPath)) {
-        try {
-            const docsJson = JSON.parse(fs.readFileSync(docsJsonPath, 'utf-8'));
-            // Validate the $schema field contains mintlify.com/docs.json
-            if (docsJson.$schema && docsJson.$schema.includes('mintlify.com/docs.json')) {
-                return true;
-            }
-        } catch {
-            return false;
-        }
+  // Check for docs.json (preferred format)
+  const docsJsonPath = path.join(cwd, 'docs.json');
+  if (fs.existsSync(docsJsonPath)) {
+    try {
+      const docsJson = JSON.parse(fs.readFileSync(docsJsonPath, 'utf-8'));
+      // Validate the $schema field contains mintlify.com/docs.json
+      if (
+        docsJson.$schema &&
+        docsJson.$schema.includes('mintlify.com/docs.json')
+      ) {
+        return true;
+      }
+    } catch {
+      return false;
     }
+  }
 
-    return false;
+  return false;
 }

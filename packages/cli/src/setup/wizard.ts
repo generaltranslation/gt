@@ -23,7 +23,7 @@ export async function handleSetupReactCommand(
   frameworkObject: ReactFrameworkObject
 ): Promise<void> {
   const frameworkDisplayName = getFrameworkDisplayName(frameworkObject);
-  
+
   // Ask user for confirmation using inquirer
   const answer = await promptConfirm({
     message: chalk.yellow(

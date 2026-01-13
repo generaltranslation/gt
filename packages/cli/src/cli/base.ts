@@ -51,7 +51,10 @@ import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets from '../utils/sharedStaticAssets.js';
 import { setupLocadex } from '../locadex/setupFlow.js';
 import { detectFramework } from '../setup/detectFramework.js';
-import { getFrameworkDisplayName, getReactFrameworkLibrary } from '../setup/frameworkUtils.js';
+import {
+  getFrameworkDisplayName,
+  getReactFrameworkLibrary,
+} from '../setup/frameworkUtils.js';
 
 export type UploadOptions = {
   config?: string;
@@ -301,18 +304,18 @@ export class BaseCLI {
           let useAgentMessage;
           if (framework.name === 'mintlify') {
             useAgentMessage = `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`;
-          };
-          if (framework.name === 'next-app')  {
+          }
+          if (framework.name === 'next-app') {
             useAgentMessage = `Next.js App Router detected. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`;
           }
           if (useAgentMessage) {
             return await promptConfirm({
               message: useAgentMessage,
               defaultValue: false,
-            })
+            });
           }
           return false;
-        })()
+        })();
 
         if (useAgent) {
           await setupLocadex(settings);

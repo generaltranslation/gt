@@ -1,6 +1,8 @@
-import { FrameworkObject, ReactFrameworkObject } from "../types/index.js";
+import { FrameworkObject, ReactFrameworkObject } from '../types/index.js';
 
-export function getFrameworkDisplayName(frameworkObject: FrameworkObject): string {
+export function getFrameworkDisplayName(
+  frameworkObject: FrameworkObject
+): string {
   if (frameworkObject.name === 'mintlify') {
     return 'Mintlify';
   }
@@ -25,6 +27,8 @@ export function getFrameworkDisplayName(frameworkObject: FrameworkObject): strin
   return 'other framework';
 }
 
-export function getReactFrameworkLibrary(frameworkObject: ReactFrameworkObject): string {
+export function getReactFrameworkLibrary(
+  frameworkObject: ReactFrameworkObject
+): string {
   return frameworkObject.name === 'next-app' ? 'gt-next' : 'gt-react';
 }
