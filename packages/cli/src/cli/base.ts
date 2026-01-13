@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
+  ReactFrameworkObject,
   SupportedLibraries,
   SetupOptions,
   TranslateFlags,
@@ -50,6 +51,7 @@ import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets from '../utils/sharedStaticAssets.js';
 import { setupLocadex } from '../locadex/setupFlow.js';
 import { detectFramework } from '../setup/detectFramework.js';
+import { getFrameworkDisplayName, getReactFrameworkLibrary } from '../setup/frameworkUtils.js';
 
 export type UploadOptions = {
   config?: string;
@@ -293,33 +295,40 @@ export class BaseCLI {
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
-        const packageJson = await searchForPackageJson();
-
         const framework = await detectFramework();
 
-        const useAgent = framework.name === 'next-app'
-          ? await promptConfirm({
-              message: `Detected Next.js App Router. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`,
+        const useAgent = await (async () => {
+          let useAgentMessage;
+          if (framework.name === 'mintlify') {
+            useAgentMessage = `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`;
+          };
+          if (framework.name === 'next-app')  {
+            useAgentMessage = `Next.js App Router detected. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`;
+          }
+          if (useAgentMessage) {
+            return await promptConfirm({
+              message: useAgentMessage,
               defaultValue: false,
             })
-          : false;
+          }
+          return false;
+        })()
 
         if (useAgent) {
           await setupLocadex(settings);
           logger.endCommand(
-            'Done! Locadex will run in the background and configure your project. See the docs for more information: https://generaltranslation.com/docs/locadex'
+            'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
         } else {
           let ranReactSetup = false;
 
           // so that people can run init in non-js projects
           if (framework.type === 'react') {
-
-            const frameworkDisplayName = framework.name === 'next-app' ? 'Next.js App Router' : 'React';
-            const library = framework.name === 'next-app' ? 'gt-next' : 'gt-react';
+            const frameworkDisplayName = getFrameworkDisplayName(framework);
+            const library = getReactFrameworkLibrary(framework);
 
             const wrap = await promptConfirm({
-              message: `Detected that this project is using ${frameworkDisplayName}. Would you like to install ${library} and add the GTProvider?`,
+              message: `${frameworkDisplayName} detected. Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
               defaultValue: true,
             });
 
@@ -327,10 +336,10 @@ export class BaseCLI {
               logger.info(
                 `${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`
               );
-              await this.handleSetupReactCommand(options);
+              await this.handleSetupReactCommand(options, framework);
               logger.endCommand(
                 `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext steps: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
               );
               ranReactSetup = true;
             }
@@ -408,9 +417,10 @@ export class BaseCLI {
   }
 
   protected async handleSetupReactCommand(
-    options: SetupOptions
+    options: SetupOptions,
+    frameworkObject: ReactFrameworkObject
   ): Promise<void> {
-    await handleSetupReactCommand(options);
+    await handleSetupReactCommand(options, frameworkObject);
   }
 
   // Wizard for configuring gt.config.json
@@ -436,11 +446,11 @@ export class BaseCLI {
           { value: 'local', label: 'Save locally' },
           { value: 'cdn', label: 'Use CDN' },
         ],
-        defaultValue: 'local'
-      })
+        defaultValue: 'local',
+      });
       return selectedValue === 'cdn';
     })();
-    
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
