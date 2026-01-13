@@ -297,7 +297,7 @@ export class BaseCLI {
         const useAgent = isUsingNextjs
           ? await promptConfirm({
               message: `Detected that this project is using Next.js. Would you like to use the Locadex AI Agent to automatically set up your project?`,
-              defaultValue: true,
+              defaultValue: false,
             })
           : false;
 
