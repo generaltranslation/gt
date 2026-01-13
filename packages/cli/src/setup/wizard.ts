@@ -22,8 +22,7 @@ export async function handleSetupReactCommand(
   // Ask user for confirmation using inquirer
   const answer = await promptConfirm({
     message: chalk.yellow(
-      `This wizard will configure your React project for internationalization with GT.
-If your project is already using a different i18n library, this wizard may cause issues.
+      `This wizard will configure your React project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
 
 Make sure you have committed or stashed any changes. Do you want to continue?`
     ),
