@@ -443,6 +443,7 @@ export class BaseCLI {
 
     // Ask where the translations are stored
     const usingCDN = await (async () => {
+      if (!isUsingGT) return false;
       const selectedValue = await promptSelect({
         message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
         options: [
