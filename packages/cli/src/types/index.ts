@@ -115,7 +115,7 @@ export type FrameworkObject =
     };
 export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;
 
-export type FrameworkType = FrameworkObject['type'] | undefined;
+export type FrameworkType = FrameworkObject['type'];
 
 export type SupportedFrameworks = FrameworkObject['name'];
 export type SupportedReactFrameworks = Extract<
