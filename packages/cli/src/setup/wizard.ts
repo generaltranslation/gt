@@ -3,7 +3,7 @@ import { promptSelect } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import { promptConfirm } from '../console/logging.js';
-import { SetupOptions, SupportedFrameworks } from '../types/index.js';
+import { SetupOptions, SupportedReactFrameworks } from '../types/index.js';
 import findFilepath from '../fs/findFilepath.js';
 import { formatFiles } from '../hooks/postProcess.js';
 import { handleInitGT } from '../next/parse/handleInitGT.js';
@@ -15,15 +15,19 @@ import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 import { exitSync } from '../console/logging.js';
+import { ReactFrameworkObject } from '../types/index.js';
+import { getFrameworkDisplayName } from './frameworkUtils.js';
 
 export async function handleSetupReactCommand(
-  options: SetupOptions
+  options: SetupOptions,
+  frameworkObject: ReactFrameworkObject
 ): Promise<void> {
+  const frameworkDisplayName = getFrameworkDisplayName(frameworkObject);
+
   // Ask user for confirmation using inquirer
   const answer = await promptConfirm({
     message: chalk.yellow(
-      `This wizard will configure your React project for internationalization with GT.
-If your project is already using a different i18n library, this wizard may cause issues.
+      `This wizard will configure your ${frameworkDisplayName} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
 
 Make sure you have committed or stashed any changes. Do you want to continue?`
     ),
@@ -38,8 +42,8 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
     exitSync(0);
   }
 
-  const frameworkType = await promptSelect<SupportedFrameworks | 'other'>({
-    message: 'What framework are you using?',
+  const frameworkType = await promptSelect<SupportedReactFrameworks | 'other'>({
+    message: 'Which framework are you using?',
     options: [
       { value: 'next-app', label: chalk.blue('Next.js App Router') },
       { value: 'next-pages', label: chalk.green('Next.js Pages Router') },
@@ -49,19 +53,19 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       { value: 'redwood', label: chalk.red('RedwoodJS') },
       { value: 'other', label: chalk.dim('Other') },
     ],
-    defaultValue: 'next-app',
+    defaultValue: frameworkObject?.name || 'other',
   });
   if (frameworkType === 'other') {
     logger.error(
-      `Sorry, other React frameworks are not currently supported. 
-Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
+      `Sorry, the wizard doesn't currently support other React frameworks. 
+Please let us know what you would like to see added at https://github.com/generaltranslation/gt/issues`
     );
     exitSync(0);
   }
 
   // ----- Create a starter gt.config.json file -----
   await createOrUpdateConfig(options.config || 'gt.config.json', {
-    framework: frameworkType as SupportedFrameworks,
+    framework: frameworkType as SupportedReactFrameworks,
   });
 
   const packageJson = await getPackageJson();

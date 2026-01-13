@@ -7,6 +7,7 @@ import {
   logErrorAndExit,
   promptConfirm,
   promptMultiSelect,
+  promptSelect,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import path from 'node:path';
@@ -14,6 +15,7 @@ import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
+  ReactFrameworkObject,
   SupportedLibraries,
   SetupOptions,
   TranslateFlags,
@@ -48,6 +50,11 @@ import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js'
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets from '../utils/sharedStaticAssets.js';
 import { setupLocadex } from '../locadex/setupFlow.js';
+import { detectFramework } from '../setup/detectFramework.js';
+import {
+  getFrameworkDisplayName,
+  getReactFrameworkLibrary,
+} from '../setup/frameworkUtils.js';
 
 export type UploadOptions = {
   config?: string;
@@ -291,43 +298,56 @@ export class BaseCLI {
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
-        const packageJson = await searchForPackageJson();
-        const isUsingNextjs =
-          packageJson && isPackageInstalled('next', packageJson);
-        const useAgent = isUsingNextjs
-          ? await promptConfirm({
-              message: `Detected that this project is using Next.js. Would you like to use the Locadex AI Agent to automatically set up your project?`,
-              defaultValue: true,
-            })
-          : false;
+        const framework = await detectFramework();
+
+        const useAgent = await (async () => {
+          let useAgentMessage;
+          if (framework.name === 'mintlify') {
+            useAgentMessage = `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`;
+          }
+          if (framework.name === 'next-app') {
+            useAgentMessage = `Next.js App Router detected. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`;
+          }
+          if (useAgentMessage) {
+            return await promptConfirm({
+              message: useAgentMessage,
+              defaultValue: false,
+            });
+          }
+          return false;
+        })();
 
         if (useAgent) {
           await setupLocadex(settings);
           logger.endCommand(
-            'Done! The Locadex AI Agent will run in the background and set up your project. See the docs for more information: https://generaltranslation.com/docs'
+            'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
         } else {
           let ranReactSetup = false;
+
           // so that people can run init in non-js projects
-          if (packageJson && isPackageInstalled('react', packageJson)) {
+          if (framework.type === 'react') {
+            const frameworkDisplayName = getFrameworkDisplayName(framework);
+            const library = getReactFrameworkLibrary(framework);
+
             const wrap = await promptConfirm({
-              message: `Detected that this project is using React. Would you like to run the React setup wizard?\nThis will install gt-react|gt-next as a dependency and internationalize your app.`,
+              message: `${frameworkDisplayName} detected. Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
               defaultValue: true,
             });
 
             if (wrap) {
               logger.info(
-                `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
+                `${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`
               );
-              await this.handleSetupReactCommand(options);
+              await this.handleSetupReactCommand(options, framework);
               logger.endCommand(
                 `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-Certain aspects of your app may still need manual setup.
-See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
               );
               ranReactSetup = true;
             }
           }
+
           if (ranReactSetup) {
             logger.startCommand('Setting up project config...');
           }
@@ -400,9 +420,10 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   }
 
   protected async handleSetupReactCommand(
-    options: SetupOptions
+    options: SetupOptions,
+    frameworkObject: ReactFrameworkObject
   ): Promise<void> {
-    await handleSetupReactCommand(options);
+    await handleSetupReactCommand(options, frameworkObject);
   }
 
   // Wizard for configuring gt.config.json
@@ -421,22 +442,25 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     const isUsingGT = isUsingGTNext || isUsingGTReact || ranReactSetup;
 
     // Ask where the translations are stored
-    const usingCDN = isUsingGT
-      ? await promptConfirm({
-          message: `Auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
-            isUsingGTNext
-              ? 'https://generaltranslation.com/en/docs/next/guides/local-tx'
-              : 'https://generaltranslation.com/en/docs/react/guides/local-tx'
-          } for more information.\nIf you answer no, we'll configure the CLI tool to download completed translations.`,
-          defaultValue: false,
-        })
-      : false;
+    const usingCDN = await (async () => {
+      if (!isUsingGT) return false;
+      const selectedValue = await promptSelect({
+        message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
+        options: [
+          { value: 'local', label: 'Save locally' },
+          { value: 'cdn', label: 'Use CDN' },
+        ],
+        defaultValue: 'local',
+      });
+      return selectedValue === 'cdn';
+    })();
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
         ? await promptText({
             message:
-              'What is the path to the directory where you would like to locally store your translations?',
+              'What is the path to the directory where you would like to store your translation files?',
             defaultValue: './public/_gt',
           })
         : null;
@@ -460,9 +484,9 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
 
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
-      : `${chalk.dim(
-          '(Optional)'
-        )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
+      : `Do you have any additional files in this project to translate? For example, Markdown files for docs. ${chalk.dim(
+          '(To continue without selecting press Enter)'
+        )}`;
     const fileExtensions = await promptMultiSelect({
       message,
       options: [
@@ -509,7 +533,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     });
 
     logger.success(
-      `Feel free to edit ${chalk.cyan(
+      `Edit ${chalk.cyan(
         configFilepath
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
