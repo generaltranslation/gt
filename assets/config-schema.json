@@ -484,6 +484,25 @@
           },
           "additionalProperties": false
         },
+        "skipFileValidation": {
+          "type": "object",
+          "description": "Skip pre-parse validation for specific file types before sending content to the translation pipeline.",
+          "properties": {
+            "json": {
+              "type": "boolean",
+              "description": "Skip JSON parseability checks."
+            },
+            "yaml": {
+              "type": "boolean",
+              "description": "Skip YAML parseability checks."
+            },
+            "mdx": {
+              "type": "boolean",
+              "description": "Skip MDX AST parseability checks."
+            }
+          },
+          "additionalProperties": false
+        },
         "mintlify": {
           "type": "object",
           "description": "Mintlify-specific options.",

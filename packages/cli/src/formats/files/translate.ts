@@ -26,6 +26,7 @@ export async function aggregateFiles(
   }
 
   const { resolvedPaths: filePaths } = settings.files;
+  const skipValidation = settings.options?.skipFileValidation;
 
   // Process JSON files
   if (filePaths.json) {
@@ -51,11 +52,13 @@ export async function aggregateFiles(
         const relativePath = getRelative(filePath);
 
         // Pre-validate JSON parseability
-        try {
-          JSON.parse(content);
-        } catch (e: any) {
-          logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
-          return null;
+        if (!skipValidation?.json) {
+          try {
+            JSON.parse(content);
+          } catch (e: any) {
+            logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
+            return null;
+          }
         }
 
         const parsedJson = parseJson(
@@ -94,11 +97,13 @@ export async function aggregateFiles(
         const relativePath = getRelative(filePath);
 
         // Pre-validate YAML parseability
-        try {
-          YAML.parse(content);
-        } catch (e: any) {
-          logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
-          return null;
+        if (!skipValidation?.yaml) {
+          try {
+            YAML.parse(content);
+          } catch (e: any) {
+            logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
+            return null;
+          }
         }
 
         const { content: parsedYaml, fileFormat } = parseYaml(
@@ -137,12 +142,14 @@ export async function aggregateFiles(
           const relativePath = getRelative(filePath);
 
           if (fileType === 'mdx') {
-            const validation = isValidMdx(content, filePath);
-            if (!validation.isValid) {
-              logger.warn(
-                `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
-              );
-              return null;
+            if (!skipValidation?.mdx) {
+              const validation = isValidMdx(content, filePath);
+              if (!validation.isValid) {
+                logger.warn(
+                  `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
+                );
+                return null;
+              }
             }
           }
 
