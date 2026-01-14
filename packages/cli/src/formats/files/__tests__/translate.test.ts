@@ -120,6 +120,31 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result[0].fileName).toBe('valid.json');
     });
 
+    it('should allow invalid JSON when validation is skipped', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            json: ['/full/path/invalid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {
+          skipFileValidation: {
+            json: true,
+          },
+        },
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{ invalid json');
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('invalid.json');
+    });
+
     it('should skip JSON files that return null content and log warning', async () => {
       const settings = {
         files: {
@@ -219,6 +244,35 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.mdx');
+    });
+
+    it('should skip MDX validation when configured', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            mdx: ['/full/path/invalid.mdx'],
+          },
+          placeholderPaths: {},
+        },
+        options: {
+          skipFileValidation: {
+            mdx: true,
+          },
+        },
+      };
+
+      mockReadFile.mockReturnValueOnce('<>Invalid mdx');
+      mockIsValidMdx.mockReturnValueOnce({
+        isValid: false,
+        error: 'bad',
+      });
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(mockIsValidMdx).not.toHaveBeenCalled();
+      expect(mockLogWarning).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('invalid.mdx');
     });
 
     it('should skip files that are empty after sanitization and log warning', async () => {

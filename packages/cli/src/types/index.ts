@@ -228,6 +228,12 @@ export type AdditionalOptions = {
   yamlSchema?: {
     [fileGlob: string]: YamlSchema;
   };
+  // Skip pre-parse validation checks for specific file types
+  skipFileValidation?: {
+    json?: boolean;
+    yaml?: boolean;
+    mdx?: boolean;
+  };
   // Optional Mintlify-specific options container
   mintlify?: MintlifyOptions;
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
