@@ -26,11 +26,11 @@ export async function aggregateFiles(
   }
 
   const { resolvedPaths: filePaths } = settings.files;
+  const skipValidation = settings.options?.skipFileValidation;
 
   // Process JSON files
   if (filePaths.json) {
     const { library, additionalModules } = determineLibrary();
-    const skipValidation = settings.options?.skipFileValidation;
 
     // Determine dataFormat for JSONs
     let dataFormat: DataFormat;
@@ -91,7 +91,6 @@ export async function aggregateFiles(
 
   // Process YAML files
   if (filePaths.yaml) {
-    const skipValidation = settings.options?.skipFileValidation;
     const yamlFiles = filePaths.yaml
       .map((filePath) => {
         const content = readFile(filePath);
@@ -143,7 +142,6 @@ export async function aggregateFiles(
           const relativePath = getRelative(filePath);
 
           if (fileType === 'mdx') {
-            const skipValidation = settings.options?.skipFileValidation;
             if (!skipValidation?.mdx) {
               const validation = isValidMdx(content, filePath);
               if (!validation.isValid) {
