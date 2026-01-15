@@ -175,6 +175,46 @@ No links here either.
     );
   });
 
+  it('escapes inline anchors when fileTypeHint is mdx even if target path is .md', () => {
+    const source = `## Source heading {#custom-source-id}`;
+    const translated = `## Encabezado traducido`;
+    const sourceHeadingMap = extractHeadingInfo(source);
+
+    const result = addExplicitAnchorIds(
+      translated,
+      sourceHeadingMap,
+      undefined,
+      source,
+      '/tmp/file.md',
+      'mdx'
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.content).toContain(
+      '## Encabezado traducido \\{#custom-source-id\\}'
+    );
+  });
+
+  it('keeps inline anchors unescaped when fileTypeHint is md even if target path is .mdx', () => {
+    const source = `## Source heading {#custom-source-id}`;
+    const translated = `## Encabezado traducido`;
+    const sourceHeadingMap = extractHeadingInfo(source);
+
+    const result = addExplicitAnchorIds(
+      translated,
+      sourceHeadingMap,
+      undefined,
+      source,
+      '/tmp/file.mdx',
+      'md'
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.content).toContain(
+      '## Encabezado traducido {#custom-source-id}'
+    );
+  });
+
   it('should handle JSX href attributes in raw JSX', () => {
     const input = `## Implementation Details
 
