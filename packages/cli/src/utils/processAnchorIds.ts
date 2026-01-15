@@ -2,7 +2,7 @@ import {
   addExplicitAnchorIds,
   extractHeadingInfo,
 } from './addExplicitAnchorIds.js';
-import { readFile } from '../fs/findFilepath.js';
+import { getRelative, readFile } from '../fs/findFilepath.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
 import * as fs from 'fs';
@@ -25,37 +25,41 @@ export default async function processAnchorIds(
     settings.locales,
     settings.defaultLocale
   );
+  const sourceTypeByPath = new Map<string, 'md' | 'mdx'>();
+  if (resolvedPaths.md) {
+    for (const filePath of resolvedPaths.md) {
+      sourceTypeByPath.set(getRelative(filePath), 'md');
+    }
+  }
+  if (resolvedPaths.mdx) {
+    for (const filePath of resolvedPaths.mdx) {
+      sourceTypeByPath.set(getRelative(filePath), 'mdx');
+    }
+  }
 
   // Process each locale's translated files
   const processPromises = Object.entries(fileMapping)
     .filter(([locale, filesMap]) => locale !== settings.defaultLocale) // Skip default locale
     .map(async ([locale, filesMap]) => {
-      // Get all translated files that are md or mdx
-      const translatedFiles = Object.values(filesMap).filter(
-        (p) =>
-          p &&
-          (p.endsWith('.md') || p.endsWith('.mdx')) &&
-          (!includeFiles || includeFiles.has(p))
+      // Get all translated files whose sources are md or mdx
+      const mdFiles = Object.entries(filesMap).filter(
+        ([sourcePath, translatedPath]) =>
+          translatedPath &&
+          sourceTypeByPath.has(sourcePath) &&
+          (!includeFiles || includeFiles.has(translatedPath))
       );
 
-      for (const translatedPath of translatedFiles) {
+      for (const [sourcePath, translatedPath] of mdFiles) {
         try {
           // Check if translated file exists before processing
           if (!fs.existsSync(translatedPath)) {
             continue;
           }
 
-          // Find the corresponding source file
-          const sourcePath = Object.keys(filesMap).find(
-            (key) => filesMap[key] === translatedPath
-          );
-          if (!sourcePath) {
-            continue;
-          }
-
           // Extract heading info from source file
           const sourceContent = readFile(sourcePath);
           const sourceHeadingMap = extractHeadingInfo(sourceContent);
+          const fileTypeHint = sourceTypeByPath.get(sourcePath);
 
           // Read translated file and apply anchor IDs
           const translatedContent = readFile(translatedPath);
@@ -64,7 +68,8 @@ export default async function processAnchorIds(
             sourceHeadingMap,
             settings,
             sourcePath,
-            translatedPath
+            translatedPath,
+            fileTypeHint
           );
 
           if (result.hasChanges) {
