@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.46
+
+### Patch Changes
+
+- [#945](https://github.com/generaltranslation/gt/pull/945) [`3f0da49`](https://github.com/generaltranslation/gt/commit/3f0da498beaff2fe697cbf785bd1cc5fa069d93d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add escaping of anchor ID syntax to all files passed in as MDX via gt.config.json
+
 ## 2.5.45
 
 ### Patch Changes
