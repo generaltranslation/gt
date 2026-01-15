@@ -237,7 +237,11 @@ export function addExplicitAnchorIds(
     ? translatedPath.toLowerCase().endsWith('.mdx')
     : true; // default to mdx-style escaping when unknown
   const shouldEscapeAnchors =
-    fileTypeHint === 'mdx' ? true : fileTypeHint === 'md' ? false : translatedIsMdx;
+    fileTypeHint === 'mdx'
+      ? true
+      : fileTypeHint === 'md'
+        ? false
+        : translatedIsMdx;
 
   // Apply IDs to translated content
   let content: string;
@@ -248,7 +252,11 @@ export function addExplicitAnchorIds(
       idMappings
     );
   } else {
-    content = applyInlineIds(translatedContent, idMappings, shouldEscapeAnchors);
+    content = applyInlineIds(
+      translatedContent,
+      idMappings,
+      shouldEscapeAnchors
+    );
   }
 
   return {
