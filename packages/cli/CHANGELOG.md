@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.47
+
+### Patch Changes
+
+- [#947](https://github.com/generaltranslation/gt/pull/947) [`5dccb20`](https://github.com/generaltranslation/gt/commit/5dccb20c94080aba17685d0ef623882b446cb39b) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix to avoid anchor ID double escaping during parse fallback on MDX
+
 ## 2.5.46
 
 ### Patch Changes
