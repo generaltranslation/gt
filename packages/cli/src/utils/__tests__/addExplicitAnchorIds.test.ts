@@ -70,7 +70,7 @@ Another section here.
     expect(result.hasChanges).toBe(true);
     // We track the normalized anchor as an addition in MDX mode
     expect(result.addedIds).toHaveLength(1);
-    expect(result.content).toContain('## Already has ID \\\\{#custom-id\\\\}');
+    expect(result.content).toContain('## Already has ID \\{#custom-id\\}');
   });
 
   it('reuses explicit IDs from source when translation lacks them', () => {
@@ -110,7 +110,7 @@ Another section here.
 
     expect(result.hasChanges).toBe(true);
     expect(result.content).toContain(
-      '## Traducción \\\\{#custom-source-id\\\\}'
+      '## Traducción \\{#custom-source-id\\}'
     );
     // Normalization counts as a recorded ID in MDX mode
     expect(result.addedIds).toHaveLength(1);
