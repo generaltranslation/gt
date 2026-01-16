@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "entries": {
+    "17c04954b9c3f671348886b60c28370f": {
+      "879f3a5f954ee8b75bf1e91f4ea9916b41c933e5beba7eb6362647a637c9c66d": {
+        "ee45b8b3dead258b09e8635bd325d7e056e762b68f66d9414be41048bfd6373d": {
+          "de": {
+            "updatedAt": "2026-01-16T23:12:49.122Z",
+            "postProcessHash": "4555efc989ac138d2254f1d0149b4bcea01f21e688611565fc11adec4f0aa001"
+          },
+          "es": {
+            "updatedAt": "2026-01-16T23:12:49.122Z",
+            "postProcessHash": "f4a62e5d56617cdcd513c6894f14b2acb808390e2e3b81883dc64d0787b5e91f"
+          },
+          "fr": {
+            "updatedAt": "2026-01-16T23:12:49.123Z",
+            "postProcessHash": "5f9f43f6b1c1fdb052537f7cfabd189425c3aba3139f191c84fbd3639cae1486"
+          },
+          "ja": {
+            "updatedAt": "2026-01-16T23:12:49.123Z",
+            "postProcessHash": "709180b3d7a8f094719fe5f2b10d4a7f43fbc76abceb8ba95592380968121f17"
+          },
+          "zh": {
+            "updatedAt": "2026-01-16T23:12:49.123Z",
+            "postProcessHash": "86b12caa1dbefe075e4b8957a02db28ee250c59fd2e969c969c0aad04b1256fa"
+          }
+        },
+        "3f8cff417b4a1bea85ee0768e2be4268802ab6da6f18a77d356fdcb120b3099c": {
+          "de": {
+            "updatedAt": "2026-01-16T23:15:09.481Z",
+            "postProcessHash": "286905d045e37edada39c60229b5f36cdc2eb3108f279ed5abf999eb66bd21f9"
+          },
+          "es": {
+            "updatedAt": "2026-01-16T23:15:09.481Z",
+            "postProcessHash": "5df4b67e08a787a3752d42f241d7491d0a551edd49b51090aa35486f5af652df"
+          },
+          "fr": {
+            "updatedAt": "2026-01-16T23:15:09.482Z",
+            "postProcessHash": "e23056f5f2b0ca3755ab81176c773810f157dccd95fb97984f2c846d01a2d06a"
+          },
+          "ja": {
+            "updatedAt": "2026-01-16T23:15:09.482Z",
+            "postProcessHash": "6c394b06b9d4b21339db105811445d01ce768401765e7e8bbc724f8fbed7116f"
+          },
+          "zh": {
+            "updatedAt": "2026-01-16T23:15:09.482Z",
+            "postProcessHash": "c6c8e8eb38c3d23041335cc33c369bda17c6c35b8a7524b875d8193723586216"
+          }
+        }
+      }
+    }
+  }
+}

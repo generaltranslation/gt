@@ -1,0 +1,30 @@
+{
+  "name": "next-ssg",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "prebuild": "npm run translate",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "translate": "npx gtx-cli translate"
+  },
+  "dependencies": {
+    "gt-next": "latest",
+    "gtx-cli": "latest",
+    "next": "latest",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "latest",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
