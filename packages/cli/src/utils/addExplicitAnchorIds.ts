@@ -452,7 +452,7 @@ function applyInlineIdsStringFallback(
       if (!escapeAnchors) {
         return line;
       }
-      return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\\\{#$1\\\\}')}`;
+      return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\{#$1\\}')}`;
     }
 
     const suffix = escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;

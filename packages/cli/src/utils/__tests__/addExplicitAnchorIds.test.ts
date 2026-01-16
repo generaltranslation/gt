@@ -597,6 +597,19 @@ This is just an example
       );
       expect(result.content).not.toContain('\\{#fake-heading-in-code-block\\}');
     });
+
+    it('normalizes unescaped anchors to a single-escaped form in fallback mode', () => {
+      const input = `## Titulo {#titulo}
+
+{ this will break mdx parsing
+`;
+      const sourceHeadingMap = extractHeadingInfo(input);
+      const result = addExplicitAnchorIds(input, sourceHeadingMap);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.content).toContain('## Titulo \\{#titulo\\}');
+      expect(result.content).not.toContain('## Titulo \\\\{#titulo\\\\}');
+    });
   });
 
   describe('Special Characters - Both Modes', () => {
