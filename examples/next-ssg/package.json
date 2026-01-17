@@ -4,11 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm run translate",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "translate": "npx gtx-cli translate"
+    "lint": "eslint"
   },
   "dependencies": {
     "gt-next": "latest",
