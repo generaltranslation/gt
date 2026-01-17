@@ -1,0 +1,76 @@
+{
+  "039ccefb7f335e27": "Généré avec Create Next App",
+  "5aa871958a8f167b": "Create Next App",
+  "df0269bad214a097": {
+    "c": {
+      "c": [
+        {
+          "d": {
+            "alt": "Next.js logo"
+          },
+          "i": 3,
+          "t": "Image"
+        },
+        {
+          "c": [
+            {
+              "c": "Pour commencer, modifiez le fichier page.tsx.",
+              "i": 5,
+              "t": "h1"
+            },
+            {
+              "c": [
+                "Vous cherchez un point de départ ou des instructions supplémentaires ? Consultez les ",
+                {
+                  "c": "Modèles",
+                  "i": 7,
+                  "t": "a"
+                },
+                " ou le centre ",
+                {
+                  "c": "d'apprentissage",
+                  "i": 8,
+                  "t": "a"
+                },
+                "."
+              ],
+              "i": 6,
+              "t": "p"
+            }
+          ],
+          "i": 4,
+          "t": "div"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                {
+                  "d": {
+                    "alt": "Vercel logomark"
+                  },
+                  "i": 11,
+                  "t": "Image"
+                },
+                "Déployer maintenant"
+              ],
+              "i": 10,
+              "t": "a"
+            },
+            {
+              "c": "Documentation",
+              "i": 12,
+              "t": "a"
+            }
+          ],
+          "i": 9,
+          "t": "div"
+        }
+      ],
+      "i": 2,
+      "t": "main"
+    },
+    "i": 1,
+    "t": "div"
+  }
+}
