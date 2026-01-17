@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
 };
 
 export default withGTConfig(nextConfig, {
-  getLocalePath: 'src/i18n/getLocale.ts',
-  getRegionPath: 'src/i18n/getRegion.ts',
-  loadTranslationsPath: 'src/i18n/loadTranslations.ts',
+  getLocalePath: './i18n/getLocale.ts',
+  getRegionPath: './i18n/getRegion.ts',
+  loadTranslationsPath: './i18n/loadTranslations.ts',
 });
