@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.6
+
+### Patch Changes
+
+- [#950](https://github.com/generaltranslation/gt/pull/950) [`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: datefns format support base
+
 ## 8.1.5
 
 ### Patch Changes

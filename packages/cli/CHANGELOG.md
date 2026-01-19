@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.5.48
+
+### Patch Changes
+
+- Updated dependencies [[`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da)]:
+  - generaltranslation@8.1.6
+
 ## 2.5.47
 
 ### Patch Changes
