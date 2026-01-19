@@ -1,4 +1,9 @@
-import { I18nextMessage, IcuMessage, JsxChildren } from '../jsx/content';
+import {
+  I18nextMessage,
+  IcuMessage,
+  JsxChildren,
+  DateFnsMessage,
+} from '../jsx/content';
 
 /**
  * TranslationResultReference is used to store the reference for a translation result.
@@ -17,8 +22,8 @@ export type TypedResult =
       dataFormat: 'JSX';
     }
   | {
-      translation: I18nextMessage | IcuMessage;
-      dataFormat: 'ICU' | 'I18NEXT';
+      translation: I18nextMessage | IcuMessage | DateFnsMessage;
+      dataFormat: 'ICU' | 'I18NEXT' | 'DATE_FNS';
     };
 
 /**

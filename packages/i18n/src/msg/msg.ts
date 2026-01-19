@@ -1,6 +1,5 @@
 import { EncodedTranslationOptions, InlineTranslationOptions } from '../types';
 import { hashSource } from 'generaltranslation/id';
-import { icuMessageContainsVariables } from './utils/icuMessageContainsVariables';
 import { formatMessage } from 'generaltranslation';
 import {
   encode,
