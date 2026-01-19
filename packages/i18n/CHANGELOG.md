@@ -1,5 +1,13 @@
 # gt-i18n
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [[`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da)]:
+  - generaltranslation@8.1.6
+  - @generaltranslation/supported-locales@2.0.37
+
 ## 0.3.2
 
 ### Patch Changes
