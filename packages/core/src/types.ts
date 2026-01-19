@@ -5,6 +5,7 @@ import { Variable, VariableType } from './types-dir/jsx/variables';
 import {
   IcuMessage,
   I18nextMessage,
+  DateFnsMessage,
   JsxChildren,
   JsxChild,
   JsxElement,
@@ -22,6 +23,7 @@ export type { TranslationStatusResult } from './types-dir/api/translationStatus'
 export {
   IcuMessage,
   I18nextMessage,
+  DateFnsMessage,
   JsxChildren,
   JsxChild,
   JsxElement,

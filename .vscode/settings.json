@@ -1,6 +1,9 @@
 {
   "rust-analyzer.linkedProjects": ["packages/next/swc-plugin/Cargo.toml"],
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

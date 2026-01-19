@@ -3,3 +3,6 @@ export const formatI18nextWarning =
 
 export const formatJsxWarning =
   'Warning: formatJsx is not currently supported but will be implemented in a future version. Use _formatMessage for current ICU message format support.';
+
+export const formatDateFnsWarning =
+  'Warning: formatDateFns is not currently supported but will be implemented in a future version. Use _formatMessage for current ICU message format support.';

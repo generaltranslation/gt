@@ -12,7 +12,7 @@ export type GTJsonFormatMetadata = Record<
     id?: string;
     domain?: string;
     maxChars?: number;
-    dataFormat?: 'JSX' | 'ICU';
+    dataFormat?: 'JSX' | 'ICU' | 'I18NEXT' | 'DATE_FNS';
     requestVersion?: number;
     approved_at?: string | null;
     approved_by?: string | null;

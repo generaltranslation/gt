@@ -16,6 +16,10 @@ export type Updates = ({
       dataFormat: 'I18NEXT';
       source: string;
     }
+  | {
+      dataFormat: 'DATE_FNS';
+      source: string;
+    }
 ))[];
 
 /**
