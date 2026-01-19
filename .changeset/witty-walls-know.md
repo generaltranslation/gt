@@ -1,5 +1,5 @@
 ---
-'generaltranslation': minor
+'generaltranslation': patch
 ---
 
-feat: datefns format support
+chore: datefns format support base
