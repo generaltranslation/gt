@@ -5,7 +5,7 @@ import {
   DateFnsMessage,
 } from '../jsx/content';
 
-/**\
+/**
  * TranslationResultReference is used to store the reference for a translation result.
  */
 export type TranslationResultReference = {

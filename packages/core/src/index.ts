@@ -721,7 +721,7 @@ export class GT {
     }
   ): Promise<TranslationResult | TranslationError>;
 
-  // Overload for I18next content
+  // Overload for DateFns content
   /**
    * Translates the source content to the target locale.
    * @deprecated Use the {@link translate} method instead.
