@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.5.49
+
+### Patch Changes
+
+- [#953](https://github.com/generaltranslation/gt/pull/953) [`4fca112`](https://github.com/generaltranslation/gt/commit/4fca1123d797883b8ad73a770ad177b5068a4707) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add handling for OpenAPI configurations via Mintlify's `docs.json`
+
 ## 2.5.48
 
 ### Patch Changes
