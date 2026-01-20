@@ -41,13 +41,24 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 
 ## Quick Start
 
+Install the library for your framework:
+
 ```bash
-npm install gt-next
-npx gtx-cli init
+npm install gt-next    # Next.js
+npm install gt-react   # React
+npm install gt-i18n    # Pure JavaScript
 ```
 
+Then run the setup wizard:
+
+```bash
+npx gtx-cli@latest init
+```
+
+Wrap your content in the `<T>` component:
+
 ```jsx
-import { T } from 'gt-next';
+import { T } from 'gt-next'; // or 'gt-react'
 
 export default function Page() {
   return (
