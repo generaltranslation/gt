@@ -203,10 +203,8 @@ describe('processOpenApi', () => {
     await processOpenApi(settings);
 
     const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
-    const enGroup =
-      updatedDocs.navigation.languages[0].tabs[0].groups[0];
-    const esGroup =
-      updatedDocs.navigation.languages[1].tabs[0].groups[0];
+    const enGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
+    const esGroup = updatedDocs.navigation.languages[1].tabs[0].groups[0];
     expect(enGroup.openapi.source).toBe('openapi.json');
     expect(enGroup.pages[0]).toBe('GET /foo');
     expect(esGroup.openapi.source).toBe('es/openapi.json');

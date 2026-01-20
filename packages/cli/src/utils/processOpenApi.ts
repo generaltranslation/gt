@@ -197,8 +197,7 @@ function collectDocsJsonTargets(
   }
 
   for (const [filePath, locales] of seen.entries()) {
-    const localeHint =
-      locales.size === 1 ? Array.from(locales)[0] : undefined;
+    const localeHint = locales.size === 1 ? Array.from(locales)[0] : undefined;
     targets.push({ path: filePath, localeHint });
   }
 
@@ -371,10 +370,7 @@ function matchSpecBySource(
   const explicitBase = path.basename(normalizedExplicit);
   const explicitBaseWithoutExt = stripExtension(explicitBase);
   const matches = specs.filter((spec) => {
-    const configPath = normalizeSlashes(spec.configPath).replace(
-      /^\.?\/+/,
-      ''
-    );
+    const configPath = normalizeSlashes(spec.configPath).replace(/^\.?\/+/, '');
     const configBase = path.basename(configPath);
     const configPathNoExt = stripExtension(configPath);
     const configBaseNoExt = stripExtension(configBase);
@@ -391,7 +387,9 @@ function matchSpecBySource(
     warnings.add(
       `OpenAPI source "${source}" matches multiple specs (${matches
         .map((m) => m.configPath)
-        .join(', ')}). Using the first configured match (${matches[0].configPath}).`
+        .join(
+          ', '
+        )}). Using the first configured match (${matches[0].configPath}).`
     );
     return matches[0];
   }
