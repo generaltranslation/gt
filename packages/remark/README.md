@@ -1,12 +1,22 @@
+<p align="center">
+  <a href="https://generaltranslation.com/docs">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/gt-logo-light.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" width="100" height="100">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://generaltranslation.com/docs"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+</p>
+
 # gt-remark
 
-A small Remark plugin to help safely stringify MDX/Markdown by escaping HTML-sensitive characters in text nodes, while leaving code, math, MDX expressions, and front-matter untouched.
+Remark plugin for escaping HTML-sensitive characters in MDX/Markdown text nodes.
 
-- Escapes: `{`, `}`, `&`, `<`, `>`, `"`, `'`, `_`
-- Ignores parents: `code`, `inlineCode`, `mdxFlowExpression`, `mdxTextExpression`, `mdxjsEsm`, `yaml`, `toml`, `math`, `inlineMath`
-- Idempotent for `&` (does not double-escape existing entities)
-
-## Install
+## Installation
 
 ```bash
 npm install gt-remark
@@ -24,15 +34,7 @@ const file = await unified()
   .use(remarkParse)
   .use(escapeHtmlInTextNodes)
   .use(remarkStringify)
-  .process('Hello & <world> {ok}');
-
-console.log(String(file));
+  .process('Hello & <world>');
 ```
 
-## API
-
-- `escapeHtmlInTextNodes`: Remark plugin with no options. Applies safe escaping to text nodes only.
-
-## License
-
-FSL-1.1-ALv2
+See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.
