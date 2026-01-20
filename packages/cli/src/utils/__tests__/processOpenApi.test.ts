@@ -130,6 +130,362 @@ describe('processOpenApi', () => {
     expect(updatedTranslated).toContain('/es/openapi.demo.yaml POST /foo');
   });
 
+  it('rewrites Mintlify docs.json openapi source and strips locale prefixes from openapi pages', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specPath = path.join(tmpDir, 'openapi.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.json');
+    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
+    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          navigation: {
+            languages: [
+              {
+                language: 'en',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Endpoints',
+                        openapi: { source: 'openapi.json', directory: 'api' },
+                        pages: ['GET /foo'],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                language: 'es',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Endpoints',
+                        openapi: { source: 'openapi.json', directory: 'api' },
+                        pages: ['es/GET /foo'],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const settings = createSettings(tmpDir, ['./openapi.json']);
+    settings.files = {
+      resolvedPaths: {
+        json: [specPath, docsJsonPath],
+      },
+      placeholderPaths: {
+        json: [specPath, docsJsonPath],
+      },
+      transformPaths: {
+        json: {
+          match: 'openapi.json$',
+          replace: '{locale}/openapi.json',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const enGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
+    const esGroup = updatedDocs.navigation.languages[1].tabs[0].groups[0];
+    expect(enGroup.openapi.source).toBe('openapi.json');
+    expect(enGroup.pages[0]).toBe('GET /foo');
+    expect(esGroup.openapi.source).toBe('es/openapi.json');
+    expect(esGroup.pages[0]).toBe('GET /foo');
+  });
+
+  it('rewrites docs.json openapi source with nested locale paths and respects absolute style', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specPath = path.join(tmpDir, 'api', 'specs', 'openapi.json');
+    fs.mkdirSync(path.dirname(specPath), { recursive: true });
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+
+    const localizedSpecPath = path.join(
+      tmpDir,
+      'api',
+      'es',
+      'specs',
+      'openapi.json'
+    );
+    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
+    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          navigation: {
+            languages: [
+              {
+                language: 'es',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Endpoints',
+                        openapi: {
+                          source: '/api/specs/openapi.json',
+                          directory: 'api',
+                        },
+                        pages: ['es/GET /foo'],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const settings = createSettings(tmpDir, ['./api/specs/openapi.json']);
+    settings.files = {
+      resolvedPaths: { json: [specPath, docsJsonPath] },
+      placeholderPaths: { json: [specPath, docsJsonPath] },
+      transformPaths: {
+        json: {
+          match: 'api/specs/openapi\\.json$',
+          replace: 'api/{locale}/specs/openapi.json',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
+    expect(esGroup.openapi.source).toBe('/api/es/specs/openapi.json');
+    expect(esGroup.pages[0]).toBe('GET /foo');
+  });
+
+  it('leaves docs.json openapi source unchanged when localized file is missing', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specPath = path.join(tmpDir, 'openapi.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          navigation: {
+            languages: [
+              {
+                language: 'es',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Endpoints',
+                        openapi: { source: 'openapi.json', directory: 'api' },
+                        pages: ['es/GET /foo'],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const settings = createSettings(tmpDir, ['./openapi.json']);
+    settings.files = {
+      resolvedPaths: { json: [specPath, docsJsonPath] },
+      placeholderPaths: { json: [specPath, docsJsonPath] },
+      transformPaths: {
+        json: {
+          match: 'openapi.json$',
+          replace: '{locale}/openapi.json',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
+    expect(esGroup.openapi.source).toBe('openapi.json');
+    expect(esGroup.pages[0]).toBe('GET /foo');
+  });
+
+  it('preserves ./relative openapi source style while localizing', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specPath = path.join(tmpDir, 'api', 'openapi.json');
+    fs.mkdirSync(path.dirname(specPath), { recursive: true });
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+
+    const localizedSpecPath = path.join(tmpDir, 'api', 'es', 'openapi.json');
+    fs.mkdirSync(path.dirname(localizedSpecPath), { recursive: true });
+    fs.writeFileSync(localizedSpecPath, JSON.stringify(spec));
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          navigation: {
+            languages: [
+              {
+                language: 'es',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Endpoints',
+                        openapi: { source: './api/openapi.json' },
+                        pages: ['es/GET /foo'],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const settings = createSettings(tmpDir, ['./api/openapi.json']);
+    settings.files = {
+      resolvedPaths: { json: [specPath, docsJsonPath] },
+      placeholderPaths: { json: [specPath, docsJsonPath] },
+      transformPaths: {
+        json: {
+          match: 'api/openapi\\.json$',
+          replace: 'api/{locale}/openapi.json',
+        },
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
+    expect(esGroup.openapi.source).toBe('./api/es/openapi.json');
+    expect(esGroup.pages[0]).toBe('GET /foo');
+  });
+
+  it('localizes docs.json openapi source when multiple specs share a basename', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specAPath = path.join(tmpDir, 'api', 'a', 'openapi.json');
+    const specBPath = path.join(tmpDir, 'api', 'b', 'openapi.json');
+    fs.mkdirSync(path.dirname(specAPath), { recursive: true });
+    fs.mkdirSync(path.dirname(specBPath), { recursive: true });
+    fs.writeFileSync(specAPath, JSON.stringify(spec));
+    fs.writeFileSync(specBPath, JSON.stringify(spec));
+
+    const localizedSpecAPath = path.join(
+      tmpDir,
+      'api',
+      'es',
+      'a',
+      'openapi.json'
+    );
+    const localizedSpecBPath = path.join(
+      tmpDir,
+      'api',
+      'es',
+      'b',
+      'openapi.json'
+    );
+    fs.mkdirSync(path.dirname(localizedSpecAPath), { recursive: true });
+    fs.mkdirSync(path.dirname(localizedSpecBPath), { recursive: true });
+    fs.writeFileSync(localizedSpecAPath, JSON.stringify(spec));
+    fs.writeFileSync(localizedSpecBPath, JSON.stringify(spec));
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          navigation: {
+            languages: [
+              {
+                language: 'es',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Endpoints',
+                        openapi: { source: 'openapi.json' },
+                        pages: ['es/GET /foo'],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const settings = createSettings(tmpDir, [
+      './api/a/openapi.json',
+      './api/b/openapi.json',
+    ]);
+    settings.files = {
+      resolvedPaths: { json: [specAPath, specBPath, docsJsonPath] },
+      placeholderPaths: { json: [specAPath, specBPath, docsJsonPath] },
+      transformPaths: {
+        json: [
+          {
+            match: 'api/a/openapi\\.json$',
+            replace: 'api/{locale}/a/openapi.json',
+          },
+          {
+            match: 'api/b/openapi\\.json$',
+            replace: 'api/{locale}/b/openapi.json',
+          },
+        ],
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const esGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
+    expect(esGroup.openapi.source).toBe('api/es/a/openapi.json');
+    expect(esGroup.pages[0]).toBe('GET /foo');
+  });
+
   it('skips ambiguous operations when multiple specs match and leaves frontmatter unchanged', async () => {
     const specA = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
     const specB = { openapi: '3.0.0', paths: { '/dup': { get: {} } } };
