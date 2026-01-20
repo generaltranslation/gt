@@ -7,9 +7,9 @@
   </a>
   <h1>General Translation</h1>
 
-<a href="https://generaltranslation.com"><img alt="General Translation" src="https://img.shields.io/badge/MADE%20BY%20General%20Translation-000000.svg?style=for-the-badge&labelColor=ffffff&color=0070f3"></a>
-<a href="https://www.npmjs.com/package/gt-next"><img alt="NPM version" src="https://img.shields.io/npm/v/gt-next.svg?style=for-the-badge&labelColor=ffffff&color=0070f3"></a>
-<a href="https://github.com/generaltranslation/gt/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/npm/l/gt-next.svg?style=for-the-badge&labelColor=ffffff&color=0070f3"></a>
+<a href="https://generaltranslation.com"><img alt="General Translation" src="https://img.shields.io/badge/MADE%20BY%20General%20Translation-000000.svg?style=for-the-badge&labelColor=ffffff&color=000000"></a>
+<a href="https://www.npmjs.com/package/gt-next"><img alt="NPM version" src="https://img.shields.io/npm/v/gt-next.svg?style=for-the-badge&labelColor=ffffff&color=000000"></a>
+<a href="https://github.com/generaltranslation/gt/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/npm/l/gt-next.svg?style=for-the-badge&labelColor=ffffff&color=000000"></a>
 <a href="https://discord.gg/W99K6fchSu"><img alt="Join the community on Discord" src="https://img.shields.io/badge/Join%20the%20community-5865F2.svg?style=for-the-badge&logo=discord&labelColor=23272A&logoWidth=20"></a>
 
 </div>
