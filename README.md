@@ -16,7 +16,7 @@
 
 ## Getting Started
 
-General Translation is a fully integrated suite of internationalization (i18n) tools for React apps. Translate entire React components—not just strings—with a simple `<T>` wrapper. No JSON files. No refactoring. Just write your content and let GT handle the rest.
+General Translation is a fully integrated suite of internationalization (i18n) tools for React apps. Translate entire React components—not just strings—with a simple `<T>` wrapper. No refactoring into dictionaries. Just write your content and let GT handle the rest.
 
 - Visit our [documentation](https://generaltranslation.com/docs) to get started.
 - Create a free API key at [generaltranslation.com](https://generaltranslation.com).
@@ -41,54 +41,20 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 
 ## Quick Start
 
-Install the library for your framework:
+Run the setup wizard:
 
 ```bash
-npm install gt-next    # Next.js
-npm install gt-react   # React
-npm install gt-i18n    # Pure JavaScript
+npx gtx-cli@latest
 ```
 
-Then run the setup wizard:
-
-```bash
-npx gtx-cli@latest init
-```
-
-Wrap your content in the `<T>` component:
-
-```jsx
-import { T } from 'gt-next'; // or 'gt-react'
-
-export default function Page() {
-  return (
-    <T>
-      <p>This gets translated automatically.</p>
-    </T>
-  );
-}
-```
+Or use [Locadex](https://generaltranslation.com/dashboard/api/integrations/github/start?returnTo=%2Fproject%2Flocadex) to set your project up for you.
 
 ## Community
 
-The General Translation community can be found on [Discord](https://discord.gg/W99K6fchSu) where you can ask questions, voice ideas, and share your projects.
+The team can be found on [Discord](https://discord.gg/W99K6fchSu) where you can ask questions, voice ideas, and share your projects.
 
 You can also open discussions on [GitHub](https://github.com/generaltranslation/gt/discussions).
 
 ## Contributing
 
 Contributions to General Translation are welcome and highly appreciated. Before getting started, please review our contribution guidelines to ensure a smooth experience.
-
-### Good First Issues
-
-We have a list of [good first issues](https://github.com/generaltranslation/gt/labels/good%20first%20issue) that contain bugs with a relatively limited scope. This is a great place for newcomers to get started and gain experience with our codebase.
-
-## Security
-
-If you believe you have found a security vulnerability in General Translation, we encourage you to **responsibly disclose this and NOT open a public issue**.
-
-Please report security issues to [support@generaltranslation.com](mailto:support@generaltranslation.com).
-
-## License
-
-[MIT](LICENSE)
