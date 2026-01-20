@@ -1,21 +1,25 @@
 <p align="center">
-  <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  <a href="https://generaltranslation.com/docs/locadex">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/gt-logo-light.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" width="100" height="100">
+    </picture>
   </a>
 </p>
 
-# Locadex
+<p align="center">
+  <a href="https://generaltranslation.com/docs/locadex"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+</p>
 
-Locadex is an AI agent to automate i18n in complex codebases.
+# locadex
+
+AI agent for automating i18n in complex codebases.
+
+## Quick Start
 
 ```bash
 npx locadex@latest start
 ```
 
-## Documentation
-
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
-
-## Contributing
-
-We welcome any contributions to our libraries. Please submit a pull request!
+See the [full documentation](https://generaltranslation.com/docs/locadex) for guides and API reference.

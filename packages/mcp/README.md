@@ -1,23 +1,25 @@
 <p align="center">
-  <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  <a href="https://generaltranslation.com/docs">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/gt-logo-light.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" width="100" height="100">
+    </picture>
   </a>
 </p>
 
-# General Translation MCP Server
+<p align="center">
+  <a href="https://generaltranslation.com/docs"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+</p>
 
-This is a basic stdio MCP server for General Translation.
+# @generaltranslation/mcp
 
-Start it with
+MCP server for General Translation.
+
+## Usage
 
 ```bash
 npx @generaltranslation/mcp
 ```
 
-## Documentation
-
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](generaltranslation.com/docs).
-
-## Contributing
-
-We welcome any contributions to our libraries. Please submit a pull request!
+See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.
