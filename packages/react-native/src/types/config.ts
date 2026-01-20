@@ -31,5 +31,7 @@ export type GTProviderProps = {
   fallback?: React.ReactNode;
   customMapping?: CustomMapping;
   modelProvider?: string;
+  enableI18n?: boolean;
+  enableI18nLoaded?: boolean;
   [key: string]: any;
 };

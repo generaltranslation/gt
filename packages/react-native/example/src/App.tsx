@@ -2,8 +2,10 @@ import { Text, View, StyleSheet, Button } from 'react-native';
 import { useLocale, useSetLocale, T, GTProvider } from 'gt-react-native';
 import gtConfig from '../gt.config.json';
 import { getLocaleProperties } from 'generaltranslation';
+import React from 'react';
 
 export default function App() {
+  console.log('App');
   return (
     <GTProvider {...gtConfig}>
       <Content />

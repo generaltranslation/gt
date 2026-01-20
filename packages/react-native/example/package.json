@@ -4,6 +4,9 @@
   "private": true,
   "main": "./index.js",
   "scripts": {
+    "setup": "npm run remove-workspaces && npm install && npm run add-workspaces",
+    "remove-workspaces": "node scripts/remove-workspaces.js",
+    "add-workspaces": "node scripts/add-workspaces.js",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start",
@@ -11,8 +14,11 @@
     "build:ios": "react-native build-ios --mode Debug"
   },
   "dependencies": {
+    "@formatjs/intl-datetimeformat": "^6.18.2",
     "@formatjs/intl-displaynames": "^6.8.13",
+    "@formatjs/intl-getcanonicallocales": "^2.5.6",
     "@formatjs/intl-listformat": "^7.7.13",
+    "@formatjs/intl-locale": "^4.2.13",
     "@formatjs/intl-numberformat": "^8.15.6",
     "@formatjs/intl-pluralrules": "^5.4.6",
     "@formatjs/intl-relativetimeformat": "^11.4.13",
@@ -33,6 +39,7 @@
     "@react-native/metro-config": "0.81.1",
     "@react-native/typescript-config": "0.81.1",
     "@types/react": "^19.1.0",
+    "baseline-browser-mapping": "^2.9.15",
     "react-native-builder-bob": "^0.40.13",
     "react-native-monorepo-config": "^0.1.9"
   },
