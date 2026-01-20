@@ -1,104 +1,83 @@
 <div align="center">
-  <a href="https://generaltranslation.com" target="_blank">
-    <img src="./assets/gt-logo-light.svg" alt="General Translation, Inc." width="64" height="64">
+  <a href="https://generaltranslation.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" height="128">
+    </picture>
   </a>
+  <h1>General Translation</h1>
+
+<a href="https://generaltranslation.com"><img alt="General Translation" src="https://img.shields.io/badge/MADE%20BY%20General%20Translation-4B0082.svg?style=for-the-badge&labelColor=000"></a>
+<a href="https://www.npmjs.com/package/gt-next"><img alt="NPM version" src="https://img.shields.io/npm/v/gt-next.svg?style=for-the-badge&labelColor=000000"></a>
+<a href="https://github.com/generaltranslation/gt/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/npm/l/gt-next.svg?style=for-the-badge&labelColor=000000"></a>
+<a href="https://discord.gg/W99K6fchSu"><img alt="Join the community on Discord" src="https://img.shields.io/badge/Join%20the%20community-blueviolet.svg?style=for-the-badge&logo=discord&labelColor=000000&logoWidth=20"></a>
+
 </div>
 
-<div align="center">
+## Getting Started
 
-# General Translation
+General Translation is a fully integrated suite of internationalization (i18n) tools for React apps. Translate entire React components—not just strings—with a simple `<T>` wrapper. No JSON files. No refactoring. Just write your content and let GT handle the rest.
 
-</div>
+- Visit our [documentation](https://generaltranslation.com/docs) to get started.
+- Create a free API key at [generaltranslation.com](https://generaltranslation.com).
 
-General Translation (GT) is fully integrated suite of internationalization (i18n) tools for developers.
+## Documentation
 
-This open-source repo contains internationalization libraries for React frameworks like Next.js and React Router.
+Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs) to view the full documentation.
 
-📖&nbsp;&nbsp;For guides, examples, and API references, read the [docs](https://generaltranslation.com/docs).
+## Packages
 
-🔑&nbsp;&nbsp;Create a free API key for the translation service [generaltranslation.com](https://generaltranslation.com)!
+| Package | Description |
+| ------- | ----------- |
+| [gt-next](packages/next) | Automatic i18n for Next.js |
+| [gt-react](packages/react) | Automatic i18n for React |
+| [gt-i18n](packages/i18n) | Pure JavaScript i18n library |
+| [gtx-cli](packages/cli) | CLI tool for continuous localization |
+| [gt-sanity](packages/sanity) | Plugin for Sanity Studio v3 |
+| [locadex](packages/locadex) | AI agent for automating i18n in complex codebases |
+| [generaltranslation](packages/core) | Core TypeScript library (internal) |
+| [@generaltranslation/compiler](packages/compiler) | Build plugin for webpack, Vite, Rollup, esbuild |
+| [@generaltranslation/mcp](packages/mcp) | MCP server for General Translation |
 
-💬&nbsp;&nbsp;Join the [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
+## Quick Start
 
-## Projects
+```bash
+npm install gt-next
+npx gtx-cli init
+```
 
-- [gt-next](packages/next/README.md): AI-powered i18n library for Next.js
-- [gt-react](packages/react/README.md): AI-powered i18n library for React
+```jsx
+import { T } from 'gt-next';
 
-- [gtx-cli](packages/cli/README.md): CLI tool for continuous localization
-
-- [generaltranslation](packages/core/README.md): Core TypeScript language infrastructure library
-
-- [supported-locales](packages/supported-locales/README.md): Helper library for currently supported locales on [generaltranslation.com](https://generaltranslation.com)
-
-## Add the `<T>` component and see translations as you code:
-
-![Demo](./assets/live_translations.gif)
-
-## Features
-
-### ⚛️&nbsp;&nbsp;Translate entire React components, not just strings
-
-- Just wrap your content in a `<T>` component!
-- No need for complex refactoring or managing JSON files.
-
-```tsx
 export default function Page() {
   return (
     <T>
-      <p>You can write any JSX as children of the {'<T>'} component.</p>
-      <p>
-        For example, you could write a <a href='/'>link</a> and have the text be
-        translated in context.
-      </p>
-      <div>
-        <div>
-          <p>Even deeply nested components are translated in context.</p>
-          <button>Click me!</button>
-        </div>
-      </div>
+      <p>This gets translated automatically.</p>
     </T>
   );
 }
 ```
 
-### 🔎&nbsp;&nbsp;Feature parity with existing libraries
+## Community
 
-- GT libraries also support the same features as existing libraries like `next-intl` and `react-i18next`.
-- Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
+The General Translation community can be found on [Discord](https://discord.gg/W99K6fchSu) where you can ask questions, voice ideas, and share your projects.
 
-### 🔧&nbsp;&nbsp;Developer-friendly
-
-- Setup is simple and can be done in minutes.
-- All GT libraries are open-source and work standalone.
-  - You can use your own translation provider or use our free AI-powered translation service.
-- No more managing translation keys like `t('menu.header.title')`.
-  - Just write everything in-line!
-
-### 🧠&nbsp;&nbsp;Free, context-aware AI translation service
-
-- Translation hot reload in development
-- Libraries integrate natively with the translation platform.
-- Translations are generated for your app in seconds.
-- HTML content is re-arranged and customized according to the language.
-
-## Examples
-
-See the [examples](examples) directory for some example projects that use our libraries.
-
-## Installation
-
-Any of the libraries can be installed via npm, yarn, pnpm, or bun.
-
-For example, to install `gt-next`:
-
-```bash
-npm install gt-next
-yarn add gt-next
-```
-
-See the [docs](https://generaltranslation.com/docs) for more information.
+You can also open discussions on [GitHub](https://github.com/generaltranslation/gt/discussions).
 
 ## Contributing
 
-We welcome any contributions to the libraries. Please submit a pull request!
+Contributions to General Translation are welcome and highly appreciated. Before getting started, please review our contribution guidelines to ensure a smooth experience.
+
+### Good First Issues
+
+We have a list of [good first issues](https://github.com/generaltranslation/gt/labels/good%20first%20issue) that contain bugs with a relatively limited scope. This is a great place for newcomers to get started and gain experience with our codebase.
+
+## Security
+
+If you believe you have found a security vulnerability in General Translation, we encourage you to **responsibly disclose this and NOT open a public issue**.
+
+Please report security issues to [support@generaltranslation.com](mailto:support@generaltranslation.com).
+
+## License
+
+[MIT](LICENSE)
