@@ -22,10 +22,7 @@ export function useEnableI18n({
   const asyncEnabled = enableI18nLoaded !== undefined;
 
   // Track if this is the first render for SSR hydration recovery
-  console.log('useEnableI18n');
-  console.log('useRef', useRef)
   const isFirstRender = useRef(true);
-  console.log('useEnableI18n 2');
 
   // Extract state from cookie or default _enableI18n flag
   const [enableI18n, setEnableI18n] = useState(

@@ -6,7 +6,6 @@ import { useRegionState } from './hooks/useRegionState';
 import { useEnableI18n } from './hooks/useEnableI18n';
 
 export function GTProvider(props: GTProviderProps): React.JSX.Element {
-  console.log('GTProvider');
   return (
     <_GTProvider
       ssr={false}
