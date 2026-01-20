@@ -15,7 +15,6 @@ import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
-  ReactFrameworkObject,
   SupportedLibraries,
   SetupOptions,
   TranslateFlags,
@@ -166,6 +165,7 @@ export class BaseCLI {
 
     await handleSetupProject(initOptions, settings, this.library);
   }
+
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
     const settings = await generateSettings(initOptions);
 
@@ -323,23 +323,44 @@ export class BaseCLI {
             'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
         } else {
+          // Get framework display info for the defaults message
+          const frameworkDisplayName =
+            framework.type === 'react'
+              ? getFrameworkDisplayName(framework)
+              : null;
+          const library =
+            framework.type === 'react'
+              ? getReactFrameworkLibrary(framework)
+              : null;
+
+          // Build defaults description based on detected framework
+          const defaultsDescription =
+            framework.type === 'react'
+              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ./public/_gt`
+              : 'Files saved locally in ./public/_gt';
+
+          // Ask if user wants to use defaults
+          const useDefaults = await promptConfirm({
+            message: `Would you like to use the recommended General Translation defaults? ${chalk.dim(`(${defaultsDescription})`)}`,
+            defaultValue: true,
+          });
+
           let ranReactSetup = false;
 
           // so that people can run init in non-js projects
           if (framework.type === 'react') {
-            const frameworkDisplayName = getFrameworkDisplayName(framework);
-            const library = getReactFrameworkLibrary(framework);
-
-            const wrap = await promptConfirm({
-              message: `${frameworkDisplayName} detected. Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
-              defaultValue: true,
-            });
+            const wrap = useDefaults
+              ? true
+              : await promptConfirm({
+                  message: `${frameworkDisplayName} detected. Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+                  defaultValue: true,
+                });
 
             if (wrap) {
               logger.info(
                 `${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`
               );
-              await this.handleSetupReactCommand(options, framework);
+              await handleSetupReactCommand(options, framework, useDefaults);
               logger.endCommand(
                 `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
 \nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
@@ -352,7 +373,7 @@ export class BaseCLI {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(ranReactSetup);
+          await this.handleInitCommand(ranReactSetup, useDefaults);
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -419,16 +440,12 @@ export class BaseCLI {
     );
   }
 
-  protected async handleSetupReactCommand(
-    options: SetupOptions,
-    frameworkObject: ReactFrameworkObject
-  ): Promise<void> {
-    await handleSetupReactCommand(options, frameworkObject);
-  }
-
   // Wizard for configuring gt.config.json
-  protected async handleInitCommand(ranReactSetup: boolean): Promise<void> {
-    const { defaultLocale, locales } = await getDesiredLocales();
+  protected async handleInitCommand(
+    ranReactSetup: boolean,
+    useDefaults: boolean = false
+  ): Promise<void> {
+    const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
     const packageJson = await searchForPackageJson();
     const isUsingGTNext = packageJson
@@ -444,6 +461,7 @@ export class BaseCLI {
     // Ask where the translations are stored
     const usingCDN = await (async () => {
       if (!isUsingGT) return false;
+      if (useDefaults) return false; // Default to local
       const selectedValue = await promptSelect({
         message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
         options: [
@@ -458,11 +476,13 @@ export class BaseCLI {
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
-        ? await promptText({
-            message:
-              'What is the path to the directory where you would like to store your translation files?',
-            defaultValue: './public/_gt',
-          })
+        ? useDefaults
+          ? './public/_gt'
+          : await promptText({
+              message:
+                'What is the path to the directory where you would like to store your translation files?',
+              defaultValue: './public/_gt',
+            })
         : null;
 
     // Determine final translations directory with fallback
@@ -487,18 +507,21 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       : `Do you have any additional files in this project to translate? For example, Markdown files for docs. ${chalk.dim(
           '(To continue without selecting press Enter)'
         )}`;
-    const fileExtensions = await promptMultiSelect({
-      message,
-      options: [
-        { value: 'json', label: FILE_EXT_TO_EXT_LABEL.json },
-        { value: 'md', label: FILE_EXT_TO_EXT_LABEL.md },
-        { value: 'mdx', label: FILE_EXT_TO_EXT_LABEL.mdx },
-        { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
-        { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
-        { value: 'yaml', label: FILE_EXT_TO_EXT_LABEL.yaml },
-      ],
-      required: !isUsingGT,
-    });
+    const fileExtensions =
+      useDefaults && isUsingGT
+        ? [] // Skip for GT projects when using defaults
+        : await promptMultiSelect({
+            message,
+            options: [
+              { value: 'json', label: FILE_EXT_TO_EXT_LABEL.json },
+              { value: 'md', label: FILE_EXT_TO_EXT_LABEL.md },
+              { value: 'mdx', label: FILE_EXT_TO_EXT_LABEL.mdx },
+              { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
+              { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
+              { value: 'yaml', label: FILE_EXT_TO_EXT_LABEL.yaml },
+            ],
+            required: !isUsingGT,
+          });
 
     const files: FilesOptions = {};
     for (const fileExtension of fileExtensions) {
@@ -555,12 +578,14 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
 
     // Set credentials
     if (!areCredentialsSet()) {
-      const loginQuestion = await promptConfirm({
-        message: `Would you like the wizard to automatically generate a ${
-          isUsingGT ? 'development' : 'production'
-        } API key and project ID for you?`,
-        defaultValue: true,
-      });
+      const loginQuestion = useDefaults
+        ? true
+        : await promptConfirm({
+            message: `Would you like the wizard to automatically generate a ${
+              isUsingGT ? 'development' : 'production'
+            } API key and project ID for you?`,
+            defaultValue: true,
+          });
       if (loginQuestion) {
         const settings = await generateSettings({});
         const keyType = isUsingGT ? 'development' : 'production';

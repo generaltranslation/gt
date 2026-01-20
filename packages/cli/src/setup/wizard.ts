@@ -20,44 +20,50 @@ import { getFrameworkDisplayName } from './frameworkUtils.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,
-  frameworkObject: ReactFrameworkObject
+  frameworkObject: ReactFrameworkObject,
+  useDefaults: boolean = false
 ): Promise<void> {
   const frameworkDisplayName = getFrameworkDisplayName(frameworkObject);
 
   // Ask user for confirmation using inquirer
-  const answer = await promptConfirm({
-    message: chalk.yellow(
-      `This wizard will configure your ${frameworkDisplayName} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
+  if (!useDefaults) {
+    const answer = await promptConfirm({
+      message: chalk.yellow(
+        `This wizard will configure your ${frameworkDisplayName} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
 
 Make sure you have committed or stashed any changes. Do you want to continue?`
-    ),
-    defaultValue: true,
-    cancelMessage:
-      'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup',
-  });
-  if (!answer) {
-    logger.info(
-      'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup'
-    );
-    exitSync(0);
+      ),
+      defaultValue: true,
+      cancelMessage:
+        'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup',
+    });
+    if (!answer) {
+      logger.info(
+        'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup'
+      );
+      exitSync(0);
+    }
   }
 
-  const frameworkType = await promptSelect<SupportedReactFrameworks | 'other'>({
-    message: 'Which framework are you using?',
-    options: [
-      { value: 'next-app', label: chalk.blue('Next.js App Router') },
-      { value: 'next-pages', label: chalk.green('Next.js Pages Router') },
-      { value: 'vite', label: chalk.cyan('Vite + React') },
-      { value: 'gatsby', label: chalk.magenta('Gatsby') },
-      { value: 'react', label: chalk.yellow('React') },
-      { value: 'redwood', label: chalk.red('RedwoodJS') },
-      { value: 'other', label: chalk.dim('Other') },
-    ],
-    defaultValue: frameworkObject?.name || 'other',
-  });
+  const frameworkType =
+    useDefaults && frameworkObject?.name
+      ? frameworkObject.name
+      : await promptSelect<SupportedReactFrameworks | 'other'>({
+          message: 'Which framework are you using?',
+          options: [
+            { value: 'next-app', label: chalk.blue('Next.js App Router') },
+            { value: 'next-pages', label: chalk.green('Next.js Pages Router') },
+            { value: 'vite', label: chalk.cyan('Vite + React') },
+            { value: 'gatsby', label: chalk.magenta('Gatsby') },
+            { value: 'react', label: chalk.yellow('React') },
+            { value: 'redwood', label: chalk.red('RedwoodJS') },
+            { value: 'other', label: chalk.dim('Other') },
+          ],
+          defaultValue: frameworkObject?.name || 'other',
+        });
   if (frameworkType === 'other') {
     logger.error(
-      `Sorry, the wizard doesn't currently support other React frameworks. 
+      `Sorry, the wizard doesn't currently support other React frameworks.
 Please let us know what you would like to see added at https://github.com/generaltranslation/gt/issues`
     );
     exitSync(0);
@@ -188,12 +194,14 @@ Please let us know what you would like to see added at https://github.com/genera
     return;
   }
 
-  const applyFormatting = await promptConfirm({
-    message: `Would you like the wizard to auto-format the modified files? ${chalk.dim(
-      `(${formatter})`
-    )}`,
-    defaultValue: true,
-  });
+  const applyFormatting = useDefaults
+    ? true
+    : await promptConfirm({
+        message: `Would you like the wizard to auto-format the modified files? ${chalk.dim(
+          `(${formatter})`
+        )}`,
+        defaultValue: true,
+      });
   // Format updated files if formatters are available
   if (applyFormatting) await formatFiles(filesUpdated, formatter);
 }
