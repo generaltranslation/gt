@@ -1,6 +1,6 @@
 {
   "name": "gt-react-native",
-  "version": "0.0.9",
+  "version": "0.0.10-alpha.0",
   "description": "An i18n package for React Native",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/module/index.d.ts",
