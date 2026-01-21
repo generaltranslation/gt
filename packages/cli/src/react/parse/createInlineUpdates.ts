@@ -192,3 +192,5 @@ function linkStaticUpdates(updates: Updates): void {
     });
   });
 }
+
+export { dedupeUpdates as _test_dedupeUpdates };
