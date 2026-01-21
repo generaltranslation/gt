@@ -1,0 +1,70 @@
+
+> gtx-cli@2.6.1 test
+> vitest run --config=./vitest.config.ts parseStringFunction.refactor.test.ts --reporter=verbose
+
+
+ RUN  v3.2.4 /Users/jackieyc/GT/gt/packages/cli
+
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should extract simple msg() string literal 7ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should extract msg() with template literal (no expressions) 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should error on msg() with template literal with expressions 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should error on msg() with non-string argument 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should handle multiple msg() calls 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should handle msg() with metadata options 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should handle msg() in various contexts 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should extract simple useGT() translation 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should extract useGT() with metadata 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should handle useGT() with $maxChars 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should error on invalid $maxChars (string) 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should error on invalid $maxChars (boolean) 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should handle $maxChars with negative values (converts to positive) 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should handle $maxChars with zero 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should error when useGT used in async function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should handle useGT() with template literal (no expressions) 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should error on useGT() with template literal with expressions 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should error on useGT() with non-string argument 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useGT() Hook Calls > should error on non-static metadata 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > getGT() Async Hook Calls > should extract simple getGT() translation in async function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > getGT() Async Hook Calls > should not extract when getGT used in non-async function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > getGT() Async Hook Calls > should handle getGT() with all metadata types 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useMessages() and getMessages() Hooks > should extract useMessages() string literal 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useMessages() and getMessages() Hooks > should NOT error on useMessages() with dynamic content (msg() may be passed) 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useMessages() and getMessages() Hooks > should extract getMessages() in async function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useMessages() and getMessages() Hooks > should error when useMessages used in async function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > useMessages() and getMessages() Hooks > should error when getMessages used in non-async function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Variable Aliases > should resolve simple alias 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Variable Aliases > should resolve chained aliases 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Variable Aliases > should handle deeply nested aliases 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Variable Aliases > should handle aliases with multiple usages 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Variable Aliases > should not create infinite loops with circular references 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Variable Aliases > should handle aliases passed as function parameters 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Prop Drilling (Translation Callback Passing) > should handle translation callback passed to function declaration 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Prop Drilling (Translation Callback Passing) > should handle translation callback passed to arrow function 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Prop Drilling (Translation Callback Passing) > should handle nested function calls 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Prop Drilling (Translation Callback Passing) > should handle translation callback with different parameter positions 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Prop Drilling (Translation Callback Passing) > should handle translation callback with default parameters 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Prop Drilling (Translation Callback Passing) > should resolve aliases within helper functions 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should resolve imported function 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should cache cross-file resolutions 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should handle re-exports 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should handle named re-exports 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should handle circular imports gracefully 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should handle file read errors gracefully 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > resolveVariableAliases - Unit Tests > should resolve single alias 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > resolveVariableAliases - Unit Tests > should resolve chain of aliases 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > resolveVariableAliases - Unit Tests > should handle circular references without infinite loop 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle very long strings 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle special characters 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle unicode characters 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle ICU message format 1ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle empty strings 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle strings with only whitespace 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle multiple translation functions in one scope 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Output Format Consistency > should maintain consistent metadata structure 0ms
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts > parseStringFunction - Comprehensive Behavioral Tests > Output Format Consistency > should maintain filePaths in metadata 0ms
+
+ Test Files  1 passed (1)
+      Tests  57 passed (57)
+   Start at  10:48:23
+   Duration  345ms (transform 72ms, setup 0ms, collect 174ms, tests 31ms, environment 0ms, prepare 24ms)
+

@@ -1,0 +1,123 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`parseStringFunction - Comprehensive Behavioral Tests > Cross-File Function Resolution > should handle named re-exports 1`] = `
+"{
+  "updates": [],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle multiple translation functions in one scope 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "ICU",
+      "source": "first",
+      "metadata": {
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    },
+    {
+      "dataFormat": "ICU",
+      "source": "second",
+      "metadata": {
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseStringFunction - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle special characters 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "ICU",
+      "source": "Test & < > ' \\" \`",
+      "metadata": {
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseStringFunction - Comprehensive Behavioral Tests > Output Format Consistency > should maintain consistent metadata structure 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "ICU",
+      "source": "test",
+      "metadata": {
+        "id": "id1",
+        "context": "ctx1",
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    },
+    {
+      "dataFormat": "ICU",
+      "source": "test2",
+      "metadata": {
+        "id": "id2",
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    },
+    {
+      "dataFormat": "ICU",
+      "source": "test3",
+      "metadata": {
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseStringFunction - Comprehensive Behavioral Tests > getGT() Async Hook Calls > should not extract when getGT used in non-async function 1`] = `
+"{
+  "updates": [],
+  "errors": [
+    "test.tsx (4:20): Found getGT() in a synchronous function. Use useGT() instead, or make the function async."
+  ],
+  "warnings": {}
+}"
+`;
+
+exports[`parseStringFunction - Comprehensive Behavioral Tests > msg() Function Calls > should handle msg() with metadata options 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "ICU",
+      "source": "hello",
+      "metadata": {
+        "id": "greeting",
+        "context": "page",
+        "filePaths": [
+          "test.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;

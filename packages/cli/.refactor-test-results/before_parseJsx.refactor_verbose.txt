@@ -1,0 +1,49 @@
+
+> gtx-cli@2.6.1 test
+> vitest run --config=./vitest.config.ts parseJsx.refactor.test.ts --reporter=verbose
+
+
+ RUN  v3.2.4 /Users/jackieyc/GT/gt/packages/cli
+
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should parse simple text content 7ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should parse text with leading/trailing whitespace correctly 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should parse JSX with nested elements 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should handle empty T components 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should handle self-closing T components 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle Static with simple string literal 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle Static with numeric literal 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle Static with boolean literal 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle Static with null 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle Static with negative numbers 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle Static with ternary expressions 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Static Component Behavior > should handle nested ternary expressions in Static 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Var component 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Num component 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Plural component with all forms 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Branch component 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Metadata Handling > should extract id prop 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Metadata Handling > should extract context prop 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Metadata Handling > should extract multiple metadata props 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Metadata Handling > should include filePaths in metadata 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Metadata Handling > should set staticId for Static components 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Error and Warning Generation > should error on unwrapped expressions 2ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Error and Warning Generation > should handle nested T components 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Error and Warning Generation > should error on recursive function calls in Static 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Error and Warning Generation > should warn when function not found in Static 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Hash Consistency > should produce consistent hashes for identical content 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Hash Consistency > should produce different hashes for different content 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Hash Consistency > should maintain hash consistency with Static multiplication 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Complex Integration Scenarios > should handle multiple T components in one file 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Complex Integration Scenarios > should handle T with mixed content types 1ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Complex Integration Scenarios > should handle deeply nested JSX structures 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle very long text content 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle special characters in content 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle unicode characters 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle JSX fragments 0ms
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts > parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle T with no children but props 0ms
+
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  10:48:21
+   Duration  354ms (transform 78ms, setup 0ms, collect 180ms, tests 27ms, environment 0ms, prepare 26ms)
+

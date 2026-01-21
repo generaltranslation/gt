@@ -1,0 +1,14 @@
+
+> gtx-cli@2.6.1 test
+> vitest run --config=./vitest.config.ts parseJsx.refactor.test.ts
+
+
+ RUN  v3.2.4 /Users/jackieyc/GT/gt/packages/cli
+
+ ✓ src/react/jsx/utils/jsxParsing/__tests__/parseJsx.refactor.test.ts (36 tests) 26ms
+
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  10:48:21
+   Duration  334ms (transform 77ms, setup 0ms, collect 175ms, tests 26ms, environment 0ms, prepare 24ms)
+

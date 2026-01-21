@@ -1,0 +1,14 @@
+
+> gtx-cli@2.6.1 test
+> vitest run --config=./vitest.config.ts parseStringFunction.refactor.test.ts
+
+
+ RUN  v3.2.4 /Users/jackieyc/GT/gt/packages/cli
+
+ ✓ src/react/jsx/utils/__tests__/parseStringFunction.refactor.test.ts (57 tests) 27ms
+
+ Test Files  1 passed (1)
+      Tests  57 passed (57)
+   Start at  10:48:22
+   Duration  327ms (transform 68ms, setup 0ms, collect 168ms, tests 27ms, environment 0ms, prepare 25ms)
+

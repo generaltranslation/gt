@@ -1,0 +1,222 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should handle empty T components 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": {
+        "t": "T",
+        "i": 1
+      },
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Basic JSX Element Parsing > should handle self-closing T components 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": {
+        "t": "T",
+        "i": 1
+      },
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Complex Integration Scenarios > should handle deeply nested JSX structures 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": {
+        "t": "div",
+        "i": 1,
+        "c": {
+          "t": "span",
+          "i": 2,
+          "c": [
+            {
+              "t": "b",
+              "i": 3,
+              "c": "Nested"
+            },
+            " content"
+          ]
+        }
+      },
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle JSX fragments 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": {
+        "t": "C1",
+        "i": 1,
+        "c": "Fragment content"
+      },
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle T with no children but props 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": {
+        "t": "T",
+        "i": 1
+      },
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ],
+        "id": "test"
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Edge Cases and Boundary Conditions > should handle special characters in content 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": "Test & < > ' \\" \` ",
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Error and Warning Generation > should handle nested T components 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": [
+        "Outer ",
+        {
+          "t": "T",
+          "i": 1,
+          "c": "Inner"
+        }
+      ],
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    },
+    {
+      "dataFormat": "JSX",
+      "source": "Inner",
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Num component 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": [
+        "Price: ",
+        {
+          "i": 1,
+          "k": "_gt_n_1",
+          "v": "n"
+        }
+      ],
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Var component 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": [
+        "Hello ",
+        {
+          "i": 1,
+          "k": "userName",
+          "v": "v"
+        }
+      ],
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
