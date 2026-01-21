@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { mergeUpdatesByHash } from '../createInlineUpdates.js';
+import { _test_dedupeUpdates as dedupeUpdates } from '../createInlineUpdates.js';
 import type { Updates } from '../../../types/index.js';
 
-describe('mergeUpdatesByHash', () => {
+describe('dedupeUpdates', () => {
   it('coalesces filePaths for identical hashes', () => {
     const updates: Updates = [
       {
@@ -22,7 +22,7 @@ describe('mergeUpdatesByHash', () => {
       },
     ];
 
-    mergeUpdatesByHash(updates);
+    dedupeUpdates(updates);
 
     expect(updates).toHaveLength(2);
     const merged = updates.find((u) => u.metadata.hash === 'h1');
@@ -43,7 +43,7 @@ describe('mergeUpdatesByHash', () => {
       },
     ];
 
-    mergeUpdatesByHash(updates);
+    dedupeUpdates(updates);
 
     const merged = updates.find((u) => u.metadata.hash === 'h1');
     expect(merged?.metadata.filePaths).toEqual(['pathA', 'pathB']);

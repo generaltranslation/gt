@@ -1,5 +1,5 @@
 import { Updates } from '../../../../types/index.js';
-
+import { randomUUID } from 'node:crypto';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -42,6 +42,11 @@ import path from 'node:path';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
+
+// For tracking static
+type StaticTracker = {
+  isStatic: boolean;
+};
 
 // TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
 
@@ -131,14 +136,13 @@ export function parseTranslationComponent({
  * @param insideT - Whether the current node is inside a <T> component
  * @returns The built JSX tree
  */
-export function buildJSXTree({
+function buildJSXTree({
   importAliases,
   node,
   unwrappedExpressions,
   inStatic,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
@@ -148,12 +152,12 @@ export function buildJSXTree({
   importedFunctionsMap,
   pkgs,
   helperPath,
+  staticTracker,
 }: {
   importAliases: Record<string, string>;
   node: any;
   callStack: string[];
   unwrappedExpressions: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
@@ -165,6 +169,7 @@ export function buildJSXTree({
   inStatic: boolean;
   visited: Set<string> | null;
   helperPath: NodePath;
+  staticTracker: StaticTracker;
 }): JsxTree | MultiplicationNode {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -182,13 +187,13 @@ export function buildJSXTree({
         importAliases,
         visited: visited!,
         callStack,
-        updates,
         errors,
         warnings,
         file,
         parsingOptions,
         importedFunctionsMap,
         pkgs,
+        staticTracker,
       });
     }
 
@@ -200,7 +205,6 @@ export function buildJSXTree({
         unwrappedExpressions,
         visited,
         callStack,
-        updates,
         errors,
         warnings,
         file,
@@ -211,6 +215,7 @@ export function buildJSXTree({
         pkgs,
         inStatic,
         helperPath: helperPath.get('expression'),
+        staticTracker,
       });
     }
 
@@ -307,7 +312,6 @@ export function buildJSXTree({
                 unwrappedExpressions,
                 visited,
                 callStack,
-                updates,
                 errors: errors,
                 warnings: warnings,
                 file: file,
@@ -318,6 +322,7 @@ export function buildJSXTree({
                 pkgs,
                 inStatic,
                 helperPath: helperValue,
+                staticTracker,
               });
             }
             // For HTML content props, only accept static string expressions
@@ -363,7 +368,6 @@ export function buildJSXTree({
             unwrappedExpressions,
             visited,
             callStack,
-            updates,
             errors,
             warnings,
             file,
@@ -374,6 +378,7 @@ export function buildJSXTree({
             pkgs,
             inStatic: true,
             helperPath: helperChild,
+            staticTracker,
           });
           results.props.children.push(result);
         }
@@ -397,7 +402,6 @@ export function buildJSXTree({
           unwrappedExpressions,
           visited,
           callStack,
-          updates,
           errors,
           warnings,
           file,
@@ -408,6 +412,7 @@ export function buildJSXTree({
           pkgs,
           inStatic,
           helperPath: helperPath.get('children')[index],
+          staticTracker,
         })
       )
       .filter((child) => child !== null && child !== '');
@@ -436,7 +441,6 @@ export function buildJSXTree({
           unwrappedExpressions,
           visited,
           callStack,
-          updates,
           errors,
           warnings,
           file,
@@ -447,6 +451,7 @@ export function buildJSXTree({
           pkgs,
           inStatic,
           helperPath: helperPath.get('children')[index],
+          staticTracker,
         })
       )
       .filter((child: any) => child !== null && child !== '');
@@ -526,13 +531,13 @@ export function buildJSXTree({
         visited: visited!, // we know this is true bc of inStatic
         callStack,
         file,
-        updates,
         errors,
         warnings,
         unwrappedExpressions,
         pkgs,
         parsingOptions,
         importedFunctionsMap,
+        staticTracker,
       });
     } else {
       unwrappedExpressions.push(generate(node).code);
@@ -545,7 +550,6 @@ export function buildJSXTree({
       unwrappedExpressions,
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
@@ -556,6 +560,7 @@ export function buildJSXTree({
       pkgs,
       inStatic,
       helperPath: helperPath.get('expression'),
+      staticTracker,
     });
   }
   // If it's some other JS expression
@@ -580,7 +585,7 @@ export function buildJSXTree({
 // end buildJSXTree
 
 // Parses a JSX element and adds it to the updates array
-export function parseJSXElement({
+function parseJSXElement({
   importAliases,
   node,
   originalName,
@@ -633,6 +638,11 @@ export function parseJSXElement({
     file,
   });
 
+  // Flag for if contains static content
+  const staticTracker: StaticTracker = {
+    isStatic: false,
+  };
+
   // Build the JSX tree for this component
   const treeResult = buildJSXTree({
     importAliases,
@@ -642,7 +652,6 @@ export function parseJSXElement({
     callStack: [],
     pkgs,
     unwrappedExpressions,
-    updates,
     errors: componentErrors,
     warnings: componentWarnings,
     file,
@@ -651,6 +660,7 @@ export function parseJSXElement({
     importedFunctionsMap,
     inStatic: false,
     helperPath: scopeNode,
+    staticTracker,
   }) as JsxTree;
 
   // Strip the outer <T> component if necessary
@@ -702,6 +712,10 @@ export function parseJSXElement({
     return;
   }
 
+  // Create a temporary unique flag for static content
+  const temporaryStaticId = `static-temp-id-${randomUUID()}`;
+  const isStatic = staticTracker.isStatic;
+
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
     // Clean the tree by removing null 'c' fields from JsxElements
@@ -710,8 +724,11 @@ export function parseJSXElement({
     updates.push({
       dataFormat: 'JSX',
       source: cleanedTree,
-      // eslint-disable-next-line no-undef
-      metadata: { ...structuredClone(metadata) },
+      metadata: {
+        // eslint-disable-next-line no-undef
+        ...structuredClone(metadata),
+        ...(isStatic && { staticId: temporaryStaticId }),
+      },
     });
   }
 }
@@ -724,12 +741,12 @@ function resolveStaticFunctionInvocationFromBinding({
   visited,
   callStack,
   file,
-  updates,
   errors,
   warnings,
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   importAliases: Record<string, string>;
   calleeBinding: traverseModule.Binding;
@@ -738,12 +755,12 @@ function resolveStaticFunctionInvocationFromBinding({
   visited: Set<string>;
   callStack: string[];
   file: string;
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
@@ -785,7 +802,6 @@ function resolveStaticFunctionInvocationFromBinding({
           path,
           unwrappedExpressions,
           callStack,
-          updates,
           errors,
           warnings,
           visited,
@@ -793,6 +809,7 @@ function resolveStaticFunctionInvocationFromBinding({
           parsingOptions,
           importedFunctionsMap,
           pkgs,
+          staticTracker,
         }),
     });
   } else if (
@@ -813,7 +830,6 @@ function resolveStaticFunctionInvocationFromBinding({
           functionName,
           path,
           unwrappedExpressions,
-          updates,
           callStack,
           pkgs,
           errors,
@@ -822,6 +838,7 @@ function resolveStaticFunctionInvocationFromBinding({
           file,
           parsingOptions,
           importedFunctionsMap,
+          staticTracker,
         }),
     });
   } else if (importedFunctionsMap.has(callee.name)) {
@@ -856,12 +873,12 @@ function resolveStaticFunctionInvocationFromBinding({
             visited,
             callStack,
             unwrappedExpressions,
-            updates,
             errors,
             warnings,
             file,
             parsingOptions,
             pkgs,
+            staticTracker,
           }),
       });
       if (result !== null) {
@@ -896,24 +913,24 @@ function processFunctionInFile({
   visited,
   callStack,
   parsingOptions,
-  updates,
   errors,
   warnings,
   file,
   unwrappedExpressions,
   pkgs,
+  staticTracker,
 }: {
   filePath: string;
   functionName: string;
   visited: Set<string>;
   callStack: string[];
   parsingOptions: ParsingConfigOptions;
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
   unwrappedExpressions: string[];
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
@@ -971,12 +988,12 @@ function processFunctionInFile({
             callStack,
             visited,
             pkgs,
-            updates,
             errors,
             warnings,
             file: filePath,
             parsingOptions,
             importedFunctionsMap,
+            staticTracker,
           });
         }
       },
@@ -996,7 +1013,6 @@ function processFunctionInFile({
             path,
             callStack,
             pkgs,
-            updates,
             errors,
             warnings,
             visited,
@@ -1004,6 +1020,7 @@ function processFunctionInFile({
             file: filePath,
             parsingOptions,
             importedFunctionsMap,
+            staticTracker,
           });
         }
       },
@@ -1050,11 +1067,11 @@ function processFunctionInFile({
             visited,
             callStack,
             parsingOptions,
-            updates,
             errors,
             warnings,
             file: filePath,
             pkgs,
+            staticTracker,
           });
           if (foundResult != null) {
             result = foundResult;
@@ -1085,13 +1102,13 @@ function processFunctionDeclarationNodePath({
   unwrappedExpressions,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   functionName: string;
   path: NodePath<t.FunctionDeclaration>;
@@ -1099,13 +1116,13 @@ function processFunctionDeclarationNodePath({
   unwrappedExpressions: string[];
   visited: Set<string>;
   callStack: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1129,12 +1146,12 @@ function processFunctionDeclarationNodePath({
           expressionNodePath: returnNodePath,
           importAliases,
           visited,
-          updates,
           errors,
           warnings,
           file,
           parsingOptions,
           importedFunctionsMap,
+          staticTracker,
         })
       );
     },
@@ -1158,13 +1175,13 @@ function processVariableDeclarationNodePath({
   unwrappedExpressions,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   functionName: string;
   path: NodePath<t.VariableDeclarator>;
@@ -1172,13 +1189,13 @@ function processVariableDeclarationNodePath({
   unwrappedExpressions: string[];
   visited: Set<string>;
   callStack: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1210,12 +1227,12 @@ function processVariableDeclarationNodePath({
         importAliases,
         visited,
         callStack,
-        updates,
         errors,
         warnings,
         file,
         parsingOptions,
         importedFunctionsMap,
+        staticTracker,
       })
     );
   } else {
@@ -1238,12 +1255,12 @@ function processVariableDeclarationNodePath({
             importAliases,
             visited,
             callStack,
-            updates,
             errors,
             warnings,
             file,
             parsingOptions,
             importedFunctionsMap,
+            staticTracker,
           })
         );
       },
@@ -1273,13 +1290,13 @@ function processStaticExpression({
   importAliases,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   unwrappedExpressions: string[];
   /* TODO: remove scopeNode, we can just reuse expressionNodePath here */
@@ -1288,16 +1305,16 @@ function processStaticExpression({
   importAliases: Record<string, string>;
   visited: Set<string>;
   callStack: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): JsxTree | MultiplicationNode {
-  // // If the node is null, return
-  // if (expressionNodePath == null) return null;
+  // Mark the static tracker as true
+  staticTracker.isStatic = true;
 
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(expressionNodePath.node)) {
@@ -1309,13 +1326,13 @@ function processStaticExpression({
       expressionNodePath: expressionNodePath.get('expression'),
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
       parsingOptions,
       importedFunctionsMap,
       pkgs,
+      staticTracker,
     });
   } else if (
     t.isCallExpression(expressionNodePath.node) &&
@@ -1343,12 +1360,12 @@ function processStaticExpression({
       callStack,
       visited,
       file,
-      updates,
       errors,
       warnings,
       pkgs,
       parsingOptions,
       importedFunctionsMap,
+      staticTracker,
     });
   } else if (
     t.isAwaitExpression(expressionNodePath.node) &&
@@ -1377,12 +1394,12 @@ function processStaticExpression({
       visited,
       callStack,
       file,
-      updates,
       errors,
       warnings,
       pkgs,
       parsingOptions,
       importedFunctionsMap,
+      staticTracker,
     });
   } else if (
     t.isJSXElement(expressionNodePath.node) ||
@@ -1395,7 +1412,6 @@ function processStaticExpression({
       unwrappedExpressions,
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
@@ -1406,6 +1422,7 @@ function processStaticExpression({
       pkgs,
       inStatic: true,
       helperPath: expressionNodePath,
+      staticTracker,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1423,13 +1440,13 @@ function processStaticExpression({
             expressionNodePath,
             visited,
             callStack,
-            updates,
             errors,
             warnings,
             file,
             parsingOptions,
             importedFunctionsMap,
             pkgs,
+            staticTracker,
           })
       ),
     };
@@ -1441,7 +1458,6 @@ function processStaticExpression({
       unwrappedExpressions,
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
@@ -1452,6 +1468,7 @@ function processStaticExpression({
       pkgs,
       inStatic: true,
       helperPath: expressionNodePath,
+      staticTracker,
     });
   }
 }

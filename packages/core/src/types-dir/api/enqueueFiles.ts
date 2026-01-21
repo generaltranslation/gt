@@ -2,7 +2,7 @@ import { JsxChildren } from '../jsx/content';
 
 // Types for the enqueueTranslationEntries function
 export type Updates = ({
-  metadata: Record<string, any>;
+  metadata: Record<string, any> & { staticId?: string };
 } & (
   | {
       dataFormat: 'JSX';
