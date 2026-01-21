@@ -1,5 +1,4 @@
 import { Updates } from '../../../../types/index.js';
-
 import { randomUUID } from 'node:crypto';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
@@ -43,6 +42,11 @@ import path from 'node:path';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
+
+// For tracking static
+type StaticTracker = {
+  isStatic: boolean;
+};
 
 // TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
 
@@ -132,7 +136,7 @@ export function parseTranslationComponent({
  * @param insideT - Whether the current node is inside a <T> component
  * @returns The built JSX tree
  */
-export function buildJSXTree({
+function buildJSXTree({
   importAliases,
   node,
   unwrappedExpressions,
@@ -148,6 +152,7 @@ export function buildJSXTree({
   importedFunctionsMap,
   pkgs,
   helperPath,
+  staticTracker,
 }: {
   importAliases: Record<string, string>;
   node: any;
@@ -164,6 +169,7 @@ export function buildJSXTree({
   inStatic: boolean;
   visited: Set<string> | null;
   helperPath: NodePath;
+  staticTracker: StaticTracker;
 }): JsxTree | MultiplicationNode {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -187,6 +193,7 @@ export function buildJSXTree({
         parsingOptions,
         importedFunctionsMap,
         pkgs,
+        staticTracker,
       });
     }
 
@@ -208,6 +215,7 @@ export function buildJSXTree({
         pkgs,
         inStatic,
         helperPath: helperPath.get('expression'),
+        staticTracker,
       });
     }
 
@@ -314,6 +322,7 @@ export function buildJSXTree({
                 pkgs,
                 inStatic,
                 helperPath: helperValue,
+                staticTracker,
               });
             }
             // For HTML content props, only accept static string expressions
@@ -369,6 +378,7 @@ export function buildJSXTree({
             pkgs,
             inStatic: true,
             helperPath: helperChild,
+            staticTracker,
           });
           results.props.children.push(result);
         }
@@ -402,6 +412,7 @@ export function buildJSXTree({
           pkgs,
           inStatic,
           helperPath: helperPath.get('children')[index],
+          staticTracker,
         })
       )
       .filter((child) => child !== null && child !== '');
@@ -440,6 +451,7 @@ export function buildJSXTree({
           pkgs,
           inStatic,
           helperPath: helperPath.get('children')[index],
+          staticTracker,
         })
       )
       .filter((child: any) => child !== null && child !== '');
@@ -525,6 +537,7 @@ export function buildJSXTree({
         pkgs,
         parsingOptions,
         importedFunctionsMap,
+        staticTracker,
       });
     } else {
       unwrappedExpressions.push(generate(node).code);
@@ -547,6 +560,7 @@ export function buildJSXTree({
       pkgs,
       inStatic,
       helperPath: helperPath.get('expression'),
+      staticTracker,
     });
   }
   // If it's some other JS expression
@@ -624,6 +638,11 @@ function parseJSXElement({
     file,
   });
 
+  // Flag for if contains static content
+  const staticTracker: StaticTracker = {
+    isStatic: false,
+  };
+
   // Build the JSX tree for this component
   const treeResult = buildJSXTree({
     importAliases,
@@ -641,6 +660,7 @@ function parseJSXElement({
     importedFunctionsMap,
     inStatic: false,
     helperPath: scopeNode,
+    staticTracker,
   }) as JsxTree;
 
   // Strip the outer <T> component if necessary
@@ -692,10 +712,9 @@ function parseJSXElement({
     return;
   }
 
-  // We know its static if there are multiple entries
-  const isStatic = minifiedTress.length > 1;
   // Create a temporary unique flag for static content
   const temporaryStaticId = `static-temp-id-${randomUUID()}`;
+  const isStatic = staticTracker.isStatic;
 
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
@@ -727,6 +746,7 @@ function resolveStaticFunctionInvocationFromBinding({
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   importAliases: Record<string, string>;
   calleeBinding: traverseModule.Binding;
@@ -740,6 +760,7 @@ function resolveStaticFunctionInvocationFromBinding({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
@@ -788,6 +809,7 @@ function resolveStaticFunctionInvocationFromBinding({
           parsingOptions,
           importedFunctionsMap,
           pkgs,
+          staticTracker,
         }),
     });
   } else if (
@@ -816,6 +838,7 @@ function resolveStaticFunctionInvocationFromBinding({
           file,
           parsingOptions,
           importedFunctionsMap,
+          staticTracker,
         }),
     });
   } else if (importedFunctionsMap.has(callee.name)) {
@@ -855,6 +878,7 @@ function resolveStaticFunctionInvocationFromBinding({
             file,
             parsingOptions,
             pkgs,
+            staticTracker,
           }),
       });
       if (result !== null) {
@@ -894,6 +918,7 @@ function processFunctionInFile({
   file,
   unwrappedExpressions,
   pkgs,
+  staticTracker,
 }: {
   filePath: string;
   functionName: string;
@@ -905,6 +930,7 @@ function processFunctionInFile({
   file: string;
   unwrappedExpressions: string[];
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
@@ -967,6 +993,7 @@ function processFunctionInFile({
             file: filePath,
             parsingOptions,
             importedFunctionsMap,
+            staticTracker,
           });
         }
       },
@@ -993,6 +1020,7 @@ function processFunctionInFile({
             file: filePath,
             parsingOptions,
             importedFunctionsMap,
+            staticTracker,
           });
         }
       },
@@ -1043,6 +1071,7 @@ function processFunctionInFile({
             warnings,
             file: filePath,
             pkgs,
+            staticTracker,
           });
           if (foundResult != null) {
             result = foundResult;
@@ -1079,6 +1108,7 @@ function processFunctionDeclarationNodePath({
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   functionName: string;
   path: NodePath<t.FunctionDeclaration>;
@@ -1092,6 +1122,7 @@ function processFunctionDeclarationNodePath({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1120,6 +1151,7 @@ function processFunctionDeclarationNodePath({
           file,
           parsingOptions,
           importedFunctionsMap,
+          staticTracker,
         })
       );
     },
@@ -1149,6 +1181,7 @@ function processVariableDeclarationNodePath({
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   functionName: string;
   path: NodePath<t.VariableDeclarator>;
@@ -1162,6 +1195,7 @@ function processVariableDeclarationNodePath({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1198,6 +1232,7 @@ function processVariableDeclarationNodePath({
         file,
         parsingOptions,
         importedFunctionsMap,
+        staticTracker,
       })
     );
   } else {
@@ -1225,6 +1260,7 @@ function processVariableDeclarationNodePath({
             file,
             parsingOptions,
             importedFunctionsMap,
+            staticTracker,
           })
         );
       },
@@ -1260,6 +1296,7 @@ function processStaticExpression({
   parsingOptions,
   importedFunctionsMap,
   pkgs,
+  staticTracker,
 }: {
   unwrappedExpressions: string[];
   /* TODO: remove scopeNode, we can just reuse expressionNodePath here */
@@ -1274,9 +1311,10 @@ function processStaticExpression({
   parsingOptions: ParsingConfigOptions;
   importedFunctionsMap: Map<string, string>;
   pkgs: GTLibrary[];
+  staticTracker: StaticTracker;
 }): JsxTree | MultiplicationNode {
-  // // If the node is null, return
-  // if (expressionNodePath == null) return null;
+  // Mark the static tracker as true
+  staticTracker.isStatic = true;
 
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(expressionNodePath.node)) {
@@ -1294,6 +1332,7 @@ function processStaticExpression({
       parsingOptions,
       importedFunctionsMap,
       pkgs,
+      staticTracker,
     });
   } else if (
     t.isCallExpression(expressionNodePath.node) &&
@@ -1326,6 +1365,7 @@ function processStaticExpression({
       pkgs,
       parsingOptions,
       importedFunctionsMap,
+      staticTracker,
     });
   } else if (
     t.isAwaitExpression(expressionNodePath.node) &&
@@ -1359,6 +1399,7 @@ function processStaticExpression({
       pkgs,
       parsingOptions,
       importedFunctionsMap,
+      staticTracker,
     });
   } else if (
     t.isJSXElement(expressionNodePath.node) ||
@@ -1381,6 +1422,7 @@ function processStaticExpression({
       pkgs,
       inStatic: true,
       helperPath: expressionNodePath,
+      staticTracker,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1404,6 +1446,7 @@ function processStaticExpression({
             parsingOptions,
             importedFunctionsMap,
             pkgs,
+            staticTracker,
           })
       ),
     };
@@ -1425,6 +1468,7 @@ function processStaticExpression({
       pkgs,
       inStatic: true,
       helperPath: expressionNodePath,
+      staticTracker,
     });
   }
 }
