@@ -352,7 +352,7 @@ export class BaseCLI {
             const wrap = useDefaults
               ? true
               : await promptConfirm({
-                  message: `${frameworkDisplayName} detected. Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+                  message: `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
                   defaultValue: true,
                 });
 
