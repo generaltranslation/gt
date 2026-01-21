@@ -142,15 +142,25 @@ export function parseTranslationComponent({
     parseJSXElement({
       scopeNode: jsxElementPath,
       node: jsxElementPath.node,
-      pkgs,
       originalName,
-      importAliases,
       updates,
-      errors,
-      warnings,
-      file,
-      parsingOptions,
-      importedFunctionsMap,
+      config: {
+        importAliases,
+        parsingOptions,
+        pkgs,
+        file,
+      },
+      state: {
+        visited: null,
+        callStack: [],
+        staticTracker: { isStatic: false },
+        importedFunctionsMap,
+      },
+      output: {
+        errors,
+        warnings,
+        unwrappedExpressions: [],
+      },
     });
   }
 }
@@ -537,29 +547,21 @@ function buildJSXTree({
 
 // Parses a JSX element and adds it to the updates array
 function parseJSXElement({
-  importAliases,
   node,
   originalName,
-  pkgs,
-  updates,
-  errors,
-  warnings,
-  file,
-  parsingOptions,
   scopeNode,
-  importedFunctionsMap,
+  updates,
+  config,
+  state,
+  output,
 }: {
-  importAliases: Record<string, string>;
   node: t.JSXElement;
   originalName: string;
-  pkgs: GTLibrary[];
-  updates: Updates;
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  parsingOptions: ParsingConfigOptions;
   scopeNode: NodePath<t.JSXElement>;
-  importedFunctionsMap: Map<string, string>;
+  updates: Updates;
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
 }) {
   const openingElement = node.openingElement;
   const name = openingElement.name;
@@ -575,7 +577,7 @@ function parseJSXElement({
   const componentErrors: string[] = [];
   const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
-  const relativeFilepath = path.relative(process.cwd(), file);
+  const relativeFilepath = path.relative(process.cwd(), config.file);
   metadata.filePaths = [relativeFilepath];
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
@@ -586,7 +588,7 @@ function parseJSXElement({
     openingElement,
     metadata,
     componentErrors,
-    file,
+    file: config.file,
   });
 
   // Flag for if contains static content
@@ -601,17 +603,12 @@ function parseJSXElement({
     insideT: false,
     inStatic: false,
     helperPath: scopeNode,
-    config: {
-      importAliases,
-      parsingOptions,
-      pkgs,
-      file,
-    },
+    config,
     state: {
       visited: null,
       callStack: [],
       staticTracker,
-      importedFunctionsMap,
+      importedFunctionsMap: state.importedFunctionsMap,
     },
     output: {
       unwrappedExpressions,
@@ -629,12 +626,12 @@ function parseJSXElement({
 
   // Update warnings
   if (componentWarnings.size > 0) {
-    componentWarnings.forEach((warning) => warnings.add(warning));
+    componentWarnings.forEach((warning) => output.warnings.add(warning));
   }
 
   // Update errors
   if (componentErrors.length > 0) {
-    errors.push(...componentErrors);
+    output.errors.push(...componentErrors);
     return;
   }
 
@@ -658,9 +655,9 @@ function parseJSXElement({
 
   // If we found an unwrapped expression, skip
   if (unwrappedExpressions.length > 0) {
-    errors.push(
+    output.errors.push(
       warnHasUnwrappedExpressionSync(
-        file,
+        config.file,
         unwrappedExpressions,
         metadata.id,
         `${node.loc?.start?.line}:${node.loc?.start?.column}`
