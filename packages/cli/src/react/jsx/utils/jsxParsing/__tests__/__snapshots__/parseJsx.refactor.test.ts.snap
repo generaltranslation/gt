@@ -171,6 +171,38 @@ exports[`parseJsx - Comprehensive Behavioral Tests > Error and Warning Generatio
 }"
 `;
 
+exports[`parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Branch component 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": [
+        {
+          "t": "Branch",
+          "i": 1,
+          "d": {
+            "b": {
+              "male": "He",
+              "female": "She",
+              "other": "They"
+            },
+            "t": "b"
+          }
+        },
+        " arrived"
+      ],
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
 exports[`parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Num component 1`] = `
 "{
   "updates": [
@@ -182,6 +214,37 @@ exports[`parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, N
           "i": 1,
           "k": "_gt_n_1",
           "v": "n"
+        }
+      ],
+      "metadata": {
+        "filePaths": [
+          "../../../../../../test/page.tsx"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": {}
+}"
+`;
+
+exports[`parseJsx - Comprehensive Behavioral Tests > Variable Components (Var, Num, Plural, Branch) > should handle Plural component with all forms 1`] = `
+"{
+  "updates": [
+    {
+      "dataFormat": "JSX",
+      "source": [
+        "You have ",
+        {
+          "t": "Plural",
+          "i": 1,
+          "d": {
+            "b": {
+              "one": "one item",
+              "other": "many items"
+            },
+            "t": "p"
+          }
         }
       ],
       "metadata": {

@@ -492,19 +492,11 @@ function buildJSXTree({
         return null;
       }
       return resolveStaticFunctionInvocationFromBinding({
-        importAliases: config.importAliases,
         calleeBinding,
         callee,
-        visited: state.visited!, // we know this is true bc of inStatic
-        callStack: state.callStack,
-        file: config.file,
-        errors: output.errors,
-        warnings: output.warnings,
-        unwrappedExpressions: output.unwrappedExpressions,
-        pkgs: config.pkgs,
-        parsingOptions: config.parsingOptions,
-        importedFunctionsMap: state.importedFunctionsMap,
-        staticTracker: state.staticTracker,
+        config,
+        state,
+        output,
       });
     } else {
       output.unwrappedExpressions.push(generate(node).code);
@@ -699,33 +691,17 @@ function parseJSXElement({
 }
 
 function resolveStaticFunctionInvocationFromBinding({
-  importAliases,
   calleeBinding,
   callee,
-  unwrappedExpressions,
-  visited,
-  callStack,
-  file,
-  errors,
-  warnings,
-  parsingOptions,
-  importedFunctionsMap,
-  pkgs,
-  staticTracker,
+  config,
+  state,
+  output,
 }: {
-  importAliases: Record<string, string>;
   calleeBinding: traverseModule.Binding;
   callee: t.Identifier;
-  unwrappedExpressions: string[];
-  visited: Set<string>;
-  callStack: string[];
-  file: string;
-  errors: string[];
-  warnings: Set<string>;
-  parsingOptions: ParsingConfigOptions;
-  importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibrary[];
-  staticTracker: StaticTracker;
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
 }): MultiplicationNode | null {
   // Stop recursive calls
   type RecursiveGuardCallback = () =>
@@ -742,13 +718,13 @@ function resolveStaticFunctionInvocationFromBinding({
     functionName: string;
   }) {
     const cacheKey = `${filename}::${functionName}`;
-    if (callStack.includes(cacheKey)) {
-      errors.push(warnRecursiveFunctionCallSync(file, functionName));
+    if (state.callStack.includes(cacheKey)) {
+      output.errors.push(warnRecursiveFunctionCallSync(config.file, functionName));
       return null;
     }
-    callStack.push(cacheKey);
+    state.callStack.push(cacheKey);
     const result = cb();
-    callStack.pop();
+    state.callStack.pop();
     return result;
   }
 
@@ -758,23 +734,15 @@ function resolveStaticFunctionInvocationFromBinding({
     const functionName = callee.name;
     const path = calleeBinding.path;
     return withRecusionGuard({
-      filename: file,
+      filename: config.file,
       functionName,
       cb: () =>
         processFunctionDeclarationNodePath({
-          importAliases,
+          config,
+          state,
+          output,
           functionName,
           path,
-          unwrappedExpressions,
-          callStack,
-          errors,
-          warnings,
-          visited,
-          file,
-          parsingOptions,
-          importedFunctionsMap,
-          pkgs,
-          staticTracker,
         }),
     });
   } else if (
@@ -787,26 +755,18 @@ function resolveStaticFunctionInvocationFromBinding({
     const functionName = callee.name;
     const path = calleeBinding.path;
     return withRecusionGuard({
-      filename: file,
+      filename: config.file,
       functionName,
       cb: () =>
         processVariableDeclarationNodePath({
-          importAliases,
+          config,
+          state,
+          output,
           functionName,
           path,
-          unwrappedExpressions,
-          callStack,
-          pkgs,
-          errors,
-          visited,
-          warnings,
-          file,
-          parsingOptions,
-          importedFunctionsMap,
-          staticTracker,
         }),
     });
-  } else if (importedFunctionsMap.has(callee.name)) {
+  } else if (state.importedFunctionsMap.has(callee.name)) {
     // Get the original function name
     let originalName: string | undefined;
     if (calleeBinding.path.isImportSpecifier()) {
@@ -820,11 +780,11 @@ function resolveStaticFunctionInvocationFromBinding({
     }
 
     // Function is being imported
-    const importPath = importedFunctionsMap.get(callee.name)!;
+    const importPath = state.importedFunctionsMap.get(callee.name)!;
     const filePath = resolveImportPath(
-      file,
+      config.file,
       importPath,
-      parsingOptions,
+      config.parsingOptions,
       resolveImportPathCache
     );
     if (filePath && originalName) {
@@ -833,17 +793,11 @@ function resolveStaticFunctionInvocationFromBinding({
         functionName: originalName,
         cb: () =>
           processFunctionInFile({
+            config,
+            state,
+            output,
             filePath,
             functionName: originalName,
-            visited,
-            callStack,
-            unwrappedExpressions,
-            errors,
-            warnings,
-            file,
-            parsingOptions,
-            pkgs,
-            staticTracker,
           }),
       });
       if (result !== null) {
@@ -851,9 +805,9 @@ function resolveStaticFunctionInvocationFromBinding({
       }
     }
   }
-  warnings.add(
+  output.warnings.add(
     warnFunctionNotFoundSync(
-      file,
+      config.file,
       callee.name,
       `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
     )
@@ -873,29 +827,17 @@ function resolveStaticFunctionInvocationFromBinding({
  * If the function is not found in the file, follows re-exports (export * from './other')
  */
 function processFunctionInFile({
+  config,
+  state,
+  output,
   filePath,
   functionName,
-  visited,
-  callStack,
-  parsingOptions,
-  errors,
-  warnings,
-  file,
-  unwrappedExpressions,
-  pkgs,
-  staticTracker,
 }: {
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
   filePath: string;
   functionName: string;
-  visited: Set<string>;
-  callStack: string[];
-  parsingOptions: ParsingConfigOptions;
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  unwrappedExpressions: string[];
-  pkgs: GTLibrary[];
-  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   // Create a custom key for the function call
   const cacheKey = `${filePath}::${functionName}`;
@@ -905,10 +847,12 @@ function processFunctionInFile({
   }
 
   // Prevent infinite loops from circular re-exports
-  if (visited.has(filePath)) {
+  if (state.visited && state.visited.has(filePath)) {
     return null;
   }
-  visited.add(filePath);
+  if (state.visited) {
+    state.visited.add(filePath);
+  }
 
   let result: MultiplicationNode | null | undefined = undefined;
   try {
@@ -918,7 +862,7 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    const { importAliases } = getPathsAndAliases(ast, pkgs);
+    const { importAliases } = getPathsAndAliases(ast, config.pkgs);
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string> = new Map();
@@ -931,7 +875,7 @@ function processFunctionInFile({
     const reExports: string[] = [];
 
     const warnDuplicateFuncDef = (path: NodePath) => {
-      warnings.add(
+      output.warnings.add(
         warnDuplicateFunctionDefinitionSync(
           filePath,
           functionName,
@@ -946,19 +890,19 @@ function processFunctionInFile({
         if (path.node.id?.name === functionName) {
           if (result !== undefined) return warnDuplicateFuncDef(path);
           result = processFunctionDeclarationNodePath({
-            importAliases,
+            config: {
+              importAliases,
+              parsingOptions: config.parsingOptions,
+              pkgs: config.pkgs,
+              file: filePath,
+            },
+            state: {
+              ...state,
+              importedFunctionsMap,
+            },
+            output,
             functionName,
             path,
-            unwrappedExpressions,
-            callStack,
-            visited,
-            pkgs,
-            errors,
-            warnings,
-            file: filePath,
-            parsingOptions,
-            importedFunctionsMap,
-            staticTracker,
           });
         }
       },
@@ -973,19 +917,19 @@ function processFunctionInFile({
         ) {
           if (result !== undefined) return warnDuplicateFuncDef(path);
           result = processVariableDeclarationNodePath({
-            importAliases,
+            config: {
+              importAliases,
+              parsingOptions: config.parsingOptions,
+              pkgs: config.pkgs,
+              file: filePath,
+            },
+            state: {
+              ...state,
+              importedFunctionsMap,
+            },
+            output,
             functionName,
             path,
-            callStack,
-            pkgs,
-            errors,
-            warnings,
-            visited,
-            unwrappedExpressions,
-            file: filePath,
-            parsingOptions,
-            importedFunctionsMap,
-            staticTracker,
           });
         }
       },
@@ -1021,22 +965,24 @@ function processFunctionInFile({
         const resolvedPath = resolveImportPath(
           filePath,
           reExportPath,
-          parsingOptions,
+          config.parsingOptions,
           resolveImportPathCache
         );
         if (resolvedPath) {
           const foundResult = processFunctionInFile({
+            config: {
+              importAliases,
+              parsingOptions: config.parsingOptions,
+              pkgs: config.pkgs,
+              file: filePath,
+            },
+            state: {
+              ...state,
+              importedFunctionsMap,
+            },
+            output,
             filePath: resolvedPath,
             functionName,
-            unwrappedExpressions,
-            visited,
-            callStack,
-            parsingOptions,
-            errors,
-            warnings,
-            file: filePath,
-            pkgs,
-            staticTracker,
           });
           if (foundResult != null) {
             result = foundResult;
@@ -1061,33 +1007,17 @@ function processFunctionInFile({
  * function getInfo() { ... }
  */
 function processFunctionDeclarationNodePath({
+  config,
+  state,
+  output,
   functionName,
   path,
-  importAliases,
-  unwrappedExpressions,
-  visited,
-  callStack,
-  errors,
-  warnings,
-  file,
-  parsingOptions,
-  importedFunctionsMap,
-  pkgs,
-  staticTracker,
 }: {
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
   functionName: string;
   path: NodePath<t.FunctionDeclaration>;
-  importAliases: Record<string, string>;
-  unwrappedExpressions: string[];
-  visited: Set<string>;
-  callStack: string[];
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  parsingOptions: ParsingConfigOptions;
-  importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibrary[];
-  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1104,25 +1034,11 @@ function processFunctionDeclarationNodePath({
       }
       result.branches.push(
         processStaticExpression({
-          config: {
-            parsingOptions,
-            importAliases,
-            pkgs,
-            file,
-          },
-          state: {
-            visited,
-            callStack,
-            staticTracker,
-            importedFunctionsMap,
-          },
-          output: {
-            errors,
-            warnings,
-            unwrappedExpressions,
-          },
+          config,
+          state,
+          output,
           expressionNodePath: returnNodePath,
-          scopeNode: returnNodePath,
+          scopeNode: returnPath,
         })
       );
     },
@@ -1140,33 +1056,17 @@ function processFunctionDeclarationNodePath({
  * IMPORTANT: the RHand value must be the function definition, or this will fail
  */
 function processVariableDeclarationNodePath({
+  config,
+  state,
+  output,
   functionName,
   path,
-  importAliases,
-  unwrappedExpressions,
-  visited,
-  callStack,
-  errors,
-  warnings,
-  file,
-  parsingOptions,
-  importedFunctionsMap,
-  pkgs,
-  staticTracker,
 }: {
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
   functionName: string;
   path: NodePath<t.VariableDeclarator>;
-  importAliases: Record<string, string>;
-  unwrappedExpressions: string[];
-  visited: Set<string>;
-  callStack: string[];
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  parsingOptions: ParsingConfigOptions;
-  importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibrary[];
-  staticTracker: StaticTracker;
 }): MultiplicationNode | null {
   const result: MultiplicationNode = {
     nodeType: 'multiplication',
@@ -1176,9 +1076,9 @@ function processVariableDeclarationNodePath({
   // Enforce the Rhand is a function definition
   const arrowFunctionPath = path.get('init');
   if (!arrowFunctionPath.isArrowFunctionExpression()) {
-    errors.push(
+    output.errors.push(
       warnInvalidStaticInitSync(
-        file,
+        config.file,
         functionName,
         `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
       )
@@ -1191,23 +1091,9 @@ function processVariableDeclarationNodePath({
     // process expression return
     result.branches.push(
       processStaticExpression({
-        config: {
-          parsingOptions,
-          importAliases,
-          pkgs,
-          file,
-        },
-        state: {
-          visited,
-          callStack,
-          staticTracker,
-          importedFunctionsMap,
-        },
-        output: {
-          errors,
-          warnings,
-          unwrappedExpressions,
-        },
+        config,
+        state,
+        output,
         expressionNodePath: bodyNodePath,
         scopeNode: arrowFunctionPath,
       })
@@ -1225,23 +1111,9 @@ function processVariableDeclarationNodePath({
         }
         result.branches.push(
           processStaticExpression({
-            config: {
-              parsingOptions,
-              importAliases,
-              pkgs,
-              file,
-            },
-            state: {
-              visited,
-              callStack,
-              staticTracker,
-              importedFunctionsMap,
-            },
-            output: {
-              errors,
-              warnings,
-              unwrappedExpressions,
-            },
+            config,
+            state,
+            output,
             expressionNodePath: returnNodePath,
             scopeNode: returnPath,
           })
@@ -1251,9 +1123,9 @@ function processVariableDeclarationNodePath({
   }
 
   if (result.branches.length === 0) {
-    errors.push(
+    output.errors.push(
       warnMissingReturnSync(
-        file,
+        config.file,
         functionName,
         `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
       )
@@ -1311,19 +1183,11 @@ function processStaticExpression({
     }
     // Function is found
     return resolveStaticFunctionInvocationFromBinding({
-      importAliases: config.importAliases,
       calleeBinding,
       callee,
-      unwrappedExpressions: output.unwrappedExpressions,
-      callStack: state.callStack,
-      visited: state.visited!,
-      file: config.file,
-      errors: output.errors,
-      warnings: output.warnings,
-      pkgs: config.pkgs,
-      parsingOptions: config.parsingOptions,
-      importedFunctionsMap: state.importedFunctionsMap,
-      staticTracker: state.staticTracker,
+      config,
+      state,
+      output,
     });
   } else if (
     t.isAwaitExpression(expressionNodePath.node) &&
@@ -1345,19 +1209,11 @@ function processStaticExpression({
     }
     // Function is found
     return resolveStaticFunctionInvocationFromBinding({
-      importAliases: config.importAliases,
       calleeBinding,
       callee,
-      unwrappedExpressions: output.unwrappedExpressions,
-      visited: state.visited!,
-      callStack: state.callStack,
-      file: config.file,
-      errors: output.errors,
-      warnings: output.warnings,
-      pkgs: config.pkgs,
-      parsingOptions: config.parsingOptions,
-      importedFunctionsMap: state.importedFunctionsMap,
-      staticTracker: state.staticTracker,
+      config,
+      state,
+      output,
     });
   } else if (
     t.isJSXElement(expressionNodePath.node) ||
@@ -1365,22 +1221,14 @@ function processStaticExpression({
   ) {
     // ex: return <div>Jsx content</div>
     return buildJSXTree({
-      importAliases: config.importAliases,
       node: expressionNodePath.node,
-      unwrappedExpressions: output.unwrappedExpressions,
-      visited: state.visited,
-      callStack: state.callStack,
-      errors: output.errors,
-      warnings: output.warnings,
-      file: config.file,
-      insideT: true,
-      parsingOptions: config.parsingOptions,
-      scopeNode,
-      importedFunctionsMap: state.importedFunctionsMap,
-      pkgs: config.pkgs,
-      inStatic: true,
       helperPath: expressionNodePath,
-      staticTracker: state.staticTracker,
+      scopeNode,
+      insideT: true,
+      inStatic: true,
+      config,
+      state,
+      output,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1403,22 +1251,14 @@ function processStaticExpression({
     return result;
   } else {
     return buildJSXTree({
-      importAliases: config.importAliases,
       node: expressionNodePath.node,
-      unwrappedExpressions: output.unwrappedExpressions,
-      visited: state.visited,
-      callStack: state.callStack,
-      errors: output.errors,
-      warnings: output.warnings,
-      file: config.file,
-      insideT: true,
-      parsingOptions: config.parsingOptions,
-      scopeNode,
-      importedFunctionsMap: state.importedFunctionsMap,
-      pkgs: config.pkgs,
-      inStatic: true,
       helperPath: expressionNodePath,
-      staticTracker: state.staticTracker,
+      scopeNode,
+      insideT: true,
+      inStatic: true,
+      config,
+      state,
+      output,
     });
   }
 }
