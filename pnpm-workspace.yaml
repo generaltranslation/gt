@@ -1,6 +1,6 @@
 packages:
   - packages/*
-  - test-apps/**/*
+  - tests/apps/**/*
   - examples/next-ssg
 
 minimumReleaseAge: 1440

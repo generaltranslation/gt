@@ -4,7 +4,7 @@
   "workspaces": [
     "packages/*",
     "examples/*",
-    "test-apps/**/*"
+    "tests/apps/**/*"
   ],
   "scripts": {
     "build": "turbo run build --filter='./packages/*'",

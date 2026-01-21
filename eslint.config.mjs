@@ -70,7 +70,7 @@ export default [
       'coverage/',
       '**/*.d.ts',
       '**/rollup.config.*',
-      'packages/compiler/src/transform/jsx-children/__tests__/seeds/**/*',
+      'tests/seeds/**/*',
     ],
   },
 ];
