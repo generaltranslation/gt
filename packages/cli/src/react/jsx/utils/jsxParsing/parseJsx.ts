@@ -194,21 +194,13 @@ function buildJSXTree({
 
     if (inStatic) {
       return processStaticExpression({
-        unwrappedExpressions: output.unwrappedExpressions,
-        scopeNode,
+        config,
+        state,
+        output,
         expressionNodePath: helperPath.get(
           'expression'
         ) as NodePath<t.Expression>,
-        importAliases: config.importAliases,
-        visited: state.visited!,
-        callStack: state.callStack,
-        errors: output.errors,
-        warnings: output.warnings,
-        file: config.file,
-        parsingOptions: config.parsingOptions,
-        importedFunctionsMap: state.importedFunctionsMap,
-        pkgs: config.pkgs,
-        staticTracker: state.staticTracker,
+        scopeNode,
       });
     }
 
@@ -1112,19 +1104,25 @@ function processFunctionDeclarationNodePath({
       }
       result.branches.push(
         processStaticExpression({
-          unwrappedExpressions,
-          pkgs,
-          callStack,
-          scopeNode: returnNodePath,
+          config: {
+            parsingOptions,
+            importAliases,
+            pkgs,
+            file,
+          },
+          state: {
+            visited,
+            callStack,
+            staticTracker,
+            importedFunctionsMap,
+          },
+          output: {
+            errors,
+            warnings,
+            unwrappedExpressions,
+          },
           expressionNodePath: returnNodePath,
-          importAliases,
-          visited,
-          errors,
-          warnings,
-          file,
-          parsingOptions,
-          importedFunctionsMap,
-          staticTracker,
+          scopeNode: returnNodePath,
         })
       );
     },
@@ -1193,19 +1191,25 @@ function processVariableDeclarationNodePath({
     // process expression return
     result.branches.push(
       processStaticExpression({
-        unwrappedExpressions,
-        pkgs,
-        scopeNode: arrowFunctionPath,
+        config: {
+          parsingOptions,
+          importAliases,
+          pkgs,
+          file,
+        },
+        state: {
+          visited,
+          callStack,
+          staticTracker,
+          importedFunctionsMap,
+        },
+        output: {
+          errors,
+          warnings,
+          unwrappedExpressions,
+        },
         expressionNodePath: bodyNodePath,
-        importAliases,
-        visited,
-        callStack,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
-        importedFunctionsMap,
-        staticTracker,
+        scopeNode: arrowFunctionPath,
       })
     );
   } else {
@@ -1221,19 +1225,25 @@ function processVariableDeclarationNodePath({
         }
         result.branches.push(
           processStaticExpression({
-            unwrappedExpressions,
-            pkgs,
-            scopeNode: returnPath,
+            config: {
+              parsingOptions,
+              importAliases,
+              pkgs,
+              file,
+            },
+            state: {
+              visited,
+              callStack,
+              staticTracker,
+              importedFunctionsMap,
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions,
+            },
             expressionNodePath: returnNodePath,
-            importAliases,
-            visited,
-            callStack,
-            errors,
-            warnings,
-            file,
-            parsingOptions,
-            importedFunctionsMap,
-            staticTracker,
+            scopeNode: returnPath,
           })
         );
       },
@@ -1257,55 +1267,30 @@ function processVariableDeclarationNodePath({
  * Process a <Static> expression
  */
 function processStaticExpression({
-  unwrappedExpressions,
-  scopeNode,
+  config,
+  state,
+  output,
   expressionNodePath,
-  importAliases,
-  visited,
-  callStack,
-  errors,
-  warnings,
-  file,
-  parsingOptions,
-  importedFunctionsMap,
-  pkgs,
-  staticTracker,
+  scopeNode,
 }: {
-  unwrappedExpressions: string[];
-  /* TODO: remove scopeNode, we can just reuse expressionNodePath here */
-  scopeNode: NodePath;
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
   expressionNodePath: NodePath<t.Expression>;
-  importAliases: Record<string, string>;
-  visited: Set<string>;
-  callStack: string[];
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  parsingOptions: ParsingConfigOptions;
-  importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibrary[];
-  staticTracker: StaticTracker;
+  scopeNode: NodePath;
 }): JsxTree | MultiplicationNode {
   // Mark the static tracker as true
-  staticTracker.isStatic = true;
+  state.staticTracker.isStatic = true;
 
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(expressionNodePath.node)) {
     // ex: return (value)
     return processStaticExpression({
-      unwrappedExpressions,
-      importAliases,
+      config,
+      state,
+      output,
       scopeNode,
       expressionNodePath: expressionNodePath.get('expression'),
-      visited,
-      callStack,
-      errors,
-      warnings,
-      file,
-      parsingOptions,
-      importedFunctionsMap,
-      pkgs,
-      staticTracker,
     });
   } else if (
     t.isCallExpression(expressionNodePath.node) &&
@@ -1315,9 +1300,9 @@ function processStaticExpression({
     const callee = expressionNodePath.node.callee;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
     if (!calleeBinding) {
-      warnings.add(
+      output.warnings.add(
         warnFunctionNotFoundSync(
-          file,
+          config.file,
           callee.name,
           `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
         )
@@ -1326,19 +1311,19 @@ function processStaticExpression({
     }
     // Function is found
     return resolveStaticFunctionInvocationFromBinding({
-      importAliases,
+      importAliases: config.importAliases,
       calleeBinding,
       callee,
-      unwrappedExpressions,
-      callStack,
-      visited,
-      file,
-      errors,
-      warnings,
-      pkgs,
-      parsingOptions,
-      importedFunctionsMap,
-      staticTracker,
+      unwrappedExpressions: output.unwrappedExpressions,
+      callStack: state.callStack,
+      visited: state.visited!,
+      file: config.file,
+      errors: output.errors,
+      warnings: output.warnings,
+      pkgs: config.pkgs,
+      parsingOptions: config.parsingOptions,
+      importedFunctionsMap: state.importedFunctionsMap,
+      staticTracker: state.staticTracker,
     });
   } else if (
     t.isAwaitExpression(expressionNodePath.node) &&
@@ -1349,9 +1334,9 @@ function processStaticExpression({
     const callee = expressionNodePath.node.argument.callee;
     const calleeBinding = scopeNode.scope.getBinding(callee.name);
     if (!calleeBinding) {
-      warnings.add(
+      output.warnings.add(
         warnFunctionNotFoundSync(
-          file,
+          config.file,
           callee.name,
           `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
         )
@@ -1360,19 +1345,19 @@ function processStaticExpression({
     }
     // Function is found
     return resolveStaticFunctionInvocationFromBinding({
-      importAliases,
+      importAliases: config.importAliases,
       calleeBinding,
       callee,
-      unwrappedExpressions,
-      visited,
-      callStack,
-      file,
-      errors,
-      warnings,
-      pkgs,
-      parsingOptions,
-      importedFunctionsMap,
-      staticTracker,
+      unwrappedExpressions: output.unwrappedExpressions,
+      visited: state.visited!,
+      callStack: state.callStack,
+      file: config.file,
+      errors: output.errors,
+      warnings: output.warnings,
+      pkgs: config.pkgs,
+      parsingOptions: config.parsingOptions,
+      importedFunctionsMap: state.importedFunctionsMap,
+      staticTracker: state.staticTracker,
     });
   } else if (
     t.isJSXElement(expressionNodePath.node) ||
@@ -1380,22 +1365,22 @@ function processStaticExpression({
   ) {
     // ex: return <div>Jsx content</div>
     return buildJSXTree({
-      importAliases,
+      importAliases: config.importAliases,
       node: expressionNodePath.node,
-      unwrappedExpressions,
-      visited,
-      callStack,
-      errors,
-      warnings,
-      file,
+      unwrappedExpressions: output.unwrappedExpressions,
+      visited: state.visited,
+      callStack: state.callStack,
+      errors: output.errors,
+      warnings: output.warnings,
+      file: config.file,
       insideT: true,
-      parsingOptions,
+      parsingOptions: config.parsingOptions,
       scopeNode,
-      importedFunctionsMap,
-      pkgs,
+      importedFunctionsMap: state.importedFunctionsMap,
+      pkgs: config.pkgs,
       inStatic: true,
       helperPath: expressionNodePath,
-      staticTracker,
+      staticTracker: state.staticTracker,
     });
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
@@ -1407,41 +1392,33 @@ function processStaticExpression({
       branches: [consequentNodePath, alternateNodePath].map(
         (expressionNodePath) =>
           processStaticExpression({
-            unwrappedExpressions,
-            importAliases,
+            config,
+            state,
+            output,
             scopeNode,
             expressionNodePath,
-            visited,
-            callStack,
-            errors,
-            warnings,
-            file,
-            parsingOptions,
-            importedFunctionsMap,
-            pkgs,
-            staticTracker,
           })
       ),
     };
     return result;
   } else {
     return buildJSXTree({
-      importAliases,
+      importAliases: config.importAliases,
       node: expressionNodePath.node,
-      unwrappedExpressions,
-      visited,
-      callStack,
-      errors,
-      warnings,
-      file,
+      unwrappedExpressions: output.unwrappedExpressions,
+      visited: state.visited,
+      callStack: state.callStack,
+      errors: output.errors,
+      warnings: output.warnings,
+      file: config.file,
       insideT: true,
-      parsingOptions,
+      parsingOptions: config.parsingOptions,
       scopeNode,
-      importedFunctionsMap,
-      pkgs,
+      importedFunctionsMap: state.importedFunctionsMap,
+      pkgs: config.pkgs,
       inStatic: true,
       helperPath: expressionNodePath,
-      staticTracker,
+      staticTracker: state.staticTracker,
     });
   }
 }
