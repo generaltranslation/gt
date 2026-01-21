@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.0
+
+### Minor Changes
+
+- [#958](https://github.com/generaltranslation/gt/pull/958) [`c64d5d1`](https://github.com/generaltranslation/gt/commit/c64d5d1bc7fda78294e09b93c4a4e08d576409fc) Thanks [@pie575](https://github.com/pie575)! - CLI New Default Workflow
+
 ## 2.5.49
 
 ### Patch Changes
