@@ -49,6 +49,19 @@ type StaticTracker = {
 };
 
 /**
+ * Union type representing all possible JSX child node types from Babel.
+ */
+type JSXChildNode = t.JSXText | t.JSXExpressionContainer | t.JSXSpreadChild | t.JSXElement | t.JSXFragment;
+
+/**
+ * Props object for JSX elements and fragments.
+ */
+type JSXProps = {
+  children?: JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[];
+  [key: string]: string | number | boolean | JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[] | null | undefined;
+};
+
+/**
  * Immutable configuration options for parsing.
  */
 type ConfigOptions = {
@@ -169,7 +182,7 @@ function buildJSXTree({
   state,
   output,
 }: {
-  node: any;
+  node: t.Node | null | undefined;
   helperPath: NodePath;
   scopeNode: NodePath;
   insideT: boolean;
@@ -257,7 +270,7 @@ function buildJSXTree({
     // If this JSXElement is one of the recognized variable components,
     const elementIsVariable = VARIABLE_COMPONENTS.includes(componentType);
 
-    const props: { [key: string]: any } = {};
+    const props: JSXProps = {};
 
     const elementIsPlural = componentType === 'Plural';
     const elementIsBranch = componentType === 'Branch';
@@ -267,7 +280,9 @@ function buildJSXTree({
         .get('openingElement')
         .get('attributes')[index];
       if (t.isJSXAttribute(attr)) {
-        const attrName = attr.name.name;
+        const attrName = typeof attr.name.name === 'string'
+          ? attr.name.name
+          : attr.name.name.name;
         let attrValue = null;
         if (attr.value) {
           if (t.isStringLiteral(attr.value)) {
@@ -277,9 +292,9 @@ function buildJSXTree({
               'value'
             ) as NodePath<t.JSXExpressionContainer>;
             // Check if this is an HTML content prop (title, placeholder, alt, etc.)
-            const isHtmlContentProp = Object.values(
+            const isHtmlContentProp = (Object.values(
               HTML_CONTENT_PROPS
-            ).includes(attrName as any);
+            ) as string[]).includes(attrName);
 
             // If its a plural or branch prop
             if (
@@ -295,7 +310,9 @@ function buildJSXTree({
               }
               // If it's an array, flag as an unwrapped expression
               if (t.isArrayExpression(attr.value.expression)) {
-                output.unwrappedExpressions.push(generate(attr.value.expression).code);
+                output.unwrappedExpressions.push(
+                  generate(attr.value.expression).code
+                );
               }
               attrValue = buildJSXTree({
                 node: attr.value,
@@ -324,7 +341,7 @@ function buildJSXTree({
             }
           }
         }
-        props[attrName as any] = attrValue;
+        props[attrName] = attrValue;
       }
     });
 
@@ -337,9 +354,7 @@ function buildJSXTree({
           props,
         };
         // Create children array if necessary
-        if (element.children.length) {
-          results.props.children = [];
-        }
+        const childrenArray: (JsxTree | MultiplicationNode)[] = [];
         if (state.visited === null) {
           state.visited = new Set();
         }
@@ -355,7 +370,10 @@ function buildJSXTree({
             state,
             output,
           });
-          results.props.children.push(result);
+          childrenArray.push(result);
+        }
+        if (childrenArray.length) {
+          results.props.children = childrenArray;
         }
         return results;
       }
@@ -382,7 +400,9 @@ function buildJSXTree({
           output,
         })
       )
-      .filter((child) => child !== null && child !== '');
+      .filter((child): child is JsxTree | MultiplicationNode =>
+        child !== null && child !== ''
+      );
 
     if (children.length === 1) {
       props.children = children[0];
@@ -401,7 +421,7 @@ function buildJSXTree({
   // If it's a JSX fragment
   else if (t.isJSXFragment(node)) {
     const children = node.children
-      .map((child: any, index: number) =>
+      .map((child: JSXChildNode, index: number) =>
         buildJSXTree({
           node: child,
           insideT: true,
@@ -413,9 +433,11 @@ function buildJSXTree({
           output,
         })
       )
-      .filter((child: any) => child !== null && child !== '');
+      .filter((child): child is JsxTree | MultiplicationNode =>
+        child !== null && child !== ''
+      );
 
-    const props: { [key: string]: any } = {};
+    const props: JSXProps = {};
 
     if (children.length === 1) {
       props.children = children[0];
@@ -517,8 +539,8 @@ function buildJSXTree({
   ) {
     output.unwrappedExpressions.push(generate(node).code);
   } else {
-    if (node === undefined) {
-      output.unwrappedExpressions.push(node);
+    if (node === undefined || node === null) {
+      output.unwrappedExpressions.push(String(node));
     } else {
       output.unwrappedExpressions.push(generate(node).code);
     }
@@ -698,7 +720,9 @@ function resolveStaticFunctionInvocationFromBinding({
   }) {
     const cacheKey = `${filename}::${functionName}`;
     if (state.callStack.includes(cacheKey)) {
-      output.errors.push(warnRecursiveFunctionCallSync(config.file, functionName));
+      output.errors.push(
+        warnRecursiveFunctionCallSync(config.file, functionName)
+      );
       return null;
     }
     state.callStack.push(cacheKey);
