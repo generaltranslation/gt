@@ -67,17 +67,21 @@ export async function createInlineUpdates(
     // Parse <T> components
     for (const { localName, path } of translationComponentPaths) {
       parseTranslationComponent({
-        importAliases,
         originalName: localName,
         localName,
-        ast,
-        pkgs,
         path,
         updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
+        config: {
+          importAliases,
+          parsingOptions,
+          pkgs,
+          file,
+        },
+        output: {
+          errors,
+          warnings,
+          unwrappedExpressions: [],
+        },
       });
     }
   }

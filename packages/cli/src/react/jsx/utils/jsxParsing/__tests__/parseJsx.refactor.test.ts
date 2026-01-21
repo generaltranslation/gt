@@ -778,17 +778,21 @@ describe('parseJsx - Comprehensive Behavioral Tests', () => {
         const tBinding = programPath.scope.getBinding(tLocalName);
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file,
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file,
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },

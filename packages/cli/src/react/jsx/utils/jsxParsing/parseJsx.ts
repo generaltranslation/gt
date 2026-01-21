@@ -98,27 +98,18 @@ const processFunctionCache = new Map<string, MultiplicationNode | null>();
  */
 export function parseTranslationComponent({
   originalName,
-  importAliases,
   localName,
   path,
   updates,
-  errors,
-  warnings,
-  file,
-  parsingOptions,
-  pkgs,
+  config,
+  output,
 }: {
-  ast: any;
-  pkgs: GTLibrary[];
   originalName: string;
-  importAliases: Record<string, string>;
-  path: traverseModule.NodePath<traverseModule.Node>;
   localName: string;
+  path: traverseModule.NodePath<traverseModule.Node>;
   updates: Updates;
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  parsingOptions: ParsingConfigOptions;
+  config: ConfigOptions;
+  output: OutputCollector;
 }) {
   // First, collect all imports in this file to track cross-file function calls
   const importedFunctionsMap: Map<string, string> = buildImportMap(
@@ -144,23 +135,14 @@ export function parseTranslationComponent({
       node: jsxElementPath.node,
       originalName,
       updates,
-      config: {
-        importAliases,
-        parsingOptions,
-        pkgs,
-        file,
-      },
+      config,
       state: {
         visited: null,
         callStack: [],
         staticTracker: { isStatic: false },
         importedFunctionsMap,
       },
-      output: {
-        errors,
-        warnings,
-        unwrappedExpressions: [],
-      },
+      output,
     });
   }
 }
