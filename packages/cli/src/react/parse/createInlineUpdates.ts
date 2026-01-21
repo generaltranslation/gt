@@ -56,28 +56,35 @@ export async function createInlineUpdates(
         name,
         originalName,
         path,
-        updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions
+        {
+          parsingOptions,
+          file,
+          ignoreAdditionalData: false,
+          ignoreDynamicContent: false,
+          ignoreInvalidIcu: false,
+        },
+        { updates, errors, warnings }
       );
     }
 
     // Parse <T> components
     for (const { localName, path } of translationComponentPaths) {
       parseTranslationComponent({
-        importAliases,
         originalName: localName,
         localName,
-        ast,
-        pkgs,
         path,
         updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
+        config: {
+          importAliases,
+          parsingOptions,
+          pkgs,
+          file,
+        },
+        output: {
+          errors,
+          warnings,
+          unwrappedExpressions: [],
+        },
       });
     }
   }
