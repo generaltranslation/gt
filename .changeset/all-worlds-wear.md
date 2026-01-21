@@ -1,5 +1,5 @@
 ---
-'gtx-cli': minor
+'gtx-cli': patch
 ---
 
 Refactor parseJSX and parseStringFunction
