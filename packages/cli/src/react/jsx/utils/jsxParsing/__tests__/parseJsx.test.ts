@@ -162,17 +162,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/original/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/original/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -464,17 +468,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/selfrecursion/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/selfrecursion/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -611,17 +619,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/recursion2/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/recursion2/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -759,17 +771,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/circular/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/circular/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -911,17 +927,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/broken/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/broken/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -1049,17 +1069,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/undefined/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/undefined/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -1185,17 +1209,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkgs: ['gt-next'],
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/aliases/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/aliases/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -1389,17 +1417,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkg: 'gt-next',
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/shadowing/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/shadowing/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -1514,17 +1546,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkg: 'gt-next',
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/renamed/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/renamed/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -1617,17 +1653,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkg: 'gt-next',
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/ds-alias/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/ds-alias/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
@@ -1745,17 +1785,21 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
         if (tBinding) {
           parseTranslationComponent({
-            ast,
-            pkg: 'gt-next',
             originalName: 'T',
-            importAliases,
             localName: tLocalName,
             path: tBinding.path,
             updates,
-            errors,
-            warnings,
-            file: '/test/multilevel/page.tsx',
-            parsingOptions,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: ['gt-next'],
+              file: '/test/multilevel/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
           });
         }
       },
