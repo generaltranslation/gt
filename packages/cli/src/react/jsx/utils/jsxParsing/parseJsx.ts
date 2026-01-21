@@ -48,6 +48,35 @@ type StaticTracker = {
   isStatic: boolean;
 };
 
+/**
+ * Immutable configuration options for parsing.
+ */
+type ConfigOptions = {
+  parsingOptions: ParsingConfigOptions;
+  importAliases: Record<string, string>;
+  pkgs: GTLibrary[];
+  file: string;
+};
+
+/**
+ * Mutable state for tracking parsing progress.
+ */
+type StateTracker = {
+  visited: Set<string> | null;
+  callStack: string[];
+  staticTracker: StaticTracker;
+  importedFunctionsMap: Map<string, string>;
+};
+
+/**
+ * Collectors for errors, warnings, and unwrapped expressions.
+ */
+type OutputCollector = {
+  errors: string[];
+  warnings: Set<string>;
+  unwrappedExpressions: string[];
+};
+
 // TODO: currently we cover VariableDeclaration and FunctionDeclaration nodes, but are there others we should cover as well?
 
 /**
@@ -129,47 +158,33 @@ export function parseTranslationComponent({
 /**
  * Builds a JSX tree from a given node, recursively handling children.
  * @param node - The node to build the tree from
- * @param unwrappedExpressions - An array to store unwrapped expressions
- * @param updates - The updates array
- * @param errors - The errors array
- * @param file - The file name
+ * @param helperPath - NodePath for AST traversal
+ * @param scopeNode - Scope node for binding resolution
  * @param insideT - Whether the current node is inside a <T> component
+ * @param inStatic - Whether we're inside a Static component
+ * @param config - Immutable configuration options
+ * @param state - Mutable state tracking
+ * @param output - Error/warning collectors
  * @returns The built JSX tree
  */
 function buildJSXTree({
-  importAliases,
   node,
-  unwrappedExpressions,
-  inStatic,
-  visited,
-  callStack,
-  errors,
-  warnings,
-  file,
-  insideT,
-  parsingOptions,
-  scopeNode,
-  importedFunctionsMap,
-  pkgs,
   helperPath,
-  staticTracker,
+  scopeNode,
+  insideT,
+  inStatic,
+  config,
+  state,
+  output,
 }: {
-  importAliases: Record<string, string>;
   node: any;
-  callStack: string[];
-  unwrappedExpressions: string[];
-  errors: string[];
-  warnings: Set<string>;
-  file: string;
-  insideT: boolean;
-  parsingOptions: ParsingConfigOptions;
-  scopeNode: NodePath;
-  importedFunctionsMap: Map<string, string>;
-  pkgs: GTLibrary[];
-  inStatic: boolean;
-  visited: Set<string> | null;
   helperPath: NodePath;
-  staticTracker: StaticTracker;
+  scopeNode: NodePath;
+  insideT: boolean;
+  inStatic: boolean;
+  config: ConfigOptions;
+  state: StateTracker;
+  output: OutputCollector;
 }): JsxTree | MultiplicationNode {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -179,43 +194,35 @@ function buildJSXTree({
 
     if (inStatic) {
       return processStaticExpression({
-        unwrappedExpressions,
+        unwrappedExpressions: output.unwrappedExpressions,
         scopeNode,
         expressionNodePath: helperPath.get(
           'expression'
         ) as NodePath<t.Expression>,
-        importAliases,
-        visited: visited!,
-        callStack,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
-        importedFunctionsMap,
-        pkgs,
-        staticTracker,
+        importAliases: config.importAliases,
+        visited: state.visited!,
+        callStack: state.callStack,
+        errors: output.errors,
+        warnings: output.warnings,
+        file: config.file,
+        parsingOptions: config.parsingOptions,
+        importedFunctionsMap: state.importedFunctionsMap,
+        pkgs: config.pkgs,
+        staticTracker: state.staticTracker,
       });
     }
 
     const expr = node.expression;
     if (t.isJSXElement(expr) || t.isJSXFragment(expr)) {
       return buildJSXTree({
-        importAliases,
         node: expr,
-        unwrappedExpressions,
-        visited,
-        callStack,
-        errors,
-        warnings,
-        file,
         insideT,
-        parsingOptions,
-        scopeNode,
-        importedFunctionsMap,
-        pkgs,
         inStatic,
+        scopeNode,
         helperPath: helperPath.get('expression'),
-        staticTracker,
+        config,
+        state,
+        output,
       });
     }
 
@@ -230,7 +237,7 @@ function buildJSXTree({
 
     // Keep existing behavior for non-static expressions
     const code = generate(node).code;
-    unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
+    output.unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
     return code;
   } else if (t.isJSXText(node)) {
     // Updated JSX Text handling
@@ -251,13 +258,13 @@ function buildJSXTree({
     }
 
     // Convert from alias to original name
-    const componentType = importAliases[typeName ?? ''];
+    const componentType = config.importAliases[typeName ?? ''];
 
     if (componentType === TRANSLATION_COMPONENT && insideT) {
       // Add warning: Nested <T> components are allowed, but they are advised against
-      warnings.add(
+      output.warnings.add(
         warnNestedTComponent(
-          file,
+          config.file,
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
@@ -300,29 +307,21 @@ function buildJSXTree({
                 t.isTemplateLiteral(attr.value.expression) &&
                 !isStaticExpression(attr.value.expression, true).isStatic
               ) {
-                unwrappedExpressions.push(generate(attr.value).code);
+                output.unwrappedExpressions.push(generate(attr.value).code);
               }
               // If it's an array, flag as an unwrapped expression
               if (t.isArrayExpression(attr.value.expression)) {
-                unwrappedExpressions.push(generate(attr.value.expression).code);
+                output.unwrappedExpressions.push(generate(attr.value.expression).code);
               }
               attrValue = buildJSXTree({
-                importAliases,
                 node: attr.value,
-                unwrappedExpressions,
-                visited,
-                callStack,
-                errors: errors,
-                warnings: warnings,
-                file: file,
                 insideT: true,
-                parsingOptions,
-                scopeNode,
-                importedFunctionsMap,
-                pkgs,
                 inStatic,
+                scopeNode,
                 helperPath: helperValue,
-                staticTracker,
+                config,
+                state,
+                output,
               });
             }
             // For HTML content props, only accept static string expressions
@@ -357,28 +356,20 @@ function buildJSXTree({
         if (element.children.length) {
           results.props.children = [];
         }
-        if (visited === null) {
-          visited = new Set();
+        if (state.visited === null) {
+          state.visited = new Set();
         }
         for (let index = 0; index < element.children.length; index++) {
           const helperChild = helperElement[index];
           const result = buildJSXTree({
-            importAliases,
             node: helperChild.node,
-            unwrappedExpressions,
-            visited,
-            callStack,
-            errors,
-            warnings,
-            file,
             insideT: true,
-            parsingOptions,
-            scopeNode,
-            importedFunctionsMap,
-            pkgs,
             inStatic: true,
+            scopeNode,
             helperPath: helperChild,
-            staticTracker,
+            config,
+            state,
+            output,
           });
           results.props.children.push(result);
         }
@@ -397,22 +388,14 @@ function buildJSXTree({
     const children: (JsxTree | MultiplicationNode)[] = element.children
       .map((child, index) =>
         buildJSXTree({
-          importAliases,
           node: child,
-          unwrappedExpressions,
-          visited,
-          callStack,
-          errors,
-          warnings,
-          file,
           insideT: true,
-          parsingOptions,
-          scopeNode,
-          importedFunctionsMap,
-          pkgs,
           inStatic,
+          scopeNode,
           helperPath: helperPath.get('children')[index],
-          staticTracker,
+          config,
+          state,
+          output,
         })
       )
       .filter((child) => child !== null && child !== '');
@@ -436,22 +419,14 @@ function buildJSXTree({
     const children = node.children
       .map((child: any, index: number) =>
         buildJSXTree({
-          importAliases,
           node: child,
-          unwrappedExpressions,
-          visited,
-          callStack,
-          errors,
-          warnings,
-          file,
           insideT: true,
-          parsingOptions,
-          scopeNode,
-          importedFunctionsMap,
-          pkgs,
           inStatic,
+          scopeNode,
           helperPath: helperPath.get('children')[index],
-          staticTracker,
+          config,
+          state,
+          output,
         })
       )
       .filter((child: any) => child !== null && child !== '');
@@ -515,9 +490,9 @@ function buildJSXTree({
       const callee = callExpression.callee as t.Identifier;
       const calleeBinding = scopeNode.scope.getBinding(callee.name);
       if (!calleeBinding) {
-        warnings.add(
+        output.warnings.add(
           warnFunctionNotFoundSync(
-            file,
+            config.file,
             callee.name,
             `${callee.loc?.start?.line}:${callee.loc?.start?.column}`
           )
@@ -525,42 +500,34 @@ function buildJSXTree({
         return null;
       }
       return resolveStaticFunctionInvocationFromBinding({
-        importAliases,
+        importAliases: config.importAliases,
         calleeBinding,
         callee,
-        visited: visited!, // we know this is true bc of inStatic
-        callStack,
-        file,
-        errors,
-        warnings,
-        unwrappedExpressions,
-        pkgs,
-        parsingOptions,
-        importedFunctionsMap,
-        staticTracker,
+        visited: state.visited!, // we know this is true bc of inStatic
+        callStack: state.callStack,
+        file: config.file,
+        errors: output.errors,
+        warnings: output.warnings,
+        unwrappedExpressions: output.unwrappedExpressions,
+        pkgs: config.pkgs,
+        parsingOptions: config.parsingOptions,
+        importedFunctionsMap: state.importedFunctionsMap,
+        staticTracker: state.staticTracker,
       });
     } else {
-      unwrappedExpressions.push(generate(node).code);
+      output.unwrappedExpressions.push(generate(node).code);
     }
   } else if (t.isParenthesizedExpression(node)) {
     const child = node.expression;
     return buildJSXTree({
-      importAliases,
       node: child,
-      unwrappedExpressions,
-      visited,
-      callStack,
-      errors,
-      warnings,
-      file,
       insideT,
-      parsingOptions,
-      scopeNode,
-      importedFunctionsMap,
-      pkgs,
       inStatic,
+      scopeNode,
       helperPath: helperPath.get('expression'),
-      staticTracker,
+      config,
+      state,
+      output,
     });
   }
   // If it's some other JS expression
@@ -572,12 +539,12 @@ function buildJSXTree({
     t.isLogicalExpression(node) ||
     t.isConditionalExpression(node)
   ) {
-    unwrappedExpressions.push(generate(node).code);
+    output.unwrappedExpressions.push(generate(node).code);
   } else {
     if (node === undefined) {
-      unwrappedExpressions.push(node);
+      output.unwrappedExpressions.push(node);
     } else {
-      unwrappedExpressions.push(generate(node).code);
+      output.unwrappedExpressions.push(generate(node).code);
     }
   }
   return null;
@@ -645,22 +612,28 @@ function parseJSXElement({
 
   // Build the JSX tree for this component
   const treeResult = buildJSXTree({
-    importAliases,
     node,
     scopeNode,
-    visited: null,
-    callStack: [],
-    pkgs,
-    unwrappedExpressions,
-    errors: componentErrors,
-    warnings: componentWarnings,
-    file,
     insideT: false,
-    parsingOptions,
-    importedFunctionsMap,
     inStatic: false,
     helperPath: scopeNode,
-    staticTracker,
+    config: {
+      importAliases,
+      parsingOptions,
+      pkgs,
+      file,
+    },
+    state: {
+      visited: null,
+      callStack: [],
+      staticTracker,
+      importedFunctionsMap,
+    },
+    output: {
+      unwrappedExpressions,
+      errors: componentErrors,
+      warnings: componentWarnings,
+    },
   }) as JsxTree;
 
   // Strip the outer <T> component if necessary
