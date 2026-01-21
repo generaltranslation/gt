@@ -49,7 +49,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -128,7 +132,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -176,7 +184,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -220,7 +232,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -263,7 +279,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -301,7 +321,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -340,7 +364,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -379,7 +407,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -421,7 +453,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -470,7 +506,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -520,7 +560,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -564,7 +608,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -609,7 +657,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -653,7 +705,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -699,7 +755,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -742,7 +802,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -785,7 +849,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -829,7 +897,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -875,7 +947,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -923,7 +999,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -968,7 +1048,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1005,7 +1089,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1054,7 +1142,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1109,7 +1201,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1181,7 +1277,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1265,7 +1365,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1326,7 +1430,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1376,7 +1484,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1428,7 +1540,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1504,7 +1620,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1549,7 +1669,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1596,7 +1720,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1635,7 +1763,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1679,7 +1811,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1721,7 +1857,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1758,7 +1898,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1796,7 +1940,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1837,7 +1985,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1879,7 +2031,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1936,7 +2092,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -1979,7 +2139,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2021,7 +2185,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2065,7 +2233,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2107,7 +2279,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2150,7 +2326,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2188,7 +2368,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2228,7 +2412,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2268,7 +2456,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2307,7 +2499,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2346,7 +2542,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2388,7 +2588,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2437,7 +2641,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2479,7 +2687,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -2523,7 +2735,11 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
-            { updates: params.updates, errors: params.errors, warnings: params.warnings }
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
