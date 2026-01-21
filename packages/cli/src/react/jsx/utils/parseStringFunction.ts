@@ -1,4 +1,4 @@
-import { NodePath } from '@babel/traverse';
+import { NodePath, Scope, Binding } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
 import * as t from '@babel/types';
 import { isStaticExpression, isValidIcu } from '../evaluateJsx.js';
@@ -167,7 +167,11 @@ function processTranslationCall(
                     )
                   );
                 }
-                if (result.isStatic && result.value && !config.ignoreAdditionalData) {
+                if (
+                  result.isStatic &&
+                  result.value &&
+                  !config.ignoreAdditionalData
+                ) {
                   // Map $id and $context to id and context
                   metadata[mapAttributeName(attribute)] = result.value;
                 }
@@ -244,7 +248,11 @@ function processTranslationCall(
                   )
                 );
               }
-              if (result.isStatic && result.value && !config.ignoreAdditionalData) {
+              if (
+                result.isStatic &&
+                result.value &&
+                !config.ignoreAdditionalData
+              ) {
                 const mappedKey = mapAttributeName(attribute);
                 if (attribute === '$maxChars') {
                   if (
@@ -340,7 +348,7 @@ function extractParameterName(param: t.Node): string | null {
  * @returns Array of all variable names that reference the original translation callback
  */
 export function resolveVariableAliases(
-  scope: any,
+  scope: Scope,
   variableName: string,
   visited: Set<string> = new Set()
 ): string[] {
@@ -358,7 +366,7 @@ export function resolveVariableAliases(
     for (const [otherVarName, otherBinding] of Object.entries(scope.bindings)) {
       if (otherVarName === variableName || visited.has(otherVarName)) continue;
 
-      const otherBindingTyped = otherBinding as any;
+      const otherBindingTyped = otherBinding as Binding;
       if (
         otherBindingTyped.path &&
         otherBindingTyped.path.isVariableDeclarator() &&
@@ -396,11 +404,7 @@ function handleFunctionCall(
     tPath.parent.callee === tPath.node
   ) {
     // Direct translation call: t('hello')
-    processTranslationCall(
-      tPath,
-      config,
-      output
-    );
+    processTranslationCall(tPath, config, output);
   } else if (
     tPath.parent.type === 'CallExpression' &&
     t.isExpression(tPath.node) &&
@@ -485,12 +489,7 @@ function processFunctionIfMatches(
     const paramName = extractParameterName(param);
 
     if (paramName) {
-      findFunctionParameterUsage(
-        functionPath,
-        paramName,
-        config,
-        output
-      );
+      findFunctionParameterUsage(functionPath, paramName, config, output);
     }
   }
 }
@@ -716,11 +715,7 @@ export function parseStrings(
         refPath.parent.type === 'CallExpression' &&
         refPath.parent.callee === refPath.node
       ) {
-        processTranslationCall(
-          refPath,
-          msgConfig,
-          output
-        );
+        processTranslationCall(refPath, msgConfig, output);
       }
       continue;
     }
