@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.7
+
+### Patch Changes
+
+- [#960](https://github.com/generaltranslation/gt/pull/960) [`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: upload shared id for static content
+
 ## 8.1.6
 
 ### Patch Changes
