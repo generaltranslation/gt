@@ -1,4 +1,5 @@
 import { DataFormat } from '../jsx/content';
+import { Updates } from './enqueueFiles';
 import { Entry } from './entry';
 
 export type FileFormat =
@@ -36,7 +37,7 @@ export type File = {
  */
 export type FileToUpload = {
   content: string;
-  formatMetadata?: Record<string, any>;
+  formatMetadata?: Record<string, any> | Updates[number]['metadata'];
   incomingBranchId?: string;
   checkedOutBranchId?: string;
   locale: string;

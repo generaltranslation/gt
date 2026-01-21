@@ -36,6 +36,7 @@ import { handleStaticExpression } from './parseDeclareStatic.js';
 import { nodeToStrings } from './parseString.js';
 import { isNumberLiteral } from './isNumberLiteral.js';
 import { indexVars } from 'generaltranslation/internal';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -152,11 +153,12 @@ function processTranslationCall(
             }
           });
         }
+        const temporaryStaticId = `static-temp-id-${randomUUID()}`;
         for (const string of strings) {
           updates.push({
             dataFormat: 'ICU',
             source: string,
-            metadata: { ...metadata },
+            metadata: { ...metadata, staticId: temporaryStaticId },
           });
         }
         return;

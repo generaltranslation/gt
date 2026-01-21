@@ -1,5 +1,6 @@
 import { Updates } from '../../../../types/index.js';
 
+import { randomUUID } from 'node:crypto';
 import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -138,7 +139,6 @@ export function buildJSXTree({
   inStatic,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
@@ -153,7 +153,6 @@ export function buildJSXTree({
   node: any;
   callStack: string[];
   unwrappedExpressions: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
@@ -182,7 +181,6 @@ export function buildJSXTree({
         importAliases,
         visited: visited!,
         callStack,
-        updates,
         errors,
         warnings,
         file,
@@ -200,7 +198,6 @@ export function buildJSXTree({
         unwrappedExpressions,
         visited,
         callStack,
-        updates,
         errors,
         warnings,
         file,
@@ -307,7 +304,6 @@ export function buildJSXTree({
                 unwrappedExpressions,
                 visited,
                 callStack,
-                updates,
                 errors: errors,
                 warnings: warnings,
                 file: file,
@@ -363,7 +359,6 @@ export function buildJSXTree({
             unwrappedExpressions,
             visited,
             callStack,
-            updates,
             errors,
             warnings,
             file,
@@ -397,7 +392,6 @@ export function buildJSXTree({
           unwrappedExpressions,
           visited,
           callStack,
-          updates,
           errors,
           warnings,
           file,
@@ -436,7 +430,6 @@ export function buildJSXTree({
           unwrappedExpressions,
           visited,
           callStack,
-          updates,
           errors,
           warnings,
           file,
@@ -526,7 +519,6 @@ export function buildJSXTree({
         visited: visited!, // we know this is true bc of inStatic
         callStack,
         file,
-        updates,
         errors,
         warnings,
         unwrappedExpressions,
@@ -545,7 +537,6 @@ export function buildJSXTree({
       unwrappedExpressions,
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
@@ -580,7 +571,7 @@ export function buildJSXTree({
 // end buildJSXTree
 
 // Parses a JSX element and adds it to the updates array
-export function parseJSXElement({
+function parseJSXElement({
   importAliases,
   node,
   originalName,
@@ -642,7 +633,6 @@ export function parseJSXElement({
     callStack: [],
     pkgs,
     unwrappedExpressions,
-    updates,
     errors: componentErrors,
     warnings: componentWarnings,
     file,
@@ -702,6 +692,11 @@ export function parseJSXElement({
     return;
   }
 
+  // We know its static if there are multiple entries
+  const isStatic = minifiedTress.length > 1;
+  // Create a temporary unique flag for
+  const temporaryStaticId = `static-temp-id-${randomUUID()}`;
+
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
     // Clean the tree by removing null 'c' fields from JsxElements
@@ -710,8 +705,11 @@ export function parseJSXElement({
     updates.push({
       dataFormat: 'JSX',
       source: cleanedTree,
-      // eslint-disable-next-line no-undef
-      metadata: { ...structuredClone(metadata) },
+      metadata: {
+        // eslint-disable-next-line no-undef
+        ...structuredClone(metadata),
+        ...(isStatic && { staticId: temporaryStaticId }),
+      },
     });
   }
 }
@@ -724,7 +722,6 @@ function resolveStaticFunctionInvocationFromBinding({
   visited,
   callStack,
   file,
-  updates,
   errors,
   warnings,
   parsingOptions,
@@ -738,7 +735,6 @@ function resolveStaticFunctionInvocationFromBinding({
   visited: Set<string>;
   callStack: string[];
   file: string;
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   parsingOptions: ParsingConfigOptions;
@@ -785,7 +781,6 @@ function resolveStaticFunctionInvocationFromBinding({
           path,
           unwrappedExpressions,
           callStack,
-          updates,
           errors,
           warnings,
           visited,
@@ -813,7 +808,6 @@ function resolveStaticFunctionInvocationFromBinding({
           functionName,
           path,
           unwrappedExpressions,
-          updates,
           callStack,
           pkgs,
           errors,
@@ -856,7 +850,6 @@ function resolveStaticFunctionInvocationFromBinding({
             visited,
             callStack,
             unwrappedExpressions,
-            updates,
             errors,
             warnings,
             file,
@@ -896,7 +889,6 @@ function processFunctionInFile({
   visited,
   callStack,
   parsingOptions,
-  updates,
   errors,
   warnings,
   file,
@@ -908,7 +900,6 @@ function processFunctionInFile({
   visited: Set<string>;
   callStack: string[];
   parsingOptions: ParsingConfigOptions;
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
@@ -971,7 +962,6 @@ function processFunctionInFile({
             callStack,
             visited,
             pkgs,
-            updates,
             errors,
             warnings,
             file: filePath,
@@ -996,7 +986,6 @@ function processFunctionInFile({
             path,
             callStack,
             pkgs,
-            updates,
             errors,
             warnings,
             visited,
@@ -1050,7 +1039,6 @@ function processFunctionInFile({
             visited,
             callStack,
             parsingOptions,
-            updates,
             errors,
             warnings,
             file: filePath,
@@ -1085,7 +1073,6 @@ function processFunctionDeclarationNodePath({
   unwrappedExpressions,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
@@ -1099,7 +1086,6 @@ function processFunctionDeclarationNodePath({
   unwrappedExpressions: string[];
   visited: Set<string>;
   callStack: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
@@ -1129,7 +1115,6 @@ function processFunctionDeclarationNodePath({
           expressionNodePath: returnNodePath,
           importAliases,
           visited,
-          updates,
           errors,
           warnings,
           file,
@@ -1158,7 +1143,6 @@ function processVariableDeclarationNodePath({
   unwrappedExpressions,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
@@ -1172,7 +1156,6 @@ function processVariableDeclarationNodePath({
   unwrappedExpressions: string[];
   visited: Set<string>;
   callStack: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
@@ -1210,7 +1193,6 @@ function processVariableDeclarationNodePath({
         importAliases,
         visited,
         callStack,
-        updates,
         errors,
         warnings,
         file,
@@ -1238,7 +1220,6 @@ function processVariableDeclarationNodePath({
             importAliases,
             visited,
             callStack,
-            updates,
             errors,
             warnings,
             file,
@@ -1273,7 +1254,6 @@ function processStaticExpression({
   importAliases,
   visited,
   callStack,
-  updates,
   errors,
   warnings,
   file,
@@ -1288,7 +1268,6 @@ function processStaticExpression({
   importAliases: Record<string, string>;
   visited: Set<string>;
   callStack: string[];
-  updates: Updates;
   errors: string[];
   warnings: Set<string>;
   file: string;
@@ -1309,7 +1288,6 @@ function processStaticExpression({
       expressionNodePath: expressionNodePath.get('expression'),
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
@@ -1343,7 +1321,6 @@ function processStaticExpression({
       callStack,
       visited,
       file,
-      updates,
       errors,
       warnings,
       pkgs,
@@ -1377,7 +1354,6 @@ function processStaticExpression({
       visited,
       callStack,
       file,
-      updates,
       errors,
       warnings,
       pkgs,
@@ -1395,7 +1371,6 @@ function processStaticExpression({
       unwrappedExpressions,
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
@@ -1423,7 +1398,6 @@ function processStaticExpression({
             expressionNodePath,
             visited,
             callStack,
-            updates,
             errors,
             warnings,
             file,
@@ -1441,7 +1415,6 @@ function processStaticExpression({
       unwrappedExpressions,
       visited,
       callStack,
-      updates,
       errors,
       warnings,
       file,
