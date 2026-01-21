@@ -694,7 +694,7 @@ function parseJSXElement({
 
   // We know its static if there are multiple entries
   const isStatic = minifiedTress.length > 1;
-  // Create a temporary unique flag for
+  // Create a temporary unique flag for static content
   const temporaryStaticId = `static-temp-id-${randomUUID()}`;
 
   // <T> is valid here
