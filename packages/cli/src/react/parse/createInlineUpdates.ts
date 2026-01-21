@@ -56,11 +56,14 @@ export async function createInlineUpdates(
         name,
         originalName,
         path,
-        updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions
+        {
+          parsingOptions,
+          file,
+          ignoreAdditionalData: false,
+          ignoreDynamicContent: false,
+          ignoreInvalidIcu: false,
+        },
+        { updates, errors, warnings }
       );
     }
 

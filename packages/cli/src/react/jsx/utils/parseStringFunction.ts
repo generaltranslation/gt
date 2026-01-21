@@ -61,6 +61,34 @@ export function clearParsingCaches(): void {
 }
 
 /**
+ * Immutable configuration options for string parsing.
+ */
+type ParsingConfig = {
+  parsingOptions: ParsingConfigOptions;
+  file: string;
+  ignoreAdditionalData: boolean;
+  ignoreDynamicContent: boolean;
+  ignoreInvalidIcu: boolean;
+};
+
+/**
+ * Mutable state for tracking parsing progress.
+ */
+type ParsingState = {
+  visited: Set<string>;
+  importMap: Map<string, string>;
+};
+
+/**
+ * Collectors for updates, errors, and warnings.
+ */
+type ParsingOutput = {
+  updates: Updates;
+  errors: string[];
+  warnings: Set<string>;
+};
+
+/**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
  * Extracts the translatable string content and metadata, then adds it to the updates array.
  *
@@ -72,14 +100,8 @@ export function clearParsingCaches(): void {
  */
 function processTranslationCall(
   tPath: NodePath,
-  updates: Updates,
-  errors: string[],
-  warnings: Set<string>,
-  file: string,
-  ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  config: ParsingConfig,
+  output: ParsingOutput
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -88,26 +110,26 @@ function processTranslationCall(
     const arg = tPath.parent.arguments[0];
     // if (t.isExpression(arg)) {
     if (
-      !ignoreDynamicContent &&
+      !config.ignoreDynamicContent &&
       t.isExpression(arg) &&
       !isStaticExpression(arg).isStatic
     ) {
       const result = handleStaticExpression(
         arg,
         tPath,
-        file,
-        parsingOptions,
-        errors
+        config.file,
+        config.parsingOptions,
+        output.errors
       );
       if (result) {
         const strings = nodeToStrings(result).map(indexVars);
-        if (!ignoreInvalidIcu) {
+        if (!config.ignoreInvalidIcu) {
           for (const string of strings) {
             const { isValid, error } = isValidIcu(string);
             if (!isValid) {
-              warnings.add(
+              output.warnings.add(
                 warnInvalidIcuSync(
-                  file,
+                  config.file,
                   string,
                   error ?? 'Unknown error',
                   `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
@@ -136,16 +158,16 @@ function processTranslationCall(
               ) {
                 const result = isStaticExpression(prop.value);
                 if (!result.isStatic) {
-                  errors.push(
+                  output.errors.push(
                     warnNonStaticExpressionSync(
-                      file,
+                      config.file,
                       attribute,
                       generate(prop.value).code,
                       `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
                     )
                   );
                 }
-                if (result.isStatic && result.value && !ignoreAdditionalData) {
+                if (result.isStatic && result.value && !config.ignoreAdditionalData) {
                   // Map $id and $context to id and context
                   metadata[mapAttributeName(attribute)] = result.value;
                 }
@@ -155,7 +177,7 @@ function processTranslationCall(
         }
         const temporaryStaticId = `static-temp-id-${randomUUID()}`;
         for (const string of strings) {
-          updates.push({
+          output.updates.push({
             dataFormat: 'ICU',
             source: string,
             metadata: { ...metadata, staticId: temporaryStaticId },
@@ -164,9 +186,9 @@ function processTranslationCall(
         return;
       }
       // Nothing returned, push error
-      errors.push(
+      output.errors.push(
         warnNonStringSync(
-          file,
+          config.file,
           generate(arg).code,
           `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
         )
@@ -180,12 +202,12 @@ function processTranslationCall(
         arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
 
       // Validate is ICU
-      if (!ignoreInvalidIcu) {
+      if (!config.ignoreInvalidIcu) {
         const { isValid, error } = isValidIcu(source);
         if (!isValid) {
-          warnings.add(
+          output.warnings.add(
             warnInvalidIcuSync(
-              file,
+              config.file,
               source,
               error ?? 'Unknown error',
               `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
@@ -213,16 +235,16 @@ function processTranslationCall(
             ) {
               const result = isStaticExpression(prop.value);
               if (!result.isStatic) {
-                errors.push(
+                output.errors.push(
                   warnNonStaticExpressionSync(
-                    file,
+                    config.file,
                     attribute,
                     generate(prop.value).code,
                     `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
                   )
                 );
               }
-              if (result.isStatic && result.value && !ignoreAdditionalData) {
+              if (result.isStatic && result.value && !config.ignoreAdditionalData) {
                 const mappedKey = mapAttributeName(attribute);
                 if (attribute === '$maxChars') {
                   if (
@@ -231,9 +253,9 @@ function processTranslationCall(
                         !isNumberLiteral(prop.value))) ||
                     !Number.isInteger(Number(result.value))
                   ) {
-                    errors.push(
+                    output.errors.push(
                       warnInvalidMaxCharsSync(
-                        file,
+                        config.file,
                         generate(prop).code,
                         `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
                       )
@@ -252,7 +274,7 @@ function processTranslationCall(
         });
       }
 
-      const relativeFilepath = pathModule.relative(process.cwd(), file);
+      const relativeFilepath = pathModule.relative(process.cwd(), config.file);
       if (relativeFilepath) {
         if (!metadata.filePaths) {
           metadata.filePaths = [relativeFilepath];
@@ -263,27 +285,27 @@ function processTranslationCall(
         }
       }
 
-      updates.push({
+      output.updates.push({
         dataFormat: 'ICU',
         source,
         metadata,
       });
     } else if (t.isTemplateLiteral(arg)) {
       // warn if template literal
-      if (!ignoreDynamicContent) {
-        errors.push(
+      if (!config.ignoreDynamicContent) {
+        output.errors.push(
           warnTemplateLiteralSync(
-            file,
+            config.file,
             generate(arg).code,
             `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
           )
         );
       }
     } else {
-      if (!ignoreDynamicContent) {
-        errors.push(
+      if (!config.ignoreDynamicContent) {
+        output.errors.push(
           warnNonStringSync(
-            file,
+            config.file,
             generate(arg).code,
             `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
           )
@@ -365,15 +387,9 @@ export function resolveVariableAliases(
  */
 function handleFunctionCall(
   tPath: NodePath,
-  updates: Updates,
-  errors: string[],
-  warnings: Set<string>,
-  file: string,
-  importMap: Map<string, string>,
-  ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  config: ParsingConfig,
+  state: ParsingState,
+  output: ParsingOutput
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -382,14 +398,8 @@ function handleFunctionCall(
     // Direct translation call: t('hello')
     processTranslationCall(
       tPath,
-      updates,
-      errors,
-      warnings,
-      file,
-      ignoreAdditionalData,
-      ignoreDynamicContent,
-      ignoreInvalidIcu,
-      parsingOptions
+      config,
+      output
     );
   } else if (
     tPath.parent.type === 'CallExpression' &&
@@ -410,14 +420,8 @@ function handleFunctionCall(
           argIndex,
           functionPath.node,
           functionPath,
-          updates,
-          errors,
-          warnings,
-          file,
-          ignoreAdditionalData,
-          ignoreDynamicContent,
-          ignoreInvalidIcu,
-          parsingOptions
+          config,
+          output
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -434,23 +438,17 @@ function handleFunctionCall(
           argIndex,
           calleeBinding.path.node.init,
           initPath,
-          updates,
-          errors,
-          warnings,
-          file,
-          ignoreAdditionalData,
-          ignoreDynamicContent,
-          ignoreInvalidIcu,
-          parsingOptions
+          config,
+          output
         );
       }
       // If not found locally, check if it's an imported function
-      else if (importMap.has(callee.name)) {
-        const importPath = importMap.get(callee.name)!;
+      else if (state.importMap.has(callee.name)) {
+        const importPath = state.importMap.get(callee.name)!;
         const resolvedPath = resolveImportPath(
-          file,
+          config.file,
           importPath,
-          parsingOptions,
+          config.parsingOptions,
           resolveImportPathCache
         );
 
@@ -459,13 +457,9 @@ function handleFunctionCall(
             resolvedPath,
             callee.name,
             argIndex,
-            updates,
-            errors,
-            warnings,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions
+            config,
+            state,
+            output
           );
         }
       }
@@ -483,14 +477,8 @@ function processFunctionIfMatches(
   argIndex: number,
   functionNode: t.Function,
   functionPath: NodePath,
-  updates: Updates,
-  errors: string[],
-  warnings: Set<string>,
-  filePath: string,
-  ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  config: ParsingConfig,
+  output: ParsingOutput
 ): void {
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
@@ -500,14 +488,8 @@ function processFunctionIfMatches(
       findFunctionParameterUsage(
         functionPath,
         paramName,
-        updates,
-        errors,
-        warnings,
-        filePath,
-        ignoreAdditionalData,
-        ignoreDynamicContent,
-        ignoreInvalidIcu,
-        parsingOptions
+        config,
+        output
       );
     }
   }
@@ -524,14 +506,8 @@ function processFunctionIfMatches(
 function findFunctionParameterUsage(
   functionPath: NodePath,
   parameterName: string,
-  updates: Updates,
-  errors: string[],
-  warnings: Set<string>,
-  file: string,
-  ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions
+  config: ParsingConfig,
+  output: ParsingOutput
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -555,15 +531,9 @@ function findFunctionParameterUsage(
         binding.referencePaths.forEach((refPath) => {
           handleFunctionCall(
             refPath,
-            updates,
-            errors,
-            warnings,
-            file,
-            importMap,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions
+            config,
+            { visited: new Set(), importMap },
+            output
           );
         });
       }
@@ -586,14 +556,9 @@ function processFunctionInFile(
   filePath: string,
   functionName: string,
   argIndex: number,
-  updates: Updates,
-  errors: string[],
-  warnings: Set<string>,
-  ignoreAdditionalData: boolean,
-  ignoreDynamicContent: boolean,
-  ignoreInvalidIcu: boolean,
-  parsingOptions: ParsingConfigOptions,
-  visited: Set<string> = new Set()
+  config: ParsingConfig,
+  state: ParsingState,
+  output: ParsingOutput
 ): void {
   // Check cache first to avoid redundant parsing
   const cacheKey = `${filePath}::${functionName}::${argIndex}`;
@@ -602,10 +567,10 @@ function processFunctionInFile(
   }
 
   // Prevent infinite loops from circular re-exports
-  if (visited.has(filePath)) {
+  if (state.visited.has(filePath)) {
     return;
   }
-  visited.add(filePath);
+  state.visited.add(filePath);
 
   try {
     const code = fs.readFileSync(filePath, 'utf8');
@@ -627,14 +592,8 @@ function processFunctionInFile(
             argIndex,
             path.node,
             path,
-            updates,
-            errors,
-            warnings,
-            filePath,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions
+            config,
+            output
           );
         }
       },
@@ -654,14 +613,8 @@ function processFunctionInFile(
             argIndex,
             path.node.init,
             initPath,
-            updates,
-            errors,
-            warnings,
-            filePath,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions
+            config,
+            output
           );
         }
       },
@@ -697,7 +650,7 @@ function processFunctionInFile(
         const resolvedPath = resolveImportPath(
           filePath,
           reExportPath,
-          parsingOptions,
+          config.parsingOptions,
           resolveImportPathCache
         );
         if (resolvedPath) {
@@ -705,14 +658,9 @@ function processFunctionInFile(
             resolvedPath,
             functionName,
             argIndex,
-            updates,
-            errors,
-            warnings,
-            ignoreAdditionalData,
-            ignoreDynamicContent,
-            ignoreInvalidIcu,
-            parsingOptions,
-            visited
+            config,
+            state,
+            output
           );
         }
       }
@@ -744,11 +692,8 @@ export function parseStrings(
   importName: string,
   originalName: string,
   path: NodePath,
-  updates: Updates,
-  errors: string[],
-  warnings: Set<string>,
-  file: string,
-  parsingOptions: ParsingConfigOptions
+  config: ParsingConfig,
+  output: ParsingOutput
 ): void {
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
@@ -758,9 +703,13 @@ export function parseStrings(
   for (const refPath of referencePaths) {
     // Handle msg() calls directly without variable assignment
     if (originalName === MSG_TRANSLATION_FUNCTION) {
-      const ignoreAdditionalData = false;
-      const ignoreDynamicContent = false;
-      const ignoreInvalidIcu = false;
+      const msgConfig: ParsingConfig = {
+        parsingOptions: config.parsingOptions,
+        file: config.file,
+        ignoreAdditionalData: false,
+        ignoreDynamicContent: false,
+        ignoreInvalidIcu: false,
+      };
 
       // Check if this is a direct call to msg('string')
       if (
@@ -769,14 +718,8 @@ export function parseStrings(
       ) {
         processTranslationCall(
           refPath,
-          updates,
-          errors,
-          warnings,
-          file,
-          ignoreAdditionalData,
-          ignoreDynamicContent,
-          ignoreInvalidIcu,
-          parsingOptions
+          msgConfig,
+          output
         );
       }
       continue;
@@ -795,9 +738,9 @@ export function parseStrings(
         (originalName === INLINE_TRANSLATION_HOOK ||
           originalName === INLINE_MESSAGE_HOOK)
       ) {
-        errors.push(
+        output.errors.push(
           warnAsyncUseGT(
-            file,
+            config.file,
             `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
           )
         );
@@ -807,9 +750,9 @@ export function parseStrings(
         (originalName === INLINE_TRANSLATION_HOOK_ASYNC ||
           originalName === INLINE_MESSAGE_HOOK_ASYNC)
       ) {
-        errors.push(
+        output.errors.push(
           warnSyncGetGT(
-            file,
+            config.file,
             `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
           )
         );
@@ -819,9 +762,13 @@ export function parseStrings(
       const isMessageHook =
         originalName === INLINE_MESSAGE_HOOK ||
         originalName === INLINE_MESSAGE_HOOK_ASYNC;
-      const ignoreAdditionalData = isMessageHook;
-      const ignoreDynamicContent = isMessageHook;
-      const ignoreInvalidIcu = isMessageHook;
+      const hookConfig: ParsingConfig = {
+        parsingOptions: config.parsingOptions,
+        file: config.file,
+        ignoreAdditionalData: isMessageHook,
+        ignoreDynamicContent: isMessageHook,
+        ignoreInvalidIcu: isMessageHook,
+      };
 
       const effectiveParent =
         parentPath?.node.type === 'AwaitExpression'
@@ -851,15 +798,9 @@ export function parseStrings(
           for (const tPath of tReferencePaths) {
             handleFunctionCall(
               tPath,
-              updates,
-              errors,
-              warnings,
-              file,
-              importMap,
-              ignoreAdditionalData,
-              ignoreDynamicContent,
-              ignoreInvalidIcu,
-              parsingOptions
+              hookConfig,
+              { visited: new Set(), importMap },
+              output
             );
           }
         });

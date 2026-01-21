@@ -994,11 +994,14 @@ describe('parseStringFunction - Comprehensive Behavioral Tests', () => {
             path.node.local.name,
             hookName,
             path,
-            updates,
-            errors,
-            warnings,
-            FILE_PATH,
-            parsingOptions
+            {
+              parsingOptions,
+              file: FILE_PATH,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates, errors, warnings }
           );
         }
       },

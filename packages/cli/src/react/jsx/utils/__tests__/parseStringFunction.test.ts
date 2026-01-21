@@ -42,11 +42,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -118,11 +121,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -163,11 +169,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -204,11 +213,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -244,11 +256,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -279,11 +294,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -315,11 +333,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -351,11 +372,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -390,11 +414,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -436,11 +463,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -483,11 +513,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -524,11 +557,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -566,11 +602,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -607,11 +646,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -650,11 +692,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -690,11 +735,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -730,11 +778,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -771,11 +822,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -814,11 +868,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -859,11 +916,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -901,11 +961,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -935,11 +998,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -981,11 +1047,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1033,11 +1102,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1102,11 +1174,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1183,11 +1258,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1241,11 +1319,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1288,11 +1369,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1337,11 +1421,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1410,11 +1497,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1452,11 +1542,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1496,9 +1589,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useGT',
             path,
-            params.updates,
-            params.errors,
-            params.file
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1530,10 +1628,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1570,11 +1672,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1609,11 +1714,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1643,11 +1751,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1678,11 +1789,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1716,11 +1830,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1755,11 +1872,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1809,11 +1929,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1849,11 +1972,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'msg',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1888,11 +2014,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1929,11 +2058,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -1968,11 +2100,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2008,11 +2143,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2043,11 +2181,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2080,11 +2221,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2117,11 +2261,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2153,11 +2300,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2189,11 +2339,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2228,11 +2381,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2274,11 +2430,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2313,11 +2472,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
@@ -2354,11 +2516,14 @@ describe('parseStrings', () => {
             path.node.local.name,
             'getMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file,
-            params.parsingOptions
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreAdditionalData: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+            },
+            { updates: params.updates, errors: params.errors, warnings: params.warnings }
           );
         }
       },
