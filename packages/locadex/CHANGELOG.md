@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.80
+
+### Patch Changes
+
+- Updated dependencies [[`e0da677`](https://github.com/generaltranslation/gt/commit/e0da677827434c5bfda945557f643c4468a2dac6), [`f446e01`](https://github.com/generaltranslation/gt/commit/f446e01754671d3586feb811c036d317a8693039)]:
+  - gtx-cli@2.6.2
+
 ## 1.0.79
 
 ### Patch Changes

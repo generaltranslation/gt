@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.6.2
+
+### Patch Changes
+
+- [#964](https://github.com/generaltranslation/gt/pull/964) [`e0da677`](https://github.com/generaltranslation/gt/commit/e0da677827434c5bfda945557f643c4468a2dac6) Thanks [@pie575](https://github.com/pie575)! - Refactor parseJSX and parseStringFunction
+
+- [#966](https://github.com/generaltranslation/gt/pull/966) [`f446e01`](https://github.com/generaltranslation/gt/commit/f446e01754671d3586feb811c036d317a8693039) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add config flag to filter Mintlify files based on `docs.json` pages
+
 ## 2.6.1
 
 ### Patch Changes
