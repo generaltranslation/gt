@@ -40,6 +40,7 @@ export type OpenApiConfig = {
 
 export type MintlifyOptions = {
   openapi?: OpenApiConfig;
+  useDocsJsonNavigation?: boolean;
 };
 
 export type SharedFlags = {
