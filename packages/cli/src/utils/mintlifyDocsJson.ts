@@ -28,8 +28,7 @@ export function applyMintlifyDocsJsonFilter(
     return;
   }
 
-  const normalizedPages = normalizePages(pages);
-  const pageList = Array.from(normalizedPages);
+  const pageList = Array.from(pages);
   const matchedPages = new Set<string>();
 
   const filterByPages = (filePaths?: string[], placeholderPaths?: string[]) => {
@@ -161,16 +160,6 @@ function normalizePage(page: string): string | null {
   normalized = normalized.replace(/^\.\//, '').replace(/^\/+/, '');
   normalized = normalized.replace(/\.(mdx|md)$/i, '');
   return normalized || null;
-}
-
-function normalizePages(pages: Set<string>): Set<string> {
-  const normalized = new Set<string>();
-  for (const page of pages) {
-    const cleaned = normalizePage(page);
-    if (!cleaned) continue;
-    normalized.add(cleaned);
-  }
-  return normalized;
 }
 
 function stripExtension(filePath: string): string {
