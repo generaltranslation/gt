@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.4
+
+### Patch Changes
+
+- [#969](https://github.com/generaltranslation/gt/pull/969) [`0fef5cb`](https://github.com/generaltranslation/gt/commit/0fef5cb5266a0aa6ccdf2dc8778ee913eb145b5d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add flag for Mintlify docs to infer title from source file name when missing title in YAML frontmatter
+
 ## 2.6.3
 
 ### Patch Changes
