@@ -10,6 +10,7 @@ import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework.js';
 import { isValidMdx } from '../../utils/validateMdx.js';
 import { hashStringSync } from '../../utils/hash.js';
+import { applyMintlifyTitleFallback } from '../../utils/mintlifyTitleFallback.js';
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
@@ -153,13 +154,30 @@ export async function aggregateFiles(
             }
           }
 
-          const sanitizedContent = sanitizeFileContent(content);
+          let processedContent = content;
+          let addedMintlifyTitle = false;
+          if (
+            fileType === 'mdx' &&
+            settings.options?.mintlify?.inferTitleFromFilename
+          ) {
+            const result = applyMintlifyTitleFallback(
+              processedContent,
+              relativePath,
+              settings.defaultLocale
+            );
+            processedContent = result.content;
+            addedMintlifyTitle = result.addedTitle;
+          }
+
+          const sanitizedContent = sanitizeFileContent(processedContent);
           return {
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
             fileId: hashStringSync(relativePath),
-            versionId: hashStringSync(content),
+            versionId: hashStringSync(
+              addedMintlifyTitle ? processedContent : content
+            ),
             locale: settings.defaultLocale,
           } satisfies FileToUpload;
         })
