@@ -50,10 +50,10 @@ export const staticString = createRule({
     messages: {
       // generic error message (no fix)
       staticStringRequired:
-        'Registration functions can only accept static strings. For example: msg("This is a static string!").',
+        'Registration functions (gt, msg) can only accept static strings. For example: msg("This is a static string!").',
       // msg(`Hello, ${name}!`) TODO: autofix
       variableInterpolationRequired:
-        'Dynamically constructed strings are not allowed. Use ICU-style variable interpolation instead (e.g. gt("Hello {name}!"), { name: value }).',
+        'Registration functions (gt, msg) can only accept static strings. Use ICU-style variable interpolation instead (e.g. gt("Hello {name}!"), { name: value }).',
       // TODO: missing a variable in interpolation (gt() only) (no fix)
       missingVariableInInterpolation:
         'Missing a variable in interpolation. Any variable supplied to the ICU-string, must be provided as a key in the options object.',
