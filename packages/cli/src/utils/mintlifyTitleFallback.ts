@@ -6,7 +6,8 @@ type TitleFallbackResult = {
   addedTitle: boolean;
 };
 
-const FRONTMATTER_REGEX = /^---\s*\r?\n([\s\S]*?)\r?\n(---|\.\.\.)\s*(?:\r?\n|$)/;
+const FRONTMATTER_REGEX =
+  /^---\s*\r?\n([\s\S]*?)\r?\n(---|\.\.\.)\s*(?:\r?\n|$)/;
 
 function toTitleCase(value: string): string {
   return value
@@ -83,8 +84,7 @@ export function applyMintlifyTitleFallback(
     }
 
     const titleLine = YAML.stringify({ title: inferredTitle }).trimEnd();
-    const headerEndIndex =
-      contentBody.indexOf(newline) + newline.length;
+    const headerEndIndex = contentBody.indexOf(newline) + newline.length;
     const updated =
       contentBody.slice(0, headerEndIndex) +
       titleLine +

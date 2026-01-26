@@ -348,7 +348,9 @@ describe('aggregateFiles - Empty File Handling', () => {
         },
       };
 
-      mockReadFile.mockReturnValueOnce('---\nsummary: "Hello"\n---\n\n# Content');
+      mockReadFile.mockReturnValueOnce(
+        '---\nsummary: "Hello"\n---\n\n# Content'
+      );
 
       const result = await aggregateFiles(settings as any);
 
@@ -372,7 +374,9 @@ describe('aggregateFiles - Empty File Handling', () => {
         },
       };
 
-      mockReadFile.mockReturnValueOnce('---\nsummary: "Hello"\n---\n\n# Content');
+      mockReadFile.mockReturnValueOnce(
+        '---\nsummary: "Hello"\n---\n\n# Content'
+      );
 
       const result = await aggregateFiles(settings as any);
 
