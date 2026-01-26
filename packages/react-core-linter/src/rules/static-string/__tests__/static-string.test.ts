@@ -26,9 +26,60 @@ describe('static-string rule', () => {
           `,
           options: [{ libs: ['@generaltranslation/react-core'] }],
         },
+        {
+          code: `
+            import { useGT } from '@generaltranslation/react-core';
+            function Component() {
+              const gt = useGT();
+              return gt("Hello world");
+            }
+          `,
+          options: [{ libs: ['@generaltranslation/react-core'] }],
+        },
+        {
+          code: `
+            import { useGT, declareStatic } from '@generaltranslation/react-core';
+            function Component() {
+              const gt = useGT();
+              return gt("Hello " + declareStatic("world"));
+            }
+          `,
+          options: [{ libs: ['@generaltranslation/react-core'] }],
+        },
       ],
       invalid: [
-        // TODO: Add invalid test cases when rule logic is implemented
+        {
+          code: `
+            import { useGT } from '@generaltranslation/react-core';
+            function Component() {
+              const gt = useGT();
+              const name = "World";
+              return gt("Hello " + name);
+            }
+          `,
+          options: [{ libs: ['@generaltranslation/react-core'] }],
+          errors: [
+            {
+              messageId: 'variableInterpolationRequired',
+            },
+          ],
+        },
+        {
+          code: `
+            import { useGT } from '@generaltranslation/react-core';
+            function Component() {
+              const gt = useGT();
+              const name = "World";
+              return gt(\`Hello \${name}!\`);
+            }
+          `,
+          options: [{ libs: ['@generaltranslation/react-core'] }],
+          errors: [
+            {
+              messageId: 'variableInterpolationRequired',
+            },
+          ],
+        },
       ],
     });
   });
