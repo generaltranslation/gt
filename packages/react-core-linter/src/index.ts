@@ -9,6 +9,7 @@
 import type { ESLint, Rule } from 'eslint';
 import { staticJsx } from './rules/static-jsx/index.js';
 import { staticString } from './rules/static-string/index.js';
+import { injectRecommended } from './configs/recommended.js';
 
 const plugin: ESLint.Plugin = {
   meta: {
@@ -30,6 +31,17 @@ const plugin: ESLint.Plugin = {
   },
 };
 
-plugin
+plugin.configs = {
+  recommended: {
+    plugins: { '@generaltranslation/react-core-linter': plugin },
+    rules: {
+      '@generaltranslation/react-core-linter/static-jsx': 'error',
+      '@generaltranslation/react-core-linter/static-string': 'error',
+    },
+  },
+};
+
+// // Add the recommended config
+// injectRecommended(plugin);
 
 export default plugin;

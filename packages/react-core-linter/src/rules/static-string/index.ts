@@ -1,6 +1,10 @@
 import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
 import { GT_LIBRARIES, RULE_URL } from '../../utils/constants.js';
-import { isMsgFunction } from '../../utils/isGTFunction.js';
+import {
+  isDeclareStaticFunction,
+  isGTCallbackFunction,
+  isMsgFunction,
+} from '../../utils/isGTFunction.js';
 
 /**
  * Static string rule for translation components
@@ -44,12 +48,18 @@ export const staticString = createRule({
     ],
     hasSuggestions: false,
     messages: {
-      // msg(someVariable) (no fix)
+      // generic error message (no fix)
       staticStringRequired:
-        'Registration functions can only accept static strings.',
-      // msg(`Hello, ${name}!`)
+        'Registration functions can only accept static strings. For example: msg("This is a static string!").',
+      // msg(`Hello, ${name}!`) TODO: autofix
       variableInterpolationRequired:
-        'Dynamically constructed strings are not allowed. Use ICU-style variable interpolation instead.',
+        'Dynamically constructed strings are not allowed. Use ICU-style variable interpolation instead (e.g. gt("Hello {name}!"), { name: value }).',
+      // TODO: missing a variable in interpolation (gt() only) (no fix)
+      missingVariableInInterpolation:
+        'Missing a variable in interpolation. Any variable supplied to the ICU-string, must be provided as a key in the options object.',
+      // TODO: any sugar variables must be static (no fix)
+      sugarVariableMustBeStatic:
+        'Sugar variables must be static strings. For example: gt("Hello!", { $context: "A greeting" }).',
     },
   },
   defaultOptions: [{ libs: GT_LIBRARIES }],
@@ -61,8 +71,12 @@ export const staticString = createRule({
        * Handle function calls
        */
       CallExpression(node: TSESTree.CallExpression) {
-        if (!isMsgFunction({ context, node, libs })) return;
-        console.log(node);
+        if (
+          !isMsgFunction({ context, node, libs }) &&
+          !isGTCallbackFunction({ context, node, libs })
+        ) {
+          return;
+        }
 
         // Ignore if there is no first argument
         if (node.arguments.length === 0) return;
@@ -70,23 +84,54 @@ export const staticString = createRule({
         // Disallow spread elements (no fix)
         const firstArgument = node.arguments[0];
         if (firstArgument.type === TSESTree.AST_NODE_TYPES.SpreadElement) {
-          context.report({
+          return context.report({
             node: firstArgument,
             messageId: 'variableInterpolationRequired',
           });
-          return;
         }
 
-        // Check if the first argument is a static string
-        // TODO: allow for supported syntax like "A" + "B"
-        // TODO: add declareStatic() handling
-        // TODO: add auto fix for supported syntax like "Hello " + "World" or `Hello ${name}!`
-        if (!isStaticString(firstArgument)) {
-          context.report({
-            node: firstArgument,
+        // Validate gt()'s params
+        validateGTInvocation(firstArgument);
+
+        /**
+         * Helper function to validate gt()'s params
+         */
+        function validateGTInvocation(expression: TSESTree.Expression) {
+          // Static string is okay
+          if (isStaticString(expression)) return;
+
+          // declareStatic() is okay
+          if (
+            expression.type === TSESTree.AST_NODE_TYPES.CallExpression &&
+            isDeclareStaticFunction({ context, node: expression, libs })
+          ) {
+            return;
+          }
+
+          // Validate binary expressions: "A" + declareStatic(??) + `C`
+          if (
+            expression.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
+            expression.operator === '+'
+          ) {
+            validateGTInvocation(expression.left);
+            validateGTInvocation(expression.right);
+            return;
+          }
+
+          // Interpolation: `Hello ${name}!`
+          if (expression.type === TSESTree.AST_NODE_TYPES.TemplateLiteral) {
+            // TODO: keep track of nodes to interpolate
+            return context.report({
+              node: expression,
+              messageId: 'variableInterpolationRequired',
+            });
+          }
+
+          // Generic error message
+          return context.report({
+            node: expression,
             messageId: 'staticStringRequired',
           });
-          return;
         }
       },
     };

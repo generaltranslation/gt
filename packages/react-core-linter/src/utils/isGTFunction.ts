@@ -10,13 +10,16 @@ import {
   STATIC_COMPONENT_NAME,
   DECLARE_STATIC_FUNCTION_NAME,
   MSG_FUNCTION_NAME,
+  GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
 } from './constants.js';
 import { RuleContext, Scope } from '@typescript-eslint/utils/ts-eslint';
 
 export type IsGTFunctionOptions = {
   // TODO: better typing
   context: Readonly<RuleContext<any, any>>;
-  /** Opening or closing element of the component */
+  /** Opening or closing element of the component
+   * TODO: make this more selective (eg differentiate btwn JSX and Function calls)
+   */
   node:
     | TSESTree.JSXOpeningElement
     | TSESTree.JSXClosingElement
@@ -66,7 +69,7 @@ export function isGTFunction({
   const identifierName = getIdentifierName(node);
   if (identifierName === null) return false;
 
-  // Get the component scope
+  // Get the scope
   let scope: Scope.Scope | null = context.sourceCode.getScope(node);
   let variable: Scope.Variable | undefined;
   while (scope) {
@@ -216,4 +219,74 @@ export function isMsgFunction({
     libs,
     targetName: MSG_FUNCTION_NAME,
   });
+}
+
+export function isGTCallbackFunction({
+  context,
+  node,
+  libs,
+}: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
+  // -- Step 1: Get binding for the gt identifier -- //
+  const identifierName = getIdentifierName(node);
+  if (identifierName === null) return false;
+
+  if (identifierName === 'gt') {
+    return true;
+  }
+
+  // Find the variable declaration in scope
+  let scope: Scope.Scope | null = context.sourceCode.getScope(node);
+  let variable: Scope.Variable | undefined;
+  while (scope) {
+    variable = scope.set.get(identifierName);
+    if (variable) break;
+    scope = scope.upper;
+  }
+  if (!variable) {
+    return false;
+  }
+
+  // -- Step 2: Check if the variable was declared with useGT() or await getGT() -- //
+  // Helper function
+  function isGTDeclaratorCallExpression(
+    node: TSESTree.CallExpression
+  ): boolean {
+    return isGTFunction({
+      context,
+      node,
+      libs,
+      targetName: GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
+    });
+  }
+
+  // Find the first variable declarator definition (const gt = ...)
+  const variableDef = variable.defs.find(
+    (def) =>
+      def.type === 'Variable' &&
+      def.node.type === AST_NODE_TYPES.VariableDeclarator
+  ) as Scope.Definitions.VariableDefinition | undefined;
+  const init = variableDef?.node.init;
+  if (!init) return false;
+
+  // -- Step 3: Check the import -- //
+
+  // Case 1: const gt = useGT()
+  if (
+    init.type === AST_NODE_TYPES.CallExpression &&
+    isGTDeclaratorCallExpression(init)
+  ) {
+    return true;
+  }
+
+  // Case 2: const gt = await getGT()
+  if (
+    libs.includes('gt-next') &&
+    init.type === AST_NODE_TYPES.AwaitExpression &&
+    init.argument.type === AST_NODE_TYPES.CallExpression &&
+    isGTDeclaratorCallExpression(init.argument)
+  ) {
+    return true;
+  }
+
+  return false;
 }

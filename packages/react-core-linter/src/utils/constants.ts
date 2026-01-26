@@ -51,6 +51,12 @@ export const BRANCH_COMPONENT_NAMES = [
   PLURAL_COMPONENT_NAME,
 ];
 
+// const gt = useGT(); const gt = await getGT();
+export const GT_CALLBACK_DECLARATOR_FUNCTION_NAMES = [
+  USE_GT_FUNCTION_NAME,
+  GET_GT_FUNCTION_NAME,
+];
+
 // Error: any non-string literal, number literal, boolean literal, null literal, template literal (no interpolation)
 export const ALLOWED_JSX_EXPRESSIONS = [
   TSESTree.AST_NODE_TYPES.Literal,
