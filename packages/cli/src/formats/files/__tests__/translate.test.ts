@@ -11,6 +11,7 @@ import { isValidMdx } from '../../../utils/validateMdx.js';
 vi.mock('../../../console/logger.js', () => ({
   logger: {
     warn: vi.fn(),
+    error: vi.fn(),
   },
 }));
 vi.mock('../../../fs/findFilepath.js');
@@ -62,6 +63,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
 
     mockSanitizeFileContent.mockImplementation((content) => content);
+    mockIsValidMdx.mockReset();
     mockIsValidMdx.mockReturnValue({ isValid: true });
   });
 
