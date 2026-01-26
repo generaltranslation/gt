@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.3
+
+### Patch Changes
+
+- [#967](https://github.com/generaltranslation/gt/pull/967) [`bc52a1d`](https://github.com/generaltranslation/gt/commit/bc52a1ddc8ef11540681215b8a9b0ab54e1b3bca) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Reverting Mintlify-specific `docs.json` file filtering
+
 ## 2.6.2
 
 ### Patch Changes
