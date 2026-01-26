@@ -21,7 +21,6 @@ import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
-import { applyMintlifyDocsJsonFilter } from '../utils/mintlifyDocsJson.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -177,12 +176,6 @@ export async function generateSettings(
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),
-    mintlify: {
-      ...(mergedOptions.options?.mintlify || {}),
-      useDocsJsonNavigation:
-        gtConfig.options?.mintlify?.useDocsJsonNavigation ||
-        mergedOptions.options?.mintlify?.useDocsJsonNavigation,
-    },
     experimentalLocalizeStaticImports:
       gtConfig.options?.experimentalLocalizeStaticImports ||
       flags.experimentalLocalizeStaticImports,
@@ -201,8 +194,6 @@ export async function generateSettings(
     clearLocaleDirsExclude:
       gtConfig.options?.clearLocaleDirsExclude || flags.clearLocaleDirsExclude,
   };
-
-  applyMintlifyDocsJsonFilter(mergedOptions, cwd);
 
   // Add additional options if provided
   if (mergedOptions.options) {
