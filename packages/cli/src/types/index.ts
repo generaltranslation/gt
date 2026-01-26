@@ -40,6 +40,7 @@ export type OpenApiConfig = {
 
 export type MintlifyOptions = {
   openapi?: OpenApiConfig;
+  inferTitleFromFilename?: boolean;
 };
 
 export type SharedFlags = {

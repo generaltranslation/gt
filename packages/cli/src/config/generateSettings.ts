@@ -176,6 +176,12 @@ export async function generateSettings(
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),
+    mintlify: {
+      ...(mergedOptions.options?.mintlify || {}),
+      inferTitleFromFilename:
+        gtConfig.options?.mintlify?.inferTitleFromFilename ||
+        mergedOptions.options?.mintlify?.inferTitleFromFilename,
+    },
     experimentalLocalizeStaticImports:
       gtConfig.options?.experimentalLocalizeStaticImports ||
       flags.experimentalLocalizeStaticImports,

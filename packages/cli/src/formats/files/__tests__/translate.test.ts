@@ -275,6 +275,111 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result[0].fileName).toBe('invalid.mdx');
     });
 
+    it('should infer mintlify title from filename when missing', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            mdx: ['/full/path/my-file.mdx'],
+          },
+          placeholderPaths: {},
+        },
+        defaultLocale: 'en',
+        options: {
+          mintlify: {
+            inferTitleFromFilename: true,
+          },
+        },
+      };
+
+      mockReadFile.mockReturnValueOnce(
+        '---\nsummary: "Hello"\n---\n\n# Content'
+      );
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toMatch(/title:\s*"?My File"?/);
+    });
+
+    it('should not change mintlify frontmatter when title is present', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            mdx: ['/full/path/assistant.mdx'],
+          },
+          placeholderPaths: {},
+        },
+        defaultLocale: 'en',
+        options: {
+          mintlify: {
+            inferTitleFromFilename: true,
+          },
+        },
+      };
+
+      const content =
+        '---\n' +
+        'title: Assistant\n' +
+        'description: "Test"\n' +
+        '---\n\n' +
+        '# Content';
+
+      mockReadFile.mockReturnValueOnce(content);
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toBe(content);
+    });
+
+    it('should infer title from parent directory for index files', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            mdx: ['/full/path/docs/getting-started/index.mdx'],
+          },
+          placeholderPaths: {},
+        },
+        defaultLocale: 'en',
+        options: {
+          mintlify: {
+            inferTitleFromFilename: true,
+          },
+        },
+      };
+
+      mockReadFile.mockReturnValueOnce('---\nsummary: "Hello"\n---\n\n# Content');
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toMatch(/title:\s*"?Getting Started"?/);
+    });
+
+    it('should use Index for default locale index files', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            mdx: ['/full/path/es/index.mdx'],
+          },
+          placeholderPaths: {},
+        },
+        defaultLocale: 'es',
+        options: {
+          mintlify: {
+            inferTitleFromFilename: true,
+          },
+        },
+      };
+
+      mockReadFile.mockReturnValueOnce('---\nsummary: "Hello"\n---\n\n# Content');
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toMatch(/title:\s*"?Index"?/);
+    });
+
     it('should skip files that are empty after sanitization and log warning', async () => {
       const settings = {
         files: {
