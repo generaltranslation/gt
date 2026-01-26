@@ -230,10 +230,6 @@ export function isGTCallbackFunction({
   const identifierName = getIdentifierName(node);
   if (identifierName === null) return false;
 
-  if (identifierName === 'gt') {
-    return true;
-  }
-
   // Find the variable declaration in scope
   let scope: Scope.Scope | null = context.sourceCode.getScope(node);
   let variable: Scope.Variable | undefined;

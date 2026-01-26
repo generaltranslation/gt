@@ -41,7 +41,4 @@ plugin.configs = {
   },
 };
 
-// // Add the recommended config
-// injectRecommended(plugin);
-
 export default plugin;
