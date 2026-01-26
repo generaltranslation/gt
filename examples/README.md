@@ -6,27 +6,62 @@
 
 # Examples
 
-This directory contains example apps that use gt-next and gt-react.
-Each example walks you through setting up the project, and gt-next or gt-react was added to each project.
-Furthermore, all of these examples work out-of-the-box and can be deployed with one click to Vercel.
+Example apps demonstrating `gt-next` and `gt-react` integration. All examples work out-of-the-box and can be deployed to Vercel with one click.
 
-## Next.js
+# Example README Template
 
-- [next-create-app](./next-create-app)
-- [next-chatbot](./next-chatbot)
-- [next-pages-router](./next-pages-router)
-- [next-gt-starter](./next-gt-starter)
+Use this template for each example app's README:
 
-## Vite
+```markdown
+<p align="center">
+  <a href="https://generaltranslation.com" target="_blank">
+    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  </a>
+</p>
 
-- [vite-create-app](./vite-create-app)
+# [LIBRARY] + [FRAMEWORK] Example
 
-## Other
+[One sentence description of what this example demonstrates.]
 
-- [create-react-app](./create-react-app)
-- gatsby (coming soon!)
-- redwood (coming soon!)
+[Live demo link if available]
 
-## Other resources
+## Quick Start
 
-Feel free to check out our [documentation](https://generaltranslation.com/docs) and our [website](https://generaltranslation.com).
+### Clone and install
+
+\`\`\`bash
+git clone https://github.com/generaltranslation/gt.git
+cd gt-libraries/examples/[EXAMPLE_NAME]
+npm install
+\`\`\`
+
+### Run development server
+
+\`\`\`bash
+npm run dev
+\`\`\`
+
+### Build for production
+
+\`\`\`bash
+npm run build
+npm start
+\`\`\`
+
+## Deploy
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/generaltranslation/gt/tree/main/examples/[EXAMPLE_NAME])
+
+## Documentation
+
+- [[LIBRARY] docs](https://generaltranslation.com/docs/[LIBRARY_PATH])
+```
+
+### Template Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `[LIBRARY]` | GT library used | `gt-next`, `gt-react` |
+| `[FRAMEWORK]` | Framework/tool | `Next.js`, `Vite`, `Create React App` |
+| `[EXAMPLE_NAME]` | Directory name | `next-create-app`, `vite-create-app` |
+| `[LIBRARY_PATH]` | Docs path | `next`, `react` |

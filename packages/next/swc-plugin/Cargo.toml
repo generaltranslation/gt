@@ -23,8 +23,11 @@ strip = "symbols"  # Strip debug symbols
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-swc_core = { version = "34.0.*", features = ["ecma_plugin_transform"] }
+swc_core = { version = "49.0.0", features = ["ecma_plugin_transform"] }
 sha2 = "0.10"
+
+# Force exact swc_common version to match Next.js
+swc_common = "=18.0.0"
 
 # .cargo/config.toml defines few alias to build plugin.
 # cargo build-wasip1 generates wasm32-wasip1 binary

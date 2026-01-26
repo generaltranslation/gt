@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { Options, Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
-import { hashSource } from 'generaltranslation/id';
+import { hashSource, hashString } from 'generaltranslation/id';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
@@ -56,41 +56,60 @@ export async function createInlineUpdates(
         name,
         originalName,
         path,
-        updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions
+        {
+          parsingOptions,
+          file,
+          ignoreAdditionalData: false,
+          ignoreDynamicContent: false,
+          ignoreInvalidIcu: false,
+        },
+        { updates, errors, warnings }
       );
     }
 
     // Parse <T> components
     for (const { localName, path } of translationComponentPaths) {
       parseTranslationComponent({
-        importAliases,
         originalName: localName,
         localName,
-        ast,
-        pkgs,
         path,
         updates,
-        errors,
-        warnings,
-        file,
-        parsingOptions,
+        config: {
+          importAliases,
+          parsingOptions,
+          pkgs,
+          file,
+        },
+        output: {
+          errors,
+          warnings,
+          unwrappedExpressions: [],
+        },
       });
     }
-
-    // Extra validation (for Locadex)
-    // Done in parseStrings() atm
-    // if (validate) {
-    //   for (const { localName: name, path, originalName } of translationPaths) {
-    //     validateStringFunction(name, path, updates, errors, file, originalName);
-    //   }
-    // }
   }
 
-  // Post-process to add a hash to each update
+  // Post processing steps:
+  await calculateHashes(updates);
+  dedupeUpdates(updates);
+  linkStaticUpdates(updates);
+
+  return { updates, errors, warnings: [...warnings] };
+}
+
+/**
+ * Given a package name, return the upstream packages that it depends on
+ * @param pkg
+ */
+function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
+  return GT_LIBRARIES_UPSTREAM[pkg];
+}
+
+/**
+ * Calculate hashes
+ */
+async function calculateHashes(updates: Updates): Promise<void> {
+  // parallel calculation of hashes
   await Promise.all(
     updates.map(async (update) => {
       const hash = hashSource({
@@ -105,21 +124,12 @@ export async function createInlineUpdates(
       update.metadata.hash = hash;
     })
   );
-
-  mergeUpdatesByHash(updates);
-
-  return { updates, errors, warnings: [...warnings] };
 }
 
 /**
- * Given a package name, return the upstream packages that it depends on
- * @param pkg
+ * Dedupe entries
  */
-function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
-  return GT_LIBRARIES_UPSTREAM[pkg];
-}
-
-export function mergeUpdatesByHash(updates: Updates): void {
+function dedupeUpdates(updates: Updates): void {
   const mergedByHash = new Map<string, (typeof updates)[number]>();
   const noHashUpdates: (typeof updates)[number][] = [];
 
@@ -157,3 +167,37 @@ export function mergeUpdatesByHash(updates: Updates): void {
   const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];
   updates.splice(0, updates.length, ...mergedUpdates);
 }
+
+/**
+ * Mark static updates as the related by attaching a shared id to static content
+ * Id is calculated as the hash of the static children's combined hashes
+ */
+function linkStaticUpdates(updates: Updates): void {
+  // construct map of temporary static ids to updates
+  const temporaryStaticIdToUpdates = updates.reduce(
+    (acc: Record<string, Updates[number][]>, update: Updates[number]) => {
+      if (update.metadata.staticId) {
+        if (!acc[update.metadata.staticId]) {
+          acc[update.metadata.staticId] = [];
+        }
+        acc[update.metadata.staticId].push(update);
+      }
+      return acc;
+    },
+    {} as Record<string, Updates[number][]>
+  );
+
+  // Calculate shared static ids
+  Object.values(temporaryStaticIdToUpdates).forEach((staticUpdates) => {
+    const hashes = staticUpdates
+      .map((update) => update.metadata.hash)
+      .sort()
+      .join('-');
+    const sharedStaticId = hashString(hashes);
+    staticUpdates.forEach((update) => {
+      update.metadata.staticId = sharedStaticId;
+    });
+  });
+}
+
+export { dedupeUpdates as _test_dedupeUpdates };

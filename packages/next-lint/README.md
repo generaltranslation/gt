@@ -1,6 +1,20 @@
+<p align="center">
+  <a href="https://generaltranslation.com/docs/next">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/gt-logo-light.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" width="100" height="100">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://generaltranslation.com/docs/next"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+</p>
+
 # @generaltranslation/gt-next-lint
 
-ESLint plugin that catches common translation errors in gt-next components.
+ESLint plugin for gt-next translation errors.
 
 ## Installation
 
@@ -8,11 +22,10 @@ ESLint plugin that catches common translation errors in gt-next components.
 npm install --save-dev @generaltranslation/gt-next-lint
 ```
 
-## Configuration
+## Usage
 
-Add to your `eslint.config.mjs`:
-
-```javascript
+```js
+// eslint.config.mjs
 import gtNext from '@generaltranslation/gt-next-lint';
 
 export default [
@@ -26,43 +39,4 @@ export default [
 ];
 ```
 
-## Rules
-
-### `no-dynamic-jsx`
-
-Wraps dynamic content in `<T>` components with variable components.
-
-```jsx
-// ❌ Wrong
-<T>Hello {userName}!</T>
-
-// ✅ Correct  
-<T>Hello <Var>{userName}</Var>!</T>
-```
-
-### `no-dynamic-string`
-
-Only allows string literals in translation functions.
-
-```jsx
-const t = useGT();
-
-// ❌ Wrong
-t(`Hello ${name}`)
-t('Hello ' + name)
-
-// ✅ Correct
-t('Hello, {name}!', { name })
-```
-
-## Supported Components
-
-- `<Var>` - Variables
-- `<DateTime>` - Dates
-- `<Num>` - Numbers  
-- `<Currency>` - Currency
-
-## Supported Functions
-
-- `useGT()` - Client translations
-- `getGT()` - Server translations
+See the [full documentation](https://generaltranslation.com/docs/next) for guides and API reference.

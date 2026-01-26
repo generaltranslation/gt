@@ -1,5 +1,17 @@
 # gt-remark
 
+## 1.0.4
+
+### Patch Changes
+
+- [#940](https://github.com/generaltranslation/gt/pull/940) [`defee33`](https://github.com/generaltranslation/gt/commit/defee33267734041e58b6c76564f9903c95ba37e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Remove underscore escaping from headers
+
+## 1.0.3
+
+### Patch Changes
+
+- [#938](https://github.com/generaltranslation/gt/pull/938) [`24987af`](https://github.com/generaltranslation/gt/commit/24987afd74ba3ab95d0d52b0486d452b51afa9cf) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding custom GFM plugin
+
 ## 1.0.2
 
 ### Patch Changes

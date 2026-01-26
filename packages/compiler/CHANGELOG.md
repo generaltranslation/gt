@@ -1,5 +1,25 @@
 # @generaltranslation/compiler
 
+## 1.1.16
+
+### Patch Changes
+
+- Updated dependencies [[`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67)]:
+  - generaltranslation@8.1.7
+
+## 1.1.15
+
+### Patch Changes
+
+- Updated dependencies [[`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da)]:
+  - generaltranslation@8.1.6
+
+## 1.1.14
+
+### Patch Changes
+
+- [#932](https://github.com/generaltranslation/gt/pull/932) [`dcdd751`](https://github.com/generaltranslation/gt/commit/dcdd7516edfe2e51ed633c79bc2045fb14fd938b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: compiler cli deps when installed at the same time caused an bug in npm with the esbuild version
+
 ## 1.1.13
 
 ### Patch Changes

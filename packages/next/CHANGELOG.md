@@ -1,5 +1,38 @@
 # gt-next
 
+## 6.12.7
+
+### Patch Changes
+
+- Updated dependencies [[`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67)]:
+  - generaltranslation@8.1.7
+  - @generaltranslation/compiler@1.1.16
+  - gt-react@10.10.4
+  - @generaltranslation/supported-locales@2.0.38
+
+## 6.12.6
+
+### Patch Changes
+
+- Updated dependencies [[`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da)]:
+  - generaltranslation@8.1.6
+  - @generaltranslation/compiler@1.1.15
+  - gt-react@10.10.3
+  - @generaltranslation/supported-locales@2.0.37
+
+## 6.12.5
+
+### Patch Changes
+
+- Updated dependencies [[`dcdd751`](https://github.com/generaltranslation/gt/commit/dcdd7516edfe2e51ed633c79bc2045fb14fd938b)]:
+  - @generaltranslation/compiler@1.1.14
+
+## 6.12.4
+
+### Patch Changes
+
+- [#925](https://github.com/generaltranslation/gt/pull/925) [`6df7670`](https://github.com/generaltranslation/gt/commit/6df76703afeb2dc1c782f0f2da9d46208975906b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: deprecate swc plugin for nextjs versions earlier than 16.1
+
 ## 6.12.3
 
 ### Patch Changes

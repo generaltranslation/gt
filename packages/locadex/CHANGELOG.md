@@ -1,5 +1,103 @@
 # locadex
 
+## 1.0.80
+
+### Patch Changes
+
+- Updated dependencies [[`e0da677`](https://github.com/generaltranslation/gt/commit/e0da677827434c5bfda945557f643c4468a2dac6), [`f446e01`](https://github.com/generaltranslation/gt/commit/f446e01754671d3586feb811c036d317a8693039)]:
+  - gtx-cli@2.6.2
+
+## 1.0.79
+
+### Patch Changes
+
+- Updated dependencies [[`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67)]:
+  - gtx-cli@2.6.1
+
+## 1.0.78
+
+### Patch Changes
+
+- Updated dependencies [[`c64d5d1`](https://github.com/generaltranslation/gt/commit/c64d5d1bc7fda78294e09b93c4a4e08d576409fc)]:
+  - gtx-cli@2.6.0
+
+## 1.0.77
+
+### Patch Changes
+
+- Updated dependencies [[`4fca112`](https://github.com/generaltranslation/gt/commit/4fca1123d797883b8ad73a770ad177b5068a4707)]:
+  - gtx-cli@2.5.49
+
+## 1.0.76
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gtx-cli@2.5.48
+
+## 1.0.75
+
+### Patch Changes
+
+- Updated dependencies [[`5dccb20`](https://github.com/generaltranslation/gt/commit/5dccb20c94080aba17685d0ef623882b446cb39b)]:
+  - gtx-cli@2.5.47
+
+## 1.0.74
+
+### Patch Changes
+
+- Updated dependencies [[`3f0da49`](https://github.com/generaltranslation/gt/commit/3f0da498beaff2fe697cbf785bd1cc5fa069d93d)]:
+  - gtx-cli@2.5.46
+
+## 1.0.73
+
+### Patch Changes
+
+- Updated dependencies [[`0a58f13`](https://github.com/generaltranslation/gt/commit/0a58f13c9d25938a5e12644349248ce18aebb796), [`0cb890b`](https://github.com/generaltranslation/gt/commit/0cb890b84d775b360de0d8f6ed2b1ec8aeaa0af2)]:
+  - gtx-cli@2.5.45
+
+## 1.0.72
+
+### Patch Changes
+
+- Updated dependencies [[`45ee200`](https://github.com/generaltranslation/gt/commit/45ee20016ff82ea07008e053e296146a0e925841)]:
+  - gtx-cli@2.5.44
+
+## 1.0.71
+
+### Patch Changes
+
+- Updated dependencies [[`a9aae8c`](https://github.com/generaltranslation/gt/commit/a9aae8c7d22a074ef490b4f4a563a64ae50cd444)]:
+  - gtx-cli@2.5.43
+
+## 1.0.70
+
+### Patch Changes
+
+- Updated dependencies [[`dcdd751`](https://github.com/generaltranslation/gt/commit/dcdd7516edfe2e51ed633c79bc2045fb14fd938b)]:
+  - gtx-cli@2.5.42
+
+## 1.0.69
+
+### Patch Changes
+
+- Updated dependencies [[`ca7b778`](https://github.com/generaltranslation/gt/commit/ca7b7785cc28817c154900933ac7be2098a10faf)]:
+  - gtx-cli@2.5.41
+
+## 1.0.68
+
+### Patch Changes
+
+- Updated dependencies [[`f0f86f3`](https://github.com/generaltranslation/gt/commit/f0f86f3c2dbb90d43029f64def2b3dc43584bad7)]:
+  - gtx-cli@2.5.40
+
+## 1.0.67
+
+### Patch Changes
+
+- Updated dependencies [[`3071d23`](https://github.com/generaltranslation/gt/commit/3071d2396f67e1e0a907878ec4555c314b2e5c52)]:
+  - gtx-cli@2.5.39
+
 ## 1.0.66
 
 ### Patch Changes

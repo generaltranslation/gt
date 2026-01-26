@@ -10,7 +10,7 @@ mod tests {
         // Test string literal - should pass
         let string_expr = JSXExpr::Expr(Box::new(Expr::Lit(Lit::Str(Str {
             span: DUMMY_SP,
-            value: Atom::new("hello"),
+            value: Atom::new("hello").into(),
             raw: None,
         }))));
         assert!(is_allowed_dynamic_content(&string_expr));
@@ -197,7 +197,7 @@ mod tests {
                     span: DUMMY_SP,
                     arg: Box::new(Expr::Lit(Lit::Str(Str {
                         span: DUMMY_SP,
-                        value: Atom::new("not a call"),
+                        value: Atom::new("not a call").into(),
                         raw: None,
                     }))),
                 })),
@@ -227,7 +227,7 @@ mod tests {
                 spread: None,
                 expr: Box::new(Expr::Lit(Lit::Str(Str {
                     span: DUMMY_SP,
-                    value: Atom::new("not a call"),
+                    value: Atom::new("not a call").into(),
                     raw: None,
                 }))),
             }],
@@ -467,7 +467,7 @@ mod tests {
         // Test string literal
         let string_expr = Expr::Lit(Lit::Str(Str {
             span: DUMMY_SP,
-            value: Atom::new("42"),
+            value: Atom::new("42").into(),
             raw: None,
         }));
         assert_eq!(extract_number_from_expr(&string_expr), None);
@@ -504,7 +504,7 @@ mod tests {
             op: UnaryOp::Plus,
             arg: Box::new(Expr::Lit(Lit::Str(Str {
                 span: DUMMY_SP,
-                value: Atom::new("42"),
+                value: Atom::new("42").into(),
                 raw: None,
             }))),
         });

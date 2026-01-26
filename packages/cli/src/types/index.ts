@@ -40,6 +40,7 @@ export type OpenApiConfig = {
 
 export type MintlifyOptions = {
   openapi?: OpenApiConfig;
+  useDocsJsonNavigation?: boolean;
 };
 
 export type SharedFlags = {
@@ -104,13 +105,24 @@ export type GenerateSourceOptions = {
 
 export type Framework = 'gt-next' | 'gt-react';
 
-export type SupportedFrameworks =
-  | 'next-app'
-  | 'next-pages'
-  | 'vite'
-  | 'gatsby'
-  | 'react'
-  | 'redwood';
+export type FrameworkObject =
+  | {
+      name: 'mintlify';
+      type?: undefined;
+    }
+  | {
+      name: 'next-app' | 'next-pages' | 'vite' | 'gatsby' | 'redwood' | 'react';
+      type: 'react';
+    };
+export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;
+
+export type FrameworkType = FrameworkObject['type'];
+
+export type SupportedFrameworks = FrameworkObject['name'];
+export type SupportedReactFrameworks = Extract<
+  FrameworkObject,
+  { type: 'react' }
+>['name'];
 
 export type SupportedLibraries =
   | 'gt-next'
@@ -217,6 +229,12 @@ export type AdditionalOptions = {
   yamlSchema?: {
     [fileGlob: string]: YamlSchema;
   };
+  // Skip pre-parse validation checks for specific file types
+  skipFileValidation?: {
+    json?: boolean;
+    yaml?: boolean;
+    mdx?: boolean;
+  };
   // Optional Mintlify-specific options container
   mintlify?: MintlifyOptions;
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
@@ -267,7 +285,7 @@ export type JsonSchema = {
 };
 
 export type YamlSchema = {
-  preset?: 'mintlify';
+  preset?: 'mintlify' | 'openapi';
   include?: string[];
   transform?: TransformOptions;
 };

@@ -1,5 +1,97 @@
 # gtx-cli
 
+## 2.6.2
+
+### Patch Changes
+
+- [#964](https://github.com/generaltranslation/gt/pull/964) [`e0da677`](https://github.com/generaltranslation/gt/commit/e0da677827434c5bfda945557f643c4468a2dac6) Thanks [@pie575](https://github.com/pie575)! - Refactor parseJSX and parseStringFunction
+
+- [#966](https://github.com/generaltranslation/gt/pull/966) [`f446e01`](https://github.com/generaltranslation/gt/commit/f446e01754671d3586feb811c036d317a8693039) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add config flag to filter Mintlify files based on `docs.json` pages
+
+## 2.6.1
+
+### Patch Changes
+
+- [#960](https://github.com/generaltranslation/gt/pull/960) [`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: upload shared id for static content
+
+- Updated dependencies [[`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67)]:
+  - generaltranslation@8.1.7
+
+## 2.6.0
+
+### Minor Changes
+
+- [#958](https://github.com/generaltranslation/gt/pull/958) [`c64d5d1`](https://github.com/generaltranslation/gt/commit/c64d5d1bc7fda78294e09b93c4a4e08d576409fc) Thanks [@pie575](https://github.com/pie575)! - CLI New Default Workflow
+
+## 2.5.49
+
+### Patch Changes
+
+- [#953](https://github.com/generaltranslation/gt/pull/953) [`4fca112`](https://github.com/generaltranslation/gt/commit/4fca1123d797883b8ad73a770ad177b5068a4707) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add handling for OpenAPI configurations via Mintlify's `docs.json`
+
+## 2.5.48
+
+### Patch Changes
+
+- Updated dependencies [[`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da)]:
+  - generaltranslation@8.1.6
+
+## 2.5.47
+
+### Patch Changes
+
+- [#947](https://github.com/generaltranslation/gt/pull/947) [`5dccb20`](https://github.com/generaltranslation/gt/commit/5dccb20c94080aba17685d0ef623882b446cb39b) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix to avoid anchor ID double escaping during parse fallback on MDX
+
+## 2.5.46
+
+### Patch Changes
+
+- [#945](https://github.com/generaltranslation/gt/pull/945) [`3f0da49`](https://github.com/generaltranslation/gt/commit/3f0da498beaff2fe697cbf785bd1cc5fa069d93d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add escaping of anchor ID syntax to all files passed in as MDX via gt.config.json
+
+## 2.5.45
+
+### Patch Changes
+
+- [#944](https://github.com/generaltranslation/gt/pull/944) [`0a58f13`](https://github.com/generaltranslation/gt/commit/0a58f13c9d25938a5e12644349248ce18aebb796) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add option to skip file validation when passing for translation
+
+- [#942](https://github.com/generaltranslation/gt/pull/942) [`0cb890b`](https://github.com/generaltranslation/gt/commit/0cb890b84d775b360de0d8f6ed2b1ec8aeaa0af2) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Refreshed CLI setup wizard flow
+
+## 2.5.44
+
+### Patch Changes
+
+- [#936](https://github.com/generaltranslation/gt/pull/936) [`45ee200`](https://github.com/generaltranslation/gt/commit/45ee20016ff82ea07008e053e296146a0e925841) Thanks [@brian-lou](https://github.com/brian-lou)! - Create Locadex AI Agent link in gtx-cli init command
+
+## 2.5.43
+
+### Patch Changes
+
+- [#933](https://github.com/generaltranslation/gt/pull/933) [`a9aae8c`](https://github.com/generaltranslation/gt/commit/a9aae8c7d22a074ef490b4f4a563a64ae50cd444) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fixing handling of [locale] placeholder in blob patterns
+
+## 2.5.42
+
+### Patch Changes
+
+- [#932](https://github.com/generaltranslation/gt/pull/932) [`dcdd751`](https://github.com/generaltranslation/gt/commit/dcdd7516edfe2e51ed633c79bc2045fb14fd938b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: compiler cli deps when installed at the same time caused an bug in npm with the esbuild version
+
+## 2.5.41
+
+### Patch Changes
+
+- [#929](https://github.com/generaltranslation/gt/pull/929) [`ca7b778`](https://github.com/generaltranslation/gt/commit/ca7b7785cc28817c154900933ac7be2098a10faf) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Auto-update OpenAPI spec paths when specs are modified
+
+## 2.5.40
+
+### Patch Changes
+
+- [#927](https://github.com/generaltranslation/gt/pull/927) [`f0f86f3`](https://github.com/generaltranslation/gt/commit/f0f86f3c2dbb90d43029f64def2b3dc43584bad7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding YAML support for Mintlify OpenAPI configurations
+
+## 2.5.39
+
+### Patch Changes
+
+- [#920](https://github.com/generaltranslation/gt/pull/920) [`3071d23`](https://github.com/generaltranslation/gt/commit/3071d2396f67e1e0a907878ec4555c314b2e5c52) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: bin release
+
 ## 2.5.38
 
 ### Patch Changes

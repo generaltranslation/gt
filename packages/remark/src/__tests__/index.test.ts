@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { unified } from 'unified';
+import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
-import escapeHtmlInTextNodes from '../index';
+import escapeHtmlInTextNodes, { remarkGfmCustom } from '../index';
 import type { Root, Text, Paragraph, Code, InlineCode } from 'mdast';
 
 describe('escapeHtmlInTextNodes', () => {
@@ -418,5 +419,54 @@ describe('escapeHtmlInTextNodes', () => {
       const result = processAst(tree);
       expect(result).toContain('&lt;placeholder&gt; &amp; &quot;special&quot;');
     });
+  });
+});
+
+describe('remarkGfmCustom', () => {
+  const processMarkdown = (markdown: string) => {
+    const processor = unified()
+      .use(remarkParse)
+      .use(remarkGfmCustom)
+      .use(remarkStringify, {
+        bullet: '-',
+        emphasis: '_',
+        strong: '*',
+        rule: '-',
+        ruleRepetition: 3,
+        ruleSpaces: false,
+        handlers: {
+          text(node: any) {
+            return node.value;
+          },
+        },
+      });
+
+    return String(processor.processSync(markdown));
+  };
+
+  it('should keep bare URLs as plain text', () => {
+    const input =
+      'See https://github.com/ClickHouse/ClickHouse/issues/92752 for details.';
+    const result = processMarkdown(input);
+    expect(result).toContain(
+      'See https://github.com/ClickHouse/ClickHouse/issues/92752 for details.'
+    );
+    expect(result).not.toContain(
+      '<https://github.com/ClickHouse/ClickHouse/issues/92752>'
+    );
+    expect(result).not.toContain(
+      '[https://github.com/ClickHouse/ClickHouse/issues/92752]'
+    );
+  });
+
+  it('should keep GFM tables working', () => {
+    const input = [
+      '| Format | Support | Notes |',
+      '|---|---|---|',
+      '| JSON | OK | Supports `JSON` |',
+    ].join('\n');
+    const result = processMarkdown(input);
+    expect(result).toMatch(/\| Format \| Support \| Notes\s*\|/);
+    expect(result).toMatch(/\| JSON\s+\| OK\s+\| Supports `JSON` \|/);
   });
 });

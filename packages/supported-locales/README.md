@@ -1,17 +1,25 @@
 <p align="center">
-  <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  <a href="https://generaltranslation.com/docs">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/gt-logo-light.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" width="100" height="100">
+    </picture>
   </a>
 </p>
 
-# General Translation Supported Locales
+<p align="center">
+  <a href="https://generaltranslation.com/docs"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+</p>
 
-List of supported locales for General Translation. We update this list frequently, and will release a new version of this library when we do.
+# @generaltranslation/supported-locales
 
-See our [docs](https://generaltranslation.com/docs) for more information including guides, examples, and API references.
+List of supported locales for General Translation.
 
-## Contributing
+## Installation
 
-We welcome any contributions to our libraries. Please submit a pull request!
+```bash
+npm install @generaltranslation/supported-locales
+```
 
-To request a new locale, please submit an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues).
+See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.

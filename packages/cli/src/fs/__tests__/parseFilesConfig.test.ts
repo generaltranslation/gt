@@ -644,6 +644,27 @@ describe('parseFilesConfig', () => {
       ]);
     });
 
+    it('should handle [locale] in filename after globstar', () => {
+      const includePatterns = ['src/content/**/[locale].mdx'];
+      const excludePatterns = [];
+
+      vi.mocked(fg.sync).mockReturnValue([
+        '/project/src/content/courses/en.mdx',
+      ]);
+
+      const result = expandGlobPatterns(
+        '/project',
+        includePatterns,
+        excludePatterns,
+        'en',
+        ['en', 'fr']
+      );
+
+      expect(result.placeholderPaths).toEqual([
+        '/project/src/content/courses/[locale].mdx',
+      ]);
+    });
+
     it('should handle mixed exclude patterns with [locale] and [locales]', () => {
       const includePatterns = ['src/[locale]/*.json'];
       const excludePatterns = [

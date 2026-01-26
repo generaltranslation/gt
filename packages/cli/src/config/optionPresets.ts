@@ -66,6 +66,10 @@ export function generatePreset(
         return {
           include: ['$..summary', '$..description'],
         };
+      case 'openapi':
+        return {
+          include: ['$..summary', '$..description'],
+        };
       default:
         return {};
     }

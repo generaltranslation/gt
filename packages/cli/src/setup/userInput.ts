@@ -15,19 +15,19 @@ export async function getDesiredLocales(): Promise<{
 
   // Ask for the locales
   const locales = await promptText({
-    message: `What locales would you like to translate your project into? ${chalk.dim('(space-separated list)')}`,
-    defaultValue: 'es zh fr de ja',
+    message: `Which languages would you like to translate your project into? Enter your response as a list of BCP-47 locale tags. ${chalk.dim('(space-separated list)')}`,
+    defaultValue: 'es fr de ja zh',
     validate: (input) => {
       const localeList = input.split(' ');
       if (localeList.length === 0) {
         return 'Please enter at least one locale';
       }
       if (localeList.some((locale) => !locale.trim())) {
-        return 'Please enter a valid locale (e.g., en, fr, es)';
+        return 'Please enter a valid locale (e.g., es fr de)';
       }
       for (const locale of localeList) {
         if (!gt.isValidLocale(locale)) {
-          return 'Please enter a valid locale (e.g., en, fr, es)';
+          return 'Please enter a valid locale (e.g., es fr de)';
         }
       }
       return true;

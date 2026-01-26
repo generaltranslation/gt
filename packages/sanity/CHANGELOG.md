@@ -1,5 +1,19 @@
 # gt-sanity
 
+## 1.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`eb07e8c`](https://github.com/generaltranslation/gt/commit/eb07e8ce1b610551437b40f96c72ac76d0af7b67)]:
+  - generaltranslation@8.1.7
+
+## 1.1.13
+
+### Patch Changes
+
+- Updated dependencies [[`feada39`](https://github.com/generaltranslation/gt/commit/feada3918ad78a1584f07245ac158c2d994a38da)]:
+  - generaltranslation@8.1.6
+
 ## 1.1.12
 
 ### Patch Changes

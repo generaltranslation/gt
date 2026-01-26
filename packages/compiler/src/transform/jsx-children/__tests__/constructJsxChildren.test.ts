@@ -129,5 +129,5 @@ function createTests(seedsPath: string): void {
 }
 
 describe('constructJsxChildren', () => {
-  createTests(path.join(__dirname, '../../../../../../seeds'));
+  createTests(path.join(__dirname, '../../../../../../tests/seeds'));
 });

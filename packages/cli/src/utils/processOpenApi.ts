@@ -45,6 +45,7 @@ const HTTP_METHODS = new Set([
   'HEAD',
   'TRACE',
 ]);
+const OPENAPI_SPEC_EXTENSIONS = new Set(['.json', '.yaml', '.yml']);
 
 /**
  * Postprocess Mintlify OpenAPI references to point to locale-specific spec files.
@@ -131,15 +132,294 @@ export default async function processOpenApi(
     }
   }
 
+  const docsJsonTargets = collectDocsJsonTargets(
+    settings,
+    fileMapping,
+    includeFiles
+  );
+  for (const target of docsJsonTargets) {
+    if (!fs.existsSync(target.path)) continue;
+    const content = fs.readFileSync(target.path, 'utf8');
+    const updated = rewriteDocsJsonOpenApi(
+      content,
+      target.path,
+      target.localeHint,
+      specAnalyses,
+      fileMappingAbs,
+      fileMapping,
+      warnings,
+      configDir,
+      settings.defaultLocale
+    );
+    if (updated?.changed) {
+      await fs.promises.writeFile(target.path, updated.content, 'utf8');
+    }
+  }
+
   for (const message of warnings) {
     logger.warn(message);
   }
 }
 
+function collectDocsJsonTargets(
+  settings: Settings,
+  fileMapping: Record<string, Record<string, string>>,
+  includeFiles?: Set<string>
+): Array<{ path: string; localeHint?: string }> {
+  const targets: Array<{ path: string; localeHint?: string }> = [];
+  const seen = new Map<string, Set<string>>();
+
+  const addTarget = (filePath: string, locale?: string) => {
+    const canonicalPath = path.resolve(filePath);
+    if (
+      includeFiles &&
+      !includeFiles.has(filePath) &&
+      !includeFiles.has(canonicalPath)
+    ) {
+      return;
+    }
+    const locales = seen.get(canonicalPath) ?? new Set<string>();
+    if (locale) locales.add(locale);
+    seen.set(canonicalPath, locales);
+  };
+
+  if (!includeFiles && settings.files?.resolvedPaths.json) {
+    for (const filePath of settings.files.resolvedPaths.json) {
+      addTarget(filePath, settings.defaultLocale);
+    }
+  }
+
+  for (const [locale, filesMap] of Object.entries(fileMapping)) {
+    for (const filePath of Object.values(filesMap)) {
+      if (!filePath.endsWith('.json')) continue;
+      addTarget(filePath, locale);
+    }
+  }
+
+  for (const [filePath, locales] of seen.entries()) {
+    const localeHint = locales.size === 1 ? Array.from(locales)[0] : undefined;
+    targets.push({ path: filePath, localeHint });
+  }
+
+  return targets;
+}
+
+function isMintlifyDocsJson(filePath: string, json: unknown): boolean {
+  if (!isRecord(json)) return false;
+  const schema = json.$schema;
+  if (typeof schema === 'string') {
+    return (
+      schema.includes('mintlify.com/docs.json') ||
+      schema.includes('mintlify.com/mint.json')
+    );
+  }
+  const base = path.basename(filePath);
+  return base === 'docs.json' || base === 'mint.json';
+}
+
+function rewriteDocsJsonOpenApi(
+  content: string,
+  filePath: string,
+  localeHint: string | undefined,
+  specs: SpecAnalysis[],
+  fileMappingAbs: Record<string, Record<string, string>>,
+  fileMappingRel: Record<string, Record<string, string>>,
+  warnings: Set<string>,
+  configDir: string,
+  defaultLocale: string
+): { changed: boolean; content: string } | null {
+  let json: unknown;
+  try {
+    json = JSON.parse(content);
+  } catch {
+    return null;
+  }
+
+  if (!isMintlifyDocsJson(filePath, json)) return null;
+
+  let changed = false;
+
+  const visitNode = (node: unknown, activeLocale?: string) => {
+    if (Array.isArray(node)) {
+      node.forEach((item) => visitNode(item, activeLocale));
+      return;
+    }
+    if (!isRecord(node)) return;
+
+    let nextLocale = activeLocale;
+    if (typeof node.language === 'string') {
+      nextLocale = node.language;
+    }
+
+    if (isRecord(node.openapi) && Array.isArray(node.pages)) {
+      const locale = nextLocale || localeHint || defaultLocale;
+      const openapiConfig = node.openapi as Record<string, unknown>;
+      const sourceValue = openapiConfig.source;
+      if (typeof sourceValue === 'string') {
+        const localizedSource = localizeDocsJsonSpecPath(
+          sourceValue,
+          locale,
+          filePath,
+          specs,
+          fileMappingAbs,
+          fileMappingRel,
+          warnings,
+          configDir
+        );
+        if (localizedSource && localizedSource !== sourceValue) {
+          openapiConfig.source = localizedSource;
+          changed = true;
+        }
+      }
+
+      const pages = node.pages;
+      for (let i = 0; i < pages.length; i += 1) {
+        const page = pages[i];
+        if (typeof page !== 'string') continue;
+        const updated = stripLocaleFromOpenApiPage(page, locale);
+        if (updated !== page) {
+          pages[i] = updated;
+          changed = true;
+        }
+      }
+    }
+
+    for (const value of Object.values(node)) {
+      visitNode(value, nextLocale);
+    }
+  };
+
+  visitNode(json, undefined);
+
+  if (!changed) return null;
+  return { changed, content: JSON.stringify(json, null, 2) };
+}
+
+function stripLocaleFromOpenApiPage(value: string, locale: string): string {
+  const trimmed = value.trim();
+  const prefix = `${locale}/`;
+  if (!trimmed.startsWith(prefix)) return value;
+  const candidate = trimmed.slice(prefix.length);
+  const parsed = parseOpenApiValue(candidate);
+  if (!parsed) return value;
+  return candidate;
+}
+
+function localizeDocsJsonSpecPath(
+  source: string,
+  locale: string,
+  filePath: string,
+  specs: SpecAnalysis[],
+  fileMappingAbs: Record<string, Record<string, string>>,
+  _fileMappingRel: Record<string, Record<string, string>>,
+  warnings: Set<string>,
+  configDir: string
+): string | null {
+  const resolvedAbs = resolveDocsJsonSpecPath(source, filePath, configDir);
+  const matched = matchSpecBySource(source, resolvedAbs, specs, warnings);
+  if (!matched) return source;
+
+  const localizedSpecPath = resolveLocalizedSpecPath(
+    matched,
+    locale,
+    fileMappingAbs,
+    configDir,
+    source
+  );
+  const localizedAbs = resolveDocsJsonSpecPath(
+    localizedSpecPath,
+    filePath,
+    configDir
+  );
+  if (!fs.existsSync(localizedAbs)) {
+    warnings.add(
+      `OpenAPI source "${source}" localized for locale "${locale}" points to a missing file (${localizedAbs}). Keeping original source.`
+    );
+    return source;
+  }
+
+  const rel = normalizeSlashes(path.relative(configDir, localizedAbs));
+  return formatSpecPathForDocsJson(rel, source);
+}
+
+function resolveDocsJsonSpecPath(
+  source: string,
+  filePath: string,
+  configDir: string
+): string {
+  if (source.startsWith('/')) {
+    return path.resolve(configDir, source.replace(/^\/+/, ''));
+  }
+  if (source.startsWith('./') || source.startsWith('../')) {
+    return path.resolve(path.dirname(filePath), source);
+  }
+  return path.resolve(configDir, source);
+}
+
+function matchSpecBySource(
+  source: string,
+  resolvedAbs: string,
+  specs: SpecAnalysis[],
+  warnings: Set<string>
+): SpecAnalysis | null {
+  const exact = specs.find((spec) => samePath(resolvedAbs, spec.absPath));
+  if (exact) return exact;
+
+  const normalizedExplicit = normalizeSlashes(source).replace(/^\.?\/+/, '');
+  const explicitWithoutExt = stripExtension(normalizedExplicit);
+  const explicitBase = path.basename(normalizedExplicit);
+  const explicitBaseWithoutExt = stripExtension(explicitBase);
+  const matches = specs.filter((spec) => {
+    const configPath = normalizeSlashes(spec.configPath).replace(/^\.?\/+/, '');
+    const configBase = path.basename(configPath);
+    const configPathNoExt = stripExtension(configPath);
+    const configBaseNoExt = stripExtension(configBase);
+    return (
+      configPath === normalizedExplicit ||
+      configPathNoExt === explicitWithoutExt ||
+      configBase === explicitBase ||
+      configBaseNoExt === explicitBaseWithoutExt
+    );
+  });
+
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) {
+    warnings.add(
+      `OpenAPI source "${source}" matches multiple specs (${matches
+        .map((m) => m.configPath)
+        .join(
+          ', '
+        )}). Using the first configured match (${matches[0].configPath}).`
+    );
+    return matches[0];
+  }
+
+  return null;
+}
+
+function formatSpecPathForDocsJson(
+  relativePath: string,
+  originalPathText: string
+): string {
+  const normalized = normalizeSlashes(relativePath);
+  const base = normalized.replace(/^\.\//, '').replace(/\/+/g, '/');
+
+  if (originalPathText.startsWith('/')) {
+    return `/${base.replace(/^\/+/, '')}`;
+  }
+  if (originalPathText.startsWith('../')) {
+    return normalized;
+  }
+  if (originalPathText.startsWith('./')) {
+    return `./${base.replace(/^\/+/, '')}`;
+  }
+  return base.replace(/^\/+/, '');
+}
+
 /**
  * Resolve configured OpenAPI files to absolute paths and collect the operations,
  * schemas, and webhooks they expose. Warns and skips when files are missing,
- * unsupported (non-JSON), or fail to parse so later steps can continue gracefully.
+ * unsupported (non-JSON/YAML), or fail to parse so later steps can continue gracefully.
  */
 function buildSpecAnalyses(
   openapiFiles: string[],
@@ -153,9 +433,10 @@ function buildSpecAnalyses(
       logger.warn(`OpenAPI file not found: ${configEntry}`);
       continue;
     }
-    if (path.extname(absPath).toLowerCase() !== '.json') {
+    const ext = path.extname(absPath).toLowerCase();
+    if (!OPENAPI_SPEC_EXTENSIONS.has(ext)) {
       logger.warn(
-        `Skipping OpenAPI file (only .json supported): ${configEntry}`
+        `Skipping OpenAPI file (only .json/.yml/.yaml supported): ${configEntry}`
       );
       continue;
     }
@@ -163,9 +444,10 @@ function buildSpecAnalyses(
     let spec: unknown;
     try {
       const raw = fs.readFileSync(absPath, 'utf8');
-      spec = JSON.parse(raw);
+      spec = ext === '.json' ? JSON.parse(raw) : YAML.parse(raw);
     } catch {
-      logger.warn(`Failed to parse OpenAPI JSON: ${configEntry}`);
+      const format = ext === '.json' ? 'JSON' : 'YAML';
+      logger.warn(`Failed to parse OpenAPI ${format}: ${configEntry}`);
       continue;
     }
 
@@ -372,7 +654,7 @@ function parseOpenApiValue(value: string): ParsedOpenApiValue | null {
   const second = tokens[1];
   const methodCandidate = second?.toUpperCase();
   const firstLooksLikeSpec =
-    first.toLowerCase().endsWith('.json') ||
+    hasOpenApiSpecExtension(first) ||
     (second &&
       (second.toLowerCase() === 'webhook' ||
         (methodCandidate && HTTP_METHODS.has(methodCandidate))));
@@ -408,7 +690,7 @@ function parseSchemaValue(value: string): ParsedSchemaValue | null {
   if (!tokens.length) return null;
   let cursor = 0;
   let specPath: string | undefined;
-  if (tokens[0].toLowerCase().endsWith('.json')) {
+  if (hasOpenApiSpecExtension(tokens[0])) {
     specPath = tokens[0];
     cursor = 1;
   }
@@ -449,7 +731,34 @@ function resolveSpec(
         samePath(candidate, normalizedSpecPath)
       );
     });
-    if (foundSpec) return foundSpec;
+    if (foundSpec) {
+      if (specHasMatch(foundSpec, match)) {
+        return foundSpec;
+      }
+
+      const alternatives = specs.filter(
+        (spec) => spec !== foundSpec && specHasMatch(spec, match)
+      );
+      if (alternatives.length === 1) {
+        warnings.add(
+          `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found there. Using ${alternatives[0].configPath} instead.`
+        );
+        return alternatives[0];
+      }
+      if (alternatives.length > 1) {
+        warnings.add(
+          `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found there and matches multiple specs (${alternatives
+            .map((spec) => spec.configPath)
+            .join(', ')}). Skipping localization for this reference.`
+        );
+        return null;
+      }
+
+      warnings.add(
+        `OpenAPI reference ${refDescription} in ${filePath} points to ${foundSpec.configPath}, but the entry was not found in any configured spec. Skipping localization for this reference.`
+      );
+      return null;
+    }
 
     const explicitWithoutExt = stripExtension(normalizedExplicit);
     const explicitBase = path.basename(normalizedExplicit);
@@ -511,6 +820,19 @@ function resolveSpec(
     `OpenAPI reference ${refDescription} in ${filePath} was not found in any configured spec. Skipping localization for this reference.`
   );
   return null;
+}
+
+function specHasMatch(
+  spec: SpecAnalysis,
+  match: { type: 'operation' | 'webhook' | 'schema'; key: string }
+): boolean {
+  if (match.type === 'schema') {
+    return spec.schemas.has(match.key);
+  }
+  if (match.type === 'webhook') {
+    return spec.webhooks.has(match.key);
+  }
+  return spec.operations.has(match.key);
 }
 
 /**
@@ -579,6 +901,10 @@ function describeOpenApiRef(value: ParsedOpenApiValue): string {
 function stripExtension(p: string): string {
   const parsed = path.parse(p);
   return normalizeSlashes(path.join(parsed.dir, parsed.name));
+}
+
+function hasOpenApiSpecExtension(value: string): boolean {
+  return OPENAPI_SPEC_EXTENSIONS.has(path.extname(value).toLowerCase());
 }
 
 /** Normalize separators for stable comparisons and output. */

@@ -70,7 +70,7 @@ Another section here.
     expect(result.hasChanges).toBe(true);
     // We track the normalized anchor as an addition in MDX mode
     expect(result.addedIds).toHaveLength(1);
-    expect(result.content).toContain('## Already has ID \\\\{#custom-id\\\\}');
+    expect(result.content).toContain('## Already has ID \\{#custom-id\\}');
   });
 
   it('reuses explicit IDs from source when translation lacks them', () => {
@@ -109,9 +109,7 @@ Another section here.
     const result = addExplicitAnchorIds(translated, sourceHeadingMap);
 
     expect(result.hasChanges).toBe(true);
-    expect(result.content).toContain(
-      '## Traducción \\\\{#custom-source-id\\\\}'
-    );
+    expect(result.content).toContain('## Traducción \\{#custom-source-id\\}');
     // Normalization counts as a recorded ID in MDX mode
     expect(result.addedIds).toHaveLength(1);
   });
@@ -172,6 +170,46 @@ No links here either.
     // Existing anchor in markdown remains unescaped
     expect(result.content).toContain(
       '## Otro encabezado {#another-source-heading}'
+    );
+  });
+
+  it('escapes inline anchors when fileTypeHint is mdx even if target path is .md', () => {
+    const source = `## Source heading {#custom-source-id}`;
+    const translated = `## Encabezado traducido`;
+    const sourceHeadingMap = extractHeadingInfo(source);
+
+    const result = addExplicitAnchorIds(
+      translated,
+      sourceHeadingMap,
+      undefined,
+      source,
+      '/tmp/file.md',
+      'mdx'
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.content).toContain(
+      '## Encabezado traducido \\{#custom-source-id\\}'
+    );
+  });
+
+  it('keeps inline anchors unescaped when fileTypeHint is md even if target path is .mdx', () => {
+    const source = `## Source heading {#custom-source-id}`;
+    const translated = `## Encabezado traducido`;
+    const sourceHeadingMap = extractHeadingInfo(source);
+
+    const result = addExplicitAnchorIds(
+      translated,
+      sourceHeadingMap,
+      undefined,
+      source,
+      '/tmp/file.mdx',
+      'md'
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.content).toContain(
+      '## Encabezado traducido {#custom-source-id}'
     );
   });
 
@@ -556,6 +594,19 @@ This is just an example
         '## Another Real Heading \\{#another-real-heading\\}'
       );
       expect(result.content).not.toContain('\\{#fake-heading-in-code-block\\}');
+    });
+
+    it('normalizes unescaped anchors to a single-escaped form in fallback mode', () => {
+      const input = `## Titulo {#titulo}
+
+{ this will break mdx parsing
+`;
+      const sourceHeadingMap = extractHeadingInfo(input);
+      const result = addExplicitAnchorIds(input, sourceHeadingMap);
+
+      expect(result.hasChanges).toBe(true);
+      expect(result.content).toContain('## Titulo \\{#titulo\\}');
+      expect(result.content).not.toContain('## Titulo \\\\{#titulo\\\\}');
     });
   });
 

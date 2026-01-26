@@ -29,10 +29,10 @@ vi.mock('../../../fs/matchFiles.js', () => ({
 
 // Expect these tests to have errors (they have {undefined} which is disallowed)
 const TESTS_WITH_ERRORS = [
-  'seeds/Complex-cases/many-edge-cases',
-  'seeds/Complex-cases/more-extreme-edge-cases',
-  'seeds/Complex-cases/whitespace',
-  'seeds/T-component/Simple/Expressions/Static-special-identifiers',
+  'tests/seeds/complex-cases/many-edge-cases',
+  'tests/seeds/complex-cases/more-extreme-edge-cases',
+  'tests/seeds/complex-cases/whitespace',
+  'tests/seeds/t-component/simple/expressions/static-special-identifiers',
 ];
 
 function isLeafDir(pathname: string): boolean {
@@ -158,5 +158,5 @@ beforeEach(() => {
 
 describe('createInlineUpdates', () => {
   // Test full suite to see our amazing progress
-  createTests(path.join(__dirname, '../../../../../../seeds'));
+  createTests(path.join(__dirname, '../../../../../../tests/seeds'));
 });
