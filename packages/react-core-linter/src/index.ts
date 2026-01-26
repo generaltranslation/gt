@@ -9,7 +9,6 @@
 import type { ESLint, Rule } from 'eslint';
 import { staticJsx } from './rules/static-jsx/index.js';
 import { staticString } from './rules/static-string/index.js';
-import { injectRecommended } from './configs/recommended.js';
 
 const plugin: ESLint.Plugin = {
   meta: {
