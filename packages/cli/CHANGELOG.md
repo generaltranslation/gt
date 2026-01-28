@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.5
+
+### Patch Changes
+
+- [#971](https://github.com/generaltranslation/gt/pull/971) [`821b0f0`](https://github.com/generaltranslation/gt/commit/821b0f05bab247e4d4c91cabc3ccfd45d672d25f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding `experimentalLocalizeRelativeAssets` config option to handle asset paths
+
 ## 2.6.4
 
 ### Patch Changes
