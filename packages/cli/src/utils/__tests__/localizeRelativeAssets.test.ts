@@ -63,7 +63,7 @@ describe('localizeRelativeAssets', () => {
 
     expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
     const written = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
-    expect(written).toContain("src='/whatsapp-clawd.jpg'");
+    expect(written).toContain('src="/whatsapp-clawd.jpg"');
 
     cwdSpy.mockRestore();
   });
@@ -95,8 +95,8 @@ describe('localizeRelativeAssets', () => {
     );
 
     expect(result.hasChanges).toBe(false);
-    expect(result.content).toContain("src='https://example.com/a.jpg'");
-    expect(result.content).toContain("src='/a.jpg'");
+    expect(result.content).toContain('src="https://example.com/a.jpg"');
+    expect(result.content).toContain('src="/a.jpg"');
   });
 
   it('does not rewrite markdown links', () => {
