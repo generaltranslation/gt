@@ -26,6 +26,7 @@ export type Options = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+  experimentalLocalizeRelativeAssets?: boolean;
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
   docsImportRewrites?: Array<{
     match: string;
@@ -69,6 +70,7 @@ export type TranslateFlags = SharedFlags & {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+  experimentalLocalizeRelativeAssets?: boolean;
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
@@ -247,6 +249,7 @@ export type AdditionalOptions = {
   clearLocaleDirsExclude?: string[]; // array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., "./snippets/[locale]/preserved/**" or "./[locales]/static/**")
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
+  experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for div wrapping, 'default' or undefined for inline {#id}. Can run independently of static url localization
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file

@@ -10,6 +10,7 @@ import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
+import localizeRelativeAssets from '../../utils/localizeRelativeAssets.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
 import processOpenApi from '../../utils/processOpenApi.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
@@ -102,6 +103,16 @@ export async function postProcessTranslations(
     );
     if (nonDefaultLocales.length > 0) {
       await localizeStaticUrls(settings, nonDefaultLocales, includeFiles);
+    }
+  }
+
+  // Rewrite relative asset URLs in translated md/mdx files
+  if (settings.options?.experimentalLocalizeRelativeAssets) {
+    const nonDefaultLocales = settings.locales.filter(
+      (locale) => locale !== settings.defaultLocale
+    );
+    if (nonDefaultLocales.length > 0) {
+      await localizeRelativeAssets(settings, nonDefaultLocales, includeFiles);
     }
   }
 

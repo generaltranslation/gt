@@ -577,6 +577,11 @@
           "description": "Inserts locale in static url paths in md/mdx files",
           "default": false
         },
+        "experimentalLocalizeRelativeAssets": {
+          "type": "boolean",
+          "description": "Rewrites relative image asset URLs in translated md/mdx files to valid paths",
+          "default": false
+        },
         "experimentalHideDefaultLocale": {
           "type": "boolean",
           "description": "Hides the default locale in the import path",
