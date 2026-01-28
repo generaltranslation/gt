@@ -73,6 +73,11 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option(
+      '--experimental-localize-relative-assets',
+      'Triggering this will rewrite relative image asset URLs in translated md/mdx files to valid paths.',
+      false
+    )
+    .option(
       '--force',
       'Force a retranslation, invalidating all existing cached translations if they exist.',
       false

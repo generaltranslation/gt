@@ -188,6 +188,9 @@ export async function generateSettings(
     experimentalLocalizeStaticUrls:
       gtConfig.options?.experimentalLocalizeStaticUrls ||
       flags.experimentalLocalizeStaticUrls,
+    experimentalLocalizeRelativeAssets:
+      gtConfig.options?.experimentalLocalizeRelativeAssets ||
+      flags.experimentalLocalizeRelativeAssets,
     experimentalHideDefaultLocale:
       gtConfig.options?.experimentalHideDefaultLocale ||
       flags.experimentalHideDefaultLocale,
