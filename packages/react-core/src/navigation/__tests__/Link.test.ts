@@ -45,10 +45,20 @@ describe('processHref', () => {
 
     it('should replace {locale} in external URLs', () => {
       expect(
-        processHref('https://docs.example.com/{locale}/guide', 'en', 'en', false)
+        processHref(
+          'https://docs.example.com/{locale}/guide',
+          'en',
+          'en',
+          false
+        )
       ).toBe('https://docs.example.com/en/guide');
       expect(
-        processHref('https://docs.example.com/{locale}/guide', 'fr', 'en', false)
+        processHref(
+          'https://docs.example.com/{locale}/guide',
+          'fr',
+          'en',
+          false
+        )
       ).toBe('https://docs.example.com/fr/guide');
     });
 
