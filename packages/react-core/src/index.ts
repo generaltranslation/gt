@@ -17,6 +17,7 @@ import useSetLocale from './hooks/useSetLocale';
 import LocaleSelector from './ui/LocaleSelector';
 import useLocaleSelector from './hooks/useLocaleSelector';
 import RegionSelector from './ui/RegionSelector';
+import Link from './navigation/Link';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
@@ -61,6 +62,7 @@ export {
   useLocaleDirection,
   LocaleSelector,
   RegionSelector,
+  Link,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,

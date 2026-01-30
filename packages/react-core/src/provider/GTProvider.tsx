@@ -56,6 +56,7 @@ export default function GTProvider({
     ? config.enableI18n
     : true,
   enableI18nLoaded,
+  hideDefaultLocale = config?.hideDefaultLocale ?? false,
   useEnableI18n = _useEnableI18n,
   readAuthFromEnv = _readAuthFromEnv,
   useDetermineLocale = _useDetermineLocale,
@@ -265,6 +266,7 @@ export default function GTProvider({
         locales: approvedLocales,
         setLocale,
         defaultLocale,
+        hideDefaultLocale,
         region,
         setRegion,
         translations,
