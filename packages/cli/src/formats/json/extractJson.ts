@@ -51,7 +51,10 @@ export function extractJson(
 
   // Handle include-style schemas (simple path-based extraction)
   if (jsonSchema.include) {
-    const extracted = flattenJsonWithStringFilter(localJson, jsonSchema.include);
+    const extracted = flattenJsonWithStringFilter(
+      localJson,
+      jsonSchema.include
+    );
     return JSON.stringify(extracted, null, 2);
   }
 
