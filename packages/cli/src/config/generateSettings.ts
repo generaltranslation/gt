@@ -244,13 +244,15 @@ export async function generateSettings(
 
   // Add branch options if not provided
   const branchOptions = mergedOptions.branchOptions || {};
-  branchOptions.enabled = flags.enableBranching ?? false;
+  branchOptions.enabled =
+    flags.enableBranching ?? gtConfig.branchOptions?.enabled ?? false;
   branchOptions.currentBranch =
     flags.branch ?? gtConfig.branchOptions?.currentBranch ?? undefined;
   branchOptions.autoDetectBranches = flags.disableBranchDetection
     ? false
-    : true;
-  branchOptions.remoteName = gtConfig.branchOptions?.remoteName ?? 'origin';
+    : (gtConfig.branchOptions?.autoDetectBranches ?? true);
+  branchOptions.remoteName =
+    flags.remoteName ?? gtConfig.branchOptions?.remoteName ?? 'origin';
   mergedOptions.branchOptions = branchOptions;
 
   // if there's no existing config file, creates one
