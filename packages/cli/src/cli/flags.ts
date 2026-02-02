@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import findFilepath from '../fs/findFilepath.js';
+import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 
 const DEFAULT_TIMEOUT = 600;
 
@@ -101,7 +102,12 @@ export function attachTranslateFlags(command: Command) {
       'Disable additional branch detection and optimizations and use the manually specified branch',
       false
     )
-    .option('--enable-branching', 'Enable branching for the project', false); // disabled by default for now
+    .option('--enable-branching', 'Enable branching for the project', false) // disabled by default for now
+    .option(
+      '--remote-name <name>',
+      'Specify a custom remote name to use for branch detection',
+      DEFAULT_GIT_REMOTE_NAME
+    );
   return command;
 }
 
