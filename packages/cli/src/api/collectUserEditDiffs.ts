@@ -13,6 +13,7 @@ import {
   DownloadedVersionEntry,
   DownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
+import { extractJson } from '../formats/json/extractJson.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -186,7 +187,30 @@ export async function collectAndSendUserEditDiffs(
         } catch {}
 
         if (diff && diff.trim().length > 0) {
-          const localContent = await fs.promises.readFile(c.outputPath, 'utf8');
+          const rawLocalContent = await fs.promises.readFile(
+            c.outputPath,
+            'utf8'
+          );
+
+          // For JSON files with jsonSchema config, extract to composite format
+          let localContent = rawLocalContent;
+          if (
+            c.fileName.endsWith('.json') &&
+            settings.options?.jsonSchema &&
+            c.locale !== settings.defaultLocale
+          ) {
+            const extractedContent = extractJson(
+              rawLocalContent,
+              c.fileName,
+              settings.options,
+              c.locale,
+              settings.defaultLocale
+            );
+            if (extractedContent) {
+              localContent = extractedContent;
+            }
+          }
+
           collectedDiffs.push({
             fileName: c.fileName,
             locale: c.locale,
