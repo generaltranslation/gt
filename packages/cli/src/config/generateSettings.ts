@@ -14,7 +14,10 @@ import fs from 'node:fs';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
-import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import {
+  DEFAULT_GIT_REMOTE_NAME,
+  GT_DASHBOARD_URL,
+} from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
 import path from 'node:path';
 import chalk from 'chalk';
@@ -252,7 +255,9 @@ export async function generateSettings(
     ? false
     : (gtConfig.branchOptions?.autoDetectBranches ?? true);
   branchOptions.remoteName =
-    flags.remoteName ?? gtConfig.branchOptions?.remoteName ?? 'origin';
+    flags.remoteName ??
+    gtConfig.branchOptions?.remoteName ??
+    DEFAULT_GIT_REMOTE_NAME;
   mergedOptions.branchOptions = branchOptions;
 
   // if there's no existing config file, creates one

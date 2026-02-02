@@ -6,3 +6,5 @@ export const GT_CONFIG_SCHEMA_URL = 'https://assets.gtx.dev/config-schema.json';
 
 export const TEMPLATE_FILE_NAME = '__INTERNAL_GT_TEMPLATE_NAME__';
 export const TEMPLATE_FILE_ID = hashStringSync(TEMPLATE_FILE_NAME);
+
+export const DEFAULT_GIT_REMOTE_NAME = 'origin';

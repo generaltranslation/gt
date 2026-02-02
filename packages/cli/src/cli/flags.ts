@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import findFilepath from '../fs/findFilepath.js';
+import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 
 const DEFAULT_TIMEOUT = 600;
 
@@ -105,7 +106,7 @@ export function attachTranslateFlags(command: Command) {
     .option(
       '--remote-name <name>',
       'Specify a custom remote name to use for branch detection',
-      'origin'
+      DEFAULT_GIT_REMOTE_NAME
     );
   return command;
 }
