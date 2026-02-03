@@ -2,6 +2,8 @@
 
 Node.js utilities for General Translation.
 
+This is currently a placeholder package.
+
 ## Installation
 
 ```bash
