@@ -102,6 +102,12 @@ import type {
 } from './translate/createBranch';
 import _createBranch from './translate/createBranch';
 import type { FileReference } from './types-dir/api/file';
+import _processFileMoves, {
+  type MoveMapping,
+  type MoveResult,
+  type ProcessMovesResponse,
+  type ProcessMovesOptions,
+} from './translate/processFileMoves';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 
 // ============================================================ //
@@ -322,6 +328,28 @@ export class GT {
     this._validateAuth('createBranch');
     return await _createBranch(query, this._getTranslationConfig());
   }
+
+  /**
+   * Processes file moves by cloning source files and translations with new fileIds.
+   * This is called when files have been moved/renamed and we want to preserve translations.
+   *
+   * @param {MoveMapping[]} moves - Array of move mappings (old fileId to new fileId)
+   * @param {ProcessMovesOptions} options - Options including branchId and timeout
+   * @returns {Promise<ProcessMovesResponse>} The move processing results
+   *
+   * @example
+   * const result = await gt.processFileMoves([
+   *   { oldFileId: 'abc123', newFileId: 'def456', newFileName: 'locales/en.json' }
+   * ], { branchId: 'main' });
+   */
+  async processFileMoves(
+    moves: MoveMapping[],
+    options: ProcessMovesOptions = {}
+  ): Promise<ProcessMovesResponse> {
+    this._validateAuth('processFileMoves');
+    return await _processFileMoves(moves, options, this._getTranslationConfig());
+  }
+
   // -------------- Translation Methods -------------- //
 
   /**

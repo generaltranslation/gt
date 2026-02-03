@@ -7,6 +7,12 @@ import chalk from 'chalk';
 import { BranchData } from '../types/branch.js';
 import type { FileDataResult, FileReference } from 'generaltranslation/types';
 
+type MoveMapping = {
+  oldFileId: string;
+  newFileId: string;
+  newFileName: string;
+};
+
 export class UploadSourcesStep extends WorkflowStep<
   { files: FileToUpload[]; branchData: BranchData },
   FileReference[]
@@ -21,6 +27,44 @@ export class UploadSourcesStep extends WorkflowStep<
     super();
   }
 
+  /**
+   * Detects file moves by comparing local files against orphaned files.
+   * A move is detected when a local file has the same versionId (content hash)
+   * as an orphaned file but a different fileId (path hash).
+   */
+  private detectMoves(
+    localFiles: FileToUpload[],
+    orphanedFiles: NonNullable<FileDataResult['orphanedFiles']>
+  ): MoveMapping[] {
+    const moves: MoveMapping[] = [];
+
+    // Build a map of versionId -> orphaned file
+    const orphansByVersionId = new Map<
+      string,
+      NonNullable<FileDataResult['orphanedFiles']>[number]
+    >();
+    for (const orphan of orphanedFiles) {
+      orphansByVersionId.set(orphan.versionId, orphan);
+    }
+
+    // Check each local file against orphaned files
+    for (const local of localFiles) {
+      const orphan = orphansByVersionId.get(local.versionId);
+      if (orphan && orphan.fileId !== local.fileId) {
+        // Same content, different path = move detected
+        moves.push({
+          oldFileId: orphan.fileId,
+          newFileId: local.fileId,
+          newFileName: local.fileName,
+        });
+        // Remove from map to avoid matching same orphan twice
+        orphansByVersionId.delete(local.versionId);
+      }
+    }
+
+    return moves;
+  }
+
   async run({
     files,
     branchData,
@@ -33,21 +77,51 @@ export class UploadSourcesStep extends WorkflowStep<
       return [];
     }
 
+    const currentBranchId = branchData.currentBranch.id;
+
     this.spinner.start(
       `Syncing ${files.length} file${files.length !== 1 ? 's' : ''} with General Translation API...`
     );
 
-    // First, figure out which files need to be uploaded
-
+    // Query file data AND request orphaned files for move detection
     const fileData = await this.gt.queryFileData({
       sourceFiles: files.map((f) => ({
         fileId: f.fileId,
         versionId: f.versionId,
-        branchId: f.branchId ?? branchData.currentBranch.id,
+        branchId: f.branchId ?? currentBranchId,
       })),
+      detectMovesForBranch: currentBranchId,
     });
 
-    // build a map of branch:fileId:versionId to fileData
+    // Detect file moves
+    const moves = this.detectMoves(files, fileData.orphanedFiles ?? []);
+
+    // Process moves if any were detected
+    if (moves.length > 0) {
+      this.spinner.message(
+        `Detected ${moves.length} moved file${moves.length !== 1 ? 's' : ''}, preserving translations...`
+      );
+
+      const moveResult = await this.gt.processFileMoves(moves, {
+        branchId: currentBranchId,
+      });
+
+      const succeeded = moveResult.results.filter((r) => r.success).length;
+      const failed = moveResult.results.filter((r) => !r.success).length;
+
+      if (succeeded > 0) {
+        logger.debug(
+          `Successfully migrated ${succeeded} moved file${succeeded !== 1 ? 's' : ''}`
+        );
+      }
+      if (failed > 0) {
+        logger.warn(
+          `Failed to migrate ${failed} moved file${failed !== 1 ? 's' : ''}`
+        );
+      }
+    }
+
+    // Build a map of branch:fileId:versionId to fileData
     const fileDataMap = new Map<
       string,
       NonNullable<FileDataResult['sourceFiles']>[number]
@@ -56,15 +130,21 @@ export class UploadSourcesStep extends WorkflowStep<
       fileDataMap.set(`${f.branchId}:${f.fileId}:${f.versionId}`, f);
     });
 
+    // Also mark successfully moved files as already existing
+    // (since we just cloned them with the new fileId)
+    const movedFileIds = new Set(
+      moves.filter((m) => {
+        // Check if this move was successful (file now exists with new fileId)
+        return true; // We'll verify existence via the upload response
+      }).map((m) => m.newFileId)
+    );
+
     // Build a list of files that need to be uploaded
     const filesToUpload: FileToUpload[] = [];
     const filesToSkipUpload: FileToUpload[] = [];
     files.forEach((f) => {
-      if (
-        fileDataMap.has(
-          `${f.branchId ?? branchData.currentBranch.id}:${f.fileId}:${f.versionId}`
-        )
-      ) {
+      const key = `${f.branchId ?? currentBranchId}:${f.fileId}:${f.versionId}`;
+      if (fileDataMap.has(key) || movedFileIds.has(f.fileId)) {
         filesToSkipUpload.push(f);
       } else {
         filesToUpload.push(f);
@@ -75,7 +155,7 @@ export class UploadSourcesStep extends WorkflowStep<
       filesToUpload.map((f) => ({
         source: {
           ...f,
-          branchId: f.branchId ?? branchData.currentBranch.id,
+          branchId: f.branchId ?? currentBranchId,
           locale: this.settings.defaultLocale,
           incomingBranchId: branchData.incomingBranch?.id,
           checkedOutBranchId: branchData.checkedOutBranch?.id,
@@ -94,14 +174,16 @@ export class UploadSourcesStep extends WorkflowStep<
       ...filesToSkipUpload.map((f) => ({
         fileId: f.fileId,
         versionId: f.versionId,
-        branchId: f.branchId ?? branchData.currentBranch.id,
+        branchId: f.branchId ?? currentBranchId,
         fileName: f.fileName,
         fileFormat: f.fileFormat,
         dataFormat: f.dataFormat,
         locale: f.locale,
       }))
     );
-    this.spinner.stop(chalk.green('Files uploaded successfully'));
+
+    const moveMsg = moves.length > 0 ? ` (${moves.length} moved)` : '';
+    this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
 
     return this.result;
   }

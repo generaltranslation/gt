@@ -19,6 +19,9 @@ export type FileDataQuery = {
     branchId: string;
     locale: string;
   }[];
+  // When provided, returns files that exist on this branch but weren't in the sourceFiles query
+  // Used to detect file moves
+  detectMovesForBranch?: string;
 };
 
 export type FileDataResult = {
@@ -48,6 +51,13 @@ export type FileDataResult = {
     publishedAt: string | null;
     completedAt: string | null;
     locale: string;
+  }[];
+  // Files that exist on the branch but weren't in the sourceFiles query
+  // Used to detect file moves
+  orphanedFiles?: {
+    fileId: string;
+    versionId: string;
+    fileName: string;
   }[];
 };
 
@@ -79,6 +89,7 @@ export default async function _queryFileData(
       branchId: item.branchId,
       locale: item.locale,
     })),
+    detectMovesForBranch: data.detectMovesForBranch,
   };
   // Request the file data
   let response;
