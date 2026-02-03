@@ -191,8 +191,16 @@ describe('UploadSourcesStep', () => {
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
         orphanedFiles: [
-          { fileId: 'old-id-1', versionId: 'version-1', fileName: 'old/en.json' },
-          { fileId: 'old-id-2', versionId: 'version-2', fileName: 'old/es.json' },
+          {
+            fileId: 'old-id-1',
+            versionId: 'version-1',
+            fileName: 'old/en.json',
+          },
+          {
+            fileId: 'old-id-2',
+            versionId: 'version-2',
+            fileName: 'old/es.json',
+          },
         ],
       });
 
@@ -214,8 +222,14 @@ describe('UploadSourcesStep', () => {
 
       expect(mockGt.processFileMoves).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ oldFileId: 'old-id-1', newFileId: 'new-id-1' }),
-          expect.objectContaining({ oldFileId: 'old-id-2', newFileId: 'new-id-2' }),
+          expect.objectContaining({
+            oldFileId: 'old-id-1',
+            newFileId: 'new-id-1',
+          }),
+          expect.objectContaining({
+            oldFileId: 'old-id-2',
+            newFileId: 'new-id-2',
+          }),
         ]),
         { branchId: 'branch-123' }
       );
@@ -236,7 +250,11 @@ describe('UploadSourcesStep', () => {
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
         orphanedFiles: [
-          { fileId: 'old-file-id', versionId: 'content-hash', fileName: 'old.json' },
+          {
+            fileId: 'old-file-id',
+            versionId: 'content-hash',
+            fileName: 'old.json',
+          },
         ],
       });
 
@@ -253,7 +271,10 @@ describe('UploadSourcesStep', () => {
       });
 
       const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      const result = await step.run({ files: localFiles, branchData: mockBranchData as any });
+      const result = await step.run({
+        files: localFiles,
+        branchData: mockBranchData as any,
+      });
 
       // Upload should be called with empty array (file was moved, not uploaded)
       expect(mockGt.uploadSourceFiles).toHaveBeenCalledWith(
@@ -269,7 +290,10 @@ describe('UploadSourcesStep', () => {
 
     it('should handle empty files array', async () => {
       const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      const result = await step.run({ files: [], branchData: mockBranchData as any });
+      const result = await step.run({
+        files: [],
+        branchData: mockBranchData as any,
+      });
 
       expect(result).toEqual([]);
       expect(mockGt.queryFileData).not.toHaveBeenCalled();

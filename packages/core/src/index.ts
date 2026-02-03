@@ -347,7 +347,11 @@ export class GT {
     options: ProcessMovesOptions = {}
   ): Promise<ProcessMovesResponse> {
     this._validateAuth('processFileMoves');
-    return await _processFileMoves(moves, options, this._getTranslationConfig());
+    return await _processFileMoves(
+      moves,
+      options,
+      this._getTranslationConfig()
+    );
   }
 
   // -------------- Translation Methods -------------- //

@@ -133,10 +133,12 @@ export class UploadSourcesStep extends WorkflowStep<
     // Also mark successfully moved files as already existing
     // (since we just cloned them with the new fileId)
     const movedFileIds = new Set(
-      moves.filter((m) => {
-        // Check if this move was successful (file now exists with new fileId)
-        return true; // We'll verify existence via the upload response
-      }).map((m) => m.newFileId)
+      moves
+        .filter((m) => {
+          // Check if this move was successful (file now exists with new fileId)
+          return true; // We'll verify existence via the upload response
+        })
+        .map((m) => m.newFileId)
     );
 
     // Build a list of files that need to be uploaded
