@@ -31,7 +31,7 @@ export function extractJson(
 ): string | null {
   const jsonSchema = validateJsonSchema(options, inputPath);
   if (!jsonSchema) {
-    // No schema - return content as-is
+    // No schema
     return null;
   }
 
