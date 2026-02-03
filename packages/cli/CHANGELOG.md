@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.6.7
+
+### Patch Changes
+
+- [#975](https://github.com/generaltranslation/gt/pull/975) [`18d6672`](https://github.com/generaltranslation/gt/commit/18d6672c45d1cafe93817aec67fa60c70a1c7567) Thanks [@brian-lou](https://github.com/brian-lou)! - Add branch config options
+
+- [#978](https://github.com/generaltranslation/gt/pull/978) [`73238cf`](https://github.com/generaltranslation/gt/commit/73238cf4d55e8b42c10c870c6a525df9ff36c338) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fixing `save-local` behavior for composite JSONs
+
 ## 2.6.6
 
 ### Patch Changes
