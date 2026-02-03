@@ -69,12 +69,14 @@
       "import": "./dist/index.esm.min.mjs"
     }
   },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-node": [
-        "/dist/index"
+  "typesVersions": {
+    "*": {
+      "types": [
+        "./dist/index.d.ts"
       ]
     }
+  },
+  "compilerOptions": {
+    "baseUrl": "."
   }
 }
