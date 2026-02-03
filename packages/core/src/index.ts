@@ -108,6 +108,10 @@ import _processFileMoves, {
   type ProcessMovesResponse,
   type ProcessMovesOptions,
 } from './translate/processFileMoves';
+import _getOrphanedFiles, {
+  type OrphanedFile,
+  type GetOrphanedFilesResult,
+} from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 
 // ============================================================ //
@@ -349,6 +353,33 @@ export class GT {
     this._validateAuth('processFileMoves');
     return await _processFileMoves(
       moves,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Gets orphaned files for a branch - files that exist on the branch
+   * but whose fileIds are not in the provided list.
+   * Used for move detection.
+   *
+   * @param {string} branchId - The branch to check for orphaned files
+   * @param {string[]} fileIds - List of current file IDs (files that are NOT orphaned)
+   * @param {Object} options - Options including timeout
+   * @returns {Promise<GetOrphanedFilesResult>} The orphaned files
+   *
+   * @example
+   * const result = await gt.getOrphanedFiles('branch-id', ['file-1', 'file-2']);
+   */
+  async getOrphanedFiles(
+    branchId: string,
+    fileIds: string[],
+    options: { timeout?: number } = {}
+  ): Promise<GetOrphanedFilesResult> {
+    this._validateAuth('getOrphanedFiles');
+    return await _getOrphanedFiles(
+      branchId,
+      fileIds,
       options,
       this._getTranslationConfig()
     );

@@ -80,6 +80,10 @@ export type { BranchDataResult } from './types-dir/api/branch';
 export type { BranchQuery } from './translate/queryBranchData';
 export type { FileDataQuery, FileDataResult } from './translate/queryFileData';
 export type {
+  OrphanedFile,
+  GetOrphanedFilesResult,
+} from './translate/getOrphanedFiles';
+export type {
   JobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';

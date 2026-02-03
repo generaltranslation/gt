@@ -5,7 +5,11 @@ import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../types/branch.js';
-import type { FileDataResult, FileReference } from 'generaltranslation/types';
+import type {
+  FileDataResult,
+  FileReference,
+  OrphanedFile,
+} from 'generaltranslation/types';
 
 type MoveMapping = {
   oldFileId: string;
@@ -34,15 +38,12 @@ export class UploadSourcesStep extends WorkflowStep<
    */
   private detectMoves(
     localFiles: FileToUpload[],
-    orphanedFiles: NonNullable<FileDataResult['orphanedFiles']>
+    orphanedFiles: OrphanedFile[]
   ): MoveMapping[] {
     const moves: MoveMapping[] = [];
 
     // Build a map of versionId -> orphaned file
-    const orphansByVersionId = new Map<
-      string,
-      NonNullable<FileDataResult['orphanedFiles']>[number]
-    >();
+    const orphansByVersionId = new Map<string, OrphanedFile>();
     for (const orphan of orphanedFiles) {
       orphansByVersionId.set(orphan.versionId, orphan);
     }
@@ -83,18 +84,23 @@ export class UploadSourcesStep extends WorkflowStep<
       `Syncing ${files.length} file${files.length !== 1 ? 's' : ''} with General Translation API...`
     );
 
-    // Query file data AND request orphaned files for move detection
-    const fileData = await this.gt.queryFileData({
-      sourceFiles: files.map((f) => ({
-        fileId: f.fileId,
-        versionId: f.versionId,
-        branchId: f.branchId ?? currentBranchId,
-      })),
-      detectMovesForBranch: currentBranchId,
-    });
+    // Query file data and orphaned files in parallel
+    const [fileData, orphanedFilesResult] = await Promise.all([
+      this.gt.queryFileData({
+        sourceFiles: files.map((f) => ({
+          fileId: f.fileId,
+          versionId: f.versionId,
+          branchId: f.branchId ?? currentBranchId,
+        })),
+      }),
+      this.gt.getOrphanedFiles(
+        currentBranchId,
+        files.map((f) => f.fileId)
+      ),
+    ]);
 
     // Detect file moves
-    const moves = this.detectMoves(files, fileData.orphanedFiles ?? []);
+    const moves = this.detectMoves(files, orphanedFilesResult.orphanedFiles);
 
     // Process moves if any were detected
     if (moves.length > 0) {

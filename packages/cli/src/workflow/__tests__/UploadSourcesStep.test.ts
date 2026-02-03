@@ -5,6 +5,7 @@ import type { FileToUpload } from 'generaltranslation/types';
 // Mock the GT class
 const mockGt = {
   queryFileData: vi.fn(),
+  getOrphanedFiles: vi.fn(),
   processFileMoves: vi.fn(),
   uploadSourceFiles: vi.fn(),
 };
@@ -55,6 +56,8 @@ describe('UploadSourcesStep', () => {
       // Server has the file at old path
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({
         orphanedFiles: [
           {
             fileId: 'old-file-id-hash', // Old hash (from old path)
@@ -112,6 +115,8 @@ describe('UploadSourcesStep', () => {
 
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({
         orphanedFiles: [
           {
             fileId: 'old-file-id-hash',
@@ -153,6 +158,8 @@ describe('UploadSourcesStep', () => {
             versionId: 'same-content-hash',
           },
         ],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({
         orphanedFiles: [],
       });
 
@@ -190,6 +197,8 @@ describe('UploadSourcesStep', () => {
 
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({
         orphanedFiles: [
           {
             fileId: 'old-id-1',
@@ -249,6 +258,8 @@ describe('UploadSourcesStep', () => {
 
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({
         orphanedFiles: [
           {
             fileId: 'old-file-id',
@@ -314,6 +325,8 @@ describe('UploadSourcesStep', () => {
 
       mockGt.queryFileData.mockResolvedValue({
         sourceFiles: [],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({
         orphanedFiles: [], // No orphaned files
       });
 
