@@ -175,8 +175,7 @@ export class BaseCLI {
     if (!settings.stageTranslations) {
       // Update settings.stageTranslations to true
       settings.stageTranslations = true;
-      await updateConfig({
-        configFilepath: settings.config,
+      await updateConfig(settings.config, {
         stageTranslations: true,
       });
     }
