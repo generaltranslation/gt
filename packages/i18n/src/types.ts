@@ -35,6 +35,7 @@ export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;
 
+// TODO: also export this from fallbacks
 // TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
 export type MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
@@ -43,6 +44,7 @@ export type MFunctionType = <T extends string | null | undefined>(
   options?: Record<string, any>
 ) => T extends string ? string : T;
 
+// TODO: also export this from fallbacks
 // TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
 export type GTFunctionType = (
   message: string,

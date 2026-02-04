@@ -1,0 +1,31 @@
+import { TranslationsLoader } from '../../translations-loaders/types';
+
+/**
+ * Configuration for the TranslationsManager
+ *
+ * @property {string} [projectId] - The project id.
+ * @property {string} [cacheUrl] - The cache url.
+ * @property {string} [_versionId] - The version id.
+ * @property {string} [_branchId] - The branch id.
+ * @property {number} cacheExpiryTime - The cache expiry time in milliseconds.
+ */
+export type TranslationsManagerConfig = {
+  projectId?: string;
+  cacheUrl?: string | null;
+  _versionId?: string;
+  _branchId?: string;
+  cacheExpiryTime: number;
+};
+
+/**
+ * Params for the TranslationsManager constructor
+ *
+ * @property {number} [cacheExpiryTime] - The cache expiry time in milliseconds.
+ * @property {TranslationsLoader} [customTranslationLoader] - A custom translations loader function.
+ */
+export type TranslationsManagerConstructorParams = Partial<
+  Pick<TranslationsManagerConfig, 'cacheExpiryTime'>
+> &
+  Omit<TranslationsManagerConfig, 'cacheExpiryTime'> & {
+    customTranslationLoader?: TranslationsLoader;
+  };
