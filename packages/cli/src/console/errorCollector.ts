@@ -2,9 +2,15 @@
  * Central error collector singleton for collecting errors during command execution.
  * When enabled via --json-errors flag, errors are collected and output as JSON at the end.
  */
+
+type ErrorEntry = {
+  file?: string;
+  message: string;
+};
+
 class ErrorCollector {
   private static instance: ErrorCollector;
-  private errors: string[] = [];
+  private errors: ErrorEntry[] = [];
   private enabled: boolean = false;
 
   private constructor() {}
@@ -18,19 +24,28 @@ class ErrorCollector {
 
   enable(): void {
     this.enabled = true;
+    this.errors = []; // Clear any stale errors from previous runs
   }
 
   isEnabled(): boolean {
     return this.enabled;
   }
 
+  // For general errors without file context
   addError(message: string): void {
     if (this.enabled) {
-      this.errors.push(message);
+      this.errors.push({ message });
     }
   }
 
-  getErrors(): string[] {
+  // For errors with file context
+  addFileError(file: string, message: string): void {
+    if (this.enabled) {
+      this.errors.push({ file, message });
+    }
+  }
+
+  getErrors(): ErrorEntry[] {
     return [...this.errors];
   }
 

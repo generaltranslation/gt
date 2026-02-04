@@ -16,7 +16,7 @@ import { errorCollector } from './errorCollector.js';
 /**
  * Strip ANSI escape codes from a string for clean JSON output
  */
-function stripAnsi(str: string): string {
+export function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*m/g, '');
 }
 
@@ -27,8 +27,8 @@ export function logErrorAndExit(message: string): never {
 }
 
 export function exitSync(code: number): never {
-  // Output JSON errors if enabled
-  if (errorCollector.isEnabled()) {
+  // Output JSON errors if enabled and exiting due to an error
+  if (errorCollector.isEnabled() && code !== 0) {
     console.log(errorCollector.toJSON());
   }
   // Flush logs before exit

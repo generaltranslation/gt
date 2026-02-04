@@ -1,4 +1,5 @@
-import { logErrorAndExit } from '../console/logging.js';
+import { exitSync, stripAnsi } from '../console/logging.js';
+import { errorCollector } from '../console/errorCollector.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
 import { Options, Settings } from '../types/index.js';
@@ -6,6 +7,19 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+
+/**
+ * Parse file path from error string in withLocation format: "filepath (line:col): message"
+ * Returns { file, message } or just { message } if no file found
+ */
+function parseFileFromError(error: string): { file?: string; message: string } {
+  // Match: "filepath (line:col): rest of message" or "filepath: rest of message"
+  const match = error.match(/^(.+?)\s*(?:\(\d+:\d+\))?\s*:\s*(.+)$/s);
+  if (match) {
+    return { file: match[1].trim(), message: match[2].trim() };
+  }
+  return { message: error };
+}
 
 export async function validateProject(
   settings: Options & Settings,
@@ -22,7 +36,18 @@ export async function validateProject(
     );
 
     if (errors.length > 0) {
-      logErrorAndExit(
+      // Add each error to collector with parsed file info
+      for (const error of errors) {
+        const { file, message } = parseFileFromError(stripAnsi(error));
+        if (file) {
+          errorCollector.addFileError(file, message);
+        } else {
+          errorCollector.addError(message);
+        }
+      }
+
+      // Display formatted error and exit
+      logger.error(
         chalk.red(
           `Error: CLI tool encountered ${errors.length} syntax errors:\n` +
             errors
@@ -30,6 +55,7 @@ export async function validateProject(
               .join('')
         )
       );
+      return exitSync(1);
     }
     logger.success(
       chalk.green(`Success! Found ${updates.length} translatable entries.`)
@@ -70,7 +96,18 @@ export async function validateProject(
   }
 
   if (errors.length > 0) {
-    logErrorAndExit(
+    // Add each error to collector with parsed file info
+    for (const error of errors) {
+      const { file, message } = parseFileFromError(stripAnsi(error));
+      if (file) {
+        errorCollector.addFileError(file, message);
+      } else {
+        errorCollector.addError(message);
+      }
+    }
+
+    // Display formatted error and exit
+    logger.error(
       chalk.red(
         `Error: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content.\n` +
           errors
@@ -78,6 +115,7 @@ export async function validateProject(
             .join('')
       )
     );
+    return exitSync(1);
   }
 
   if (updates.length === 0) {
