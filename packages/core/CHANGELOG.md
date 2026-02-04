@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.8
+
+### Patch Changes
+
+- [#981](https://github.com/generaltranslation/gt/pull/981) [`fca3a25`](https://github.com/generaltranslation/gt/commit/fca3a2583eb7f21bc3ef13516351d479f7bef882) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling source file movement to persist existing translations instead of retranslating
+
 ## 8.1.7
 
 ### Patch Changes

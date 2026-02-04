@@ -1,5 +1,12 @@
 # @generaltranslation/gt-next-lint
 
+## 10.0.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.12.8
+
 ## 10.0.7
 
 ### Patch Changes
