@@ -170,14 +170,15 @@ export async function aggregateFiles(
           }
 
           const sanitizedContent = sanitizeFileContent(processedContent);
+          // Always hash original content for versionId
+          const computedVersionId = hashStringSync(content);
+
           return {
             content: sanitizedContent,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
             fileId: hashStringSync(relativePath),
-            versionId: hashStringSync(
-              addedMintlifyTitle ? processedContent : content
-            ),
+            versionId: computedVersionId,
             locale: settings.defaultLocale,
           } satisfies FileToUpload;
         })
