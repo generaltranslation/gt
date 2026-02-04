@@ -3,7 +3,7 @@ import {
   InlineResolveOptions,
   InlineTranslationOptions,
   MFunctionType,
-} from '../types';
+} from '../../types';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from './utils/isEncodedTranslationOptions';
 import { gtFallback } from './gtFallback';

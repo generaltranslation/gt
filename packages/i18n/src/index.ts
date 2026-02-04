@@ -1,2 +1,2 @@
 export * from './msg';
-export * from './static';
+export * from './translation-functions/static';

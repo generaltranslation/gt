@@ -1,8 +1,8 @@
-import { GTFunctionType, InlineTranslationOptions } from '../types';
-import logger from '../logs/logger';
+import { GTFunctionType, InlineTranslationOptions } from '../../types';
+import logger from '../../logs/logger';
 import { formatMessage } from './utils/formatMessage';
-import { extractVariables } from '../utils/extractVariables';
-import { interpolationFailureWarning } from '../logs/warnings';
+import { extractVariables } from '../../utils/extractVariables';
+import { interpolationFailureWarning } from '../../logs/warnings';
 import { VAR_IDENTIFIER } from 'generaltranslation/internal';
 import { formatCutoff } from 'generaltranslation';
 

@@ -1,5 +1,5 @@
-import logger from '../../logs/logger';
-import { interpolationFailureWarning } from '../../logs/warnings';
+import logger from '../../../logs/logger';
+import { interpolationFailureWarning } from '../../../logs/warnings';
 import { formatMessage as _formatMessage } from 'generaltranslation';
 
 /**

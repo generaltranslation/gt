@@ -5,6 +5,9 @@ export type BaseTranslationOptions = Record<string, any>;
 // For t()
 export type DictionaryTranslationOptions = BaseTranslationOptions;
 
+/**
+ * TODO: this should be moved
+ */
 // For functions like gt(), msg()
 export type InlineTranslationOptions = BaseTranslationOptions & {
   $context?: string;
@@ -44,9 +47,4 @@ export type MFunctionType = <T extends string | null | undefined>(
   options?: Record<string, any>
 ) => T extends string ? string : T;
 
-// TODO: also export this from fallbacks
-// TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
-export type GTFunctionType = (
-  message: string,
-  options?: InlineTranslationOptions
-) => string;
+export { GTFunctionType } from './translation-functions/gt/types';

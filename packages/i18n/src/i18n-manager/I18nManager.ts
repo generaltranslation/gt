@@ -15,8 +15,14 @@ import {
   getTranslationApiType,
   TranslationApiType,
 } from './utils/getTranslationApiType';
+import { InlineTranslationOptions } from '../types';
+import { hashSource } from 'generaltranslation/id';
+import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 
-abstract class I18nManager {
+/**
+ * Abstract class to be overridden by the wrapper library.
+ */
+class I18nManager {
   private config: I18nManagerConfig;
 
   /**
@@ -27,10 +33,11 @@ abstract class I18nManager {
   /**
    * Store adapter
    */
-  protected abstract storeAdapter: StorageAdapter;
+  protected storeAdapter: StorageAdapter = new FallbackStorageAdapter();
 
   /**
    * Creates an instance of I18nManager.
+   * TODO: resolve gtConfig from just file path
    * @param params - The parameters for the I18nManager constructor
    * @param params.config - The configuration for the I18nManager
    */
@@ -59,7 +66,14 @@ abstract class I18nManager {
    * Get the locale
    */
   getLocale(): string {
-    return this.storeAdapter.getItem('locale') || libraryDefaultLocale;
+    const locale = this.storeAdapter.getItem('locale');
+    if (!locale) {
+      console.warn(
+        'getLocale() invoked outside of translation context, falling back to default locale'
+      );
+      return this.config.defaultLocale;
+    }
+    return locale;
   }
 
   /**
@@ -70,10 +84,51 @@ abstract class I18nManager {
   }
 
   /**
+   * Get the default locale
+   */
+  getDefaultLocale(): string {
+    return this.config.defaultLocale;
+  }
+
+  /**
    * Get the locales
    */
   getLocales(): string[] {
     return this.config.locales;
+  }
+
+  /**
+   * Get translation for a given locale and message
+   *
+   * @param message - The message to get the translation for
+   * @param options - The options for the translation
+   * @returns The translation for the given locale and message
+   *
+   * Note: we can assume that the translation is a string because we are passing a string
+   */
+  async getTranslation(
+    message: string,
+    options: InlineTranslationOptions
+  ): Promise<string | undefined> {
+    // Get translations
+    const translations = await this.translationsManager.getTranslations(
+      this.getLocale()
+    );
+
+    // Calculate hash
+    // TODO: make this into a utility function
+    const hash = hashSource({
+      source: message,
+      ...(options.$context && { context: options.$context }),
+      ...(options.$maxChars != null && {
+        maxChars: Math.abs(options.$maxChars),
+      }),
+      ...(options.$id && { id: options.$id }),
+      dataFormat: 'ICU',
+    });
+
+    // Return translation or undefined
+    return translations[hash] as unknown as string | undefined;
   }
 
   /**
