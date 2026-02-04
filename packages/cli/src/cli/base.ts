@@ -88,11 +88,13 @@ export class BaseCLI {
   }
 
   /**
-   * Enable JSON error collection if the flag is set
+   * Enable or disable JSON error collection based on the flag
    */
   protected enableJsonErrors(options: SharedFlags): void {
     if (options.jsonErrors) {
       errorCollector.enable();
+    } else {
+      errorCollector.disable();
     }
   }
 

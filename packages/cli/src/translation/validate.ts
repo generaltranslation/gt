@@ -13,11 +13,23 @@ import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
  * Returns { file, message } or just { message } if no file found
  */
 function parseFileFromError(error: string): { file?: string; message: string } {
-  // Match: "filepath (line:col): rest of message" or "filepath: rest of message"
-  const match = error.match(/^(.+?)\s*(?:\(\d+:\d+\))?\s*:\s*(.+)$/s);
-  if (match) {
-    return { file: match[1].trim(), message: match[2].trim() };
+  // First try to match with location format: "filepath (line:col): message"
+  // Use greedy match for filepath to handle Windows drive letters (C:\...)
+  const withLocation = error.match(/^(.+)\s+\(\d+:\d+\)\s*:\s*(.+)$/s);
+  if (withLocation) {
+    return { file: withLocation[1].trim(), message: withLocation[2].trim() };
   }
+
+  // Fallback: find the last ": " pattern (colon followed by space)
+  // This handles Windows paths like "C:\path\file.ts: message"
+  const lastColonSpace = error.lastIndexOf(': ');
+  if (lastColonSpace > 0) {
+    return {
+      file: error.substring(0, lastColonSpace).trim(),
+      message: error.substring(lastColonSpace + 2).trim(),
+    };
+  }
+
   return { message: error };
 }
 

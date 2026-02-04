@@ -27,6 +27,11 @@ class ErrorCollector {
     this.errors = []; // Clear any stale errors from previous runs
   }
 
+  disable(): void {
+    this.enabled = false;
+    this.errors = [];
+  }
+
   isEnabled(): boolean {
     return this.enabled;
   }
