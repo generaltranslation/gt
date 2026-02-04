@@ -52,7 +52,7 @@ export default async function updateConfig(
     };
 
     // Apply null filter to remove values that were marked for removal
-    const filteredContent = applyNullFilter(mergedContent, newContent);
+    const filteredContent = applyNullFilter(mergedContent, options);
 
     // write to file
     const jsonContent = JSON.stringify(filteredContent, null, 2);

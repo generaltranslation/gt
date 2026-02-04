@@ -105,6 +105,7 @@ export async function handleStage(
   }
 
   // Always delete branch id from config if branching is disabled
+  // Avoids incorrect CDN queries at runtime
   if (!settings.branchOptions.enabled) {
     await updateConfig(settings.config, {
       _branchId: null,
