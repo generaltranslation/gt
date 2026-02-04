@@ -167,7 +167,14 @@ function standardizeLocales(config: {
 } {
   // Sanitize defaultLocale and locales
   const defaultLocale = standardizeLocale(config.defaultLocale);
-  const locales = config.locales.map(standardizeLocale);
+  const locales = config.locales.map((locale) => {
+    // only standardize locales without a custom mapping
+    const customMapping = config.customMapping?.[locale];
+    return typeof customMapping === 'string' || customMapping?.code
+      ? locale
+      : standardizeLocale(locale);
+  });
+  // Sanitize customMapping
   const customMapping = Object.fromEntries(
     Object.entries(config.customMapping || {}).map(([key, value]) => [
       standardizeLocale(key),
