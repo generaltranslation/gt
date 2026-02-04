@@ -5,6 +5,7 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../types';
+import { processBatches } from './utils/batch';
 
 export type MoveMapping = {
   oldFileId: string;
@@ -59,28 +60,45 @@ export default async function _processFileMoves(
   const timeout = options.timeout ?? defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/moves`;
 
-  const body = {
-    branchId: options.branchId,
+  const batchResult = await processBatches(
     moves,
+    async (batch) => {
+      const body = {
+        branchId: options.branchId,
+        moves: batch,
+      };
+
+      let response: Response | undefined;
+      try {
+        response = await fetchWithTimeout(
+          url,
+          {
+            method: 'POST',
+            headers: generateRequestHeaders(config),
+            body: JSON.stringify(body),
+          },
+          timeout
+        );
+      } catch (err) {
+        handleFetchError(err, timeout);
+      }
+
+      await validateResponse(response);
+      const result = (await response!.json()) as ProcessMovesResponse;
+      return result.results;
+    },
+    { batchSize: 100 }
+  );
+
+  const succeeded = batchResult.data.filter((r) => r.success).length;
+  const failed = batchResult.data.filter((r) => !r.success).length;
+
+  return {
+    results: batchResult.data,
+    summary: {
+      total: moves.length,
+      succeeded,
+      failed,
+    },
   };
-
-  let response: Response | undefined;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify(body),
-      },
-      timeout
-    );
-  } catch (err) {
-    handleFetchError(err, timeout);
-  }
-
-  await validateResponse(response);
-  const result = (await response!.json()) as ProcessMovesResponse;
-
-  return result;
 }
