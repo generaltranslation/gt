@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.10
+
+### Patch Changes
+
+- [#986](https://github.com/generaltranslation/gt/pull/986) [`b943ac2`](https://github.com/generaltranslation/gt/commit/b943ac200d8ec41219b3c09a669f94590fec0f65) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: include branchid in gt config
+
 ## 2.6.9
 
 ### Patch Changes
