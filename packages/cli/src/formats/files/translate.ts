@@ -170,8 +170,7 @@ export async function aggregateFiles(
           }
 
           const sanitizedContent = sanitizeFileContent(processedContent);
-          // Always hash original content for versionId - this ensures
-          // move detection works even when Mintlify title is inferred from filename
+          // Always hash original content for versionId
           const computedVersionId = hashStringSync(content);
 
           return {
