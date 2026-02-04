@@ -102,6 +102,9 @@ export class UploadSourcesStep extends WorkflowStep<
     // Detect file moves
     const moves = this.detectMoves(files, orphanedFilesResult.orphanedFiles);
 
+    // Track successfully moved files
+    let successfullyMovedFileIds = new Set<string>();
+
     // Process moves if any were detected
     if (moves.length > 0) {
       this.spinner.message(
@@ -112,8 +115,13 @@ export class UploadSourcesStep extends WorkflowStep<
         branchId: currentBranchId,
       });
 
-      const succeeded = moveResult.results.filter((r) => r.success).length;
-      const failed = moveResult.results.filter((r) => !r.success).length;
+      // Only track files where the move actually succeeded
+      successfullyMovedFileIds = new Set(
+        moveResult.results.filter((r) => r.success).map((r) => r.newFileId)
+      );
+
+      const succeeded = moveResult.summary.succeeded;
+      const failed = moveResult.summary.failed;
 
       if (succeeded > 0) {
         logger.debug(
@@ -136,23 +144,12 @@ export class UploadSourcesStep extends WorkflowStep<
       fileDataMap.set(`${f.branchId}:${f.fileId}:${f.versionId}`, f);
     });
 
-    // Also mark successfully moved files as already existing
-    // (since we just cloned them with the new fileId)
-    const movedFileIds = new Set(
-      moves
-        .filter((m) => {
-          // Check if this move was successful (file now exists with new fileId)
-          return true; // We'll verify existence via the upload response
-        })
-        .map((m) => m.newFileId)
-    );
-
     // Build a list of files that need to be uploaded
     const filesToUpload: FileToUpload[] = [];
     const filesToSkipUpload: FileToUpload[] = [];
     files.forEach((f) => {
       const key = `${f.branchId ?? currentBranchId}:${f.fileId}:${f.versionId}`;
-      if (fileDataMap.has(key) || movedFileIds.has(f.fileId)) {
+      if (fileDataMap.has(key) || successfullyMovedFileIds.has(f.fileId)) {
         filesToSkipUpload.push(f);
       } else {
         filesToUpload.push(f);

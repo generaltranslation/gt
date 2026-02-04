@@ -84,6 +84,12 @@ export type {
   GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
 export type {
+  MoveMapping,
+  MoveResult,
+  ProcessMovesResponse,
+  ProcessMovesOptions,
+} from './translate/processFileMoves';
+export type {
   JobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
