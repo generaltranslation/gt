@@ -120,14 +120,8 @@ export class UploadSourcesStep extends WorkflowStep<
         moveResult.results.filter((r) => r.success).map((r) => r.newFileId)
       );
 
-      const succeeded = moveResult.summary.succeeded;
       const failed = moveResult.summary.failed;
 
-      if (succeeded > 0) {
-        logger.debug(
-          `Successfully migrated ${succeeded} moved file${succeeded !== 1 ? 's' : ''}`
-        );
-      }
       if (failed > 0) {
         logger.warn(
           `Failed to migrate ${failed} moved file${failed !== 1 ? 's' : ''}`
