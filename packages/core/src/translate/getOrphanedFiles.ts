@@ -34,9 +34,10 @@ export default async function _getOrphanedFiles(
   config: TranslationRequestConfig
 ): Promise<GetOrphanedFilesResult> {
   const timeout = options.timeout ? options.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/orphaned?branchId=${encodeURIComponent(branchId)}`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/orphaned`;
 
   const body = {
+    branchId,
     fileIds,
   };
 
