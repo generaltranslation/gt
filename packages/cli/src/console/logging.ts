@@ -11,22 +11,37 @@ import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import { FileToUpload } from 'generaltranslation/types';
+import { errorCollector } from './errorCollector.js';
+
+/**
+ * Strip ANSI escape codes from a string for clean JSON output
+ */
+function stripAnsi(str: string): string {
+  return str.replace(/\x1B\[[0-9;]*m/g, '');
+}
 
 export function logErrorAndExit(message: string): never {
+  errorCollector.addError(stripAnsi(message));
   logger.error(message);
   return exitSync(1);
 }
 
 export function exitSync(code: number): never {
+  // Output JSON errors if enabled
+  if (errorCollector.isEnabled()) {
+    console.log(errorCollector.toJSON());
+  }
   // Flush logs before exit
   logger.flush();
   process.exit(code);
 }
 
 // GT specific logging
-export function displayHeader(introString?: string) {
-  displayAsciiTitle();
-  displayInitializingText();
+export function displayHeader(introString?: string, showLogo: boolean = true) {
+  if (showLogo) {
+    displayAsciiTitle();
+    displayInitializingText();
+  }
 
   if (introString) {
     logger.startCommand(introString);

@@ -1,11 +1,10 @@
 import fs from 'node:fs';
-import { Options, Updates } from '../../types/index.js';
+import { Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
 import { hashSource, hashString } from 'generaltranslation/id';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
-import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';

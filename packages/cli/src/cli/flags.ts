@@ -12,7 +12,13 @@ export function attachSharedFlags(command: Command) {
       findFilepath(['gt.config.json'])
     )
     .option('--api-key <key>', 'API key for General Translation cloud service')
-    .option('--project-id <id>', 'General Translation project ID');
+    .option('--project-id <id>', 'General Translation project ID')
+    .option('--no-logo', 'Disable the ASCII logo display')
+    .option(
+      '--json-errors',
+      'Output errors as JSON array at end of execution',
+      false
+    );
   return command;
 }
 

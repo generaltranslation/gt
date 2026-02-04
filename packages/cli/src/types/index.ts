@@ -48,6 +48,8 @@ export type SharedFlags = {
   config?: string;
   apiKey?: string;
   projectId?: string;
+  logo?: boolean;
+  jsonErrors?: boolean;
 };
 
 export type TranslateFlags = SharedFlags & {

@@ -6,6 +6,7 @@ import {
   GenerateSourceOptions,
   SupportedLibraries,
   TranslateFlags,
+  SharedFlags,
 } from '../types/index.js';
 import { displayHeader, exitSync, promptConfirm } from '../console/logging.js';
 import { logger } from '../console/logger.js';
@@ -27,6 +28,7 @@ import {
   attachAdditionalReactTranslateFlags,
   attachTranslateFlags,
 } from './flags.js';
+import { errorCollector } from '../console/errorCollector.js';
 
 const pkg = 'gt-react';
 
@@ -68,9 +70,14 @@ export class ReactCLI extends BaseCLI {
           )
       )
     ).action(async (options: TranslateFlags) => {
-      displayHeader('Uploading source files and setting up project...');
+      this.enableJsonErrors(options);
+      displayHeader(
+        'Uploading source files and setting up project...',
+        options.logo !== false
+      );
       await this.handleSetupProject(options);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
 
@@ -84,11 +91,14 @@ export class ReactCLI extends BaseCLI {
           )
       )
     ).action(async (options: TranslateFlags) => {
+      this.enableJsonErrors(options);
       displayHeader(
-        'Staging project for translation with approval required...'
+        'Staging project for translation with approval required...',
+        options.logo !== false
       );
       await this.handleStage(options);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
 
@@ -102,9 +112,11 @@ export class ReactCLI extends BaseCLI {
           )
       )
     ).action(async (options: TranslateFlags) => {
-      displayHeader('Translating project...');
+      this.enableJsonErrors(options);
+      displayHeader('Translating project...', options.logo !== false);
       await this.handleTranslate(options);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
 
@@ -134,11 +146,18 @@ export class ReactCLI extends BaseCLI {
         'Include inline <T> tags in addition to dictionary file',
         true
       )
-      .action(async (files: string[], options: Options) => {
+      .option(
+        '--json-errors',
+        'Output errors as JSON array at end of execution',
+        false
+      )
+      .action(async (files: string[], options: Options & SharedFlags) => {
+        this.enableJsonErrors(options);
         // intro here since we don't want to show the ascii title
         intro(chalk.cyan('Validating project...'));
         await this.handleValidate(options, files);
         logger.endCommand('Done!');
+        this.outputJsonErrors();
       });
   }
 
@@ -152,9 +171,14 @@ export class ReactCLI extends BaseCLI {
           )
       )
     ).action(async (initOptions: TranslateFlags) => {
-      displayHeader('Generating source templates...');
+      this.enableJsonErrors(initOptions);
+      displayHeader(
+        'Generating source templates...',
+        initOptions.logo !== false
+      );
       await this.handleGenerateSourceCommand(initOptions);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
 

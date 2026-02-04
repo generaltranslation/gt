@@ -54,6 +54,7 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
+import { errorCollector } from '../console/errorCollector.js';
 
 export type UploadOptions = {
   config?: string;
@@ -85,6 +86,24 @@ export class BaseCLI {
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
   }
+
+  /**
+   * Enable JSON error collection if the flag is set
+   */
+  protected enableJsonErrors(options: SharedFlags): void {
+    if (options.jsonErrors) {
+      errorCollector.enable();
+    }
+  }
+
+  /**
+   * Output collected errors as JSON if enabled
+   */
+  protected outputJsonErrors(): void {
+    if (errorCollector.isEnabled()) {
+      console.log(errorCollector.toJSON());
+    }
+  }
   // Init is never called in a child class
   public init() {
     this.setupSetupProjectCommand();
@@ -107,9 +126,14 @@ export class BaseCLI {
           'Upload source files and setup the project for translation'
         )
     ).action(async (initOptions: TranslateFlags) => {
-      displayHeader('Uploading source files and setting up project...');
+      this.enableJsonErrors(initOptions);
+      displayHeader(
+        'Uploading source files and setting up project...',
+        initOptions.logo !== false
+      );
       await this.handleSetupProject(initOptions);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
 
@@ -121,11 +145,14 @@ export class BaseCLI {
           'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
         )
     ).action(async (initOptions: TranslateFlags) => {
+      this.enableJsonErrors(initOptions);
       displayHeader(
-        'Staging project for translation with approval required...'
+        'Staging project for translation with approval required...',
+        initOptions.logo !== false
       );
       await this.handleStage(initOptions);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
   protected setupTranslateCommand(): void {
@@ -134,9 +161,11 @@ export class BaseCLI {
         .command('translate')
         .description('Translate your project using General Translation')
     ).action(async (initOptions: TranslateFlags) => {
-      displayHeader('Starting translation...');
+      this.enableJsonErrors(initOptions);
+      displayHeader('Starting translation...', initOptions.logo !== false);
       await this.handleTranslate(initOptions);
       logger.endCommand('Done!');
+      this.outputJsonErrors();
     });
   }
 
@@ -148,10 +177,12 @@ export class BaseCLI {
           'Save local edits for all configured files by sending diffs (no translation enqueued)'
         )
     ).action(async (initOptions: SharedFlags) => {
-      displayHeader('Saving local edits...');
+      this.enableJsonErrors(initOptions);
+      displayHeader('Saving local edits...', initOptions.logo !== false);
       const settings = await generateSettings(initOptions);
       await saveLocalEdits(settings);
       logger.endCommand('Saved local edits');
+      this.outputJsonErrors();
     });
   }
 
@@ -223,15 +254,19 @@ export class BaseCLI {
         .description(
           'Upload source files and translations to the General Translation platform'
         )
-    ).action(async (initOptions: UploadOptions) => {
-      displayHeader('Starting upload...');
-      const settings = await generateSettings(initOptions);
+    ).action(
+      async (initOptions: UploadOptions & { logo?: boolean } & SharedFlags) => {
+        this.enableJsonErrors(initOptions);
+        displayHeader('Starting upload...', initOptions.logo !== false);
+        const settings = await generateSettings(initOptions);
 
-      const options = { ...initOptions, ...settings };
+        const options = { ...initOptions, ...settings };
 
-      await this.handleUploadCommand(options);
-      logger.endCommand('Done!');
-    });
+        await this.handleUploadCommand(options);
+        logger.endCommand('Done!');
+        this.outputJsonErrors();
+      }
+    );
   }
 
   protected setupLoginCommand(): void {
@@ -247,8 +282,12 @@ export class BaseCLI {
         '-t, --key-type <type>',
         'Type of key to generate, production | development'
       )
-      .action(async (options: LoginOptions) => {
-        displayHeader('Authenticating with General Translation...');
+      .option('--no-logo', 'Disable the ASCII logo display')
+      .action(async (options: LoginOptions & { logo?: boolean }) => {
+        displayHeader(
+          'Authenticating with General Translation...',
+          options.logo !== false
+        );
         if (!options.keyType) {
           const packageJson = await searchForPackageJson();
           const isUsingGTNext = packageJson
@@ -294,9 +333,10 @@ export class BaseCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
-      .action(async (options: SetupOptions) => {
+      .option('--no-logo', 'Disable the ASCII logo display')
+      .action(async (options: SetupOptions & { logo?: boolean }) => {
         const settings = await generateSettings(options);
-        displayHeader('Running setup wizard...');
+        displayHeader('Running setup wizard...', options.logo !== false);
 
         const framework = await detectFramework();
 
@@ -388,8 +428,9 @@ export class BaseCLI {
       .description(
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
-      .action(async () => {
-        displayHeader('Configuring project...');
+      .option('--no-logo', 'Disable the ASCII logo display')
+      .action(async (options: { logo?: boolean }) => {
+        displayHeader('Configuring project...', options.logo !== false);
 
         logger.info(
           'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
