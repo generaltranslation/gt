@@ -74,7 +74,7 @@ export default async function updateConfig(
  */
 function applyNullFilter<T extends Record<string, unknown>>(
   obj: T,
-  filter: Partial<Record<keyof T, unknown>>
+  filter: Partial<Record<keyof T, null | unknown>>
 ): T {
   const result = { ...obj };
   for (const key of Object.keys(filter)) {
