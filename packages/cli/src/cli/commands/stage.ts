@@ -99,12 +99,18 @@ export async function handleStage(
     if (templateData?.versionId) {
       await updateConfig(settings.config, {
         _versionId: templateData.versionId,
-        _branchId: settings.branchOptions.enabled
-          ? branchData.currentBranch.id
-          : null,
+        _branchId: branchData.currentBranch.id,
       });
     }
   }
+
+  // Always delete branch id from config if branching is disabled
+  if (!settings.branchOptions.enabled) {
+    await updateConfig(settings.config, {
+      _branchId: null,
+    });
+  }
+
   return {
     fileVersionData,
     jobData,
