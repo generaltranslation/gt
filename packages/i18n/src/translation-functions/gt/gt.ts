@@ -11,6 +11,8 @@ import { InlineTranslationOptions } from '../../types';
  * @param {string} [options.$_hash] - The hash for the translation
  * @param {string} [options.$locale] - The locale for the translation
  * @returns The translated message
+ *
+ * TODO: comment and types
  */
 
 async function gt(
