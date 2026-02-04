@@ -32,7 +32,7 @@ export default async function updateConfig(
     ...(projectId && { projectId }),
     ...(_versionId && { _versionId }),
     ...(_branchId && { _branchId }),
-    // By default its false
+    // Omit when false
     ...(stageTranslations && { stageTranslations }),
   };
 
