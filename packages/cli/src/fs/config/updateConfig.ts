@@ -10,17 +10,20 @@ export default async function updateConfig({
   configFilepath,
   projectId,
   _versionId,
+  _branchId,
   stageTranslations,
 }: {
   configFilepath: string;
   projectId?: string;
   _versionId?: string;
+  _branchId?: string;
   stageTranslations?: boolean;
 }): Promise<void> {
   // Filter out empty string values from the config object
   const newContent = {
     ...(projectId && { projectId }),
     ...(_versionId && { _versionId }),
+    ...(_branchId && { _branchId }),
     ...(stageTranslations && { stageTranslations }),
     // ...(locales && { locales }), // Don't override locales
   };

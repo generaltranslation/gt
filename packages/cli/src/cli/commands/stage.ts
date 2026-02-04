@@ -100,6 +100,9 @@ export async function handleStage(
       await updateConfig({
         configFilepath: settings.config,
         _versionId: templateData.versionId,
+        ...(settings.branchOptions.enabled && {
+          _branchId: branchData.currentBranch.id,
+        }),
       });
     }
   }
