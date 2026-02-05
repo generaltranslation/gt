@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.11
+
+### Patch Changes
+
+- [#988](https://github.com/generaltranslation/gt/pull/988) [`efdf632`](https://github.com/generaltranslation/gt/commit/efdf632acab7cdd4d1819408d808bd4ac05bc7c8) Thanks [@pie575](https://github.com/pie575)! - Added function to export errors as json from running validate
+
 ## 2.6.10
 
 ### Patch Changes
