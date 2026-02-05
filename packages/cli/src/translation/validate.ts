@@ -15,7 +15,7 @@ export type ValidationMessage = {
   message: string;
 };
 
-export type ValidationResult = Map<string, ValidationMessage[]>;
+export type ValidationResult = Record<string, ValidationMessage[]>;
 
 /**
  * Parse file path from error/warning string in withLocation format: "filepath (line:col): message"
@@ -50,16 +50,17 @@ export async function getValidateJson(
   pkg: 'gt-react' | 'gt-next',
   files?: string[]
 ): Promise<ValidationResult> {
-  const result: ValidationResult = new Map();
+  const result: ValidationResult = {};
 
   const addMessage = (
     file: string,
     level: ValidationLevel,
     message: string
   ) => {
-    const existing = result.get(file) || [];
-    existing.push({ level, message });
-    result.set(file, existing);
+    if (!result[file]) {
+      result[file] = [];
+    }
+    result[file].push({ level, message });
   };
 
   if (files && files.length > 0) {
@@ -83,8 +84,10 @@ export async function getValidateJson(
   }
 
   // Full project validation
-  if (!settings.dictionary) {
-    settings.dictionary = findFilepath([
+  // Use local variable to avoid mutating caller's settings object
+  const dictionary =
+    settings.dictionary ||
+    findFilepath([
       './dictionary.js',
       './src/dictionary.js',
       './dictionary.json',
@@ -92,12 +95,11 @@ export async function getValidateJson(
       './dictionary.ts',
       './src/dictionary.ts',
     ]);
-  }
 
   const { errors, warnings } = await createUpdates(
     settings,
     settings.src,
-    settings.dictionary,
+    dictionary,
     pkg,
     true,
     settings.parsingOptions

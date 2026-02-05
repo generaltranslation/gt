@@ -269,9 +269,6 @@ importers:
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
-      tsx:
-        specifier: ^4.20.6
-        version: 4.20.6
       typescript:
         specifier: ^5.5.4
         version: 5.9.2
