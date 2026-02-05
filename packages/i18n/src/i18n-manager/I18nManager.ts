@@ -8,17 +8,10 @@ import StorageAdapter from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
-import {
-  getLoadTranslationsType,
-  LoadTranslationsType,
-} from './utils/getLoadTranslationsType';
-import {
-  getTranslationApiType,
-  TranslationApiType,
-} from './utils/getTranslationApiType';
 import { InlineTranslationOptions } from '../translation-functions/types';
 import { hashSource } from 'generaltranslation/id';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
+import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 
 /**
  * Class for managing translation functionality
@@ -164,9 +157,7 @@ export default I18nManager;
 function standardizeConfig(
   config: I18nManagerConstructorParams
 ): I18nManagerConfig {
-  const gtServicesEnabled =
-    getLoadTranslationsType(config) === LoadTranslationsType.GT_REMOTE ||
-    getTranslationApiType(config) === TranslationApiType.GT;
+  const gtServicesEnabled = getGTServicesEnabled(config);
 
   const dedupedLocales = dedupeLocales({
     defaultLocale: config.defaultLocale || libraryDefaultLocale,
@@ -226,16 +217,21 @@ function standardizeLocales(config: {
   // Sanitize defaultLocale and locales
   const defaultLocale = standardizeLocale(config.defaultLocale);
   const locales = config.locales.map((locale) => {
-    // only standardize locales without a custom mapping
-    const customMapping = config.customMapping?.[locale];
-    return typeof customMapping === 'string' || customMapping?.code
-      ? locale
-      : standardizeLocale(locale);
+    const mappedLocale =
+      typeof customMapping?.[locale] === 'string'
+        ? customMapping?.[locale]
+        : customMapping?.[locale]?.code;
+    if (mappedLocale) {
+      return locale;
+    } else {
+      return standardizeLocale(locale);
+    }
   });
+
   // Sanitize customMapping
   const customMapping = Object.fromEntries(
     Object.entries(config.customMapping || {}).map(([key, value]) => [
-      standardizeLocale(key),
+      key,
       typeof value === 'string'
         ? standardizeLocale(value)
         : {

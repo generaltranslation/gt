@@ -32,12 +32,15 @@ export function createRemoteTranslationLoader(
   // Get url
   const unlocalizedUrl = generateUrl(params);
 
-  // define loader function
+  // define loader function (error handled by wrapper)
   const loader: TranslationsLoader = async (locale: string) => {
     // Standardize locale
     locale = resolveCanonicalLocale(locale, params.customMapping);
     const url = unlocalizedUrl.replace('[locale]', locale);
     const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load translations from ${url}`);
+    }
     return (await response.json()) as Translations;
   };
 
