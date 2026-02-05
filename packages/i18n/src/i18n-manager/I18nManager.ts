@@ -115,7 +115,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    */
   async getTranslation(
     message: string,
-    options: InlineTranslationOptions
+    options?: InlineTranslationOptions
   ): Promise<string | undefined> {
     // Early return if i18n is disabled or default locale
     if (
