@@ -1,12 +1,16 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
-import { TranslationsManagerConstructorParams } from './translations-manager/utils/types/translations-manager';
+import { StorageAdapter } from './storage-adapter/StorageAdapter';
+import { TranslationsLoader } from './translations-manager/translations-loaders/types';
 
 /**
  * Parameters for the I18nManager constructor
  */
-export type I18nManagerConstructorParams = GTConfig &
-  Pick<TranslationsManagerConstructorParams, 'customTranslationLoader'>;
+export type I18nManagerConstructorParams<T extends StorageAdapter> =
+  GTConfig & {
+    customTranslationLoader?: TranslationsLoader;
+    storeAdapter?: T;
+  };
 
 /**
  * I18nManager class configuration
