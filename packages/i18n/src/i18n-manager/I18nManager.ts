@@ -9,9 +9,9 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
 import { InlineTranslationOptions } from '../translation-functions/types';
-import { hashSource } from 'generaltranslation/id';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
+import { hashMessage } from 'src/utils/hashMessage';
 
 /**
  * Class for managing translation functionality
@@ -112,16 +112,16 @@ class I18nManager {
     );
 
     // Calculate hash
-    // TODO: make this into a utility function
-    const hash = hashSource({
-      source: message,
-      ...(options.$context && { context: options.$context }),
-      ...(options.$maxChars != null && {
-        maxChars: Math.abs(options.$maxChars),
-      }),
-      ...(options.$id && { id: options.$id }),
-      dataFormat: 'ICU',
-    });
+    // const hash = hashSource({
+    //   source: indexVars(message),
+    //   ...(options.$context && { context: options.$context }),
+    //   ...(options.$id && { id: options.$id }),
+    //   ...(options.$maxChars != null && {
+    //     maxChars: Math.abs(options.$maxChars),
+    //   }),
+    //   dataFormat: 'ICU',
+    // });
+    const hash = hashMessage(message, options);
 
     // Return translation or undefined
     return translations[hash] as unknown as string | undefined;

@@ -3,9 +3,9 @@ import { validateLocales } from '../validateLocales';
 
 describe('validateLocales', () => {
   it('validates invalid locale when GT services enabled', () => {
-    const result = validateLocales({ 
+    const result = validateLocales({
       defaultLocale: 'invalid-locale',
-      cacheUrl: undefined // GT_REMOTE enabled
+      cacheUrl: undefined, // GT_REMOTE enabled
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('error');
@@ -16,7 +16,7 @@ describe('validateLocales', () => {
     const result = validateLocales({
       locales: ['en', 'invalid-locale'],
       defaultLocale: 'en',
-      runtimeUrl: undefined // GT enabled
+      runtimeUrl: undefined, // GT enabled
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('error');
@@ -27,7 +27,7 @@ describe('validateLocales', () => {
     const result = validateLocales({
       defaultLocale: 'invalid-locale',
       cacheUrl: null,
-      runtimeUrl: null
+      runtimeUrl: null,
     });
     expect(result).toHaveLength(0);
   });
