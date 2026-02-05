@@ -32,13 +32,11 @@ class AsyncStorageAdapter extends StorageAdapter {
     return store[key];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   setItem(key: keyof Store, value: string): void {
-    const currentStore = this.store.getStore();
-    if (!currentStore) {
-      return;
-    }
-    const newStore = { ...currentStore, [key]: value };
-    this.store.enterWith(newStore);
+    throw new Error(
+      `setItem("${key}") is not supported for AsyncStorageAdapter`
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
