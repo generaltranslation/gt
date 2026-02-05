@@ -1,7 +1,11 @@
+import { StorageAdapterType } from './types';
+
 /**
  * Abstract class to be overridden by the wrapper library.
  */
 abstract class StorageAdapter {
+  abstract readonly type: StorageAdapterType;
+
   /**
    * Get an item from the storage
    * @param key - The key to get the item for

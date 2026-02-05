@@ -5,7 +5,14 @@ type Store = {
   locale: string;
 };
 
-export class AsyncStorageAdapter extends StorageAdapter {
+const ASYNC_STORAGE_ADAPTER_TYPE = 'async-storage-adapter';
+
+/**
+ * AsyncStorageAdapter implementation that uses AsyncLocalStorage as the storage adapter.
+ */
+class AsyncStorageAdapter extends StorageAdapter {
+  readonly type = ASYNC_STORAGE_ADAPTER_TYPE;
+
   private store: AsyncLocalStorage<Store>;
 
   constructor(store?: AsyncLocalStorage<Store>) {
@@ -39,3 +46,5 @@ export class AsyncStorageAdapter extends StorageAdapter {
     // noop (locale is always set)
   }
 }
+
+export { AsyncStorageAdapter, ASYNC_STORAGE_ADAPTER_TYPE };

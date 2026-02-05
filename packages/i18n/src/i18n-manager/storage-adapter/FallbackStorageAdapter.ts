@@ -1,9 +1,15 @@
 import { StorageAdapter } from './StorageAdapter';
+import { StorageAdapterType } from './types';
+
+const FALLBACK_STORAGE_ADAPTER_TYPE: StorageAdapterType =
+  'fallback-storage-adapter';
 
 /**
  * Fallback to storage adapter that is scoped to the entire process
  */
 class FallbackStorageAdapter extends StorageAdapter {
+  readonly type = FALLBACK_STORAGE_ADAPTER_TYPE;
+
   private storage: Record<string, string> = {};
 
   getItem(key: string): string | undefined {
@@ -19,4 +25,4 @@ class FallbackStorageAdapter extends StorageAdapter {
   }
 }
 
-export { FallbackStorageAdapter };
+export { FallbackStorageAdapter, FALLBACK_STORAGE_ADAPTER_TYPE };

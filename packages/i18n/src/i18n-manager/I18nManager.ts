@@ -1,7 +1,11 @@
 import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
 import { TranslationsManager } from './translations-manager/TranslationsManager';
-import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
+import {
+  I18nManagerConfig,
+  I18nManagerConstructorParams,
+  StorageAdapterType,
+} from './types';
 import { validateConfig } from './validation/validateConfig';
 import { Translations } from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
@@ -57,6 +61,13 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   // ========== Getters and Setters ========== //
+
+  /**
+   * Get adapter type
+   */
+  getAdapterType(): StorageAdapterType {
+    return this.storeAdapter.type;
+  }
 
   /**
    * Get the locale

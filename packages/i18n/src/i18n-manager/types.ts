@@ -1,3 +1,4 @@
+import { StorageAdapterType } from './storage-adapter/types';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
@@ -26,3 +27,5 @@ export type I18nManagerConfig = {
   apiKey?: string;
   runtimeUrl?: string | null;
 };
+
+export type { TranslationsLoader, StorageAdapter, StorageAdapterType };
