@@ -97,12 +97,21 @@ export async function handleStage(
       (file) => file.fileId === TEMPLATE_FILE_ID
     );
     if (templateData?.versionId) {
-      await updateConfig({
-        configFilepath: settings.config,
+      await updateConfig(settings.config, {
         _versionId: templateData.versionId,
+        _branchId: branchData.currentBranch.id,
       });
     }
   }
+
+  // Always delete branch id from config if branching is disabled
+  // Avoids incorrect CDN queries at runtime
+  if (!settings.branchOptions.enabled) {
+    await updateConfig(settings.config, {
+      _branchId: null,
+    });
+  }
+
   return {
     fileVersionData,
     jobData,

@@ -1,5 +1,26 @@
 # gtx-cli
 
+## 2.6.10
+
+### Patch Changes
+
+- [#986](https://github.com/generaltranslation/gt/pull/986) [`b943ac2`](https://github.com/generaltranslation/gt/commit/b943ac200d8ec41219b3c09a669f94590fec0f65) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: include branchid in gt config
+
+## 2.6.9
+
+### Patch Changes
+
+- [#984](https://github.com/generaltranslation/gt/pull/984) [`bfd90d5`](https://github.com/generaltranslation/gt/commit/bfd90d596f925ce0ab56d856994d1fb11cd55dc2) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix versionid calculation
+
+## 2.6.8
+
+### Patch Changes
+
+- [#981](https://github.com/generaltranslation/gt/pull/981) [`fca3a25`](https://github.com/generaltranslation/gt/commit/fca3a2583eb7f21bc3ef13516351d479f7bef882) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling source file movement to persist existing translations instead of retranslating
+
+- Updated dependencies [[`fca3a25`](https://github.com/generaltranslation/gt/commit/fca3a2583eb7f21bc3ef13516351d479f7bef882)]:
+  - generaltranslation@8.1.8
+
 ## 2.6.7
 
 ### Patch Changes
