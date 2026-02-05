@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.6.12
+
+### Patch Changes
+
+- [#992](https://github.com/generaltranslation/gt/pull/992) [`776a12f`](https://github.com/generaltranslation/gt/commit/776a12f5ac2fbc3bb832d96ca337fcbadbf1fd49) Thanks [@brian-lou](https://github.com/brian-lou)! - Enable branching for default; graceful fallback
+
+## 2.6.11
+
+### Patch Changes
+
+- [#988](https://github.com/generaltranslation/gt/pull/988) [`efdf632`](https://github.com/generaltranslation/gt/commit/efdf632acab7cdd4d1819408d808bd4ac05bc7c8) Thanks [@pie575](https://github.com/pie575)! - Added function to export errors as json from running validate
+
 ## 2.6.10
 
 ### Patch Changes

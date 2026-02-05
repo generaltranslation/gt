@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.6.10",
+  "version": "2.6.12",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -42,6 +42,10 @@
     "./types": {
       "import": "./dist/types.js",
       "types": "./dist/types.d.ts"
+    },
+    "./functions": {
+      "import": "./dist/functions.js",
+      "types": "./dist/functions.d.ts"
     },
     "./updates/*": {
       "import": "./dist/updates/*.js",
