@@ -15,6 +15,7 @@ describe('createRemoteTranslationLoader', () => {
   it('fetches translations from remote URL', async () => {
     const mockResponse = { hello: 'Hello, World!' };
     (fetch as any).mockResolvedValueOnce({
+      ok: true,
       json: () => Promise.resolve(mockResponse),
     });
 
