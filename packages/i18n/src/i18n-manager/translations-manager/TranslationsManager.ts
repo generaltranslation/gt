@@ -145,6 +145,7 @@ function determineTranslationLoader(config: {
         projectId: config.projectId!,
         _versionId: config._versionId,
         _branchId: config._branchId,
+        customMapping: config.customMapping,
       });
     case LoadTranslationsType.CUSTOM:
       return config.customTranslationLoader!;

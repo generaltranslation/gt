@@ -104,6 +104,11 @@ class I18nManager {
     message: string,
     options: InlineTranslationOptions
   ): Promise<string | undefined> {
+    // Early return if i18n is disabled
+    if (this.config.enableI18n === false) {
+      return message;
+    }
+
     // Get translations
     const translations = await this.translationsManager.getTranslations(
       this.getLocale()
@@ -154,16 +159,15 @@ function standardizeConfig(
     customMapping: config.customMapping,
   });
 
-  if (gtServicesEnabled) {
-    return {
-      enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
-      ...standardizeLocales(dedupedLocales),
-    };
-  }
-
   return {
-    enableI18n: false,
-    ...dedupedLocales,
+    enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
+    projectId: config.projectId,
+    devApiKey: config.devApiKey,
+    apiKey: config.apiKey,
+    runtimeUrl: config.runtimeUrl,
+    ...(gtServicesEnabled
+      ? standardizeLocales(dedupedLocales)
+      : dedupedLocales),
   };
 }
 

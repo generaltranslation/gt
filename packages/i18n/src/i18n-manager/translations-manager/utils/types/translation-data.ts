@@ -11,7 +11,7 @@ export type Translation = string | unknown;
  * Object containing translations for a single locale
  */
 export type Translations = {
-  [hash: string]: Translations;
+  [hash: string]: Translation;
 };
 
 /**
