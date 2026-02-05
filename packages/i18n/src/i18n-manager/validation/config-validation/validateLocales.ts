@@ -38,7 +38,9 @@ export function validateLocales(params: {
 
     // Validate locale format
     const localeRegex = /^[a-z]{2,3}(-[A-Z]{2,3})?(-[a-z]+)*$/;
-    const invalidLocales = locales.filter(locale => !localeRegex.test(locale));
+    const invalidLocales = locales.filter(
+      (locale) => !localeRegex.test(locale)
+    );
     if (invalidLocales.length > 0) {
       results.push({
         type: 'error',

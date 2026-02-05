@@ -10,9 +10,9 @@ describe('validateLocales', () => {
   });
 
   it('validates locale format', () => {
-    const result = validateLocales({ 
-      locales: ['invalid-locale'], 
-      defaultLocale: 'invalid-locale' 
+    const result = validateLocales({
+      locales: ['invalid-locale'],
+      defaultLocale: 'invalid-locale',
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('error');
@@ -20,9 +20,9 @@ describe('validateLocales', () => {
   });
 
   it('detects duplicate locales', () => {
-    const result = validateLocales({ 
-      locales: ['en', 'en', 'es'], 
-      defaultLocale: 'en' 
+    const result = validateLocales({
+      locales: ['en', 'en', 'es'],
+      defaultLocale: 'en',
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('error');

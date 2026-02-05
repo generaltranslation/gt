@@ -7,7 +7,7 @@ describe('createRemoteTranslationLoader', () => {
   it('returns loader function', () => {
     const loader = createRemoteTranslationLoader({
       cacheUrl: 'https://example.com',
-      projectId: 'test-project'
+      projectId: 'test-project',
     });
     expect(typeof loader).toBe('function');
   });
@@ -15,12 +15,12 @@ describe('createRemoteTranslationLoader', () => {
   it('fetches translations from remote URL', async () => {
     const mockResponse = { hello: 'Hello, World!' };
     (fetch as any).mockResolvedValueOnce({
-      json: () => Promise.resolve(mockResponse)
+      json: () => Promise.resolve(mockResponse),
     });
 
     const loader = createRemoteTranslationLoader({
       cacheUrl: 'https://example.com',
-      projectId: 'test-project'
+      projectId: 'test-project',
     });
 
     const result = await loader('en');
