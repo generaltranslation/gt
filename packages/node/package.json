@@ -44,6 +44,9 @@
     "url": "https://github.com/generaltranslation/gt/issues"
   },
   "homepage": "https://generaltranslation.com/",
+  "peerDependencies": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^16.0.1",
