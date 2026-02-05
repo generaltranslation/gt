@@ -103,6 +103,7 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option('--enable-branching', 'Enable branching for the project')
+    .option('--no-enable-branching', 'Disable branching for the project')
     .option(
       '--remote-name <name>',
       'Specify a custom remote name to use for branch detection',
