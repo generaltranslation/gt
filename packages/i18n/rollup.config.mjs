@@ -111,4 +111,41 @@ export default [
     },
     plugins: [dts()],
   },
+
+
+  // Bundling for the internal module
+  {
+    input: 'src/internal.ts',
+    output: [
+      {
+        file: 'dist/internal.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/internal.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+  },
+
+  // TypeScript declarations for the main library
+  {
+    input: 'src/internal.ts',
+    output: {
+      file: 'dist/internal.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
 ];

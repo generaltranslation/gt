@@ -21,7 +21,9 @@ import { hashSource } from 'generaltranslation/id';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 
 /**
- * Abstract class to be overridden by the wrapper library.
+ * Class for managing translation functionality
+ *
+ * @internal
  */
 class I18nManager {
   private config: I18nManagerConfig;
