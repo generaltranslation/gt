@@ -1,3 +1,4 @@
+import { CustomMapping } from 'generaltranslation/src/types';
 import { TranslationsLoader } from '../../translations-loaders/types';
 
 /**
@@ -14,6 +15,7 @@ export type TranslationsManagerConfig = {
   cacheUrl?: string | null;
   _versionId?: string;
   _branchId?: string;
+  customMapping?: CustomMapping;
   cacheExpiryTime: number;
 };
 
