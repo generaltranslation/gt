@@ -15,7 +15,7 @@ export function _resolveAliasLocale(
     reverseCustomMapping = Object.fromEntries(
       Object.entries(customMapping)
         .filter(
-          ([_, value]) => value && typeof value === 'object' && 'code' in value
+          ([, value]) => value && typeof value === 'object' && 'code' in value
         )
         .map(([key, value]) => [(value as { code: string }).code, key])
     );

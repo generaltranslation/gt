@@ -73,8 +73,8 @@ import {
   _getRegionProperties,
   CustomRegionMapping,
 } from './locales/getRegionProperties';
-import { shouldUseCanonicalLocale } from './locales/customLocaleMapping';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
+import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import _uploadSourceFiles from './translate/uploadSourceFiles';
 import _uploadTranslations from './translate/uploadTranslations';
 import {
@@ -1580,12 +1580,7 @@ export class GT {
   ): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('resolveCanonicalLocale'));
-
-    if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-      return (customMapping[locale] as { code: string }).code;
-    }
-
-    return locale;
+    return _resolveCanonicalLocale(locale, customMapping);
   }
 
   /**
@@ -2072,6 +2067,19 @@ export function resolveAliasLocale(
   customMapping?: CustomMapping
 ): string {
   return _resolveAliasLocale(locale, customMapping);
+}
+
+/**
+ * Resolves the canonical locale for a given locale.
+ * @param {string} locale - The locale to resolve the canonical locale for
+ * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the canonical locale
+ * @returns {string} The canonical locale
+ */
+export function resolveCanonicalLocale(
+  locale: string,
+  customMapping?: CustomMapping
+): string {
+  return _resolveCanonicalLocale(locale, customMapping);
 }
 
 /**

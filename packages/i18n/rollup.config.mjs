@@ -4,6 +4,14 @@ import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 
+const external = [
+  'generaltranslation',
+  'generaltranslation/types',
+  'generaltranslation/internal',
+  'generaltranslation/id',
+  '@generaltranslation/supported-locales',
+];
+
 export default [
   // Bundling for the main library (index.ts)
   {
@@ -28,7 +36,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the main library
@@ -63,7 +71,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the types module
@@ -99,7 +107,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the fallbacks module
@@ -107,6 +115,43 @@ export default [
     input: 'src/fallbacks.ts',
     output: {
       file: 'dist/fallbacks.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
+
+
+  // Bundling for the internal module
+  {
+    input: 'src/internal.ts',
+    output: [
+      {
+        file: 'dist/internal.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/internal.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+    external,
+  },
+
+  // TypeScript declarations for the main library
+  {
+    input: 'src/internal.ts',
+    output: {
+      file: 'dist/internal.d.ts',
       format: 'es',
     },
     plugins: [dts()],

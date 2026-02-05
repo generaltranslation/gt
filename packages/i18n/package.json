@@ -76,6 +76,11 @@
       "types": "./dist/fallbacks.d.ts",
       "require": "./dist/fallbacks.cjs.min.cjs",
       "import": "./dist/fallbacks.esm.min.mjs"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "require": "./dist/internal.cjs.min.cjs",
+      "import": "./dist/internal.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -85,6 +90,9 @@
       ],
       "fallbacks": [
         "./dist/fallbacks.d.ts"
+      ],
+      "internal": [
+        "./dist/internal.d.ts"
       ]
     }
   },
@@ -96,6 +104,9 @@
       ],
       "gt-i18n/fallbacks": [
         "/dist/fallbacks"
+      ],
+      "gt-i18n/internal": [
+        "/dist/internal"
       ]
     }
   }

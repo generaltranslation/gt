@@ -1,4 +1,4 @@
-import { BaseTranslationOptions } from '../types';
+import { BaseTranslationOptions } from '../translation-functions/types';
 /**
  * Given an object of options, returns an object with no gt-related options
  *

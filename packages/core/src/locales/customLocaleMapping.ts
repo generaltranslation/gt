@@ -18,6 +18,12 @@ export const getCustomProperty = (
   return undefined;
 };
 
+/**
+ * Checks if a given locale should use the canonical locale.
+ * @param locale - The locale to check if it should use the canonical locale
+ * @param customMapping - The custom mapping to use for checking if the locale should use the canonical locale
+ * @returns True if the locale should use the canonical locale, false otherwise
+ */
 export const shouldUseCanonicalLocale = (
   locale: string,
   customMapping: CustomMapping
