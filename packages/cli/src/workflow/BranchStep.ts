@@ -108,11 +108,13 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {
             // retry with default branch
-            const createBranchResult = await this.gt.createBranch({
-              branchName: 'main', // name doesn't matter for default branch
-              defaultBranch: true,
-            });
-            this.branchData.currentBranch = createBranchResult.branch;
+            try {
+              const createBranchResult = await this.gt.createBranch({
+                branchName: 'main', // name doesn't matter for default branch
+                defaultBranch: true,
+              });
+              this.branchData.currentBranch = createBranchResult.branch;
+            } catch {}
           }
         }
       } else {
