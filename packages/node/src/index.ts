@@ -1,3 +1,1 @@
-export function helloWorld(): string {
-  return 'Hello World';
-}
+// TODO: do not use the factory
