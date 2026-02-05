@@ -117,8 +117,11 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
     message: string,
     options: InlineTranslationOptions
   ): Promise<string | undefined> {
-    // Early return if i18n is disabled
-    if (this.config.enableI18n === false) {
+    // Early return if i18n is disabled or default locale
+    if (
+      this.config.enableI18n === false ||
+      this.getLocale() === this.config.defaultLocale
+    ) {
       return message;
     }
 
