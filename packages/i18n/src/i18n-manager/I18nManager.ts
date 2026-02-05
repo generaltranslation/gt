@@ -16,7 +16,7 @@ import { hashMessage } from '../utils/hashMessage';
 /**
  * Class for managing translation functionality
  */
-class I18nManager {
+class I18nManager<T extends StorageAdapter = FallbackStorageAdapter> {
   private config: I18nManagerConfig;
 
   /**
@@ -27,7 +27,7 @@ class I18nManager {
   /**
    * Store adapter
    */
-  protected storeAdapter: StorageAdapter = new FallbackStorageAdapter();
+  protected storeAdapter: T;
 
   /**
    * Creates an instance of I18nManager.
@@ -35,13 +35,15 @@ class I18nManager {
    * @param params - The parameters for the I18nManager constructor
    * @param params.config - The configuration for the I18nManager
    */
-  constructor(params: I18nManagerConstructorParams) {
+  constructor(params: I18nManagerConstructorParams<T>) {
     // Validation
     const validationResults = validateConfig(params);
     publishValidationResults(validationResults, 'I18nManager:');
 
     // Setup
     this.config = standardizeConfig(params);
+    this.storeAdapter =
+      (params.storeAdapter as T) ?? new FallbackStorageAdapter();
     this.translationsManager = new TranslationsManager(params);
   }
 
@@ -148,8 +150,8 @@ export { I18nManager };
  * @param config - The config to standardize
  * @returns The standardized config
  */
-function standardizeConfig(
-  config: I18nManagerConstructorParams
+function standardizeConfig<T extends StorageAdapter>(
+  config: I18nManagerConstructorParams<T>
 ): I18nManagerConfig {
   const gtServicesEnabled = getGTServicesEnabled(config);
 
