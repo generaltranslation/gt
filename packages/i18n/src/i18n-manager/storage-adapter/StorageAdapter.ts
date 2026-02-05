@@ -23,4 +23,4 @@ abstract class StorageAdapter {
   abstract removeItem(key: string): void;
 }
 
-export default StorageAdapter;
+export { StorageAdapter };

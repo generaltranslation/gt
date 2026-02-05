@@ -12,7 +12,7 @@ import {
   getLoadTranslationsType,
   LoadTranslationsType,
 } from '../utils/getLoadTranslationsType';
-import { CustomMapping } from 'generaltranslation/src/types';
+import { CustomMapping } from 'generaltranslation/types';
 
 /**
  * TranslationsManager is responsible for loading and caching translations
@@ -63,7 +63,7 @@ class TranslationsManager {
         return (translations || {}) as Translations;
       } catch (error) {
         // TODO: centralized logging system
-        logger.error(`Failed to load translations`, error);
+        logger.error('Failed to load translations ' + error);
         // Delete failed promise entry from cache to avoid persisting failed promises
         this.cache.delete(locale);
         return {} as Translations;

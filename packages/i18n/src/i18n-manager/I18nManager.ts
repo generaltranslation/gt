@@ -4,19 +4,17 @@ import { TranslationsManager } from './translations-manager/TranslationsManager'
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
 import { Translations } from './translations-manager/utils/types/translation-data';
-import StorageAdapter from './storage-adapter/StorageAdapter';
+import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
 import { InlineTranslationOptions } from '../translation-functions/types';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
-import { hashMessage } from 'src/utils/hashMessage';
+import { hashMessage } from '../utils/hashMessage';
 
 /**
  * Class for managing translation functionality
- *
- * @internal
  */
 class I18nManager {
   private config: I18nManagerConfig;
@@ -112,15 +110,6 @@ class I18nManager {
     );
 
     // Calculate hash
-    // const hash = hashSource({
-    //   source: indexVars(message),
-    //   ...(options.$context && { context: options.$context }),
-    //   ...(options.$id && { id: options.$id }),
-    //   ...(options.$maxChars != null && {
-    //     maxChars: Math.abs(options.$maxChars),
-    //   }),
-    //   dataFormat: 'ICU',
-    // });
     const hash = hashMessage(message, options);
 
     // Return translation or undefined
@@ -145,7 +134,7 @@ class I18nManager {
   }
 }
 
-export default I18nManager;
+export { I18nManager };
 
 // ===== Helper Functions ===== //
 
@@ -218,9 +207,9 @@ function standardizeLocales(config: {
   const defaultLocale = standardizeLocale(config.defaultLocale);
   const locales = config.locales.map((locale) => {
     const mappedLocale =
-      typeof customMapping?.[locale] === 'string'
-        ? customMapping?.[locale]
-        : customMapping?.[locale]?.code;
+      typeof config.customMapping?.[locale] === 'string'
+        ? config.customMapping?.[locale]
+        : config.customMapping?.[locale]?.code;
     if (mappedLocale) {
       return locale;
     } else {

@@ -1,4 +1,4 @@
-import StorageAdapter from './StorageAdapter';
+import { StorageAdapter } from './StorageAdapter';
 
 /**
  * Fallback to storage adapter that is scoped to the entire process

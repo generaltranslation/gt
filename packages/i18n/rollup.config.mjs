@@ -4,6 +4,14 @@ import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 
+const external = [
+  'generaltranslation',
+  'generaltranslation/types',
+  'generaltranslation/internal',
+  'generaltranslation/id',
+  '@generaltranslation/supported-locales',
+];
+
 export default [
   // Bundling for the main library (index.ts)
   {
@@ -28,7 +36,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the main library
@@ -63,7 +71,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the types module
@@ -99,7 +107,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the fallbacks module
@@ -136,7 +144,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['generaltranslation', '@generaltranslation/supported-locales'],
+    external,
   },
 
   // TypeScript declarations for the main library

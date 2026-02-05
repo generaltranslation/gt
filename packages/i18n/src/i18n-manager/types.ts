@@ -1,4 +1,4 @@
-import { CustomMapping } from 'generaltranslation/src/types';
+import { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { TranslationsManagerConstructorParams } from './translations-manager/utils/types/translations-manager';
 
