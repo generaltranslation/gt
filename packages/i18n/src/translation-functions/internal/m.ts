@@ -20,7 +20,7 @@ import { InteralMFunctionType } from './types';
  */
 export const m: InteralMFunctionType = async (
   encodedMsg: string,
-  options: InlineResolveOptions = {}
+  options?: InlineResolveOptions
 ): Promise<string> => {
   // Get any encoded options
   const decodedOptions = decodeOptions(encodedMsg) ?? {};

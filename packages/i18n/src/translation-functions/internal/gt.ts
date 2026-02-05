@@ -18,7 +18,7 @@ import { InteralGtFunctionType } from './types';
  */
 export const gt: InteralGtFunctionType = async (
   message: string,
-  options: InlineTranslationOptions
+  options?: InlineTranslationOptions
 ) => {
   const i18nManager = getI18nManager();
   const translation = await i18nManager.getTranslation(message, options);
