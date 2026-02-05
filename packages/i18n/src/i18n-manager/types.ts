@@ -10,7 +10,7 @@ import { TranslationsLoader } from './translations-manager/translations-loaders/
 export type I18nManagerConstructorParams<
   T extends StorageAdapter = StorageAdapter,
 > = GTConfig & {
-  customTranslationLoader?: TranslationsLoader;
+  loadTranslations?: TranslationsLoader;
   storeAdapter?: T;
 };
 

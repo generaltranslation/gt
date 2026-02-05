@@ -8,5 +8,5 @@ import { GTConfig, TranslationsLoader } from 'gt-i18n/types';
  * @param {function} config.customTranslationLoader.load - The function to load the translations
  */
 export type ConfigGTParams = GTConfig & {
-  customTranslationLoader?: TranslationsLoader;
+  loadTranslations?: TranslationsLoader;
 };

@@ -42,7 +42,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   constructor(params: I18nManagerConstructorParams<T>) {
     // Validation
     const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nManager:');
+    publishValidationResults(validationResults, 'I18nManager: ');
 
     // Setup
     this.config = standardizeConfig(params);

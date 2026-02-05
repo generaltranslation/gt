@@ -22,9 +22,9 @@ export enum LoadTranslationsType {
  */
 export function getLoadTranslationsType(config: {
   cacheUrl?: string | null;
-  customTranslationLoader?: TranslationsLoader;
+  loadTranslations?: TranslationsLoader;
 }): LoadTranslationsType {
-  if (config.customTranslationLoader) {
+  if (config.loadTranslations) {
     return LoadTranslationsType.CUSTOM;
   } else if (config.cacheUrl) {
     return LoadTranslationsType.REMOTE;

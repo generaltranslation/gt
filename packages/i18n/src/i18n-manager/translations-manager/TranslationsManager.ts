@@ -128,7 +128,7 @@ function determineTranslationLoader(config: {
   cacheUrl?: string | null;
   _versionId?: string;
   _branchId?: string;
-  customTranslationLoader?: TranslationsLoader;
+  loadTranslations?: TranslationsLoader;
   customMapping?: CustomMapping;
 }): TranslationsLoader {
   const loadTranslationsType = getLoadTranslationsType(config);
@@ -148,7 +148,7 @@ function determineTranslationLoader(config: {
         customMapping: config.customMapping,
       });
     case LoadTranslationsType.CUSTOM:
-      return config.customTranslationLoader!;
+      return config.loadTranslations!;
     case LoadTranslationsType.DISABLED:
       return createFallbackTranslationLoader();
   }
