@@ -43,6 +43,10 @@
       "import": "./dist/types.js",
       "types": "./dist/types.d.ts"
     },
+    "./functions": {
+      "import": "./dist/functions.js",
+      "types": "./dist/functions.d.ts"
+    },
     "./updates/*": {
       "import": "./dist/updates/*.js",
       "types": "./dist/updates/*.d.ts"

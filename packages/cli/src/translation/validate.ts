@@ -1,7 +1,7 @@
 import { logErrorAndExit, stripAnsi } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
-import { Options, Settings } from '../types/index.js';
+import { Options, Settings, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
@@ -16,6 +16,41 @@ export type ValidationMessage = {
 };
 
 export type ValidationResult = Record<string, ValidationMessage[]>;
+
+/**
+ * Shared validation logic - returns raw results from createUpdates/createInlineUpdates
+ */
+async function runValidation(
+  settings: Options & Settings,
+  pkg: 'gt-react' | 'gt-next',
+  files?: string[]
+): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
+  if (files && files.length > 0) {
+    return createInlineUpdates(pkg, true, files, settings.parsingOptions);
+  }
+
+  // Full project validation
+  // Use local variable to avoid mutating caller's settings object
+  const dictionary =
+    settings.dictionary ||
+    findFilepath([
+      './dictionary.js',
+      './src/dictionary.js',
+      './dictionary.json',
+      './src/dictionary.json',
+      './dictionary.ts',
+      './src/dictionary.ts',
+    ]);
+
+  return createUpdates(
+    settings,
+    settings.src,
+    dictionary,
+    pkg,
+    true,
+    settings.parsingOptions
+  );
+}
 
 /**
  * Parse file path from error/warning string in withLocation format: "filepath (line:col): message"
@@ -50,6 +85,8 @@ export async function getValidateJson(
   pkg: 'gt-react' | 'gt-next',
   files?: string[]
 ): Promise<ValidationResult> {
+  const { errors, warnings } = await runValidation(settings, pkg, files);
+
   const result: ValidationResult = {};
 
   const addMessage = (
@@ -62,48 +99,6 @@ export async function getValidateJson(
     }
     result[file].push({ level, message });
   };
-
-  if (files && files.length > 0) {
-    const { errors, warnings } = await createInlineUpdates(
-      pkg,
-      true,
-      files,
-      settings.parsingOptions
-    );
-
-    for (const error of errors) {
-      const { file, message } = parseFileFromMessage(stripAnsi(error));
-      addMessage(file, 'error', message);
-    }
-    for (const warning of warnings) {
-      const { file, message } = parseFileFromMessage(stripAnsi(warning));
-      addMessage(file, 'warning', message);
-    }
-
-    return result;
-  }
-
-  // Full project validation
-  // Use local variable to avoid mutating caller's settings object
-  const dictionary =
-    settings.dictionary ||
-    findFilepath([
-      './dictionary.js',
-      './src/dictionary.js',
-      './dictionary.json',
-      './src/dictionary.json',
-      './dictionary.ts',
-      './src/dictionary.ts',
-    ]);
-
-  const { errors, warnings } = await createUpdates(
-    settings,
-    settings.src,
-    dictionary,
-    pkg,
-    true,
-    settings.parsingOptions
-  );
 
   for (const error of errors) {
     const { file, message } = parseFileFromMessage(stripAnsi(error));
@@ -122,49 +117,10 @@ export async function validateProject(
   pkg: 'gt-react' | 'gt-next',
   files?: string[]
 ): Promise<void> {
-  if (files && files.length > 0) {
-    // Validate specific files using createInlineUpdates
-    const { errors, updates } = await createInlineUpdates(
-      pkg,
-      true,
-      files,
-      settings.parsingOptions
-    );
-
-    if (errors.length > 0) {
-      logErrorAndExit(
-        chalk.red(
-          `Error: CLI tool encountered ${errors.length} syntax errors:\n` +
-            errors
-              .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
-              .join('')
-        )
-      );
-    }
-    logger.success(
-      chalk.green(`Success! Found ${updates.length} translatable entries.`)
-    );
-    return;
-  }
-
-  if (!settings.dictionary) {
-    settings.dictionary = findFilepath([
-      './dictionary.js',
-      './src/dictionary.js',
-      './dictionary.json',
-      './src/dictionary.json',
-      './dictionary.ts',
-      './src/dictionary.ts',
-    ]);
-  }
-
-  const { updates, errors, warnings } = await createUpdates(
+  const { updates, errors, warnings } = await runValidation(
     settings,
-    settings.src,
-    settings.dictionary,
     pkg,
-    true,
-    settings.parsingOptions
+    files
   );
 
   if (warnings.length > 0) {

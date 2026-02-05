@@ -21,11 +21,3 @@ export function main(program: Command) {
 }
 
 export { BaseCLI };
-
-// Programmatic API exports
-export {
-  getValidateJson,
-  ValidationResult,
-  ValidationMessage,
-  ValidationLevel,
-} from './translation/validate.js';
