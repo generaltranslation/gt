@@ -120,6 +120,12 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       }
     }
 
+    if (this.branchData.currentBranch.id === '') {
+      return logErrorAndExit(
+        'Something went wrong while resolving branch information. Please try again.'
+      );
+    }
+
     // Now set the incoming and checked out branches (first one that exists)
     this.branchData.incomingBranch =
       incoming
