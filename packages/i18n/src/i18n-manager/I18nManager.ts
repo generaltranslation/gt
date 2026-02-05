@@ -16,7 +16,7 @@ import { hashMessage } from '../utils/hashMessage';
 /**
  * Class for managing translation functionality
  */
-class I18nManager<T extends StorageAdapter = FallbackStorageAdapter> {
+class I18nManager<T extends StorageAdapter = StorageAdapter> {
   private config: I18nManagerConfig;
 
   /**
