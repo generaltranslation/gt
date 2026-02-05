@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.12
+
+### Patch Changes
+
+- [#992](https://github.com/generaltranslation/gt/pull/992) [`776a12f`](https://github.com/generaltranslation/gt/commit/776a12f5ac2fbc3bb832d96ca337fcbadbf1fd49) Thanks [@brian-lou](https://github.com/brian-lou)! - Enable branching for default; graceful fallback
+
 ## 2.6.11
 
 ### Patch Changes
