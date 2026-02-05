@@ -12,6 +12,13 @@ import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import { FileToUpload } from 'generaltranslation/types';
 
+/**
+ * Strip ANSI escape codes from a string (e.g., chalk color codes)
+ */
+export function stripAnsi(str: string): string {
+  return str.replace(/\x1B\[[0-9;]*m/g, '');
+}
+
 export function logErrorAndExit(message: string): never {
   logger.error(message);
   return exitSync(1);

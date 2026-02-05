@@ -1,4 +1,4 @@
-import { logErrorAndExit } from '../console/logging.js';
+import { logErrorAndExit, stripAnsi } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
 import { Options, Settings } from '../types/index.js';
@@ -6,6 +6,114 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+
+// Types for programmatic validation API
+export type ValidationLevel = 'error' | 'warning';
+
+export type ValidationMessage = {
+  level: ValidationLevel;
+  message: string;
+};
+
+export type ValidationResult = Map<string, ValidationMessage[]>;
+
+/**
+ * Parse file path from error/warning string in withLocation format: "filepath (line:col): message"
+ */
+function parseFileFromMessage(msg: string): { file: string; message: string } {
+  // First try to match with location format: "filepath (line:col): message"
+  // Using [\s\S] instead of . with /s flag for ES5 compatibility
+  const withLocation = msg.match(/^(.+)\s+\(\d+:\d+\)\s*:\s*([\s\S]+)$/);
+  if (withLocation) {
+    return { file: withLocation[1].trim(), message: withLocation[2].trim() };
+  }
+
+  // Fallback: find the last ": " pattern (handles Windows paths like C:\...)
+  const lastColonSpace = msg.lastIndexOf(': ');
+  if (lastColonSpace > 0) {
+    return {
+      file: msg.substring(0, lastColonSpace).trim(),
+      message: msg.substring(lastColonSpace + 2).trim(),
+    };
+  }
+
+  // No file found - use empty string as key for "global" messages
+  return { file: '', message: msg };
+}
+
+/**
+ * Programmatic API for validation - returns structured results instead of logging/exiting.
+ * Equivalent to running `gtx-cli validate` but returns data.
+ */
+export async function getValidateJson(
+  settings: Options & Settings,
+  pkg: 'gt-react' | 'gt-next',
+  files?: string[]
+): Promise<ValidationResult> {
+  const result: ValidationResult = new Map();
+
+  const addMessage = (
+    file: string,
+    level: ValidationLevel,
+    message: string
+  ) => {
+    const existing = result.get(file) || [];
+    existing.push({ level, message });
+    result.set(file, existing);
+  };
+
+  if (files && files.length > 0) {
+    const { errors, warnings } = await createInlineUpdates(
+      pkg,
+      true,
+      files,
+      settings.parsingOptions
+    );
+
+    for (const error of errors) {
+      const { file, message } = parseFileFromMessage(stripAnsi(error));
+      addMessage(file, 'error', message);
+    }
+    for (const warning of warnings) {
+      const { file, message } = parseFileFromMessage(stripAnsi(warning));
+      addMessage(file, 'warning', message);
+    }
+
+    return result;
+  }
+
+  // Full project validation
+  if (!settings.dictionary) {
+    settings.dictionary = findFilepath([
+      './dictionary.js',
+      './src/dictionary.js',
+      './dictionary.json',
+      './src/dictionary.json',
+      './dictionary.ts',
+      './src/dictionary.ts',
+    ]);
+  }
+
+  const { errors, warnings } = await createUpdates(
+    settings,
+    settings.src,
+    settings.dictionary,
+    pkg,
+    true,
+    settings.parsingOptions
+  );
+
+  for (const error of errors) {
+    const { file, message } = parseFileFromMessage(stripAnsi(error));
+    addMessage(file, 'error', message);
+  }
+  for (const warning of warnings) {
+    const { file, message } = parseFileFromMessage(stripAnsi(warning));
+    addMessage(file, 'warning', message);
+  }
+
+  return result;
+}
 
 export async function validateProject(
   settings: Options & Settings,
