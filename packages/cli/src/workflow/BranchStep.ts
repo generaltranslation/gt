@@ -107,9 +107,6 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {
-            logger.error(
-              'Failed to create branch. To enable branching, please upgrade your plan.'
-            );
             // retry with default branch
             const createBranchResult = await this.gt.createBranch({
               branchName: 'main', // name doesn't matter for default branch
