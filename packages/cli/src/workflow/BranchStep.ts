@@ -107,20 +107,25 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {
-            logger.error(
-              'Failed to create branch. To enable branching, please upgrade your plan.'
-            );
             // retry with default branch
-            const createBranchResult = await this.gt.createBranch({
-              branchName: 'main', // name doesn't matter for default branch
-              defaultBranch: true,
-            });
-            this.branchData.currentBranch = createBranchResult.branch;
+            try {
+              const createBranchResult = await this.gt.createBranch({
+                branchName: 'main', // name doesn't matter for default branch
+                defaultBranch: true,
+              });
+              this.branchData.currentBranch = createBranchResult.branch;
+            } catch {}
           }
         }
       } else {
         this.branchData.currentBranch = currentBranch;
       }
+    }
+
+    if (this.branchData.currentBranch.id === '') {
+      return logErrorAndExit(
+        'Something went wrong while resolving branch information. Please try again.'
+      );
     }
 
     // Now set the incoming and checked out branches (first one that exists)
