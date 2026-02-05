@@ -4,6 +4,12 @@ import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 
+const external = [
+  'generaltranslation',
+  'gt-i18n/internal',
+  'gt-i18n/types',
+];
+
 export default [
   // Bundling for the main library (index.ts)
   {
@@ -28,7 +34,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['gt-i18n', 'generaltranslation'],
+    external,
   },
 
   // TypeScript declarations for the main library
@@ -39,6 +45,6 @@ export default [
       format: 'es',
     },
     plugins: [dts()],
-    external: ['gt-i18n', 'generaltranslation'],
+    external,
   },
 ];

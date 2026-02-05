@@ -77,10 +77,10 @@
       "require": "./dist/fallbacks.cjs.min.cjs",
       "import": "./dist/fallbacks.esm.min.mjs"
     },
-    "./i18n-manager": {
-      "types": "./dist/i18n-manager.d.ts",
-      "require": "./dist/i18n-manager.cjs.min.cjs",
-      "import": "./dist/i18n-manager.esm.min.mjs"
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "require": "./dist/internal.cjs.min.cjs",
+      "import": "./dist/internal.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -91,8 +91,8 @@
       "fallbacks": [
         "./dist/fallbacks.d.ts"
       ],
-      "i18n-manager": [
-        "./dist/i18n-manager.d.ts"
+      "internal": [
+        "./dist/internal.d.ts"
       ]
     }
   },
@@ -105,8 +105,8 @@
       "gt-i18n/fallbacks": [
         "/dist/fallbacks"
       ],
-      "gt-i18n/i18n-manager": [
-        "/dist/i18n-manager"
+      "gt-i18n/internal": [
+        "/dist/internal"
       ]
     }
   }
