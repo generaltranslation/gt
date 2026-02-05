@@ -5,13 +5,13 @@ import { Translations } from '../utils/types/translation-data';
 import { CustomMapping } from 'generaltranslation/types';
 
 /**
- * Parameters for the createCdnTranslationLoader function
+ * Parameters for the createRemoteTranslationLoader function
  * @param cacheUrl - The cache url
  * @param projectId - The project id
  * @param _versionId - The version id
  * @param _branchId - The branch id
  */
-type CreateCdnTranslationLoaderParams = {
+type CreateRemoteTranslationLoaderParams = {
   cacheUrl: string;
   projectId: string;
   _versionId?: string;
@@ -20,23 +20,23 @@ type CreateCdnTranslationLoaderParams = {
 };
 
 /**
- * Creates a translations loader function that loads translations from a CDN
- * @param params - The parameters for the createCdnTranslationLoader function
+ * Creates a translations loader function that loads translations from a remote store (CDN or other)
+ * @param params - The parameters for the createRemoteTranslationLoader function
  * @returns A translations loader function
  *
  * TODO: validate projectId, cacheUrl, _versionId, _branchId
  */
-export function createCdnTranslationLoader(
-  params: CreateCdnTranslationLoaderParams
+export function createRemoteTranslationLoader(
+  params: CreateRemoteTranslationLoaderParams
 ): TranslationsLoader {
   // Get url
-  const urlWithoutLocale = generateCdnUrl(params);
+  const unlocalizedUrl = generateUrl(params);
 
   // define loader function
   const loader: TranslationsLoader = async (locale: string) => {
     // Standardize locale
     locale = resolveCanonicalLocale(locale, params.customMapping);
-    const url = urlWithoutLocale.replace('[locale]', locale);
+    const url = unlocalizedUrl.replace('[locale]', locale);
     const response = await fetch(url);
     return (await response.json()) as Translations;
   };
@@ -49,7 +49,7 @@ export function createCdnTranslationLoader(
 /**
  * Generate a URL for a translations file
  */
-function generateCdnUrl(params: CreateCdnTranslationLoaderParams): string {
+function generateUrl(params: CreateRemoteTranslationLoaderParams): string {
   const {
     cacheUrl = defaultCacheUrl,
     projectId,

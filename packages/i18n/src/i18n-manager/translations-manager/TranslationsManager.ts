@@ -5,7 +5,7 @@ import {
 } from './translations-loaders/types';
 import { Translations, TranslationsMap } from './utils/types/translation-data';
 import { TranslationsManagerConstructorParams } from './utils/types/translations-manager';
-import { createCdnTranslationLoader } from './translations-loaders/createCdnTranslationLoader';
+import { createRemoteTranslationLoader } from './translations-loaders/createRemoteTranslationLoader';
 import { createFallbackTranslationLoader } from './translations-loaders/createFallbackTranslationLoader';
 import {
   getLoadTranslationsType,
@@ -141,7 +141,7 @@ function determineTranslationLoader(config: {
   switch (loadTranslationsType) {
     case LoadTranslationsType.REMOTE:
     case LoadTranslationsType.GT_REMOTE:
-      return createCdnTranslationLoader({
+      return createRemoteTranslationLoader({
         cacheUrl: config.cacheUrl!,
         projectId: config.projectId!,
         _versionId: config._versionId,

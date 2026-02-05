@@ -3,8 +3,8 @@ import { defaultCacheUrl } from 'generaltranslation/internal';
 
 /**
  * Loader translations type
- * - GT_REMOTE: use the default CDN URL {@link defaultCacheUrl}
- * - REMOTE: use a custom CDN URL
+ * - GT_REMOTE: use the default remote store URL {@link defaultCacheUrl}
+ * - REMOTE: use a custom remote store URL
  * - CUSTOM: use a custom translations loader
  * - DISABLED: no translations loading
  */
