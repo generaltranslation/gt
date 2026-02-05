@@ -13,12 +13,12 @@ describe('gtFallback', () => {
   });
 
   it('handles null message', () => {
-    const result = gtFallback(null);
+    const result = gtFallback(null as unknown as string);
     expect(result).toBeNull();
   });
 
   it('handles undefined message', () => {
-    const result = gtFallback(undefined);
+    const result = gtFallback(undefined as unknown as string);
     expect(result).toBeUndefined();
   });
 });
