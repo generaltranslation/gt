@@ -2,7 +2,7 @@ import { resolveCanonicalLocale } from 'generaltranslation';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { Translations } from '../utils/types/translation-data';
-import { CustomMapping } from 'generaltranslation/src/types';
+import { CustomMapping } from 'generaltranslation/types';
 
 /**
  * Parameters for the createCdnTranslationLoader function

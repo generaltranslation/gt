@@ -1,4 +1,7 @@
-import { EncodedTranslationOptions, InlineTranslationOptions } from '../types';
+import {
+  EncodedTranslationOptions,
+  InlineTranslationOptions,
+} from '../../types';
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
 import {
@@ -7,9 +10,9 @@ import {
   indexVars,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
-import { interpolationFailureWarning } from '../logs/warnings';
-import logger from '../logs/logger';
-import { extractVariables } from '../utils/extractVariables';
+import { interpolationFailureMessage } from '../utils/messages';
+import logger from '../../logs/logger';
+import { extractVariables } from '../../utils/extractVariables';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -64,7 +67,7 @@ export function msg<T extends string>(
       },
     });
   } catch (error) {
-    logger.warn(interpolationFailureWarning + ' Error: ' + error);
+    logger.warn(interpolationFailureMessage + ' Error: ' + error);
     return message;
   }
 

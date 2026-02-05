@@ -15,7 +15,7 @@ import {
   getTranslationApiType,
   TranslationApiType,
 } from './utils/getTranslationApiType';
-import { InlineTranslationOptions } from '../types';
+import { InlineTranslationOptions } from '../translation-functions/types';
 import { hashSource } from 'generaltranslation/id';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 

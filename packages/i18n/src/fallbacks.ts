@@ -1,2 +1,1 @@
-export * from './fallbacks/gtFallback';
-export * from './fallbacks/mFallback';
+export * from './translation-functions/fallbacks';

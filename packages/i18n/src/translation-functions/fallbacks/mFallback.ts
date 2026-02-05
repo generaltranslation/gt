@@ -1,11 +1,7 @@
 import { decodeMsg } from '../msg/decodeMsg';
-import {
-  InlineResolveOptions,
-  InlineTranslationOptions,
-  MFunctionType,
-} from '../../types';
+import { InlineResolveOptions, MFunctionType } from '../types';
 import { decodeOptions } from '../msg/decodeOptions';
-import { isEncodedTranslationOptions } from './utils/isEncodedTranslationOptions';
+import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { gtFallback } from './gtFallback';
 
 /**
@@ -41,8 +37,7 @@ export const mFallback: MFunctionType = <T extends string | null | undefined>(
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;
 
   // Get any encoded options
-  const decodedOptions =
-    decodeOptions(encodedMsg) || ({} as InlineTranslationOptions);
+  const decodedOptions = decodeOptions(encodedMsg) ?? {};
 
   // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
   if (isEncodedTranslationOptions(decodedOptions)) {
@@ -51,5 +46,6 @@ export const mFallback: MFunctionType = <T extends string | null | undefined>(
   }
 
   // Use gtFallback to interpolate
+  // Not using decoded options to match behavior in @gt/react-core
   return gtFallback(encodedMsg, options) as T extends string ? string : T;
 };
