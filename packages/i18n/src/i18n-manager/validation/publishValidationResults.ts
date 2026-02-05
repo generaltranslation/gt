@@ -1,4 +1,5 @@
 import { ValidationResult } from './types';
+import logger from '../../logs/logger';
 
 /**
  * Throw errors if there are any errors and log warnings if there are any warnings
@@ -18,10 +19,10 @@ export function publishValidationResults(
   results.forEach((result) => {
     switch (result.type) {
       case 'error':
-        console.error(prefix + result.message);
+        logger.error(prefix + result.message);
         break;
       case 'warning':
-        console.warn(prefix + result.message);
+        logger.warn(prefix + result.message);
         break;
     }
   });

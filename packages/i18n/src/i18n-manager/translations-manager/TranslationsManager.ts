@@ -1,4 +1,5 @@
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
+import logger from '../../logs/logger';
 import {
   SafeTranslationsLoader,
   TranslationsLoader,
@@ -62,7 +63,7 @@ class TranslationsManager {
         return (translations || {}) as Translations;
       } catch (error) {
         // TODO: centralized logging system
-        console.error(`Failed to load translations`, error);
+        logger.error(`Failed to load translations`, error);
         // Delete failed promise entry from cache to avoid persisting failed promises
         this.cache.delete(locale);
         return {} as Translations;
@@ -133,7 +134,7 @@ function determineTranslationLoader(config: {
   const loadTranslationsType = getLoadTranslationsType(config);
   if (loadTranslationsType === LoadTranslationsType.DISABLED) {
     // TODO: move this warning to validation layer
-    console.warn(
+    logger.warn(
       'No translation loader found. No translations will be loaded.'
     );
   }

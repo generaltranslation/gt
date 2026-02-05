@@ -1,4 +1,5 @@
 import { publishValidationResults } from './validation/publishValidationResults';
+import logger from '../logs/logger';
 import { TranslationsManager } from './translations-manager/TranslationsManager';
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
@@ -68,7 +69,7 @@ class I18nManager {
   getLocale(): string {
     const locale = this.storeAdapter.getItem('locale');
     if (!locale) {
-      console.warn(
+      logger.warn(
         'getLocale() invoked outside of translation context, falling back to default locale'
       );
       return this.config.defaultLocale;

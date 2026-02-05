@@ -10,6 +10,14 @@ import { InteralTxFunctionType } from './types';
  *
  * This is a placeholder for the tx() function.
  * TODO: Implement the tx() function.
+ *
+ * @example
+ * // Simple runtime translation without interpolation
+ * const status = await tx('Processing complete');
+ *
+ * @example
+ * // Runtime translation with interpolation
+ * const progress = await tx('Processing complete', { locale: 'es-MX' });
  */
 
 export const tx: InteralTxFunctionType = async (

@@ -11,6 +11,14 @@ import { InteralTFunctionType } from './types';
  *
  * This is a placeholder for the t() function.
  * TODO: Implement the t() function.
+ *
+ * @example
+ * // Simple dictionary lookup without interpolation
+ * const title = await t('page.title');
+ *
+ * @example
+ * // Dictionary lookup with interpolation
+ * const message = await t('user.greeting', { name: 'Bob' });
  */
 export const t: InteralTFunctionType = async (
   id: string,

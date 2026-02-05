@@ -1,5 +1,6 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import I18nManager from './I18nManager';
+import logger from '../logs/logger';
 
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
@@ -10,7 +11,7 @@ let i18nManager: I18nManager | undefined = undefined;
  */
 export function getI18nManager(): I18nManager {
   if (!i18nManager) {
-    console.warn(
+    logger.warn(
       'Translation failed because I18nManager not initialized. Falling back to library default locale: ' +
         libraryDefaultLocale
     );

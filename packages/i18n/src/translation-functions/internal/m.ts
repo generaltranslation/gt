@@ -9,6 +9,14 @@ import { InteralMFunctionType } from './types';
  * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
  * @param {InlineTranslationOptions} options - The options to interpolate.
  * @returns - The decoded and interpolated message.
+ *
+ * @example
+ * // Simple message without interpolation
+ * const greeting = await m(msg('Hello, world!'));
+ *
+ * @example
+ * // Message with interpolation
+ * const welcome = await m(msg('Welcome, {user}!'), { user: 'Alice' });
  */
 export const m: InteralMFunctionType = async (
   encodedMsg: string,

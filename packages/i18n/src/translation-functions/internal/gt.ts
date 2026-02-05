@@ -7,6 +7,14 @@ import { InteralGtFunctionType } from './types';
  * @param {string} message - The message to translate
  * @param {InlineTranslationOptions} options - The options for the translation
  * @returns The translated message
+ *
+ * @example
+ * // Simple translation without interpolation
+ * const greeting = await gt('Hello, world!');
+ *
+ * @example
+ * // Translation with interpolation
+ * const welcome = await gt('Hello, {name}!', { name: 'Alice' });
  */
 export const gt: InteralGtFunctionType = async (
   message: string,
