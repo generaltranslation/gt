@@ -3,8 +3,8 @@
  * Import from 'gtx-cli/functions' to access these APIs.
  */
 
-export {
-  getValidateJson,
+export { getValidateJson } from './translation/validate.js';
+export type {
   ValidationResult,
   ValidationMessage,
   ValidationLevel,
