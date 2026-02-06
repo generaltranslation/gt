@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.6.14
+
+### Patch Changes
+
+- [#996](https://github.com/generaltranslation/gt/pull/996) [`13714ba`](https://github.com/generaltranslation/gt/commit/13714ba951bd56e7b897e81ee529661da3dec01a) Thanks [@brian-lou](https://github.com/brian-lou)! - Change pino transport
+
+- [#998](https://github.com/generaltranslation/gt/pull/998) [`9661270`](https://github.com/generaltranslation/gt/commit/966127076152d8a6d911324947942a05bd31cf6e) Thanks [@brian-lou](https://github.com/brian-lou)! - Disable branching by default
+
 ## 2.6.13
 
 ### Patch Changes
