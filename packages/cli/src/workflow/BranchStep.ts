@@ -107,6 +107,9 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {
+            logger.warn(
+              'To enable translation branching, please upgrade your plan. Falling back to default branch.'
+            );
             // retry with default branch
             try {
               const createBranchResult = await this.gt.createBranch({

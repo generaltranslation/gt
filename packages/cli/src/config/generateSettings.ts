@@ -248,7 +248,7 @@ export async function generateSettings(
   // Add branch options if not provided
   const branchOptions = mergedOptions.branchOptions || {};
   branchOptions.enabled =
-    flags.enableBranching ?? gtConfig.branchOptions?.enabled ?? true;
+    flags.enableBranching ?? gtConfig.branchOptions?.enabled ?? false;
   branchOptions.currentBranch =
     flags.branch ?? gtConfig.branchOptions?.currentBranch ?? undefined;
   branchOptions.autoDetectBranches = flags.disableBranchDetection
