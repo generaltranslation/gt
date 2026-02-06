@@ -30,5 +30,9 @@ export function withGT<T>(locale: string, fn: () => T): T {
 function isAsyncStorageI18nManager(
   i18nManager: I18nManager<AsyncStorageAdapter> | I18nManager<StorageAdapter>
 ): i18nManager is AsyncStorageI18nManager {
-  return i18nManager.getAdapterType() === ASYNC_STORAGE_ADAPTER_TYPE;
+  return (
+    i18nManager.getAdapterType() === ASYNC_STORAGE_ADAPTER_TYPE &&
+    'run' in i18nManager &&
+    typeof i18nManager.run === 'function'
+  );
 }

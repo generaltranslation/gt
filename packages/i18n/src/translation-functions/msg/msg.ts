@@ -92,7 +92,7 @@ export function msg<T extends string>(
  * @returns The encoded message.
  *
  * @note - This function registers the message before the build process. The actual translation does not
- * occur until the reg() function is invoked.
+ * occur until the res() function is invoked.
  *
  * @note - Message format
  * A message is broken into two parts separated by colons:

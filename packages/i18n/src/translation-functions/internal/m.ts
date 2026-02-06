@@ -43,11 +43,11 @@ export const m: InteralMFunctionType = async (
  *
  * @example
  * // Simple message without interpolation
- * const greeting = await res(res('Hello, world!'));
+ * const greeting = await res(reg('Hello, world!'));
  *
  * @example
  * // Message with interpolation
- * const welcome = await res(res('Welcome, {user}!'), { user: 'Alice' });
+ * const welcome = await res(reg('Welcome, {user}!'), { user: 'Alice' });
  *
  */
 export const res = m;
