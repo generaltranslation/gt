@@ -8,6 +8,7 @@ import {
 } from '../api/downloadFileBatch.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
+import { recordWarning } from '../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 
 export type DownloadTranslationsInput = {
@@ -128,6 +129,13 @@ export class DownloadTranslationsStep extends WorkflowStep<
           logger.warn(
             `Failed to download ${batchResult.failed.length} files: ${batchResult.failed.map((f) => f.inputPath).join('\n')}`
           );
+          for (const f of batchResult.failed) {
+            recordWarning(
+              'failed_download',
+              f.inputPath,
+              `Failed to download for locale ${f.locale}`
+            );
+          }
         }
       } else {
         this.spinner?.stop(chalk.green('No files to download'));
