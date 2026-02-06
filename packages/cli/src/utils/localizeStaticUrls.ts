@@ -359,12 +359,7 @@ function transformMdxUrls(
 
     const ast = parseProcessor.parse(mdxContent);
     processedAst = parseProcessor.runSync(ast) as Root;
-  } catch (error) {
-    console.warn(
-      `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
-    );
-    console.warn('Returning original content unchanged due to parsing error.');
-
+  } catch {
     return {
       content: mdxContent,
       hasChanges: false,

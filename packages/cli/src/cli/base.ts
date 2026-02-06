@@ -49,7 +49,9 @@ import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
-import processSharedStaticAssets from '../utils/sharedStaticAssets.js';
+import processSharedStaticAssets, {
+  mirrorAssetsToLocales,
+} from '../utils/sharedStaticAssets.js';
 import { setupLocadex } from '../locadex/setupFlow.js';
 import { detectFramework } from '../setup/detectFramework.js';
 import {
@@ -214,6 +216,8 @@ export class BaseCLI {
     if (include.size > 0) {
       await postProcessTranslations(settings, include);
     }
+    // Mirror assets after translations are downloaded and locale dirs are populated
+    await mirrorAssetsToLocales(settings);
     clearDownloaded();
     displayTranslateSummary();
     clearWarnings();

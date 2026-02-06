@@ -263,8 +263,9 @@ export type AdditionalOptions = {
 
 export type SharedStaticAssetsConfig = {
   include: string | string[];
-  outDir: string;
+  outDir?: string;
   publicPath?: string;
+  mirrorToLocales?: boolean;
 };
 
 export type JsonSchema = {

@@ -10,6 +10,8 @@ import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
 import escapeHtmlInTextNodes from 'gt-remark';
 import type { Settings, SharedStaticAssetsConfig } from '../types/index.js';
+import { createFileMapping } from '../formats/files/fileMapping.js';
+import { TEMPLATE_FILE_NAME } from './constants.js';
 
 function derivePublicPath(outDir: string, provided?: string): string {
   if (provided) return provided;
@@ -203,24 +205,140 @@ function rewriteMdxContent(
   }
 }
 
+function resolveAssetPaths(include: string[], cwd: string): Set<string> {
+  const assetPaths = new Set<string>();
+  for (let pattern of include) {
+    if (pattern.startsWith('/')) pattern = pattern.slice(1);
+    const matches = fg.sync(path.resolve(cwd, pattern), { absolute: true });
+    for (const m of matches) assetPaths.add(path.normalize(m));
+  }
+  return assetPaths;
+}
+
+export async function mirrorAssetsToLocales(settings: Settings) {
+  const cfg: SharedStaticAssetsConfig | undefined =
+    settings.sharedStaticAssets as any;
+  if (!cfg?.mirrorToLocales) return;
+  if (!settings.files) return;
+
+  const cwd = process.cwd();
+  const include = toArray(cfg.include);
+  if (include.length === 0) return;
+
+  const assetPaths = resolveAssetPaths(include, cwd);
+  if (assetPaths.size === 0) return;
+
+  const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
+  const targetLocales = settings.locales.filter(
+    (l) => l !== settings.defaultLocale
+  );
+  if (targetLocales.length === 0) return;
+
+  const fileMapping = createFileMapping(
+    resolvedPaths,
+    placeholderPaths,
+    transformPaths,
+    targetLocales,
+    settings.defaultLocale
+  );
+
+  for (const locale of targetLocales) {
+    const filesMap = fileMapping[locale];
+    if (!filesMap) continue;
+
+    // Extract unique (sourceDir, targetDir) pairs from the file mapping
+    const dirPairs = new Map<string, string>();
+    for (const [sourcePath, targetPath] of Object.entries(filesMap)) {
+      if (sourcePath === TEMPLATE_FILE_NAME) continue;
+      const sourceDir = path.dirname(path.resolve(cwd, sourcePath));
+      const targetDir = path.dirname(path.resolve(cwd, targetPath));
+      if (sourceDir !== targetDir) {
+        dirPairs.set(sourceDir, targetDir);
+      }
+    }
+
+    if (dirPairs.size === 0) continue;
+
+    // Derive ancestor directory pairs by walking up from each known pair.
+    // e.g. if docs/guide → ja/docs/guide, infer docs → ja/docs.
+    // Stop at cwd or when an existing pair conflicts.
+    const ancestorPairs = new Map<string, string>();
+    for (const [sourceDir, targetDir] of dirPairs) {
+      let s = path.dirname(sourceDir);
+      let t = path.dirname(targetDir);
+      while (s.startsWith(cwd) && s !== cwd) {
+        const existing = dirPairs.get(s) ?? ancestorPairs.get(s);
+        if (existing !== undefined) {
+          if (existing !== t) break; // conflict — different transforms
+        } else {
+          ancestorPairs.set(s, t);
+        }
+        s = path.dirname(s);
+        t = path.dirname(t);
+      }
+    }
+    for (const [s, t] of ancestorPairs) {
+      dirPairs.set(s, t);
+    }
+
+    // Sort source dirs by length descending so longest prefix matches first
+    const sortedPairs = [...dirPairs.entries()].sort(
+      (a, b) => b[0].length - a[0].length
+    );
+
+    for (const assetAbs of assetPaths) {
+      // Find the directory pair whose sourceDir is the longest prefix of the asset
+      let bestSource: string | undefined;
+      let bestTarget: string | undefined;
+      for (const [sourceDir, targetDir] of sortedPairs) {
+        if (
+          assetAbs.startsWith(sourceDir + path.sep) ||
+          assetAbs.startsWith(sourceDir + '/')
+        ) {
+          bestSource = sourceDir;
+          bestTarget = targetDir;
+          break;
+        }
+      }
+      if (!bestSource || !bestTarget) continue;
+
+      const relFromSource = path.relative(bestSource, assetAbs);
+      const targetAsset = path.resolve(bestTarget, relFromSource);
+
+      // Skip if target already exists with same size
+      try {
+        const [srcStat, dstStat] = await Promise.all([
+          fs.promises.stat(assetAbs),
+          fs.promises.stat(targetAsset),
+        ]);
+        if (dstStat.isFile() && srcStat.size === dstStat.size) continue;
+      } catch {
+        // target doesn't exist, proceed with copy
+      }
+
+      await ensureDir(path.dirname(targetAsset));
+      await fs.promises.copyFile(assetAbs, targetAsset);
+    }
+  }
+}
+
 export default async function processSharedStaticAssets(settings: Settings) {
   const cfg: SharedStaticAssetsConfig | undefined =
     settings.sharedStaticAssets as any;
   if (!cfg) return;
+
+  // mirrorToLocales is handled separately after translations are downloaded
+  if (cfg.mirrorToLocales) return;
 
   const cwd = process.cwd();
   const include = toArray(cfg.include);
   if (include.length === 0) return;
 
   // Resolve assets
-  const assetPaths = new Set<string>();
-  for (let pattern of include) {
-    // Treat leading '/' as repo-relative, not filesystem root
-    if (pattern.startsWith('/')) pattern = pattern.slice(1);
-    const matches = fg.sync(path.resolve(cwd, pattern), { absolute: true });
-    for (const m of matches) assetPaths.add(path.normalize(m));
-  }
+  const assetPaths = resolveAssetPaths(include, cwd);
   if (assetPaths.size === 0) return;
+
+  if (!cfg.outDir) return;
 
   const outDirInput = cfg.outDir.startsWith('/')
     ? cfg.outDir.slice(1)
