@@ -5,7 +5,7 @@ import { gt } from './gt';
 import { InteralMFunctionType } from './types';
 
 /**
- * A fallback function for the m() function that decodes and interpolates.
+ * Resolves a registered message to its translation.
  * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
  * @param {InlineTranslationOptions} options - The options to interpolate.
  * @returns - The decoded and interpolated message.
@@ -20,7 +20,7 @@ import { InteralMFunctionType } from './types';
  */
 export const m: InteralMFunctionType = async (
   encodedMsg: string,
-  options: InlineResolveOptions = {}
+  options?: InlineResolveOptions
 ): Promise<string> => {
   // Get any encoded options
   const decodedOptions = decodeOptions(encodedMsg) ?? {};
@@ -34,3 +34,20 @@ export const m: InteralMFunctionType = async (
   // Separate from decoded options to match behavior in @gt/react-core
   return gt(encodedMsg, options);
 };
+
+/**
+ * Resolves a registered message to its translation.
+ * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
+ * @param {InlineTranslationOptions} options - The options to interpolate.
+ * @returns - The decoded and interpolated message.
+ *
+ * @example
+ * // Simple message without interpolation
+ * const greeting = await res(reg('Hello, world!'));
+ *
+ * @example
+ * // Message with interpolation
+ * const welcome = await res(reg('Welcome, {user}!'), { user: 'Alice' });
+ *
+ */
+export const res = m;

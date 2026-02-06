@@ -2,6 +2,7 @@ import { publishValidationResults } from './validation/publishValidationResults'
 import logger from '../logs/logger';
 import { TranslationsManager } from './translations-manager/TranslationsManager';
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
+import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
 import { Translations } from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
@@ -38,7 +39,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   constructor(params: I18nManagerConstructorParams<T>) {
     // Validation
     const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nManager:');
+    publishValidationResults(validationResults, 'I18nManager: ');
 
     // Setup
     this.config = standardizeConfig(params);
@@ -57,6 +58,13 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   // ========== Getters and Setters ========== //
+
+  /**
+   * Get adapter type
+   */
+  getAdapterType(): StorageAdapterType {
+    return this.storeAdapter.type;
+  }
 
   /**
    * Get the locale
@@ -104,10 +112,13 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    */
   async getTranslation(
     message: string,
-    options: InlineTranslationOptions
+    options?: InlineTranslationOptions
   ): Promise<string | undefined> {
-    // Early return if i18n is disabled
-    if (this.config.enableI18n === false) {
+    // Early return if i18n is disabled or default locale
+    if (
+      this.config.enableI18n === false ||
+      this.getLocale() === this.config.defaultLocale
+    ) {
       return message;
     }
 

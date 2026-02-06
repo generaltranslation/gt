@@ -22,7 +22,7 @@ import { InteralTxFunctionType } from './types';
 
 export const tx: InteralTxFunctionType = async (
   message: string,
-  options: RuntimeTranslationOptions
+  options?: RuntimeTranslationOptions
 ): Promise<string> => {
   throw new Error('tx() is not implemented');
 };

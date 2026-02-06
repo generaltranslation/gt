@@ -1,4 +1,13 @@
+// I18nManager
+export type {
+  I18nManagerConstructorParams,
+  TranslationsLoader,
+  I18nManagerConfig,
+  StorageAdapter,
+} from './i18n-manager/types';
+
+// Translation functions
 export * from './translation-functions/types';
-export { I18nManagerConfig } from './i18n-manager/types';
-export { StorageAdapter, I18nManager } from './i18n-manager';
-export type { I18nManagerConstructorParams } from './i18n-manager/types';
+
+// Config
+export type { GTConfig } from './config/types';

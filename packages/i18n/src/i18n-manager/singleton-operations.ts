@@ -1,6 +1,7 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { I18nManager } from './I18nManager';
 import logger from '../logs/logger';
+import { StorageAdapter } from './storage-adapter/StorageAdapter';
 
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
@@ -9,7 +10,9 @@ let i18nManager: I18nManager | undefined = undefined;
  * Get the singleton instance of I18nManager
  * @returns The singleton instance of I18nManager
  */
-export function getI18nManager(): I18nManager {
+export function getI18nManager<T extends StorageAdapter>():
+  | I18nManager<T>
+  | I18nManager<StorageAdapter> {
   if (!i18nManager) {
     logger.warn(
       'Translation failed because I18nManager not initialized. Falling back to library default locale: ' +

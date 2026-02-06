@@ -12,7 +12,7 @@ import {
  */
 export type InteralGtFunctionType = (
   message: string,
-  options: InlineTranslationOptions
+  options?: InlineTranslationOptions
 ) => Promise<string>;
 
 /**
@@ -21,7 +21,7 @@ export type InteralGtFunctionType = (
  */
 export type InteralMFunctionType = (
   encodedMsg: string,
-  options: InlineResolveOptions
+  options?: InlineResolveOptions
 ) => Promise<string>;
 
 /**
@@ -30,7 +30,7 @@ export type InteralMFunctionType = (
  */
 export type InteralTFunctionType = (
   id: string,
-  options: DictionaryTranslationOptions
+  options?: DictionaryTranslationOptions
 ) => Promise<string>;
 
 /**
@@ -39,5 +39,5 @@ export type InteralTFunctionType = (
  */
 export type InteralTxFunctionType = (
   message: string,
-  options: RuntimeTranslationOptions
+  options?: RuntimeTranslationOptions
 ) => Promise<string>;

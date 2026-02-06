@@ -84,3 +84,31 @@ export function msg<T extends string>(
   // Construct result
   return `${interpolatedString}:${optionsEncoding}`;
 }
+
+/**
+ * Registers a message to be translated. Returns the message unchanged if no options are provided.
+ * @param message The message to encode.
+ * @param options The options to encode.
+ * @returns The encoded message.
+ *
+ * @note - This function registers the message before the build process. The actual translation does not
+ * occur until the res() function is invoked.
+ *
+ * @note - Message format
+ * A message is broken into two parts separated by colons:
+ * - interpolated content - the content with interpolated variables
+ * - hash + options - a unique identifier for the source content and options for the translation
+ *
+ * @example - Basic usage
+ *
+ * ```jsx
+ * import { reg } from 'gt-i18n';
+ * const message1 = reg('Hello, World!');
+ * console.log(message1); // "Hello, World!"
+ * const message2 = reg('Hello, {name}!', { name: 'Brian' });
+ * console.log(message2); // "Hello, Brian:eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9"
+ * ```
+ * eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9
+ * encodes to {"$_hash": "0x123", "$_source": "Hello, {name}!", "name": "Brian"}
+ */
+export const reg = msg;

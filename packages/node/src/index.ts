@@ -1,3 +1,2 @@
-export function helloWorld(): string {
-  return 'Hello World';
-}
+export * from './setup';
+export * from './translation-functions';

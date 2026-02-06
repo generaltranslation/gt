@@ -17,17 +17,17 @@ import { ValidationResult } from '../types';
  * - GT_REMOTE:
  *   - projectId is required
  * - CUSTOM:
- *   - customTranslationLoader is required
+ *   - loadTranslations is required
  * - DISABLED:
  *   - no requirements
  */
 export function validateLoadTranslations(params: {
   projectId?: string;
   cacheUrl?: string | null;
-  customTranslationLoader?: TranslationsLoader;
+  loadTranslations?: TranslationsLoader;
 }): ValidationResult[] {
   const results: ValidationResult[] = [];
-  const { projectId, customTranslationLoader } = params;
+  const { projectId, loadTranslations } = params;
 
   const loadTranslationsType = getLoadTranslationsType(params);
   switch (loadTranslationsType) {
@@ -42,11 +42,11 @@ export function validateLoadTranslations(params: {
       }
       break;
     case LoadTranslationsType.CUSTOM:
-      if (!customTranslationLoader) {
+      if (!loadTranslations) {
         results.push({
           type: 'error',
           message:
-            'customTranslationLoader is required when loading translations from a custom loader',
+            'loadTranslations is required when loading translations from a custom loader',
         });
       }
       break;

@@ -23,11 +23,11 @@ export type TranslationsManagerConfig = {
  * Params for the TranslationsManager constructor
  *
  * @property {number} [cacheExpiryTime] - The cache expiry time in milliseconds.
- * @property {TranslationsLoader} [customTranslationLoader] - A custom translations loader function.
+ * @property {TranslationsLoader} [loadTranslations] - A custom translations loader function.
  */
 export type TranslationsManagerConstructorParams = Partial<
   Pick<TranslationsManagerConfig, 'cacheExpiryTime'>
 > &
   Omit<TranslationsManagerConfig, 'cacheExpiryTime'> & {
-    customTranslationLoader?: TranslationsLoader;
+    loadTranslations?: TranslationsLoader;
   };

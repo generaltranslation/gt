@@ -22,7 +22,7 @@ import { InteralTFunctionType } from './types';
  */
 export const t: InteralTFunctionType = async (
   id: string,
-  options: DictionaryTranslationOptions
+  options?: DictionaryTranslationOptions
 ): Promise<string> => {
   throw new Error('t() is not implemented');
 };
