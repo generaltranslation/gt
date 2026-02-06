@@ -26,7 +26,10 @@ export function displayTranslateSummary() {
   const warnings = getWarnings();
 
   // Group by category
-  const grouped = new Map<WarningCategory, { fileName: string; reason: string }[]>();
+  const grouped = new Map<
+    WarningCategory,
+    { fileName: string; reason: string }[]
+  >();
   for (const w of warnings) {
     let list = grouped.get(w.category);
     if (!list) {

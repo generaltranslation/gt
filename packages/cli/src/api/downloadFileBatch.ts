@@ -94,7 +94,11 @@ export async function downloadFileBatch(
 
         if (!outputPath || !fileProperties) {
           logger.warn(`No input/output path found for file: ${fileKey}`);
-          recordWarning('failed_download', fileKey, 'No input/output path found');
+          recordWarning(
+            'failed_download',
+            fileKey,
+            'No input/output path found'
+          );
           result.failed.push(requestedFile);
           continue;
         }
@@ -202,7 +206,11 @@ export async function downloadFileBatch(
         }
       } catch (error) {
         logger.error(`Error saving file ${fileKey}: ` + error);
-        recordWarning('failed_download', fileKey, `Error saving file: ${error}`);
+        recordWarning(
+          'failed_download',
+          fileKey,
+          `Error saving file: ${error}`
+        );
         result.failed.push(requestedFile);
       }
     }

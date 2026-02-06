@@ -59,7 +59,11 @@ export async function aggregateFiles(
             JSON.parse(content);
           } catch (e: any) {
             logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
-            recordWarning('skipped_file', relativePath, 'JSON file is not parsable');
+            recordWarning(
+              'skipped_file',
+              relativePath,
+              'JSON file is not parsable'
+            );
             return null;
           }
         }
@@ -106,7 +110,11 @@ export async function aggregateFiles(
             YAML.parse(content);
           } catch (e: any) {
             logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
-            recordWarning('skipped_file', relativePath, 'YAML file is not parsable');
+            recordWarning(
+              'skipped_file',
+              relativePath,
+              'YAML file is not parsable'
+            );
             return null;
           }
         }
@@ -131,7 +139,11 @@ export async function aggregateFiles(
           logger.warn(
             `Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`
           );
-          recordWarning('skipped_file', file?.fileName ?? 'unknown', 'YAML file is empty');
+          recordWarning(
+            'skipped_file',
+            file?.fileName ?? 'unknown',
+            'YAML file is empty'
+          );
           return false;
         }
         return true;
@@ -154,7 +166,11 @@ export async function aggregateFiles(
                 logger.warn(
                   `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
                 );
-                recordWarning('skipped_file', relativePath, `MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`);
+                recordWarning(
+                  'skipped_file',
+                  relativePath,
+                  `MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
+                );
                 return null;
               }
             }
@@ -197,7 +213,11 @@ export async function aggregateFiles(
             logger.warn(
               `Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`
             );
-            recordWarning('skipped_file', file?.fileName ?? 'unknown', 'File is empty after sanitization');
+            recordWarning(
+              'skipped_file',
+              file?.fileName ?? 'unknown',
+              'File is empty after sanitization'
+            );
             return false;
           }
           return true;
