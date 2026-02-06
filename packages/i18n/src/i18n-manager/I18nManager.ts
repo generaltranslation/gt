@@ -1,11 +1,8 @@
 import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
 import { TranslationsManager } from './translations-manager/TranslationsManager';
-import {
-  I18nManagerConfig,
-  I18nManagerConstructorParams,
-  StorageAdapterType,
-} from './types';
+import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
+import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
 import { Translations } from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';

@@ -2,7 +2,7 @@ import { StorageAdapter } from './StorageAdapter';
 import { StorageAdapterType } from './types';
 
 const FALLBACK_STORAGE_ADAPTER_TYPE: StorageAdapterType =
-  'fallback-storage-adapter';
+  'fallback-storage-adapter' as const;
 
 /**
  * Fallback to storage adapter that is scoped to the entire process

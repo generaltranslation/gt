@@ -5,7 +5,7 @@ type Store = {
   locale: string;
 };
 
-const ASYNC_STORAGE_ADAPTER_TYPE = 'async-storage-adapter';
+const ASYNC_STORAGE_ADAPTER_TYPE = 'async-storage-adapter' as const;
 
 /**
  * AsyncStorageAdapter implementation that uses AsyncLocalStorage as the storage adapter.

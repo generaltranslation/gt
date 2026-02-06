@@ -1,7 +1,7 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { I18nManager } from './I18nManager';
 import logger from '../logs/logger';
-import { StorageAdapter } from './types';
+import { StorageAdapter } from './storage-adapter/StorageAdapter';
 
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
