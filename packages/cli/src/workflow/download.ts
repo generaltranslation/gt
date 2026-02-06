@@ -8,6 +8,7 @@ import { DownloadTranslationsStep } from './DownloadStep.js';
 import { BranchData } from '../types/branch.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
+import { recordWarning } from '../state/translateWarnings.js';
 import { BranchStep } from './BranchStep.js';
 import { FileProperties } from '../types/files.js';
 import chalk from 'chalk';
@@ -115,6 +116,13 @@ export async function downloadTranslations(
           .map(([key, value]) => `- ${value.fileName}`)
           .join('\n')}`
       );
+      for (const [, value] of pollResult.fileTracker.failed) {
+        recordWarning(
+          'failed_translation',
+          value.fileName,
+          `Failed to translate for locale ${value.locale}`
+        );
+      }
     }
 
     if (!pollResult.success) {

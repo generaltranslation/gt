@@ -44,6 +44,8 @@ import {
   postProcessTranslations,
 } from './commands/translate.js';
 import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
+import { clearWarnings } from '../state/translateWarnings.js';
+import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
@@ -213,6 +215,8 @@ export class BaseCLI {
       await postProcessTranslations(settings, include);
     }
     clearDownloaded();
+    displayTranslateSummary();
+    clearWarnings();
   }
 
   protected setupUploadCommand(): void {

@@ -1,6 +1,7 @@
 import type { FileToUpload } from 'generaltranslation/types';
 import { WorkflowStep } from './Workflow.js';
 import { logger } from '../console/logger.js';
+import { recordWarning } from '../state/translateWarnings.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import chalk from 'chalk';
@@ -126,6 +127,16 @@ export class UploadSourcesStep extends WorkflowStep<
         logger.warn(
           `Failed to migrate ${failed} moved file${failed !== 1 ? 's' : ''}`
         );
+        for (const r of moveResult.results) {
+          if (!r.success) {
+            const move = moves.find((m) => m.newFileId === r.newFileId);
+            recordWarning(
+              'failed_move',
+              move?.newFileName ?? r.newFileId,
+              r.error ?? 'Unknown error'
+            );
+          }
+        }
       }
     }
 

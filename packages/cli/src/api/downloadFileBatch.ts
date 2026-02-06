@@ -13,6 +13,7 @@ import {
   ensureNestedObject,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
+import { recordWarning } from '../state/translateWarnings.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflow/PollJobsStep.js';
 
@@ -93,6 +94,7 @@ export async function downloadFileBatch(
 
         if (!outputPath || !fileProperties) {
           logger.warn(`No input/output path found for file: ${fileKey}`);
+          recordWarning('failed_download', fileKey, 'No input/output path found');
           result.failed.push(requestedFile);
           continue;
         }
@@ -200,6 +202,7 @@ export async function downloadFileBatch(
         }
       } catch (error) {
         logger.error(`Error saving file ${fileKey}: ` + error);
+        recordWarning('failed_download', fileKey, `Error saving file: ${error}`);
         result.failed.push(requestedFile);
       }
     }
