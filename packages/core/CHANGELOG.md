@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.9
+
+### Patch Changes
+
+- [#989](https://github.com/generaltranslation/gt/pull/989) [`4a66903`](https://github.com/generaltranslation/gt/commit/4a669031f74a0b20783709752ab7fc0ab40869df) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: set up i18n base
+
 ## 8.1.8
 
 ### Patch Changes
