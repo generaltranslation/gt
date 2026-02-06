@@ -443,11 +443,7 @@ function transformMdxImports(
 
     const ast = parseProcessor.parse(mdxContent);
     processedAst = parseProcessor.runSync(ast) as Root;
-  } catch (error) {
-    console.warn(
-      `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
-    );
-    console.warn('Falling back to string-based import localization.');
+  } catch {
     return transformImportsStringFallback(
       mdxContent,
       defaultLocale,

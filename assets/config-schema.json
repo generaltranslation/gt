@@ -301,7 +301,7 @@
     },
     "sharedStaticAssets": {
       "type": "object",
-      "description": "Configuration for moving shared static assets to a single directory and rewriting references in source files.",
+      "description": "Configuration for moving shared static assets to a single directory and rewriting references in source files, or mirroring assets to each locale directory.",
       "properties": {
         "include": {
           "oneOf": [
@@ -316,15 +316,29 @@
         },
         "outDir": {
           "type": "string",
-          "description": "Repo-root relative output directory where assets will be placed (on disk). Examples: 'public/shared', 'static/img', 'shared'."
+          "description": "Repo-root relative output directory where assets will be placed (on disk). Examples: 'public/shared', 'static/img', 'shared'. Not required when mirrorToLocales is true."
         },
         "publicPath": {
           "type": "string",
           "description": "Public URL prefix to use in rewritten content. If omitted, it is derived from outDir (public/* → '/…', static/* → '/…', otherwise '/basename(outDir)').",
           "examples": ["/shared", "/img", "/assets"]
+        },
+        "mirrorToLocales": {
+          "type": "boolean",
+          "description": "When true, copy matched assets to the equivalent location in each locale directory instead of centralizing them. This preserves relative paths in translated files. outDir and publicPath are ignored.",
+          "default": false
         }
       },
-      "required": ["include", "outDir"],
+      "required": ["include"],
+      "if": {
+        "not": {
+          "properties": { "mirrorToLocales": { "const": true } },
+          "required": ["mirrorToLocales"]
+        }
+      },
+      "then": {
+        "required": ["outDir"]
+      },
       "additionalProperties": false
     },
     "options": {

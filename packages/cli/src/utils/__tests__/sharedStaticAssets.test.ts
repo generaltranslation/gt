@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs';
 import fg from 'fast-glob';
-import processSharedStaticAssets from '../sharedStaticAssets';
+import processSharedStaticAssets, { mirrorAssetsToLocales } from '../sharedStaticAssets';
 import type { Settings } from '../../types/index.js';
+import { createFileMapping } from '../../formats/files/fileMapping.js';
 
 // Mock dependencies
 vi.mock('node:fs', () => ({
@@ -17,6 +18,7 @@ vi.mock('node:fs', () => ({
       stat: vi.fn(),
       readdir: vi.fn(),
       rmdir: vi.fn(),
+      copyFile: vi.fn(),
     },
   },
 }));
@@ -28,6 +30,7 @@ vi.mock('node:path', () => ({
     dirname: vi.fn(),
     normalize: vi.fn(),
     basename: vi.fn(),
+    sep: '/',
   },
 }));
 
@@ -35,6 +38,10 @@ vi.mock('fast-glob', () => ({
   default: {
     sync: vi.fn(),
   },
+}));
+
+vi.mock('../../formats/files/fileMapping.js', () => ({
+  createFileMapping: vi.fn(),
 }));
 
 describe('processSharedStaticAssets', () => {
@@ -738,6 +745,305 @@ describe('processSharedStaticAssets', () => {
       await processSharedStaticAssets(settings);
 
       expect(fg.sync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('mirrorToLocales mode', () => {
+    beforeEach(() => {
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined);
+      vi.mocked(fs.promises.stat).mockRejectedValue(new Error('Not found'));
+
+      // Setup path mocks
+      vi.mocked(path.resolve).mockImplementation((base, rel) =>
+        rel ? `${base}/${rel}` : base
+      );
+      vi.mocked(path.relative).mockImplementation((from, to) =>
+        to.replace(from + '/', '')
+      );
+      vi.mocked(path.normalize).mockImplementation((p) => p);
+      vi.mocked(path.dirname).mockImplementation((p) => {
+        const parts = p.split('/');
+        return parts.slice(0, -1).join('/');
+      });
+    });
+
+    it('should copy asset to correct locale-relative location', async () => {
+      const assetPath = '/project/docs/guide/images/diagram.png';
+      vi.mocked(fg.sync).mockReturnValue([assetPath]);
+
+      // fileMapping: source docs/guide/intro.mdx → target i18n/fr/docs/guide/intro.mdx
+      vi.mocked(createFileMapping).mockReturnValue({
+        fr: {
+          'docs/guide/intro.mdx': 'i18n/fr/docs/guide/intro.mdx',
+        },
+      });
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        sharedStaticAssets: {
+          include: ['docs/**/images/**/*.png'],
+          mirrorToLocales: true,
+        },
+        files: {
+          resolvedPaths: { mdx: ['/project/docs/guide/intro.mdx'], md: [] },
+          placeholderPaths: {
+            mdx: ['/project/i18n/[locale]/docs/guide/intro.mdx'],
+            md: [],
+          },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      await mirrorAssetsToLocales(settings);
+
+      expect(createFileMapping).toHaveBeenCalled();
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        assetPath,
+        '/project/i18n/fr/docs/guide/images/diagram.png'
+      );
+      // Original asset should NOT be moved/deleted
+      expect(fs.promises.rename).not.toHaveBeenCalled();
+      expect(fs.promises.unlink).not.toHaveBeenCalled();
+    });
+
+    it('should copy assets to multiple locales', async () => {
+      const assetPath = '/project/docs/images/logo.png';
+      vi.mocked(fg.sync).mockReturnValue([assetPath]);
+
+      vi.mocked(createFileMapping).mockReturnValue({
+        fr: {
+          'docs/intro.mdx': 'i18n/fr/docs/intro.mdx',
+        },
+        es: {
+          'docs/intro.mdx': 'i18n/es/docs/intro.mdx',
+        },
+      });
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr', 'es'],
+        sharedStaticAssets: {
+          include: ['docs/**/images/**/*'],
+          mirrorToLocales: true,
+        },
+        files: {
+          resolvedPaths: { mdx: ['/project/docs/intro.mdx'], md: [] },
+          placeholderPaths: {
+            mdx: ['/project/i18n/[locale]/docs/intro.mdx'],
+            md: [],
+          },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      await mirrorAssetsToLocales(settings);
+
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        assetPath,
+        '/project/i18n/fr/docs/images/logo.png'
+      );
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        assetPath,
+        '/project/i18n/es/docs/images/logo.png'
+      );
+      expect(fs.promises.copyFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not require outDir when mirrorToLocales is true', async () => {
+      const assetPath = '/project/docs/images/pic.png';
+      vi.mocked(fg.sync).mockReturnValue([assetPath]);
+
+      vi.mocked(createFileMapping).mockReturnValue({
+        fr: {
+          'docs/page.mdx': 'i18n/fr/docs/page.mdx',
+        },
+      });
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        sharedStaticAssets: {
+          include: ['docs/**/images/**/*'],
+          mirrorToLocales: true,
+          // no outDir
+        },
+        files: {
+          resolvedPaths: { mdx: ['/project/docs/page.mdx'], md: [] },
+          placeholderPaths: {
+            mdx: ['/project/i18n/[locale]/docs/page.mdx'],
+            md: [],
+          },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      // Should not throw
+      await mirrorAssetsToLocales(settings);
+
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        assetPath,
+        '/project/i18n/fr/docs/images/pic.png'
+      );
+    });
+
+    it('should skip copy when target already exists with same size', async () => {
+      const assetPath = '/project/docs/images/pic.png';
+      vi.mocked(fg.sync).mockReturnValue([assetPath]);
+
+      vi.mocked(createFileMapping).mockReturnValue({
+        fr: {
+          'docs/page.mdx': 'i18n/fr/docs/page.mdx',
+        },
+      });
+
+      // Both source and target exist with same size
+      vi.mocked(fs.promises.stat).mockImplementation((p) => {
+        if (
+          p === assetPath ||
+          p === '/project/i18n/fr/docs/images/pic.png'
+        ) {
+          return Promise.resolve({ isFile: () => true, size: 1024 } as any);
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        sharedStaticAssets: {
+          include: ['docs/**/images/**/*'],
+          mirrorToLocales: true,
+        },
+        files: {
+          resolvedPaths: { mdx: ['/project/docs/page.mdx'], md: [] },
+          placeholderPaths: {
+            mdx: ['/project/i18n/[locale]/docs/page.mdx'],
+            md: [],
+          },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      await mirrorAssetsToLocales(settings);
+
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
+    });
+
+    it('should return early if no files config', async () => {
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        sharedStaticAssets: {
+          include: ['docs/**/images/**/*'],
+          mirrorToLocales: true,
+        },
+        files: undefined,
+      } as unknown as Settings;
+
+      await mirrorAssetsToLocales(settings);
+
+      expect(fg.sync).not.toHaveBeenCalled();
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
+    });
+
+    it('should derive ancestor dir pairs for assets in sibling directories', async () => {
+      // Asset is in docs/images/ but MDX files are only in docs/guide/
+      // We need to infer that docs/ → ja/docs/ from docs/guide/ → ja/docs/guide/
+      const assetPath = '/project/docs/images/datastore_architecture.png';
+      vi.mocked(fg.sync).mockReturnValue([assetPath]);
+
+      vi.mocked(createFileMapping).mockReturnValue({
+        ja: {
+          'docs/guide/page.mdx': 'ja/docs/guide/page.mdx',
+        },
+      });
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'ja'],
+        sharedStaticAssets: {
+          include: ['docs/**/*.png'],
+          mirrorToLocales: true,
+        },
+        files: {
+          resolvedPaths: { mdx: ['/project/docs/guide/page.mdx'], md: [] },
+          placeholderPaths: {
+            mdx: ['/project/ja/docs/guide/page.mdx'],
+            md: [],
+          },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      await mirrorAssetsToLocales(settings);
+
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        assetPath,
+        '/project/ja/docs/images/datastore_architecture.png'
+      );
+    });
+
+    it('should handle asset in nested subdirectory', async () => {
+      const assetPath = '/project/docs/guide/advanced/images/deep/nested.svg';
+      vi.mocked(fg.sync).mockReturnValue([assetPath]);
+
+      vi.mocked(createFileMapping).mockReturnValue({
+        fr: {
+          'docs/guide/advanced/page.mdx':
+            'i18n/fr/docs/guide/advanced/page.mdx',
+        },
+      });
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        sharedStaticAssets: {
+          include: ['docs/**/images/**/*'],
+          mirrorToLocales: true,
+        },
+        files: {
+          resolvedPaths: {
+            mdx: ['/project/docs/guide/advanced/page.mdx'],
+            md: [],
+          },
+          placeholderPaths: {
+            mdx: ['/project/i18n/[locale]/docs/guide/advanced/page.mdx'],
+            md: [],
+          },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      await mirrorAssetsToLocales(settings);
+
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        assetPath,
+        '/project/i18n/fr/docs/guide/advanced/images/deep/nested.svg'
+      );
+    });
+
+    it('processSharedStaticAssets should skip when mirrorToLocales is true', async () => {
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        sharedStaticAssets: {
+          include: ['docs/**/*.png'],
+          mirrorToLocales: true,
+        },
+        files: {
+          resolvedPaths: { mdx: [], md: [] },
+          placeholderPaths: { mdx: [], md: [] },
+          transformPaths: { mdx: undefined, md: undefined },
+        },
+      } as unknown as Settings;
+
+      await processSharedStaticAssets(settings);
+
+      // Should not do anything — mirror is called separately
+      expect(fg.sync).not.toHaveBeenCalled();
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
     });
   });
 });

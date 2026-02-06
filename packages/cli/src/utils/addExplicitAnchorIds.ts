@@ -147,10 +147,7 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
 
     const ast = parseProcessor.parse(mdxContent);
     processedAst = parseProcessor.runSync(ast) as Root;
-  } catch (error) {
-    console.warn(
-      `Failed to parse MDX content: ${error instanceof Error ? error.message : String(error)}`
-    );
+  } catch {
     // Fallback: line-by-line extraction skipping fenced code blocks
     return extractHeadingsWithFallback(mdxContent);
   }
@@ -297,10 +294,7 @@ function applyInlineIds(
 
     const ast = parseProcessor.parse(translatedContent);
     processedAst = parseProcessor.runSync(ast) as Root;
-  } catch (error) {
-    console.warn(
-      `Failed to parse translated MDX content: ${error instanceof Error ? error.message : String(error)}`
-    );
+  } catch {
     return applyInlineIdsStringFallback(
       translatedContent,
       idMappings,
@@ -386,10 +380,7 @@ function applyInlineIds(
     }
 
     return content;
-  } catch (error) {
-    console.warn(
-      `Failed to stringify translated MDX content: ${error instanceof Error ? error.message : String(error)}`
-    );
+  } catch {
     return translatedContent;
   }
 }
