@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.15
+
+### Patch Changes
+
+- [#999](https://github.com/generaltranslation/gt/pull/999) [`09f3e68`](https://github.com/generaltranslation/gt/commit/09f3e6829243decffa795251d46c9e6a0d1ed878) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Allow `sharedStaticAssets` configuration to mirror shared asset structure
+
 ## 2.6.14
 
 ### Patch Changes
