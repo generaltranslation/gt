@@ -205,10 +205,7 @@ function rewriteMdxContent(
   }
 }
 
-function resolveAssetPaths(
-  include: string[],
-  cwd: string
-): Set<string> {
+function resolveAssetPaths(include: string[], cwd: string): Set<string> {
   const assetPaths = new Set<string>();
   for (let pattern of include) {
     if (pattern.startsWith('/')) pattern = pattern.slice(1);

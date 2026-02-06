@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs';
 import fg from 'fast-glob';
-import processSharedStaticAssets, { mirrorAssetsToLocales } from '../sharedStaticAssets';
+import processSharedStaticAssets, {
+  mirrorAssetsToLocales,
+} from '../sharedStaticAssets';
 import type { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 
@@ -900,10 +902,7 @@ describe('processSharedStaticAssets', () => {
 
       // Both source and target exist with same size
       vi.mocked(fs.promises.stat).mockImplementation((p) => {
-        if (
-          p === assetPath ||
-          p === '/project/i18n/fr/docs/images/pic.png'
-        ) {
+        if (p === assetPath || p === '/project/i18n/fr/docs/images/pic.png') {
           return Promise.resolve({ isFile: () => true, size: 1024 } as any);
         }
         return Promise.reject(new Error('Not found'));
