@@ -1,5 +1,14 @@
 # @generaltranslation/react-core
 
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [[`4a66903`](https://github.com/generaltranslation/gt/commit/4a669031f74a0b20783709752ab7fc0ab40869df), [`8b65862`](https://github.com/generaltranslation/gt/commit/8b65862c33ecb62fa0d9b80ec3fba55dbfe04719)]:
+  - generaltranslation@8.1.9
+  - gt-i18n@0.3.6
+  - @generaltranslation/supported-locales@2.0.40
+
 ## 1.4.5
 
 ### Patch Changes

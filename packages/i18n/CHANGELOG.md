@@ -1,5 +1,17 @@
 # gt-i18n
 
+## 0.3.6
+
+### Patch Changes
+
+- [#989](https://github.com/generaltranslation/gt/pull/989) [`4a66903`](https://github.com/generaltranslation/gt/commit/4a669031f74a0b20783709752ab7fc0ab40869df) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: set up i18n base
+
+- [#991](https://github.com/generaltranslation/gt/pull/991) [`8b65862`](https://github.com/generaltranslation/gt/commit/8b65862c33ecb62fa0d9b80ec3fba55dbfe04719) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: support for node environments
+
+- Updated dependencies [[`4a66903`](https://github.com/generaltranslation/gt/commit/4a669031f74a0b20783709752ab7fc0ab40869df)]:
+  - generaltranslation@8.1.9
+  - @generaltranslation/supported-locales@2.0.40
+
 ## 0.3.5
 
 ### Patch Changes
