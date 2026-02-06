@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { randomUUID } from 'node:crypto';
-import { pino, transport } from 'pino';
+import { pino, destination } from 'pino';
 import {
   log as clackLog,
   spinner,
@@ -120,25 +120,9 @@ class Logger {
 
     this.logFormat = format;
 
-    const transports: Array<{
-      level: string;
-      target: string;
-      options: Record<string, unknown>;
-    }> = [];
-
-    // Console output (stdout)
+    // Console output (stdout) - only for JSON format
+    // For 'default' format, we use @clack/prompts directly
     if (format === 'json') {
-      // JSON formatted console output
-      transports.push({
-        level: logLevel,
-        target: 'pino/file',
-        options: { destination: 1 }, // stdout
-      });
-    }
-    // For 'default' format, we don't add a console transport - we'll use @clack/prompts directly
-
-    // Create console logger if we have console transports
-    if (transports.length > 0) {
       this.pinoLogger = pino(
         {
           level: logLevel,
@@ -146,9 +130,7 @@ class Logger {
             logId: randomUUID(),
           }),
         },
-        transport({
-          targets: transports,
-        })
+        destination(1)
       );
     }
 
@@ -161,15 +143,7 @@ class Logger {
             logId: randomUUID(),
           }),
         },
-        transport({
-          targets: [
-            {
-              level: logLevel,
-              target: 'pino/file',
-              options: { destination: logFile },
-            },
-          ],
-        })
+        destination(logFile)
       );
     }
   }
