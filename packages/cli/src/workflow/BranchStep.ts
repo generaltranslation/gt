@@ -44,6 +44,12 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     let incoming: string[] = [];
     let checkedOut: string[] = [];
     let useDefaultBranch: boolean = true;
+    // Track whether we should assume the branch is checked out from the default branch
+    // (when --branch is specified but auto-detection is disabled or failed)
+    let assumeCheckedOutFromDefault: boolean = false;
+    // Track whether auto-detection was disabled or failed
+    let autoDetectionDisabledOrFailed: boolean =
+      !this.settings.branchOptions.autoDetectBranches;
 
     if (
       this.settings.branchOptions.enabled &&
@@ -58,17 +64,32 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       current = currentResult;
       incoming = incomingResult;
       checkedOut = checkedOutResult;
-      useDefaultBranch = false;
+
+      // If auto-detection succeeded, don't use default branch
+      if (current !== null) {
+        useDefaultBranch = false;
+      } else {
+        // Auto-detection failed (current is null)
+        autoDetectionDisabledOrFailed = true;
+      }
+      // If auto-detection failed but --branch is specified, we'll handle it below
+      // If auto-detection failed and no --branch, useDefaultBranch remains true (fallback to default branch)
     }
     if (
       this.settings.branchOptions.enabled &&
       this.settings.branchOptions.currentBranch
     ) {
+      // --branch is specified, so we're not using the default branch
       current = {
         currentBranchName: this.settings.branchOptions.currentBranch,
         defaultBranch: current?.defaultBranch ?? false, // we have no way of knowing if this is the default branch without using the auto-detection logic
       };
       useDefaultBranch = false;
+
+      // Only assume branch is checked out from default if auto-detection was disabled or failed
+      if (autoDetectionDisabledOrFailed) {
+        assumeCheckedOutFromDefault = true;
+      }
     }
 
     const branchData = await this.gt.queryBranchData({
@@ -80,6 +101,12 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     });
 
     if (useDefaultBranch) {
+      // Log warning if we're falling back to default branch due to disabled/failed auto-detection
+      if (autoDetectionDisabledOrFailed) {
+        logger.warn(
+          'Branch auto-detection is disabled or failed. Using default branch.'
+        );
+      }
       if (!branchData.defaultBranch) {
         const createBranchResult = await this.gt.createBranch({
           branchName: 'main', // name doesn't matter for default branch
@@ -143,17 +170,24 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
           }
         })
         .filter((b) => b !== null)[0] ?? null;
-    this.branchData.checkedOutBranch =
-      checkedOut
-        .map((b) => {
-          const branch = branchData.branches.find((bb) => bb.name === b);
-          if (branch) {
-            return branch;
-          } else {
-            return null;
-          }
-        })
-        .filter((b) => b !== null)[0] ?? null;
+
+    // If --branch was specified but auto-detection is disabled or failed,
+    // assume the branch is checked out from the default branch
+    if (assumeCheckedOutFromDefault && branchData.defaultBranch) {
+      this.branchData.checkedOutBranch = branchData.defaultBranch;
+    } else {
+      this.branchData.checkedOutBranch =
+        checkedOut
+          .map((b) => {
+            const branch = branchData.branches.find((bb) => bb.name === b);
+            if (branch) {
+              return branch;
+            } else {
+              return null;
+            }
+          })
+          .filter((b) => b !== null)[0] ?? null;
+    }
 
     this.spinner.stop(chalk.green('Branch information resolved successfully'));
     return this.branchData;
