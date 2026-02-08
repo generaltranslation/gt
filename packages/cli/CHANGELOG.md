@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.16
+
+### Patch Changes
+
+- [#1002](https://github.com/generaltranslation/gt/pull/1002) [`8f8368a`](https://github.com/generaltranslation/gt/commit/8f8368a8723f79c4ebe56129bac03cb6cb33eec8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: branch detection vercel
+
 ## 2.6.15
 
 ### Patch Changes
