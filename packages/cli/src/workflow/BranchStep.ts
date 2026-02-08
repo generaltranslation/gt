@@ -173,7 +173,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         })
         .filter((b) => b !== null)[0] ?? null;
 
-    // When --branch is set manually without git, assume it was checked out from default
+    // When --branch is set manually or auto-detection failed, assume it was checked out from default
     if (
       (this.settings.branchOptions.currentBranch || autoDetectFailed) &&
       (!this.settings.branchOptions.autoDetectBranches || autoDetectFailed) &&
