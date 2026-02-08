@@ -48,11 +48,13 @@ const mockGt = {
 const defaultBranch = { id: 'default-id', name: 'main' };
 const featureBranch = { id: 'feature-id', name: 'feature-x' };
 
-function makeSettings(overrides: {
-  enabled?: boolean;
-  autoDetectBranches?: boolean;
-  currentBranch?: string;
-} = {}) {
+function makeSettings(
+  overrides: {
+    enabled?: boolean;
+    autoDetectBranches?: boolean;
+    currentBranch?: string;
+  } = {}
+) {
   return {
     branchOptions: {
       enabled: overrides.enabled ?? true,
@@ -240,7 +242,10 @@ describe('BranchStep', () => {
         branchName: 'new-branch',
         defaultBranch: false,
       });
-      expect(result?.currentBranch).toEqual({ id: 'new-id', name: 'new-branch' });
+      expect(result?.currentBranch).toEqual({
+        id: 'new-id',
+        name: 'new-branch',
+      });
     });
   });
 });
