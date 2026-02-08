@@ -47,6 +47,9 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     // Track whether we should assume the branch is checked out from the default branch
     // (when --branch is specified but auto-detection is disabled or failed)
     let assumeCheckedOutFromDefault: boolean = false;
+    // Track whether auto-detection was disabled or failed
+    let autoDetectionDisabledOrFailed: boolean =
+      !this.settings.branchOptions.autoDetectBranches;
 
     if (
       this.settings.branchOptions.enabled &&
@@ -65,6 +68,9 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       // If auto-detection succeeded, don't use default branch
       if (current !== null) {
         useDefaultBranch = false;
+      } else {
+        // Auto-detection failed (current is null)
+        autoDetectionDisabledOrFailed = true;
       }
       // If auto-detection failed but --branch is specified, we'll handle it below
       // If auto-detection failed and no --branch, useDefaultBranch remains true (fallback to default branch)
@@ -80,9 +86,8 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       };
       useDefaultBranch = false;
 
-      // If auto-detection is disabled or failed (checkedOut is empty), assume the branch
-      // is checked out from the default branch
-      if (checkedOut.length === 0) {
+      // Only assume branch is checked out from default if auto-detection was disabled or failed
+      if (autoDetectionDisabledOrFailed) {
         assumeCheckedOutFromDefault = true;
       }
     }
