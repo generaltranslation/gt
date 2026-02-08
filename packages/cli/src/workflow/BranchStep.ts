@@ -101,6 +101,12 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     });
 
     if (useDefaultBranch) {
+      // Log warning if we're falling back to default branch due to disabled/failed auto-detection
+      if (autoDetectionDisabledOrFailed) {
+        logger.warn(
+          'Branch auto-detection is disabled or failed. Using default branch.'
+        );
+      }
       if (!branchData.defaultBranch) {
         const createBranchResult = await this.gt.createBranch({
           branchName: 'main', // name doesn't matter for default branch
