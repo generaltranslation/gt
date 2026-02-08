@@ -74,7 +74,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         useDefaultBranch = false;
       } else {
         logger.warn(
-          'Banch auto-detection failed. Falling back to the default branch. Use --branch to specify a branch manually.'
+          'Branch auto-detection failed. Falling back to the default branch. Use --branch to specify a branch manually.'
         );
       }
     }
