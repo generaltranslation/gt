@@ -44,6 +44,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     let incoming: string[] = [];
     let checkedOut: string[] = [];
     let useDefaultBranch: boolean = true;
+    let autoDetectFailed = false;
 
     if (
       this.settings.branchOptions.enabled &&
@@ -58,7 +59,24 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       current = currentResult;
       incoming = incomingResult;
       checkedOut = checkedOutResult;
-      useDefaultBranch = false;
+
+      // Try env var detection if git commands failed (e.g. Vercel)
+      if (!currentResult) {
+        autoDetectFailed = true;
+        const vercelBranch = process.env.VERCEL_GIT_COMMIT_REF;
+        if (vercelBranch) {
+          current = { currentBranchName: vercelBranch, defaultBranch: false };
+        }
+      }
+
+      // If detection succeeded, use the detected branch; otherwise fall back to default
+      if (current) {
+        useDefaultBranch = false;
+      } else {
+        logger.warn(
+          'Banch auto-detection failed. Falling back to the default branch. Use --branch to specify a branch manually.'
+        );
+      }
     }
     if (
       this.settings.branchOptions.enabled &&
@@ -154,6 +172,17 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
           }
         })
         .filter((b) => b !== null)[0] ?? null;
+
+    // When --branch is set manually without git, assume it was checked out from default
+    if (
+      (this.settings.branchOptions.currentBranch || autoDetectFailed) &&
+      (!this.settings.branchOptions.autoDetectBranches || autoDetectFailed) &&
+      !this.branchData.checkedOutBranch &&
+      branchData.defaultBranch &&
+      this.branchData.currentBranch.id !== branchData.defaultBranch.id
+    ) {
+      this.branchData.checkedOutBranch = branchData.defaultBranch;
+    }
 
     this.spinner.stop(chalk.green('Branch information resolved successfully'));
     return this.branchData;
