@@ -251,8 +251,25 @@ function rewriteDocsJsonOpenApi(
       nextLocale = node.language;
     }
 
-    if (isRecord(node.openapi) && Array.isArray(node.pages)) {
-      const locale = nextLocale || localeHint || defaultLocale;
+    const locale = nextLocale || localeHint || defaultLocale;
+
+    if (typeof node.openapi === 'string') {
+      const sourceValue = node.openapi;
+      const localizedSource = localizeDocsJsonSpecPath(
+        sourceValue,
+        locale,
+        filePath,
+        specs,
+        fileMappingAbs,
+        fileMappingRel,
+        warnings,
+        configDir
+      );
+      if (localizedSource && localizedSource !== sourceValue) {
+        node.openapi = localizedSource;
+        changed = true;
+      }
+    } else if (isRecord(node.openapi)) {
       const openapiConfig = node.openapi as Record<string, unknown>;
       const sourceValue = openapiConfig.source;
       if (typeof sourceValue === 'string') {
@@ -271,7 +288,9 @@ function rewriteDocsJsonOpenApi(
           changed = true;
         }
       }
+    }
 
+    if (Array.isArray(node.pages)) {
       const pages = node.pages;
       for (let i = 0; i < pages.length; i += 1) {
         const page = pages[i];

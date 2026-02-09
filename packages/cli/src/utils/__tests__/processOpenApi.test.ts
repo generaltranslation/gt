@@ -211,6 +211,122 @@ describe('processOpenApi', () => {
     expect(esGroup.pages[0]).toBe('GET /foo');
   });
 
+  it('rewrites docs.json string openapi field with locale-specific spec path', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specPath = path.join(tmpDir, 'openapi.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.json');
+    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
+    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
+
+    const reportingSpec = {
+      openapi: '3.0.0',
+      paths: { '/reports': { get: {} } },
+    };
+    const reportingSpecPath = path.join(tmpDir, 'openapi-reporting.json');
+    fs.writeFileSync(reportingSpecPath, JSON.stringify(reportingSpec));
+    const translatedReportingSpecPath = path.join(
+      tmpDir,
+      'es',
+      'openapi-reporting.json'
+    );
+    fs.writeFileSync(
+      translatedReportingSpecPath,
+      JSON.stringify(reportingSpec)
+    );
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          navigation: {
+            languages: [
+              {
+                language: 'en',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'Processing API',
+                        icon: 'square-terminal',
+                        openapi: 'openapi.json',
+                      },
+                      {
+                        group: 'Reporting API',
+                        icon: 'square-terminal',
+                        openapi: 'openapi-reporting.json',
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                language: 'es',
+                tabs: [
+                  {
+                    tab: 'API',
+                    groups: [
+                      {
+                        group: 'API de procesamiento',
+                        icon: 'square-terminal',
+                        openapi: 'openapi.json',
+                      },
+                      {
+                        group: 'API de informes',
+                        icon: 'square-terminal',
+                        openapi: 'openapi-reporting.json',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const settings = createSettings(tmpDir, [
+      './openapi.json',
+      './openapi-reporting.json',
+    ]);
+    settings.files = {
+      resolvedPaths: {
+        json: [specPath, reportingSpecPath, docsJsonPath],
+      },
+      placeholderPaths: {
+        json: [specPath, reportingSpecPath, docsJsonPath],
+      },
+      transformPaths: {
+        json: [
+          {
+            match: 'openapi\\.json$',
+            replace: '{locale}/openapi.json',
+          },
+          {
+            match: 'openapi-reporting\\.json$',
+            replace: '{locale}/openapi-reporting.json',
+          },
+        ],
+      },
+    };
+
+    await processOpenApi(settings);
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const enGroups = updatedDocs.navigation.languages[0].tabs[0].groups;
+    const esGroups = updatedDocs.navigation.languages[1].tabs[0].groups;
+    expect(enGroups[0].openapi).toBe('openapi.json');
+    expect(enGroups[1].openapi).toBe('openapi-reporting.json');
+    expect(esGroups[0].openapi).toBe('es/openapi.json');
+    expect(esGroups[1].openapi).toBe('es/openapi-reporting.json');
+  });
+
   it('rewrites docs.json openapi source with nested locale paths and respects absolute style', async () => {
     const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
     const specPath = path.join(tmpDir, 'api', 'specs', 'openapi.json');
