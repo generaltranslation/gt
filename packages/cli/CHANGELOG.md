@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.17
+
+### Patch Changes
+
+- [#1005](https://github.com/generaltranslation/gt/pull/1005) [`ca125b3`](https://github.com/generaltranslation/gt/commit/ca125b3212675b27fa756b8cad80b7a1f21f8306) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add handling of `openapi` field in group nodes for Mintlify docs
+
 ## 2.6.16
 
 ### Patch Changes
