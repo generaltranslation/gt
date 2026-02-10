@@ -6,7 +6,7 @@ import { MFunctionType } from '../types/functions';
 
 /**
  * Returns the m function that resolves a registered message to its translation.
- * @returns The m function
+ * @returns A promise of the m function
  * @important Must be used inside of a request context
  *
  * @example
@@ -17,7 +17,7 @@ import { MFunctionType } from '../types/functions';
  * const m = await getMessages();
  * const greeting = m(registeredMessage);
  */
-export async function getMessages() {
+export async function getMessages(): Promise<MFunctionType> {
   // Get the gt function
   const gt = await getGT();
 

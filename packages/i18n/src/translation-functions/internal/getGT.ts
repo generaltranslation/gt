@@ -5,14 +5,14 @@ import { GTFunctionType } from '../types/functions';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
- * @returns The gt function
+ * @returns A promise of the gt function
  * @important Must be used inside of a request context
  *
  * @example
  * const gt = await getGT();
  * const greeting = gt('Hello, world!');
  */
-export async function getGT() {
+export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
   const resolveTranslation = await i18nManager.getTranslationResolver();

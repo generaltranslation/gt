@@ -5,7 +5,7 @@ import { TFunctionType } from '../types/functions';
 
 /**
  * Returns the t function that translates a dictionary entry based on its id and options.
- * @returns The t function
+ * @returns A promise of the t function
  * @important Must be used inside of a request context
  *
  * @deprecated not yet supported
@@ -14,7 +14,7 @@ import { TFunctionType } from '../types/functions';
  * const t = await getTranslations();
  * const title = await t('page.title');
  */
-export async function getTranslations() {
+export async function getTranslations(): Promise<TFunctionType> {
   /**
    * Dictionary resolution
    * @param {string} id - The id of the translation to translate.
