@@ -29,10 +29,12 @@ export async function getMessages() {
    *
    * @example
    * // Simple message without interpolation
-   * const greeting = await m(msg('Hello, world!'));
+   * const m = await getMessages();
+   * const greeting = m(msg('Hello, world!'));
    *
    * @example
    * // Message with interpolation
+   * const m = await getMessages();
    * const welcome = await m(msg('Welcome, {user}!'), { user: 'Alice' });
    */
   const m: MFunctionType = <T extends string | null | undefined>(

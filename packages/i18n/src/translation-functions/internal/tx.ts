@@ -20,7 +20,7 @@ import { TxFunctionType } from '../types/functions';
  *
  * @example
  * // Runtime translation with interpolation
- * const progress = await tx('Processing complete', { locale: 'es-MX' });
+ * const progress = await tx(`Processing ${status}`, { locale: 'es-MX' });
  */
 
 export const tx: TxFunctionType = async (

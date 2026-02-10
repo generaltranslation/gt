@@ -25,11 +25,13 @@ export async function getGT() {
    *
    * @example
    * // Simple translation without interpolation
-   * const greeting = await gt('Hello, world!');
+   * const gt = await getGT();
+   * const greeting = gt('Hello, world!');
    *
    * @example
    * // Translation with interpolation
-   * const welcome = await gt('Hello, {name}!', { name: 'Alice' });
+   * const gt = await getGT();
+   * const welcome = gt('Hello, {name}!', { name: 'Alice' });
    */
   const gt: GTFunctionType = (
     message: string,

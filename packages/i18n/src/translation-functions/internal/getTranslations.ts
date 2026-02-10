@@ -28,11 +28,13 @@ export async function getTranslations() {
    *
    * @example
    * // Simple dictionary lookup without interpolation
-   * const title = await t('page.title');
+   * const t = await getTranslations();
+   * const title = t('page.title');
    *
    * @example
    * // Dictionary lookup with interpolation
-   * const message = await t('user.greeting', { name: 'Bob' });
+   * const t = await getTranslations();
+   * const greeting = t('user.greeting', { name: 'Bob' });
    */
   const t: TFunctionType = (
     id: string,

@@ -1,4 +1,4 @@
-// --- Re-exports from gt-i18n --- //
+// --- Function Types --- //
 
 // GT Function
 export type { GTFunctionType } from 'gt-i18n/internal-types';
