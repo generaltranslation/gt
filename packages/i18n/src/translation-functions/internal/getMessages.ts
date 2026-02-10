@@ -35,7 +35,7 @@ export async function getMessages(): Promise<MFunctionType> {
    * @example
    * // Message with interpolation
    * const m = await getMessages();
-   * const welcome = await m(msg('Welcome, {user}!'), { user: 'Alice' });
+   * const welcome = m(msg('Welcome, {user}!'), { user: 'Alice' });
    */
   const m: MFunctionType = <T extends string | null | undefined>(
     encodedMsg: T,
