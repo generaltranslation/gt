@@ -4,7 +4,7 @@ import { VAR_IDENTIFIER } from 'generaltranslation/internal';
 import { formatCutoff } from 'generaltranslation';
 import logger from '../../logs/logger';
 import { interpolationFailureMessage } from './messages';
-import { InlineTranslationOptions } from '../../types';
+import type { InlineTranslationOptions } from '../types/options';
 
 /**
  * Applies string interpolation and cutoff formatting. Fallsback to the original message if interpolation fails.

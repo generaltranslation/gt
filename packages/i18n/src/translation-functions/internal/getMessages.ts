@@ -5,13 +5,6 @@ import { getGT } from './getGT';
 import { MFunctionType } from '../types/functions';
 
 /**
- * Return type for the m function
- */
-type MReturnType<T extends string | null | undefined> = T extends string
-  ? string
-  : T;
-
-/**
  * Returns the m function that resolves a registered message to its translation.
  * @returns The m function
  * @important Must be used inside of a request context
@@ -47,19 +40,21 @@ export async function getMessages() {
     options: InlineResolveOptions = {}
   ): T extends string ? string : T => {
     // Return if the encoded message is null or undefined
-    if (encodedMsg == null) return encodedMsg as MReturnType<T>;
+    if (encodedMsg == null) return encodedMsg as T extends string ? string : T;
 
     // Get any encoded options
     const decodedOptions = decodeOptions(encodedMsg) ?? {};
 
     // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
     if (isEncodedTranslationOptions(decodedOptions)) {
-      return gt(decodedOptions.$_source, decodedOptions) as MReturnType<T>;
+      return gt(decodedOptions.$_source, decodedOptions) as T extends string
+        ? string
+        : T;
     }
 
     // Use gt to interpolate
     // Separate from decoded options to match behavior in @gt/react-core
-    return gt(encodedMsg, options) as MReturnType<T>;
+    return gt(encodedMsg, options) as T extends string ? string : T;
   };
 
   return m;
