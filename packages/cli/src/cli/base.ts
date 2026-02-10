@@ -58,6 +58,11 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
+import {
+  findAgentFiles,
+  getAgentInstructions,
+  appendAgentInstructions,
+} from '../setup/agentInstructions.js';
 
 export type UploadOptions = {
   config?: string;
@@ -326,6 +331,7 @@ export class BaseCLI {
 
         if (useAgent) {
           await setupLocadex(settings);
+          await this.promptAgentInstructions();
           logger.endCommand(
             'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
@@ -381,6 +387,8 @@ export class BaseCLI {
           }
           // Configure gt.config.json
           await this.handleInitCommand(ranReactSetup, useDefaults);
+
+          await this.promptAgentInstructions(useDefaults);
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -606,5 +614,32 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     const keyType = options.keyType || 'production';
     const credentials = await retrieveCredentials(settings, keyType);
     await setCredentials(credentials, keyType, settings.framework);
+  }
+
+  protected async promptAgentInstructions(
+    useDefaults: boolean = false
+  ): Promise<void> {
+    const agentFiles = findAgentFiles();
+    if (agentFiles.length === 0) return;
+
+    const addInstructions = useDefaults
+      ? true
+      : await promptConfirm({
+          message: `Found AI agent instruction files (${agentFiles.map((f) => path.basename(f)).join(', ')}). Would you like to add GT usage instructions?`,
+          defaultValue: true,
+        });
+
+    if (addInstructions) {
+      const instructions = getAgentInstructions(this.library);
+      let updatedCount = 0;
+      for (const file of agentFiles) {
+        if (appendAgentInstructions(file, instructions)) {
+          updatedCount++;
+        }
+      }
+      if (updatedCount > 0) {
+        logger.success('Added GT instructions to agent files.');
+      }
+    }
   }
 }

@@ -10,10 +10,10 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "node scripts/generate-version.js && tsc",
+    "build": "node scripts/generate-version.js && tsc && cp -r src/setup/instructions dist/setup/instructions",
     "build:clean": "sh ../../scripts/clean.sh && pnpm bin:restore && rm -rf binaries && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "build:bin": "node scripts/generate-version.js && tsc && sh scripts/build-exe.sh all",
+    "build:bin": "node scripts/generate-version.js && tsc && cp -r src/setup/instructions dist/setup/instructions && sh scripts/build-exe.sh all",
     "build:bin:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build:bin",
     "build:bin:release": "pnpm run build:bin:clean && pnpm run build:bin",
     "build:bin:darwin-x64": "sh scripts/build-exe.sh darwin-x64",
