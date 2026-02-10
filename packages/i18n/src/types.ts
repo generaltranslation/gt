@@ -7,7 +7,7 @@ export type {
 } from './i18n-manager/types';
 
 // Translation functions
-export * from './translation-functions/types';
+export type * from './translation-functions/types';
 
 // Config
 export type { GTConfig } from './config/types';

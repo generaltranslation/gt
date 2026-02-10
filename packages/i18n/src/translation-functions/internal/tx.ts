@@ -1,12 +1,15 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { RuntimeTranslationOptions } from '../types';
-import { InteralTxFunctionType } from './types';
+import { RuntimeTranslationOptions } from '../types/options';
+import { TxFunctionType } from '../types/functions';
+
 /**
  * Translates a message at runtime.
  * @param {string} message - The message to translate.
  * @param {RuntimeTranslationOptions} options - The options for the translation.
  * @returns {Promise<string>} The translated message.
+ *
+ * @deprecated not yet supported
  *
  * This is a placeholder for the tx() function.
  * TODO: Implement the tx() function.
@@ -20,7 +23,7 @@ import { InteralTxFunctionType } from './types';
  * const progress = await tx('Processing complete', { locale: 'es-MX' });
  */
 
-export const tx: InteralTxFunctionType = async (
+export const tx: TxFunctionType = async (
   message: string,
   options?: RuntimeTranslationOptions
 ): Promise<string> => {
