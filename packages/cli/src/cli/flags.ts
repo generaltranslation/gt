@@ -111,7 +111,7 @@ export function attachTranslateFlags(command: Command) {
   return command;
 }
 
-export function attachAdditionalReactTranslateFlags(command: Command) {
+export function attachInlineTranslateFlags(command: Command) {
   command
     .option(
       '--tsconfig, --jsconfig <path>',
@@ -125,12 +125,12 @@ export function attachAdditionalReactTranslateFlags(command: Command) {
     )
     .option(
       '--inline',
-      'Include inline <T> tags in addition to dictionary file',
+      'Include inline content in translations (e.g., inline jsx translations, inline string translations, etc.)',
       true
     )
     .option(
       '--ignore-errors',
-      'Ignore errors encountered while scanning for <T> tags',
+      'Ignore errors encountered while scanning for inline content',
       false
     );
   return command;

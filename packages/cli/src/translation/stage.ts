@@ -7,10 +7,10 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 
-export async function aggregateReactTranslations(
+export async function aggregateInlineTranslations(
   options: TranslateFlags,
   settings: Settings,
-  library: 'gt-react' | 'gt-next'
+  library: 'gt-react' | 'gt-next' | 'gt-node'
 ): Promise<Updates> {
   if (!options.dictionary) {
     options.dictionary = findFilepath([
