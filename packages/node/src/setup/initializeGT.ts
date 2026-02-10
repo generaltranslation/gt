@@ -1,4 +1,4 @@
-import { setI18nManager } from 'gt-i18n/internal';
+import { setI18nManager } from '../i18n-manager/singleton-operations';
 import type { InitializeGTParams } from './types';
 import { AsyncStorageI18nManager } from '../i18n-manager/AsyncStorageI18nManager';
 import { AsyncStorageAdapter } from '../i18n-manager/AsyncStorageAdapter';

@@ -1,3 +1,5 @@
-// Translation functions
+// Translation functions types
+export * from './translation-functions/types';
 
-// Translation options
+// Setup types
+export * from './setup/types';

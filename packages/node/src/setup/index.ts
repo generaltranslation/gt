@@ -1,2 +1,2 @@
-export { initializeGT as configGT } from './initializeGT';
+export { initializeGT } from './initializeGT';
 export { withGT } from './withGT';
