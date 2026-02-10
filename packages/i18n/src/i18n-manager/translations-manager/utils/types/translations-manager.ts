@@ -1,5 +1,5 @@
-import { CustomMapping } from 'generaltranslation/src/types';
-import { TranslationsLoader } from '../../translations-loaders/types';
+import type { CustomMapping } from 'generaltranslation/types';
+import type { TranslationsLoader } from '../../translations-loaders/types';
 
 /**
  * Configuration for the TranslationsManager

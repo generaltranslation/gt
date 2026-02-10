@@ -8,6 +8,7 @@ const external = [
   'generaltranslation',
   'gt-i18n/internal',
   'gt-i18n/types',
+  'node:async_hooks',
 ];
 
 export default [
@@ -30,7 +31,7 @@ export default [
     ],
     plugins: [
       resolve({ extensions: ['.js', '.mjs', '.ts'] }),
-      typescript({ tsconfig: './tsconfig.json' }),
+      typescript({ tsconfig: './tsconfig.json', outputToFilesystem: true }),
       commonjs(),
       terser(),
     ],

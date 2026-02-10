@@ -1,5 +1,5 @@
 // Async Storage Singleton Management
-export * from './i18n-manager';
+export * from './async-i18n-manager';
 
 // Singleton Management
 export {
