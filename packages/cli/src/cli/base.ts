@@ -60,6 +60,8 @@ import {
 } from '../setup/frameworkUtils.js';
 import {
   findAgentFiles,
+  hasCursorRulesDir,
+  CURSOR_GT_RULES_FILE,
   getAgentInstructions,
   appendAgentInstructions,
 } from '../setup/agentInstructions.js';
@@ -620,6 +622,12 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     useDefaults: boolean = false
   ): Promise<void> {
     const agentFiles = findAgentFiles();
+
+    // Include .cursor/rules/gt.mdc if the directory exists but the file doesn't yet
+    if (hasCursorRulesDir() && !agentFiles.includes(CURSOR_GT_RULES_FILE)) {
+      agentFiles.push(CURSOR_GT_RULES_FILE);
+    }
+
     if (agentFiles.length === 0) return;
 
     const addInstructions = useDefaults

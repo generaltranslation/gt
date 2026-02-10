@@ -10,12 +10,11 @@ Wrap JSX content with the `<T>` component for translation:
 ```jsx
 import { T } from 'gt-react';
 
-<T id='unique_id'>
+<T>
   <p>Hello, world!</p>
 </T>;
 ```
 
-- Every `<T>` must have a unique `id` prop.
 - Children of `<T>` must be static — no JS expressions or variables directly inside.
 
 ### Translating strings
@@ -24,8 +23,8 @@ Use `useGT()` for string translation:
 
 ```js
 import { useGT } from 'gt-react';
-const t = useGT();
-t('Hello'); // returns translated string
+const gt = useGT();
+gt('Hello'); // returns translated string
 ```
 
 ### Shared / reusable strings
@@ -47,7 +46,7 @@ m('greeting'); // translated "Hello"
 
 Use variable components for dynamic values inside `<T>`:
 
-- `<Var value={name}>` — variables (strings, numbers, etc.)
+- `<Var>{value}</Var>` — variables (strings, numbers, etc.)
 - `<Num value={count} />` — formatted numbers
 - `<Currency value={price} currency="USD" />` — formatted currency
 - `<DateTime value={date} />` — formatted dates/times
@@ -55,7 +54,7 @@ Use variable components for dynamic values inside `<T>`:
 ```jsx
 import { T, Var, Num } from 'gt-react';
 
-<T id='order_summary'>
+<T>
   <Var>{userName}</Var> ordered <Num value={itemCount} /> items.
 </T>;
 ```

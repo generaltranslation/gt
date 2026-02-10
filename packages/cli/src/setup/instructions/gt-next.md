@@ -12,28 +12,27 @@ Wrap JSX content with the `<T>` component for translation:
 ```jsx
 import { T } from 'gt-next';
 
-<T id='unique_id'>
+<T>
   <p>Hello, world!</p>
 </T>;
 ```
 
-- Every `<T>` must have a unique `id` prop.
 - Children of `<T>` must be static — no JS expressions or variables directly inside.
 
 ### Translating strings
 
-Use `useGT()` (client components) or `getGT()` (server components) for string translation:
+Use `useGT()` for client components or `getGT()` for server components (async):
 
 ```js
 import { useGT } from 'gt-next';
-const t = useGT();
-t('Hello'); // returns translated string
+const gt = useGT();
+gt('Hello'); // returns translated string
 ```
 
 ```js
 import { getGT } from 'gt-next';
-const t = await getGT();
-t('Hello');
+const gt = await getGT(); // use await version in async server components
+gt('Hello');
 ```
 
 ### Shared / reusable strings
@@ -51,11 +50,17 @@ const m = useMessages(messages);
 m('greeting'); // translated "Hello"
 ```
 
+```js
+import { getMessages } from 'gt-next';
+const m = await getMessages(messages); // use await version in async server components
+m('greeting');
+```
+
 ### Dynamic content inside `<T>`
 
 Use variable components for dynamic values inside `<T>`:
 
-- `<Var value={name}>` — variables (strings, numbers, etc.)
+- `<Var>{value}</Var>` — variables (strings, numbers, etc.)
 - `<Num value={count} />` — formatted numbers
 - `<Currency value={price} currency="USD" />` — formatted currency
 - `<DateTime value={date} />` — formatted dates/times
@@ -63,16 +68,18 @@ Use variable components for dynamic values inside `<T>`:
 ```jsx
 import { T, Var, Num } from 'gt-next';
 
-<T id='order_summary'>
+<T>
   <Var>{userName}</Var> ordered <Num value={itemCount} /> items.
 </T>;
 ```
 
 ### Locale hooks
 
-- `useLocale()` — get current locale
-- `useSetLocale()` — change locale
-- `useDefaultLocale()` — get default locale
+- `useLocale()` / `await getLocale()` — get current locale
+- `useSetLocale()` — change locale (client only)
+- `useDefaultLocale()` / `await getDefaultLocale()` — get default locale
+
+Use the `await get...()` versions in async server components.
 
 ### Translating
 

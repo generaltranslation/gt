@@ -18,7 +18,7 @@ const AGENT_FILE_PATHS = [
 ];
 
 const CURSOR_RULES_DIR = '.cursor/rules';
-const CURSOR_GT_RULES_FILE = '.cursor/rules/gt.md';
+export const CURSOR_GT_RULES_FILE = '.cursor/rules/gt.mdc';
 
 const GT_SECTION_START = '<!-- GT_INSTRUCTIONS START -->';
 const GT_SECTION_END = '<!-- GT_INSTRUCTIONS END -->';
@@ -36,29 +36,29 @@ function getLibraryVersion(library: SupportedLibraries): string | undefined {
 
 /**
  * Detect existing AI agent instruction files in the project.
- * Also checks for .cursor/rules/ directory and targets gt.md inside it.
  */
 export function findAgentFiles(): string[] {
   const cwd = process.cwd();
   const found: string[] = [];
 
-  for (const filePath of AGENT_FILE_PATHS) {
+  for (const filePath of [...AGENT_FILE_PATHS, CURSOR_GT_RULES_FILE]) {
     const fullPath = path.resolve(cwd, filePath);
     if (fs.existsSync(fullPath)) {
       found.push(filePath);
     }
   }
 
-  // If .cursor/rules/ directory exists, target gt.md inside it
-  const cursorRulesDir = path.resolve(cwd, CURSOR_RULES_DIR);
-  if (
-    fs.existsSync(cursorRulesDir) &&
-    fs.statSync(cursorRulesDir).isDirectory()
-  ) {
-    found.push(CURSOR_GT_RULES_FILE);
-  }
-
   return found;
+}
+
+/**
+ * Check if the .cursor/rules/ directory exists (for offering to create gt.md).
+ */
+export function hasCursorRulesDir(): boolean {
+  const cursorRulesDir = path.resolve(process.cwd(), CURSOR_RULES_DIR);
+  return (
+    fs.existsSync(cursorRulesDir) && fs.statSync(cursorRulesDir).isDirectory()
+  );
 }
 
 /**
@@ -111,14 +111,15 @@ export function appendAgentInstructions(
 ): boolean {
   const fullPath = path.resolve(process.cwd(), filePath);
 
-  // For .cursor/rules/gt.md, write fresh or skip if identical
+  // For .cursor/rules/gt.md, write as a standalone file with frontmatter
   if (filePath === CURSOR_GT_RULES_FILE) {
+    const cursorContent = `---\ndescription: GT internationalization instructions\nalwaysApply: true\n---\n${instructions}\n`;
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
     if (fs.existsSync(fullPath)) {
       const existing = fs.readFileSync(fullPath, 'utf8');
-      if (existing.includes(instructions)) return false;
+      if (existing === cursorContent) return false;
     }
-    fs.writeFileSync(fullPath, instructions + '\n', 'utf8');
+    fs.writeFileSync(fullPath, cursorContent, 'utf8');
     return true;
   }
 
