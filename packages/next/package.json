@@ -17,7 +17,8 @@
     "@generaltranslation/compiler": "workspace:*",
     "@generaltranslation/next-internal": "workspace:*",
     "generaltranslation": "workspace:*",
-    "gt-react": "workspace:*"
+    "gt-react": "workspace:*",
+    "gt-i18n": "workspace:*"
   },
   "scripts": {
     "patch": "pnpm version patch",

@@ -28,6 +28,9 @@
     },
     {
       "path": "../supported-locales"
+    },
+    {
+      "path": "../i18n"
     }
   ]
 }

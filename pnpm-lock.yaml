@@ -505,6 +505,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../i18n
       gt-react:
         specifier: workspace:*
         version: link:../react
