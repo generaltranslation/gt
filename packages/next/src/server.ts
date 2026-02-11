@@ -32,6 +32,15 @@ export function getLocales(): string[] {
 }
 
 export {
+  msg,
+  decodeMsg,
+  decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
+} from 'gt-i18n';
+
+export {
   GTProvider,
   T,
   getGT,
