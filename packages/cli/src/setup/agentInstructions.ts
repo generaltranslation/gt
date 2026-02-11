@@ -100,12 +100,17 @@ export function getAgentInstructions(library: SupportedLibraries): string {
     case 'gt-react':
       filename = 'gt-react.md';
       break;
-    default:
-      filename = 'base.md';
-      break;
   }
 
-  const body = fs.readFileSync(path.join(INSTRUCTIONS_DIR, filename), 'utf8');
+  let body = '';
+  const libToFile: Partial<Record<SupportedLibraries, string>> = {
+    'gt-next': 'gt-next.md',
+    'gt-react': 'gt-react.md'
+  };
+  const instructionFile = libToFile[library];
+  if (instructionFile) {
+    body = fs.readFileSync(path.join(INSTRUCTIONS_DIR, instructionFile), 'utf8');
+  }
 
   return `${GT_SECTION_START}
 
