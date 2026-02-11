@@ -1,14 +1,14 @@
-### gt-next
+# gt-next
 
 This project is using the `gt-next` internationalization library for Next.js App Router.
 
-### gt-next setup
+## gt-next setup
 
 - `GTProvider` must wrap the app in the root layout to provide translation context.
 - The `withGTConfig()` plugin wraps `next.config` in the Next.js config file.
 - (optional) `createNextMiddleware()` is used in `proxy.ts` for automatic locale routing.
 
-### Translating JSX 
+## Translating JSX
 
 `gt-next` uses the `<T>` component for translation.
 
@@ -26,7 +26,7 @@ import { T } from 'gt-next';
 </T>;
 ```
 
-You can also add a `context` prop to `<T>` to give context to the translator. For example: 
+You can also add a `context` prop to `<T>` to give context to the translator. For example:
 
 ```jsx
 import { T } from 'gt-next';
@@ -36,7 +36,7 @@ import { T } from 'gt-next';
 </T>;
 ```
 
-### Translating simple strings
+## Translating simple strings
 
 Use the `gt` function returned by the `useGT()` hook to translate strings directly. Invoke `useGT()` in synchronous components or `await getGT()` in async components only.
 
@@ -54,9 +54,9 @@ gt('Hello, world!');
 
 - Just like with the children of the `<T>` component, all strings passed to `gt()` must be static string literals. No variables or template literals.
 
-### Translating shared or out-of-scope strings
+## Translating shared or out-of-scope strings
 
-Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const gt = useGT()`. 
+Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const gt = useGT()`.
 
 ```js
 import { msg, useMessages } from 'gt-next';
@@ -73,7 +73,7 @@ export default function Greeting() {
 - Use the equivalent `await getMessages()` for async components.
 - `useMessages()` / `getMessages()` take no arguments.
 
-### Dynamic content inside `<T>`
+## Dynamic content inside `<T>`
 
 Use variable components for dynamic values inside `<T>`:
 
@@ -90,9 +90,9 @@ import { T, Var, Num } from 'gt-next';
 </T>;
 ```
 
-### Utility hooks
+## Utility hooks
 
-#### `useLocale()`
+### `useLocale()`
 
 `useLocale` returns the user's current language, as a BCP 47 locale tag.
 
@@ -102,6 +102,6 @@ import { useLocale } from 'gt-next'
 const locale = useLocale(); // "en-US"
 ```
 
-### Quickstart
+## Quickstart
 
-See https://generaltranslation.com/docs/next.md
+See <https://generaltranslation.com/docs/next.md>

@@ -1,11 +1,12 @@
 import { logErrorAndExit, stripAnsi } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
-import { Options, Settings, Updates } from '../types/index.js';
+import { Framework, Options, Settings, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { InlineLibrary } from '../types/libraries.js';
 
 // Types for programmatic validation API
 export type ValidationLevel = 'error' | 'warning';
@@ -22,7 +23,7 @@ export type ValidationResult = Record<string, ValidationMessage[]>;
  */
 async function runValidation(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next' | 'gt-node',
+  pkg: InlineLibrary,
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
@@ -82,7 +83,7 @@ function parseFileFromMessage(msg: string): { file: string; message: string } {
  */
 export async function getValidateJson(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next',
+  pkg: Framework,
   files?: string[]
 ): Promise<ValidationResult> {
   const { errors, warnings } = await runValidation(settings, pkg, files);
@@ -114,7 +115,7 @@ export async function getValidateJson(
 
 export async function validateProject(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next' | 'gt-node',
+  pkg: InlineLibrary,
   files?: string[]
 ): Promise<void> {
   const { updates, errors, warnings } = await runValidation(

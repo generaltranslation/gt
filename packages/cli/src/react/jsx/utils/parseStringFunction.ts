@@ -7,10 +7,10 @@ import {
   MSG_REGISTRATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
-  mapAttributeName,
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
 } from './constants.js';
+import { mapAttributeName } from './mapAttributeName.js';
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,

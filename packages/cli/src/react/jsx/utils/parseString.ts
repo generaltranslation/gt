@@ -13,7 +13,8 @@ import {
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
-import { DECLARE_VAR_FUNCTION, GT_LIBRARIES, GTLibrary } from './constants.js';
+import { DECLARE_VAR_FUNCTION } from '../../jsx/utils/constants.js';
+import { GTLibrary, GT_LIBRARIES } from '../../../types/libraries.js';
 import { declareVar } from 'generaltranslation/internal';
 import { isStaticExpression } from '../evaluateJsx.js';
 import generateModule from '@babel/generator';

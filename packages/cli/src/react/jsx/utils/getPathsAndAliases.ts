@@ -8,8 +8,8 @@ import {
   INLINE_MESSAGE_HOOK_ASYNC,
   MSG_REGISTRATION_FUNCTION,
   TRANSLATION_COMPONENT,
-  GTLibrary,
 } from '../../jsx/utils/constants.js';
+import { GTLibrary } from '../../../types/libraries.js';
 import { extractImportName } from './parseAst.js';
 import * as t from '@babel/types';
 

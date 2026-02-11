@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SupportedLibraries } from '../types/index.js';
 import { getCLIVersion, getPackageVersion } from '../utils/packageJson.js';
+import { Libraries } from '../types/libraries.js';
 
 const INSTRUCTIONS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -94,8 +95,8 @@ export function getAgentInstructions(library: SupportedLibraries): string {
 
   let body = '';
   const libToFile: Partial<Record<SupportedLibraries, string>> = {
-    'gt-next': 'gt-next.md',
-    'gt-react': 'gt-react.md',
+    [Libraries.GT_NEXT]: 'gt-next.md',
+    [Libraries.GT_REACT]: 'gt-react.md',
   };
   const instructionFile = libToFile[library];
   if (instructionFile) {

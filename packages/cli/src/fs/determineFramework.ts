@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { SupportedLibraries } from '../types/index.js';
 import { logger } from '../console/logger.js';
+import { Libraries } from '../types/libraries.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
@@ -33,12 +34,12 @@ export function determineLibrary(): {
     };
 
     // Check for gt-next or gt-react in dependencies
-    if (dependencies['gt-next']) {
-      library = 'gt-next';
-    } else if (dependencies['gt-react']) {
-      library = 'gt-react';
-    } else if (dependencies['gt-node']) {
-      library = 'gt-node';
+    if (dependencies[Libraries.GT_NEXT]) {
+      library = Libraries.GT_NEXT;
+    } else if (dependencies[Libraries.GT_REACT]) {
+      library = Libraries.GT_REACT;
+    } else if (dependencies[Libraries.GT_NODE]) {
+      library = Libraries.GT_NODE;
     } else if (dependencies['next-intl']) {
       library = 'next-intl';
     } else if (dependencies['i18next']) {

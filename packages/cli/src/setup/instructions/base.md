@@ -1,8 +1,8 @@
-## General Translation (GT) Internationalization Rules
+# General Translation (GT) Internationalization Rules
 
 This project is using [General Translation](https://generaltranslation.com/docs/overview.md) for internationalization (i18n) and translations. General Translation is a developer-first localization stack, built for the world's best engineering teams to ship apps in every language with ease.
 
-### Configuration
+## Configuration
 
 The General Translation configuration file is called `gt.config.json`. It is usually located in the root or src directory of a project.
 
@@ -18,12 +18,12 @@ The General Translation configuration file is called `gt.config.json`. It is usu
 }
 ```
 
-The API reference for the config file can be found at https://generaltranslation.com/docs/cli/reference/config.md.
+The API reference for the config file can be found at <https://generaltranslation.com/docs/cli/reference/config.md>.
 
-### Translation
+## Translation
 
 Run `npx gtx-cli translate` to create translation files for your project. You must have an API key to do this.
 
-### Documentation 
+## Documentation
 
-https://generaltranslation.com/llms.txt
+<https://generaltranslation.com/llms.txt>

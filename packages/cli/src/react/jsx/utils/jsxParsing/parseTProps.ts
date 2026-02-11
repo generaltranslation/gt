@@ -4,7 +4,8 @@ import generateModule from '@babel/generator';
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
 
-import { GT_ATTRIBUTES, mapAttributeName } from '../constants.js';
+import { GT_ATTRIBUTES } from '../constants.js';
+import { mapAttributeName } from '../mapAttributeName.js';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   warnInvalidMaxCharsSync,
