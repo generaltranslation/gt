@@ -1,7 +1,7 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { ParsingConfigOptions } from './parsing.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries, InlineLibrary } from '../react/jsx/utils/constants.js';
 
 export type { Updates } from 'generaltranslation/types';
 
@@ -128,9 +128,7 @@ export type SupportedReactFrameworks = Extract<
 >['name'];
 
 export type SupportedLibraries =
-  | typeof Libraries.GT_NEXT
-  | typeof Libraries.GT_REACT
-  | typeof Libraries.GT_NODE
+  | InlineLibrary
   | 'next-intl'
   | 'react-i18next'
   | 'next-i18next'

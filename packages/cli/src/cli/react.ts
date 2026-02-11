@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import {
+  Framework,
   SupportedFrameworks,
   WrapOptions,
   SupportedLibraries,
@@ -20,7 +21,7 @@ const pkg = Libraries.GT_REACT;
 export class ReactCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: typeof Libraries.GT_REACT | typeof Libraries.GT_NEXT,
+    library: Framework,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);

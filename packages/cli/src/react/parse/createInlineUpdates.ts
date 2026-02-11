@@ -13,7 +13,8 @@ import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
   GT_LIBRARIES_UPSTREAM,
-  Libraries,
+  REACT_LIBRARIES,
+  ReactLibrary,
 } from '../jsx/utils/constants.js';
 
 export async function createInlineUpdates(
@@ -71,7 +72,7 @@ export async function createInlineUpdates(
     }
 
     // Parse <T> components
-    if (pkg !== Libraries.GT_NODE) {
+    if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
       for (const { localName, path } of translationComponentPaths) {
         parseTranslationComponent({
           originalName: localName,

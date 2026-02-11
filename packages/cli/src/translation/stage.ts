@@ -6,15 +6,12 @@ import { Settings, TranslateFlags, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { InlineLibrary } from '../react/jsx/utils/constants.js';
 
 export async function aggregateInlineTranslations(
   options: TranslateFlags,
   settings: Settings,
-  library:
-    | typeof Libraries.GT_REACT
-    | typeof Libraries.GT_NEXT
-    | typeof Libraries.GT_NODE
+  library: InlineLibrary
 ): Promise<Updates> {
   if (!options.dictionary) {
     options.dictionary = findFilepath([

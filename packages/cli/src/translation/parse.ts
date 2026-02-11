@@ -8,7 +8,7 @@ import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 import type { ParsingConfigOptions } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { InlineLibrary } from '../react/jsx/utils/constants.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -23,10 +23,7 @@ export async function createUpdates(
   options: TranslateFlags,
   src: string[] | undefined,
   sourceDictionary: string | undefined,
-  pkg:
-    | typeof Libraries.GT_REACT
-    | typeof Libraries.GT_NEXT
-    | typeof Libraries.GT_NODE,
+  pkg: InlineLibrary,
   validate: boolean,
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {

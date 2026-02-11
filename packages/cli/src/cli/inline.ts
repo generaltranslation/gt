@@ -18,7 +18,7 @@ import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries, InlineLibrary } from '../react/jsx/utils/constants.js';
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -26,10 +26,7 @@ import { Libraries } from '../react/jsx/utils/constants.js';
 export class InlineCLI extends BaseCLI {
   constructor(
     command: Command,
-    library:
-      | typeof Libraries.GT_REACT
-      | typeof Libraries.GT_NEXT
-      | typeof Libraries.GT_NODE,
+    library: InlineLibrary,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -189,12 +186,7 @@ export class InlineCLI extends BaseCLI {
   }
 }
 
-function fallbackToGtReact(
-  library: SupportedLibraries
-):
-  | typeof Libraries.GT_NEXT
-  | typeof Libraries.GT_REACT
-  | typeof Libraries.GT_NODE {
+function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
   return [Libraries.GT_NEXT, Libraries.GT_NODE].includes(library as Libraries)
     ? (library as typeof Libraries.GT_NEXT | typeof Libraries.GT_NODE)
     : Libraries.GT_REACT;
