@@ -1,11 +1,16 @@
-### Setup
+### gt-react
 
-- `GTProvider` wraps the app to provide translation context.
-- Config is stored in `gt.config.json`.
+This project is using the `gt-react` internationalization library.
 
-### Translating JSX
+### gt-react setup
 
-Wrap JSX content with the `<T>` component for translation:
+- `GTProvider` must wrap the app in the root layout to provide translation context.
+
+### Translating JSX 
+
+`gt-react` uses the `<T>` component for translation.
+
+Pass JSX content as the direct children of `<T>` to translate it. Children of `<T>` must be static — no JS expressions or variables directly inside.
 
 ```jsx
 import { T } from 'gt-react';
@@ -19,37 +24,45 @@ import { T } from 'gt-react';
 </T>;
 ```
 
-- Children of `<T>` must be static — no JS expressions or variables directly inside.
+You can also add a `context` prop to `<T>` to give context to the translator. For example: 
 
-### Translating strings
+```jsx
+import { T } from 'gt-react';
 
-Use `useGT()` for string translation:
+<T context="Cookies as in web cookies">
+  View your <a href="/cookies">Cookies</a>
+</T>;
+```
+
+### Translating simple strings
+
+Use the `gt` function returned by the `useGT()` hook to translate strings directly.
 
 ```js
 import { useGT } from 'gt-react';
 const gt = useGT();
-gt('Hello, welcome to our store!'); // returns translated string
+gt('Hello, world!'); // returns "Hola, mundo"
 ```
 
-- All strings passed to `gt()` must be static string literals — no variables or template literals.
+- Just like with the children of the `<T>` component, all strings passed to `gt()` must be static string literals. No variables or template literals.
 
-### Shared / reusable strings
+### Translating shared or out-of-scope strings
 
-Use `msg()` to encode strings for translation, and `useMessages()` to translate them:
+Use `msg()` to register strings for translation, and `useMessages()` to translate them. `const m = useMessages()` should be used equivalently to `const gt = useGT()`. 
 
 ```js
 import { msg, useMessages } from 'gt-react';
 
-const encodedGreeting = msg('Hello, welcome to our store!');
+const greeting = msg('Hello, world!');
 
 export default function Greeting() {
   const m = useMessages();
-  return <p>{m(encodedGreeting)}</p>;
+  return <p>{m(greeting)}</p>;
 }
 ```
 
-- All strings passed to `msg()` must be static string literals.
-- `useMessages()` takes no parameters. Pass the encoded string directly to the returned function.
+- All strings passed to `msg()` must be static string literals. No variables or template literals.
+- `useMessages()` / `getMessages()` take no arguments.
 
 ### Dynamic content inside `<T>`
 
@@ -68,16 +81,18 @@ import { T, Var, Num } from 'gt-react';
 </T>;
 ```
 
-### Locale hooks
+### Utility hooks
 
-- `useLocale()` — get current locale
-- `useSetLocale()` — change locale
-- `useDefaultLocale()` — get default locale
+#### `useLocale()`
 
-### Translating
+`useLocale` returns the user's current language, as a BCP 47 locale tag.
 
-Run `npx gtx-cli translate` to translate the project.
+```js
+import { useLocale } from 'gt-react'
 
-### Docs
+const locale = useLocale(); // "en-US"
+```
 
-https://generaltranslation.com/llms.txt
+### Quickstart
+
+See https://generaltranslation.com/docs/react.md

@@ -659,7 +659,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
   ): Promise<void> {
     const agentFiles = findAgentFiles();
 
-    // Include .cursor/rules/gt.mdc if the directory exists but the file doesn't yet
+    // Include .cursor/rules/gt-i18n.mdc if the directory exists but the file doesn't yet
     if (hasCursorRulesDir() && !agentFiles.includes(CURSOR_GT_RULES_FILE)) {
       agentFiles.push(CURSOR_GT_RULES_FILE);
     }

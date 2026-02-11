@@ -1,9 +1,8 @@
-### Workflow
+This project is using [General Translation](https://generaltranslation.com/docs) for internationalization (i18n) and translations. General Translation is a developer-friendly localization stack, built to ship multilingual apps from end-to-end with ease.
 
-1. Configure translation file patterns in `gt.config.json`.
-2. Run `npx gtx-cli translate` to translate files.
+### Configuration
 
-### Config (`gt.config.json`)
+The General Translation configuration file is called `gt.config.json`. It is usually located in the root or src directory of a project.
 
 ```json
 {
@@ -17,13 +16,12 @@
 }
 ```
 
-- Use `[locale]` as a placeholder in file path patterns. It will be replaced with each target locale.
-- See https://generaltranslation.com/docs/cli/reference/config for all options.
+The API reference for the config file can be found at https://generaltranslation.com/docs/cli/reference/config.md.
 
-### Translating
+### Translation
 
-Run `npx gtx-cli translate` to translate the project.
+Run `npx gtx-cli translate` to create translation files for your project. You must have an API key to do this.
 
-### Docs
+### Documentation 
 
 https://generaltranslation.com/llms.txt

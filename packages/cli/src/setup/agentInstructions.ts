@@ -18,10 +18,10 @@ const AGENT_FILE_PATHS = [
 ];
 
 const CURSOR_RULES_DIR = '.cursor/rules';
-export const CURSOR_GT_RULES_FILE = '.cursor/rules/gt.mdc';
+export const CURSOR_GT_RULES_FILE = '.cursor/rules/gt-i18n.mdc';
 
-const GT_SECTION_START = '<!-- GT_INSTRUCTIONS START -->';
-const GT_SECTION_END = '<!-- GT_INSTRUCTIONS END -->';
+const GT_SECTION_START = '<!-- GT I18N RULES START -->';
+const GT_SECTION_END = '<!-- GT I18N RULES END -->';
 
 function getLibraryVersion(library: SupportedLibraries): string | undefined {
   const packageJsonPath = path.resolve(process.cwd(), 'package.json');
@@ -72,7 +72,7 @@ export function findAgentFilesWithInstructions(): string[] {
 }
 
 /**
- * Check if the .cursor/rules/ directory exists (for offering to create gt.mdc).
+ * Check if the .cursor/rules/ directory exists (for offering to create gt-i18n.mdc).
  */
 export function hasCursorRulesDir(): boolean {
   const cursorRulesDir = path.resolve(process.cwd(), CURSOR_RULES_DIR);
