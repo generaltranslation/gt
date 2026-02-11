@@ -1,4 +1,5 @@
 import { FrameworkObject, ReactFrameworkObject } from '../types/index.js';
+import { Libraries } from '../react/jsx/utils/constants.js';
 
 export function getFrameworkDisplayName(
   frameworkObject: FrameworkObject
@@ -30,5 +31,7 @@ export function getFrameworkDisplayName(
 export function getReactFrameworkLibrary(
   frameworkObject: ReactFrameworkObject
 ): string {
-  return frameworkObject.name === 'next-app' ? 'gt-next' : 'gt-react';
+  return frameworkObject.name === 'next-app'
+    ? Libraries.GT_NEXT
+    : Libraries.GT_REACT;
 }

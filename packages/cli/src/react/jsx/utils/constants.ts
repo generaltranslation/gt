@@ -55,6 +55,15 @@ export function mapAttributeName(attrName: string): string {
   return attrName;
 }
 
+export enum Libraries {
+  GT_REACT = 'gt-react',
+  GT_NEXT = 'gt-next',
+  GT_REACT_NATIVE = 'gt-react-native',
+  GT_NODE = 'gt-node',
+  GT_I18N = 'gt-i18n',
+  REACT_CORE = '@generaltranslation/react-core',
+}
+
 export const GT_LIBRARIES = [
   'gt-react',
   'gt-next',
@@ -78,28 +87,29 @@ export type GTReactLibrary =
  * A mapping of each library to their upstream dependencies for filtering imports
  */
 export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
-  'gt-next': [
-    'gt-i18n',
-    '@generaltranslation/react-core',
-    'gt-react',
-    'gt-next',
+  [Libraries.GT_NEXT]: [
+    Libraries.GT_I18N,
+    Libraries.REACT_CORE,
+    Libraries.GT_REACT,
+    Libraries.GT_NEXT,
   ],
-  'gt-react': [
-    'gt-i18n',
-    '@generaltranslation/react-core',
-    'gt-react',
-    'gt-react-native', // allow for cross-library compatibility (gt-react/gt-react-native only)
+  [Libraries.GT_REACT]: [
+    Libraries.GT_I18N,
+    Libraries.REACT_CORE,
+    Libraries.GT_REACT,
+    Libraries.GT_REACT_NATIVE, // allow for cross-library compatibility (gt-react/gt-react-native only)
   ],
-  'gt-react-native': [
-    'gt-i18n',
-    '@generaltranslation/react-core',
-    'gt-react-native',
-    'gt-react', // allow for cross-library compatibility (gt-react/gt-react-native only)
+  [Libraries.GT_REACT_NATIVE]: [
+    Libraries.GT_I18N,
+    Libraries.REACT_CORE,
+    Libraries.GT_REACT_NATIVE,
+    Libraries.GT_REACT, // allow for cross-library compatibility (gt-react/gt-react-native only)
   ],
-  'gt-node': ['gt-i18n', '@generaltranslation/react-core', 'gt-node'],
-  '@generaltranslation/react-core': [
-    'gt-i18n',
-    '@generaltranslation/react-core',
+  [Libraries.GT_NODE]: [
+    Libraries.GT_I18N,
+    Libraries.REACT_CORE,
+    Libraries.GT_NODE,
   ],
-  'gt-i18n': ['gt-i18n'],
+  [Libraries.REACT_CORE]: [Libraries.GT_I18N, Libraries.REACT_CORE],
+  [Libraries.GT_I18N]: [Libraries.GT_I18N],
 } as const;

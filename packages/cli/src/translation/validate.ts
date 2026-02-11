@@ -6,6 +6,7 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { Libraries } from '../react/jsx/utils/constants.js';
 
 // Types for programmatic validation API
 export type ValidationLevel = 'error' | 'warning';
@@ -22,7 +23,10 @@ export type ValidationResult = Record<string, ValidationMessage[]>;
  */
 async function runValidation(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next' | 'gt-node',
+  pkg:
+    | typeof Libraries.GT_REACT
+    | typeof Libraries.GT_NEXT
+    | typeof Libraries.GT_NODE,
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
@@ -82,7 +86,7 @@ function parseFileFromMessage(msg: string): { file: string; message: string } {
  */
 export async function getValidateJson(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next',
+  pkg: typeof Libraries.GT_REACT | typeof Libraries.GT_NEXT,
   files?: string[]
 ): Promise<ValidationResult> {
   const { errors, warnings } = await runValidation(settings, pkg, files);
@@ -114,7 +118,10 @@ export async function getValidateJson(
 
 export async function validateProject(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next' | 'gt-node',
+  pkg:
+    | typeof Libraries.GT_REACT
+    | typeof Libraries.GT_NEXT
+    | typeof Libraries.GT_NODE,
   files?: string[]
 ): Promise<void> {
   const { updates, errors, warnings } = await runValidation(

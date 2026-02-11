@@ -10,7 +10,11 @@ import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
-import { GTLibrary, GT_LIBRARIES_UPSTREAM } from '../jsx/utils/constants.js';
+import {
+  GTLibrary,
+  GT_LIBRARIES_UPSTREAM,
+  Libraries,
+} from '../jsx/utils/constants.js';
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -67,7 +71,7 @@ export async function createInlineUpdates(
     }
 
     // Parse <T> components
-    if (pkg !== 'gt-node') {
+    if (pkg !== Libraries.GT_NODE) {
       for (const { localName, path } of translationComponentPaths) {
         parseTranslationComponent({
           originalName: localName,

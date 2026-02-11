@@ -10,6 +10,7 @@ import { aggregateInlineTranslations } from '../../translation/stage.js';
 import type { FileToUpload, JsxChildren } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
+import { Libraries } from '../../react/jsx/utils/constants.js';
 
 export async function collectFiles(
   options: TranslateFlags,
@@ -22,9 +23,9 @@ export async function collectFiles(
   // Parse for React components
   let reactComponents = 0;
   if (
-    library === 'gt-react' ||
-    library === 'gt-next' ||
-    library === 'gt-node'
+    library === Libraries.GT_REACT ||
+    library === Libraries.GT_NEXT ||
+    library === Libraries.GT_NODE
   ) {
     const updates = await aggregateInlineTranslations(
       options,

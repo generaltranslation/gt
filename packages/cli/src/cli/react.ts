@@ -13,13 +13,14 @@ import { wrapContentReact } from '../react/parse/wrapContent.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
 import { InlineCLI } from './inline.js';
+import { Libraries } from '../react/jsx/utils/constants.js';
 
-const pkg = 'gt-react';
+const pkg = Libraries.GT_REACT;
 
 export class ReactCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: 'gt-react' | 'gt-next',
+    library: typeof Libraries.GT_REACT | typeof Libraries.GT_NEXT,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);

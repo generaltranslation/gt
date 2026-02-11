@@ -17,6 +17,7 @@ import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
 import { getFrameworkDisplayName } from './frameworkUtils.js';
+import { Libraries } from '../react/jsx/utils/constants.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,
@@ -86,24 +87,28 @@ Please let us know what you would like to see added at https://github.com/genera
   // Check if gt-next or gt-react is installed
   if (
     frameworkType === 'next-app' &&
-    !isPackageInstalled('gt-next', packageJson)
+    !isPackageInstalled(Libraries.GT_NEXT, packageJson)
   ) {
     const packageManager = await getPackageManager();
     const spinner = logger.createSpinner('timer');
-    spinner.start(`Installing gt-next with ${packageManager.name}...`);
-    await installPackage('gt-next', packageManager);
-    spinner.stop(chalk.green('Automatically installed gt-next.'));
+    spinner.start(
+      `Installing ${Libraries.GT_NEXT} with ${packageManager.name}...`
+    );
+    await installPackage(Libraries.GT_NEXT, packageManager);
+    spinner.stop(chalk.green(`Automatically installed ${Libraries.GT_NEXT}.`));
   } else if (
     ['next-pages', 'react', 'redwood', 'vite', 'gatsby'].includes(
       frameworkType
     ) &&
-    !isPackageInstalled('gt-react', packageJson)
+    !isPackageInstalled(Libraries.GT_REACT, packageJson)
   ) {
     const packageManager = await getPackageManager();
     const spinner = logger.createSpinner('timer');
-    spinner.start(`Installing gt-react with ${packageManager.name}...`);
-    await installPackage('gt-react', packageManager);
-    spinner.stop(chalk.green('Automatically installed gt-react.'));
+    spinner.start(
+      `Installing ${Libraries.GT_REACT} with ${packageManager.name}...`
+    );
+    await installPackage(Libraries.GT_REACT, packageManager);
+    spinner.stop(chalk.green(`Automatically installed ${Libraries.GT_REACT}.`));
   }
 
   const errors: string[] = [];
@@ -139,7 +144,7 @@ Please let us know what you would like to see added at https://github.com/genera
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
       mergeOptions,
-      'gt-next',
+      Libraries.GT_NEXT,
       errors,
       warnings
     );

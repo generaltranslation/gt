@@ -8,6 +8,7 @@ import { resolveImportPath } from '../../resolveImportPath.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
 import { Updates } from '../../../../../types/index.js';
 import { hashSource } from 'generaltranslation/id';
+import { Libraries } from '../../constants.js';
 
 // Mock fs and resolveImportPath
 vi.mock('node:fs');
@@ -169,7 +170,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/original/page.tsx',
             },
             output: {
@@ -475,7 +476,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/selfrecursion/page.tsx',
             },
             output: {
@@ -626,7 +627,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/recursion2/page.tsx',
             },
             output: {
@@ -778,7 +779,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/circular/page.tsx',
             },
             output: {
@@ -934,7 +935,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/broken/page.tsx',
             },
             output: {
@@ -1076,7 +1077,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/undefined/page.tsx',
             },
             output: {
@@ -1216,7 +1217,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/aliases/page.tsx',
             },
             output: {
@@ -1424,7 +1425,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/shadowing/page.tsx',
             },
             output: {
@@ -1553,7 +1554,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/renamed/page.tsx',
             },
             output: {
@@ -1660,7 +1661,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/ds-alias/page.tsx',
             },
             output: {
@@ -1792,7 +1793,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             config: {
               importAliases,
               parsingOptions,
-              pkgs: ['gt-next'],
+              pkgs: [Libraries.GT_NEXT],
               file: '/test/multilevel/page.tsx',
             },
             output: {

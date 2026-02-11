@@ -20,14 +20,14 @@ import {
 } from '../jsx/utils/parseAst.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import { matchFiles } from '../../fs/matchFiles.js';
+import { Libraries } from '../jsx/utils/constants.js';
 
 const IMPORT_MAP = {
-  T: { name: 'T', source: 'gt-react' },
-  Var: { name: 'Var', source: 'gt-react' },
-  GTT: { name: 'T', source: 'gt-react' },
-  GTVar: { name: 'Var', source: 'gt-react' },
-  GTProvider: { name: 'GTProvider', source: 'gt-react' },
-  // getLocale: { name: 'getLocale', source: 'gt-react/server' },
+  T: { name: 'T', source: Libraries.GT_REACT },
+  Var: { name: 'Var', source: Libraries.GT_REACT },
+  GTT: { name: 'T', source: Libraries.GT_REACT },
+  GTVar: { name: 'Var', source: Libraries.GT_REACT },
+  GTProvider: { name: 'GTProvider', source: Libraries.GT_REACT },
 };
 
 /**
@@ -39,7 +39,7 @@ const IMPORT_MAP = {
  */
 export async function wrapContentReact(
   options: WrapOptions,
-  pkg: 'gt-react',
+  pkg: typeof Libraries.GT_REACT,
   framework: SupportedFrameworks,
   errors: string[],
   warnings: string[]
