@@ -8,12 +8,6 @@ export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
 export const STATIC_COMPONENT = 'Static';
 
-// gt-node functions
-export const GT_REGISTRATION_FUNCTION = 'gt';
-export const REG_REGISTRATION_FUNCTION = 'reg';
-export const M_RESOLUTION_FUNCTION = 'm';
-export const RES_RESOLUTION_FUNCTION = 'res';
-
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
   INLINE_TRANSLATION_HOOK,
@@ -31,12 +25,6 @@ export const GT_TRANSLATION_FUNCS = [
   'Num',
   'Branch',
   'Plural',
-
-  // gt-node functions
-  GT_REGISTRATION_FUNCTION,
-  M_RESOLUTION_FUNCTION,
-  REG_REGISTRATION_FUNCTION,
-  RES_RESOLUTION_FUNCTION,
 ];
 // Valid variable components
 export const VARIABLE_COMPONENTS = [

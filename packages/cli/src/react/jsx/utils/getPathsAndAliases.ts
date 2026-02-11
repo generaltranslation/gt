@@ -9,10 +9,6 @@ import {
   MSG_REGISTRATION_FUNCTION,
   TRANSLATION_COMPONENT,
   GTLibrary,
-  RES_RESOLUTION_FUNCTION,
-  REG_REGISTRATION_FUNCTION,
-  M_RESOLUTION_FUNCTION,
-  GT_REGISTRATION_FUNCTION,
 } from '../../jsx/utils/constants.js';
 import { extractImportName } from './parseAst.js';
 import * as t from '@babel/types';
@@ -70,11 +66,7 @@ export function getPathsAndAliases(
             name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
             name.original === INLINE_MESSAGE_HOOK ||
             name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-            name.original === MSG_REGISTRATION_FUNCTION ||
-            name.original === GT_REGISTRATION_FUNCTION ||
-            name.original === M_RESOLUTION_FUNCTION ||
-            name.original === REG_REGISTRATION_FUNCTION ||
-            name.original === RES_RESOLUTION_FUNCTION
+            name.original === MSG_REGISTRATION_FUNCTION
           ) {
             inlineTranslationPaths.push({
               localName: name.local,

@@ -21,7 +21,11 @@ export async function collectFiles(
 
   // Parse for React components
   let reactComponents = 0;
-  if (library === 'gt-react' || library === 'gt-next') {
+  if (
+    library === 'gt-react' ||
+    library === 'gt-next' ||
+    library === 'gt-node'
+  ) {
     const updates = await aggregateInlineTranslations(
       options,
       settings,
