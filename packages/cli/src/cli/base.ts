@@ -625,11 +625,29 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     this.program
       .command('update-instructions')
       .description('Update GT usage instructions in AI agent files')
-      .action(async () => {
-        const agentFiles = findAgentFilesWithInstructions();
+      .option(
+        '--new',
+        'Add instructions to all agent files, even those without existing GT instructions'
+      )
+      .action(async (options: { new?: boolean }) => {
+        const agentFiles = options.new
+          ? findAgentFiles()
+          : findAgentFilesWithInstructions();
+
+        if (
+          options.new &&
+          hasCursorRulesDir() &&
+          !agentFiles.includes(CURSOR_GT_RULES_FILE)
+        ) {
+          agentFiles.push(CURSOR_GT_RULES_FILE);
+        }
 
         if (agentFiles.length === 0) {
-          logger.warn('No agent files with GT instructions found.');
+          logger.warn(
+            options.new
+              ? 'No agent files found. Create a CLAUDE.md or similar agent file first.'
+              : 'No agent files with GT instructions found. Use --new to add instructions to existing agent files.'
+          );
           return;
         }
 
