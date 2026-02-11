@@ -31,7 +31,14 @@ export function getLocales(): string[] {
   return getI18NConfig().getLocales();
 }
 
-export { msg, decodeMsg, decodeOptions, declareStatic, declareVar, decodeVars } from 'gt-i18n';
+export {
+  msg,
+  decodeMsg,
+  decodeOptions,
+  declareStatic,
+  declareVar,
+  decodeVars,
+} from 'gt-i18n';
 
 export {
   GTProvider,
@@ -43,5 +50,5 @@ export {
   Tx,
   getLocale,
   getRegion,
-  getLocaleDirection
+  getLocaleDirection,
 };
