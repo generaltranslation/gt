@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.6.19
+
+### Patch Changes
+
+- [#1014](https://github.com/generaltranslation/gt/pull/1014) [`e421292`](https://github.com/generaltranslation/gt/commit/e421292739807db8696d7912da8b92731fb34b2b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: library names
+
+- [#1018](https://github.com/generaltranslation/gt/pull/1018) [`3ac2e30`](https://github.com/generaltranslation/gt/commit/3ac2e30dcd76bf5819f1a385397eb59bcc158732) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: gt-react-native inline tx
+
 ## 2.6.18
 
 ### Patch Changes
