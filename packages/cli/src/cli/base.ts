@@ -629,9 +629,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
         const agentFiles = findAgentFilesWithInstructions();
 
         if (agentFiles.length === 0) {
-          logger.warn(
-            'No agent files with GT instructions found. Run `npx gtx-cli init` to add them.'
-          );
+          logger.warn('No agent files with GT instructions found.');
           return;
         }
 
