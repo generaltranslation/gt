@@ -1,5 +1,11 @@
 # gt-react
 
+## 10.10.8
+
+### Patch Changes
+
+- [#1015](https://github.com/generaltranslation/gt/pull/1015) [`2ab07fa`](https://github.com/generaltranslation/gt/commit/2ab07fad1e590fb4499879e474e14079dd2c223e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - test: publish
+
 ## 10.10.7
 
 ### Patch Changes
