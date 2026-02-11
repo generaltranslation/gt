@@ -1,5 +1,12 @@
 # gt-next
 
+## 6.12.11
+
+### Patch Changes
+
+- Updated dependencies [[`2ab07fa`](https://github.com/generaltranslation/gt/commit/2ab07fad1e590fb4499879e474e14079dd2c223e)]:
+  - gt-react@10.10.8
+
 ## 6.12.10
 
 ### Patch Changes
