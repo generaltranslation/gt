@@ -1,4 +1,5 @@
-import { GTFunctionType, InlineTranslationOptions } from '../types';
+import { InlineTranslationOptions } from '../types/options';
+import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolateMessage';
 
 /**
@@ -27,8 +28,8 @@ import { interpolateMessage } from '../utils/interpolateMessage';
  * }
  */
 export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
-  encodedMsg: T,
+  message: T,
   options: InlineTranslationOptions = {}
 ): T extends string ? string : T => {
-  return interpolateMessage(encodedMsg, options);
+  return interpolateMessage(message, options);
 };

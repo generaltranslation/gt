@@ -1,10 +1,10 @@
-import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { getI18nManager } from '../async-i18n-manager/singleton-operations';
 import {
   AsyncStorageAdapter,
   ASYNC_STORAGE_ADAPTER_TYPE,
-} from '../i18n-manager/AsyncStorageAdapter';
+} from '../async-i18n-manager/AsyncStorageAdapter';
 import { I18nManager, StorageAdapter } from 'gt-i18n/internal';
-import { AsyncStorageI18nManager } from '../i18n-manager/AsyncStorageI18nManager';
+import { AsyncStorageI18nManager } from '../async-i18n-manager/AsyncStorageI18nManager';
 
 /**
  * This function wraps entry points to provide GT context

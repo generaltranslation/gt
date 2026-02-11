@@ -2,7 +2,8 @@
 
 Node.js utilities for General Translation.
 
-This is currently a placeholder package.
+**WARNING:**
+gt-node is currently unstable, and thus may be subject to breaking changes until it reaches a stable version (1.0.0).
 
 ## Installation
 

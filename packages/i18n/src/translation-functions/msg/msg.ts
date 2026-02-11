@@ -1,7 +1,7 @@
-import {
+import type {
   EncodedTranslationOptions,
   InlineTranslationOptions,
-} from '../../types';
+} from '../types/options';
 import { formatMessage } from 'generaltranslation';
 import {
   encode,

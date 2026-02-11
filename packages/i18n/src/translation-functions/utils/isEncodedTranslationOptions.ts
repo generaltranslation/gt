@@ -1,4 +1,4 @@
-import { EncodedTranslationOptions } from '../../types';
+import { EncodedTranslationOptions } from '../types/options';
 
 /**
  * Given a decoded options object, validate that includes required decoded options

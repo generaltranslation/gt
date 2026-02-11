@@ -18,6 +18,12 @@ export function getI18nManager():
   return i18nManager;
 }
 
-export function setI18nManager(i18nManager: I18nManager): void {
+/**
+ * Set the singleton instance of I18nManager
+ * @param {I18nManager<AsyncStorageAdapter>} i18nManager - The I18nManager instance
+ */
+export function setI18nManager(
+  i18nManager: I18nManager<AsyncStorageAdapter>
+): void {
   setI18nManagerBase(i18nManager);
 }

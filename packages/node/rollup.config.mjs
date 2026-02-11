@@ -8,6 +8,7 @@ const external = [
   'generaltranslation',
   'gt-i18n/internal',
   'gt-i18n/types',
+  'node:async_hooks',
 ];
 
 export default [
@@ -30,7 +31,7 @@ export default [
     ],
     plugins: [
       resolve({ extensions: ['.js', '.mjs', '.ts'] }),
-      typescript({ tsconfig: './tsconfig.json' }),
+      typescript({ tsconfig: './tsconfig.json', outputToFilesystem: true }),
       commonjs(),
       terser(),
     ],
@@ -42,6 +43,80 @@ export default [
     input: 'src/index.ts',
     output: {
       file: 'dist/index.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+    external,
+  },
+
+  // Bundling for the types library (types.ts)
+  {
+    input: 'src/types.ts',
+    output: [
+      {
+        file: 'dist/types.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/types.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+    external,
+  },
+
+  // TypeScript declarations for the types library
+  {
+    input: 'src/types.ts',
+    output: {
+      file: 'dist/types.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+    external,
+  },
+
+  // Bundling for the internal library (internal.ts)
+  {
+    input: 'src/internal.ts',
+    output: [
+      {
+        file: 'dist/internal.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/internal.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+    external,
+  },
+
+  // TypeScript declarations for the internal library
+  {
+    input: 'src/internal.ts',
+    output: {
+      file: 'dist/internal.d.ts',
       format: 'es',
     },
     plugins: [dts()],

@@ -42,5 +42,3 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
 export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;
-
-export * from './fallbacks/types';
