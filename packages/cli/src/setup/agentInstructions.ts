@@ -105,20 +105,19 @@ export function getAgentInstructions(library: SupportedLibraries): string {
   let body = '';
   const libToFile: Partial<Record<SupportedLibraries, string>> = {
     'gt-next': 'gt-next.md',
-    'gt-react': 'gt-react.md'
+    'gt-react': 'gt-react.md',
   };
   const instructionFile = libToFile[library];
   if (instructionFile) {
-    body = fs.readFileSync(path.join(INSTRUCTIONS_DIR, instructionFile), 'utf8');
+    body += '\n\n'; // add two newlines between the base and the specific instructions
+    body += fs.readFileSync(path.join(INSTRUCTIONS_DIR, instructionFile), 'utf8');
   }
 
   return `${GT_SECTION_START}
 
 ${versionLine}
 
-${base}
-
-${body}
+${base}${body}
 ${GT_SECTION_END}`;
 }
 
