@@ -3,6 +3,12 @@ import {
   AuthFromEnvReturn,
 } from '@generaltranslation/react-core/types';
 
+/**
+ * Extract the project ID and development API key from the environment variables
+ * @param projectId - The project ID
+ * @param devApiKey - The development API key
+ * @returns The project ID and development API key
+ */
 export function readAuthFromEnv({
   projectId,
   devApiKey,
