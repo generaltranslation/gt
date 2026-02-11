@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import {
+  Framework,
   SupportedFrameworks,
   WrapOptions,
   SupportedLibraries,
@@ -13,13 +14,14 @@ import { wrapContentReact } from '../react/parse/wrapContent.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
 import { InlineCLI } from './inline.js';
+import { Libraries } from '../types/libraries.js';
 
-const pkg = 'gt-react';
+const pkg = Libraries.GT_REACT;
 
 export class ReactCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: 'gt-react' | 'gt-next' | 'gt-react-native',
+    library: Framework,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);

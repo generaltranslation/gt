@@ -6,13 +6,14 @@ import {
 import { ReactCLI } from './react.js';
 import { wrapContentNext } from '../next/parse/wrapContent.js';
 import { Command } from 'commander';
+import { Libraries } from '../types/libraries.js';
 
-const pkg = 'gt-next';
+const pkg = Libraries.GT_NEXT;
 
 export class NextCLI extends ReactCLI {
   constructor(
     command: Command,
-    library: 'gt-next',
+    library: typeof Libraries.GT_NEXT,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);

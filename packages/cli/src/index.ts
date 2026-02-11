@@ -4,17 +4,21 @@ import { ReactCLI } from './cli/react.js';
 import { determineLibrary } from './fs/determineFramework.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
+import { Libraries } from './types/libraries.js';
 
 export function main(program: Command) {
   program.name('gtx-cli');
 
   const { library, additionalModules } = determineLibrary();
   let cli: BaseCLI;
-  if (library === 'gt-next') {
+  if (library === Libraries.GT_NEXT) {
     cli = new NextCLI(program, library, additionalModules);
-  } else if (library === 'gt-react' || library === 'gt-react-native') {
+  } else if (
+    library === Libraries.GT_REACT ||
+    library === Libraries.GT_REACT_NATIVE
+  ) {
     cli = new ReactCLI(program, library, additionalModules);
-  } else if (library === 'gt-node') {
+  } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);
   } else {
     cli = new BaseCLI(program, library, additionalModules);

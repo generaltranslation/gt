@@ -25,14 +25,15 @@ import {
 } from '../../react/jsx/utils/parseAst.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
+import { Libraries } from '../../types/libraries.js';
 
 const IMPORT_MAP = {
-  T: { name: 'T', source: 'gt-next' },
-  Var: { name: 'Var', source: 'gt-next' },
-  GTT: { name: 'T', source: 'gt-next' },
-  GTVar: { name: 'Var', source: 'gt-next' },
-  GTProvider: { name: 'GTProvider', source: 'gt-next' },
-  getLocale: { name: 'getLocale', source: 'gt-next/server' },
+  T: { name: 'T', source: Libraries.GT_NEXT },
+  Var: { name: 'Var', source: Libraries.GT_NEXT },
+  GTT: { name: 'T', source: Libraries.GT_NEXT },
+  GTVar: { name: 'Var', source: Libraries.GT_NEXT },
+  GTProvider: { name: 'GTProvider', source: Libraries.GT_NEXT },
+  getLocale: { name: 'getLocale', source: Libraries.GT_NEXT + '/server' },
 };
 
 /**
@@ -44,7 +45,7 @@ const IMPORT_MAP = {
  */
 export async function wrapContentNext(
   options: WrapOptions,
-  pkg: 'gt-next',
+  pkg: typeof Libraries.GT_NEXT,
   errors: string[],
   warnings: string[]
 ): Promise<{ filesUpdated: string[] }> {
@@ -84,7 +85,7 @@ export async function wrapContentNext(
     traverse(ast, {
       JSXElement(path) {
         if (
-          pkg === 'gt-next' &&
+          pkg === Libraries.GT_NEXT &&
           options.addGTProvider &&
           isHtmlElement(path.node.openingElement)
         ) {

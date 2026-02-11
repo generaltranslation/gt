@@ -67,6 +67,7 @@ import {
   appendAgentInstructions,
 } from '../setup/agentInstructions.js';
 import { determineLibrary } from '../fs/determineFramework.js';
+import { INLINE_LIBRARIES } from '../types/libraries.js';
 
 export type UploadOptions = {
   config?: string;
@@ -270,10 +271,7 @@ export class BaseCLI {
           const packageJson = await searchForPackageJson();
           if (
             packageJson &&
-            (isPackageInstalled('gt-next', packageJson) ||
-              isPackageInstalled('gt-react', packageJson) ||
-              isPackageInstalled('gt-react-native', packageJson) ||
-              isPackageInstalled('gt-node', packageJson))
+            INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson))
           ) {
             options.keyType = 'development';
           } else {
@@ -472,10 +470,7 @@ export class BaseCLI {
     // Ask if using another i18n library
     const gtInstalled =
       !!packageJson &&
-      (isPackageInstalled('gt-next', packageJson) ||
-        isPackageInstalled('gt-react', packageJson) ||
-        isPackageInstalled('gt-react-native', packageJson) ||
-        isPackageInstalled('gt-node', packageJson));
+      INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
     const isUsingGT = ranReactSetup || gtInstalled;
 
     // Ask where the translations are stored

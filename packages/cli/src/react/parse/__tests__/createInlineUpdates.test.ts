@@ -4,6 +4,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { createInlineUpdates } from '../createInlineUpdates.js';
 import { hashSource } from 'generaltranslation/id';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
+import { Libraries } from '../../../types/libraries.js';
 
 // Mock parseStrings since we're not testing string parsing functionality
 vi.mock('../jsx/utils/parseStringFunction.js', () => ({
@@ -64,7 +65,7 @@ async function createTest(dirPath: string) {
 
       // Call createInlineUpdates with the test file
       const result = await createInlineUpdates(
-        'gt-next',
+        Libraries.GT_NEXT,
         false,
         undefined,
         parsingOptions

@@ -1,6 +1,7 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { ParsingConfigOptions } from './parsing.js';
+import { Libraries, InlineLibrary } from './libraries.js';
 
 export type { Updates } from 'generaltranslation/types';
 
@@ -105,7 +106,10 @@ export type GenerateSourceOptions = {
   suppressWarnings: boolean;
 };
 
-export type Framework = 'gt-next' | 'gt-react';
+export type Framework =
+  | typeof Libraries.GT_NEXT
+  | typeof Libraries.GT_REACT
+  | typeof Libraries.GT_REACT_NATIVE;
 
 export type FrameworkObject =
   | {
@@ -127,15 +131,12 @@ export type SupportedReactFrameworks = Extract<
 >['name'];
 
 export type SupportedLibraries =
-  | 'gt-next'
-  | 'gt-react'
-  | 'gt-react-native'
+  | InlineLibrary
   | 'next-intl'
   | 'react-i18next'
   | 'next-i18next'
   | 'i18next'
   | 'i18next-icu'
-  | 'gt-node'
   | 'base';
 
 export interface ContentScanner {
