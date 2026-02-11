@@ -17,16 +17,7 @@ export class NextCLI extends ReactCLI {
   ) {
     super(command, library, additionalModules);
   }
-  public init() {
-    this.setupSetupProjectCommand();
-    this.setupStageCommand();
-    this.setupTranslateCommand();
-    this.setupGenerateSourceCommand();
-    this.setupValidateCommand();
-  }
-  public execute() {
-    super.execute();
-  }
+
   protected wrapContent(
     options: WrapOptions,
     framework: SupportedFrameworks,

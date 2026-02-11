@@ -134,6 +134,7 @@ export type SupportedLibraries =
   | 'next-i18next'
   | 'i18next'
   | 'i18next-icu'
+  | 'gt-node'
   | 'base';
 
 export interface ContentScanner {

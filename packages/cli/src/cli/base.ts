@@ -268,13 +268,12 @@ export class BaseCLI {
         displayHeader('Authenticating with General Translation...');
         if (!options.keyType) {
           const packageJson = await searchForPackageJson();
-          const isUsingGTNext = packageJson
-            ? isPackageInstalled('gt-next', packageJson)
-            : false;
-          const isUsingGTReact = packageJson
-            ? isPackageInstalled('gt-react', packageJson)
-            : false;
-          if (isUsingGTNext || isUsingGTReact) {
+          if (
+            packageJson &&
+            (isPackageInstalled('gt-next', packageJson) ||
+              isPackageInstalled('gt-react', packageJson) ||
+              isPackageInstalled('gt-node', packageJson))
+          ) {
             options.keyType = 'development';
           } else {
             options.keyType = 'production';
@@ -468,15 +467,14 @@ export class BaseCLI {
     const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
     const packageJson = await searchForPackageJson();
-    const isUsingGTNext = packageJson
-      ? isPackageInstalled('gt-next', packageJson)
-      : false;
-    const isUsingGTReact = packageJson
-      ? isPackageInstalled('gt-react', packageJson)
-      : false;
 
     // Ask if using another i18n library
-    const isUsingGT = isUsingGTNext || isUsingGTReact || ranReactSetup;
+    const gtInstalled =
+      !!packageJson &&
+      (isPackageInstalled('gt-next', packageJson) ||
+        isPackageInstalled('gt-react', packageJson) ||
+        isPackageInstalled('gt-node', packageJson));
+    const isUsingGT = ranReactSetup || gtInstalled;
 
     // Ask where the translations are stored
     const usingCDN = await (async () => {

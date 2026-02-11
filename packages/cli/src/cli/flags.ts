@@ -111,8 +111,13 @@ export function attachTranslateFlags(command: Command) {
   return command;
 }
 
-export function attachAdditionalReactTranslateFlags(command: Command) {
-  command
+/**
+ * Attaches flags necessary for parsing inline content
+ * @param command - The command to attach the flags to
+ * @returns The command with the inline content parsing flags attached
+ */
+function attachInlineContentParsingFlags(command: Command) {
+  return command
     .option(
       '--tsconfig, --jsconfig <path>',
       'Path to custom jsconfig or tsconfig file',
@@ -125,13 +130,37 @@ export function attachAdditionalReactTranslateFlags(command: Command) {
     )
     .option(
       '--inline',
-      'Include inline <T> tags in addition to dictionary file',
+      'Include inline content in translations (e.g., inline jsx translations, inline string translations, etc.)',
       true
-    )
-    .option(
-      '--ignore-errors',
-      'Ignore errors encountered while scanning for <T> tags',
-      false
     );
-  return command;
+}
+
+/**
+ * Attaches flags necessary for validating a project
+ * @param command
+ * @returns The command with the validate flags attached
+ */
+export function attachValidateFlags(command: Command) {
+  return attachInlineContentParsingFlags(
+    command.option(
+      '-c, --config <path>',
+      'Filepath to config file, by default gt.config.json',
+      findFilepath(['gt.config.json'])
+    )
+  );
+}
+
+/**
+ * Attaches flags necessary for translating a project
+ * @param command
+ * @returns The command with the translate flags attached
+ */
+export function attachInlineTranslateFlags(command: Command) {
+  return attachInlineContentParsingFlags(
+    command.option(
+      '--ignore-errors',
+      'Ignore errors encountered while scanning for inline content',
+      false
+    )
+  );
 }

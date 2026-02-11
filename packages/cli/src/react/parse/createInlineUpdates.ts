@@ -1,11 +1,10 @@
 import fs from 'node:fs';
-import { Options, Updates } from '../../types/index.js';
+import { Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
 import { hashSource, hashString } from 'generaltranslation/id';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
-import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -68,24 +67,26 @@ export async function createInlineUpdates(
     }
 
     // Parse <T> components
-    for (const { localName, path } of translationComponentPaths) {
-      parseTranslationComponent({
-        originalName: localName,
-        localName,
-        path,
-        updates,
-        config: {
-          importAliases,
-          parsingOptions,
-          pkgs,
-          file,
-        },
-        output: {
-          errors,
-          warnings,
-          unwrappedExpressions: [],
-        },
-      });
+    if (pkg !== 'gt-node') {
+      for (const { localName, path } of translationComponentPaths) {
+        parseTranslationComponent({
+          originalName: localName,
+          localName,
+          path,
+          updates,
+          config: {
+            importAliases,
+            parsingOptions,
+            pkgs,
+            file,
+          },
+          output: {
+            errors,
+            warnings,
+            unwrappedExpressions: [],
+          },
+        });
+      }
     }
   }
 
@@ -99,7 +100,8 @@ export async function createInlineUpdates(
 
 /**
  * Given a package name, return the upstream packages that it depends on
- * @param pkg
+ * @param pkg - The package name
+ * @returns The upstream packages that the package depends on
  */
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];

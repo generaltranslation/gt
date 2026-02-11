@@ -6,7 +6,7 @@ import {
 } from '../../types/index.js';
 import { invalidConfigurationError } from '../../console/index.js';
 import { aggregateFiles } from '../../formats/files/translate.js';
-import { aggregateReactTranslations } from '../../translation/stage.js';
+import { aggregateInlineTranslations } from '../../translation/stage.js';
 import type { FileToUpload, JsxChildren } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
@@ -21,8 +21,12 @@ export async function collectFiles(
 
   // Parse for React components
   let reactComponents = 0;
-  if (library === 'gt-react' || library === 'gt-next') {
-    const updates = await aggregateReactTranslations(
+  if (
+    library === 'gt-react' ||
+    library === 'gt-next' ||
+    library === 'gt-node'
+  ) {
+    const updates = await aggregateInlineTranslations(
       options,
       settings,
       library
