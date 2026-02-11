@@ -1,6 +1,5 @@
 import { Command } from 'commander';
 import {
-  Options,
   SupportedFrameworks,
   WrapOptions,
   SupportedLibraries,

@@ -61,7 +61,7 @@ export class InlineCLI extends BaseCLI {
         this.program
           .command('translate')
           .description(
-            'Scans the project for a dictionary and/or <T> tags, and sends the updates to the General Translation API for translation.'
+            'Scans the project for a dictionary and inline translations and sends the updates to the General Translation API for translation.'
           )
       )
     ).action(async (options: TranslateFlags) => {
@@ -76,7 +76,7 @@ export class InlineCLI extends BaseCLI {
       this.program
         .command('validate [files...]')
         .description(
-          'Scans the project for a dictionary and/or inline content, and validates the project for errors.'
+          'Scans the project for a dictionary and/or inline content and validates the project for errors.'
         )
     ).action(async (files: string[], options: Options) => {
       // intro here since we don't want to show the ascii title
