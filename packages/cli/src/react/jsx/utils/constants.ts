@@ -48,13 +48,6 @@ export const GT_ATTRIBUTES = [
   ...GT_ATTRIBUTES_WITH_SUGAR,
 ] as const;
 
-export function mapAttributeName(attrName: string): string {
-  if (attrName === '$id') return 'id';
-  if (attrName === '$context') return 'context';
-  if (attrName === '$maxChars') return 'maxChars';
-  return attrName;
-}
-
 export enum Libraries {
   GT_REACT = 'gt-react',
   GT_NEXT = 'gt-next',
@@ -73,15 +66,6 @@ export const GT_LIBRARIES = [
   Libraries.REACT_CORE,
 ] as const;
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
-
-/**
- * GT Libraries that use react translations
- */
-export type GTReactLibrary =
-  | 'gt-react'
-  | 'gt-react-native'
-  | 'gt-next'
-  | '@generaltranslation/react-core';
 
 /**
  * A mapping of each library to their upstream dependencies for filtering imports
