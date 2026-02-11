@@ -38,6 +38,8 @@ export function determineLibrary(): {
       library = Libraries.GT_NEXT;
     } else if (dependencies[Libraries.GT_REACT]) {
       library = Libraries.GT_REACT;
+    } else if (dependencies[Libraries.GT_REACT_NATIVE]) {
+      library = Libraries.GT_REACT_NATIVE;
     } else if (dependencies[Libraries.GT_NODE]) {
       library = Libraries.GT_NODE;
     } else if (dependencies['next-intl']) {

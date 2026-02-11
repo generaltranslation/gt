@@ -187,7 +187,14 @@ export class InlineCLI extends BaseCLI {
 }
 
 function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
-  return [Libraries.GT_NEXT, Libraries.GT_NODE].includes(library as Libraries)
-    ? (library as typeof Libraries.GT_NEXT | typeof Libraries.GT_NODE)
+  return [
+    Libraries.GT_NEXT,
+    Libraries.GT_NODE,
+    Libraries.GT_REACT_NATIVE,
+  ].includes(library as Libraries)
+    ? (library as
+        | typeof Libraries.GT_NEXT
+        | typeof Libraries.GT_NODE
+        | typeof Libraries.GT_REACT_NATIVE)
     : Libraries.GT_REACT;
 }

@@ -106,7 +106,10 @@ export type GenerateSourceOptions = {
   suppressWarnings: boolean;
 };
 
-export type Framework = typeof Libraries.GT_NEXT | typeof Libraries.GT_REACT;
+export type Framework =
+  | typeof Libraries.GT_NEXT
+  | typeof Libraries.GT_REACT
+  | typeof Libraries.GT_REACT_NATIVE;
 
 export type FrameworkObject =
   | {

@@ -13,7 +13,10 @@ export function main(program: Command) {
   let cli: BaseCLI;
   if (library === Libraries.GT_NEXT) {
     cli = new NextCLI(program, library, additionalModules);
-  } else if (library === Libraries.GT_REACT) {
+  } else if (
+    library === Libraries.GT_REACT ||
+    library === Libraries.GT_REACT_NATIVE
+  ) {
     cli = new ReactCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);

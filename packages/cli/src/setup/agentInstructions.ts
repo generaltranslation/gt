@@ -97,6 +97,8 @@ export function getAgentInstructions(library: SupportedLibraries): string {
   const libToFile: Partial<Record<SupportedLibraries, string>> = {
     [Libraries.GT_NEXT]: 'gt-next.md',
     [Libraries.GT_REACT]: 'gt-react.md',
+    // TODO: add gt-react-native.md
+    [Libraries.GT_REACT_NATIVE]: 'gt-react.md',
   };
   const instructionFile = libToFile[library];
   if (instructionFile) {
