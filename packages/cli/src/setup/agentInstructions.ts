@@ -92,16 +92,6 @@ export function getAgentInstructions(library: SupportedLibraries): string {
 
   const base = fs.readFileSync(path.join(INSTRUCTIONS_DIR, 'base.md'), 'utf8');
 
-  let filename: string;
-  switch (library) {
-    case 'gt-next':
-      filename = 'gt-next.md';
-      break;
-    case 'gt-react':
-      filename = 'gt-react.md';
-      break;
-  }
-
   let body = '';
   const libToFile: Partial<Record<SupportedLibraries, string>> = {
     'gt-next': 'gt-next.md',
@@ -157,7 +147,8 @@ export function appendAgentInstructions(
   if (content.includes(instructions)) return false;
 
   const startIdx = content.indexOf(GT_SECTION_START);
-  const endIdx = content.indexOf(GT_SECTION_END);
+  const endIdx =
+    startIdx !== -1 ? content.indexOf(GT_SECTION_END, startIdx) : -1;
 
   if (startIdx !== -1 && endIdx !== -1) {
     // Replace existing section
