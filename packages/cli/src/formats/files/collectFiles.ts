@@ -24,7 +24,8 @@ export async function collectFiles(
   if (
     library === 'gt-react' ||
     library === 'gt-next' ||
-    library === 'gt-node'
+    library === 'gt-node' ||
+    library === 'gt-react-native'
   ) {
     const updates = await aggregateInlineTranslations(
       options,

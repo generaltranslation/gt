@@ -12,7 +12,7 @@ export function main(program: Command) {
   let cli: BaseCLI;
   if (library === 'gt-next') {
     cli = new NextCLI(program, library, additionalModules);
-  } else if (library === 'gt-react') {
+  } else if (library === 'gt-react' || library === 'gt-react-native') {
     cli = new ReactCLI(program, library, additionalModules);
   } else if (library === 'gt-node') {
     cli = new NodeCLI(program, library, additionalModules);

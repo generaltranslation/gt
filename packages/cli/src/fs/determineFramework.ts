@@ -37,6 +37,8 @@ export function determineLibrary(): {
       library = 'gt-next';
     } else if (dependencies['gt-react']) {
       library = 'gt-react';
+    } else if (dependencies['gt-react-native']) {
+      library = 'gt-react-native';
     } else if (dependencies['gt-node']) {
       library = 'gt-node';
     } else if (dependencies['next-intl']) {

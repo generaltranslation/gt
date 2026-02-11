@@ -272,6 +272,7 @@ export class BaseCLI {
             packageJson &&
             (isPackageInstalled('gt-next', packageJson) ||
               isPackageInstalled('gt-react', packageJson) ||
+              isPackageInstalled('gt-react-native', packageJson) ||
               isPackageInstalled('gt-node', packageJson))
           ) {
             options.keyType = 'development';
@@ -473,6 +474,7 @@ export class BaseCLI {
       !!packageJson &&
       (isPackageInstalled('gt-next', packageJson) ||
         isPackageInstalled('gt-react', packageJson) ||
+        isPackageInstalled('gt-react-native', packageJson) ||
         isPackageInstalled('gt-node', packageJson));
     const isUsingGT = ranReactSetup || gtInstalled;
 

@@ -129,6 +129,7 @@ export type SupportedReactFrameworks = Extract<
 export type SupportedLibraries =
   | 'gt-next'
   | 'gt-react'
+  | 'gt-react-native'
   | 'next-intl'
   | 'react-i18next'
   | 'next-i18next'

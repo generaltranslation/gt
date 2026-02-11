@@ -19,7 +19,7 @@ const pkg = 'gt-react';
 export class ReactCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: 'gt-react' | 'gt-next',
+    library: 'gt-react' | 'gt-next' | 'gt-react-native',
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);

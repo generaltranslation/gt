@@ -25,7 +25,7 @@ import { validateProject } from '../translation/validate.js';
 export class InlineCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: 'gt-react' | 'gt-next' | 'gt-node',
+    library: 'gt-react' | 'gt-next' | 'gt-react-native' | 'gt-node',
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -187,8 +187,8 @@ export class InlineCLI extends BaseCLI {
 
 function fallbackToGtReact(
   library: SupportedLibraries
-): 'gt-next' | 'gt-react' | 'gt-node' {
-  return ['gt-next', 'gt-node'].includes(library)
-    ? (library as 'gt-next' | 'gt-node')
+): 'gt-next' | 'gt-react' | 'gt-node' | 'gt-react-native' {
+  return ['gt-next', 'gt-node', 'gt-react-native'].includes(library)
+    ? (library as 'gt-next' | 'gt-node' | 'gt-react-native')
     : 'gt-react';
 }
