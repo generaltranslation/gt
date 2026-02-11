@@ -110,7 +110,10 @@ export function getAgentInstructions(library: SupportedLibraries): string {
   const instructionFile = libToFile[library];
   if (instructionFile) {
     body += '\n\n'; // add two newlines between the base and the specific instructions
-    body += fs.readFileSync(path.join(INSTRUCTIONS_DIR, instructionFile), 'utf8');
+    body += fs.readFileSync(
+      path.join(INSTRUCTIONS_DIR, instructionFile),
+      'utf8'
+    );
   }
 
   return `${GT_SECTION_START}
