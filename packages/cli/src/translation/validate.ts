@@ -22,7 +22,7 @@ export type ValidationResult = Record<string, ValidationMessage[]>;
  */
 async function runValidation(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next',
+  pkg: 'gt-react' | 'gt-next' | 'gt-node',
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
@@ -114,7 +114,7 @@ export async function getValidateJson(
 
 export async function validateProject(
   settings: Options & Settings,
-  pkg: 'gt-react' | 'gt-next',
+  pkg: 'gt-react' | 'gt-next' | 'gt-node',
   files?: string[]
 ): Promise<void> {
   const { updates, errors, warnings } = await runValidation(
