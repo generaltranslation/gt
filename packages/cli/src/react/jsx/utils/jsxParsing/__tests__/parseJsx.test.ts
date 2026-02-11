@@ -8,7 +8,7 @@ import { resolveImportPath } from '../../resolveImportPath.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
 import { Updates } from '../../../../../types/index.js';
 import { hashSource } from 'generaltranslation/id';
-import { Libraries } from '../../constants.js';
+import { Libraries } from '../../../../../types/libraries.js';
 
 // Mock fs and resolveImportPath
 vi.mock('node:fs');
