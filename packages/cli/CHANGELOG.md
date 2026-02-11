@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.6.18
+
+### Patch Changes
+
+- [#1009](https://github.com/generaltranslation/gt/pull/1009) [`ffd6995`](https://github.com/generaltranslation/gt/commit/ffd6995d57e5444157071696e533ee29abcc2df4) Thanks [@pie575](https://github.com/pie575)! - added ai instructions on how to use the gt library
+
+- [#1013](https://github.com/generaltranslation/gt/pull/1013) [`d01b29c`](https://github.com/generaltranslation/gt/commit/d01b29c0f5a4442f49a1ab6d8d5ee72403c6fa17) Thanks [@pie575](https://github.com/pie575)! - added flag to update-instructions add comments to ai files even if they weren't there before
+
+- [#1007](https://github.com/generaltranslation/gt/pull/1007) [`7aaac80`](https://github.com/generaltranslation/gt/commit/7aaac80b67f4f6ffa8d9ef9aa00f6fc669596003) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: add gt-node support
+
 ## 2.6.17
 
 ### Patch Changes
