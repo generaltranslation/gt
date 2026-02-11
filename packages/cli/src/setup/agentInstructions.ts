@@ -90,13 +90,7 @@ export function getAgentInstructions(library: SupportedLibraries): string {
     ? `- **${library}**: ${libraryVersion}\n- **gtx-cli**: v${getCLIVersion()}`
     : `- **gtx-cli**: v${getCLIVersion()}`;
 
-  const header = `## General Translation (GT) — i18n Instructions
-
-This project uses [General Translation](https://generaltranslation.com/docs) for internationalization.
-
-${versionLine}
-
-> If the versions above don't match what's installed in \`package.json\`, notify the user and suggest running \`npx gtx-cli init\` to refresh.`;
+  const base = fs.readFileSync(path.join(INSTRUCTIONS_DIR, 'base.md'), 'utf8');
 
   let filename: string;
   switch (library) {
@@ -114,7 +108,10 @@ ${versionLine}
   const body = fs.readFileSync(path.join(INSTRUCTIONS_DIR, filename), 'utf8');
 
   return `${GT_SECTION_START}
-${header}
+
+${versionLine}
+
+${base}
 
 ${body}
 ${GT_SECTION_END}`;

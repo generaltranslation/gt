@@ -1,4 +1,6 @@
-This project is using [General Translation](https://generaltranslation.com/docs) for internationalization (i18n) and translations. General Translation is a developer-friendly localization stack, built to ship multilingual apps from end-to-end with ease.
+## General Translation (GT) Internationalization Rules
+
+This project is using [General Translation](https://generaltranslation.com/docs/overview.md) for internationalization (i18n) and translations. General Translation is a developer-friendly localization stack, built to ship multilingual apps from end-to-end with ease.
 
 ### Configuration
 
