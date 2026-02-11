@@ -52,7 +52,27 @@ export function findAgentFiles(): string[] {
 }
 
 /**
- * Check if the .cursor/rules/ directory exists (for offering to create gt.md).
+ * Find agent files that already contain GT instructions.
+ */
+export function findAgentFilesWithInstructions(): string[] {
+  const cwd = process.cwd();
+  const found: string[] = [];
+
+  for (const filePath of [...AGENT_FILE_PATHS, CURSOR_GT_RULES_FILE]) {
+    const fullPath = path.resolve(cwd, filePath);
+    if (fs.existsSync(fullPath)) {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (content.includes(GT_SECTION_START)) {
+        found.push(filePath);
+      }
+    }
+  }
+
+  return found;
+}
+
+/**
+ * Check if the .cursor/rules/ directory exists (for offering to create gt.mdc).
  */
 export function hasCursorRulesDir(): boolean {
   const cursorRulesDir = path.resolve(process.cwd(), CURSOR_RULES_DIR);

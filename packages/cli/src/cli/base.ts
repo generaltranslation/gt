@@ -60,11 +60,13 @@ import {
 } from '../setup/frameworkUtils.js';
 import {
   findAgentFiles,
+  findAgentFilesWithInstructions,
   hasCursorRulesDir,
   CURSOR_GT_RULES_FILE,
   getAgentInstructions,
   appendAgentInstructions,
 } from '../setup/agentInstructions.js';
+import { determineLibrary } from '../fs/determineFramework.js';
 
 export type UploadOptions = {
   config?: string;
@@ -95,6 +97,7 @@ export class BaseCLI {
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
+    this.setupUpdateInstructionsCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -618,6 +621,39 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     await setCredentials(credentials, keyType, settings.framework);
   }
 
+  protected setupUpdateInstructionsCommand(): void {
+    this.program
+      .command('update-instructions')
+      .description('Update GT usage instructions in AI agent files')
+      .action(async () => {
+        const agentFiles = findAgentFilesWithInstructions();
+
+        if (agentFiles.length === 0) {
+          logger.warn(
+            'No agent files with GT instructions found. Run `npx gtx-cli init` to add them.'
+          );
+          return;
+        }
+
+        const { library } = determineLibrary();
+        const instructions = getAgentInstructions(library);
+        let updatedCount = 0;
+        for (const file of agentFiles) {
+          if (appendAgentInstructions(file, instructions)) {
+            updatedCount++;
+          }
+        }
+
+        if (updatedCount > 0) {
+          logger.success(
+            `Updated GT instructions in ${updatedCount} file${updatedCount > 1 ? 's' : ''}.`
+          );
+        } else {
+          logger.info('All agent instruction files are already up to date.');
+        }
+      });
+  }
+
   protected async promptAgentInstructions(
     useDefaults: boolean = false
   ): Promise<void> {
@@ -638,7 +674,9 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
         });
 
     if (addInstructions) {
-      const instructions = getAgentInstructions(this.library);
+      // Re-detect library since packages may have been installed during init
+      const { library } = determineLibrary();
+      const instructions = getAgentInstructions(library);
       let updatedCount = 0;
       for (const file of agentFiles) {
         if (appendAgentInstructions(file, instructions)) {

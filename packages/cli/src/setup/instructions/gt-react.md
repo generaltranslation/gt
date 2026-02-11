@@ -11,7 +11,11 @@ Wrap JSX content with the `<T>` component for translation:
 import { T } from 'gt-react';
 
 <T>
-  <p>Hello, world!</p>
+  <h1>Welcome to our store</h1>
+  <p>
+    Browse our <a href='/products'>latest products</a> and find something you
+    love.
+  </p>
 </T>;
 ```
 
@@ -24,38 +28,43 @@ Use `useGT()` for string translation:
 ```js
 import { useGT } from 'gt-react';
 const gt = useGT();
-gt('Hello'); // returns translated string
+gt('Hello, welcome to our store!'); // returns translated string
 ```
+
+- All strings passed to `gt()` must be static string literals — no variables or template literals.
 
 ### Shared / reusable strings
 
-Use `msg()` to define shared strings, and `useMessages()` to consume them:
+Use `msg()` to encode strings for translation, and `useMessages()` to translate them:
 
 ```js
-import { msg } from 'gt-react';
-const messages = { greeting: msg('Hello') };
+import { msg, useMessages } from 'gt-react';
+
+const encodedGreeting = msg('Hello, welcome to our store!');
+
+export default function Greeting() {
+  const m = useMessages();
+  return <p>{m(encodedGreeting)}</p>;
+}
 ```
 
-```js
-import { useMessages } from 'gt-react';
-const m = useMessages(messages);
-m('greeting'); // translated "Hello"
-```
+- All strings passed to `msg()` must be static string literals.
+- `useMessages()` takes no parameters. Pass the encoded string directly to the returned function.
 
 ### Dynamic content inside `<T>`
 
 Use variable components for dynamic values inside `<T>`:
 
 - `<Var>{value}</Var>` — variables (strings, numbers, etc.)
-- `<Num value={count} />` — formatted numbers
-- `<Currency value={price} currency="USD" />` — formatted currency
-- `<DateTime value={date} />` — formatted dates/times
+- `<Num>{value}</Num>` — formatted numbers
+- `<Currency>{value}</Currency>` — formatted currency
+- `<DateTime>{value}</DateTime>` — formatted dates/times
 
 ```jsx
 import { T, Var, Num } from 'gt-react';
 
 <T>
-  <Var>{userName}</Var> ordered <Num value={itemCount} /> items.
+  <Var>{userName}</Var> ordered <Num>{itemCount}</Num> items.
 </T>;
 ```
 
