@@ -1,5 +1,6 @@
 import { decodeMsg } from '../msg/decodeMsg';
-import { InlineResolveOptions, MFunctionType } from '../types';
+import { InlineResolveOptions } from '../types/options';
+import { MFunctionType } from '../types/functions';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { gtFallback } from './gtFallback';

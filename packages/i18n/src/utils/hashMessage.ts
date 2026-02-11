@@ -1,6 +1,6 @@
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
-import { InlineTranslationOptions } from '../translation-functions/types';
+import { InlineTranslationOptions } from '../translation-functions/types/options';
 
 /**
  * Hash a message string

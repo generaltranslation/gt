@@ -1,4 +1,4 @@
-export * from './gt';
-export * from './m';
-// TODO: export * from './t';
+export * from './getGT';
+export * from './getMessages';
+export * from './getTranslations';
 export * from './tx';

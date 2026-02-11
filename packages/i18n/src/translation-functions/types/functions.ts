@@ -1,4 +1,8 @@
-import { InlineTranslationOptions } from '../types';
+import {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from './options';
 
 /**
  * Type for the gt() function
@@ -26,3 +30,25 @@ export type MFunctionType = <T extends string | null | undefined>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options?: Record<string, any>
 ) => T extends string ? string : T;
+
+/**
+ * Type for the t() function
+ * @param {string} id - The id of the translation to translate.
+ * @param {DictionaryTranslationOptions} options - The options for the translation.
+ * @returns {string} The translated message.
+ */
+export type TFunctionType = (
+  id: string,
+  options?: DictionaryTranslationOptions
+) => string;
+
+/**
+ * Internal tx() function type
+ * @param {string} message - The message to translate.
+ * @param {RuntimeTranslationOptions} options - The options for the translation.
+ * @returns {string} The translated message.
+ */
+export type TxFunctionType = (
+  message: string,
+  options?: RuntimeTranslationOptions
+) => Promise<string>;

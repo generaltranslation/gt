@@ -32,7 +32,7 @@ export default [
     ],
     plugins: [
       resolve({ extensions: ['.js', '.mjs', '.ts'] }),
-      typescript({ tsconfig: './tsconfig.json' }),
+      typescript({ tsconfig: './tsconfig.json', outputToFilesystem: true }),
       commonjs(),
       terser(),
     ],
@@ -120,7 +120,6 @@ export default [
     plugins: [dts()],
   },
 
-
   // Bundling for the internal module
   {
     input: 'src/internal.ts',
@@ -147,11 +146,47 @@ export default [
     external,
   },
 
-  // TypeScript declarations for the main library
+  // TypeScript declarations for the internal module
   {
     input: 'src/internal.ts',
     output: {
       file: 'dist/internal.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
+
+  // Bundling for the internal-types module
+  {
+    input: 'src/internal-types.ts',
+    output: [
+      {
+        file: 'dist/internal-types.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/internal-types.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+    external,
+  },
+
+  // TypeScript declarations for the internal-types module
+  {
+    input: 'src/internal-types.ts',
+    output: {
+      file: 'dist/internal-types.d.ts',
       format: 'es',
     },
     plugins: [dts()],

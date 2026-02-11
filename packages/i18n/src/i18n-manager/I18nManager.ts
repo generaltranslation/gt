@@ -9,7 +9,7 @@ import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
-import { InlineTranslationOptions } from '../translation-functions/types';
+import { InlineTranslationOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
@@ -104,34 +104,33 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   /**
    * Get translation for a given locale and message
    *
-   * @param message - The message to get the translation for
-   * @param options - The options for the translation
-   * @returns The translation for the given locale and message
+   * @param {string} [locale] - The locale to get the translation for (if not provided, will use the current locale)
+   * @returns A function that resolves the translations for a given message and options synchronously
    *
    * Note: we can assume that the translation is a string because we are passing a string
    */
-  async getTranslation(
-    message: string,
-    options?: InlineTranslationOptions
-  ): Promise<string | undefined> {
+  async getTranslationResolver(
+    locale: string = this.getLocale()
+  ): Promise<TranslationResolver> {
     // Early return if i18n is disabled or default locale
     if (
       this.config.enableI18n === false ||
-      this.getLocale() === this.config.defaultLocale
+      locale === this.config.defaultLocale
     ) {
-      return message;
+      return (message: string) => message;
     }
 
     // Get translations
-    const translations = await this.translationsManager.getTranslations(
-      this.getLocale()
-    );
+    const translations = await this.translationsManager.getTranslations(locale);
 
-    // Calculate hash
-    const hash = hashMessage(message, options);
+    // Create translation resolver
+    return (message: string, options?: InlineTranslationOptions) => {
+      // Calculate hash
+      const hash = hashMessage(message, options);
 
-    // Return translation or undefined
-    return translations[hash] as unknown as string | undefined;
+      // Return translation or undefined
+      return translations[hash] as unknown as string | undefined;
+    };
   }
 
   /**
@@ -253,3 +252,14 @@ function standardizeLocales(config: {
     customMapping,
   };
 }
+
+/**
+ * Type definition for a synchronous translation resolver function
+ * @param {string} message - The message to get the translation for
+ * @param {InlineTranslationOptions} [options] - The options for the translation
+ * @returns {string | undefined} The translation for the given message and options
+ */
+type TranslationResolver = (
+  message: string,
+  options?: InlineTranslationOptions
+) => string | undefined;

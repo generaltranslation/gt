@@ -1,6 +1,6 @@
 import { I18nManager } from 'gt-i18n/internal';
 import { AsyncStorageAdapter } from './AsyncStorageAdapter';
-import { I18nManagerConstructorParams } from 'gt-i18n/types';
+import { I18nManagerConstructorParams } from 'gt-i18n/internal-types';
 
 /**
  * I18nManager implementation that uses AsyncStorage as the storage adapter.

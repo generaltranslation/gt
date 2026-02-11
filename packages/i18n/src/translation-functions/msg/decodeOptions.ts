@@ -1,5 +1,5 @@
 import { decode } from 'generaltranslation/internal';
-import { InlineTranslationOptions } from '../types';
+import type { InlineTranslationOptions } from '../types/options';
 
 /**
  * Decodes the options from an encoded message.

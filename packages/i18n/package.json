@@ -81,6 +81,11 @@
       "types": "./dist/internal.d.ts",
       "require": "./dist/internal.cjs.min.cjs",
       "import": "./dist/internal.esm.min.mjs"
+    },
+    "./internal/types": {
+      "types": "./dist/internal-types.d.ts",
+      "require": "./dist/internal-types.cjs.min.cjs",
+      "import": "./dist/internal-types.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -93,6 +98,9 @@
       ],
       "internal": [
         "./dist/internal.d.ts"
+      ],
+      "internal-types": [
+        "./dist/internal-types.d.ts"
       ]
     }
   },
@@ -107,6 +115,9 @@
       ],
       "gt-i18n/internal": [
         "/dist/internal"
+      ],
+      "gt-i18n/internal-types": [
+        "/dist/internal-types"
       ]
     }
   }

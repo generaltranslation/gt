@@ -1,4 +1,4 @@
-import { GTConfig, TranslationsLoader } from 'gt-i18n/types';
+import type { GTConfig, TranslationsLoader } from 'gt-i18n/internal-types';
 
 /**
  * Parameters for the initializing GT
@@ -9,3 +9,6 @@ import { GTConfig, TranslationsLoader } from 'gt-i18n/types';
 export type InitializeGTParams = GTConfig & {
   loadTranslations?: TranslationsLoader;
 };
+
+// Other Reexports
+export type { GTConfig, TranslationsLoader } from 'gt-i18n/internal-types';
