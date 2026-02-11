@@ -1,5 +1,15 @@
 # gt-next
 
+## 6.12.10
+
+### Patch Changes
+
+- [#1012](https://github.com/generaltranslation/gt/pull/1012) [`d49a81a`](https://github.com/generaltranslation/gt/commit/d49a81ad580dbddca464a4e8c8d0563f46907ee0) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Re-export msg and related functions from gt-next/server in order to improve dev experience when using getMessages
+
+- Updated dependencies [[`7c0a319`](https://github.com/generaltranslation/gt/commit/7c0a31917215bd77528f9e8f01c29a113f8f25c6)]:
+  - gt-i18n@0.3.7
+  - gt-react@10.10.7
+
 ## 6.12.9
 
 ### Patch Changes
