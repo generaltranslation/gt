@@ -6,7 +6,7 @@ import {
 import { ReactCLI } from './react.js';
 import { wrapContentNext } from '../next/parse/wrapContent.js';
 import { Command } from 'commander';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 const pkg = Libraries.GT_NEXT;
 

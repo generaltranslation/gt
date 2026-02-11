@@ -17,7 +17,7 @@ import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
 import { getFrameworkDisplayName } from './frameworkUtils.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,

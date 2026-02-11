@@ -8,7 +8,7 @@ import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 import type { ParsingConfigOptions } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
-import { InlineLibrary } from '../react/jsx/utils/constants.js';
+import { InlineLibrary } from '../types/libraries.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,

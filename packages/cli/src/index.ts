@@ -4,7 +4,7 @@ import { ReactCLI } from './cli/react.js';
 import { determineLibrary } from './fs/determineFramework.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
-import { Libraries } from './react/jsx/utils/constants.js';
+import { Libraries } from './types/libraries.js';
 
 export function main(program: Command) {
   program.name('gtx-cli');

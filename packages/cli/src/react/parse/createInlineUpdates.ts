@@ -15,7 +15,7 @@ import {
   GT_LIBRARIES_UPSTREAM,
   REACT_LIBRARIES,
   ReactLibrary,
-} from '../jsx/utils/constants.js';
+} from '../../types/libraries.js';
 
 export async function createInlineUpdates(
   pkg: GTLibrary,

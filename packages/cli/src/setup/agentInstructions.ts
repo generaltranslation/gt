@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SupportedLibraries } from '../types/index.js';
 import { getCLIVersion, getPackageVersion } from '../utils/packageJson.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 const INSTRUCTIONS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

@@ -18,7 +18,7 @@ import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
-import { Libraries, InlineLibrary } from '../react/jsx/utils/constants.js';
+import { Libraries, InlineLibrary } from '../types/libraries.js';
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations

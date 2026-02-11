@@ -1,7 +1,7 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { ParsingConfigOptions } from './parsing.js';
-import { Libraries, InlineLibrary } from '../react/jsx/utils/constants.js';
+import { Libraries, InlineLibrary } from './libraries.js';
 
 export type { Updates } from 'generaltranslation/types';
 

@@ -6,7 +6,7 @@ import { Settings, TranslateFlags, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
-import { InlineLibrary } from '../react/jsx/utils/constants.js';
+import { InlineLibrary } from '../types/libraries.js';
 
 export async function aggregateInlineTranslations(
   options: TranslateFlags,

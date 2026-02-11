@@ -25,7 +25,7 @@ import {
 } from '../../react/jsx/utils/parseAst.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
-import { Libraries } from '../../react/jsx/utils/constants.js';
+import { Libraries } from '../../types/libraries.js';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: Libraries.GT_NEXT },

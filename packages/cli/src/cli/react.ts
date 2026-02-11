@@ -14,7 +14,7 @@ import { wrapContentReact } from '../react/parse/wrapContent.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
 import { InlineCLI } from './inline.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 const pkg = Libraries.GT_REACT;
 

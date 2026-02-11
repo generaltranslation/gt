@@ -1,5 +1,5 @@
 import { FrameworkObject, ReactFrameworkObject } from '../types/index.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 export function getFrameworkDisplayName(
   frameworkObject: FrameworkObject

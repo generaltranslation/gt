@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { SupportedLibraries } from '../types/index.js';
 import { InlineCLI } from './inline.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 /**
  * CLI tool for managing translations with gt-node

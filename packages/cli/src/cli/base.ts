@@ -67,7 +67,7 @@ import {
   appendAgentInstructions,
 } from '../setup/agentInstructions.js';
 import { determineLibrary } from '../fs/determineFramework.js';
-import { INLINE_LIBRARIES } from '../react/jsx/utils/constants.js';
+import { INLINE_LIBRARIES } from '../types/libraries.js';
 
 export type UploadOptions = {
   config?: string;

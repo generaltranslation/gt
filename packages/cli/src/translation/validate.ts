@@ -6,7 +6,7 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
-import { InlineLibrary } from '../react/jsx/utils/constants.js';
+import { InlineLibrary } from '../types/libraries.js';
 
 // Types for programmatic validation API
 export type ValidationLevel = 'error' | 'warning';

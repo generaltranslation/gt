@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { SupportedLibraries } from '../types/index.js';
 import { logger } from '../console/logger.js';
-import { Libraries } from '../react/jsx/utils/constants.js';
+import { Libraries } from '../types/libraries.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;

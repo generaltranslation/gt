@@ -37,7 +37,7 @@ import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
 import { MultiplicationNode, JsxTree, isElementNode } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
-import { GTLibrary } from '../constants.js';
+import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
 
 // Handle CommonJS/ESM interop
