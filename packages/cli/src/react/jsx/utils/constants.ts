@@ -65,12 +65,12 @@ export enum Libraries {
 }
 
 export const GT_LIBRARIES = [
-  'gt-react',
-  'gt-next',
-  'gt-react-native',
-  'gt-node',
-  'gt-i18n',
-  '@generaltranslation/react-core',
+  Libraries.GT_REACT,
+  Libraries.GT_NEXT,
+  Libraries.GT_REACT_NATIVE,
+  Libraries.GT_NODE,
+  Libraries.GT_I18N,
+  Libraries.REACT_CORE,
 ] as const;
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
 
