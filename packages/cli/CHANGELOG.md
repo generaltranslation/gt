@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.20
+
+### Patch Changes
+
+- [#1019](https://github.com/generaltranslation/gt/pull/1019) [`4dd02f0`](https://github.com/generaltranslation/gt/commit/4dd02f00309bfdbc8a2d49c1d4986ead1f28ac8b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: default branch fallback
+
 ## 2.6.19
 
 ### Patch Changes
