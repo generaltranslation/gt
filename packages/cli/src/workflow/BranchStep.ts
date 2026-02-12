@@ -44,7 +44,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     let incoming: string[] = [];
     let checkedOut: string[] = [];
     let useDefaultBranch: boolean = true;
-    let autoDetectFailed = false;
+    let autoDetectFailed = !this.settings.branchOptions.autoDetectBranches;
 
     if (
       this.settings.branchOptions.enabled &&
@@ -72,10 +72,6 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       // If detection succeeded, use the detected branch; otherwise fall back to default
       if (current) {
         useDefaultBranch = false;
-      } else {
-        logger.warn(
-          'Branch auto-detection failed. Falling back to the default branch. Use --branch to specify a branch manually.'
-        );
       }
     }
     if (
@@ -98,6 +94,11 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     });
 
     if (useDefaultBranch) {
+      if (autoDetectFailed) {
+        logger.warn(
+          'Branch auto-detection failed. Falling back to the default branch. Use --branch to specify a branch manually.'
+        );
+      }
       if (!branchData.defaultBranch) {
         const createBranchResult = await this.gt.createBranch({
           branchName: 'main', // name doesn't matter for default branch
@@ -173,18 +174,13 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         })
         .filter((b) => b !== null)[0] ?? null;
 
-    // When --branch is set manually or auto-detection failed, assume it was checked out from default
-    if (
-      (this.settings.branchOptions.currentBranch || autoDetectFailed) &&
-      (!this.settings.branchOptions.autoDetectBranches || autoDetectFailed) &&
-      !this.branchData.checkedOutBranch &&
-      branchData.defaultBranch &&
-      this.branchData.currentBranch.id !== branchData.defaultBranch.id
-    ) {
+    // ALWAYS fallback to default branch for checked out branch (to avoid retranslation)
+    if (!this.branchData.checkedOutBranch && branchData.defaultBranch) {
       this.branchData.checkedOutBranch = branchData.defaultBranch;
     }
 
     this.spinner.stop(chalk.green('Branch information resolved successfully'));
+
     return this.branchData;
   }
 
