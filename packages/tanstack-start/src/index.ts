@@ -1,2 +1,1 @@
-// TODO: implement gt-tanstack-start exports
-export {};
+export { initializeGT } from './setup/initializeGT';

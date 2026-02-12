@@ -1,2 +1,1 @@
-// TODO: implement gt-tanstack-start type exports
-export {};
+export type { InitializeGTParams } from './setup/types';
