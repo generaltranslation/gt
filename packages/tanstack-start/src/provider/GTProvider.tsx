@@ -6,12 +6,16 @@ import { useRegionState } from '../hooks/useRegionState';
 import { determineLocale } from '../functions/determineLocale';
 
 export function GTProvider(props: GTProviderProps): React.ReactNode {
-  console.log('[GTProvider - tanstack-start]');
+  const locale =
+    props.locale || typeof window === 'undefined'
+      ? determineLocale()
+      : undefined;
+  console.log('[GTProvider - tanstack-start]', 'locale:', locale);
   return (
     <GTReactProvider
-      ssr={typeof process !== 'undefined'}
+      // ssr={typeof window !== 'undefined'}
       {...props}
-      locale={props.locale || determineLocale()}
+      locale={locale}
       // TODO: might not need this, because on server side, only concerned about getting locale once
       // that being said, it would still be good practice to standardize how locale is being determined everywhere
       // useDetermineLocale={useDetermineLocale}

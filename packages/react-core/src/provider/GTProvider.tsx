@@ -62,7 +62,7 @@ export default function GTProvider({
   useRegionState = _useRegionState,
   ...metadata
 }: InternalGTProviderProps) {
-  console.log('[GTProvider - react-core]');
+  console.log('[GTProvider - react-core]', 'locale:', _locale);
   // ---------- PROPS ---------- //
   if (_locale) {
     _locale = resolveAliasLocale(_locale, customMapping);
@@ -104,6 +104,7 @@ export default function GTProvider({
     useDetermineLocale,
     enableI18n,
   });
+  console.log('[GTProvider - react-core]: locale state:', locale);
 
   // Define the region instance
   const { region, setRegion } = useRegionState({
@@ -132,7 +133,6 @@ export default function GTProvider({
   // default - using GT provided cache
   // disabled - no translation loading
   const loadTranslationsType = useMemo(() => {
-    console.log('[GTProvider]: useMemo: loadTranslationsType');
     return (
       (loadTranslations && 'custom') ||
       (cacheUrl && projectId && 'default') ||
@@ -168,16 +168,6 @@ export default function GTProvider({
   });
 
   // ---------- TRANSLATION STATE ---------- //
-
-  useEffect(() => {
-    console.log('[GTProvider]: useEffect: locale:', locale);
-  }, [locale]);
-  useEffect(() => {
-    console.log(
-      '[GTProvider]: useEffect: loadTranslationsType:',
-      loadTranslationsType
-    );
-  }, [loadTranslationsType]);
 
   const { translations, setTranslations } = useLoadTranslations({
     _translations,
@@ -261,14 +251,11 @@ export default function GTProvider({
   // ----- RETURN ----- //
 
   const display = !!((!translationRequired || translations) && locale);
-  console.log(
-    '[GTProvider]: display:',
-    display,
-    'locale:',
-    locale,
-    'translations:',
-    !!translations
-  );
+  console.log('[GTProvider - react-core]: display:', display);
+  if (!display) {
+    console.log('                           locale:', locale);
+    console.log('                           translations:', !!translations);
+  }
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
