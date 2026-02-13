@@ -1,33 +1,20 @@
 import React from 'react';
-import { ClientProvider } from 'gt-react/client';
+import { GTProvider as GTReactProvider } from 'gt-react';
 import { GTProviderProps } from './types';
-import { getI18nManager } from 'gt-i18n/internal';
+import { useDetermineLocale } from '../hooks/useDetermineLocale';
+import { useRegionState } from '../hooks/useRegionState';
+import { determineLocale } from '../functions/determineLocale';
 
-export function GTProvider({
-  children,
-  translations,
-  locale,
-}: GTProviderProps): React.ReactNode {
-  const i18nManager = getI18nManager();
+export function GTProvider(props: GTProviderProps): React.ReactNode {
+  console.log('[GTProvider - tanstack-start]');
   return (
-    <ClientProvider
-      // TODO: dictionary
-      dictionary={{}}
-      // TODO: dictionaryTranslations
-      dictionaryTranslations={{}}
-      translations={translations}
-      locale={locale}
-      locales={locales}
-      defaultLocale={defaultLocale}
-      translationRequired={translationRequired}
-      dialectTranslationRequired={dialectTranslationRequired}
-      region={region}
-      environment={environment}
-      renderSettings={{}}
-      developmentApiEnabled={false}
-      resetLocaleCookieName={defaultResetLocaleCookieName}
-    >
-      {children}
-    </ClientProvider>
+    <GTReactProvider
+      ssr={typeof process !== 'undefined'}
+      {...props}
+      locale={props.locale || determineLocale()}
+      // TODO: might not need this, because on server side, only concerned about getting locale once
+      // that being said, it would still be good practice to standardize how locale is being determined everywhere
+      // useDetermineLocale={useDetermineLocale}
+    />
   );
 }

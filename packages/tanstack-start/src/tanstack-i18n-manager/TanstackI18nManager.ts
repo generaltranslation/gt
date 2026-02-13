@@ -1,5 +1,5 @@
 import { I18nManager } from 'gt-i18n/internal';
-import { I18nManagerConstructorParams } from 'gt-i18n/internal-types';
+import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 
 /**
  * I18nManager implementation for Tanstack Start.

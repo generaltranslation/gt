@@ -149,6 +149,44 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
       devApiKey: this.config.devApiKey,
     });
   }
+
+  /**
+   * Is translation enabled?
+   */
+  isTranslationEnabled(): boolean {
+    return this.config.enableI18n;
+  }
+
+  // ========== Metadata ========== //
+
+  /**
+   * Returns true if translation is required
+   * @param {string} [locale] - The user's locale
+   * @returns {boolean} True if translation is required, otherwise false
+   */
+  requiresTranslation(locale: string = this.getLocale()): boolean {
+    const defaultLocale = this.getDefaultLocale();
+    const gt = this.getGTClass();
+    const locales = this.getLocales();
+    return (
+      this.config.enableI18n &&
+      gt.requiresTranslation(defaultLocale, locale, locales)
+    );
+  }
+
+  /**
+   * Returns true if dialect translation is required
+   * @param {string} [locale] - The user's locale
+   * @returns {boolean} True if dialect translation is required, otherwise false
+   */
+  requiresDialectTranslation(locale: string = this.getLocale()): boolean {
+    const defaultLocale = this.getDefaultLocale();
+    const gt = this.getGTClass();
+    return (
+      this.requiresTranslation(locale) &&
+      gt.isSameLanguage(defaultLocale, locale)
+    );
+  }
 }
 
 export { I18nManager };

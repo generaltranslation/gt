@@ -8,8 +8,12 @@ import {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
-import { PACKAGE_NAME } from '../../../errors-dir/constants';
 
+const PACKAGE_NAME = '@generaltranslation/tanstack-start';
+
+/**
+ * TODO: perhaps should use determine locale paradigm for consistency
+ */
 export function useDetermineLocale({
   locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
@@ -24,7 +28,6 @@ export function useDetermineLocale({
   locales = locales.map((locale) => resolveAliasLocale(locale, customMapping));
 
   const initializeLocale = () => {
-    console.log('[useDetermineLocale]: initializeLocale');
     if (!enableI18n) {
       return defaultLocale;
     }
@@ -63,7 +66,6 @@ export function useDetermineLocale({
 
   // check browser for locales
   useEffect(() => {
-    console.log('[useDetermineLocale]: useEffect: getNewLocale');
     const newLocale = getNewLocale({
       _locale,
       locale,
@@ -195,10 +197,6 @@ function createSetLocale({
     if (!enableI18n) {
       return defaultLocale;
     }
-    // avoid superfluous updates
-    if (newLocale === locale) {
-      return locale;
-    }
     // validate locale
     const validatedLocale = resolveAliasLocale(
       determineLocale(newLocale, locales, customMapping) ||
@@ -218,6 +216,7 @@ function createSetLocale({
   };
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
+    console.log('[setLocale]: newLocale:', newLocale);
     if (!enableI18n) {
       return;
     }

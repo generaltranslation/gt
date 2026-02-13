@@ -50,6 +50,7 @@ export function useLocaleState({
   });
 
   const [translationRequired, dialectTranslationRequired] = useMemo(() => {
+    console.log('[useLocaleState]: useMemo: translationRequired');
     // User locale is not default locale or equivalent
     const translationRequired = requiresTranslation(
       defaultLocale,

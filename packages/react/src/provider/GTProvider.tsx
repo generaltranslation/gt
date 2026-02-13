@@ -32,6 +32,7 @@ import React from 'react';
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 export function GTProvider(props: GTProviderProps): React.JSX.Element {
+  console.log('[GTProvider - react]');
   return (
     <_GTProvider
       ssr={isSSREnabled()}
@@ -40,7 +41,7 @@ export function GTProvider(props: GTProviderProps): React.JSX.Element {
       }
       {...props}
       readAuthFromEnv={readAuthFromEnv}
-      useDetermineLocale={useDetermineLocale}
+      useDetermineLocale={props.useDetermineLocale || useDetermineLocale}
       useRegionState={useRegionState}
       useEnableI18n={useEnableI18n}
     />

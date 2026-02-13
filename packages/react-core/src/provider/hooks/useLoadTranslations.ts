@@ -32,23 +32,75 @@ export function useLoadTranslations({
    * Cache Fail (for hash)    -> translations[hash] = undefined
    */
 
-  const [translations, setTranslations] = useState<Translations | null>(
-    (() => {
-      return _translations ||
-        (translationRequired && loadTranslationsType !== 'disabled')
-        ? null
-        : {};
-    })()
+  /**
+   * Initialize translations
+   */
+  function initializeTranslations() {
+    console.log('[useLoadTranslations]: init: locale:', locale);
+    console.log(
+      '[useLoadTranslations]: init: loadTranslationsType:',
+      loadTranslationsType
+    );
+    if (_translations) {
+      console.log('[initializeTranslations]: translations:', !!_translations);
+      return _translations;
+    } else if (translationRequired && loadTranslationsType !== 'disabled') {
+      console.log('[initializeTranslations]: translations: null');
+      return null;
+    } else {
+      console.log('[initializeTranslations]: translations: {}');
+      // No need to load translations ever
+      return {};
+    }
+  }
+
+  const [translations, _setTranslations] = useState<Translations | null>(
+    initializeTranslations()
   );
 
+  const setTranslations: typeof _setTranslations = (
+    newTranslationsOrUpdater:
+      | Translations
+      | null
+      | ((prev: Translations | null) => Translations | null)
+  ): void => {
+    if (typeof newTranslationsOrUpdater === 'function') {
+      _setTranslations((prev) => {
+        const result = newTranslationsOrUpdater(prev);
+        console.log(
+          '[setTranslations]: newTranslations (from updater):',
+          !!result
+        );
+        return result;
+      });
+    } else {
+      console.log(
+        '[setTranslations]: newTranslations:',
+        !!newTranslationsOrUpdater
+      );
+      _setTranslations(newTranslationsOrUpdater);
+    }
+  };
+
+  useEffect(() => {
+    console.log('[useLoadTranslations]: useEffect: locale:', locale);
+  }, [locale]);
+  useEffect(() => {
+    console.log(
+      '[useLoadTranslations]: useEffect: loadTranslationsType:',
+      loadTranslationsType
+    );
+  }, [loadTranslationsType]);
   // Reset translations if locale changes (null to trigger a new cache fetch)
   useEffect(() => {
+    console.log('[useLoadTranslations]: useEffect: setTranslations');
     setTranslations(
       translationRequired && loadTranslationsType !== 'disabled' ? null : {}
     );
   }, [locale, loadTranslationsType]);
 
   useEffect(() => {
+    console.log('[useLoadTranslations]: useEffect: translationFetcher');
     // Early return if no need to translate
     if (
       translations ||
@@ -94,6 +146,9 @@ export function useLoadTranslations({
 
       // Record results
       if (storeResults) {
+        console.log(
+          '[useLoadTranslations]: useEffect: translationFetcher - setTranslations'
+        );
         setTranslations(result); // not classified as a translation error, because we can still fetch from API
       }
     })();

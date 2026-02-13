@@ -9,7 +9,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "sourceMap": false,
     "declaration": true,
     "declarationDir": "./dist",
@@ -33,6 +33,9 @@
     },
     {
       "path": "../i18n"
+    },
+    {
+      "path": "../react-core"
     }
   ]
 }

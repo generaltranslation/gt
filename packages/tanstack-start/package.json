@@ -11,10 +11,12 @@
   ],
   "peerDependencies": {
     "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react-dom": ">=16.8.0",
+    "@tanstack/react-start": ">=1.159.0"
   },
   "dependencies": {
     "gt-react": "workspace:*",
+    "@generaltranslation/react-core": "workspace:*",
     "gt-i18n": "workspace:*",
     "generaltranslation": "workspace:*"
   },

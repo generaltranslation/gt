@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -62,6 +62,7 @@ export default function GTProvider({
   useRegionState = _useRegionState,
   ...metadata
 }: InternalGTProviderProps) {
+  console.log('[GTProvider - react-core]');
   // ---------- PROPS ---------- //
   if (_locale) {
     _locale = resolveAliasLocale(_locale, customMapping);
@@ -130,10 +131,14 @@ export default function GTProvider({
   // custom - custom loading function provided
   // default - using GT provided cache
   // disabled - no translation loading
-  const loadTranslationsType =
-    (loadTranslations && 'custom') ||
-    (cacheUrl && projectId && 'default') ||
-    'disabled';
+  const loadTranslationsType = useMemo(() => {
+    console.log('[GTProvider]: useMemo: loadTranslationsType');
+    return (
+      (loadTranslations && 'custom') ||
+      (cacheUrl && projectId && 'default') ||
+      'disabled'
+    );
+  }, [loadTranslations, cacheUrl, projectId]);
 
   // ---------- LOAD DICTIONARY ---------- //
 
@@ -163,6 +168,16 @@ export default function GTProvider({
   });
 
   // ---------- TRANSLATION STATE ---------- //
+
+  useEffect(() => {
+    console.log('[GTProvider]: useEffect: locale:', locale);
+  }, [locale]);
+  useEffect(() => {
+    console.log(
+      '[GTProvider]: useEffect: loadTranslationsType:',
+      loadTranslationsType
+    );
+  }, [loadTranslationsType]);
 
   const { translations, setTranslations } = useLoadTranslations({
     _translations,
@@ -246,6 +261,14 @@ export default function GTProvider({
   // ----- RETURN ----- //
 
   const display = !!((!translationRequired || translations) && locale);
+  console.log(
+    '[GTProvider]: display:',
+    display,
+    'locale:',
+    locale,
+    'translations:',
+    !!translations
+  );
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (

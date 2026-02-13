@@ -17,6 +17,12 @@ const external = [
   'gt-i18n',
   'gt-i18n/types',
   'gt-i18n/internal',
+  '@generaltranslation/react-core',
+  '@generaltranslation/react-core/internal',
+  '@generaltranslation/react-core/types',
+  '@generaltranslation/react-core/errors',
+  '@tanstack/react-start',
+  '@tanstack/react-start/server',
 ];
 
 export default [
