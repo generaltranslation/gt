@@ -44,6 +44,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     let incoming: string[] = [];
     let checkedOut: string[] = [];
     let useDefaultBranch: boolean = true;
+    let detectedDefaultBranchName: string = 'main';
     let autoDetectFailed = !this.settings.branchOptions.autoDetectBranches;
 
     if (
@@ -59,6 +60,10 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       current = currentResult;
       incoming = incomingResult;
       checkedOut = checkedOutResult;
+
+      if (currentResult) {
+        detectedDefaultBranchName = currentResult.defaultBranchName;
+      }
 
       // Try env var detection if git commands failed (e.g. Vercel)
       if (!currentResult) {
@@ -101,7 +106,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
       }
       if (!branchData.defaultBranch) {
         const createBranchResult = await this.gt.createBranch({
-          branchName: 'main', // name doesn't matter for default branch
+          branchName: detectedDefaultBranchName,
           defaultBranch: true,
         });
         this.branchData.currentBranch = createBranchResult.branch;
@@ -132,7 +137,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
             // retry with default branch
             try {
               const createBranchResult = await this.gt.createBranch({
-                branchName: 'main', // name doesn't matter for default branch
+                branchName: detectedDefaultBranchName,
                 defaultBranch: true,
               });
               this.branchData.currentBranch = createBranchResult.branch;
