@@ -2,22 +2,18 @@ import { defaultLocaleCookieName } from 'gt-react/internal';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeader, getCookie } from '@tanstack/react-start/server';
 import { CustomMapping } from 'generaltranslation/types';
+import { determineLocale as gtDetermineLocale } from 'generaltranslation';
 
 type DetermineLocaleOptions = {
-  locale: string;
+  defaultLocale: string;
   locales: string[];
   customMapping?: CustomMapping;
 };
 
-type DetermineLocaleFunction = () => string;
-
 /**
  * Determines the locale isomorphicly.
  *
- *
  * @internal - for exporting use client facing getLocale() instead, everywhere internally should use determineLocale()
- * TODO: move this file to a more intuitive location in this package when it becomes clear
- * TODO: unclear if this should be combined with client or not
  */
 export const determineLocale = createIsomorphicFn()
   .server(determineLocaleServer)
@@ -25,8 +21,13 @@ export const determineLocale = createIsomorphicFn()
 
 /**
  * Determines the locale on the server.
+ * Really this is only used on the client side when root loader is triggered
  */
-function determineLocaleServer() {
+function determineLocaleServer({
+  defaultLocale,
+  locales,
+  customMapping,
+}: DetermineLocaleOptions) {
   const candidates = [];
 
   // (1) Check cookie
@@ -34,27 +35,43 @@ function determineLocaleServer() {
   if (cookie) candidates.push(cookie);
 
   // (2) Check headers
-  const headers =
-    getRequestHeader('accept-language')
-      ?.split(',')
-      .map((item) => item.split(';')?.[0].trim()) || [];
-  if (headers) candidates.push(...headers);
+  if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
+    const headers =
+      getRequestHeader('accept-language')
+        ?.split(',')
+        .map((item) => item.split(';')?.[0].trim()) || [];
+    if (headers) candidates.push(...headers);
+  }
 
-  // (3) Fallback to default locale
-  candidates.push('en');
+  // Warn if no locales could be determined
+  if (
+    candidates.length === 0 &&
+    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
+  ) {
+    console.warn(
+      'gt-tanstack-start(server): no locales could be determined for this request'
+    );
+  }
 
-  // TODO: validate and standardize
-
-  const result = candidates.shift()!;
+  // determine locale (falling back to default locale if no match is found)
+  console.log('[determineLocale](server): candidates:', candidates);
+  console.log('[determineLocale](server): locales:', locales);
+  console.log('[determineLocale](server): customMapping:', customMapping);
+  console.log('[determineLocale](server): defaultLocale:', defaultLocale);
+  const result =
+    gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
   console.log('[determineLocale](server):', result);
-
   return result;
 }
 
 /**
  * Determines the locale on the client.
  */
-function determineLocaleClient() {
+function determineLocaleClient({
+  defaultLocale,
+  locales,
+  customMapping,
+}: DetermineLocaleOptions) {
   const candidates = [];
 
   // (1) Check cookie
@@ -68,13 +85,16 @@ function determineLocaleClient() {
   const browserLocale = navigator.language;
   if (browserLocale) candidates.push(browserLocale);
 
-  // (3) Fallback to default locale
-  candidates.push('en');
+  if (candidates.length === 0) {
+    console.warn(
+      'gt-tanstack-start(client): no locales could be determined for this request'
+    );
+    candidates.push(defaultLocale);
+  }
 
-  // TODO: validate and standardize
-
-  const result = candidates.shift()!;
+  // determine locale (falling back to default locale if no match is found)
+  const result =
+    gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
   console.log('[determineLocale](client):', result);
-
   return result;
 }

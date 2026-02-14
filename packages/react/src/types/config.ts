@@ -74,5 +74,6 @@ export type GTProviderProps = {
   useDetermineLocale?: (
     params: UseDetermineLocaleParams
   ) => UseDetermineLocaleReturn;
+  reloadOnLocaleUpdate?: boolean;
   [key: string]: any;
 };

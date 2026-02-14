@@ -18,6 +18,7 @@ export function useDetermineLocale({
   ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
   customMapping,
   enableI18n, // when enabled, don't change locale cookie (feature flag might be loaded async, updating cookie means state is lost on refresh)
+  reloadOnLocaleUpdate = false, // for syncing server locale with client locale
 }: UseDetermineLocaleParams): UseDetermineLocaleReturn {
   // resolve alias locale
   const _locale = useMemo(
@@ -65,6 +66,7 @@ export function useDetermineLocale({
     _setLocale,
     customMapping,
     enableI18n,
+    reloadOnLocaleUpdate,
   });
 
   // check browser for locales
@@ -186,6 +188,7 @@ function createSetLocale({
   _setLocale,
   customMapping,
   enableI18n,
+  reloadOnLocaleUpdate,
 }: {
   locale: string;
   locales: string[];
@@ -194,6 +197,7 @@ function createSetLocale({
   _setLocale: any;
   customMapping?: CustomMapping;
   enableI18n?: boolean;
+  reloadOnLocaleUpdate?: boolean;
 }) {
   locale = resolveAliasLocale(locale, customMapping);
   const setLocaleWithoutSettingCookie = (newLocale: string): string => {
@@ -228,6 +232,16 @@ function createSetLocale({
     const validatedLocale = setLocaleWithoutSettingCookie(newLocale);
     if (typeof document !== 'undefined') {
       document.cookie = `${localeCookieName}=${validatedLocale};path=/`;
+    }
+
+    if (
+      typeof window !== 'undefined' &&
+      newLocale !== locale &&
+      reloadOnLocaleUpdate
+    ) {
+      // Reload the page so server responses will be using the same locale as the client
+      // This is useful for frameworks such as Tanstack that rely on the locale being set on the server
+      window.location.reload();
     }
   };
   return [setLocale, setLocaleWithoutSettingCookie];

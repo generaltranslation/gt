@@ -81,5 +81,6 @@ export type InternalGTProviderProps = {
   ) => UseDetermineLocaleReturn;
   useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
   useEnableI18n?: (params: UseEnableI18nParams) => UseEnableI18nReturn;
+  reloadOnLocaleUpdate?: boolean;
   [key: string]: any;
 };

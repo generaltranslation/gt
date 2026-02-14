@@ -8,6 +8,7 @@ export type UseDetermineLocaleParams = {
   localeCookieName?: string;
   ssr?: boolean;
   customMapping?: CustomMapping;
+  reloadOnLocaleUpdate?: boolean;
 };
 
 export type UseDetermineLocaleReturn = [string, (locale: string) => void];

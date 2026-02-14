@@ -20,6 +20,7 @@ export function useLocaleState({
   customMapping,
   useDetermineLocale,
   enableI18n,
+  reloadOnLocaleUpdate,
 }: {
   _locale: string;
   defaultLocale: string;
@@ -31,6 +32,7 @@ export function useLocaleState({
   useDetermineLocale: (
     params: UseDetermineLocaleParams
   ) => UseDetermineLocaleReturn;
+  reloadOnLocaleUpdate?: boolean;
 }) {
   // Locale standardization
   const locales = useMemo(() => {
@@ -47,6 +49,7 @@ export function useLocaleState({
     localeCookieName,
     customMapping,
     enableI18n,
+    reloadOnLocaleUpdate,
   });
 
   const [translationRequired, dialectTranslationRequired] = useMemo(() => {

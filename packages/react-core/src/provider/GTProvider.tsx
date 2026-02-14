@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -56,13 +56,13 @@ export default function GTProvider({
     ? config.enableI18n
     : true,
   enableI18nLoaded,
+  reloadOnLocaleUpdate,
   useEnableI18n = _useEnableI18n,
   readAuthFromEnv = _readAuthFromEnv,
   useDetermineLocale = _useDetermineLocale,
   useRegionState = _useRegionState,
   ...metadata
 }: InternalGTProviderProps) {
-  console.log('[GTProvider - react-core]', 'locale:', _locale);
   // ---------- PROPS ---------- //
   if (_locale) {
     _locale = resolveAliasLocale(_locale, customMapping);
@@ -103,8 +103,8 @@ export default function GTProvider({
     customMapping,
     useDetermineLocale,
     enableI18n,
+    reloadOnLocaleUpdate,
   });
-  console.log('[GTProvider - react-core]: locale state:', locale);
 
   // Define the region instance
   const { region, setRegion } = useRegionState({
@@ -251,11 +251,6 @@ export default function GTProvider({
   // ----- RETURN ----- //
 
   const display = !!((!translationRequired || translations) && locale);
-  console.log('[GTProvider - react-core]: display:', display);
-  if (!display) {
-    console.log('                           locale:', locale);
-    console.log('                           translations:', !!translations);
-  }
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
