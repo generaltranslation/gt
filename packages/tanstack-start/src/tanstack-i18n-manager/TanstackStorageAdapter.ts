@@ -7,7 +7,7 @@ const TANSTACK_I18N_STORAGE_ADAPTER_TYPE =
 /**
  * StorageAdapter implementation for Tanstack Start.
  */
-export class TanstackI18nStorageAdapter extends StorageAdapter {
+export class TanstackStorageAdapter extends StorageAdapter {
   readonly type = TANSTACK_I18N_STORAGE_ADAPTER_TYPE;
 
   /**
@@ -22,10 +22,12 @@ export class TanstackI18nStorageAdapter extends StorageAdapter {
     return undefined;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   setItem(key: string, value: string): void {
     // noop
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   removeItem(key: string): void {
     // noop
   }

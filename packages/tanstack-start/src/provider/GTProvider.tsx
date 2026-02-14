@@ -1,8 +1,6 @@
 import React from 'react';
 import { GTProvider as GTReactProvider } from 'gt-react';
 import { GTProviderProps } from './types';
-import { useDetermineLocale } from '../hooks/useDetermineLocale';
-import { useRegionState } from '../hooks/useRegionState';
 import { determineLocale } from '../functions/determineLocale';
 
 export function GTProvider(props: GTProviderProps): React.ReactNode {

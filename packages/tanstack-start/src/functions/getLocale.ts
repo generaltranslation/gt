@@ -5,8 +5,5 @@ import { determineLocale } from './determineLocale';
  * @returns {string} The user's current locale.
  */
 export function getLocale(): string {
-  console.log(
-    `[getLocale](${typeof process !== 'undefined' ? 'server' : 'client'})`
-  );
   return determineLocale();
 }
