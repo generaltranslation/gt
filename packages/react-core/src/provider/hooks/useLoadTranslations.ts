@@ -46,25 +46,9 @@ export function useLoadTranslations({
     }
   }
 
-  const [translations, _setTranslations] = useState<Translations | null>(
+  const [translations, setTranslations] = useState<Translations | null>(
     initializeTranslations()
   );
-
-  // TODO: debugging, remove later
-  const setTranslations: typeof _setTranslations = (
-    newTranslationsOrUpdater:
-      | Translations
-      | null
-      | ((prev: Translations | null) => Translations | null)
-  ): void => {
-    if (typeof newTranslationsOrUpdater === 'function') {
-      _setTranslations((prev) => {
-        return newTranslationsOrUpdater(prev);
-      });
-    } else {
-      _setTranslations(newTranslationsOrUpdater);
-    }
-  };
 
   /**
    * Reset translations if locale changes (null to trigger a new cache fetch)
