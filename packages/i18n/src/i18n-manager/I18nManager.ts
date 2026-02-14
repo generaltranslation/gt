@@ -13,12 +13,13 @@ import { InlineTranslationOptions } from '../translation-functions/types/options
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
+import { TranslationsLoader } from './translations-manager/translations-loaders/types';
 
 /**
  * Class for managing translation functionality
  */
 class I18nManager<T extends StorageAdapter = StorageAdapter> {
-  private config: I18nManagerConfig;
+  protected config: I18nManagerConfig;
 
   /**
    * Cache for translations
@@ -55,6 +56,13 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    */
   async getTranslations(): Promise<Translations> {
     return this.translationsManager.getTranslations(this.getLocale());
+  }
+
+  /**
+   * Get the translation loader function
+   */
+  getTranslationLoader(): TranslationsLoader {
+    return this.translationsManager.getTranslationLoader();
   }
 
   // ========== Getters and Setters ========== //
@@ -148,6 +156,56 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
       apiKey: this.config.apiKey,
       devApiKey: this.config.devApiKey,
     });
+  }
+
+  /**
+   * Get translation for a given locale
+   * @param {string} locale - The locale to get the translation for
+   * @returns {Promise<Translations>} The translation for the given locale
+   */
+  async getTranslation(locale: string): Promise<Translations> {
+    if (!this.config.locales.includes(locale)) {
+      throw new Error(`Locale ${locale} not found in config`);
+    }
+    return this.translationsManager.getTranslations(locale);
+  }
+
+  /**
+   * Is translation enabled?
+   */
+  isTranslationEnabled(): boolean {
+    return this.config.enableI18n;
+  }
+
+  // ========== Metadata ========== //
+
+  /**
+   * Returns true if translation is required
+   * @param {string} [locale] - The user's locale
+   * @returns {boolean} True if translation is required, otherwise false
+   */
+  requiresTranslation(locale: string = this.getLocale()): boolean {
+    const defaultLocale = this.getDefaultLocale();
+    const gt = this.getGTClass();
+    const locales = this.getLocales();
+    return (
+      this.config.enableI18n &&
+      gt.requiresTranslation(defaultLocale, locale, locales)
+    );
+  }
+
+  /**
+   * Returns true if dialect translation is required
+   * @param {string} [locale] - The user's locale
+   * @returns {boolean} True if dialect translation is required, otherwise false
+   */
+  requiresDialectTranslation(locale: string = this.getLocale()): boolean {
+    const defaultLocale = this.getDefaultLocale();
+    const gt = this.getGTClass();
+    return (
+      this.requiresTranslation(locale) &&
+      gt.isSameLanguage(defaultLocale, locale)
+    );
   }
 }
 

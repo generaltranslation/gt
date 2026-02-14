@@ -39,13 +39,13 @@ export function validateTranslationApi(params: {
     case TranslationApiType.GT:
       if (!params.projectId) {
         results.push({
-          type: 'error',
+          type: 'warning',
           message: 'projectId is required',
         });
       }
       if (!params.devApiKey && !params.apiKey) {
         results.push({
-          type: 'error',
+          type: 'warning',
           message: 'devApiKey or apiKey is required',
         });
       }

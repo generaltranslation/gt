@@ -1,7 +1,7 @@
 import { customLoadTranslationsError } from '../../errors-dir/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
 import { CustomLoader, Translations } from '../../types-dir/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GT } from 'generaltranslation';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 
@@ -32,30 +32,55 @@ export function useLoadTranslations({
    * Cache Fail (for hash)    -> translations[hash] = undefined
    */
 
+  /**
+   * Initialize translations
+   */
+  function initializeTranslations() {
+    if (_translations) {
+      return _translations;
+    } else if (translationRequired && loadTranslationsType !== 'disabled') {
+      return null;
+    } else {
+      // No need to load translations ever
+      return {};
+    }
+  }
+
   const [translations, setTranslations] = useState<Translations | null>(
-    (() => {
-      return _translations ||
-        (translationRequired && loadTranslationsType !== 'disabled')
-        ? null
-        : {};
-    })()
+    initializeTranslations()
   );
 
-  // Reset translations if locale changes (null to trigger a new cache fetch)
+  /**
+   * Reset translations if locale changes (null to trigger a new cache fetch)
+   * Should never run on mount
+   *
+   * TODO: its possible that this adds an unnecessary re-render, perhaps the request could be embeded directly in this useEffect instead?
+   */
+  const didMount = useRef(false);
   useEffect(() => {
+    // Reset should never run on mount
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+
     setTranslations(
       translationRequired && loadTranslationsType !== 'disabled' ? null : {}
     );
   }, [locale, loadTranslationsType]);
 
+  /**
+   * Update translations
+   */
   useEffect(() => {
     // Early return if no need to translate
     if (
       translations ||
       !translationRequired ||
       loadTranslationsType === 'disabled'
-    )
+    ) {
       return;
+    }
 
     // Fetch translations
     let storeResults = true;

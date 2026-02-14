@@ -56,6 +56,7 @@ export default function GTProvider({
     ? config.enableI18n
     : true,
   enableI18nLoaded,
+  reloadOnLocaleUpdate,
   useEnableI18n = _useEnableI18n,
   readAuthFromEnv = _readAuthFromEnv,
   useDetermineLocale = _useDetermineLocale,
@@ -102,6 +103,7 @@ export default function GTProvider({
     customMapping,
     useDetermineLocale,
     enableI18n,
+    reloadOnLocaleUpdate,
   });
 
   // Define the region instance
@@ -130,10 +132,13 @@ export default function GTProvider({
   // custom - custom loading function provided
   // default - using GT provided cache
   // disabled - no translation loading
-  const loadTranslationsType =
-    (loadTranslations && 'custom') ||
-    (cacheUrl && projectId && 'default') ||
-    'disabled';
+  const loadTranslationsType = useMemo(() => {
+    return (
+      (loadTranslations && 'custom') ||
+      (cacheUrl && projectId && 'default') ||
+      'disabled'
+    );
+  }, [loadTranslations, cacheUrl, projectId]);
 
   // ---------- LOAD DICTIONARY ---------- //
 

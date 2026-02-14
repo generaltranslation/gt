@@ -114,6 +114,14 @@ class TranslationsManager {
     // Cache miss
     return this.handleCacheMiss(locale);
   }
+
+  // ===== Utilities ===== //
+  /**
+   * Get the translation loader function
+   */
+  getTranslationLoader(): TranslationsLoader {
+    return this.translationLoader;
+  }
 }
 
 export { TranslationsManager };

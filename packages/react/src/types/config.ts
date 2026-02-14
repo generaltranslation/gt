@@ -6,6 +6,8 @@ import {
   Translations,
   CustomLoader,
   GTConfig,
+  UseDetermineLocaleParams,
+  UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
 import { CustomMapping } from 'generaltranslation/types';
 
@@ -65,5 +67,13 @@ export type GTProviderProps = {
   modelProvider?: string;
   enableI18n?: boolean;
   enableI18nLoaded?: boolean;
+  /**
+   * @internal - internal use only
+   * TODO: this should have a separate export for internal use
+   */
+  useDetermineLocale?: (
+    params: UseDetermineLocaleParams
+  ) => UseDetermineLocaleReturn;
+  reloadOnLocaleUpdate?: boolean;
   [key: string]: any;
 };
