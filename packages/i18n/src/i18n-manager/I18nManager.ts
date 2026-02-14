@@ -151,6 +151,18 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   /**
+   * Get translation for a given locale
+   * @param {string} locale - The locale to get the translation for
+   * @returns {Promise<Translations>} The translation for the given locale
+   */
+  async getTranslation(locale: string): Promise<Translations> {
+    if (!this.config.locales.includes(locale)) {
+      throw new Error(`Locale ${locale} not found in config`);
+    }
+    return this.translationsManager.getTranslations(locale);
+  }
+
+  /**
    * Is translation enabled?
    */
   isTranslationEnabled(): boolean {
