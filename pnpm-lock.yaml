@@ -77,10 +77,10 @@ importers:
     dependencies:
       gt-next:
         specifier: latest
-        version: 6.12.8(next@16.1.6(@babel/core@7.28.6)(@playwright/test@1.57.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 6.12.11(next@16.1.6(@babel/core@7.28.6)(@playwright/test@1.57.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       gtx-cli:
         specifier: latest
-        version: 2.6.8(@babel/core@7.28.6)
+        version: 2.6.20(@babel/core@7.28.6)
       next:
         specifier: latest
         version: 16.1.6(@babel/core@7.28.6)(@playwright/test@1.57.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1044,6 +1044,9 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.2
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@22.13.10)(jsdom@27.0.0(bufferutil@4.0.9)(postcss@8.5.6))(lightningcss@1.30.1)(terser@5.44.0)
 
   tests/apps/cli-test-app:
     dependencies:
@@ -2801,17 +2804,17 @@ packages:
   '@formatjs/intl-localematcher@0.6.2':
     resolution: {integrity: sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA==}
 
-  '@generaltranslation/compiler@1.1.17':
-    resolution: {integrity: sha512-6Kqla/WB3PHzJxg32Qt2ou2o1wBxQ7hVf1arUZFwWtgf7eavweIQMFp3AnXO+NhS4rQ4YaBdhh3gIiEjhcnTcA==}
+  '@generaltranslation/compiler@1.1.18':
+    resolution: {integrity: sha512-bF/YH/qubeen8MhllbQG7It66pWoEvByaxTZo5Qc53641QRFDqsX7yFTZ+Sllw5f01mCvyvrgjsG8ulc6PE2NQ==}
     engines: {node: '>=16.0.0'}
 
-  '@generaltranslation/react-core@1.4.5':
-    resolution: {integrity: sha512-guzIfA+Umv7Ngt+E9ueI9icPtlf8CFfu1cEH5zXW6ERL0yDtHPylk1DghFbgz+XEVkRuzF9jCQjZXLRxmzwQSw==}
+  '@generaltranslation/react-core@1.4.7':
+    resolution: {integrity: sha512-OqxJsujf90iQh992XvJAeLtl5Qx1B82Qr+TehaLpwytQgKvBhlt6RW1FxztO43axaLT9q1rr/HYtlqBzjno1ZA==}
     peerDependencies:
       react: '>=16.8.0'
 
-  '@generaltranslation/supported-locales@2.0.39':
-    resolution: {integrity: sha512-QLzOREJDAoRYCzGVOGdYxIE8TpSeBq5GrTMgWq7H2uFlollCLCP+KoDfXVNJL2uLauYSIxsR7UowKqdGHAMimg==}
+  '@generaltranslation/supported-locales@2.0.40':
+    resolution: {integrity: sha512-uwJMtPi9xsgif01fmPE4ofWihF0/uBtu4WLLRfFLcvAH3Sj/e9nk6W/lq4s8ehT98H4ZLt09eA133T//X9hSHA==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -7284,8 +7287,8 @@ packages:
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
 
-  generaltranslation@8.1.8:
-    resolution: {integrity: sha512-SKdqCAbWlgQw2pQ9Fjxomh4R6prX46JheZJSwmN/aBJo8yR6UR3CxN+9AaWmpPbvkm9uFIaxcqUYL6xDnUN2pg==}
+  generaltranslation@8.1.9:
+    resolution: {integrity: sha512-1n1CXjY96oB4T88mqtN5AICdiaPhGvnNnxgsWJ98dWOBry6j0rNzNHB0oKslS+ui9GUEPmPcZ1KdLHuv75c7TA==}
 
   generic-names@4.0.0:
     resolution: {integrity: sha512-ySFolZQfw9FoDb3ed9d80Cm9f0+r7qj+HJkWjeD9RBfpxEVTlVhol+gvaQB/78WbwYfbnNh8nWHHBSlg072y6A==}
@@ -7426,7 +7429,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+    deprecated: Glob versions prior to v9 are no longer supported
 
   glob@9.3.5:
     resolution: {integrity: sha512-e1LleDykUz2Iu+MTYdkSsuWX8lvAjAcs0Xef0lNIu0S2wOAzuTxCJtcd9S3cijlwYF18EsU3rzb8jPVobxDh9Q==}
@@ -7492,18 +7495,18 @@ packages:
     resolution: {integrity: sha512-4kGV3sn308DQ6X5vxm1sMhRtnm6r2cXXf/1xOiJkkS3YZ74IXRxl6niGwhhLYRJUCHZ52dEitmlXFYxhqkbiZQ==}
     engines: {node: '>=20.19 <22 || >=22.12'}
 
-  gt-i18n@0.3.5:
-    resolution: {integrity: sha512-EC4QuBkvAumYiNzL74O8mmhcExovSVzYEQPWFXK9Y3diFimMdTiG82+ZnzO4T6oqod6snFXDIyv4D/iMPeRaVg==}
+  gt-i18n@0.3.7:
+    resolution: {integrity: sha512-F1S8WMIOWWiQTMsmBjIEz/9uP1oCTnvDzQ5OLmsGHS//KAhlfIvj2QwzNPVX5CQ/E4D7WqeznpgLrQNPyEQgow==}
 
-  gt-next@6.12.8:
-    resolution: {integrity: sha512-52Qii4ovl7xl/HvabB7Ch8I5SFM+BRgsjONVAgjS0BzRzANJZayUDVqyQcLLaJHUbsjd7PAALhlQ7Mi9oxecAw==}
+  gt-next@6.12.11:
+    resolution: {integrity: sha512-yBqWkpTFdVnOoYhX8+uXMmT7O4DwxZINf2niJe4k/sJ5tXGg6y1iRKzNHU80QZo1acMrEaxxeRR+ZVaGHuuhvw==}
     peerDependencies:
       next: '>=13.0.0 <15.2.1 || >15.2.2'
       react: '>=16.8.0 <20.0.0'
       react-dom: '>=16.8.0 <20.0.0'
 
-  gt-react@10.10.5:
-    resolution: {integrity: sha512-AVb4EZWPpPy0/efw56vgtip6bjbwRYdXBBzuhrdF4ufvcY2r7iPbDGWmLmlE7l6FOuXLlCcvHY7Rj8oVVqahwQ==}
+  gt-react@10.10.8:
+    resolution: {integrity: sha512-AecxKOfuG+Ln/1kaGI4RzdUaagYl1zQ73bWJKXcuPGqUwNNalZHxEUwi4slpreylRJ78XZRLHU8dO0QLo70GEQ==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -7511,8 +7514,8 @@ packages:
   gt-remark@1.0.1:
     resolution: {integrity: sha512-vMpZI7SEKiXrtKanuApcw4HmdcSwncLvKq9c1oP8SxFsNQETMo8XRrrnHyk7XCHWK34VkHk8SuZvhbFQDqkNHg==}
 
-  gtx-cli@2.6.8:
-    resolution: {integrity: sha512-VWSA55VuHNpWXEHNPRbR8zKsTPpW+OSCtkgxyw75+BP0oRawdrGBct6JdTHXkL5IJlxg6Z3dmJ6iTag13t+ZaQ==}
+  gtx-cli@2.6.20:
+    resolution: {integrity: sha512-f4PAWZsjsuQsio0EVftl/UK3uHnSyd8Dw+Le+XeMIEvw9u8QwT2TdUtWNlpHLDsBR66cOb5P3CFdFmCWv41Jtw==}
     hasBin: true
 
   gunzip-maybe@1.4.2:
@@ -13642,27 +13645,27 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@generaltranslation/compiler@1.1.17':
+  '@generaltranslation/compiler@1.1.18':
     dependencies:
       '@babel/generator': 7.28.6
       '@babel/parser': 7.28.6
       '@babel/traverse': 7.28.6
       '@babel/types': 7.28.6
-      generaltranslation: 8.1.8
+      generaltranslation: 8.1.9
       unplugin: 2.3.10
     transitivePeerDependencies:
       - supports-color
 
-  '@generaltranslation/react-core@1.4.5(react@19.2.3)':
+  '@generaltranslation/react-core@1.4.7(react@19.2.3)':
     dependencies:
-      '@generaltranslation/supported-locales': 2.0.39
-      generaltranslation: 8.1.8
-      gt-i18n: 0.3.5
+      '@generaltranslation/supported-locales': 2.0.40
+      generaltranslation: 8.1.9
+      gt-i18n: 0.3.7
       react: 19.2.3
 
-  '@generaltranslation/supported-locales@2.0.39':
+  '@generaltranslation/supported-locales@2.0.40':
     dependencies:
-      generaltranslation: 8.1.8
+      generaltranslation: 8.1.9
 
   '@humanfs/core@0.19.1': {}
 
@@ -18346,7 +18349,7 @@ snapshots:
       '@typescript-eslint/parser': 8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2)
       eslint: 9.36.0(jiti@2.6.0)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0(jiti@2.6.0))
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint@9.36.0(jiti@2.6.0)))(eslint@9.36.0(jiti@2.6.0))
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0(jiti@2.6.0))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.36.0(jiti@2.6.0))
       eslint-plugin-react: 7.37.5(eslint@9.36.0(jiti@2.6.0))
@@ -18363,7 +18366,7 @@ snapshots:
       '@next/eslint-plugin-next': 16.1.6
       eslint: 9.36.0(jiti@2.6.0)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0(jiti@2.6.0))
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint@9.36.0(jiti@2.6.0)))(eslint@9.36.0(jiti@2.6.0))
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0(jiti@2.6.0))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.36.0(jiti@2.6.0))
       eslint-plugin-react: 7.37.5(eslint@9.36.0(jiti@2.6.0))
@@ -18401,7 +18404,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0(jiti@2.6.0)):
+  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint@9.36.0(jiti@2.6.0)))(eslint@9.36.0(jiti@2.6.0)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3(supports-color@5.5.0)
@@ -18433,7 +18436,7 @@ snapshots:
       '@typescript-eslint/parser': 8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2)
       eslint: 9.36.0(jiti@2.6.0)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0(jiti@2.6.0))
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint@9.36.0(jiti@2.6.0)))(eslint@9.36.0(jiti@2.6.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -19061,7 +19064,7 @@ snapshots:
 
   functions-have-names@1.2.3: {}
 
-  generaltranslation@8.1.8:
+  generaltranslation@8.1.9:
     dependencies:
       '@formatjs/icu-messageformat-parser': 2.11.4
       crypto-js: 4.2.0
@@ -19315,29 +19318,30 @@ snapshots:
 
   groq@4.10.1: {}
 
-  gt-i18n@0.3.5:
+  gt-i18n@0.3.7:
     dependencies:
-      '@generaltranslation/supported-locales': 2.0.39
-      generaltranslation: 8.1.8
+      '@generaltranslation/supported-locales': 2.0.40
+      generaltranslation: 8.1.9
 
-  gt-next@6.12.8(next@16.1.6(@babel/core@7.28.6)(@playwright/test@1.57.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  gt-next@6.12.11(next@16.1.6(@babel/core@7.28.6)(@playwright/test@1.57.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
-      '@generaltranslation/compiler': 1.1.17
+      '@generaltranslation/compiler': 1.1.18
       '@generaltranslation/next-internal': link:packages/next-internal
-      '@generaltranslation/supported-locales': 2.0.39
-      generaltranslation: 8.1.8
-      gt-react: 10.10.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@generaltranslation/supported-locales': 2.0.40
+      generaltranslation: 8.1.9
+      gt-i18n: 0.3.7
+      gt-react: 10.10.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       next: 16.1.6(@babel/core@7.28.6)(@playwright/test@1.57.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
     transitivePeerDependencies:
       - supports-color
 
-  gt-react@10.10.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  gt-react@10.10.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
-      '@generaltranslation/react-core': 1.4.5(react@19.2.3)
-      '@generaltranslation/supported-locales': 2.0.39
-      generaltranslation: 8.1.8
+      '@generaltranslation/react-core': 1.4.7(react@19.2.3)
+      '@generaltranslation/supported-locales': 2.0.40
+      generaltranslation: 8.1.9
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
@@ -19345,7 +19349,7 @@ snapshots:
     dependencies:
       mdast-util-find-and-replace: 3.0.2
 
-  gtx-cli@2.6.8(@babel/core@7.28.6):
+  gtx-cli@2.6.20(@babel/core@7.28.6):
     dependencies:
       '@babel/generator': 7.28.3
       '@babel/parser': 7.28.4
@@ -19360,7 +19364,7 @@ snapshots:
       esbuild: 0.27.2
       fast-glob: 3.3.3
       fast-json-stable-stringify: 2.1.0
-      generaltranslation: 8.1.8
+      generaltranslation: 8.1.9
       gt-remark: 1.0.1
       html-entities: 2.6.0
       json-pointer: 0.6.2
@@ -23908,6 +23912,24 @@ snapshots:
       - supports-color
       - terser
 
+  vite-node@1.6.1(@types/node@22.13.10)(lightningcss@1.30.1)(terser@5.44.0):
+    dependencies:
+      cac: 6.7.14
+      debug: 4.4.3(supports-color@5.5.0)
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      vite: 5.4.20(@types/node@22.13.10)(lightningcss@1.30.1)(terser@5.44.0)
+    transitivePeerDependencies:
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+
   vite-node@2.1.9(@types/node@20.19.17)(lightningcss@1.30.1)(terser@5.44.0):
     dependencies:
       cac: 6.7.14
@@ -23965,6 +23987,17 @@ snapshots:
       rollup: 4.52.3
     optionalDependencies:
       '@types/node': 20.19.17
+      fsevents: 2.3.3
+      lightningcss: 1.30.1
+      terser: 5.44.0
+
+  vite@5.4.20(@types/node@22.13.10)(lightningcss@1.30.1)(terser@5.44.0):
+    dependencies:
+      esbuild: 0.21.5
+      postcss: 8.5.6
+      rollup: 4.52.3
+    optionalDependencies:
+      '@types/node': 22.13.10
       fsevents: 2.3.3
       lightningcss: 1.30.1
       terser: 5.44.0
@@ -24031,6 +24064,41 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.17
+      jsdom: 27.0.0(bufferutil@4.0.9)(postcss@8.5.6)
+    transitivePeerDependencies:
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+
+  vitest@1.6.1(@types/node@22.13.10)(jsdom@27.0.0(bufferutil@4.0.9)(postcss@8.5.6))(lightningcss@1.30.1)(terser@5.44.0):
+    dependencies:
+      '@vitest/expect': 1.6.1
+      '@vitest/runner': 1.6.1
+      '@vitest/snapshot': 1.6.1
+      '@vitest/spy': 1.6.1
+      '@vitest/utils': 1.6.1
+      acorn-walk: 8.3.4
+      chai: 4.5.0
+      debug: 4.4.3(supports-color@5.5.0)
+      execa: 8.0.1
+      local-pkg: 0.5.1
+      magic-string: 0.30.19
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      std-env: 3.9.0
+      strip-literal: 2.1.1
+      tinybench: 2.9.0
+      tinypool: 0.8.4
+      vite: 5.4.20(@types/node@22.13.10)(lightningcss@1.30.1)(terser@5.44.0)
+      vite-node: 1.6.1(@types/node@22.13.10)(lightningcss@1.30.1)(terser@5.44.0)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/node': 22.13.10
       jsdom: 27.0.0(bufferutil@4.0.9)(postcss@8.5.6)
     transitivePeerDependencies:
       - less
