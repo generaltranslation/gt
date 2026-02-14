@@ -117,14 +117,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
       this.config.enableI18n === false ||
       locale === this.config.defaultLocale
     ) {
-      // return (message: string) => message;
-      return (message: string) => {
-        console.log(
-          '[gt-i18n] getTranslationResolver(default locale): message:',
-          message
-        );
-        return message;
-      };
+      return (message: string) => message;
     }
 
     // Get translations
@@ -136,9 +129,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
       const hash = hashMessage(message, options);
 
       // Return translation or undefined
-      const result = translations[hash] as unknown as string | undefined;
-      console.log('[gt-i18n] getTranslationResolver: result:', result);
-      return result;
+      return translations[hash] as unknown as string | undefined;
     };
   }
 
