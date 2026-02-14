@@ -54,14 +54,7 @@ function determineLocaleServer({
   }
 
   // determine locale (falling back to default locale if no match is found)
-  console.log('[determineLocale](server): candidates:', candidates);
-  console.log('[determineLocale](server): locales:', locales);
-  console.log('[determineLocale](server): customMapping:', customMapping);
-  console.log('[determineLocale](server): defaultLocale:', defaultLocale);
-  const result =
-    gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
-  console.log('[determineLocale](server):', result);
-  return result;
+  return gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
 }
 
 /**
@@ -93,8 +86,5 @@ function determineLocaleClient({
   }
 
   // determine locale (falling back to default locale if no match is found)
-  const result =
-    gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
-  console.log('[determineLocale](client):', result);
-  return result;
+  return gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
 }
