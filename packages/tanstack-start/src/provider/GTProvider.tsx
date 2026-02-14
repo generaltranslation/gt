@@ -3,6 +3,7 @@ import { GTProvider as GTReactProvider } from 'gt-react';
 import { GTProviderProps } from './types';
 import { isSSREnabled } from './utils/isSSREnabled';
 import { determineProviderLocale } from './utils/determineProviderLocale';
+import { getTanstackI18nManager } from '../tanstack-i18n-manager/singleton-operations';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -27,9 +28,12 @@ import { determineProviderLocale } from './utils/determineProviderLocale';
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 export function GTProvider(props: GTProviderProps): React.ReactNode {
+  const i18nManager = getTanstackI18nManager();
+  const config = i18nManager.getProviderConfig();
   return (
     <GTReactProvider
       ssr={isSSREnabled()}
+      {...config}
       {...props}
       reloadOnLocaleUpdate={true}
       locale={determineProviderLocale(props)}

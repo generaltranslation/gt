@@ -13,12 +13,13 @@ import { InlineTranslationOptions } from '../translation-functions/types/options
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
+import { TranslationsLoader } from './translations-manager/translations-loaders/types';
 
 /**
  * Class for managing translation functionality
  */
 class I18nManager<T extends StorageAdapter = StorageAdapter> {
-  private config: I18nManagerConfig;
+  protected config: I18nManagerConfig;
 
   /**
    * Cache for translations
@@ -55,6 +56,13 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    */
   async getTranslations(): Promise<Translations> {
     return this.translationsManager.getTranslations(this.getLocale());
+  }
+
+  /**
+   * Get the translation loader function
+   */
+  getTranslationLoader(): TranslationsLoader {
+    return this.translationsManager.getTranslationLoader();
   }
 
   // ========== Getters and Setters ========== //
