@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.21
+
+### Patch Changes
+
+- [#1021](https://github.com/generaltranslation/gt/pull/1021) [`4cbf7da`](https://github.com/generaltranslation/gt/commit/4cbf7da4bb0d202e2b7c8a6995566538b71856e9) Thanks [@brian-lou](https://github.com/brian-lou)! - Use default branch name instead of placeholder
+
 ## 2.6.20
 
 ### Patch Changes

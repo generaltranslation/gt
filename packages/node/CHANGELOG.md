@@ -1,5 +1,12 @@
 # gt-node
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`c66bbe1`](https://github.com/generaltranslation/gt/commit/c66bbe125f3fbba7a97604d3c2ca6b7d7a065f31)]:
+  - gt-i18n@0.3.8
+
 ## 0.2.0
 
 ### Minor Changes
