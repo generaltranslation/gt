@@ -216,7 +216,6 @@ function createSetLocale({
   };
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
-    console.log('[setLocale]: newLocale:', newLocale);
     if (!enableI18n) {
       return;
     }

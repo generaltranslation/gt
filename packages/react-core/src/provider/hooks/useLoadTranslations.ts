@@ -59,24 +59,9 @@ export function useLoadTranslations({
   ): void => {
     if (typeof newTranslationsOrUpdater === 'function') {
       _setTranslations((prev) => {
-        const result = newTranslationsOrUpdater(prev);
-        const type =
-          result === null
-            ? 'fetch (null)'
-            : Object.keys(result).length > 0
-              ? 'set'
-              : 'reset {}';
-        console.log('[useLoadTranslations] setTranslations type:', type);
-        return result;
+        return newTranslationsOrUpdater(prev);
       });
     } else {
-      const type =
-        newTranslationsOrUpdater === null
-          ? 'fetch (null)'
-          : Object.keys(newTranslationsOrUpdater).length > 0
-            ? 'set'
-            : 'reset {}';
-      console.log('[useLoadTranslations] setTranslations type:', type);
       _setTranslations(newTranslationsOrUpdater);
     }
   };
@@ -84,6 +69,8 @@ export function useLoadTranslations({
   /**
    * Reset translations if locale changes (null to trigger a new cache fetch)
    * Should never run on mount
+   *
+   * TODO: its possible that this adds an unnecessary re-render, perhaps the request could be embeded directly in this useEffect instead?
    */
   const didMount = useRef(false);
   useEffect(() => {
@@ -93,7 +80,6 @@ export function useLoadTranslations({
       return;
     }
 
-    console.log('[useLoadTranslations] translationReset');
     setTranslations(
       translationRequired && loadTranslationsType !== 'disabled' ? null : {}
     );
@@ -149,8 +135,6 @@ export function useLoadTranslations({
 
       // Record results
       if (storeResults) {
-        console.log('[useLoadTranslations] translationFetcher');
-
         setTranslations(result); // not classified as a translation error, because we can still fetch from API
       }
     })();

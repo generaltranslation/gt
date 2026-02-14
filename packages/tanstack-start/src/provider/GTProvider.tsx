@@ -13,7 +13,7 @@ export function GTProvider(props: GTProviderProps): React.ReactNode {
   console.log('[GTProvider - tanstack-start]', 'locale:', locale);
   return (
     <GTReactProvider
-      // ssr={typeof window !== 'undefined'}
+      ssr={typeof window === 'undefined'}
       {...props}
       locale={locale}
       // TODO: might not need this, because on server side, only concerned about getting locale once

@@ -121,7 +121,6 @@ export default function useRuntimeTranslation({
 
   const mergeIntoTranslations = useCallback(
     (delta: Translations) => {
-      console.log('[useRuntimeTranslation] mergeIntoTranslations');
       setTranslations((prev) => {
         const keys = Object.keys(delta);
         if (keys.length === 0) return prev;
@@ -156,7 +155,6 @@ export default function useRuntimeTranslation({
     if (stagedResultsRef.current) {
       const staged = stagedResultsRef.current;
       stagedResultsRef.current = null;
-      console.log('[useRuntimeTranslation] stageAndRequestFlush: flush');
       mergeIntoTranslations(staged);
     }
     return () => {
@@ -170,7 +168,6 @@ export default function useRuntimeTranslation({
     const staged = stagedResultsRef.current;
     if (staged) {
       stagedResultsRef.current = null;
-      console.log('[useRuntimeTranslation] setTranslations: merge');
       mergeIntoTranslations(staged);
     }
   }, [flushTick, mergeIntoTranslations]);
@@ -198,7 +195,6 @@ export default function useRuntimeTranslation({
       const resultsMap = new Map<string, TranslatedChildren | null>();
 
       try {
-        console.log('[useRuntimeTranslation] sendBatchRequest: translateMany');
         const results = await gt.translateMany(requests, {
           ...baseMetadata,
           targetLocale: locale,
