@@ -12,14 +12,12 @@ import { determineProviderLocale } from './utils/determineProviderLocale';
  * @param {Dictionary} [dictionary=defaultDictionary] - The translation dictionary for the project.
  * @param {string[]} [locales] - The list of approved locales for the project.
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale to use if no other locale is found.
- * @param {string} [locale] - The current locale, if already set.
  * @param {string} [cacheUrl='https://cdn.gtx.dev'] - The URL of the cache service for fetching translations.
  * @param {string} [runtimeUrl='https://runtime.gtx.dev'] - The URL of the runtime service for fetching translations.
  * @param {RenderSettings} [renderSettings=defaultRenderSettings] - The settings for rendering translations.
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
- * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
  * @param {boolean} [enableI18n=true] - Whether to enable i18n.
  * @param {boolean|undefined} [enableI18nLoaded=undefined] - Flag to indicate if the enableI18n flag is finished loading asynchronously. Undefined means flag is loaded synchronously.

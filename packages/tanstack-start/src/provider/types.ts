@@ -8,4 +8,4 @@ import { GTProviderProps as GTReactProviderProps } from 'gt-react/internal';
  *
  * TODO: use Pick<> syntax
  */
-export type GTProviderProps = GTReactProviderProps;
+export type GTProviderProps = Omit<GTReactProviderProps, 'ssr'>;
