@@ -320,4 +320,5 @@ export const emojis = {
   ZM: '🇿🇲', // Zambia
   ZW: '🇿🇼', // Zimbabwe,
   EU: '🇪🇺', // European Union (EU)
+  '419': '🌎', // Latin America
 } as Record<string, string>;
