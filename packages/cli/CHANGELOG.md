@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.6.21
+
+### Patch Changes
+
+- [#1021](https://github.com/generaltranslation/gt/pull/1021) [`4cbf7da`](https://github.com/generaltranslation/gt/commit/4cbf7da4bb0d202e2b7c8a6995566538b71856e9) Thanks [@brian-lou](https://github.com/brian-lou)! - Use default branch name instead of placeholder
+
+- Updated dependencies [[`9e99e94`](https://github.com/generaltranslation/gt/commit/9e99e945cbf9e31990930e3428468f64d7240da5)]:
+  - generaltranslation@8.1.10
+
 ## 2.6.20
 
 ### Patch Changes

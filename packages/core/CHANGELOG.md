@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.10
+
+### Patch Changes
+
+- [#1024](https://github.com/generaltranslation/gt/pull/1024) [`9e99e94`](https://github.com/generaltranslation/gt/commit/9e99e945cbf9e31990930e3428468f64d7240da5) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - added custom emoji for 419 region code
+
 ## 8.1.9
 
 ### Patch Changes
