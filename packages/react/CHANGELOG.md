@@ -1,5 +1,16 @@
 # gt-react
 
+## 10.10.9
+
+### Patch Changes
+
+- [#1023](https://github.com/generaltranslation/gt/pull/1023) [`c66bbe1`](https://github.com/generaltranslation/gt/commit/c66bbe125f3fbba7a97604d3c2ca6b7d7a065f31) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: tanstack start i18n support
+
+- Updated dependencies [[`9e99e94`](https://github.com/generaltranslation/gt/commit/9e99e945cbf9e31990930e3428468f64d7240da5), [`c66bbe1`](https://github.com/generaltranslation/gt/commit/c66bbe125f3fbba7a97604d3c2ca6b7d7a065f31)]:
+  - generaltranslation@8.1.10
+  - @generaltranslation/react-core@1.4.8
+  - @generaltranslation/supported-locales@2.0.41
+
 ## 10.10.8
 
 ### Patch Changes
