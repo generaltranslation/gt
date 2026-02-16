@@ -1,5 +1,11 @@
 # gt-tanstack-start
 
+## 0.1.1
+
+### Patch Changes
+
+- [#1025](https://github.com/generaltranslation/gt/pull/1025) [`4aca966`](https://github.com/generaltranslation/gt/commit/4aca96658d38ce3f220984228510c2106afbe5ca) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: release
+
 ## 0.1.0
 
 ### Minor Changes
