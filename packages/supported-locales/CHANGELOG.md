@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.0.42
+
+### Patch Changes
+
+- [#1027](https://github.com/generaltranslation/gt/pull/1027) [`06104b0`](https://github.com/generaltranslation/gt/commit/06104b075e14b2299490e645ce1d313224aac639) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add nb locale support
+
 ## 2.0.41
 
 ### Patch Changes

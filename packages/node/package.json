@@ -1,6 +1,6 @@
 {
   "name": "gt-node",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Node.js utilities for General Translation",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
