@@ -100,15 +100,15 @@ const supportedLocales = {
     'nl-NL', // Netherlands
     'nl-BE', // Belgium
   ],
-  no: [
-    // Norwegian
-    'no',
-    'no-NO', // Norway
-  ],
   nb: [
     // Norwegian Bokmål
     'nb',
     'nb-NO', // Norway
+  ],
+  no: [
+    // Norwegian
+    'no',
+    'no-NO', // Norway
   ],
   pa: ['pa'], // Punjabi
   pl: ['pl'], // Polish
