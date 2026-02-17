@@ -1,11 +1,10 @@
 import { intlCache } from '../cache/IntlCache';
 import {
   CustomMapping,
-  FullCustomMapping,
   getCustomProperty,
   shouldUseCanonicalLocale,
 } from './customLocaleMapping';
-import { _isValidLocale, _standardizeLocale } from './isValidLocale';
+import { _standardizeLocale } from './isValidLocale';
 
 /**
  * @internal
