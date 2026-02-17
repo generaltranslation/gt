@@ -1,5 +1,12 @@
 # gt-node
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.3.9
+
 ## 0.2.1
 
 ### Patch Changes
