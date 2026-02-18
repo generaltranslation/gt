@@ -1,5 +1,16 @@
 # gt-next
 
+## 6.12.15
+
+### Patch Changes
+
+- Updated dependencies [[`7cd02ba`](https://github.com/generaltranslation/gt/commit/7cd02ba200c8645de01527a88f7cf32346e67d12)]:
+  - generaltranslation@8.1.11
+  - @generaltranslation/compiler@1.1.20
+  - gt-i18n@0.3.11
+  - gt-react@10.10.12
+  - @generaltranslation/supported-locales@2.0.44
+
 ## 6.12.14
 
 ### Patch Changes

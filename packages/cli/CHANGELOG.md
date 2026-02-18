@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.6.23
+
+### Patch Changes
+
+- [#1034](https://github.com/generaltranslation/gt/pull/1034) [`7cd02ba`](https://github.com/generaltranslation/gt/commit/7cd02ba200c8645de01527a88f7cf32346e67d12) Thanks [@brian-lou](https://github.com/brian-lou)! - Modularize API logic; add retry for 5XX errors
+
+- Updated dependencies [[`7cd02ba`](https://github.com/generaltranslation/gt/commit/7cd02ba200c8645de01527a88f7cf32346e67d12)]:
+  - generaltranslation@8.1.11
+
 ## 2.6.22
 
 ### Patch Changes
