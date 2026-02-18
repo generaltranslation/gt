@@ -133,7 +133,12 @@ export async function downloadFileBatch(
           }
         }
 
-        if (!forceDownload && !sourceChanged && fileExists && downloadedVersion) {
+        if (
+          !forceDownload &&
+          !sourceChanged &&
+          fileExists &&
+          downloadedVersion
+        ) {
           result.skipped.push(requestedFile);
           continue;
         }
