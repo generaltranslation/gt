@@ -96,6 +96,7 @@ describe.sequential('validateResponse', () => {
       json: vi
         .fn()
         .mockRejectedValue(new Error('Failed to read response body')),
+      text: vi.fn().mockResolvedValue('Failed to read response body'),
     } as unknown as Response;
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(

@@ -47,6 +47,7 @@ describe.sequential('_translate', () => {
           metadata,
         },
         timeout: undefined,
+        retryPolicy: 'none',
       }
     );
     expect(result).toEqual(mockTranslationResult);
@@ -77,6 +78,7 @@ describe.sequential('_translate', () => {
           metadata,
         },
         timeout: undefined,
+        retryPolicy: 'none',
       }
     );
     expect(result).toEqual(mockTranslationResult);

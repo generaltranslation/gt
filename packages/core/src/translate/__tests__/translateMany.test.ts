@@ -78,6 +78,7 @@ describe.sequential('_translateMany', () => {
           metadata: globalMetadata,
         },
         timeout: undefined,
+        retryPolicy: 'none',
       }
     );
     expect(result).toEqual(mockTranslateManyResult);
@@ -117,6 +118,7 @@ describe.sequential('_translateMany', () => {
           metadata: globalMetadata,
         },
         timeout: undefined,
+        retryPolicy: 'none',
       }
     );
     expect(result).toEqual(mockTranslateManyResult);
