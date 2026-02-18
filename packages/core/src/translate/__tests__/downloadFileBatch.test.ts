@@ -73,9 +73,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should download multiple files in batch successfully', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const files: DownloadFileBatchRequest = [
       { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
@@ -105,9 +103,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should handle single file in batch', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const files: DownloadFileBatchRequest = [
       { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
@@ -132,9 +128,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should use default timeout when not specified', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const files: DownloadFileBatchRequest = [
       { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
@@ -152,9 +146,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should respect custom timeout', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const files: DownloadFileBatchRequest = [
       { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
@@ -174,9 +166,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should use default URL when baseUrl not provided in config', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const configWithoutUrl: TranslationRequestConfig = {
       projectId: 'test-project',
@@ -242,9 +232,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should include fileIds in request body', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const files: DownloadFileBatchRequest = [
       { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },
@@ -266,9 +254,7 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should map fileIds correctly in request body', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(
-      mockDownloadFileBatchResultBase64
-    );
+    vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 
     const files: DownloadFileBatchRequest = [
       { fileId: 'file-1', branchId: 'branch-1', versionId: 'version-1' },

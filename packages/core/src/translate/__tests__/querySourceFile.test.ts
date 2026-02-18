@@ -118,9 +118,7 @@ describe.sequential('_querySourceFile', () => {
 
     expect(apiRequest).toHaveBeenCalledWith(
       configWithoutUrl,
-      expect.stringContaining(
-        '/v2/project/translations/files/status/file-123'
-      ),
+      expect.stringContaining('/v2/project/translations/files/status/file-123'),
       expect.any(Object)
     );
   });
