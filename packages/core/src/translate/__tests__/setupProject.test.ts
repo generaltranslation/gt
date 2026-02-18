@@ -2,15 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _setupProject, { SetupProjectResult } from '../setupProject';
 import { TranslationRequestConfig } from '../../types';
 import { FileReference } from '../../types-dir/api/file';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import validateResponse from '../utils/validateResponse';
-import handleFetchError from '../utils/handleFetchError';
-import generateRequestHeaders from '../utils/generateRequestHeaders';
+import apiRequest from '../utils/apiRequest';
 
-vi.mock('../utils/fetchWithTimeout');
-vi.mock('../utils/validateResponse');
-vi.mock('../utils/handleFetchError');
-vi.mock('../utils/generateRequestHeaders');
+vi.mock('../utils/apiRequest');
 
 describe('_setupProject', () => {
   const mockConfig: TranslationRequestConfig = {
@@ -32,16 +26,6 @@ describe('_setupProject', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(fetchWithTimeout).mockReset();
-    vi.mocked(validateResponse).mockReset();
-    vi.mocked(handleFetchError).mockReset();
-    vi.mocked(generateRequestHeaders).mockReset();
-
-    vi.mocked(generateRequestHeaders).mockReturnValue({
-      'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
-    });
   });
 
   it('should setup project successfully', async () => {
@@ -55,25 +39,15 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     const result = await _setupProject(mockFiles, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/setup/generate',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v2/project/setup/generate',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           files: [
             {
               branchId: 'branch-123',
@@ -87,12 +61,12 @@ describe('_setupProject', () => {
             },
           ],
           locales: undefined,
-        }),
-      },
-      60000
+          force: undefined,
+        },
+        timeout: undefined,
+      }
     );
 
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
     expect(result).toEqual(mockResponse);
     expect(result.status).toBe('queued');
     // @ts-expect-error - setupJobId is not defined in the type
@@ -107,12 +81,7 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     const result = await _setupProject(mockFiles, mockConfig);
 
@@ -129,44 +98,14 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     await _setupProject(mockFiles, mockConfig, { timeoutMs: 45000 });
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      60000
-    );
-  });
-
-  it('should limit timeout to defaultTimeout', async () => {
-    const mockFiles = [createMockFile()];
-
-    const mockResponse: SetupProjectResult = {
-      setupJobId: 'setup-job-456',
-      status: 'queued',
-    };
-
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    await _setupProject(mockFiles, mockConfig, { timeoutMs: 1000000 }); // Very large timeout
-
-    // Should use defaultTimeout (60000) instead of the large provided timeout
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
-      60000
+      expect.objectContaining({ timeout: 45000 })
     );
   });
 
@@ -190,21 +129,15 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     await _setupProject(mockFiles, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           files: [
             {
               branchId: 'branch-123',
@@ -218,9 +151,9 @@ describe('_setupProject', () => {
             },
           ],
           locales: undefined,
-        }),
-      },
-      expect.any(Number)
+          force: undefined,
+        },
+      })
     );
   });
 
@@ -232,21 +165,15 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     await _setupProject(mockFiles, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           files: [
             {
               branchId: 'branch-123',
@@ -255,9 +182,9 @@ describe('_setupProject', () => {
             },
           ],
           locales: undefined,
-        }),
-      },
-      expect.any(Number)
+          force: undefined,
+        },
+      })
     );
   });
 
@@ -267,26 +194,17 @@ describe('_setupProject', () => {
       setupJobId: 'setup-job-locales',
       status: 'queued',
     };
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
 
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     const locales = ['es', 'fr-CA'];
     await _setupProject(mockFiles, mockConfig, { locales });
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/setup/generate',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v2/project/setup/generate',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           files: [
             {
               branchId: 'branch-123',
@@ -295,9 +213,10 @@ describe('_setupProject', () => {
             },
           ],
           locales,
-        }),
-      },
-      60000
+          force: undefined,
+        },
+        timeout: undefined,
+      }
     );
   });
 
@@ -326,21 +245,15 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     await _setupProject(mockFiles, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           files: [
             {
               branchId: 'branch-123',
@@ -364,9 +277,9 @@ describe('_setupProject', () => {
             },
           ],
           locales: undefined,
-        }),
-      },
-      expect.any(Number)
+          force: undefined,
+        },
+      })
     );
   });
 
@@ -378,26 +291,20 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     const result = await _setupProject(mockFiles, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           files: [],
           locales: undefined,
-        }),
-      },
-      expect.any(Number)
+          force: undefined,
+        },
+      })
     );
 
     expect(result.status).toBe('queued');
@@ -409,16 +316,11 @@ describe('_setupProject', () => {
     const mockFiles = [createMockFile()];
 
     const fetchError = new Error('Network error');
-    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
-    vi.mocked(handleFetchError).mockImplementation(() => {
-      throw fetchError;
-    });
+    vi.mocked(apiRequest).mockRejectedValue(fetchError);
 
     await expect(_setupProject(mockFiles, mockConfig)).rejects.toThrow(
       'Network error'
     );
-
-    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
   it('should use default base URL when not provided', async () => {
@@ -434,19 +336,14 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     await _setupProject(mockFiles, configWithoutBaseUrl);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('api2.gtx.dev/v2/project/setup/generate'),
-      expect.any(Object),
-      expect.any(Number)
+    expect(apiRequest).toHaveBeenCalledWith(
+      configWithoutBaseUrl,
+      '/v2/project/setup/generate',
+      expect.any(Object)
     );
   });
 
@@ -458,19 +355,14 @@ describe('_setupProject', () => {
       status: 'queued',
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockResponse);
 
     await _setupProject(mockFiles, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      60000 // default defaultTimeout
+      expect.any(String),
+      expect.objectContaining({ timeout: undefined })
     );
   });
 });

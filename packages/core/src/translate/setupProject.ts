@@ -1,10 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 import type { FileReference } from '../types-dir/api/file';
 
 export type SetupProjectResult =
@@ -30,34 +25,16 @@ export default async function _setupProject(
   config: TranslationRequestConfig,
   options?: SetupProjectOptions
 ): Promise<SetupProjectResult> {
-  const timeout = options?.timeoutMs ? options.timeoutMs : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/setup/generate`;
-
-  const body = {
-    files: files.map((f) => ({
-      branchId: f.branchId,
-      fileId: f.fileId,
-      versionId: f.versionId,
-    })),
-    locales: options?.locales,
-    force: options?.force,
-  };
-
-  let response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify(body),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
-
-  await validateResponse(response);
-  return (await response.json()) as SetupProjectResult;
+  return apiRequest<SetupProjectResult>(config, '/v2/project/setup/generate', {
+    body: {
+      files: files.map((f) => ({
+        branchId: f.branchId,
+        fileId: f.fileId,
+        versionId: f.versionId,
+      })),
+      locales: options?.locales,
+      force: options?.force,
+    },
+    timeout: options?.timeoutMs,
+  });
 }

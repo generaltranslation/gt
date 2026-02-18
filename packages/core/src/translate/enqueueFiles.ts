@@ -1,10 +1,5 @@
 import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 import type { FileReference } from '../types-dir/api/file';
 import { processBatches } from './utils/batch';
 
@@ -31,9 +26,6 @@ export default async function _enqueueFiles(
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
-  const timeout = options.timeout ? options.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/translations/enqueue`;
-
   const result = await processBatches(
     files,
     async (batch) => {
@@ -52,26 +44,12 @@ export default async function _enqueueFiles(
         force: options.force,
       };
 
-      let response: Response | undefined;
-      try {
-        // Request translations
-        response = await fetchWithTimeout(
-          url,
-          {
-            method: 'POST',
-            headers: generateRequestHeaders(config),
-            body: JSON.stringify(body),
-          },
-          timeout
-        );
-      } catch (error) {
-        handleFetchError(error, timeout);
-      }
-
-      // Validate response
-      await validateResponse(response);
-      const result = (await response!.json()) as EnqueueFilesResult;
-      return Array.from(Object.entries(result.jobData));
+      const apiResult = await apiRequest<EnqueueFilesResult>(
+        config,
+        '/v2/project/translations/enqueue',
+        { body, timeout: options.timeout }
+      );
+      return Array.from(Object.entries(apiResult.jobData));
     },
     { batchSize: 100 }
   );

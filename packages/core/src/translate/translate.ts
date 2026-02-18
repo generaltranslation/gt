@@ -4,14 +4,9 @@ import {
   TranslationResult,
 } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-
 import { Content } from '../types-dir/jsx/content';
 import { EntryMetadata } from '../types-dir/api/entry';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 
 /**
  * @internal
@@ -30,33 +25,18 @@ export default async function _translate(
   metadata: EntryMetadata = {},
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
-  let response;
-  const timeout = metadata.timeout ? metadata.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
-
-  // Request the translation
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify({
-          requests: [{ source }],
-          targetLocale,
-          metadata,
-        }),
+  const results = await apiRequest<unknown[]>(
+    { ...config, baseUrl: config.baseUrl || defaultRuntimeApiUrl },
+    `/v1/translate/${config.projectId}`,
+    {
+      body: {
+        requests: [{ source }],
+        targetLocale,
+        metadata,
       },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
-
-  // Validate response
-  await validateResponse(response);
-
-  // Parse the response
-  const results = (await response.json()) as unknown[];
+      timeout: metadata.timeout,
+      retryPolicy: 'none',
+    }
+  );
   return results[0] as TranslationResult | TranslationError;
 }

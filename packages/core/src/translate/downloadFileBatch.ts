@@ -1,15 +1,10 @@
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import {
   DownloadFileBatchOptions,
   DownloadFileBatchRequest,
   DownloadFileBatchResult,
 } from '../types-dir/api/downloadFileBatch';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 import { decode } from '../utils/base64';
 import { processBatches } from './utils/batch';
 
@@ -26,33 +21,14 @@ export default async function _downloadFileBatch(
   options: DownloadFileBatchOptions,
   config: TranslationRequestConfig
 ) {
-  const timeout = options.timeout ? options.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/download`;
-
   return processBatches(
     requests,
     async (batch) => {
-      // Request the batch download
-      let response;
-      try {
-        response = await fetchWithTimeout(
-          url,
-          {
-            method: 'POST',
-            headers: generateRequestHeaders(config),
-            body: JSON.stringify(batch),
-          },
-          timeout
-        );
-      } catch (error) {
-        handleFetchError(error, timeout);
-      }
-
-      // Validate response
-      await validateResponse(response);
-
-      // Parse response
-      const result = (await response.json()) as DownloadFileBatchResult;
+      const result = await apiRequest<DownloadFileBatchResult>(
+        config,
+        '/v2/project/files/download',
+        { body: batch, timeout: options.timeout }
+      );
 
       // convert from base64 to string
       const files = result.files.map((file) => ({

@@ -5,15 +5,9 @@ import {
   FileUpload,
   RequiredUploadFilesOptions,
 } from '../../types-dir/api/uploadFiles';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import validateResponse from '../utils/validateResponse';
-import handleFetchError from '../utils/handleFetchError';
-import generateRequestHeaders from '../utils/generateRequestHeaders';
+import apiRequest from '../utils/apiRequest';
 
-vi.mock('../utils/fetchWithTimeout');
-vi.mock('../utils/validateResponse');
-vi.mock('../utils/handleFetchError');
-vi.mock('../utils/generateRequestHeaders');
+vi.mock('../utils/apiRequest');
 
 describe('_uploadTranslations', () => {
   const mockConfig: TranslationRequestConfig = {
@@ -42,16 +36,6 @@ describe('_uploadTranslations', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(fetchWithTimeout).mockReset();
-    vi.mocked(validateResponse).mockReset();
-    vi.mocked(handleFetchError).mockReset();
-    vi.mocked(generateRequestHeaders).mockReset();
-
-    vi.mocked(generateRequestHeaders).mockReturnValue({
-      'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
-    });
   });
 
   it('should upload translations successfully', async () => {
@@ -75,7 +59,7 @@ describe('_uploadTranslations', () => {
 
     const mockOptions = createMockOptions();
 
-    const mockResponse = {
+    const mockApiResponse = {
       success: true,
       uploadedFiles: [
         {
@@ -91,12 +75,7 @@ describe('_uploadTranslations', () => {
       ],
     };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     const result = await _uploadTranslations(
       mockFiles,
@@ -104,16 +83,11 @@ describe('_uploadTranslations', () => {
       mockConfig
     );
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/files/upload-translations',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v2/project/files/upload-translations',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           data: [
             {
               source: {
@@ -139,13 +113,12 @@ describe('_uploadTranslations', () => {
             },
           ],
           sourceLocale: 'en',
-        }),
-      },
-      60000
+        },
+        timeout: 60000,
+      }
     );
 
-    expect(validateResponse).toHaveBeenCalledWith(mockFetchResponse);
-    expect(result.data).toEqual(mockResponse.uploadedFiles || []);
+    expect(result.data).toEqual(mockApiResponse.uploadedFiles || []);
     expect(result.batchCount).toBe(1);
   });
 
@@ -165,23 +138,17 @@ describe('_uploadTranslations', () => {
 
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true };
+    const mockApiResponse = { success: true };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           data: [
             {
               source: {
@@ -201,9 +168,8 @@ describe('_uploadTranslations', () => {
             },
           ],
           sourceLocale: 'en',
-        }),
-      },
-      expect.any(Number)
+        },
+      })
     );
   });
 
@@ -227,31 +193,17 @@ describe('_uploadTranslations', () => {
 
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true };
+    const mockApiResponse = { success: true };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    // Capture the call that will be made
-    let capturedCall: any[] = [];
-    vi.mocked(fetchWithTimeout).mockImplementation((...args) => {
-      capturedCall = args;
-      return Promise.resolve(mockFetchResponse);
-    });
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    // Verify our specific call was made correctly
-    expect(capturedCall).toEqual([
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           data: [
             {
               source: {
@@ -273,10 +225,9 @@ describe('_uploadTranslations', () => {
             },
           ],
           sourceLocale: 'en',
-        }),
-      },
-      expect.any(Number),
-    ]);
+        },
+      })
+    );
   });
 
   it('should handle multiple source files with translations', async () => {
@@ -307,34 +258,31 @@ describe('_uploadTranslations', () => {
 
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true };
+    const mockApiResponse = { success: true };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: expect.stringContaining('component1.json'),
-      },
-      expect.any(Number)
-    );
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: expect.stringContaining('component2.json'),
-      },
-      expect.any(Number)
+      expect.objectContaining({
+        body: expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              source: expect.objectContaining({
+                fileName: 'component1.json',
+              }),
+            }),
+            expect.objectContaining({
+              source: expect.objectContaining({
+                fileName: 'component2.json',
+              }),
+            }),
+          ]),
+        }),
+      })
     );
   });
 
@@ -359,23 +307,17 @@ describe('_uploadTranslations', () => {
 
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true };
+    const mockApiResponse = { success: true };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           data: [
             {
               source: {
@@ -399,9 +341,8 @@ describe('_uploadTranslations', () => {
             },
           ],
           sourceLocale: 'en',
-        }),
-      },
-      expect.any(Number)
+        },
+      })
     );
   });
 
@@ -415,16 +356,11 @@ describe('_uploadTranslations', () => {
     const mockOptions = createMockOptions();
 
     const fetchError = new Error('Network error');
-    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
-    vi.mocked(handleFetchError).mockImplementation(() => {
-      throw fetchError;
-    });
+    vi.mocked(apiRequest).mockRejectedValue(fetchError);
 
     await expect(
       _uploadTranslations(mockFiles, mockOptions, mockConfig)
     ).rejects.toThrow('Network error');
-
-    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
   it('should handle empty translations array', async () => {
@@ -437,23 +373,17 @@ describe('_uploadTranslations', () => {
 
     const mockOptions = createMockOptions();
 
-    const mockResponse = { success: true };
+    const mockApiResponse = { success: true };
 
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           data: [
             {
               source: {
@@ -466,9 +396,8 @@ describe('_uploadTranslations', () => {
             },
           ],
           sourceLocale: 'en',
-        }),
-      },
-      expect.any(Number)
+        },
+      })
     );
   });
 
@@ -481,22 +410,16 @@ describe('_uploadTranslations', () => {
     ];
     const mockOptions = createMockOptions({ sourceLocale: 'de' });
 
-    const mockResponse = { success: true };
-    const mockFetchResponse = {
-      json: vi.fn().mockResolvedValue(mockResponse),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockFetchResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    const mockApiResponse = { success: true };
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
 
     await _uploadTranslations(mockFiles, mockOptions, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({
+      expect.objectContaining({
+        body: {
           data: [
             {
               source: {
@@ -516,9 +439,8 @@ describe('_uploadTranslations', () => {
             },
           ],
           sourceLocale: 'de',
-        }),
-      },
-      expect.any(Number)
+        },
+      })
     );
   });
 });

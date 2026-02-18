@@ -1,10 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 
 export type JobStatus =
   | 'queued'
@@ -32,24 +27,8 @@ export async function _checkJobStatus(
   config: TranslationRequestConfig,
   timeoutMs?: number
 ): Promise<CheckJobStatusResult> {
-  const timeout = timeoutMs ? timeoutMs : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/jobs/info`;
-
-  let response: Response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify({ jobIds }),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
-
-  await validateResponse(response);
-  return (await response.json()) as CheckJobStatusResult;
+  return apiRequest<CheckJobStatusResult>(config, '/v2/project/jobs/info', {
+    body: { jobIds },
+    timeout: timeoutMs,
+  });
 }

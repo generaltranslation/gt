@@ -1,15 +1,10 @@
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import {
   CheckFileTranslationsOptions,
   FileQueryResult,
 } from '../types-dir/api/checkFileTranslations';
 import { FileQuery } from '../types-dir/api/checkFileTranslations';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 
 /**
  * @internal
@@ -24,8 +19,6 @@ export default async function _querySourceFile(
   options: CheckFileTranslationsOptions,
   config: TranslationRequestConfig
 ): Promise<FileQueryResult> {
-  const { baseUrl } = config;
-  const timeout = options.timeout ? options.timeout : defaultTimeout;
   const branchId = query.branchId;
   const versionId = query.versionId;
   const fileId = query.fileId;
@@ -37,26 +30,10 @@ export default async function _querySourceFile(
   if (versionId) {
     searchParams.set('versionId', versionId);
   }
-  const url = `${baseUrl || defaultBaseUrl}/v2/project/translations/files/status/${encodeURIComponent(fileId)}?${searchParams.toString()}`;
+  const endpoint = `/v2/project/translations/files/status/${encodeURIComponent(fileId)}?${searchParams.toString()}`;
 
-  // Request the file download
-  let response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'GET',
-        headers: generateRequestHeaders(config),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
-
-  // Validate response
-  await validateResponse(response);
-
-  const result = await response.json();
-  return result as FileQueryResult;
+  return apiRequest<FileQueryResult>(config, endpoint, {
+    method: 'GET',
+    timeout: options.timeout,
+  });
 }

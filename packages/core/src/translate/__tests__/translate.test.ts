@@ -1,17 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _translate from '../translate';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import validateResponse from '../utils/validateResponse';
-import handleFetchError from '../utils/handleFetchError';
-import generateRequestHeaders from '../utils/generateRequestHeaders';
+import apiRequest from '../utils/apiRequest';
 import { TranslationRequestConfig, TranslationResult } from '../../types';
 import { Content } from '../../types-dir/jsx/content';
 import { EntryMetadata } from '../../types-dir/api/entry';
 
-vi.mock('../utils/fetchWithTimeout');
-vi.mock('../utils/validateResponse');
-vi.mock('../utils/handleFetchError');
-vi.mock('../utils/generateRequestHeaders');
+vi.mock('../utils/apiRequest');
 
 describe.sequential('_translate', () => {
   const mockConfig: TranslationRequestConfig = {
@@ -32,20 +26,10 @@ describe.sequential('_translate', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(generateRequestHeaders).mockReturnValue({
-      'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
-    });
   });
 
   it('should translate simple string content successfully', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const source: Content = 'Hello world';
     const targetLocale = 'es';
@@ -53,34 +37,24 @@ describe.sequential('_translate', () => {
 
     const result = await _translate(source, targetLocale, metadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/translate/test-project',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v1/translate/test-project',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           requests: [{ source }],
           targetLocale,
           metadata,
-        }),
-      },
-      60000
+        },
+        timeout: undefined,
+        retryPolicy: 'none',
+      }
     );
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
     expect(result).toEqual(mockTranslationResult);
   });
 
   it('should handle complex JSX content', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const source: Content = [
       'Welcome ',
@@ -94,109 +68,82 @@ describe.sequential('_translate', () => {
 
     const result = await _translate(source, targetLocale, metadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/translate/test-project',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v1/translate/test-project',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           requests: [{ source }],
           targetLocale,
           metadata,
-        }),
-      },
-      60000
+        },
+        timeout: undefined,
+        retryPolicy: 'none',
+      }
     );
     expect(result).toEqual(mockTranslationResult);
   });
 
   it('should use default timeout when not specified', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     await _translate('Hello', 'es', {}, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      60000
+      expect.any(String),
+      expect.objectContaining({ timeout: undefined })
     );
   });
 
   it('should respect custom timeout from metadata', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const metadata: EntryMetadata = { timeout: 5000 };
 
     await _translate('Hello', 'es', metadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      5000
+      expect.any(String),
+      expect.objectContaining({ timeout: 5000 })
     );
   });
 
   it('should enforce maximum timeout limit', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const metadata: EntryMetadata = { timeout: 99999 };
 
     await _translate('Hello', 'es', metadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      99999
+      expect.any(String),
+      expect.objectContaining({ timeout: 99999 })
     );
   });
 
   it('should include sourceLocale in metadata when provided', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const metadata: EntryMetadata = { sourceLocale: 'en' };
 
     await _translate('Hello', 'es', metadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('test-project'),
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
       expect.objectContaining({
-        body: expect.stringContaining('"sourceLocale":"en"'),
-      }),
-      expect.any(Number)
+        body: expect.objectContaining({
+          metadata: expect.objectContaining({ sourceLocale: 'en' }),
+        }),
+      })
     );
   });
 
   it('should use default URL when baseUrl not provided in config', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const configWithoutUrl: TranslationRequestConfig = {
       projectId: 'test-project',
@@ -205,61 +152,41 @@ describe.sequential('_translate', () => {
 
     await _translate('Hello', 'es', {}, configWithoutUrl);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/translate/test-project'
-      ),
-      expect.any(Object),
-      expect.any(Number)
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ baseUrl: 'https://runtime2.gtx.dev' }),
+      '/v1/translate/test-project',
+      expect.any(Object)
     );
   });
 
-  it('should handle fetch errors through handleFetchError', async () => {
+  it('should handle fetch errors', async () => {
     const fetchError = new Error('Network error');
-    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
-    vi.mocked(handleFetchError).mockImplementation(() => {
-      throw fetchError;
-    });
+    vi.mocked(apiRequest).mockRejectedValue(fetchError);
 
     await expect(_translate('Hello', 'es', {}, mockConfig)).rejects.toThrow(
       'Network error'
     );
-    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
   it('should handle validation errors', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    // Use mockImplementationOnce to avoid interfering with other tests
-    vi.mocked(validateResponse).mockImplementationOnce(() => {
-      throw new Error('Validation failed');
-    });
+    vi.mocked(apiRequest).mockRejectedValue(new Error('Validation failed'));
 
     await expect(_translate('Hello', 'es', {}, mockConfig)).rejects.toThrow(
       'Validation failed'
     );
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
   it('should handle empty metadata', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue([mockTranslationResult]),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue([mockTranslationResult]);
 
     const result = await _translate('Hello', 'es', {}, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
       expect.objectContaining({
-        body: expect.stringContaining('"metadata":'),
-      }),
-      expect.any(Number)
+        body: expect.objectContaining({ metadata: {} }),
+      })
     );
     expect(result).toEqual(mockTranslationResult);
   });
