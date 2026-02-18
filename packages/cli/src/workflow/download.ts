@@ -126,10 +126,7 @@ export async function downloadTranslations(
       }
     }
 
-    // Even if polling timed out, still download whatever completed successfully.
-    // This prevents catastrophic file loss when clearLocaleDirs already wiped
-    // the locale directories — without this, a timeout on even a single file
-    // would cause ALL successfully translated files to be lost.
+    // Even if polling timed out, still download whatever completed successfully
     if (!pollResult.success) {
       pollTimedOut = true;
       if (pollResult.fileTracker.completed.size > 0) {
@@ -161,8 +158,7 @@ export async function downloadTranslations(
   });
   await downloadStep.wait();
 
-  // If polling timed out, report failure even though we downloaded what we could.
-  // The caller needs to know that not all translations were retrieved.
+  // If polling timed out, report failure even though we downloaded what we could
   if (pollTimedOut) {
     return false;
   }
