@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.24
+
+### Patch Changes
+
+- [#1036](https://github.com/generaltranslation/gt/pull/1036) [`5fc08d0`](https://github.com/generaltranslation/gt/commit/5fc08d0028b7936b5916a048786bedc3b13e0042) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix: Update composite JSONs when non-translatable content changes, fix bug where `save-local` update composite key index
+
 ## 2.6.23
 
 ### Patch Changes
