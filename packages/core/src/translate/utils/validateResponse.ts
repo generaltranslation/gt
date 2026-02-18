@@ -8,7 +8,7 @@ export default async function validateResponse(response: Response) {
       const errorJson = (await response.json()) as { error: string };
       errorMsg = errorJson.error;
     } catch {
-      errorMsg = 'Failed to read response body';
+      errorMsg = (await response.text()) || 'Unknown error';
     }
     const errorMessage = apiError(
       response.status,

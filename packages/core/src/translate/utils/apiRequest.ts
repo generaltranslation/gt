@@ -63,7 +63,7 @@ export default async function apiRequest<T>(
     requestInit.body = JSON.stringify(options.body);
   }
 
-  for (let attempt = 0; ; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     let response: Response;
     try {
       response = await fetchWithTimeout(url, requestInit, timeout);
@@ -84,4 +84,6 @@ export default async function apiRequest<T>(
     await validateResponse(response!);
     return (await response!.json()) as T;
   }
+
+  throw new Error('Max retries exceeded');
 }
