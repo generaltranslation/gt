@@ -110,6 +110,11 @@ const supportedLocales = {
     'no',
     'no-NO', // Norway
   ],
+  nn: [
+    // Norwegian Nynorsk
+    'nn',
+    'nn-NO', // Norway
+  ],
   pa: ['pa'], // Punjabi
   pl: ['pl'], // Polish
   pt: [
