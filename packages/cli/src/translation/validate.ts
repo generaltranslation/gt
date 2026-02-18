@@ -91,13 +91,11 @@ export async function getValidateJson(
   files?: string[]
 ): Promise<ValidationResult> {
   const validatedPkg: Framework =
-    pkg === Libraries.GT_REACT
-      ? Libraries.GT_REACT
-      : pkg === Libraries.GT_NEXT
-        ? Libraries.GT_NEXT
-        : pkg === Libraries.GT_REACT_NATIVE
-          ? Libraries.GT_REACT_NATIVE
-          : pkg;
+    pkg === Libraries.GT_NEXT
+      ? Libraries.GT_NEXT
+      : pkg === Libraries.GT_REACT_NATIVE
+        ? Libraries.GT_REACT_NATIVE
+        : Libraries.GT_REACT;
   const { errors, warnings } = await runValidation(
     settings,
     validatedPkg,
