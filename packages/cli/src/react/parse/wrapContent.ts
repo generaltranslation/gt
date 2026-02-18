@@ -39,7 +39,7 @@ const IMPORT_MAP = {
  */
 export async function wrapContentReact(
   options: WrapOptions,
-  pkg: typeof Libraries.GT_REACT,
+  pkg: `${typeof Libraries.GT_REACT}`,
   framework: SupportedFrameworks,
   errors: string[],
   warnings: string[]

@@ -45,7 +45,7 @@ const IMPORT_MAP = {
  */
 export async function wrapContentNext(
   options: WrapOptions,
-  pkg: typeof Libraries.GT_NEXT,
+  pkg: `${typeof Libraries.GT_NEXT}`,
   errors: string[],
   warnings: string[]
 ): Promise<{ filesUpdated: string[] }> {

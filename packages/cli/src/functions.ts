@@ -9,3 +9,13 @@ export type {
   ValidationMessage,
   ValidationLevel,
 } from './translation/validate.js';
+export {
+  Libraries,
+  GTLibrary,
+  InlineLibrary,
+  ReactLibrary,
+  GT_LIBRARIES,
+  INLINE_LIBRARIES,
+  REACT_LIBRARIES,
+  GT_LIBRARIES_UPSTREAM,
+} from './types/libraries.js';
