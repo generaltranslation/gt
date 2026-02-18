@@ -97,6 +97,7 @@ export async function downloadTranslations(
   };
 
   // Step 1: Poll translation jobs if jobData exists
+  let pollTimedOut = false;
   if (jobData) {
     const pollStep = new PollTranslationJobsStep(gt);
     const pollResult = await pollStep.run({
@@ -125,8 +126,21 @@ export async function downloadTranslations(
       }
     }
 
+    // Even if polling timed out, still download whatever completed successfully.
+    // This prevents catastrophic file loss when clearLocaleDirs already wiped
+    // the locale directories — without this, a timeout on even a single file
+    // would cause ALL successfully translated files to be lost.
     if (!pollResult.success) {
-      return false;
+      pollTimedOut = true;
+      if (pollResult.fileTracker.completed.size > 0) {
+        logger.warn(
+          chalk.yellow(
+            `Timed out, but ${pollResult.fileTracker.completed.size} translation(s) completed successfully. Downloading completed files...`
+          )
+        );
+      } else {
+        return false;
+      }
     }
   } else {
     for (const file of fileQueryData) {
@@ -146,6 +160,12 @@ export async function downloadTranslations(
     forceDownload,
   });
   await downloadStep.wait();
+
+  // If polling timed out, report failure even though we downloaded what we could.
+  // The caller needs to know that not all translations were retrieved.
+  if (pollTimedOut) {
+    return false;
+  }
 
   return downloadResult;
 }

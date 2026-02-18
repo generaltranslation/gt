@@ -14,6 +14,7 @@ import {
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
+import { hashStringSync } from '../utils/hash.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflow/PollJobsStep.js';
 
@@ -120,16 +121,30 @@ export async function downloadFileBatch(
         const downloadedVersion =
           downloadedVersions.entries[branchId]?.[fileId]?.[versionId]?.[locale];
         const fileExists = fs.existsSync(outputPath);
-        if (!forceDownload && fileExists && downloadedVersion) {
+
+        let sourceChanged = false;
+        if (downloadedVersion?.sourceHash) {
+          try {
+            const currentSourceContent = fs.readFileSync(inputPath, 'utf8');
+            const currentSourceHash = hashStringSync(currentSourceContent);
+            sourceChanged = currentSourceHash !== downloadedVersion.sourceHash;
+          } catch {
+            sourceChanged = true;
+          }
+        }
+
+        if (!forceDownload && !sourceChanged && fileExists && downloadedVersion) {
           result.skipped.push(requestedFile);
           continue;
         }
         let data = file.data;
+        let sourceContentHash: string | undefined;
         if (options.options?.jsonSchema && locale) {
           const jsonSchema = validateJsonSchema(options.options, inputPath);
           if (jsonSchema) {
             const originalContent = fs.readFileSync(inputPath, 'utf8');
             if (originalContent) {
+              sourceContentHash = hashStringSync(originalContent);
               data = mergeJson(
                 originalContent,
                 inputPath,
@@ -152,6 +167,7 @@ export async function downloadFileBatch(
           if (yamlSchema) {
             const originalContent = fs.readFileSync(inputPath, 'utf8');
             if (originalContent) {
+              sourceContentHash = hashStringSync(originalContent);
               data = mergeYaml(
                 originalContent,
                 inputPath,
@@ -201,6 +217,7 @@ export async function downloadFileBatch(
           ]);
           downloadedVersions.entries[branchId][fileId][versionId][locale] = {
             updatedAt: new Date().toISOString(),
+            ...(sourceContentHash ? { sourceHash: sourceContentHash } : {}),
           };
           didUpdateDownloadedLock = true;
         }

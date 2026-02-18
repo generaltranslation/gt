@@ -155,10 +155,28 @@ export function mergeJson(
           indiciesToRemove.add(index)
         );
 
-        // 3. Merge matchingDefaultLocaleItems and targetItems
+        // Remap mismatched positional keys to current source positions
+        const sourceKeys = [...matchingDefaultLocaleItemKeys];
+        const remappedTargetItems: Record<string, any> = {};
+        for (const [key, value] of Object.entries(targetItems)) {
+          if (matchingDefaultLocaleItemKeys.has(key)) {
+            remappedTargetItems[key] = value;
+          } else if (
+            sourceKeys.length === 1 &&
+            !(sourceKeys[0] in remappedTargetItems)
+          ) {
+            remappedTargetItems[sourceKeys[0]] = value;
+          } else {
+            logger.warn(
+              `Skipping translated item at ${key}: cannot map to source item at path ${sourceObjectPointer}`
+            );
+          }
+        }
+
+        // Merge matchingDefaultLocaleItems and remapped targetItems
         const mergedItems = {
           ...(sourceObjectOptions.transform ? matchingDefaultLocaleItems : {}),
-          ...targetItems,
+          ...remappedTargetItems,
         };
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
@@ -173,10 +191,10 @@ export function mergeJson(
         )) {
           // 5. Validate that all the array indecies are still present in the source json
           if (!matchingDefaultLocaleItemKeys.has(sourceItemPointer)) {
-            logger.error(
-              `Array index ${sourceItemPointer} is not present in the source json. It is possible that the source json has been modified since the translation was generated.`
+            logger.warn(
+              `Skipping translated item at ${sourceItemPointer}: not present in source json at path ${sourceObjectPointer}`
             );
-            return exitSync(1);
+            continue;
           }
 
           // 6. Override the source item with the translated values
@@ -236,12 +254,11 @@ export function mergeJson(
         }
       }
 
-      // 8. Check that items to add is >= items to remove (if this happens, something is very wrong)
+      // 8. Check that items to add is >= items to remove
       if (itemsToAdd.length < indiciesToRemove.size) {
-        logger.error(
-          `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
+        logger.warn(
+          `Items to add (${itemsToAdd.length}) is less than items to remove (${indiciesToRemove.size}) at path: ${sourceObjectPointer}. Some translated items may have been skipped.`
         );
-        return exitSync(1);
       }
 
       // 9. Remove all items for the target locale (they can be identified by the key)

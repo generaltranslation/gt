@@ -48,6 +48,9 @@ export function extractJson(
   const canonicalTargetLocale = useCanonicalLocaleKeys
     ? gt.resolveCanonicalLocale(targetLocale)
     : targetLocale;
+  const canonicalDefaultLocale = useCanonicalLocaleKeys
+    ? gt.resolveCanonicalLocale(defaultLocale)
+    : defaultLocale;
 
   // Handle include-style schemas (simple path-based extraction)
   if (jsonSchema.include) {
@@ -99,23 +102,35 @@ export function extractJson(
         continue;
       }
 
+      // Also find default locale items
+      const matchingDefaultLocaleItems = findMatchingItemArray(
+        canonicalDefaultLocale,
+        sourceObjectOptions,
+        sourceObjectPointer,
+        sourceObjectValue
+      );
+
+      const defaultKeys = Object.keys(matchingDefaultLocaleItems);
+      const targetEntries = Object.entries(matchingTargetLocaleItems);
+
       // Initialize the nested structure for this source object pointer
       if (!compositeResult[sourceObjectPointer]) {
         compositeResult[sourceObjectPointer] = {};
       }
 
-      // For each matching item, extract the included values
-      for (const [itemPointer, { sourceItem }] of Object.entries(
-        matchingTargetLocaleItems
-      )) {
+      // For each target item, use the default locale's key position
+      for (let i = 0; i < targetEntries.length; i++) {
+        const [, { sourceItem }] = targetEntries[i];
         // Extract values at the include paths
         const extractedValues = flattenJsonWithStringFilter(
           sourceItem,
           sourceObjectOptions.include
         );
 
-        // Store under the item pointer (e.g., "/0")
-        compositeResult[sourceObjectPointer][itemPointer] = extractedValues;
+        // Use default locale key
+        const outputKey =
+          i < defaultKeys.length ? defaultKeys[i] : targetEntries[i][0];
+        compositeResult[sourceObjectPointer][outputKey] = extractedValues;
       }
     } else {
       // Object type

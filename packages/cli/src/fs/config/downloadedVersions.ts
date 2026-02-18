@@ -10,6 +10,7 @@ export type DownloadedVersionEntry = {
   fileName?: string;
   updatedAt?: string;
   postProcessHash?: string;
+  sourceHash?: string;
 };
 
 export type DownloadedVersions = {
