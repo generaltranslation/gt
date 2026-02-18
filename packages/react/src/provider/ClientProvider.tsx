@@ -42,6 +42,7 @@ export default function ClientProvider({
   environment,
   reloadServer,
 }: ClientProviderProps): React.JSX.Element {
+  const didMount = useRef(false);
   // ----- TRANSLATIONS STATE ----- //
 
   const [translations, setTranslations] = useState<Translations | null>(
@@ -50,13 +51,9 @@ export default function ClientProvider({
   );
 
   // Update the translations object when _translations changes
-  const didMountTranslations = useRef(false);
   useEffect(() => {
     // Skip on mount to avoid an extra set state after first render
-    if (!didMountTranslations.current) {
-      didMountTranslations.current = true;
-      return;
-    }
+    if (!didMount.current) return;
     // Translations must override to avoid situation where we maintain stale dev translations from other languages
     // for example { abc123: '你好!', def456: 'bonjour' }
     setTranslations(_translations);
@@ -90,14 +87,15 @@ export default function ClientProvider({
   const [dictionary, setDictionary] = useState<Dictionary>(_dictionary || {});
 
   // Update the dictionary translations when locale changes (see useEffect for _translations above)
-  const didMountDict = useRef(false);
   useEffect(() => {
-    if (!didMountDict.current) {
-      didMountDict.current = true;
-      return;
-    }
+    if (!didMount.current) return;
     setDictionaryTranslations(_dictionaryTranslations);
   }, [_dictionaryTranslations]);
+
+  useEffect(() => {
+    if (!didMount.current) return;
+    setDictionary(_dictionary);
+  }, [_dictionary]);
 
   // ----- REGION STATE ----- //
 
@@ -225,6 +223,11 @@ export default function ClientProvider({
 
   // Block rendering until all translations are resolved (IF YOU REMOVE THIS YOU WILL BE FIRED)
   const display = !!(!translationRequired || translations) && locale;
+
+  // Update didMount ref
+  useEffect(() => {
+    didMount.current = true;
+  }, []);
 
   return (
     <GTContext.Provider
