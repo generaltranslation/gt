@@ -6,7 +6,7 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
-import { InlineLibrary } from '../types/libraries.js';
+import { InlineLibrary, Libraries } from '../types/libraries.js';
 
 // Types for programmatic validation API
 export type ValidationLevel = 'error' | 'warning';
@@ -83,10 +83,24 @@ function parseFileFromMessage(msg: string): { file: string; message: string } {
  */
 export async function getValidateJson(
   settings: Options & Settings,
-  pkg: Framework,
+  // TODO: fix compatability more generally so do not have to do this
+  pkg:
+    | `${typeof Libraries.GT_REACT}`
+    | `${typeof Libraries.GT_NEXT}`
+    | `${typeof Libraries.GT_REACT_NATIVE}`,
   files?: string[]
 ): Promise<ValidationResult> {
-  const { errors, warnings } = await runValidation(settings, pkg, files);
+  const validatedPkg: Framework =
+    pkg === Libraries.GT_NEXT
+      ? Libraries.GT_NEXT
+      : pkg === Libraries.GT_REACT_NATIVE
+        ? Libraries.GT_REACT_NATIVE
+        : Libraries.GT_REACT;
+  const { errors, warnings } = await runValidation(
+    settings,
+    validatedPkg,
+    files
+  );
 
   const result: ValidationResult = {};
 
