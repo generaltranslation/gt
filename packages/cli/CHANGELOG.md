@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.22
+
+### Patch Changes
+
+- [#1029](https://github.com/generaltranslation/gt/pull/1029) [`c3dcd6f`](https://github.com/generaltranslation/gt/commit/c3dcd6f9390e8516c6c0c1eee373e587b38c4772) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: compatability interface issue with types
+
 ## 2.6.21
 
 ### Patch Changes
