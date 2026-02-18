@@ -5,10 +5,15 @@ export default async function validateResponse(response: Response) {
   if (!response.ok) {
     let errorMsg = 'Unknown error';
     try {
-      const errorJson = (await response.json()) as { error: string };
-      errorMsg = errorJson.error;
+      const text = await response.text();
+      try {
+        const errorJson = JSON.parse(text) as { error: string };
+        errorMsg = errorJson.error;
+      } catch {
+        errorMsg = text || 'Unknown error';
+      }
     } catch {
-      errorMsg = (await response.text()) || 'Unknown error';
+      // response.text() failed, keep 'Unknown error'
     }
     const errorMessage = apiError(
       response.status,

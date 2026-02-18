@@ -34,11 +34,19 @@ describe.sequential('validateResponse', () => {
       ok: false,
       status: 401,
       statusText: 'Unauthorized',
-      json: vi.fn().mockResolvedValue({ error: errorMsg }),
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: errorMsg })),
     } as unknown as Response;
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorMsg);
+
+    const mockResponse2 = {
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: errorMsg })),
+    } as unknown as Response;
+
+    await expect(validateResponse(mockResponse2)).rejects.toThrow(errorMsg);
     expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorMsg);
   });
 
@@ -49,11 +57,19 @@ describe.sequential('validateResponse', () => {
       ok: false,
       status: 404,
       statusText: 'Not Found',
-      json: vi.fn().mockResolvedValue({ error: errorMsg }),
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: errorMsg })),
     } as unknown as Response;
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorMsg);
+
+    const mockResponse2 = {
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: errorMsg })),
+    } as unknown as Response;
+
+    await expect(validateResponse(mockResponse2)).rejects.toThrow(errorMsg);
     expect(apiError).toHaveBeenCalledWith(404, 'Not Found', errorMsg);
   });
 
@@ -64,11 +80,19 @@ describe.sequential('validateResponse', () => {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
-      json: vi.fn().mockResolvedValue({ error: errorMsg }),
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: errorMsg })),
     } as unknown as Response;
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorMsg);
+
+    const mockResponse2 = {
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: errorMsg })),
+    } as unknown as Response;
+
+    await expect(validateResponse(mockResponse2)).rejects.toThrow(errorMsg);
     expect(apiError).toHaveBeenCalledWith(
       500,
       'Internal Server Error',
@@ -81,21 +105,18 @@ describe.sequential('validateResponse', () => {
       ok: false,
       status: 400,
       statusText: 'Bad Request',
-      json: vi.fn().mockResolvedValue({ error: '' }),
+      text: vi.fn().mockResolvedValue(JSON.stringify({ error: '' })),
     } as unknown as Response;
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
     expect(apiError).toHaveBeenCalledWith(400, 'Bad Request', '');
   });
 
-  it('should handle response.json() rejection', async () => {
+  it('should handle non-JSON response body', async () => {
     const mockResponse = {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
-      json: vi
-        .fn()
-        .mockRejectedValue(new Error('Failed to read response body')),
       text: vi.fn().mockResolvedValue('Failed to read response body'),
     } as unknown as Response;
 
@@ -106,6 +127,22 @@ describe.sequential('validateResponse', () => {
       500,
       'Internal Server Error',
       'Failed to read response body'
+    );
+  });
+
+  it('should handle text() rejection', async () => {
+    const mockResponse = {
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: vi.fn().mockRejectedValue(new Error('stream error')),
+    } as unknown as Response;
+
+    await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
+    expect(apiError).toHaveBeenCalledWith(
+      500,
+      'Internal Server Error',
+      'Unknown error'
     );
   });
 });
