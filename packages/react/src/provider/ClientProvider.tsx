@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import {
   defaultLocaleCookieName,
@@ -40,6 +40,7 @@ export default function ClientProvider({
   regionCookieName = defaultRegionCookieName,
   customMapping,
   environment,
+  reloadServer,
 }: ClientProviderProps): React.JSX.Element {
   // ----- TRANSLATIONS STATE ----- //
 
@@ -47,6 +48,19 @@ export default function ClientProvider({
     // devApiKey ? null : _translations
     _translations // likely to induce hydration error
   );
+
+  // Update the translations object when _translations changes
+  const didMount = useRef(false);
+  useEffect(() => {
+    // Skip on mount to avoid an extra set state after first render
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+    // Translations must override to avoid situation where we maintain stale dev translations from other languages
+    // for example { abc123: '你好!', def456: 'bonjour' }
+    setTranslations(_translations);
+  }, [_translations]);
 
   // ----- LOCALE STATE ----- //
 
@@ -74,6 +88,12 @@ export default function ClientProvider({
   const [dictionaryTranslations, setDictionaryTranslations] =
     useState<Dictionary>(_dictionaryTranslations || {});
   const [dictionary, setDictionary] = useState<Dictionary>(_dictionary || {});
+
+  // Update the dictionary translations when locale changes (see useEffect for _translations above)
+  useEffect(() => {
+    if (!didMount.current) return;
+    setDictionaryTranslations(_dictionaryTranslations);
+  }, [_dictionaryTranslations]);
 
   // ----- REGION STATE ----- //
 
@@ -130,7 +150,7 @@ export default function ClientProvider({
     // set locale
     _setLocale(newLocale);
     // re-render server components
-    window.location.reload();
+    reloadServer();
   };
 
   // ---------- TRANSLATION METHODS ---------- //

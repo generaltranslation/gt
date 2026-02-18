@@ -5,7 +5,7 @@ import { getLocale } from '../request/getLocale';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, Translations } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
-import ClientProvider from './ClientProviderWrapper';
+import ClientProviderWrapper from './ClientProviderWrapper';
 import { GTProviderProps } from '../utils/types';
 import { getRegion } from '../request/getRegion';
 
@@ -74,7 +74,7 @@ export default async function GTProvider({
   const translations = await cachedTranslationsPromise;
 
   return (
-    <ClientProvider
+    <ClientProviderWrapper
       dictionary={dictionary}
       dictionaryTranslations={dictionaryTranslations}
       translations={translations}
@@ -93,6 +93,6 @@ export default async function GTProvider({
       {...I18NConfig.getClientSideConfig()}
     >
       {children}
-    </ClientProvider>
+    </ClientProviderWrapper>
   );
 }

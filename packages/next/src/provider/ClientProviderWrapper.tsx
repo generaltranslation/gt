@@ -1,21 +1,23 @@
 'use client';
-import { ClientProvider as _ClientProvider } from 'gt-react/client';
+import { ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { GT, standardizeLocale } from 'generaltranslation';
+import { useRouter } from 'next/navigation';
 
 function extractLocale(pathname: string, gt: GT): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
   return matches ? gt.resolveAliasLocale(matches[1]) : null;
 }
 
-export default function ClientProvider(
-  props: ClientProviderProps & {
+export default function ClientProviderWrapper(
+  props: Omit<ClientProviderProps, 'reloadServer'> & {
     localeRoutingEnabledCookieName: string;
     referrerLocaleCookieName: string;
   }
 ) {
+  const router = useRouter();
   const {
     locale,
     locales,
@@ -28,6 +30,13 @@ export default function ClientProvider(
     runtimeUrl,
     customMapping,
   } = props;
+
+  /**
+   * Reloads server components
+   */
+  const reloadServer = () => {
+    router.refresh();
+  };
 
   const gt = useMemo(
     () =>
@@ -80,7 +89,7 @@ export default function ClientProvider(
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
 
         // reload page
-        window.location.reload();
+        reloadServer();
       }
     }
   }, [
@@ -91,7 +100,8 @@ export default function ClientProvider(
     gtServicesEnabled,
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
+    reloadServer,
   ]);
 
-  return <_ClientProvider {...props} />;
+  return <ClientProvider {...props} reloadServer={reloadServer} />;
 }
