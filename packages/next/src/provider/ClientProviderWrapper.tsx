@@ -2,7 +2,7 @@
 import { ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { useRouter } from 'next/navigation';
 
@@ -34,9 +34,9 @@ export default function ClientProviderWrapper(
   /**
    * Reloads server components
    */
-  const reloadServer = () => {
+  const reloadServer = useCallback(() => {
     router.refresh();
-  };
+  }, [router]);
 
   const gt = useMemo(
     () =>

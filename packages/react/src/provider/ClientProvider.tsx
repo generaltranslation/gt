@@ -50,11 +50,11 @@ export default function ClientProvider({
   );
 
   // Update the translations object when _translations changes
-  const didMount = useRef(false);
+  const didMountTranslations = useRef(false);
   useEffect(() => {
     // Skip on mount to avoid an extra set state after first render
-    if (!didMount.current) {
-      didMount.current = true;
+    if (!didMountTranslations.current) {
+      didMountTranslations.current = true;
       return;
     }
     // Translations must override to avoid situation where we maintain stale dev translations from other languages
@@ -90,8 +90,12 @@ export default function ClientProvider({
   const [dictionary, setDictionary] = useState<Dictionary>(_dictionary || {});
 
   // Update the dictionary translations when locale changes (see useEffect for _translations above)
+  const didMountDict = useRef(false);
   useEffect(() => {
-    if (!didMount.current) return;
+    if (!didMountDict.current) {
+      didMountDict.current = true;
+      return;
+    }
     setDictionaryTranslations(_dictionaryTranslations);
   }, [_dictionaryTranslations]);
 
