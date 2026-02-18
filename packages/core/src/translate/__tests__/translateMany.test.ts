@@ -1,16 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _translateMany from '../translateMany';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import validateResponse from '../utils/validateResponse';
-import handleFetchError from '../utils/handleFetchError';
-import generateRequestHeaders from '../utils/generateRequestHeaders';
+import apiRequest from '../utils/apiRequest';
 import { TranslationRequestConfig, TranslateManyResult } from '../../types';
 import { Entry, EntryMetadata } from '../../types-dir/api/entry';
 
-vi.mock('../utils/fetchWithTimeout');
-vi.mock('../utils/validateResponse');
-vi.mock('../utils/handleFetchError');
-vi.mock('../utils/generateRequestHeaders');
+vi.mock('../utils/apiRequest');
 
 describe.sequential('_translateMany', () => {
   const mockConfig: TranslationRequestConfig = {
@@ -58,20 +52,10 @@ describe.sequential('_translateMany', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(generateRequestHeaders).mockReturnValue({
-      'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
-    });
   });
 
   it('should translate multiple entries successfully', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const requests: Entry[] = [
       { source: 'Hello world', targetLocale: 'es', metadata: {} },
@@ -84,34 +68,23 @@ describe.sequential('_translateMany', () => {
 
     const result = await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/translate/test-project',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v1/translate/test-project',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           requests,
           targetLocale: 'es',
           metadata: globalMetadata,
-        }),
-      },
-      60000
+        },
+        timeout: undefined,
+      }
     );
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
     expect(result).toEqual(mockTranslateManyResult);
   });
 
   it('should handle complex JSX entries', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const requests: Entry[] = [
       {
@@ -134,33 +107,23 @@ describe.sequential('_translateMany', () => {
 
     const result = await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v1/translate/test-project',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v1/translate/test-project',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-        body: JSON.stringify({
+        body: {
           requests,
           targetLocale: 'es',
           metadata: globalMetadata,
-        }),
-      },
-      60000
+        },
+        timeout: undefined,
+      }
     );
     expect(result).toEqual(mockTranslateManyResult);
   });
 
   it('should use default timeout when not specified', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const requests: Entry[] = [{ source: 'Hello' }];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -169,20 +132,15 @@ describe.sequential('_translateMany', () => {
 
     await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      60000
+      expect.any(String),
+      expect.objectContaining({ timeout: undefined })
     );
   });
 
   it('should respect custom timeout from global metadata', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const requests: Entry[] = [{ source: 'Hello' }];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -192,20 +150,15 @@ describe.sequential('_translateMany', () => {
 
     await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      5000
+      expect.any(String),
+      expect.objectContaining({ timeout: 5000 })
     );
   });
 
   it('should enforce maximum timeout limit', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const requests: Entry[] = [{ source: 'Hello' }];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -215,20 +168,15 @@ describe.sequential('_translateMany', () => {
 
     await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      99999
+      expect.any(String),
+      expect.objectContaining({ timeout: 99999 })
     );
   });
 
   it('should use default URL when baseUrl not provided in config', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const configWithoutUrl: TranslationRequestConfig = {
       projectId: 'test-project',
@@ -242,21 +190,16 @@ describe.sequential('_translateMany', () => {
 
     await _translateMany(requests, globalMetadata, configWithoutUrl);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/translate/test-project'
-      ),
-      expect.any(Object),
-      expect.any(Number)
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ baseUrl: 'https://runtime2.gtx.dev' }),
+      '/v1/translate/test-project',
+      expect.any(Object)
     );
   });
 
-  it('should handle fetch errors through handleFetchError', async () => {
+  it('should handle fetch errors', async () => {
     const fetchError = new Error('Network error');
-    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
-    vi.mocked(handleFetchError).mockImplementation(() => {
-      throw fetchError;
-    });
+    vi.mocked(apiRequest).mockRejectedValue(fetchError);
 
     const requests: Entry[] = [{ source: 'Hello' }];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -266,18 +209,10 @@ describe.sequential('_translateMany', () => {
     await expect(
       _translateMany(requests, globalMetadata, mockConfig)
     ).rejects.toThrow('Network error');
-    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
   it('should handle validation errors', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockImplementationOnce(() => {
-      throw new Error('Validation failed');
-    });
+    vi.mocked(apiRequest).mockRejectedValue(new Error('Validation failed'));
 
     const requests: Entry[] = [{ source: 'Hello' }];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -287,16 +222,13 @@ describe.sequential('_translateMany', () => {
     await expect(
       _translateMany(requests, globalMetadata, mockConfig)
     ).rejects.toThrow('Validation failed');
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
   it('should handle empty requests array', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue({ translations: [], reference: [] }),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue({
+      translations: [],
+      reference: [],
+    });
 
     const requests: Entry[] = [];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -305,23 +237,18 @@ describe.sequential('_translateMany', () => {
 
     const result = await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
       expect.objectContaining({
-        body: expect.stringContaining('"requests":[]'),
-      }),
-      expect.any(Number)
+        body: expect.objectContaining({ requests: [] }),
+      })
     );
     expect(result).toEqual({ translations: [], reference: [] });
   });
 
   it('should include all global metadata in request', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockTranslateManyResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockTranslateManyResult);
 
     const requests: Entry[] = [{ source: 'Hello' }];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -335,14 +262,15 @@ describe.sequential('_translateMany', () => {
 
     await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
       expect.objectContaining({
-        body: expect.stringContaining(
-          '"metadata":{"targetLocale":"es","sourceLocale":"en","context":"greeting","dataFormat":"ICU","actionType":"fast","timeout":5000}'
-        ),
-      }),
-      5000
+        body: expect.objectContaining({
+          metadata: globalMetadata,
+        }),
+        timeout: 5000,
+      })
     );
   });
 });

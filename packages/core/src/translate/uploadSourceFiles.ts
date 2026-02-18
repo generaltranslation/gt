@@ -1,10 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 import { encode } from '../utils/base64';
 import { processBatches } from './utils/batch';
 
@@ -27,9 +22,6 @@ export default async function _uploadSourceFiles(
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
 ) {
-  const timeout = options.timeout ? options.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/upload-files`;
-
   return processBatches(
     files,
     async (batch) => {
@@ -52,27 +44,13 @@ export default async function _uploadSourceFiles(
         sourceLocale: options.sourceLocale,
       };
 
-      let response: Response | undefined;
-      try {
-        // Request the file uploads
-        response = await fetchWithTimeout(
-          url,
-          {
-            method: 'POST',
-            headers: generateRequestHeaders(config),
-            body: JSON.stringify(body),
-          },
-          timeout
-        );
-      } catch (err) {
-        handleFetchError(err, timeout);
-      }
+      const result = await apiRequest<UploadFilesResponse>(
+        config,
+        '/v2/project/files/upload-files',
+        { body, timeout: options.timeout }
+      );
 
-      // Validate response
-      await validateResponse(response);
-      const batchResult = (await response!.json()) as UploadFilesResponse;
-
-      return batchResult.uploadedFiles || [];
+      return result.uploadedFiles || [];
     },
     { batchSize: 100 }
   );

@@ -1,10 +1,5 @@
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 import { createBatches } from './utils/batch';
 
 export type OrphanedFile = {
@@ -34,30 +29,15 @@ export default async function _getOrphanedFiles(
   options: { timeout?: number } = {},
   config: TranslationRequestConfig
 ): Promise<GetOrphanedFilesResult> {
-  const timeout = options.timeout ? options.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/orphaned`;
+  const makeRequest = (batchFileIds: string[]) =>
+    apiRequest<GetOrphanedFilesResult>(config, '/v2/project/files/orphaned', {
+      body: { branchId, fileIds: batchFileIds },
+      timeout: options.timeout,
+    });
 
   // If no fileIds, make a single request
   if (fileIds.length === 0) {
-    const body = { branchId, fileIds: [] };
-
-    let response;
-    try {
-      response = await fetchWithTimeout(
-        url,
-        {
-          method: 'POST',
-          headers: generateRequestHeaders(config),
-          body: JSON.stringify(body),
-        },
-        timeout
-      );
-    } catch (error) {
-      handleFetchError(error, timeout);
-    }
-
-    await validateResponse(response);
-    return (await response.json()) as GetOrphanedFilesResult;
+    return makeRequest([]);
   }
 
   // Split fileIds into batches of 100
@@ -67,38 +47,15 @@ export default async function _getOrphanedFiles(
   // Each batch returns files NOT in that batch's fileIds
   // True orphans are files that appear in ALL batch responses (intersection)
   const batchResults = await Promise.all(
-    batches.map(async (batch) => {
-      const body = {
-        branchId,
-        fileIds: batch,
-      };
-
-      let response;
-      try {
-        response = await fetchWithTimeout(
-          url,
-          {
-            method: 'POST',
-            headers: generateRequestHeaders(config),
-            body: JSON.stringify(body),
-          },
-          timeout
-        );
-      } catch (error) {
-        handleFetchError(error, timeout);
-      }
-
-      await validateResponse(response);
-      return (await response.json()) as GetOrphanedFilesResult;
-    })
+    batches.map((batch) => makeRequest(batch))
   );
 
-  // Find intersection of orphaned files across all batches
-  // A file is truly orphaned only if it's not in ANY of our fileId batches
   if (batchResults.length === 1) {
     return batchResults[0];
   }
 
+  // Find intersection of orphaned files across all batches
+  // A file is truly orphaned only if it's not in ANY of our fileId batches
   // Start with first batch's orphans
   const orphanedFileMap = new Map<string, OrphanedFile>();
   for (const orphan of batchResults[0].orphanedFiles) {

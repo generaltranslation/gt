@@ -7,15 +7,9 @@ vi.mock('../../../logging/errors', () => ({
   ),
 }));
 
-vi.mock('../../../logging/logger', () => ({
-  fetchLogger: {
-    error: vi.fn(),
-  },
-}));
-
 import validateResponse from '../validateResponse';
 import { apiError } from '../../../logging/errors';
-import { fetchLogger } from '../../../logging/logger';
+import { ApiError } from '../../../errors/ApiError';
 
 describe.sequential('validateResponse', () => {
   beforeEach(() => {
@@ -31,78 +25,75 @@ describe.sequential('validateResponse', () => {
 
     await expect(validateResponse(mockResponse)).resolves.toBeUndefined();
     expect(apiError).not.toHaveBeenCalled();
-    expect(fetchLogger.error).not.toHaveBeenCalled();
   });
 
   it('should throw error for failed response with error text', async () => {
-    const errorText = 'Invalid API key';
-    const expectedErrorMessage =
-      'GT Error: API returned error status. Status: 401, Status Text: Unauthorized, Error: Invalid API key';
+    const errorMsg = 'Invalid API key';
 
     const mockResponse = {
       ok: false,
       status: 401,
       statusText: 'Unauthorized',
-      text: vi.fn().mockResolvedValue(errorText),
+      json: vi.fn().mockResolvedValue({ error: errorMsg }),
     } as unknown as Response;
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
-    expect(mockResponse.text).toHaveBeenCalled();
-    expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorText);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorMsg);
+    expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorMsg);
   });
 
   it('should handle 404 not found errors', async () => {
-    const errorText = 'Project not found';
+    const errorMsg = 'Project not found';
 
     const mockResponse = {
       ok: false,
       status: 404,
       statusText: 'Not Found',
-      text: vi.fn().mockResolvedValue(errorText),
+      json: vi.fn().mockResolvedValue({ error: errorMsg }),
     } as unknown as Response;
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
-    expect(apiError).toHaveBeenCalledWith(404, 'Not Found', errorText);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorMsg);
+    expect(apiError).toHaveBeenCalledWith(404, 'Not Found', errorMsg);
   });
 
   it('should handle 500 server errors', async () => {
-    const errorText = 'Internal server error';
+    const errorMsg = 'Internal server error';
 
     const mockResponse = {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
-      text: vi.fn().mockResolvedValue(errorText),
+      json: vi.fn().mockResolvedValue({ error: errorMsg }),
     } as unknown as Response;
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorMsg);
     expect(apiError).toHaveBeenCalledWith(
       500,
       'Internal Server Error',
-      errorText
+      errorMsg
     );
   });
 
   it('should handle empty error text', async () => {
-    const errorText = '';
-
     const mockResponse = {
       ok: false,
       status: 400,
       statusText: 'Bad Request',
-      text: vi.fn().mockResolvedValue(errorText),
+      json: vi.fn().mockResolvedValue({ error: '' }),
     } as unknown as Response;
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
-    expect(apiError).toHaveBeenCalledWith(400, 'Bad Request', errorText);
+    await expect(validateResponse(mockResponse)).rejects.toThrow(ApiError);
+    expect(apiError).toHaveBeenCalledWith(400, 'Bad Request', '');
   });
 
-  it('should handle response.text() rejection', async () => {
+  it('should handle response.json() rejection', async () => {
     const mockResponse = {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
-      text: vi
+      json: vi
         .fn()
         .mockRejectedValue(new Error('Failed to read response body')),
     } as unknown as Response;
@@ -111,6 +102,5 @@ describe.sequential('validateResponse', () => {
       'Failed to read response body'
     );
     expect(apiError).not.toHaveBeenCalled();
-    expect(fetchLogger.error).not.toHaveBeenCalled();
   });
 });

@@ -3,13 +3,14 @@ import { ApiError } from '../../errors/ApiError';
 
 export default async function validateResponse(response: Response) {
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorJson = (await response.json()) as { error: string };
+    const errorMsg = errorJson.error;
     const errorMessage = apiError(
       response.status,
       response.statusText,
-      errorText
+      errorMsg
     );
-    const error = new ApiError(errorMessage, response.status, errorText);
+    const error = new ApiError(errorMessage, response.status, errorMsg);
     throw error;
   }
 }

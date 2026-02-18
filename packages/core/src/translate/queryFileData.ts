@@ -1,11 +1,6 @@
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import { CheckFileTranslationsOptions } from '../types-dir/api/checkFileTranslations';
-import generateRequestHeaders from './utils/generateRequestHeaders';
+import apiRequest from './utils/apiRequest';
 
 export type FileDataQuery = {
   sourceFiles?: {
@@ -64,9 +59,6 @@ export default async function _queryFileData(
   options: CheckFileTranslationsOptions = {},
   config: TranslationRequestConfig
 ): Promise<FileDataResult> {
-  const timeout = options.timeout ? options.timeout : defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/info`;
-
   const body = {
     sourceFiles: data.sourceFiles?.map((item) => ({
       fileId: item.fileId,
@@ -80,26 +72,9 @@ export default async function _queryFileData(
       locale: item.locale,
     })),
   };
-  // Request the file data
-  let response;
-  try {
-    response = await fetchWithTimeout(
-      url,
-      {
-        method: 'POST',
-        headers: generateRequestHeaders(config),
-        body: JSON.stringify(body),
-      },
-      timeout
-    );
-  } catch (error) {
-    handleFetchError(error, timeout);
-  }
 
-  // Validate response
-  await validateResponse(response);
-
-  // Parse response
-  const result = await response.json();
-  return result as FileDataResult;
+  return apiRequest<FileDataResult>(config, '/v2/project/files/info', {
+    body,
+    timeout: options.timeout,
+  });
 }

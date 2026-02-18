@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _querySourceFile from '../querySourceFile';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import validateResponse from '../utils/validateResponse';
-import handleFetchError from '../utils/handleFetchError';
-import generateRequestHeaders from '../utils/generateRequestHeaders';
+import apiRequest from '../utils/apiRequest';
 import { TranslationRequestConfig } from '../../types';
 import {
   FileQuery,
@@ -11,10 +8,7 @@ import {
   FileQueryResult,
 } from '../../types-dir/api/checkFileTranslations';
 
-vi.mock('../utils/fetchWithTimeout');
-vi.mock('../utils/validateResponse');
-vi.mock('../utils/handleFetchError');
-vi.mock('../utils/generateRequestHeaders');
+vi.mock('../utils/apiRequest');
 
 describe.sequential('_querySourceFile', () => {
   const mockConfig: TranslationRequestConfig = {
@@ -59,20 +53,10 @@ describe.sequential('_querySourceFile', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(generateRequestHeaders).mockReturnValue({
-      'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
-    });
   });
 
   it('should query source file successfully', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -85,29 +69,19 @@ describe.sequential('_querySourceFile', () => {
 
     const result = await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file-123?versionId=version-456',
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v2/project/translations/files/status/file-123?versionId=version-456',
       {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-      },
-      5000
+        timeout: 5000,
+      }
     );
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
     expect(result).toEqual(mockFileQueryResult);
   });
 
   it('should use config baseUrl when provided', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -118,20 +92,15 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file-123?versionId=version-456',
-      expect.any(Object),
-      expect.any(Number)
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v2/project/translations/files/status/file-123?versionId=version-456',
+      expect.any(Object)
     );
   });
 
   it('should use default URL when baseUrl not provided in config', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const configWithoutUrl: TranslationRequestConfig = {
       projectId: 'test-project',
@@ -147,22 +116,17 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, configWithoutUrl);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      configWithoutUrl,
       expect.stringContaining(
-        'https://api2.gtx.dev/v2/project/translations/files/status/file-123'
+        '/v2/project/translations/files/status/file-123'
       ),
-      expect.any(Object),
-      expect.any(Number)
+      expect.any(Object)
     );
   });
 
   it('should use default timeout when not specified', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -173,20 +137,15 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      60000
+      expect.any(String),
+      expect.objectContaining({ timeout: undefined })
     );
   });
 
-  it('should enforce maximum timeout limit', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+  it('should respect custom timeout', async () => {
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -199,19 +158,16 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      99999
+      expect.any(String),
+      expect.objectContaining({ timeout: 99999 })
     );
   });
 
-  it('should handle fetch errors through handleFetchError', async () => {
+  it('should handle fetch errors', async () => {
     const fetchError = new Error('Network error');
-    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
-    vi.mocked(handleFetchError).mockImplementation(() => {
-      throw fetchError;
-    });
+    vi.mocked(apiRequest).mockRejectedValue(fetchError);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -223,18 +179,10 @@ describe.sequential('_querySourceFile', () => {
     await expect(_querySourceFile(query, options, mockConfig)).rejects.toThrow(
       'Network error'
     );
-    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
   it('should handle validation errors', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockImplementationOnce(() => {
-      throw new Error('Validation failed');
-    });
+    vi.mocked(apiRequest).mockRejectedValue(new Error('Validation failed'));
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -246,16 +194,10 @@ describe.sequential('_querySourceFile', () => {
     await expect(_querySourceFile(query, options, mockConfig)).rejects.toThrow(
       'Validation failed'
     );
-    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
   it('should handle query without versionId', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -264,23 +206,16 @@ describe.sequential('_querySourceFile', () => {
 
     const result = await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file-123?',
-      expect.objectContaining({
-        method: 'GET',
-      }),
-      expect.any(Number)
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
+      '/v2/project/translations/files/status/file-123?',
+      expect.objectContaining({ method: 'GET' })
     );
     expect(result).toEqual(mockFileQueryResult);
   });
 
   it('should properly encode fileId in URL', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file with spaces & special chars',
@@ -291,20 +226,15 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file%20with%20spaces%20%26%20special%20chars?versionId=version%2Fwith%2Fslashes',
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      expect.any(Number)
+      '/v2/project/translations/files/status/file%20with%20spaces%20%26%20special%20chars?versionId=version%2Fwith%2Fslashes',
+      expect.any(Object)
     );
   });
 
-  it('should use correct HTTP method and headers', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+  it('should use GET method', async () => {
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -315,49 +245,15 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(String),
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
-        },
-      },
-      expect.any(Number)
+      expect.objectContaining({ method: 'GET' })
     );
   });
 
-  it('should call generateRequestHeaders with correct parameters', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
-
-    const query: FileQuery = {
-      fileId: 'file-123',
-      versionId: 'version-456',
-    };
-
-    const options: CheckFileTranslationsOptions = {
-      timeout: 8000,
-    };
-
-    await _querySourceFile(query, options, mockConfig);
-
-    expect(generateRequestHeaders).toHaveBeenCalledWith(mockConfig);
-  });
-
   it('should handle JSON parsing errors', async () => {
-    const mockResponse = {
-      json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockRejectedValue(new Error('Invalid JSON'));
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -372,12 +268,7 @@ describe.sequential('_querySourceFile', () => {
   });
 
   it('should handle empty fileId', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: '',
@@ -388,20 +279,15 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/?versionId=version-456',
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      expect.any(Number)
+      '/v2/project/translations/files/status/?versionId=version-456',
+      expect.any(Object)
     );
   });
 
   it('should handle empty versionId in query string', async () => {
-    const mockResponse = {
-      json: vi.fn().mockResolvedValue(mockFileQueryResult),
-    } as unknown as Response;
-
-    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
-    vi.mocked(validateResponse).mockResolvedValue(undefined);
+    vi.mocked(apiRequest).mockResolvedValue(mockFileQueryResult);
 
     const query: FileQuery = {
       fileId: 'file-123',
@@ -412,10 +298,10 @@ describe.sequential('_querySourceFile', () => {
 
     await _querySourceFile(query, options, mockConfig);
 
-    expect(fetchWithTimeout).toHaveBeenCalledWith(
-      'https://api.test.com/v2/project/translations/files/status/file-123?',
+    expect(apiRequest).toHaveBeenCalledWith(
       expect.any(Object),
-      expect.any(Number)
+      '/v2/project/translations/files/status/file-123?',
+      expect.any(Object)
     );
   });
 });

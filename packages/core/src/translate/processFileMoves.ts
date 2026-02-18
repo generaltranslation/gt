@@ -1,10 +1,5 @@
-import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from './utils/fetchWithTimeout';
-import { defaultTimeout } from '../settings/settings';
-import validateResponse from './utils/validateResponse';
-import handleFetchError from './utils/handleFetchError';
-import generateRequestHeaders from './utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../types';
+import apiRequest from './utils/apiRequest';
 import { processBatches } from './utils/batch';
 
 export type MoveMapping = {
@@ -57,34 +52,17 @@ export default async function _processFileMoves(
     };
   }
 
-  const timeout = options.timeout ?? defaultTimeout;
-  const url = `${config.baseUrl || defaultBaseUrl}/v2/project/files/moves`;
-
   const batchResult = await processBatches(
     moves,
     async (batch) => {
-      const body = {
-        branchId: options.branchId,
-        moves: batch,
-      };
-
-      let response: Response | undefined;
-      try {
-        response = await fetchWithTimeout(
-          url,
-          {
-            method: 'POST',
-            headers: generateRequestHeaders(config),
-            body: JSON.stringify(body),
-          },
-          timeout
-        );
-      } catch (err) {
-        handleFetchError(err, timeout);
-      }
-
-      await validateResponse(response);
-      const result = (await response!.json()) as ProcessMovesResponse;
+      const result = await apiRequest<ProcessMovesResponse>(
+        config,
+        '/v2/project/files/moves',
+        {
+          body: { branchId: options.branchId, moves: batch },
+          timeout: options.timeout,
+        }
+      );
       return result.results;
     },
     { batchSize: 100 }
