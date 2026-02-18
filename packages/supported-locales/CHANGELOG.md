@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.0.43
+
+### Patch Changes
+
+- [#1032](https://github.com/generaltranslation/gt/pull/1032) [`573287c`](https://github.com/generaltranslation/gt/commit/573287cb6ac3429c8dd276230e7f5bebf9077230) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add nn
+
 ## 2.0.42
 
 ### Patch Changes
