@@ -101,6 +101,10 @@ describe.sequential('validateResponse', () => {
     await expect(validateResponse(mockResponse)).rejects.toThrow(
       'Failed to read response body'
     );
-    expect(apiError).not.toHaveBeenCalled();
+    expect(apiError).toHaveBeenCalledWith(
+      500,
+      'Internal Server Error',
+      'Failed to read response body'
+    );
   });
 });

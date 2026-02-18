@@ -9,8 +9,21 @@ import generateRequestHeaders from './generateRequestHeaders';
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
 
+type RetryPolicy = 'exponential' | 'linear' | 'none';
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(policy: RetryPolicy, attempt: number): number {
+  switch (policy) {
+    case 'linear':
+      return INITIAL_DELAY_MS * (attempt + 1);
+    case 'exponential':
+      return INITIAL_DELAY_MS * 2 ** attempt;
+    default:
+      return 0;
+  }
 }
 
 /**
@@ -33,11 +46,14 @@ export default async function apiRequest<T>(
     body?: unknown;
     timeout?: number;
     method?: 'GET' | 'POST';
+    retryPolicy?: RetryPolicy;
   }
 ): Promise<T> {
   const timeout = options?.timeout ?? defaultTimeout;
   const url = `${config.baseUrl || defaultBaseUrl}${endpoint}`;
   const method = options?.method ?? 'POST';
+  const retryPolicy = options?.retryPolicy ?? 'exponential';
+  const maxRetries = retryPolicy === 'none' ? 0 : MAX_RETRIES;
 
   const requestInit: RequestInit = {
     method,
@@ -52,16 +68,16 @@ export default async function apiRequest<T>(
     try {
       response = await fetchWithTimeout(url, requestInit, timeout);
     } catch (error) {
-      if (attempt < MAX_RETRIES) {
-        await sleep(INITIAL_DELAY_MS * 2 ** attempt);
+      if (attempt < maxRetries) {
+        await sleep(getRetryDelay(retryPolicy, attempt));
         continue;
       }
       handleFetchError(error, timeout);
     }
 
     // Retry on 5XX server errors
-    if (response!.status >= 500 && attempt < MAX_RETRIES) {
-      await sleep(INITIAL_DELAY_MS * 2 ** attempt);
+    if (response!.status >= 500 && attempt < maxRetries) {
+      await sleep(getRetryDelay(retryPolicy, attempt));
       continue;
     }
 

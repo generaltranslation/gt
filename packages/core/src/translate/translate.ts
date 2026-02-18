@@ -35,6 +35,7 @@ export default async function _translate(
         metadata,
       },
       timeout: metadata.timeout,
+      retryPolicy: 'none',
     }
   );
   return results[0] as TranslationResult | TranslationError;

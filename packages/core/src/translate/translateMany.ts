@@ -30,6 +30,7 @@ export default async function _translateMany(
         metadata: globalMetadata,
       },
       timeout: globalMetadata.timeout,
+      retryPolicy: 'none',
     }
   );
 }
