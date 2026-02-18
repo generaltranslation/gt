@@ -156,11 +156,11 @@ describe('extractJson', () => {
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
-      // Should extract Spanish values at index 1
+      // Should extract Spanish values using default locale's key position (/0)
       expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['/1']).toBeDefined();
-      expect(parsed['/items']['/1']['/title']).toBe('Título Español');
-      expect(parsed['/items']['/1']['/desc']).toBe('Descripción Española');
+      expect(parsed['/items']['/0']).toBeDefined();
+      expect(parsed['/items']['/0']['/title']).toBe('Título Español');
+      expect(parsed['/items']['/0']['/desc']).toBe('Descripción Española');
     });
 
     it('should extract array composite values when target locale is at index 0', () => {
@@ -197,11 +197,11 @@ describe('extractJson', () => {
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
-      // Should extract Spanish values at index 0
+      // Should extract Spanish values using default locale's key position (/1)
       expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['/0']).toBeDefined();
-      expect(parsed['/items']['/0']['/title']).toBe('Título Español');
-      expect(parsed['/items']['/0']['/desc']).toBe('Descripción Española');
+      expect(parsed['/items']['/1']).toBeDefined();
+      expect(parsed['/items']['/1']['/title']).toBe('Título Español');
+      expect(parsed['/items']['/1']['/desc']).toBe('Descripción Española');
     });
 
     it('should extract multiple matching items for same locale', () => {
@@ -236,8 +236,9 @@ describe('extractJson', () => {
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
-      expect(parsed['/items']['/1']['/title']).toBe('Título Español 1');
-      expect(parsed['/items']['/3']['/title']).toBe('Título Español 2');
+      // Keys should use default locale positions (/0, /2)
+      expect(parsed['/items']['/0']['/title']).toBe('Título Español 1');
+      expect(parsed['/items']['/2']['/title']).toBe('Título Español 2');
     });
 
     it('should handle nested key paths in array type', () => {
@@ -270,7 +271,8 @@ describe('extractJson', () => {
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
-      expect(parsed['/items']['/1']['/title']).toBe('Título Español');
+      // Key should use default locale position (/0)
+      expect(parsed['/items']['/0']['/title']).toBe('Título Español');
     });
 
     it('should warn when no matching items found for locale', () => {
@@ -577,19 +579,19 @@ describe('extractJson', () => {
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
 
-      // pt-BR is at index 1 in the test file
+      // Should use default locale (en) key position (/0)
       expect(parsed['/navigation/languages']).toBeDefined();
-      expect(parsed['/navigation/languages']['/1']).toBeDefined();
+      expect(parsed['/navigation/languages']['/0']).toBeDefined();
       expect(
-        parsed['/navigation/languages']['/1']['/global/anchors/0/anchor']
+        parsed['/navigation/languages']['/0']['/global/anchors/0/anchor']
       ).toBe('Anúncios');
       expect(
-        parsed['/navigation/languages']['/1']['/global/anchors/1/anchor']
+        parsed['/navigation/languages']['/0']['/global/anchors/1/anchor']
       ).toBe('Status');
-      expect(parsed['/navigation/languages']['/1']['/tabs/0/tab']).toBe(
+      expect(parsed['/navigation/languages']['/0']['/tabs/0/tab']).toBe(
         'Introdução'
       );
-      expect(parsed['/navigation/languages']['/1']['/tabs/1/tab']).toBe(
+      expect(parsed['/navigation/languages']['/0']['/tabs/1/tab']).toBe(
         'Funcionalidades'
       );
     });
@@ -673,7 +675,8 @@ describe('extractJson', () => {
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
-      expect(parsed['/items']['/1']['/message']).toBe(
+      // Key should use default locale position (/0)
+      expect(parsed['/items']['/0']['/message']).toBe(
         'Mensaje con "comillas", \'apostrofes\', y\nnuevas líneas\tcon tabs'
       );
     });
@@ -728,11 +731,12 @@ describe('extractJson', () => {
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
+      // Key should use default locale position (/0)
       expect(
-        parsed['/data/pages']['/1']['/sections/header/nav/links/0/text']
+        parsed['/data/pages']['/0']['/sections/header/nav/links/0/text']
       ).toBe('Inicio');
       expect(
-        parsed['/data/pages']['/1']['/sections/header/nav/links/1/text']
+        parsed['/data/pages']['/0']['/sections/header/nav/links/1/text']
       ).toBe('Acerca de');
     });
   });
@@ -777,7 +781,8 @@ describe('extractJson', () => {
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
       // Should match fr-CA in the data using canonical locale lookup
-      expect(parsed['/items']['/1']['/title']).toBe('Titre Français Canadien');
+      // Key should use default locale position (/0)
+      expect(parsed['/items']['/0']['/title']).toBe('Titre Français Canadien');
     });
   });
 
@@ -875,6 +880,7 @@ describe('extractJson', () => {
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
       // Should only extract the item that has the locale field
+      // No default locale items found, so falls back to target key (/1)
       expect(parsed['/items']['/1']['/title']).toBe('Spanish');
       expect(parsed['/items']['/0']).toBeUndefined();
     });

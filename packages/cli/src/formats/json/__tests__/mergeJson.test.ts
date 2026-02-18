@@ -1066,7 +1066,7 @@ describe('mergeJson', () => {
       }).toThrow();
     });
 
-    it('should exit when array index is not present in source json', () => {
+    it('should warn and skip when array index is not present in source json', () => {
       const originalContent = JSON.stringify({
         items: [{ locale: 'en', title: 'English Title' }],
       });
@@ -1083,35 +1083,40 @@ describe('mergeJson', () => {
         },
       ];
 
-      expect(() => {
-        mergeJson(
-          originalContent,
-          'test.json',
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.items': {
-                    type: 'array',
-                    include: ['$.title'],
-                    key: '$.locale',
-                  },
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.items': {
+                  type: 'array',
+                  include: ['$.title'],
+                  key: '$.locale',
                 },
               },
             },
           },
-          targets,
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Array index /1 is not present in the source json. It is possible that the source json has been modified since the translation was generated.'
+        },
+        targets,
+        'en'
       );
-      expect(mockExit).toHaveBeenCalledWith(1);
+
+      // The valid /0 translation should be applied
+      const parsed = JSON.parse(result[0]);
+      const spanishItem = parsed.items.find(
+        (item: any) => item.locale === 'es'
+      );
+      expect(spanishItem.title).toBe('Título Español');
+
+      // The invalid /1 key should produce a warning
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping translated item at /1: cannot map to source item at path /items'
+      );
     });
 
-    it('should exit when items to add is less than items to remove', () => {
+    it('should warn when items to add is less than items to remove', () => {
       const originalContent = JSON.stringify({
         items: [
           { locale: 'en', title: 'English Title 1' },
@@ -1134,32 +1139,36 @@ describe('mergeJson', () => {
         },
       ];
 
-      expect(() => {
-        mergeJson(
-          originalContent,
-          'test.json',
-          {
-            jsonSchema: {
-              '**/*.json': {
-                composite: {
-                  '$.items': {
-                    type: 'array',
-                    include: ['$.title'],
-                    key: '$.locale',
-                  },
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.items': {
+                  type: 'array',
+                  include: ['$.title'],
+                  key: '$.locale',
                 },
               },
             },
           },
-          targets,
-          'en'
-        );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Items to add is less than items to remove at path: /items. Please check your JSON schema key field.'
+        },
+        targets,
+        'en'
       );
-      expect(mockExit).toHaveBeenCalledWith(1);
+
+      // Should produce a warning instead of crashing
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Items to add (1) is less than items to remove (2) at path: /items'
+        )
+      );
+
+      // Should still produce a result
+      const parsed = JSON.parse(result[0]);
+      expect(parsed.items).toBeDefined();
     });
 
     it('should call logWarning when there is no transform and translated content for array', () => {
@@ -1216,6 +1225,53 @@ describe('mergeJson', () => {
         ],
       };
       expect(JSON.stringify(parsed)).toEqual(JSON.stringify(expected));
+    });
+
+    it('should remap mismatched positional key to source position', () => {
+      const originalContent = JSON.stringify({
+        items: [{ locale: 'en', title: 'Hello' }],
+      });
+
+      // Translated content has key /1 (wrong — from save-local bug)
+      // instead of /0 (correct — default locale position)
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/items': {
+              '/1': { '/title': 'Hola' },
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.items': {
+                  type: 'array',
+                  include: ['$.title'],
+                  key: '$.locale',
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      // Should have remapped /1 to /0 and applied the translation
+      const spanishItem = parsed.items.find(
+        (item: any) => item.locale === 'es'
+      );
+      expect(spanishItem).toBeDefined();
+      expect(spanishItem.title).toBe('Hola');
     });
 
     it('should call logWarning when there is no transform and translated content for object', () => {
