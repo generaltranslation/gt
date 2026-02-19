@@ -1,9 +1,6 @@
 import {
   noSupportedFormatError,
   noDefaultLocaleError,
-  noApiKeyError,
-  noProjectIdError,
-  devApiKeyError,
 } from '../../console/index.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';

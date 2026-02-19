@@ -68,6 +68,7 @@ import {
 } from '../setup/agentInstructions.js';
 import { determineLibrary } from '../fs/determineFramework.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
+import { handleEnqueue } from './commands/enqueue.js';
 
 export type UploadOptions = {
   config?: string;
@@ -106,6 +107,7 @@ export class BaseCLI {
     this.setupStageCommand();
     this.setupTranslateCommand();
     this.setupDownloadCommand();
+    this.setupEnqueueCommand();
   }
   // Execute is called by the main program
   public execute() {
@@ -145,6 +147,28 @@ export class BaseCLI {
     });
   }
 
+  /**
+   * Enqueues translations for a given set of files
+   * @param initOptions - The options for the command
+   * @returns The results of the command
+   */
+  protected setupEnqueueCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('enqueue')
+        .description('Enqueues translations for a given set of files')
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader('Enqueuing translations...');
+      await this.handleEnqueue(initOptions);
+      logger.endCommand('Done!');
+    });
+  }
+
+  /**
+   * Downloads translations that were originally staged
+   * @param initOptions - The options for the command
+   * @returns The results of the command
+   */
   protected setupDownloadCommand(): void {
     attachTranslateFlags(
       this.program
@@ -209,6 +233,16 @@ export class BaseCLI {
       });
     }
     await handleStage(initOptions, settings, this.library, true);
+  }
+
+  /**
+   * Enqueues translations for a given set of files
+   * @param initOptions - The options for the command
+   * @returns The results of the command
+   */
+  protected async handleEnqueue(initOptions: TranslateFlags): Promise<void> {
+    const settings = await generateSettings(initOptions);
+    await handleEnqueue(initOptions, settings, this.library);
   }
 
   /**

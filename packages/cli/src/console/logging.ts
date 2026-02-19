@@ -275,7 +275,7 @@ export function warnTernary(file: string) {
  * Helper: Log all collected files
  */
 export function logCollectedFiles(
-  files: FileToUpload[],
+  files: Pick<FileToUpload, 'fileName'>[],
   reactComponents?: number
 ): void {
   logger.message(

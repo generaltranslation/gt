@@ -53,7 +53,6 @@ export async function runStageFilesWorkflow({
     // first run the branch step
     const branchData = await branchStep.run();
     await branchStep.wait();
-
     if (!branchData) {
       return logErrorAndExit('Failed to resolve git branch information.');
     }
