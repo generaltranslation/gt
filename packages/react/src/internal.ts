@@ -62,7 +62,6 @@ import {
   CustomLoader,
   _Message,
   _Messages,
-  GTContextType,
   GTProp,
 } from '@generaltranslation/react-core/types';
 
@@ -79,7 +78,6 @@ export type {
   Entry,
   TranslatedChildren,
   Translations,
-  GTContextType,
   ClientProviderProps,
   GTProviderProps,
   DictionaryTranslationOptions,

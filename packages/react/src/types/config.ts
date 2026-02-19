@@ -38,6 +38,7 @@ export type ClientProviderProps = {
   regionCookieName?: string;
   customMapping?: CustomMapping;
   environment: 'development' | 'production' | 'test';
+  reloadServer: () => void;
 };
 
 export type GTProviderProps = {
