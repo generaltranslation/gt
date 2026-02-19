@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.12.16
+
+### Patch Changes
+
+- [#1033](https://github.com/generaltranslation/gt/pull/1033) [`eb7855b`](https://github.com/generaltranslation/gt/commit/eb7855b6e35a244395da7d01e3b9b659884c6488) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove window.location.reload on locale change for gt-next
+
+- Updated dependencies [[`eb7855b`](https://github.com/generaltranslation/gt/commit/eb7855b6e35a244395da7d01e3b9b659884c6488)]:
+  - gt-react@10.10.13
+
 ## 6.12.15
 
 ### Patch Changes
