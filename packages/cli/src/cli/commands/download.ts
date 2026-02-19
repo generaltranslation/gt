@@ -7,7 +7,7 @@ import {
   runDownloadWorkflow,
   FileTranslationData,
 } from '../../workflows/download.js';
-import { logErrorAndExit } from '../../console/logging.js';
+import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
@@ -24,9 +24,9 @@ export async function handleDownload(
   settings: Settings,
   library: SupportedLibraries
 ) {
-  if (!hasValidLocales(settings)) return null;
+  if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
-  if (!options.dryRun && !hasValidCredentials(settings)) return null;
+  if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
   if (!settings._versionId) {
     return logErrorAndExit(noVersionIdError);
   }

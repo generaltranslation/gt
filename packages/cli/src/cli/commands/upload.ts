@@ -5,7 +5,7 @@ import {
   noProjectIdError,
   devApiKeyError,
 } from '../../console/index.js';
-import { logErrorAndExit } from '../../console/logging.js';
+import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
@@ -20,6 +20,7 @@ import { createFileMapping } from '../../formats/files/fileMapping.js';
 import parseYaml from '../../formats/yaml/parseYaml.js';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
+import { hasValidCredentials } from './utils/validation.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -29,7 +30,7 @@ const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
  * @param placeholderPaths - Placeholder paths for translated files
  * @param transformPaths - Transform paths for file naming
  * @param dataFormat - Format of the data within the files
- * @param options - Translation options including API settings
+ * @param settings - Translation options including API settings
  * @returns Promise that resolves when translation is complete
  */
 export async function upload(
@@ -37,11 +38,11 @@ export async function upload(
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
   dataFormat: DataFormat = 'JSX',
-  options: Settings & UploadOptions
+  settings: Settings & UploadOptions
 ): Promise<void> {
   // Collect all files to translate
   const allFiles: FileToUpload[] = [];
-  const additionalOptions = options.options || {};
+  const additionalOptions = settings.options || {};
 
   // Process JSON files
   if (filePaths.json) {
@@ -56,7 +57,7 @@ export async function upload(
         content,
         filePath,
         additionalOptions,
-        options.defaultLocale
+        settings.defaultLocale
       );
 
       const relativePath = getRelative(filePath);
@@ -65,7 +66,7 @@ export async function upload(
         fileName: relativePath,
         fileFormat: 'JSON' as FileFormat,
         dataFormat,
-        locale: options.defaultLocale,
+        locale: settings.defaultLocale,
         fileId: hashStringSync(relativePath),
         versionId: hashStringSync(parsedJson),
       } satisfies FileToUpload;
@@ -93,7 +94,7 @@ export async function upload(
         fileName: relativePath,
         fileFormat,
         dataFormat,
-        locale: options.defaultLocale,
+        locale: settings.defaultLocale,
         fileId: hashStringSync(relativePath),
         versionId: hashStringSync(parsedYaml),
       } satisfies FileToUpload;
@@ -113,7 +114,7 @@ export async function upload(
           fileName: relativePath,
           fileFormat: fileType.toUpperCase() as FileFormat,
           dataFormat,
-          locale: options.defaultLocale,
+          locale: settings.defaultLocale,
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(sanitizedContent),
         } satisfies FileToUpload;
@@ -129,27 +130,19 @@ export async function upload(
     return;
   }
 
-  if (!options.defaultLocale) {
+  if (!settings.defaultLocale) {
     return logErrorAndExit(noDefaultLocaleError);
   }
-  if (!options.apiKey) {
-    return logErrorAndExit(noApiKeyError);
-  }
-  if (options.apiKey.startsWith('gtx-dev-')) {
-    return logErrorAndExit(devApiKeyError);
-  }
-  if (!options.projectId) {
-    return logErrorAndExit(noProjectIdError);
-  }
+  if (!hasValidCredentials(settings)) return exitSync(1);
 
-  const locales = options.locales || [];
+  const locales = settings.locales || [];
   // Create file mapping for all file types
   const fileMapping = createFileMapping(
     filePaths,
     placeholderPaths,
     transformPaths,
     locales,
-    options.defaultLocale
+    settings.defaultLocale
   );
 
   // construct object
@@ -188,7 +181,7 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    await runUploadFilesWorkflow({ files: uploadData, options });
+    await runUploadFilesWorkflow({ files: uploadData, options: settings });
   } catch (error) {
     logErrorAndExit(`Error uploading files: ${error}`);
   }
