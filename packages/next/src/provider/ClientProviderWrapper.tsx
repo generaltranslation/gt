@@ -33,6 +33,7 @@ export default function ClientProviderWrapper(
 
   /**
    * Reloads server components
+   * Must pass as a callback so the refresh function does not lose access to the router instance
    */
   const reloadServer = useCallback(() => {
     router.refresh();
