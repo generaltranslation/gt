@@ -3,8 +3,8 @@ import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import {
   FileTranslationData,
-  downloadTranslations,
-} from '../../workflow/download.js';
+  executeDownloadTranslationsWorkflow,
+} from '../../workflow/downloadTranslations.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import copyFile from '../../fs/copyFile.js';
@@ -39,17 +39,18 @@ export async function handleTranslate(
       settings.defaultLocale
     );
     // Check for remaining translations
-    await downloadTranslations(
-      fileVersionData,
-      jobData,
-      branchData,
-      settings.locales,
-      options.timeout,
-      (sourcePath, locale) => fileMapping[locale]?.[sourcePath] ?? null,
-      settings,
-      options.force,
-      options.forceDownload || options.force // if force is true should also force download
-    );
+    await executeDownloadTranslationsWorkflow({
+      fileVersionData: fileVersionData,
+      jobData: jobData,
+      branchData: branchData,
+      locales: settings.locales,
+      timeoutDuration: options.timeout,
+      resolveOutputPath: (sourcePath, locale) =>
+        fileMapping[locale]?.[sourcePath] ?? null,
+      options: settings,
+      forceRetranslation: options.force,
+      forceDownload: options.forceDownload || options.force, // if force is true should also force download
+    });
   }
 }
 
@@ -75,17 +76,18 @@ export async function handleDownload(
   );
   const stagedVersionData = await getStagedVersions(settings.configDirectory);
   // Check for remaining translations
-  await downloadTranslations(
-    stagedVersionData,
-    undefined,
-    undefined,
-    settings.locales,
-    options.timeout,
-    (sourcePath, locale) => fileMapping[locale][sourcePath] ?? null,
-    settings,
-    false, // force is not applicable for downloading staged translations
-    options.force || options.forceDownload
-  );
+  await executeDownloadTranslationsWorkflow({
+    fileVersionData: stagedVersionData,
+    jobData: undefined,
+    branchData: undefined,
+    locales: settings.locales,
+    timeoutDuration: options.timeout,
+    resolveOutputPath: (sourcePath, locale) =>
+      fileMapping[locale][sourcePath] ?? null,
+    options: settings,
+    forceRetranslation: false, // force is not applicable for downloading staged translations
+    forceDownload: options.force || options.forceDownload,
+  });
 }
 
 export async function postProcessTranslations(

@@ -33,8 +33,8 @@ import {
   getCurrentBranch,
   getIncomingBranches,
   getCheckedOutBranches,
-} from '../../git/branches.js';
-import { logger } from '../../console/logger.js';
+} from '../../../git/branches.js';
+import { logger } from '../../../console/logger.js';
 
 const mockGetCurrentBranch = vi.mocked(getCurrentBranch);
 const mockGetIncomingBranches = vi.mocked(getIncomingBranches);

@@ -1,11 +1,11 @@
 import type { FileToUpload } from 'generaltranslation/types';
-import { WorkflowStep } from './Workflow.js';
-import { logger } from '../console/logger.js';
-import { recordWarning } from '../state/translateWarnings.js';
+import { WorkflowStep } from './WorkflowStep.js';
+import { logger } from '../../console/logger.js';
+import { recordWarning } from '../../state/translateWarnings.js';
 import { GT } from 'generaltranslation';
-import { Settings } from '../types/index.js';
+import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
-import { BranchData } from '../types/branch.js';
+import { BranchData } from '../../types/branch.js';
 import type {
   FileDataResult,
   FileReference,

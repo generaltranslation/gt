@@ -12,10 +12,10 @@ import {
   noProjectIdError,
   devApiKeyError,
 } from '../../console/index.js';
-import { FileTranslationData } from '../../workflow/download.js';
+import { FileTranslationData } from '../../workflow/downloadTranslations.js';
 import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
-import { setupProject } from '../../workflow/setupProject.js';
+import { executeSetupProjectWorkflow } from '../../workflow/setupProject.js';
 
 export async function handleSetupProject(
   options: TranslateFlags,
@@ -61,7 +61,7 @@ export async function handleSetupProject(
   let fileVersionData: FileTranslationData | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult } = await setupProject(
+    const { branchData: branchDataResult } = await executeSetupProjectWorkflow(
       allFiles,
       options,
       settings

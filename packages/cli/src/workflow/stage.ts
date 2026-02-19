@@ -2,11 +2,11 @@ import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
-import { UploadSourcesStep } from './UploadSourcesStep.js';
-import { SetupStep } from './SetupStep.js';
-import { EnqueueStep } from './EnqueueStep.js';
-import { BranchStep } from './BranchStep.js';
-import { UserEditDiffsStep } from './UserEditDiffsStep.js';
+import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
+import { SetupStep } from './steps/SetupStep.js';
+import { EnqueueStep } from './steps/EnqueueStep.js';
+import { BranchStep } from './steps/BranchStep.js';
+import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 
 /**
@@ -24,11 +24,15 @@ function calculateTimeout(timeout: string | number | undefined): number {
  * @param settings - Settings configuration
  * @returns The translated content or version ID
  */
-export async function stageFiles(
-  files: FileToUpload[],
-  options: TranslateFlags,
-  settings: Settings
-): Promise<{
+export async function executeStageFilesWorkflow({
+  files,
+  options,
+  settings,
+}: {
+  files: FileToUpload[];
+  options: TranslateFlags;
+  settings: Settings;
+}): Promise<{
   branchData: BranchData;
   enqueueResult: EnqueueFilesResult;
 }> {

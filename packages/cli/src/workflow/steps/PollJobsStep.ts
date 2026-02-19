@@ -1,10 +1,10 @@
 import chalk from 'chalk';
-import { WorkflowStep } from './Workflow.js';
-import { logger } from '../console/logger.js';
+import { WorkflowStep } from './WorkflowStep.js';
+import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
 import { EnqueueFilesResult } from 'generaltranslation/types';
-import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
-import type { FileProperties } from '../types/files.js';
+import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
+import type { FileProperties } from '../../types/files.js';
 
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
