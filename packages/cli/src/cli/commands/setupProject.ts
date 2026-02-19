@@ -5,7 +5,7 @@ import {
   SupportedLibraries,
   TranslateFlags,
 } from '../../types/index.js';
-import { FileTranslationData } from '../../workflows/downloadTranslations.js';
+import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { executeSetupProjectWorkflow } from '../../workflows/setupProject.js';

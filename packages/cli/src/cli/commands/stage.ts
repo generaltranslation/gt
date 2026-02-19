@@ -9,7 +9,7 @@ import { executeStageFilesWorkflow } from '../../workflows/stage.js';
 import { updateVersions } from '../../fs/config/updateVersions.js';
 import type { EnqueueFilesResult } from 'generaltranslation/types';
 import updateConfig from '../../fs/config/updateConfig.js';
-import { FileTranslationData } from '../../workflows/downloadTranslations.js';
+import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
 import { TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';

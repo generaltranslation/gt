@@ -4,9 +4,9 @@ import { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import {
-  executeDownloadTranslationsWorkflow,
+  executeDownloadWorkflow,
   FileTranslationData,
-} from '../../workflows/downloadTranslations.js';
+} from '../../workflows/download.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
@@ -53,7 +53,7 @@ export async function handleDownload(
   }
 
   // Check for remaining translations
-  await executeDownloadTranslationsWorkflow({
+  await executeDownloadWorkflow({
     fileVersionData: fileVersionData,
     jobData: undefined,
     branchData: undefined,

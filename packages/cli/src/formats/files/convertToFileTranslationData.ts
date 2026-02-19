@@ -1,5 +1,5 @@
 import { FileToUpload } from 'generaltranslation/types';
-import { FileTranslationData } from '../../workflows/downloadTranslations.js';
+import { FileTranslationData } from '../../workflows/download.js';
 
 /**
  * Convert files to a file version data object
