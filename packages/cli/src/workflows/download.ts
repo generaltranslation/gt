@@ -35,7 +35,7 @@ export type FileTranslationData = {
  * @param forceDownload - Whether to force download even if file exists
  * @returns True if all translations are downloaded successfully, false otherwise
  */
-export async function executeDownloadWorkflow({
+export async function runDownloadWorkflow({
   fileVersionData,
   jobData,
   branchData,

@@ -5,7 +5,7 @@ import {
   SupportedLibraries,
   TranslateFlags,
 } from '../../types/index.js';
-import { executeStageFilesWorkflow } from '../../workflows/stage.js';
+import { runStageFilesWorkflow } from '../../workflows/stage.js';
 import { updateVersions } from '../../fs/config/updateVersions.js';
 import type { EnqueueFilesResult } from 'generaltranslation/types';
 import updateConfig from '../../fs/config/updateConfig.js';
@@ -49,7 +49,7 @@ export async function handleStage(
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
     const { branchData: branchDataResult, enqueueResult } =
-      await executeStageFilesWorkflow({ files: allFiles, options, settings });
+      await runStageFilesWorkflow({ files: allFiles, options, settings });
     jobData = enqueueResult;
     branchData = branchDataResult;
 

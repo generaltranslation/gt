@@ -8,7 +8,7 @@ import {
 import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
-import { executeSetupProjectWorkflow } from '../../workflows/setupProject.js';
+import { runSetupProjectWorkflow } from '../../workflows/setupProject.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 
 export async function handleSetupProject(
@@ -40,7 +40,7 @@ export async function handleSetupProject(
   let fileVersionData: FileTranslationData | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult } = await executeSetupProjectWorkflow(
+    const { branchData: branchDataResult } = await runSetupProjectWorkflow(
       allFiles,
       options,
       settings

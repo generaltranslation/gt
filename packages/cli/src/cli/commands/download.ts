@@ -4,7 +4,7 @@ import { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import {
-  executeDownloadWorkflow,
+  runDownloadWorkflow,
   FileTranslationData,
 } from '../../workflows/download.js';
 import { logErrorAndExit } from '../../console/logging.js';
@@ -53,7 +53,7 @@ export async function handleDownload(
   }
 
   // Check for remaining translations
-  await executeDownloadWorkflow({
+  await runDownloadWorkflow({
     fileVersionData: fileVersionData,
     jobData: undefined,
     branchData: undefined,

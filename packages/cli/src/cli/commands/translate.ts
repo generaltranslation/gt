@@ -3,7 +3,7 @@ import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import {
   FileTranslationData,
-  executeDownloadWorkflow,
+  runDownloadWorkflow,
 } from '../../workflows/download.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import copyFile from '../../fs/copyFile.js';
@@ -36,7 +36,7 @@ export async function handleTranslate(
       settings.defaultLocale
     );
     // Check for remaining translations
-    await executeDownloadWorkflow({
+    await runDownloadWorkflow({
       fileVersionData: fileVersionData,
       jobData: jobData,
       branchData: branchData,

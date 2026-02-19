@@ -14,7 +14,7 @@ import type { FileToUpload } from 'generaltranslation/types';
  * @param options - The options for the API call
  * @returns The uploaded content or version ID
  */
-export async function executeUploadFilesWorkflow({
+export async function runUploadFilesWorkflow({
   files,
   options,
 }: {

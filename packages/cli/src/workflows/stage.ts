@@ -24,7 +24,7 @@ function calculateTimeout(timeout: string | number | undefined): number {
  * @param settings - Settings configuration
  * @returns The translated content or version ID
  */
-export async function executeStageFilesWorkflow({
+export async function runStageFilesWorkflow({
   files,
   options,
   settings,

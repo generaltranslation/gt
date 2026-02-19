@@ -23,7 +23,7 @@ function calculateTimeout(timeout: string | number | undefined): number {
  * @param settings - Settings configuration
  * @returns The branch data
  */
-export async function executeSetupProjectWorkflow(
+export async function runSetupProjectWorkflow(
   files: FileToUpload[],
   options: TranslateFlags,
   settings: Settings
