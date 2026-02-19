@@ -6,7 +6,7 @@ import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import {
   executeDownloadTranslationsWorkflow,
   FileTranslationData,
-} from '../../workflow/downloadTranslations.js';
+} from '../../workflows/downloadTranslations.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';

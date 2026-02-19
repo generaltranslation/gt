@@ -4,7 +4,7 @@ import { Settings } from '../../types/index.js';
 import {
   FileTranslationData,
   executeDownloadTranslationsWorkflow,
-} from '../../workflow/downloadTranslations.js';
+} from '../../workflows/downloadTranslations.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';

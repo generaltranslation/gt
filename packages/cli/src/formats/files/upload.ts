@@ -14,7 +14,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { UploadOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
-import { executeUploadFilesWorkflow } from '../../workflow/upload.js';
+import { executeUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from './fileMapping.js';
 import parseYaml from '../yaml/parseYaml.js';

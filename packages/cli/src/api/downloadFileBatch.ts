@@ -16,7 +16,7 @@ import { recordDownloaded } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import { hashStringSync } from '../utils/hash.js';
 import stringify from 'fast-json-stable-stringify';
-import type { FileStatusTracker } from '../workflow/steps/PollJobsStep.js';
+import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 
 export type BatchedFiles = {
   branchId: string;

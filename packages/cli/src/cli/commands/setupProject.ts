@@ -5,10 +5,10 @@ import {
   SupportedLibraries,
   TranslateFlags,
 } from '../../types/index.js';
-import { FileTranslationData } from '../../workflow/downloadTranslations.js';
+import { FileTranslationData } from '../../workflows/downloadTranslations.js';
 import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
-import { executeSetupProjectWorkflow } from '../../workflow/setupProject.js';
+import { executeSetupProjectWorkflow } from '../../workflows/setupProject.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 
 export async function handleSetupProject(
