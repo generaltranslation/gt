@@ -36,6 +36,7 @@ export class InlineCLI extends BaseCLI {
     this.setupTranslateCommand();
     this.setupGenerateSourceCommand();
     this.setupValidateCommand();
+    this.setupDownloadCommand();
   }
 
   protected setupStageCommand(): void {

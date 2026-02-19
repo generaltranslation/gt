@@ -54,42 +54,6 @@ export async function handleTranslate(
   }
 }
 
-// Downloads translations that were originally staged
-export async function handleDownload(
-  options: TranslateFlags,
-  settings: Settings
-) {
-  if (!settings._versionId) {
-    logErrorAndExit(noVersionIdError);
-  }
-  if (!settings.files) {
-    logErrorAndExit(noFilesError);
-  }
-  // Files
-  const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
-  const fileMapping = createFileMapping(
-    resolvedPaths,
-    placeholderPaths,
-    transformPaths,
-    settings.locales,
-    settings.defaultLocale
-  );
-  const stagedVersionData = await getStagedVersions(settings.configDirectory);
-  // Check for remaining translations
-  await executeDownloadTranslationsWorkflow({
-    fileVersionData: stagedVersionData,
-    jobData: undefined,
-    branchData: undefined,
-    locales: settings.locales,
-    timeoutDuration: options.timeout,
-    resolveOutputPath: (sourcePath, locale) =>
-      fileMapping[locale][sourcePath] ?? null,
-    options: settings,
-    forceRetranslation: false, // force is not applicable for downloading staged translations
-    forceDownload: options.force || options.forceDownload,
-  });
-}
-
 export async function postProcessTranslations(
   settings: Settings,
   includeFiles?: Set<string>

@@ -38,8 +38,8 @@ import { upload } from '../formats/files/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
 import { handleSetupProject } from './commands/setupProject.js';
+import { handleDownload } from './commands/download.js';
 import {
-  handleDownload,
   handleTranslate,
   postProcessTranslations,
 } from './commands/translate.js';
@@ -105,6 +105,7 @@ export class BaseCLI {
     this.setupSetupProjectCommand();
     this.setupStageCommand();
     this.setupTranslateCommand();
+    this.setupDownloadCommand();
   }
   // Execute is called by the main program
   public execute() {
@@ -143,6 +144,19 @@ export class BaseCLI {
       logger.endCommand('Done!');
     });
   }
+
+  protected setupDownloadCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('download')
+        .description('Download translations that were originally staged')
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader('Downloading translations...');
+      await this.handleDownload(initOptions);
+      logger.endCommand('Done!');
+    });
+  }
+
   protected setupTranslateCommand(): void {
     attachTranslateFlags(
       this.program
@@ -195,6 +209,16 @@ export class BaseCLI {
       });
     }
     await handleStage(initOptions, settings, this.library, true);
+  }
+
+  /**
+   * Downloads translations that were originally staged
+   * @param initOptions - The options for the command
+   * @returns The results of the command
+   */
+  protected async handleDownload(initOptions: TranslateFlags): Promise<void> {
+    const settings = await generateSettings(initOptions);
+    await handleDownload(initOptions, settings);
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {

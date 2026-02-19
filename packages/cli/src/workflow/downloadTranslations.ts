@@ -127,7 +127,7 @@ export async function executeDownloadTranslationsWorkflow({
         `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
           pollResult.fileTracker.failed.entries()
         )
-          .map(([key, value]) => `- ${value.fileName}`)
+          .map(([, value]) => `- ${value.fileName}`)
           .join('\n')}`
       );
       for (const [, value] of pollResult.fileTracker.failed) {
