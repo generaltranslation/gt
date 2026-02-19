@@ -34,7 +34,7 @@ import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
-import { upload } from '../formats/files/upload.js';
+import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
 import { handleSetupProject } from './commands/setupProject.js';

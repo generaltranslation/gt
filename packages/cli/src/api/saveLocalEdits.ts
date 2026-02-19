@@ -1,5 +1,5 @@
 import { Settings } from '../types/index.js';
-import { aggregateFiles } from '../formats/files/translate.js';
+import { aggregateFiles } from '../formats/files/aggregateFiles.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
 import { gt } from '../utils/gt.js';
 import { BranchStep } from '../workflows/steps/BranchStep.js';

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { aggregateFiles } from '../translate';
+import { aggregateFiles } from '../aggregateFiles.js';
 import { logger } from '../../../console/logger.js';
 import { readFile, getRelative } from '../../../fs/findFilepath.js';
 import { parseJson } from '../../json/parseJson.js';
