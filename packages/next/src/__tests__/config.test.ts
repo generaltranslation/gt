@@ -106,9 +106,7 @@ describe('withGTConfig', () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
 
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'false'
-      );
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
     });
 
     it('has loadDictionaryEnabled false and loadTranslationsType remote', async () => {
@@ -118,12 +116,12 @@ describe('withGTConfig', () => {
 
       expect(params.loadDictionaryEnabled).toBe(false);
       expect(params.loadTranslationsType).toBe('remote');
-      expect(
-        result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED
-      ).toBe('false');
-      expect(
-        result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED
-      ).toBe('false');
+      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
+        'false'
+      );
+      expect(result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED).toBe(
+        'false'
+      );
     });
 
     it('has default batching config', async () => {
@@ -179,9 +177,9 @@ describe('withGTConfig', () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
 
-      expect(
-        result.env!._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES
-      ).toBe('false');
+      expect(result.env!._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES).toBe(
+        'false'
+      );
     });
 
     it('sets all expected _GENERALTRANSLATION_* env vars as strings', async () => {
@@ -387,10 +385,7 @@ describe('withGTConfig', () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'env-project-id';
 
-      const result = withGTConfig(
-        {},
-        { projectId: 'props-project-id' }
-      );
+      const result = withGTConfig({}, { projectId: 'props-project-id' });
       const params = parseConfigParams(result);
 
       expect(params.projectId).toBe('props-project-id');
@@ -442,9 +437,9 @@ describe('withGTConfig', () => {
         JSON.stringify({ defaultLocale: 'fr' })
       );
 
-      expect(() =>
-        withGTConfig({}, { defaultLocale: 'de' })
-      ).toThrow(/[Cc]onflicting/);
+      expect(() => withGTConfig({}, { defaultLocale: 'de' })).toThrow(
+        /[Cc]onflicting/
+      );
     });
 
     it('throws on differing arrays (different length)', async () => {
@@ -457,9 +452,9 @@ describe('withGTConfig', () => {
         JSON.stringify({ locales: ['en', 'fr'] })
       );
 
-      expect(() =>
-        withGTConfig({}, { locales: ['en'] })
-      ).toThrow(/[Cc]onflicting/);
+      expect(() => withGTConfig({}, { locales: ['en'] })).toThrow(
+        /[Cc]onflicting/
+      );
     });
 
     it('throws on differing arrays (different values)', async () => {
@@ -472,9 +467,9 @@ describe('withGTConfig', () => {
         JSON.stringify({ locales: ['en', 'fr'] })
       );
 
-      expect(() =>
-        withGTConfig({}, { locales: ['en', 'de'] })
-      ).toThrow(/[Cc]onflicting/);
+      expect(() => withGTConfig({}, { locales: ['en', 'de'] })).toThrow(
+        /[Cc]onflicting/
+      );
     });
 
     it('throws on differing objects', async () => {
@@ -508,10 +503,7 @@ describe('withGTConfig', () => {
       );
 
       expect(() =>
-        withGTConfig(
-          {},
-          { runtimeUrl: 'https://custom.example.com' }
-        )
+        withGTConfig({}, { runtimeUrl: 'https://custom.example.com' })
       ).toThrow(/[Cc]onflicting/);
     });
 
@@ -525,9 +517,7 @@ describe('withGTConfig', () => {
         JSON.stringify({ defaultLocale: 'en' })
       );
 
-      expect(() =>
-        withGTConfig({}, { defaultLocale: 'en' })
-      ).not.toThrow();
+      expect(() => withGTConfig({}, { defaultLocale: 'en' })).not.toThrow();
     });
 
     it('does NOT throw when values are identical (arrays)', async () => {
@@ -540,9 +530,7 @@ describe('withGTConfig', () => {
         JSON.stringify({ locales: ['en', 'fr'] })
       );
 
-      expect(() =>
-        withGTConfig({}, { locales: ['en', 'fr'] })
-      ).not.toThrow();
+      expect(() => withGTConfig({}, { locales: ['en', 'fr'] })).not.toThrow();
     });
 
     it('does NOT throw when values are identical (objects)', async () => {
@@ -576,9 +564,7 @@ describe('withGTConfig', () => {
       );
 
       // props don't have maxBatchSize — no conflict
-      expect(() =>
-        withGTConfig({}, { defaultLocale: 'en' })
-      ).not.toThrow();
+      expect(() => withGTConfig({}, { defaultLocale: 'en' })).not.toThrow();
     });
 
     it('error message contains key name and both values', async () => {
@@ -686,9 +672,9 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig({}, { dictionary: './my-dict.json' });
 
-      expect(
-        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
-      ).toBe('.json');
+      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
+        '.json'
+      );
     });
 
     it('resolves dictionary via resolveConfigFilepath fallback (e.g. ./dictionary.ts)', async () => {
@@ -701,9 +687,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig();
 
-      expect(
-        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
-      ).toBe('.ts');
+      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.ts');
     });
 
     it('falls back to [defaultLocale].json then [languageCode].json', async () => {
@@ -717,9 +701,9 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig({}, { defaultLocale: 'en' });
 
-      expect(
-        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
-      ).toBe('.json');
+      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe(
+        '.json'
+      );
     });
 
     it('no dictionary found = no _GENERALTRANSLATION_DICTIONARY_FILE_TYPE', async () => {
@@ -738,9 +722,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig({}, { dictionary: './dict.ts' });
 
-      expect(
-        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
-      ).toBe('.ts');
+      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.ts');
     });
 
     it('correct file type for .js extension', async () => {
@@ -748,9 +730,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig({}, { dictionary: './dict.js' });
 
-      expect(
-        result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE
-      ).toBe('.js');
+      expect(result.env!._GENERALTRANSLATION_DICTIONARY_FILE_TYPE).toBe('.js');
     });
   });
 
@@ -771,16 +751,14 @@ describe('withGTConfig', () => {
         { loadDictionaryPath: './loadDictionary.ts' }
       );
 
-      expect(
-        result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED
-      ).toBe('true');
+      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
+        'true'
+      );
     });
 
     it('loadTranslationsPath resolves + file exists = local translation enabled', async () => {
       const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve(
-        './loadTranslations.ts'
-      );
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         if (p === resolvedPath) return true;
         return false;
@@ -791,9 +769,9 @@ describe('withGTConfig', () => {
         { loadTranslationsPath: './loadTranslations.ts' }
       );
 
-      expect(
-        result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED
-      ).toBe('true');
+      expect(result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED).toBe(
+        'true'
+      );
     });
 
     it('throws when loadDictionaryPath set but file does not exist', async () => {
@@ -822,9 +800,7 @@ describe('withGTConfig', () => {
 
     it('auto-resolves loadDictionary via resolveConfigFilepath when not in props', async () => {
       const withGTConfig = await getWithGTConfig();
-      const resolvedAutoPath = require('path').resolve(
-        './loadDictionary.ts'
-      );
+      const resolvedAutoPath = require('path').resolve('./loadDictionary.ts');
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         if (p === resolvedAutoPath) return true;
         return false;
@@ -832,16 +808,14 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig();
 
-      expect(
-        result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED
-      ).toBe('true');
+      expect(result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED).toBe(
+        'true'
+      );
     });
 
     it('auto-resolves loadTranslations via resolveConfigFilepath when not in props', async () => {
       const withGTConfig = await getWithGTConfig();
-      const resolvedAutoPath = require('path').resolve(
-        './loadTranslations.ts'
-      );
+      const resolvedAutoPath = require('path').resolve('./loadTranslations.ts');
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         if (p === resolvedAutoPath) return true;
         return false;
@@ -849,9 +823,9 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig();
 
-      expect(
-        result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED
-      ).toBe('true');
+      expect(result.env!._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED).toBe(
+        'true'
+      );
     });
   });
 
@@ -878,9 +852,7 @@ describe('withGTConfig', () => {
       );
       const params = parseConfigParams(result);
 
-      const enCount = params.locales.filter(
-        (l: string) => l === 'en'
-      ).length;
+      const enCount = params.locales.filter((l: string) => l === 'en').length;
       expect(enCount).toBe(1);
     });
 
@@ -919,10 +891,7 @@ describe('withGTConfig', () => {
 
     it('empty locales + defaultLocale = [defaultLocale]', async () => {
       const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        { defaultLocale: 'en', locales: [] }
-      );
+      const result = withGTConfig({}, { defaultLocale: 'en', locales: [] });
       const params = parseConfigParams(result);
 
       expect(params.locales).toEqual(['en']);
@@ -942,9 +911,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig();
 
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'true'
-      );
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
     });
 
     it('NOT enabled with only projectId and default cacheUrl (loadTranslationsType not yet set during check)', async () => {
@@ -957,9 +924,7 @@ describe('withGTConfig', () => {
       // so gtServicesEnabled ends up false.
       const result = withGTConfig();
 
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'false'
-      );
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
     });
 
     it('disabled: no projectId', async () => {
@@ -968,9 +933,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig();
 
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'false'
-      );
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
     });
 
     it('disabled: custom runtimeUrl + null cacheUrl', async () => {
@@ -985,9 +948,7 @@ describe('withGTConfig', () => {
         }
       );
 
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'false'
-      );
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
     });
   });
 
@@ -1000,9 +961,9 @@ describe('withGTConfig', () => {
       process.env.NODE_ENV = 'production';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() =>
-        withGTConfig({}, { devApiKey: 'gt-dev-xyz' })
-      ).toThrow(/development API key/i);
+      expect(() => withGTConfig({}, { devApiKey: 'gt-dev-xyz' })).toThrow(
+        /development API key/i
+      );
     });
 
     it('invalid locales + GT services enabled throws invalidLocalesError', async () => {
@@ -1041,19 +1002,16 @@ describe('withGTConfig', () => {
         JSON.stringify({ defaultLocale: 'fr' })
       );
 
-      expect(() =>
-        withGTConfig({}, { defaultLocale: 'de' })
-      ).toThrow(/[Cc]onflicting configuration/);
+      expect(() => withGTConfig({}, { defaultLocale: 'de' })).toThrow(
+        /[Cc]onflicting configuration/
+      );
     });
 
     it('missing loader files throw respective build errors', async () => {
       const withGTConfig = await getWithGTConfig();
 
       expect(() =>
-        withGTConfig(
-          {},
-          { loadDictionaryPath: './missing/loadDictionary.ts' }
-        )
+        withGTConfig({}, { loadDictionaryPath: './missing/loadDictionary.ts' })
       ).toThrow(/loadDictionary.*could not be resolved/i);
 
       expect(() =>
@@ -1101,9 +1059,7 @@ describe('withGTConfig', () => {
 
     it('NOT set when loadTranslationsType === custom', async () => {
       const withGTConfig = await getWithGTConfig();
-      const resolvedPath = require('path').resolve(
-        './loadTranslations.ts'
-      );
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         if (p === resolvedPath) return true;
         return false;
@@ -1157,9 +1113,7 @@ describe('withGTConfig', () => {
       const result = withGTConfig({ env: { MY_EXISTING_VAR: 'hello' } });
 
       expect(result.env!.MY_EXISTING_VAR).toBe('hello');
-      expect(
-        result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS
-      ).toBeDefined();
+      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBeDefined();
     });
 
     it('I18N_CONFIG_PARAMS contains full merged config as JSON string', async () => {
@@ -1184,12 +1138,10 @@ describe('withGTConfig', () => {
         typeof result.env!._GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED
       ).toBe('string');
 
-      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        'false'
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
+      expect(typeof result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
+        'string'
       );
-      expect(
-        typeof result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED
-      ).toBe('string');
     });
   });
 
@@ -1272,10 +1224,7 @@ describe('withGTConfig', () => {
       const withGTConfig = await getWithGTConfig();
       process.env.TURBOPACK = '1';
 
-      const result = withGTConfig(
-        {},
-        { dictionary: './my-dict.json' }
-      );
+      const result = withGTConfig({}, { dictionary: './my-dict.json' });
 
       expect(result.turbopack).toBeDefined();
       expect(result.turbopack!.resolveAlias).toBeDefined();
@@ -1355,10 +1304,7 @@ describe('withGTConfig', () => {
         resetLocaleCookieName: 'my-reset',
       };
 
-      const result = withGTConfig(
-        {},
-        { headersAndCookies: customHeaders }
-      );
+      const result = withGTConfig({}, { headersAndCookies: customHeaders });
       const params = parseConfigParams(result);
 
       expect(params.headersAndCookies).toMatchObject(customHeaders);
@@ -1429,9 +1375,9 @@ describe('withGTConfig', () => {
       expect(resultA.env!._GENERALTRANSLATION_DEFAULT_LOCALE).toBe(
         resultB.env!._GENERALTRANSLATION_DEFAULT_LOCALE
       );
-      expect(
-        resultA.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED
-      ).toBe(resultB.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED);
+      expect(resultA.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
+        resultB.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED
+      );
     });
   });
 });
