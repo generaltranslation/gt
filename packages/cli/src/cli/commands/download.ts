@@ -1,10 +1,16 @@
 import { noVersionIdError, noFilesError } from '../../console/index.js';
-import { TranslateFlags } from '../../types/index.js';
+import { SupportedLibraries, TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import { getStagedVersions } from '../../fs/config/updateVersions.js';
-import { executeDownloadTranslationsWorkflow } from '../../workflow/downloadTranslations.js';
+import {
+  executeDownloadTranslationsWorkflow,
+  FileTranslationData,
+} from '../../workflow/downloadTranslations.js';
 import { logErrorAndExit } from '../../console/logging.js';
+import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
+import { collectFiles } from '../../formats/files/collectFiles.js';
+import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 
 // Downloads translations that were originally staged
 
@@ -15,13 +21,17 @@ import { logErrorAndExit } from '../../console/logging.js';
  */
 export async function handleDownload(
   options: TranslateFlags,
-  settings: Settings
+  settings: Settings,
+  library: SupportedLibraries
 ) {
+  if (!hasValidLocales(settings)) return null;
+  // Validate credentials if not in dry run
+  if (!options.dryRun && !hasValidCredentials(settings)) return null;
   if (!settings._versionId) {
-    logErrorAndExit(noVersionIdError);
+    return logErrorAndExit(noVersionIdError);
   }
   if (!settings.files) {
-    logErrorAndExit(noFilesError);
+    return logErrorAndExit(noFilesError);
   }
   // Files
   const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
@@ -32,10 +42,19 @@ export async function handleDownload(
     settings.locales,
     settings.defaultLocale
   );
-  const stagedVersionData = await getStagedVersions(settings.configDirectory);
+
+  // Collect the hashes for all files we need to download
+  let fileVersionData: FileTranslationData;
+  if (settings.stageTranslations) {
+    fileVersionData = await getStagedVersions(settings.configDirectory);
+  } else {
+    const { files } = await collectFiles(options, settings, library);
+    fileVersionData = convertToFileTranslationData(files);
+  }
+
   // Check for remaining translations
   await executeDownloadTranslationsWorkflow({
-    fileVersionData: stagedVersionData,
+    fileVersionData: fileVersionData,
     jobData: undefined,
     branchData: undefined,
     locales: settings.locales,

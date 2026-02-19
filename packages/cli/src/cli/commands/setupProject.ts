@@ -1,21 +1,15 @@
 import { logger } from '../../console/logger.js';
-import { logCollectedFiles, logErrorAndExit } from '../../console/logging.js';
+import { logCollectedFiles } from '../../console/logging.js';
 import {
   Settings,
   SupportedLibraries,
   TranslateFlags,
 } from '../../types/index.js';
-import {
-  noLocalesError,
-  noDefaultLocaleError,
-  noApiKeyError,
-  noProjectIdError,
-  devApiKeyError,
-} from '../../console/index.js';
 import { FileTranslationData } from '../../workflow/downloadTranslations.js';
 import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { executeSetupProjectWorkflow } from '../../workflow/setupProject.js';
+import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 
 export async function handleSetupProject(
   options: TranslateFlags,
@@ -25,24 +19,9 @@ export async function handleSetupProject(
   fileVersionData: FileTranslationData | undefined;
   branchData: BranchData | undefined;
 } | null> {
-  if (!settings.locales) {
-    return logErrorAndExit(noLocalesError);
-  }
-  if (!settings.defaultLocale) {
-    return logErrorAndExit(noDefaultLocaleError);
-  }
-  // Validate required settings are present if not in dry run
-  if (!options.dryRun) {
-    if (!settings.apiKey) {
-      return logErrorAndExit(noApiKeyError);
-    }
-    if (settings.apiKey.startsWith('gtx-dev-')) {
-      return logErrorAndExit(devApiKeyError);
-    }
-    if (!settings.projectId) {
-      return logErrorAndExit(noProjectIdError);
-    }
-  }
+  if (!hasValidLocales(settings)) return null;
+  // Validate credentials if not in dry run
+  if (!options.dryRun && !hasValidCredentials(settings)) return null;
 
   const { files: allFiles, reactComponents } = await collectFiles(
     options,

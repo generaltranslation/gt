@@ -6,17 +6,14 @@ import {
   executeDownloadTranslationsWorkflow,
 } from '../../workflow/downloadTranslations.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import { getStagedVersions } from '../../fs/config/updateVersions.js';
 import copyFile from '../../fs/copyFile.js';
 import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
 import localizeRelativeAssets from '../../utils/localizeRelativeAssets.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
 import processOpenApi from '../../utils/processOpenApi.js';
-import { noFilesError, noVersionIdError } from '../../console/index.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
-import { logErrorAndExit } from '../../console/logging.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
 

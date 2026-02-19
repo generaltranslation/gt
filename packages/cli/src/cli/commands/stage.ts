@@ -1,17 +1,10 @@
 import { logger } from '../../console/logger.js';
-import { logCollectedFiles, logErrorAndExit } from '../../console/logging.js';
+import { logCollectedFiles } from '../../console/logging.js';
 import {
   Settings,
   SupportedLibraries,
   TranslateFlags,
 } from '../../types/index.js';
-import {
-  noLocalesError,
-  noDefaultLocaleError,
-  noApiKeyError,
-  noProjectIdError,
-  devApiKeyError,
-} from '../../console/index.js';
 import { executeStageFilesWorkflow } from '../../workflow/stage.js';
 import { updateVersions } from '../../fs/config/updateVersions.js';
 import type { EnqueueFilesResult } from 'generaltranslation/types';
@@ -20,6 +13,8 @@ import { FileTranslationData } from '../../workflow/downloadTranslations.js';
 import { BranchData } from '../../types/branch.js';
 import { TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
+import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
+import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 
 export async function handleStage(
   options: TranslateFlags,
@@ -31,24 +26,9 @@ export async function handleStage(
   jobData: EnqueueFilesResult | undefined;
   branchData: BranchData | undefined;
 } | null> {
-  if (!settings.locales) {
-    return logErrorAndExit(noLocalesError);
-  }
-  if (!settings.defaultLocale) {
-    return logErrorAndExit(noDefaultLocaleError);
-  }
-  // Validate required settings are present if not in dry run
-  if (!options.dryRun) {
-    if (!settings.apiKey) {
-      return logErrorAndExit(noApiKeyError);
-    }
-    if (settings.apiKey.startsWith('gtx-dev-')) {
-      return logErrorAndExit(devApiKeyError);
-    }
-    if (!settings.projectId) {
-      return logErrorAndExit(noProjectIdError);
-    }
-  }
+  if (!hasValidLocales(settings)) return null;
+  // Validate credentials if not in dry run
+  if (!options.dryRun && !hasValidCredentials(settings)) return null;
 
   const { files: allFiles, reactComponents } = await collectFiles(
     options,
@@ -73,15 +53,7 @@ export async function handleStage(
     jobData = enqueueResult;
     branchData = branchDataResult;
 
-    fileVersionData = Object.fromEntries(
-      allFiles.map((file) => [
-        file.fileId,
-        {
-          fileName: file.fileName,
-          versionId: file.versionId,
-        },
-      ])
-    );
+    fileVersionData = convertToFileTranslationData(allFiles);
 
     // This logic is a little scuffed because stage is async from the API
     if (stage) {

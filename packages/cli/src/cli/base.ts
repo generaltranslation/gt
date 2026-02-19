@@ -218,7 +218,7 @@ export class BaseCLI {
    */
   protected async handleDownload(initOptions: TranslateFlags): Promise<void> {
     const settings = await generateSettings(initOptions);
-    await handleDownload(initOptions, settings);
+    await handleDownload(initOptions, settings, this.library);
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
@@ -244,7 +244,7 @@ export class BaseCLI {
         );
       }
     } else {
-      await handleDownload(initOptions, settings);
+      await handleDownload(initOptions, settings, this.library);
     }
     // Only postprocess files downloaded in this run
     const include = getDownloaded();
