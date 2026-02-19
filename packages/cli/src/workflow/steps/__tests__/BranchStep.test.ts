@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BranchStep } from '../BranchStep.js';
 
 // Mock git branch detection
-vi.mock('../../git/branches.js', () => ({
+vi.mock('../../../git/branches.js', () => ({
   getCurrentBranch: vi.fn(),
   getIncomingBranches: vi.fn(),
   getCheckedOutBranches: vi.fn(),
 }));
 
 // Mock logger
-vi.mock('../../console/logger.js', () => ({
+vi.mock('../../../console/logger.js', () => ({
   logger: {
     info: vi.fn(),
     debug: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock('../../console/logger.js', () => ({
 }));
 
 // Mock logErrorAndExit to throw instead of process.exit
-vi.mock('../../console/logging.js', () => ({
+vi.mock('../../../console/logging.js', () => ({
   logErrorAndExit: vi.fn((msg: string) => {
     throw new Error(msg);
   }),
