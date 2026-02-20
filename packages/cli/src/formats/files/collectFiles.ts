@@ -5,7 +5,7 @@ import {
   TranslateFlags,
 } from '../../types/index.js';
 import { invalidConfigurationError } from '../../console/index.js';
-import { aggregateFiles } from '../../formats/files/translate.js';
+import { aggregateFiles } from './aggregateFiles.js';
 import { aggregateInlineTranslations } from '../../translation/stage.js';
 import type { FileToUpload, JsxChildren } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';

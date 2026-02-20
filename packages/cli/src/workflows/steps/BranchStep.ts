@@ -1,15 +1,15 @@
-import { WorkflowStep } from './Workflow.js';
-import { logErrorAndExit } from '../console/logging.js';
-import { logger } from '../console/logger.js';
+import { WorkflowStep } from './WorkflowStep.js';
+import { logErrorAndExit } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
-import { Settings } from '../types/index.js';
+import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
   getCurrentBranch,
   getIncomingBranches,
   getCheckedOutBranches,
-} from '../git/branches.js';
-import { BranchData } from '../types/branch.js';
+} from '../../git/branches.js';
+import { BranchData } from '../../types/branch.js';
 import { ApiError } from 'generaltranslation/errors';
 
 // Step 1: Resolve the current branch id & update API with branch information

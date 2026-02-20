@@ -1,8 +1,8 @@
 import { Settings } from '../types/index.js';
-import { aggregateFiles } from '../formats/files/translate.js';
+import { aggregateFiles } from '../formats/files/aggregateFiles.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
 import { gt } from '../utils/gt.js';
-import { BranchStep } from '../workflow/BranchStep.js';
+import { BranchStep } from '../workflows/steps/BranchStep.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import type { FileReference } from 'generaltranslation/types';

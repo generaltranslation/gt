@@ -322,6 +322,12 @@ export async function mirrorAssetsToLocales(settings: Settings) {
   }
 }
 
+/**
+ * If you specify in config you have blob patterns pointing to assets (jpg, png, etc.)
+ * Moves static assets into a specified directory and goes thru src files and updates refrence to static assets
+ * @param settings
+ * @returns
+ */
 export default async function processSharedStaticAssets(settings: Settings) {
   const cfg: SharedStaticAssetsConfig | undefined =
     settings.sharedStaticAssets as any;

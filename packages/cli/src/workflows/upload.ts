@@ -3,9 +3,9 @@ import { logger } from '../console/logger.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { gt } from '../utils/gt.js';
-import { BranchStep } from './BranchStep.js';
-import { UploadSourcesStep } from './UploadSourcesStep.js';
-import { UploadTranslationsStep } from './UploadTranslationsStep.js';
+import { BranchStep } from './steps/BranchStep.js';
+import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
+import { UploadTranslationsStep } from './steps/UploadTranslationsStep.js';
 import type { FileToUpload } from 'generaltranslation/types';
 
 /**
@@ -14,13 +14,16 @@ import type { FileToUpload } from 'generaltranslation/types';
  * @param options - The options for the API call
  * @returns The uploaded content or version ID
  */
-export async function uploadFiles(
+export async function runUploadFilesWorkflow({
+  files,
+  options,
+}: {
   files: {
     source: FileToUpload;
     translations: FileToUpload[];
-  }[],
-  options: Settings
-) {
+  }[];
+  options: Settings;
+}) {
   try {
     logger.message(
       chalk.cyan('Files to upload:') +
