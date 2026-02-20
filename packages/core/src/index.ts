@@ -113,6 +113,7 @@ import _getOrphanedFiles, {
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+import { StringMessage } from 'src/types-dir/jsx/content';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -888,6 +889,15 @@ export class GT {
     targetLocale: string,
     metadata?: Omit<EntryMetadata, 'dataFormat'> & {
       dataFormat?: 'DATE_FNS';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for String content
+  async translate(
+    source: StringMessage,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'STRING';
     }
   ): Promise<TranslationResult | TranslationError>;
 
