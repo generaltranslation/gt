@@ -45,7 +45,7 @@ export async function aggregateFiles(
         dataFormat = 'I18NEXT';
       }
     } else {
-      dataFormat = 'JSX';
+      dataFormat = 'STRING';
     }
 
     const jsonFiles = filePaths.json
