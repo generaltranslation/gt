@@ -3,6 +3,7 @@ import {
   IcuMessage,
   JsxChildren,
   DateFnsMessage,
+  StringMessage,
 } from '../jsx/content';
 
 /**
@@ -22,8 +23,8 @@ export type TypedResult =
       dataFormat: 'JSX';
     }
   | {
-      translation: I18nextMessage | IcuMessage | DateFnsMessage;
-      dataFormat: 'ICU' | 'I18NEXT' | 'DATE_FNS';
+      translation: I18nextMessage | IcuMessage | DateFnsMessage | StringMessage;
+      dataFormat: 'ICU' | 'I18NEXT' | 'DATE_FNS' | 'STRING';
     };
 
 /**

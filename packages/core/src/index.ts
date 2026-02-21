@@ -1,5 +1,5 @@
 // `generaltranslation` language toolkit
-// © 2024, General Translation, Inc.
+// © 2026, General Translation, Inc.
 
 // ----- IMPORTS ----- //
 
@@ -104,16 +104,14 @@ import _createBranch from './translate/createBranch';
 import type { FileReference } from './types-dir/api/file';
 import _processFileMoves, {
   type MoveMapping,
-  type MoveResult,
   type ProcessMovesResponse,
   type ProcessMovesOptions,
 } from './translate/processFileMoves';
 import _getOrphanedFiles, {
-  type OrphanedFile,
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
-import { StringMessage } from 'src/types-dir/jsx/content';
+import { StringMessage } from './types-dir/jsx/content';
 
 // ============================================================ //
 //                        Core Class                            //
