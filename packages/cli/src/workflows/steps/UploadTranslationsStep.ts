@@ -1,9 +1,9 @@
-import { WorkflowStep } from './Workflow.js';
-import { logger } from '../console/logger.js';
+import { WorkflowStep } from './WorkflowStep.js';
+import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
-import { Settings } from '../types/index.js';
+import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
-import { BranchData } from '../types/branch.js';
+import { BranchData } from '../../types/branch.js';
 import type { FileReference, FileToUpload } from 'generaltranslation/types';
 
 type UploadTranslationsInput = {

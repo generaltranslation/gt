@@ -1,14 +1,14 @@
 import chalk from 'chalk';
-import { WorkflowStep } from './Workflow.js';
-import { logger } from '../console/logger.js';
+import { WorkflowStep } from './WorkflowStep.js';
+import { logger } from '../../console/logger.js';
 import {
   BatchedFiles,
   downloadFileBatch,
   DownloadFileBatchResult,
-} from '../api/downloadFileBatch.js';
+} from '../../api/downloadFileBatch.js';
 import { GT } from 'generaltranslation';
-import { Settings } from '../types/index.js';
-import { recordWarning } from '../state/translateWarnings.js';
+import { Settings } from '../../types/index.js';
+import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 
 export type DownloadTranslationsInput = {

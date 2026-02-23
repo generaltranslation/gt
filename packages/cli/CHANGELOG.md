@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.25
+
+### Patch Changes
+
+- [#1040](https://github.com/generaltranslation/gt/pull/1040) [`d7bc63f`](https://github.com/generaltranslation/gt/commit/d7bc63f497534eede92138c8836bc84169600ff1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: expose enqueue and upload commands
+
 ## 2.6.24
 
 ### Patch Changes

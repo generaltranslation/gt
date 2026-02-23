@@ -1,21 +1,15 @@
 import { logger } from '../../console/logger.js';
-import { logCollectedFiles, logErrorAndExit } from '../../console/logging.js';
+import { exitSync, logCollectedFiles } from '../../console/logging.js';
 import {
   Settings,
   SupportedLibraries,
   TranslateFlags,
 } from '../../types/index.js';
-import {
-  noLocalesError,
-  noDefaultLocaleError,
-  noApiKeyError,
-  noProjectIdError,
-  devApiKeyError,
-} from '../../console/index.js';
-import { FileTranslationData } from '../../workflow/download.js';
+import { FileTranslationData } from '../../workflows/download.js';
 import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
-import { setupProject } from '../../workflow/setupProject.js';
+import { runSetupProjectWorkflow } from '../../workflows/setupProject.js';
+import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 
 export async function handleSetupProject(
   options: TranslateFlags,
@@ -25,24 +19,9 @@ export async function handleSetupProject(
   fileVersionData: FileTranslationData | undefined;
   branchData: BranchData | undefined;
 } | null> {
-  if (!settings.locales) {
-    return logErrorAndExit(noLocalesError);
-  }
-  if (!settings.defaultLocale) {
-    return logErrorAndExit(noDefaultLocaleError);
-  }
-  // Validate required settings are present if not in dry run
-  if (!options.dryRun) {
-    if (!settings.apiKey) {
-      return logErrorAndExit(noApiKeyError);
-    }
-    if (settings.apiKey.startsWith('gtx-dev-')) {
-      return logErrorAndExit(devApiKeyError);
-    }
-    if (!settings.projectId) {
-      return logErrorAndExit(noProjectIdError);
-    }
-  }
+  if (!hasValidLocales(settings)) return exitSync(1);
+  // Validate credentials if not in dry run
+  if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
   const { files: allFiles, reactComponents } = await collectFiles(
     options,
@@ -61,7 +40,7 @@ export async function handleSetupProject(
   let fileVersionData: FileTranslationData | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult } = await setupProject(
+    const { branchData: branchDataResult } = await runSetupProjectWorkflow(
       allFiles,
       options,
       settings

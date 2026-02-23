@@ -1,8 +1,8 @@
 import type { EnqueueFilesResult } from 'generaltranslation/types';
-import { WorkflowStep } from './Workflow.js';
-import { logger } from '../console/logger.js';
+import { WorkflowStep } from './WorkflowStep.js';
+import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
-import { Settings } from '../types/index.js';
+import { Settings } from '../../types/index.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 

@@ -276,7 +276,7 @@ export const warnDeclareStaticNoResultsSync = (
   );
 
 // Re-export error messages
-export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
+export const noLocalesError = `No locales found! Please provide a list of locales for translation, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
 export const noFilesError = `Incorrect or missing files configuration! Please make sure your files are configured correctly in your gt.config.json file.`;
 export const noSourceFileError = `No source file found! Please double check your translations directory and default locale.`;

@@ -3,13 +3,16 @@ import { Settings } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
 import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
-import { FileStatusTracker, PollTranslationJobsStep } from './PollJobsStep.js';
-import { DownloadTranslationsStep } from './DownloadStep.js';
+import {
+  FileStatusTracker,
+  PollTranslationJobsStep,
+} from './steps/PollJobsStep.js';
+import { DownloadTranslationsStep } from './steps/DownloadStep.js';
 import { BranchData } from '../types/branch.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
-import { BranchStep } from './BranchStep.js';
+import { BranchStep } from './steps/BranchStep.js';
 import { FileProperties } from '../types/files.js';
 import chalk from 'chalk';
 
@@ -32,17 +35,27 @@ export type FileTranslationData = {
  * @param forceDownload - Whether to force download even if file exists
  * @returns True if all translations are downloaded successfully, false otherwise
  */
-export async function downloadTranslations(
-  fileVersionData: FileTranslationData,
-  jobData: EnqueueFilesResult | undefined,
-  branchData: BranchData | undefined,
-  locales: string[],
-  timeoutDuration: number,
-  resolveOutputPath: (sourcePath: string, locale: string) => string | null,
-  options: Settings,
-  forceRetranslation?: boolean,
-  forceDownload?: boolean
-): Promise<boolean> {
+export async function runDownloadWorkflow({
+  fileVersionData,
+  jobData,
+  branchData,
+  locales,
+  timeoutDuration,
+  resolveOutputPath,
+  options,
+  forceRetranslation,
+  forceDownload,
+}: {
+  fileVersionData: FileTranslationData;
+  jobData: EnqueueFilesResult | undefined;
+  branchData: BranchData | undefined;
+  locales: string[];
+  timeoutDuration: number;
+  resolveOutputPath: (sourcePath: string, locale: string) => string | null;
+  options: Settings;
+  forceRetranslation?: boolean;
+  forceDownload?: boolean;
+}): Promise<boolean> {
   if (!branchData) {
     // Run the branch step
     const branchStep = new BranchStep(gt, options);
@@ -114,7 +127,7 @@ export async function downloadTranslations(
         `${chalk.red(`${pollResult.fileTracker.failed.size} file(s) failed to translate:`)}\n${Array.from(
           pollResult.fileTracker.failed.entries()
         )
-          .map(([key, value]) => `- ${value.fileName}`)
+          .map(([, value]) => `- ${value.fileName}`)
           .join('\n')}`
       );
       for (const [, value] of pollResult.fileTracker.failed) {
