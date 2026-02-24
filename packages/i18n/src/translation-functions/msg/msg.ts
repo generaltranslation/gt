@@ -12,7 +12,7 @@ import { interpolationFailureMessage } from '../utils/messages';
 import logger from '../../logs/logger';
 import { extractVariables } from '../../utils/extractVariables';
 import { hashMessage } from '../../utils/hashMessage';
-import { RegisterableMessage } from '../types/message';
+import { RegisterableMessages } from '../types/message';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -49,7 +49,7 @@ export function msg(
   options: InlineTranslationOptions
 ): string[];
 export function msg(
-  message: RegisterableMessage,
+  message: RegisterableMessages,
   options?: InlineTranslationOptions
 ): string | string[] {
   // Handle array

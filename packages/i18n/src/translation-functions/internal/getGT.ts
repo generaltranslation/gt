@@ -2,7 +2,7 @@ import { gtFallback } from '../fallbacks/gtFallback';
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
-import { RegisterableMessage } from '../types/message';
+import { RegisterableMessages } from '../types/message';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -37,9 +37,9 @@ export async function getGT(): Promise<GTFunctionType> {
   function gt(message: string, options?: InlineTranslationOptions): string;
   function gt(message: string[], options?: InlineTranslationOptions): string[];
   function gt(
-    message: RegisterableMessage,
+    message: RegisterableMessages,
     options?: InlineTranslationOptions
-  ): RegisterableMessage {
+  ): RegisterableMessages {
     // Handle array
     if (Array.isArray(message)) {
       return message.map((m) => gt(m, options));

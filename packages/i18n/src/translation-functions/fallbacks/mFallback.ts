@@ -1,9 +1,9 @@
 import { decodeMsg } from '../msg/decodeMsg';
 import { InlineResolveOptions } from '../types/options';
-import { MFunctionType } from '../types/functions';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { gtFallback } from './gtFallback';
+import { ResolvableMessages } from '../types/message';
 
 /**
  * A fallback function for the m() function that decodes and interpolates.
@@ -30,23 +30,32 @@ import { gtFallback } from './gtFallback';
  *   return <>{getMessage()}</>;
  * }
  */
-export const mFallback: MFunctionType = <T extends string | null | undefined>(
+export function mFallback<T extends ResolvableMessages>(
   encodedMsg: T,
+  options?: InlineResolveOptions
+): T extends string ? string : T extends string[] ? string[] : T;
+export function mFallback(
+  message: ResolvableMessages,
   options: InlineResolveOptions = {}
-): T extends string ? string : T => {
+): ResolvableMessages {
+  // Handle array
+  if (Array.isArray(message)) {
+    return message.map((m) => mFallback(m, options));
+  }
+
   // Return if the encoded message is null or undefined
-  if (!encodedMsg) return encodedMsg as T extends string ? string : T;
+  if (!message) return message;
 
   // Get any encoded options
-  const decodedOptions = decodeOptions(encodedMsg) ?? {};
+  const decodedOptions = decodeOptions(message) ?? {};
 
   // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
   if (isEncodedTranslationOptions(decodedOptions)) {
     // This is an encoded string, msg already interpolated, just return decoded string
-    return decodeMsg(encodedMsg) as T extends string ? string : T;
+    return decodeMsg(message);
   }
 
   // Use gtFallback to interpolate
   // Not using decoded options to match behavior in @gt/react-core
-  return gtFallback(encodedMsg, options) as T extends string ? string : T;
-};
+  return gtFallback(message, options);
+}
