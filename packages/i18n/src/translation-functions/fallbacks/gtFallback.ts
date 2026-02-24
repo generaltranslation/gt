@@ -1,10 +1,10 @@
 import { InlineTranslationOptions } from '../types/options';
-import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolateMessage';
+import { InterpolatableMessage, RegisterableMessage } from '../types/message';
 
 /**
  * A fallback function for the gt() function that decodes and interpolates.
- * @param {string | null | undefined} message - The ICU formatted message to interpolate.
+ * @param {string | string[] | null | undefined} message - The ICU formatted message to interpolate see {@link InterpolatableMessage} for more details.
  * @param {InlineTranslationOptions} options - The options to interpolate.
  * @returns - The decoded and interpolated message.
  *
@@ -27,9 +27,21 @@ import { interpolateMessage } from '../utils/interpolateMessage';
  *   return <>{getMessage()}</>;
  * }
  */
-export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
-  message: T,
+export function gtFallback(
+  message: string,
+  options?: InlineTranslationOptions
+): string;
+export function gtFallback(
+  message: string[],
+  options?: InlineTranslationOptions
+): string[];
+export function gtFallback(
+  message: RegisterableMessage,
   options: InlineTranslationOptions = {}
-): T extends string ? string : T => {
-  return interpolateMessage(message, options);
-};
+): RegisterableMessage {
+  if (Array.isArray(message)) {
+    return message.map((m) => interpolateMessage(m, options));
+  } else {
+    return interpolateMessage(message, options);
+  }
+}

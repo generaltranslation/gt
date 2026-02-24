@@ -5,26 +5,35 @@ import { formatCutoff } from 'generaltranslation';
 import logger from '../../logs/logger';
 import { interpolationFailureMessage } from './messages';
 import type { InlineTranslationOptions } from '../types/options';
+import type { InterpolatableMessage } from '../types/message';
 
 /**
  * Applies string interpolation and cutoff formatting. Fallsback to the original message if interpolation fails.
- * @param {string} message - The message to interpolate.
+ * @param {string | null | undefined} message - The message to interpolate see for more details.
  * @param {InlineTranslationOptions} options - The options to interpolate.
- * @returns {string} - The interpolated message.
+ * @returns {string | string[]} - The interpolated message(s).
  */
-export function interpolateMessage<T extends string | null | undefined>(
-  encodedMsg: T,
+export function interpolateMessage(
+  message: string,
   options: InlineTranslationOptions
-): T extends string ? string : T {
+): string;
+export function interpolateMessage<T extends null | undefined>(
+  message: T,
+  options: InlineTranslationOptions
+): T;
+export function interpolateMessage(
+  message: InterpolatableMessage,
+  options: InlineTranslationOptions
+): InterpolatableMessage {
   // Return if the encoded message is null or undefined
-  if (!encodedMsg) return encodedMsg as T extends string ? string : T;
+  if (!message) return message;
 
   // Remove any gt related options
   const variables = extractVariables(options);
 
   try {
     // Interpolate the message
-    const interpolatedMessage = formatMessage(encodedMsg, {
+    const interpolatedMessage = formatMessage(message, {
       ...variables,
       [VAR_IDENTIFIER]: 'other',
     });
@@ -32,10 +41,10 @@ export function interpolateMessage<T extends string | null | undefined>(
     const cutoffMessage = formatCutoff(interpolatedMessage, {
       maxChars: options.$maxChars,
     });
-    return cutoffMessage as T extends string ? string : T;
+    return cutoffMessage;
   } catch {
     // Fallback to decodeMsg
     logger.warn(interpolationFailureMessage);
-    return encodedMsg as T extends string ? string : T;
+    return message;
   }
 }

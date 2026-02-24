@@ -12,6 +12,7 @@ import { interpolationFailureMessage } from '../utils/messages';
 import logger from '../../logs/logger';
 import { extractVariables } from '../../utils/extractVariables';
 import { hashMessage } from '../../utils/hashMessage';
+import { RegisterableMessage } from '../types/message';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -41,26 +42,23 @@ import { hashMessage } from '../../utils/hashMessage';
  * console.log(messages); // ["Hello, Alice!", "Hello, Bob!"]
  */
 export function msg<T extends string>(message: T): T;
-export function msg<T extends string>(
-  message: T,
-  options: InlineTranslationOptions
-): string;
 export function msg<T extends string[]>(message: T): T;
-export function msg<T extends string[]>(
-  message: T,
+export function msg(message: string, options: InlineTranslationOptions): string;
+export function msg(
+  message: string[],
   options: InlineTranslationOptions
 ): string[];
-export function msg<T extends string | string[]>(
-  message: T,
+export function msg(
+  message: RegisterableMessage,
   options?: InlineTranslationOptions
-): T | string | string[] {
+): string | string[] {
   // Handle array
   if (typeof message !== 'string') {
     if (!options) return message;
     return message.map((m) => msg(m, options));
   }
 
-  // Handle string
+  // Handle string (return as is)
   if (!options) {
     return message;
   }

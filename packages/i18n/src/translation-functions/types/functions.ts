@@ -1,21 +1,16 @@
 import {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from './options';
+import { gtFallback } from '../fallbacks/gtFallback';
 
 /**
  * Type for the gt() function
- * @param {string} message - The message to translate
+ * @param {string | string[] | null | undefined} message - The message to translate see {@link InterpolatableMessageType} for more details.
  * @param {InlineTranslationOptions} options - The options for the translation
  * @returns {string} The translated message
- *
- * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
  */
-export type GTFunctionType = (
-  message: string,
-  options?: InlineTranslationOptions
-) => string;
+export type GTFunctionType = typeof gtFallback;
 
 /**
  * Type for the m() function

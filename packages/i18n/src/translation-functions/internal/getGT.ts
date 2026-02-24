@@ -2,6 +2,7 @@ import { gtFallback } from '../fallbacks/gtFallback';
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
+import { RegisterableMessage } from '../types/message';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -19,7 +20,7 @@ export async function getGT(): Promise<GTFunctionType> {
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
-   * @param {string} message - The message to translate
+   * @param {string | string[]} message - The message to translate
    * @param {InlineTranslationOptions} options - The options for the translation
    * @returns The translated message
    *
@@ -33,14 +34,25 @@ export async function getGT(): Promise<GTFunctionType> {
    * const gt = await getGT();
    * const welcome = gt('Hello, {name}!', { name: 'Alice' });
    */
-  const gt: GTFunctionType = (
-    message: string,
+  function gt(message: string, options?: InlineTranslationOptions): string;
+  function gt(message: string[], options?: InlineTranslationOptions): string[];
+  function gt(
+    message: RegisterableMessage,
     options?: InlineTranslationOptions
-  ) => {
+  ): RegisterableMessage {
+    // Handle array
+    if (Array.isArray(message)) {
+      return message.map((m) => gt(m, options));
+    }
+
+    // Resolve translation
     const translation = resolveTranslation(message, options);
     if (translation) message = translation;
-    return gtFallback(message, options);
-  };
 
-  return gt;
+    // Interpolate
+    return gtFallback(message, options);
+  }
+
+  // type check
+  return gt as GTFunctionType;
 }
