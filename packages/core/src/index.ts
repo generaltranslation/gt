@@ -21,7 +21,6 @@ import {
   FormatVariables,
   I18nextMessage,
   IcuMessage,
-  DateFnsMessage,
   TranslateManyResult,
   TranslationError,
   TranslationRequestConfig,
@@ -783,19 +782,6 @@ export class GT {
     }
   ): Promise<TranslationResult | TranslationError>;
 
-  // Overload for DateFns content
-  /**
-   * Translates the source content to the target locale.
-   * @deprecated Use the {@link translate} method instead.
-   */
-  async _translate(
-    source: DateFnsMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'DATE_FNS';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
   // Implementation
   /**
    * Translates the source content to the target locale.
@@ -831,7 +817,7 @@ export class GT {
   /**
    * Translates the source content to the target locale.
    *
-   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} | {@link DateFnsMessage} The source content to translate.
+   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} The source content to translate.
    * @param {string} targetLocale - string The target locale to translate to.
    * @param {EntryMetadata} metadata - {@link EntryMetadata} The metadata for the translation.
    * @returns {Promise<TranslationResult | TranslationError>} The translated content.
@@ -878,15 +864,6 @@ export class GT {
     targetLocale: string,
     metadata?: Omit<EntryMetadata, 'dataFormat'> & {
       dataFormat?: 'I18NEXT';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for DateFns content
-  async translate(
-    source: DateFnsMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'DATE_FNS';
     }
   ): Promise<TranslationResult | TranslationError>;
 

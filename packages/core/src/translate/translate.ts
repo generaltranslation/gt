@@ -7,6 +7,7 @@ import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import { Content } from '../types-dir/jsx/content';
 import { EntryMetadata } from '../types-dir/api/entry';
 import apiRequest from './utils/apiRequest';
+import { hashSource } from '../id';
 
 /**
  * @internal
@@ -25,12 +26,19 @@ export default async function _translate(
   metadata: EntryMetadata = {},
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
+  const key =
+    metadata.hash ??
+    hashSource({
+      source,
+      dataFormat: metadata.dataFormat || 'JSX',
+      ...metadata,
+    });
   const results = await apiRequest<unknown[]>(
     { ...config, baseUrl: config.baseUrl || defaultRuntimeApiUrl },
-    `/v1/translate/${config.projectId}`,
+    `/v2/translate`,
     {
       body: {
-        requests: [{ source }],
+        requests: { [key]: source },
         targetLocale,
         metadata,
       },
@@ -38,5 +46,7 @@ export default async function _translate(
       retryPolicy: 'none',
     }
   );
-  return results[0] as TranslationResult | TranslationError;
+  return results[key as keyof typeof results] as
+    | TranslationResult
+    | TranslationError;
 }

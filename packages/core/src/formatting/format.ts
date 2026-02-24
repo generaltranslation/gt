@@ -1,12 +1,8 @@
-import { DateFnsMessage, FormatVariables, I18nextMessage } from '../types';
+import { FormatVariables, I18nextMessage } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 import IntlMessageFormat from 'intl-messageformat';
-import {
-  formatDateFnsWarning,
-  formatI18nextWarning,
-  formatJsxWarning,
-} from '../logging/warnings';
+import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
 import { formattingLogger } from '../logging/logger';
 import { JsxChildren } from '../types';
 import {
@@ -269,25 +265,6 @@ export function _formatI18next(
   _variables: FormatVariables = {}
 ): string {
   formattingLogger.warn(formatI18nextWarning);
-  return message;
-}
-
-/**
- * @experimental This function is not currently supported but will be implemented in a future version.
- * Use {@link _formatMessage} for current ICU message format support.
- * Formats a DateFns message according to the specified locales and options.
- *
- * @param message - The DateFns message to format.
- * @param variables - The variables to use for formatting.
- * @returns The formatted DateFns message.
- * @internal
- */
-export function _formatDateFns(
-  message: DateFnsMessage,
-  // eslint-disable-next-line no-unused-vars
-  _variables: FormatVariables = {}
-): string {
-  formattingLogger.warn(formatDateFnsWarning);
   return message;
 }
 

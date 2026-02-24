@@ -2,7 +2,6 @@ import {
   I18nextMessage,
   IcuMessage,
   JsxChildren,
-  DateFnsMessage,
   StringMessage,
 } from '../jsx/content';
 
@@ -23,7 +22,7 @@ export type TypedResult =
       dataFormat: 'JSX';
     }
   | {
-      translation: I18nextMessage | IcuMessage | DateFnsMessage | StringMessage;
+      translation: I18nextMessage | IcuMessage | StringMessage;
       dataFormat: 'ICU' | 'I18NEXT' | 'DATE_FNS' | 'STRING';
     };
 
@@ -33,7 +32,6 @@ export type TypedResult =
 export type TranslationError = {
   error: string;
   code: number;
-  reference?: TranslationResultReference;
 };
 
 /**
@@ -41,7 +39,6 @@ export type TranslationError = {
  */
 export type RequestSuccess = TypedResult & {
   locale: string;
-  reference: TranslationResultReference;
 };
 
 export type TranslationResult = RequestSuccess | TranslationError;

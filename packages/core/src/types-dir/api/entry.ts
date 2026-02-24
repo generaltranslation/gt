@@ -7,8 +7,6 @@ import {
   IcuMessage,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   I18nextMessage,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  DateFnsMessage,
 } from '../../types';
 
 /**
@@ -42,7 +40,7 @@ export type EntryMetadata = {
 };
 
 /**
- * GTRequest is a translation request object for {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} | {@link DateFnsMessage}
+ * GTRequest is a translation request object for {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage}
  *
  * @param source - The source content to translate.
  * @param targetLocale - The target locale to translate to.
