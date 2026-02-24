@@ -195,20 +195,28 @@ export default function useRuntimeTranslation({
       const resultsMap = new Map<string, TranslatedChildren | null>();
 
       try {
-        const results = await gt.translateMany(requests, {
-          ...baseMetadata,
-          targetLocale: locale,
-          timeout,
-        });
+        const requestsRecord: Record<string, TranslationRequestQueueItem> = {};
+        for (const req of requests) {
+          requestsRecord[req.metadata.hash] = req;
+        }
 
-        results.forEach((result, index) => {
-          const req = requests[index];
+        const results = await gt.translateMany(
+          requestsRecord,
+          {
+            ...baseMetadata,
+            targetLocale: locale,
+          },
+          timeout
+        );
+
+        for (const req of requests) {
           const { hash, id } = req.metadata;
-          if ('translation' in result) {
+          const result = results[hash];
+          if (result && result.success) {
             const value = result.translation;
             newTranslations[hash] = value;
             resultsMap.set(hash, value);
-          } else if ('error' in result) {
+          } else if (result && result.error) {
             const msg = createGenericRuntimeTranslationError(id, hash);
             console.warn(
               `${msg} ${result.error || 'An upstream error occurred.'}`
@@ -221,7 +229,7 @@ export default function useRuntimeTranslation({
             newTranslations[hash] = null;
             resultsMap.set(hash, null);
           }
-        });
+        }
       } catch (e: any) {
         if (e?.name === 'AbortError') {
           console.warn(runtimeTranslationTimeoutWarning);

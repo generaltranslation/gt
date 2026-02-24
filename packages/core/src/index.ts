@@ -807,9 +807,9 @@ export class GT {
    * Translates multiple source strings to the target locale.
    * Each entry can be a plain string or an object with source and metadata fields.
    *
-   * @param {TranslateManyEntry[]} sources - The source entries to translate.
+   * @param {TranslateManyEntry[] | Record<string, TranslateManyEntry>} sources - The source entries to translate. Can be an array or a record keyed by hash.
    * @param {object} options - Translation options including targetLocale.
-   * @returns {Promise<TranslateManyResult>} The translated contents keyed by hash.
+   * @returns {Promise<TranslateManyResult | Record<string, TranslationResult>>} The translated contents. An array if sources was an array, a record if sources was a record.
    *
    * @example
    * const result = await gt.translateMany(
@@ -822,6 +822,12 @@ export class GT {
    *   [{ source: 'Hello, world!', dataFormat: 'ICU' }],
    *   { targetLocale: 'es' }
    * );
+   *
+   * @example
+   * const result = await gt.translateMany(
+   *   { 'my-hash': 'Hello, world!' },
+   *   { targetLocale: 'es' }
+   * );
    */
   async translateMany(
     sources: TranslateManyEntry[],
@@ -832,7 +838,27 @@ export class GT {
           sourceLocale?: string;
         } & SharedMetadata),
     timeout?: number
-  ): Promise<TranslateManyResult> {
+  ): Promise<TranslateManyResult>;
+  async translateMany(
+    sources: Record<string, TranslateManyEntry>,
+    options:
+      | string
+      | ({
+          targetLocale: string;
+          sourceLocale?: string;
+        } & SharedMetadata),
+    timeout?: number
+  ): Promise<Record<string, TranslationResult>>;
+  async translateMany(
+    sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
+    options:
+      | string
+      | ({
+          targetLocale: string;
+          sourceLocale?: string;
+        } & SharedMetadata),
+    timeout?: number
+  ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
     // Normalize string shorthand to options object
     if (typeof options === 'string') {
       options = { targetLocale: options };
@@ -858,7 +884,9 @@ export class GT {
 
     // Request the translation
     return await _translateMany(
-      sources,
+      // TypeScript can't narrow the union through the pass-through, so we need to cast to any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sources as any,
       {
         ...options,
         targetLocale,
