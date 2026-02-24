@@ -15,9 +15,9 @@ import { hashMessage } from '../../utils/hashMessage';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
- * @param message The message to encode.
- * @param options The options to encode.
- * @returns The encoded message.
+ * @param {string | string[]} message The message to encode.
+ * @param {InlineTranslationOptions} [options] The options to encode.
+ * @returns The message or array of messages.
  *
  * @note - This function registers the message before the build process. The actual translation does not
  * occur until the m() function is invoked.
@@ -29,25 +29,38 @@ import { hashMessage } from '../../utils/hashMessage';
  *
  * @example - Basic usage
  *
- * ```jsx
- * import { msg } from 'gt-i18n';
  * const message1 = msg('Hello, World!');
  * console.log(message1); // "Hello, World!"
+ *
  * const message2 = msg('Hello, {name}!', { name: 'Brian' });
  * console.log(message2); // "Hello, Brian:eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9"
- * ```
- * eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9
- * encodes to {"$_hash": "0x123", "$_source": "Hello, {name}!", "name": "Brian"}
+ *
+ * @example - Array usage
+ *
+ * const messages = msg(['Hello, Alice!', 'Hello, Bob!']);
+ * console.log(messages); // ["Hello, Alice!", "Hello, Bob!"]
  */
 export function msg<T extends string>(message: T): T;
 export function msg<T extends string>(
   message: T,
   options: InlineTranslationOptions
 ): string;
-export function msg<T extends string>(
+export function msg<T extends string[]>(message: T): T;
+export function msg<T extends string[]>(
+  message: T,
+  options: InlineTranslationOptions
+): string[];
+export function msg<T extends string | string[]>(
   message: T,
   options?: InlineTranslationOptions
-): T | string {
+): T | string | string[] {
+  // Handle array
+  if (typeof message !== 'string') {
+    if (!options) return message;
+    return message.map((m) => msg(m, options));
+  }
+
+  // Handle string
   if (!options) {
     return message;
   }
@@ -84,31 +97,3 @@ export function msg<T extends string>(
   // Construct result
   return `${interpolatedString}:${optionsEncoding}`;
 }
-
-/**
- * Registers a message to be translated. Returns the message unchanged if no options are provided.
- * @param message The message to encode.
- * @param options The options to encode.
- * @returns The encoded message.
- *
- * @note - This function registers the message before the build process. The actual translation does not
- * occur until the res() function is invoked.
- *
- * @note - Message format
- * A message is broken into two parts separated by colons:
- * - interpolated content - the content with interpolated variables
- * - hash + options - a unique identifier for the source content and options for the translation
- *
- * @example - Basic usage
- *
- * ```jsx
- * import { reg } from 'gt-i18n';
- * const message1 = reg('Hello, World!');
- * console.log(message1); // "Hello, World!"
- * const message2 = reg('Hello, {name}!', { name: 'Brian' });
- * console.log(message2); // "Hello, Brian:eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9"
- * ```
- * eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9
- * encodes to {"$_hash": "0x123", "$_source": "Hello, {name}!", "name": "Brian"}
- */
-export const reg = msg;
