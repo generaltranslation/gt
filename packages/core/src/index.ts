@@ -758,8 +758,8 @@ export class GT {
    */
   async translate(
     source: TranslateManyEntry,
-    options?: {
-      targetLocale?: string;
+    options: {
+      targetLocale: string;
       sourceLocale?: string;
     } & SharedMetadata,
     timeout?: number
@@ -778,8 +778,9 @@ export class GT {
     // Replace target locale with canonical locale
     targetLocale = this.resolveCanonicalLocale(targetLocale);
 
-    const sourceLocale =
-      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale;
+    const sourceLocale = this.resolveCanonicalLocale(
+      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
+    );
 
     // Request the translation
     const results = await _translateMany(
@@ -817,8 +818,8 @@ export class GT {
    */
   async translateMany(
     sources: TranslateManyEntry[],
-    options?: {
-      targetLocale?: string;
+    options: {
+      targetLocale: string;
       sourceLocale?: string;
     } & SharedMetadata,
     timeout?: number
@@ -837,8 +838,9 @@ export class GT {
     // Replace target locale with canonical locale
     targetLocale = this.resolveCanonicalLocale(targetLocale);
 
-    const sourceLocale =
-      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale;
+    const sourceLocale = this.resolveCanonicalLocale(
+      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
+    );
 
     // Request the translation
     return await _translateMany(

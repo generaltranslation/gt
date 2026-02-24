@@ -15,7 +15,12 @@ import {
   DataFormat,
   Content,
 } from './types-dir/jsx/content';
-import { ActionType, EntryMetadata, Entry, TranslateManyEntry } from './types-dir/api/entry';
+import {
+  ActionType,
+  EntryMetadata,
+  Entry,
+  TranslateManyEntry,
+} from './types-dir/api/entry';
 import { HashMetadata } from './id/types';
 export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 
