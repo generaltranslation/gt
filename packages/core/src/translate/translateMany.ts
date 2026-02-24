@@ -97,7 +97,14 @@ export default async function _translateMany(
 
   // If input was an array, map the record response back to an array in input order
   if (hashOrder) {
-    return hashOrder.map((hash) => response[hash]);
+    return hashOrder.map(
+      (hash) =>
+        response[hash] ?? {
+          success: false,
+          error: 'No translation returned',
+          code: 500,
+        }
+    );
   }
 
   // If input was a record, return the record response directly
