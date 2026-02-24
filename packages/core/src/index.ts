@@ -758,12 +758,19 @@ export class GT {
    */
   async translate(
     source: TranslateManyEntry,
-    options: {
-      targetLocale: string;
-      sourceLocale?: string;
-    } & SharedMetadata,
+    options:
+      | string
+      | ({
+          targetLocale: string;
+          sourceLocale?: string;
+        } & SharedMetadata),
     timeout?: number
   ): Promise<TranslationResult | TranslationError> {
+    // Normalize string shorthand to options object
+    if (typeof options === 'string') {
+      options = { targetLocale: options };
+    }
+
     // Validation
     this._validateAuth('translate');
 
@@ -818,12 +825,19 @@ export class GT {
    */
   async translateMany(
     sources: TranslateManyEntry[],
-    options: {
-      targetLocale: string;
-      sourceLocale?: string;
-    } & SharedMetadata,
+    options:
+      | string
+      | ({
+          targetLocale: string;
+          sourceLocale?: string;
+        } & SharedMetadata),
     timeout?: number
   ): Promise<TranslateManyResult> {
+    // Normalize string shorthand to options object
+    if (typeof options === 'string') {
+      options = { targetLocale: options };
+    }
+
     // Validation
     this._validateAuth('translateMany');
 
