@@ -1,13 +1,4 @@
-import {
-  Content,
-  DataFormat,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  JsxChildren,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  IcuMessage,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  I18nextMessage,
-} from '../../types';
+import { Content, DataFormat } from '../../types';
 
 /**
  * ActionType is the type of action to perform on the request.
@@ -40,20 +31,9 @@ export type SharedMetadata = {
 };
 
 /**
- * Entry is a single translation request entry for {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage}
- *
- * @param source - The source content to translate.
- * @param metadata - The metadata for the request.
- */
-export type Entry = {
-  source: Content;
-  sourceLocale?: string;
-  targetLocale?: string;
-  metadata?: EntryMetadata;
-};
-
-/**
  * TranslateManyEntry is the input type for translateMany.
  * Can be a plain string or an object with source and entry metadata fields.
  */
-export type TranslateManyEntry = string | ({ source: Content } & EntryMetadata);
+export type TranslateManyEntry =
+  | string
+  | { source: Content; metadata?: EntryMetadata };

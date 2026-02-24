@@ -21,6 +21,8 @@ import {
 import { defaultLocaleHeaderName } from '../utils/headers';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTTranslationError } from '../utils/errors';
+import type { TranslateManyEntry } from 'generaltranslation/types';
+
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -544,17 +546,13 @@ export default class I18NConfiguration {
     this._activeRequests++;
     try {
       // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
-      const requests: Record<
-        string,
-        {
-          source: (typeof batch)[0]['source'];
-          metadata: (typeof batch)[0]['metadata'];
-          dataFormat: (typeof batch)[0]['dataFormat'];
-        }
-      > = {};
+      const requests: Record<string, TranslateManyEntry> = {};
       for (const item of batch) {
         const { source, metadata, dataFormat } = item;
-        requests[metadata.hash] = { source, metadata, dataFormat };
+        requests[metadata.hash] = {
+          source,
+          metadata: { ...metadata, dataFormat },
+        };
       }
 
       const results = await this.gt.translateMany(

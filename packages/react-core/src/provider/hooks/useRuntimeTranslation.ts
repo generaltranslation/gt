@@ -21,6 +21,7 @@ import {
   batchInterval,
 } from '../config/defaultProps';
 import { GT } from 'generaltranslation';
+import type { TranslateManyEntry } from 'generaltranslation/types';
 
 type TranslationRequestMetadata = {
   hash: string;
@@ -195,9 +196,13 @@ export default function useRuntimeTranslation({
       const resultsMap = new Map<string, TranslatedChildren | null>();
 
       try {
-        const requestsRecord: Record<string, TranslationRequestQueueItem> = {};
+        const requestsRecord: Record<string, TranslateManyEntry> = {};
         for (const req of requests) {
-          requestsRecord[req.metadata.hash] = req;
+          const { source, metadata } = req;
+          requestsRecord[metadata.hash] = {
+            source,
+            metadata: { ...metadata, dataFormat: req.dataFormat },
+          };
         }
 
         const results = await gt.translateMany(

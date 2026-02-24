@@ -1,6 +1,5 @@
 import { DataFormat } from '../jsx/content';
 import { Updates } from './enqueueFiles';
-import { Entry } from './entry';
 
 export type FileFormat =
   | 'GTJSON'
@@ -12,20 +11,6 @@ export type FileFormat =
   | 'JS'
   | 'HTML'
   | 'TXT';
-
-export type FileMetadata = {
-  filePath: string;
-  fileFormat: FileFormat;
-  context?: string;
-  maxChars?: number;
-  sourceLocale?: string;
-  hash?: string;
-};
-
-export type File = {
-  source: Entry[] | string;
-  fileMetadata: FileMetadata;
-};
 
 /**
  * File object structure for uploading files

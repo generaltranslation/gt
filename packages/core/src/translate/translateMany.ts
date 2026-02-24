@@ -4,7 +4,11 @@ import {
   TranslationResult,
 } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import { TranslateManyEntry, SharedMetadata } from '../types-dir/api/entry';
+import {
+  TranslateManyEntry,
+  SharedMetadata,
+  EntryMetadata,
+} from '../types-dir/api/entry';
 import apiRequest from './utils/apiRequest';
 import { Content } from '../types-dir/jsx/content';
 import { hashSource } from '../id';
@@ -54,7 +58,7 @@ export default async function _translateMany(
   const hashOrder: string[] | undefined = isArray ? [] : undefined;
   const requestsObject: Record<
     string,
-    { source: Content; metadata?: Record<string, unknown> }
+    { source: Content; metadata?: EntryMetadata }
   > = {};
 
   const entries: [string | undefined, TranslateManyEntry][] = isArray
@@ -64,19 +68,19 @@ export default async function _translateMany(
   for (const [key, request] of entries) {
     const normalized =
       typeof request === 'string' ? { source: request } : request;
-    const { source, ...metadata } = normalized;
+    const { source, metadata } = normalized;
     const hash =
       key ??
-      metadata.hash ??
+      metadata?.hash ??
       hashSource({
         source,
-        dataFormat: metadata.dataFormat ?? 'STRING',
-        ...metadata,
+        dataFormat: metadata?.dataFormat ?? 'STRING',
+        ...(metadata ?? {}),
       });
     hashOrder?.push(hash);
     requestsObject[hash] = {
       source,
-      ...(Object.keys(metadata).length > 0 && { metadata }),
+      metadata: metadata,
     };
   }
 

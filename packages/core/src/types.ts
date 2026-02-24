@@ -18,7 +18,6 @@ import {
 import {
   ActionType,
   EntryMetadata,
-  Entry,
   TranslateManyEntry,
 } from './types-dir/api/entry';
 import { HashMetadata } from './id/types';
@@ -40,7 +39,6 @@ export {
   DataFormat,
   ActionType as EntryActionType,
   EntryMetadata as EntryMetadata,
-  Entry as Entry,
   TranslateManyEntry as TranslateManyEntry,
   Content,
   HashMetadata,
