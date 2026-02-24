@@ -1,7 +1,9 @@
 import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import { Entry, EntryMetadata } from '../types-dir/api/entry';
+import { Entry, EntryMetadata, SharedMetadata } from '../types-dir/api/entry';
 import apiRequest from './utils/apiRequest';
+import { Content } from '../types-dir/jsx/content';
+import { hashSource } from '../id';
 
 /**
  * @internal
@@ -17,16 +19,36 @@ import apiRequest from './utils/apiRequest';
  */
 export default async function _translateMany(
   requests: Entry[],
-  globalMetadata: { targetLocale: string } & EntryMetadata,
+  globalMetadata: {
+    targetLocale: string;
+    sourceLocale: string;
+    timeout?: number;
+  } & SharedMetadata,
   config: TranslationRequestConfig
 ): Promise<TranslateManyResult> {
+  // map from requests array to requests object
+  const requestsObject = requests.reduce(
+    (acc, request) => {
+      acc[
+        request.metadata?.hash ??
+          hashSource({
+            source: request.source,
+            dataFormat: request.metadata?.dataFormat ?? 'JSX',
+            ...request.metadata,
+          })
+      ] = { source: request.source, metadata: request.metadata };
+      return acc;
+    },
+    {} as Record<string, { source: Content; metadata?: EntryMetadata }>
+  );
   return apiRequest<TranslateManyResult>(
     { ...config, baseUrl: config.baseUrl || defaultRuntimeApiUrl },
-    `/v1/translate/${config.projectId}`,
+    `/v2/translate`,
     {
       body: {
-        requests,
+        requests: requestsObject,
         targetLocale: globalMetadata.targetLocale,
+        sourceLocale: globalMetadata.sourceLocale,
         metadata: globalMetadata,
       },
       timeout: globalMetadata.timeout,

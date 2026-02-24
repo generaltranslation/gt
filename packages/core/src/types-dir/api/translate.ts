@@ -23,13 +23,14 @@ export type TypedResult =
     }
   | {
       translation: I18nextMessage | IcuMessage | StringMessage;
-      dataFormat: 'ICU' | 'I18NEXT' | 'DATE_FNS' | 'STRING';
+      dataFormat: 'ICU' | 'I18NEXT' | 'STRING';
     };
 
 /**
  * RequestError is a type that represents an error that occurred during a translation request.
  */
 export type TranslationError = {
+  success: false;
   error: string;
   code: number;
 };
@@ -38,6 +39,7 @@ export type TranslationError = {
  * RequestSuccess is a type that represents a successful translation request.
  */
 export type RequestSuccess = TypedResult & {
+  success: true;
   locale: string;
 };
 

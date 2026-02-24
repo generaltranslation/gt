@@ -3,11 +3,9 @@ import {
   TranslationError,
   TranslationResult,
 } from '../types';
-import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import { Content } from '../types-dir/jsx/content';
-import { EntryMetadata } from '../types-dir/api/entry';
-import apiRequest from './utils/apiRequest';
-import { hashSource } from '../id';
+import { EntryMetadata, SharedMetadata } from '../types-dir/api/entry';
+import _translateMany from './translateMany';
 
 /**
  * @internal
@@ -22,31 +20,15 @@ import { hashSource } from '../id';
  */
 export default async function _translate(
   source: Content,
-  targetLocale: string,
+  globalMetadata: {
+    targetLocale: string;
+    sourceLocale: string;
+    timeout?: number;
+  } & SharedMetadata,
   metadata: EntryMetadata = {},
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
-  const key =
-    metadata.hash ??
-    hashSource({
-      source,
-      dataFormat: metadata.dataFormat || 'JSX',
-      ...metadata,
-    });
-  const results = await apiRequest<unknown[]>(
-    { ...config, baseUrl: config.baseUrl || defaultRuntimeApiUrl },
-    `/v2/translate`,
-    {
-      body: {
-        requests: { [key]: source },
-        targetLocale,
-        metadata,
-      },
-      timeout: metadata.timeout,
-      retryPolicy: 'none',
-    }
-  );
-  return results[key as keyof typeof results] as
-    | TranslationResult
-    | TranslationError;
+  const requests = [{ source, metadata }];
+  const results = await _translateMany(requests, globalMetadata, config);
+  return results[0] as TranslationResult | TranslationError;
 }

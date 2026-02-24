@@ -16,7 +16,7 @@ import {
  * @param fast - The fast action type (mini model).
  * @param string - Other model
  */
-export type ActionType = 'standard' | 'fast' | string;
+export type ActionType = 'fast';
 
 /**
  * EntryMetadata is the metadata for a GTRequest.
@@ -27,27 +27,27 @@ export type ActionType = 'standard' | 'fast' | string;
  * @param hash - The hash of the request.
  */
 export type EntryMetadata = {
-  context?: string;
   id?: string;
-  maxChars?: number;
   hash?: string;
+  context?: string;
+  maxChars?: number;
   dataFormat?: DataFormat;
-  sourceLocale?: string;
   actionType?: ActionType;
-  timeout?: number;
-  regionCode?: string; // equivalent to regionCode in LocaleProperties, passed via customMapping
-  scriptCode?: string; // equivalent to scriptCode in LocaleProperties, passed via customMapping
+};
+
+export type SharedMetadata = {
+  modelProvider?: string;
 };
 
 /**
- * GTRequest is a translation request object for {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage}
+ * Entry is a single translation request entry for {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage}
  *
  * @param source - The source content to translate.
- * @param targetLocale - The target locale to translate to.
  * @param metadata - The metadata for the request.
  */
 export type Entry = {
   source: Content;
+  sourceLocale?: string;
   targetLocale?: string;
   metadata?: EntryMetadata;
 };
