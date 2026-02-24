@@ -53,3 +53,25 @@ describe('msg function integration with variables', () => {
     expect(decoded).toBe('Hello World{}');
   });
 });
+
+describe('msg function with string arrays', () => {
+  it('should return the array unchanged when no options are provided', () => {
+    const messages = ['Hello, Alice!', 'Hello, Bob!'];
+    const result = msg(messages);
+    expect(result).toEqual(messages);
+    expect(result).toBe(messages); // same reference
+  });
+
+  it('should apply options to each string in the array', () => {
+    const messages = ['Hello {name}', 'Goodbye {name}'];
+    const result = msg(messages, { name: 'World' });
+    expect(result).toHaveLength(2);
+    expect(decodeMsg(result[0])).toBe('Hello World');
+    expect(decodeMsg(result[1])).toBe('Goodbye World');
+  });
+
+  it('should handle an empty array', () => {
+    const result = msg([], { name: 'World' });
+    expect(result).toEqual([]);
+  });
+});
