@@ -3,28 +3,26 @@ import {
   RuntimeTranslationOptions,
 } from './options';
 import { gtFallback } from '../fallbacks/gtFallback';
+import { mFallback } from '../fallbacks/mFallback';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+import { InterpolatableMessage, RegisterableMessages } from '../types/message';
 
 /**
  * Type for the gt() function
- * @param {string | string[] | null | undefined} message - The message to translate see {@link InterpolatableMessageType} for more details.
+ * @param {string | string[]} message - The message to translate. See {@link InterpolatableMessageType} for more details.
  * @param {InlineTranslationOptions} options - The options for the translation
- * @returns {string} The translated message
+ * @returns {string | string[]} The translated message
  */
 export type GTFunctionType = typeof gtFallback;
 
 /**
  * Type for the m() function
- * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
+ * @param {string | string[] | null | undefined} message - The message to decode and interpolate. See {@link RegisterableMessages} for more details.
  * @param {InlineTranslationOptions} options - The options to interpolate.
- * @returns {string | null | undefined} The decoded and interpolated message.
- * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ * @returns {string | string[] | null | undefined} The decoded and interpolated message.
  */
-export type MFunctionType = <T extends string | null | undefined>(
-  encodedMsg: T,
-  // TODO: this needs to become a InlineTranslationOptions
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  options?: Record<string, any>
-) => T extends string ? string : T;
+export type MFunctionType = typeof mFallback;
 
 /**
  * Type for the t() function

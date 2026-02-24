@@ -40,22 +40,30 @@ import { RegisterableMessages } from '../types/message';
  *
  * const messages = msg(['Hello, Alice!', 'Hello, Bob!']);
  * console.log(messages); // ["Hello, Alice!", "Hello, Bob!"]
+ *
+ * @example - When specifying an id for an array, each message will have a unique id of `${id}.${index}`
+ * const messages = msg(['Hello, Alice!', 'Hello, Bob!'], { id: 'greetings' });
+ * // "Hello, Alice!" id: "greetings.0"
+ * // "Hello, Bob!" id: "greetings.1"
  */
-export function msg<T extends string>(message: T): T;
-export function msg<T extends string[]>(message: T): T;
-export function msg(message: string, options: InlineTranslationOptions): string;
-export function msg(
-  message: string[],
+export function msg<T extends RegisterableMessages>(message: T): T;
+export function msg<T extends RegisterableMessages>(
+  message: T,
   options: InlineTranslationOptions
-): string[];
+): T extends string ? string : string[];
 export function msg(
   message: RegisterableMessages,
   options?: InlineTranslationOptions
-): string | string[] {
+): RegisterableMessages {
   // Handle array
   if (typeof message !== 'string') {
     if (!options) return message;
-    return message.map((m) => msg(m, options));
+    return message.map((m, i) =>
+      msg(m, {
+        ...options,
+        ...(options.id != null && { $id: `${options.id}.${i}` }),
+      })
+    );
   }
 
   // Handle string (return as is)

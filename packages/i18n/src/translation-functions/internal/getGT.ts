@@ -34,15 +34,22 @@ export async function getGT(): Promise<GTFunctionType> {
    * const gt = await getGT();
    * const welcome = gt('Hello, {name}!', { name: 'Alice' });
    */
-  function gt(message: string, options?: InlineTranslationOptions): string;
-  function gt(message: string[], options?: InlineTranslationOptions): string[];
+  function gt<T extends RegisterableMessages>(
+    message: T,
+    options?: InlineTranslationOptions
+  ): T extends string ? string : string[];
   function gt(
     message: RegisterableMessages,
-    options?: InlineTranslationOptions
+    options: InlineTranslationOptions = {}
   ): RegisterableMessages {
     // Handle array
-    if (Array.isArray(message)) {
-      return message.map((m) => gt(m, options));
+    if (typeof message !== 'string') {
+      return message.map((m, i) =>
+        gt(m, {
+          ...options,
+          ...(options.id != null && { $id: `${options.id}.${i}` }),
+        })
+      );
     }
 
     // Resolve translation
@@ -53,6 +60,5 @@ export async function getGT(): Promise<GTFunctionType> {
     return gtFallback(message, options);
   }
 
-  // type check
   return gt as GTFunctionType;
 }

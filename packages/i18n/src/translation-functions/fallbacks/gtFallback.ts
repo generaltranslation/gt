@@ -29,13 +29,18 @@ import { RegisterableMessages } from '../types/message';
  */
 export function gtFallback<T extends RegisterableMessages>(
   message: T,
-  options: InlineTranslationOptions
+  options?: InlineTranslationOptions
 ): T extends string ? string : string[];
 export function gtFallback(
   message: RegisterableMessages,
   options: InlineTranslationOptions = {}
 ): RegisterableMessages {
-  return Array.isArray(message)
-    ? message.map((m) => interpolateMessage(m, options))
+  return typeof message !== 'string'
+    ? message.map((m, i) =>
+        interpolateMessage(m, {
+          ...options,
+          ...(options.id != null && { $id: `${options.id}.${i}` }),
+        })
+      )
     : interpolateMessage(message, options);
 }

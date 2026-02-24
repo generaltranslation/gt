@@ -3,6 +3,8 @@ import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { getGT } from './getGT';
 import { MFunctionType } from '../types/functions';
+import { ResolvableMessages } from '../types/message';
+import { msg } from '../msg/msg';
 
 /**
  * Returns the m function that resolves a registered message to its translation.
@@ -23,7 +25,7 @@ export async function getMessages(): Promise<MFunctionType> {
 
   /**
    * Resolves a registered message to its translation.
-   * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
+   * @param {string | string[] | null | undefined} message - The encoded message to decode and interpolate.
    * @param {InlineTranslationOptions} options - The options to interpolate.
    * @returns - The decoded and interpolated message.
    *
@@ -37,27 +39,39 @@ export async function getMessages(): Promise<MFunctionType> {
    * const m = await getMessages();
    * const welcome = m(msg('Welcome, {user}!'), { user: 'Alice' });
    */
-  const m: MFunctionType = <T extends string | null | undefined>(
-    encodedMsg: T,
+  function m<T extends ResolvableMessages>(
+    message: T,
+    options?: InlineResolveOptions
+  ): T extends string ? string : T extends string[] ? string[] : T;
+  function m(
+    message: ResolvableMessages,
     options: InlineResolveOptions = {}
-  ): T extends string ? string : T => {
+  ): ResolvableMessages {
+    // Handle array
+    if (message != null && typeof message !== 'string') {
+      return message.map((msg, i) =>
+        m(msg, {
+          ...options,
+          ...(options.id != null && { $id: `${options.id}.${i}` }),
+        })
+      );
+    }
+
     // Return if the encoded message is null or undefined
-    if (encodedMsg == null) return encodedMsg as T extends string ? string : T;
+    if (message == null) return message;
 
     // Get any encoded options
-    const decodedOptions = decodeOptions(encodedMsg) ?? {};
+    const decodedOptions = decodeOptions(message) ?? {};
 
     // Return early if string already interpolated eg: mFallback(msg('Hello, {name}!', { name: 'Brian' }))
     if (isEncodedTranslationOptions(decodedOptions)) {
-      return gt(decodedOptions.$_source, decodedOptions) as T extends string
-        ? string
-        : T;
+      return gt(decodedOptions.$_source, decodedOptions);
     }
 
     // Use gt to interpolate
     // Separate from decoded options to match behavior in @gt/react-core
-    return gt(encodedMsg, options) as T extends string ? string : T;
-  };
+    return gt(message, options);
+  }
 
-  return m;
+  return m as MFunctionType;
 }

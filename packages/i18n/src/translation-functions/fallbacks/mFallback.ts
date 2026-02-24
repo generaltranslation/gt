@@ -31,7 +31,7 @@ import { ResolvableMessages } from '../types/message';
  * }
  */
 export function mFallback<T extends ResolvableMessages>(
-  encodedMsg: T,
+  message: T,
   options?: InlineResolveOptions
 ): T extends string ? string : T extends string[] ? string[] : T;
 export function mFallback(
@@ -39,8 +39,13 @@ export function mFallback(
   options: InlineResolveOptions = {}
 ): ResolvableMessages {
   // Handle array
-  if (Array.isArray(message)) {
-    return message.map((m) => mFallback(m, options));
+  if (message != null && typeof message !== 'string') {
+    return message.map((m, i) =>
+      mFallback(m, {
+        ...options,
+        ...(options.id != null && { $id: `${options.id}.${i}` }),
+      })
+    );
   }
 
   // Return if the encoded message is null or undefined
