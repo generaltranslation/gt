@@ -51,3 +51,9 @@ export type Entry = {
   targetLocale?: string;
   metadata?: EntryMetadata;
 };
+
+/**
+ * TranslateManyEntry is the input type for translateMany.
+ * Can be a plain string or an object with source and entry metadata fields.
+ */
+export type TranslateManyEntry = string | ({ source: Content } & EntryMetadata);
