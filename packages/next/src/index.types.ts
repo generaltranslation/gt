@@ -418,19 +418,36 @@ export const RegionSelector: typeof _RegionSelector = () => {
 };
 
 /**
- * Gets the message decoding and translation function `m` provided by `<GTProvider>`.
+ * Registers a message to be translated. Returns the message unchanged if no options are provided.
+ * @param {string | string[]} message The message to encode.
+ * @param {InlineTranslationOptions} [options] The options to encode.
+ * @returns The message or array of messages.
  *
- * @returns {Function} A translation function that accepts an encoded message, decodes it, and returns the translated value.
+ * @note - This function registers the message before the build process. The actual translation does not
+ * occur until the m() function is invoked.
  *
- * @example
- * const encodedMessage = msg("Hello, world")
- * const m = useMessages();
- * m(encodedMessage) // returns "Hello, world" translated
+ * @note - Message format
+ * A message is broken into two parts separated by colons:
+ * - interpolated content - the content with interpolated variables
+ * - hash + options - a unique identifier for the source content and options for the translation
  *
- * @example
- * const encodedMessage = msg("My name is {name}", { name: "Brian" });
- * const m = useMessages();
- * m(encodedMessage) // returns "My name is Brian" translated
+ * @example - Basic usage
+ *
+ * const message1 = msg('Hello, World!');
+ * console.log(message1); // "Hello, World!"
+ *
+ * const message2 = msg('Hello, {name}!', { name: 'Brian' });
+ * console.log(message2); // "Hello, Brian:eyIkX2hhc2giOiAiMHgxMjMiLCAiJF9zb3VyY2UiOiAiSGVsbG8sIHtuYW1lfSEiLCAibmFtZSI6ICJCcmlhbiJ9"
+ *
+ * @example - Array usage
+ *
+ * const messages = msg(['Hello, Alice!', 'Hello, Bob!']);
+ * console.log(messages); // ["Hello, Alice!", "Hello, Bob!"]
+ *
+ * @example - When specifying an id for an array, each message will have a unique id of `${id}.${index}`
+ * const messages = msg(['Hello, Alice!', 'Hello, Bob!'], { $id: 'greetings' });
+ * // "Hello, Alice!" id: "greetings.0"
+ * // "Hello, Bob!" id: "greetings.1"
  */
 export const useMessages: (
   _messages?: _Messages
