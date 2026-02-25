@@ -1,21 +1,9 @@
 import * as t from '@babel/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
-import { isStaticExpression, isValidIcu } from '../../../evaluateJsx.js';
-import {
-  warnInvalidIcuSync,
-  warnInvalidMaxCharsSync,
-} from '../../../../../console/index.js';
-import { warnNonStaticExpressionSync } from '../../../../../console/index.js';
-import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
-import generateModule from '@babel/generator';
-import { mapAttributeName } from '../../mapAttributeName.js';
-import pathModule from 'node:path';
-import { isNumberLiteral } from '../../isNumberLiteral.js';
+import { isValidIcu } from '../../../evaluateJsx.js';
+import { warnInvalidIcuSync } from '../../../../../console/index.js';
 import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
-
-// Handle CommonJS/ESM interop
-const generate = generateModule.default || generateModule;
 
 /**
  * For the processTranslationCall function, this function handles the case where a string literal or template literal is used.

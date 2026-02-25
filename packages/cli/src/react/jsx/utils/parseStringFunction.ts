@@ -1,6 +1,5 @@
 import { NodePath, Scope, Binding } from '@babel/traverse';
 import * as t from '@babel/types';
-import { isStaticExpression } from '../evaluateJsx.js';
 import {
   MSG_REGISTRATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
@@ -23,9 +22,6 @@ import type {
 } from './stringParsing/types.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
-import { handleStaticTranslationCall } from './stringParsing/processTranslationCall/handleStaticTranslationCall.js';
-import { handleLiteralTranslationCall } from './stringParsing/processTranslationCall/handleLiteralTranslationCall.js';
-import { handleInvalidTranslationCall } from './stringParsing/processTranslationCall/handleInvalidTranslationCall.js';
 import { processTranslationArgs } from './stringParsing/processTranslationCall/processTranslationArgs.js';
 
 /**
