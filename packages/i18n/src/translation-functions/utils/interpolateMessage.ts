@@ -12,6 +12,9 @@ import type { InterpolatableMessage } from '../types/message';
  * @param {string | null | undefined} message - The message to interpolate see for more details.
  * @param {InlineTranslationOptions} options - The options to interpolate.
  * @returns {string | string[]} - The interpolated message(s).
+ *
+ * TODO: investigate indexVars(), condenseVars(), and extractVars() from core (see useCreateInternalUseGTFunction.ts) for example
+ * we need to properly handle interpolation for declareVar()
  */
 export function interpolateMessage(
   message: string,
