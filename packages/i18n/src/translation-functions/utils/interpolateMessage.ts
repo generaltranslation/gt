@@ -54,9 +54,10 @@ export function interpolateMessage<T extends string | null | undefined>(
 
     // If formatting the translation failed and we have a fallback, try formatting the source instead
     if (source != null) {
-      return interpolateMessage(source, variables) as T extends string
-        ? string
-        : T;
+      return interpolateMessage(source, {
+        ...options,
+        $_fallback: undefined,
+      }) as T extends string ? string : T;
     }
 
     // Apply cutoff formatting
