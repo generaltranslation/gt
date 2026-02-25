@@ -33,7 +33,11 @@ export function routeTranslationCall({
   options: t.CallExpression['arguments'][number] | undefined;
   index?: number;
 }): void {
-  if (t.isArrayExpression(arg) && index == null) {
+  if (
+    t.isArrayExpression(arg) &&
+    index == null &&
+    !config.ignoreInlineListContent
+  ) {
     // handle array translation call
     for (let i = 0; i < arg.elements.length; i++) {
       const element = arg.elements[i];

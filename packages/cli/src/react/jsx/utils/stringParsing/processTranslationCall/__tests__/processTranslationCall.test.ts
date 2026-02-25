@@ -8,15 +8,14 @@ import { Updates } from '../../../../../../types/index.js';
 
 const FILE_PATH = 'test.tsx';
 
-function createConfig(
-  overrides?: Partial<ParsingConfig>
-): ParsingConfig {
+function createConfig(overrides?: Partial<ParsingConfig>): ParsingConfig {
   return {
     parsingOptions: { conditionNames: [] },
     file: FILE_PATH,
     ignoreInlineMetadata: false,
     ignoreDynamicContent: false,
     ignoreInvalidIcu: false,
+    ignoreInlineListContent: false,
     ...overrides,
   };
 }
@@ -174,9 +173,7 @@ describe('processTranslationCall - array support', () => {
   });
 
   it('should index $id for a single-element array', () => {
-    const output = runProcessTranslationCall(
-      `t(["only"], { $id: "single" })`
-    );
+    const output = runProcessTranslationCall(`t(["only"], { $id: "single" })`);
 
     expect(output.updates).toHaveLength(1);
     expect(output.updates[0]).toMatchObject({

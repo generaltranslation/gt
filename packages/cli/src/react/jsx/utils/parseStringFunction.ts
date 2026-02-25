@@ -430,6 +430,7 @@ export function parseStrings(
         ignoreInlineMetadata: false,
         ignoreDynamicContent: false,
         ignoreInvalidIcu: false,
+        ignoreInlineListContent: false,
       };
 
       // Check if this is a direct call to msg('string')
@@ -479,12 +480,17 @@ export function parseStrings(
       const isMessageHook =
         originalName === INLINE_MESSAGE_HOOK ||
         originalName === INLINE_MESSAGE_HOOK_ASYNC;
+      const isInlineGT =
+        originalName === INLINE_TRANSLATION_HOOK ||
+        originalName === INLINE_TRANSLATION_HOOK_ASYNC;
       const hookConfig: ParsingConfig = {
         parsingOptions: config.parsingOptions,
         file: config.file,
         ignoreInlineMetadata: isMessageHook,
         ignoreDynamicContent: isMessageHook,
         ignoreInvalidIcu: isMessageHook,
+        // TODO: when we add support for array content in gt function, this should just always be false
+        ignoreInlineListContent: isInlineGT,
       };
 
       const effectiveParent =

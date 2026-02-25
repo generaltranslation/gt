@@ -19,6 +19,11 @@ export type ParsingConfig = {
    * If true, invalid ICU strings will not be treated as errors
    */
   ignoreInvalidIcu: boolean;
+  /**
+   * If true, will ignore registration of list content
+   * eg msg(['hello', 'world', 'foo', 'bar']) will not be registered
+   */
+  ignoreInlineListContent: boolean;
 };
 
 /**

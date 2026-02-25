@@ -48,6 +48,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -91,10 +92,19 @@ describe('parseStrings', () => {
             path.node.local.name,
             'useMessages',
             path,
-            params.updates,
-            params.errors,
-            params.warnings,
-            params.file
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreInlineMetadata: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
+            },
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
           );
         }
       },
@@ -131,6 +141,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -183,6 +194,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -231,6 +243,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -278,6 +291,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -320,6 +334,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -363,6 +378,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -406,6 +422,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -452,6 +469,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -505,6 +523,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -559,6 +578,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -607,6 +627,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -656,6 +677,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -704,6 +726,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -754,6 +777,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -801,6 +825,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -848,6 +873,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -896,6 +922,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -946,6 +973,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -998,6 +1026,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1047,6 +1076,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1088,6 +1118,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1141,6 +1172,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1200,6 +1232,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1276,6 +1309,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1364,6 +1398,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1429,6 +1464,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1483,6 +1519,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1539,6 +1576,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1619,6 +1657,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1668,6 +1707,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1719,6 +1759,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -1762,6 +1803,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -1810,6 +1852,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -1856,6 +1899,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -1897,6 +1941,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -1939,6 +1984,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -1984,6 +2030,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -2030,6 +2077,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -2091,6 +2139,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -2138,6 +2187,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: false,
             },
             {
               updates: params.updates,
@@ -2184,6 +2234,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2232,6 +2283,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2278,6 +2330,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2325,6 +2378,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2367,6 +2421,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2411,6 +2466,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2455,6 +2511,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2498,6 +2555,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2541,6 +2599,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2587,6 +2646,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2640,6 +2700,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2686,6 +2747,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2734,6 +2796,7 @@ describe('parseStrings', () => {
               ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
             },
             {
               updates: params.updates,
@@ -2781,6 +2844,7 @@ describe('parseStrings', () => {
                 ignoreInlineMetadata: false,
                 ignoreDynamicContent: false,
                 ignoreInvalidIcu: false,
+                ignoreInlineListContent: false,
               },
               {
                 updates: params.updates,

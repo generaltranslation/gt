@@ -66,6 +66,7 @@ export async function createInlineUpdates(
           ignoreInlineMetadata: false,
           ignoreDynamicContent: false,
           ignoreInvalidIcu: false,
+          ignoreInlineListContent: false,
         },
         { updates, errors, warnings }
       );
