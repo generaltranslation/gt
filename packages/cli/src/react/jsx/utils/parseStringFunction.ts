@@ -23,9 +23,10 @@ import type {
 } from './stringParsing/types.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
-import { handleStaticTranslationCall } from './stringParsing/handleStaticTranslationCall.js';
-import { handleLiteralTranslationCall } from './stringParsing/handleLiteralTranslationCall.js';
-import { handleInvalidTranslationCall } from './stringParsing/handleInvalidTranslationCall.js';
+import { handleStaticTranslationCall } from './stringParsing/processTranslationCall/handleStaticTranslationCall.js';
+import { handleLiteralTranslationCall } from './stringParsing/processTranslationCall/handleLiteralTranslationCall.js';
+import { handleInvalidTranslationCall } from './stringParsing/processTranslationCall/handleInvalidTranslationCall.js';
+import { processTranslationArgs } from './stringParsing/processTranslationCall/processTranslationArgs.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -65,49 +66,22 @@ function processTranslationCall(
   output: ParsingOutput
 ): void {
   if (
-    tPath.parent.type === 'CallExpression' &&
-    tPath.parent.arguments.length > 0
+    tPath.parent.type !== 'CallExpression' ||
+    tPath.parent.arguments.length === 0
   ) {
-    const arg = tPath.parent.arguments[0];
-    const options:
-      | t.ArgumentPlaceholder
-      | t.SpreadElement
-      | t.Expression
-      | undefined = tPath.parent.arguments[1];
-
-    if (
-      !config.ignoreDynamicContent &&
-      t.isExpression(arg) &&
-      !isStaticExpression(arg).isStatic
-    ) {
-      // handle static translation call
-      handleStaticTranslationCall({
-        arg,
-        options,
-        tPath,
-        config,
-        output,
-      });
-    } else if (
-      arg.type === 'StringLiteral' ||
-      (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
-    ) {
-      // Handle string and template literals
-      handleLiteralTranslationCall({
-        arg,
-        options,
-        config,
-        output,
-      });
-    } else {
-      // error on invalid translation call
-      handleInvalidTranslationCall({
-        arg,
-        config,
-        output,
-      });
-    }
+    return;
   }
+
+  const arg = tPath.parent.arguments[0];
+  const options = tPath.parent.arguments.at(1);
+
+  processTranslationArgs({
+    tPath,
+    config,
+    output,
+    arg,
+    options,
+  });
 }
 
 /**
@@ -491,7 +465,7 @@ export function parseStrings(
       const msgConfig: ParsingConfig = {
         parsingOptions: config.parsingOptions,
         file: config.file,
-        ignoreAdditionalData: false,
+        ignoreInlineMetadata: false,
         ignoreDynamicContent: false,
         ignoreInvalidIcu: false,
       };
@@ -546,7 +520,7 @@ export function parseStrings(
       const hookConfig: ParsingConfig = {
         parsingOptions: config.parsingOptions,
         file: config.file,
-        ignoreAdditionalData: isMessageHook,
+        ignoreInlineMetadata: isMessageHook,
         ignoreDynamicContent: isMessageHook,
         ignoreInvalidIcu: isMessageHook,
       };

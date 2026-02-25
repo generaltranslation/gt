@@ -1,20 +1,18 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { ParsingConfig } from './types.js';
-import { ParsingOutput } from './types.js';
-import { handleStaticExpression } from '../parseDeclareStatic.js';
-import { nodeToStrings } from '../parseString.js';
+import { ParsingConfig } from '../types.js';
+import { ParsingOutput } from '../types.js';
+import { handleStaticExpression } from '../../parseDeclareStatic.js';
+import { nodeToStrings } from '../../parseString.js';
 import { indexVars } from 'generaltranslation/internal';
-import { isStaticExpression, isValidIcu } from '../../evaluateJsx.js';
+import { isValidIcu } from '../../../evaluateJsx.js';
 import {
   warnInvalidIcuSync,
   warnNonStringSync,
-} from '../../../../console/index.js';
-import { warnNonStaticExpressionSync } from '../../../../console/index.js';
-import { GT_ATTRIBUTES_WITH_SUGAR } from '../constants.js';
+} from '../../../../../console/index.js';
 import generateModule from '@babel/generator';
-import { mapAttributeName } from '../mapAttributeName.js';
 import { randomUUID } from 'node:crypto';
+import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -33,12 +31,14 @@ export function handleStaticTranslationCall({
   tPath,
   config,
   output,
+  index,
 }: {
   arg: t.Expression;
   options?: t.Expression | t.ArgumentPlaceholder | t.SpreadElement;
   tPath: NodePath;
   config: ParsingConfig;
   output: ParsingOutput;
+  index?: number;
 }): void {
   // parse static expression
   const result = handleStaticExpression(
@@ -61,6 +61,7 @@ export function handleStaticTranslationCall({
     return;
   }
 
+  // validate ICU
   const strings = nodeToStrings(result).map(indexVars);
   if (!config.ignoreInvalidIcu) {
     for (const string of strings) {
@@ -80,36 +81,13 @@ export function handleStaticTranslationCall({
   }
 
   // get metadata and id from options
-  const metadata: Record<string, string> = {};
-  if (options && options.type === 'ObjectExpression') {
-    options.properties.forEach((prop) => {
-      if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
-        const attribute = prop.key.name;
-        if (
-          GT_ATTRIBUTES_WITH_SUGAR.includes(
-            attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
-          ) &&
-          t.isExpression(prop.value)
-        ) {
-          const result = isStaticExpression(prop.value);
-          if (!result.isStatic) {
-            output.errors.push(
-              warnNonStaticExpressionSync(
-                config.file,
-                attribute,
-                generate(prop.value).code,
-                `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-              )
-            );
-          }
-          if (result.isStatic && result.value && !config.ignoreAdditionalData) {
-            // Map $id and $context to id and context
-            metadata[mapAttributeName(attribute)] = result.value;
-          }
-        }
-      }
-    });
-  }
+  const metadata = extractStringEntryMetadata({
+    options,
+    output,
+    config,
+    index,
+  });
+
   const temporaryStaticId = `static-temp-id-${randomUUID()}`;
   for (const string of strings) {
     output.updates.push({

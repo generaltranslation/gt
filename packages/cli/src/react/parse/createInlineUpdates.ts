@@ -63,7 +63,7 @@ export async function createInlineUpdates(
         {
           parsingOptions,
           file,
-          ignoreAdditionalData: false,
+          ignoreInlineMetadata: false,
           ignoreDynamicContent: false,
           ignoreInvalidIcu: false,
         },

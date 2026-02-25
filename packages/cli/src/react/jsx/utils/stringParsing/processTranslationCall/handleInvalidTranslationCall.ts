@@ -1,9 +1,9 @@
 import * as t from '@babel/types';
-import { ParsingConfig, ParsingOutput } from './types.js';
+import { ParsingConfig, ParsingOutput } from '../types.js';
 import {
   warnNonStringSync,
   warnTemplateLiteralSync,
-} from '../../../../console/index.js';
+} from '../../../../../console/index.js';
 import generateModule from '@babel/generator';
 
 // Handle CommonJS/ESM interop

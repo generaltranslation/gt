@@ -45,7 +45,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -128,7 +128,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -180,7 +180,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -228,7 +228,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -275,7 +275,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -317,7 +317,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -360,7 +360,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -403,7 +403,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -449,7 +449,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -502,7 +502,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -556,7 +556,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -604,7 +604,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -653,7 +653,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -701,7 +701,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -751,7 +751,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -798,7 +798,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -845,7 +845,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -893,7 +893,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -943,7 +943,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -995,7 +995,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1044,7 +1044,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1085,7 +1085,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1138,7 +1138,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1197,7 +1197,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1273,7 +1273,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1361,7 +1361,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1426,7 +1426,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1480,7 +1480,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1536,7 +1536,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1616,7 +1616,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1665,7 +1665,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1716,7 +1716,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1759,7 +1759,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1807,7 +1807,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1853,7 +1853,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1894,7 +1894,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1936,7 +1936,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -1981,7 +1981,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2027,7 +2027,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2088,7 +2088,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2135,7 +2135,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2181,7 +2181,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2229,7 +2229,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2275,7 +2275,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2322,7 +2322,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2364,7 +2364,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2408,7 +2408,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2452,7 +2452,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2495,7 +2495,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2538,7 +2538,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2584,7 +2584,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2637,7 +2637,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2683,7 +2683,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
@@ -2731,7 +2731,7 @@ describe('parseStrings', () => {
             {
               parsingOptions: params.parsingOptions,
               file: params.file,
-              ignoreAdditionalData: false,
+              ignoreInlineMetadata: false,
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
             },
