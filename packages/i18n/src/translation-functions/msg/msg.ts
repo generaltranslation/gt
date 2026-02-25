@@ -61,7 +61,8 @@ export function msg(
     return message.map((m, i) =>
       msg(m, {
         ...options,
-        ...(options.$id != null && { $id: `${options.$id}.${i}` }),
+        // ignore if $id is an empty string or not defined
+        ...(options.$id && { $id: `${options.$id}.${i}` }),
       })
     );
   }

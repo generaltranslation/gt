@@ -132,9 +132,12 @@ function extractInlineMetadata({
                 // Add the maxChars value to the metadata
                 metadata[mappedKey] = Math.abs(Number(result.value));
               }
-            } else if (mappedKey === 'id' && index != null) {
+            } else if (mappedKey === 'id') {
+              // ignore if $id is an empty string or not defined
+              if (!result.value) return;
               // For array translation calls, append `.${index}` to the id
-              metadata[mappedKey] = `${result.value}.${index}`;
+              metadata[mappedKey] =
+                index != null ? `${result.value}.${index}` : result.value;
             } else {
               // Add the $context or $id or other attributes value to the metadata
               // TODO: why are we including everything? arent we only interested in relevant inline metadata?
