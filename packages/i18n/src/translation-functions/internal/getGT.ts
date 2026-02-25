@@ -60,11 +60,3 @@ export async function getGT(): Promise<GTFunctionType> {
 
   return gt as GTFunctionType;
 }
-
-function a(str: string[]): readonly string[] {
-  return str;
-}
-
-const b: string[] = ['hi'] as string[];
-const c = msg(b);
-c[0] = 'bye';

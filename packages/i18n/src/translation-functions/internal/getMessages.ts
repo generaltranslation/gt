@@ -4,7 +4,6 @@ import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOption
 import { getGT } from './getGT';
 import { MFunctionType } from '../types/functions';
 import { ResolvableMessages } from '../types/message';
-import { msg } from '../msg/msg';
 
 /**
  * Returns the m function that resolves a registered message to its translation.

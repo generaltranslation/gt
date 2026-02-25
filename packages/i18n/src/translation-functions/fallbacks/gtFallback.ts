@@ -55,8 +55,3 @@ export function gtFallback(
       )
     : interpolateMessage(message, options ?? {});
 }
-
-const a: typeof gtFallback = (
-  message1: string,
-  options?: InlineTranslationOptions
-) => message1;

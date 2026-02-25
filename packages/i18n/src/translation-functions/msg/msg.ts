@@ -46,11 +46,11 @@ import { RegisterableMessages } from '../types/message';
  * // "Hello, Alice!" id: "greetings.0"
  * // "Hello, Bob!" id: "greetings.1"
  */
-// export function msg<T extends RegisterableMessages>(message: T): T;
-// export function msg<T extends RegisterableMessages>(
-//   message: T,
-//   options?: InlineTranslationOptions
-// ): T extends string ? string : string[];
+export function msg<T extends RegisterableMessages>(message: T): T;
+export function msg<T extends RegisterableMessages>(
+  message: T,
+  options?: InlineTranslationOptions
+): T extends string ? string : string[];
 export function msg(
   message: RegisterableMessages,
   options?: InlineTranslationOptions
@@ -103,6 +103,3 @@ export function msg(
   // Construct result
   return `${interpolatedString}:${optionsEncoding}`;
 }
-
-const a: typeof msg = (message: string, options?: InlineTranslationOptions) =>
-  message;

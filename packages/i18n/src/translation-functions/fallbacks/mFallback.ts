@@ -31,6 +31,9 @@ import { ResolvableMessages } from '../types/message';
  * }
  */
 export function mFallback<T extends ResolvableMessages>(
+  message: T
+): T extends string ? string : T extends string[] ? string[] : T;
+export function mFallback<T extends ResolvableMessages>(
   message: T,
   options?: InlineResolveOptions
 ): T extends string ? string : T extends string[] ? string[] : T;
