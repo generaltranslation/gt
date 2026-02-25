@@ -34,10 +34,8 @@ export async function getGT(): Promise<GTFunctionType> {
    * const gt = await getGT();
    * const welcome = gt('Hello, {name}!', { name: 'Alice' });
    */
-  function gt<T extends RegisterableMessages>(
-    message: T,
-    options?: InlineTranslationOptions
-  ): T extends string ? string : string[];
+  function gt(message: string, options?: InlineTranslationOptions): string;
+  function gt(message: string[], options?: InlineTranslationOptions): string[];
   function gt(
     message: RegisterableMessages,
     options: InlineTranslationOptions = {}
@@ -62,3 +60,11 @@ export async function getGT(): Promise<GTFunctionType> {
 
   return gt as GTFunctionType;
 }
+
+function a(str: string[]): readonly string[] {
+  return str;
+}
+
+const b: string[] = ['hi'] as string[];
+const c = msg(b);
+c[0] = 'bye';

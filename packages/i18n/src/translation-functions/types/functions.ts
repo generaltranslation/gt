@@ -1,5 +1,6 @@
 import {
   DictionaryTranslationOptions,
+  InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from './options';
 import { gtFallback } from '../fallbacks/gtFallback';
@@ -15,6 +16,11 @@ import { InterpolatableMessage, RegisterableMessages } from '../types/message';
  * @returns {string | string[]} The translated message
  */
 export type GTFunctionType = typeof gtFallback;
+
+const testGT: GTFunctionType = (
+  message: string,
+  options?: InlineTranslationOptions
+) => message;
 
 /**
  * Type for the m() function
