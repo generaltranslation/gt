@@ -93,6 +93,7 @@ export const staticString = createRule({
 
         /**
          * Helper function to validate gt()'s params
+         * TODO: when enable array support in gt function remove allowArrays parameter as it will always be true
          */
         function validateGTInvocation(
           expression: TSESTree.Expression,
