@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.6.26
+
+### Patch Changes
+
+- [#1046](https://github.com/generaltranslation/gt/pull/1046) [`47918b7`](https://github.com/generaltranslation/gt/commit/47918b7a4c38967fe2148d972f0a3c740e0bc25d) Thanks [@brian-lou](https://github.com/brian-lou)! - Update /translate endpoint
+
+- Updated dependencies [[`47918b7`](https://github.com/generaltranslation/gt/commit/47918b7a4c38967fe2148d972f0a3c740e0bc25d)]:
+  - generaltranslation@8.1.12
+
 ## 2.6.25
 
 ### Patch Changes
