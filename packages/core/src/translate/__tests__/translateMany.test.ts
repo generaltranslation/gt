@@ -49,8 +49,10 @@ describe.sequential('_translateMany', () => {
       { source: 'Hello world', metadata: {} },
       { source: 'Goodbye world', metadata: {} },
     ];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -91,8 +93,10 @@ describe.sequential('_translateMany', () => {
         source: 'Hello {name}',
       },
     ];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -119,8 +123,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -138,8 +144,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -157,8 +165,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -181,8 +191,10 @@ describe.sequential('_translateMany', () => {
     };
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -201,8 +213,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockRejectedValue(fetchError);
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -216,8 +230,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockRejectedValue(new Error('Validation failed'));
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -231,8 +247,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockResolvedValue({});
 
     const requests: TranslateManyEntry[] = [];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
     };
@@ -253,8 +271,10 @@ describe.sequential('_translateMany', () => {
     vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
 
     const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: { targetLocale: string; sourceLocale: string } &
-      SharedMetadata = {
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
       targetLocale: 'es',
       sourceLocale: 'en',
       modelProvider: 'custom-provider',

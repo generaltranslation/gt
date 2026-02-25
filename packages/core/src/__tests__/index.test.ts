@@ -88,9 +88,7 @@ describe('GT Translation Methods', () => {
         baseUrl: 'https://api.test.com',
       });
 
-      await expect(
-        gtNoProject.translate('Hello world', 'es')
-      ).rejects.toThrow(
+      await expect(gtNoProject.translate('Hello world', 'es')).rejects.toThrow(
         'GT Error: Cannot call `translate` without a specified project ID. Either pass a project ID to the `translate` function or specify a projectId in the GT constructor.'
       );
     });
