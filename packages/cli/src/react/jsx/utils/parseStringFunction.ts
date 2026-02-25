@@ -22,7 +22,6 @@ import type {
 } from './stringParsing/types.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
-import { routeTranslationCall } from './stringParsing/processTranslationCall/routeTranslationCall.js';
 import { processTranslationCall } from './stringParsing/processTranslationCall/index.js';
 
 /**

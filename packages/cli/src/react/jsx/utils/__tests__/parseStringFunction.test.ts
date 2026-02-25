@@ -2753,4 +2753,222 @@ describe('parseStrings', () => {
     });
     expect(params.errors).toHaveLength(0);
   });
+
+  // ----- Array support tests ----- //
+
+  describe('msg() array support', () => {
+    /**
+     * Helper to run parseStrings for a msg() import and return the output.
+     */
+    function runMsgParseStrings(code: string) {
+      const ast = parseCode(code);
+      const params = createMockParams();
+
+      traverse(ast, {
+        ImportSpecifier(path) {
+          if (
+            t.isIdentifier(path.node.imported) &&
+            path.node.imported.name === 'msg' &&
+            t.isIdentifier(path.node.local)
+          ) {
+            parseStrings(
+              path.node.local.name,
+              'msg',
+              path,
+              {
+                parsingOptions: params.parsingOptions,
+                file: params.file,
+                ignoreInlineMetadata: false,
+                ignoreDynamicContent: false,
+                ignoreInvalidIcu: false,
+              },
+              {
+                updates: params.updates,
+                errors: params.errors,
+                warnings: params.warnings,
+              }
+            );
+          }
+        },
+      });
+
+      return params;
+    }
+
+    it('should handle msg() with array of string literals', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["hello", "world"]);
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({
+        dataFormat: 'ICU',
+        source: 'hello',
+      });
+      expect(params.updates[1]).toMatchObject({
+        dataFormat: 'ICU',
+        source: 'world',
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle msg() with array of template literals', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg([\`hello\`, \`world\`]);
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({ source: 'hello' });
+      expect(params.updates[1]).toMatchObject({ source: 'world' });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle msg() with mixed string and template literals in array', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["hello", \`world\`]);
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({ source: 'hello' });
+      expect(params.updates[1]).toMatchObject({ source: 'world' });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should append index to $id for each array element', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["a", "b"], { $id: "items" });
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({
+        source: 'a',
+        metadata: { id: 'items.0' },
+      });
+      expect(params.updates[1]).toMatchObject({
+        source: 'b',
+        metadata: { id: 'items.1' },
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should append index to $id and share $context across array elements', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["a", "b"], { $id: "x", $context: "nav" });
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({
+        source: 'a',
+        metadata: { id: 'x.0', context: 'nav' },
+      });
+      expect(params.updates[1]).toMatchObject({
+        source: 'b',
+        metadata: { id: 'x.1', context: 'nav' },
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should share $context without id when $id is not provided', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["a", "b"], { $context: "nav" });
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({
+        source: 'a',
+        metadata: { context: 'nav' },
+      });
+      expect(params.updates[0].metadata).not.toHaveProperty('id');
+      expect(params.updates[1]).toMatchObject({
+        source: 'b',
+        metadata: { context: 'nav' },
+      });
+      expect(params.updates[1].metadata).not.toHaveProperty('id');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should share $maxChars across array elements', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["a", "b"], { $maxChars: 10 });
+      `);
+
+      expect(params.updates).toHaveLength(2);
+      expect(params.updates[0]).toMatchObject({
+        metadata: { maxChars: 10 },
+      });
+      expect(params.updates[1]).toMatchObject({
+        metadata: { maxChars: 10 },
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle msg() with empty array', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg([]);
+      `);
+
+      expect(params.updates).toHaveLength(0);
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle msg() with single-element array', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["only"]);
+      `);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0]).toMatchObject({
+        dataFormat: 'ICU',
+        source: 'only',
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should index $id for single-element array', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        msg(["only"], { $id: "s" });
+      `);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0]).toMatchObject({
+        source: 'only',
+        metadata: { id: 's.0' },
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should error on dynamic variable element inside array', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        const someVar = "dynamic";
+        msg(["hello", someVar]);
+      `);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0]).toMatchObject({ source: 'hello' });
+      expect(params.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should error on template literal with expression inside array', () => {
+      const params = runMsgParseStrings(`
+        import { msg } from 'gt-next';
+        const name = "world";
+        msg(["hello", \`hi \${name}\`]);
+      `);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0]).toMatchObject({ source: 'hello' });
+      expect(params.errors.length).toBeGreaterThan(0);
+    });
+  });
 });
