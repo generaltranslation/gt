@@ -105,4 +105,35 @@ describe('gtFallback', () => {
       expect(result).toBe('Bonjour Alice !');
     });
   });
+
+  describe('fallback retry on formatting failure', () => {
+    it('retries with source when translation formatting fails', () => {
+      // Malformed translation that will cause formatMessage to throw
+      const source = 'Hello {_gt_, select, other {World}}!';
+      const translation = 'Bonjour {_gt_1, bad_syntax, other {}}!';
+      const result = gtFallback(translation, { $_fallback: source });
+      // Should fall back to formatting the source, resolving the unindexed select
+      expect(result).toBe('Hello World!');
+    });
+
+    it('retries with source and preserves user variables', () => {
+      const source =
+        'Hello {name}, welcome to {_gt_, select, other {the park}}!';
+      const translation = 'Bonjour {name, bad_syntax, other {}} {_gt_1}!';
+      const result = gtFallback(translation, {
+        name: 'Alice',
+        $_fallback: source,
+      });
+      // Should fall back to formatting the source with user variables
+      expect(result).toBe('Hello Alice, welcome to the park!');
+    });
+
+    it('returns raw message with cutoff when no fallback and formatting fails', () => {
+      // Malformed ICU with no $_fallback — returns the raw encodedMsg
+      const result = gtFallback('{bad, bad_syntax, other {}}', {});
+      // formatMessage wrapper catches internally and returns raw string,
+      // so this tests that the outer catch also gracefully handles it
+      expect(typeof result).toBe('string');
+    });
+  });
 });

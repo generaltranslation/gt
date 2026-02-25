@@ -23,9 +23,11 @@ export function interpolateMessage<T extends string | null | undefined>(
   // Return if the encoded message is null or undefined
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;
 
+  // Get the source to use as a fallback
+  const source = options.$_fallback;
+
   // Remove any gt related options
   const variables = extractVariables(options);
-  const source = options.$_fallback;
 
   try {
     // Extract declared variable values from the source/fallback
@@ -48,8 +50,19 @@ export function interpolateMessage<T extends string | null | undefined>(
     });
     return cutoffMessage as T extends string ? string : T;
   } catch {
-    // Fallback to decodeMsg
     logger.warn(interpolationFailureMessage);
-    return encodedMsg as T extends string ? string : T;
+
+    // If formatting the translation failed and we have a fallback, try formatting the source instead
+    if (source != null) {
+      return interpolateMessage(source, variables) as T extends string
+        ? string
+        : T;
+    }
+
+    // Apply cutoff formatting
+    const cutoffMessage = formatCutoff(encodedMsg, {
+      maxChars: options.$maxChars,
+    });
+    return cutoffMessage as T extends string ? string : T;
   }
 }
