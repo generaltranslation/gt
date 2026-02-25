@@ -13,6 +13,8 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $id?: string;
   $_hash?: string;
   $maxChars?: number;
+  /** @internal Used to carry the original source when rendering a translation */
+  $_fallback?: string;
   /** @deprecated use {@link EncodedTranslationOptions} instead */
   $_source?: string;
 };

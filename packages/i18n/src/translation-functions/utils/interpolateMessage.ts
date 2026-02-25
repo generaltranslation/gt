@@ -1,6 +1,10 @@
 import { extractVariables } from '../../utils/extractVariables';
 import { formatMessage } from './formatMessage';
-import { VAR_IDENTIFIER } from 'generaltranslation/internal';
+import {
+  VAR_IDENTIFIER,
+  extractVars,
+  condenseVars,
+} from 'generaltranslation/internal';
 import { formatCutoff } from 'generaltranslation';
 import logger from '../../logs/logger';
 import { interpolationFailureMessage } from './messages';
@@ -21,11 +25,21 @@ export function interpolateMessage<T extends string | null | undefined>(
 
   // Remove any gt related options
   const variables = extractVariables(options);
+  const source = options.$_fallback;
 
   try {
+    // Extract declared variable values from the source/fallback
+    const declaredVars = extractVars(source || '');
+
+    // Condense indexed selects to arguments if declared vars exist
+    const message = Object.keys(declaredVars).length
+      ? condenseVars(encodedMsg)
+      : encodedMsg;
+
     // Interpolate the message
-    const interpolatedMessage = formatMessage(encodedMsg, {
+    const interpolatedMessage = formatMessage(message, {
       ...variables,
+      ...declaredVars,
       [VAR_IDENTIFIER]: 'other',
     });
     // Apply cutoff formatting
