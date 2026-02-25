@@ -2,4 +2,4 @@
 'gt-i18n': patch
 ---
 
-fix: declare static support for gt-i18n
+fix: declareVar support for gt-i18n
