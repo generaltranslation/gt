@@ -38,7 +38,9 @@ export async function getGT(): Promise<GTFunctionType> {
     options?: InlineTranslationOptions
   ) => {
     const translation = resolveTranslation(message, options);
-    if (translation) message = translation;
+    if (translation) {
+      return gtFallback(translation, { ...options, $_fallback: message });
+    }
     return gtFallback(message, options);
   };
 
