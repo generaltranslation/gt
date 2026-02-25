@@ -9,9 +9,16 @@ import { NodePath } from '@babel/traverse';
 
 /**
  * Helper function for processTranslationCall
- * Given arg and options, validate + extract strings
+ * Given arg and options, maps to appropriate translation call handler
+ * @param tPath - The path to the translation call
+ * @param config - The configuration to use
+ * @param output - The output to use
+ * @param arg - The argument to parse
+ * @param options - The options to parse
+ * @param index - The index of the argument
+ * @returns void
  */
-export function processTranslationArgs({
+export function routeTranslationCall({
   tPath,
   config,
   output,
@@ -31,7 +38,7 @@ export function processTranslationArgs({
     for (let i = 0; i < arg.elements.length; i++) {
       const element = arg.elements[i];
       if (element == null) continue;
-      processTranslationArgs({
+      routeTranslationCall({
         tPath,
         config,
         output,

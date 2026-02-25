@@ -22,7 +22,8 @@ import type {
 } from './stringParsing/types.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
-import { processTranslationArgs } from './stringParsing/processTranslationCall/processTranslationArgs.js';
+import { routeTranslationCall } from './stringParsing/processTranslationCall/routeTranslationCall.js';
+import { processTranslationCall } from './stringParsing/processTranslationCall/index.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -44,40 +45,6 @@ const processFunctionCache = new Map<string, boolean>();
 export function clearParsingCaches(): void {
   resolveImportPathCache.clear();
   processFunctionCache.clear();
-}
-
-/**
- * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
- * Extracts the translatable string content and metadata, then adds it to the updates array.
- *
- * Handles:
- * - String literals: t('hello')
- * - Template literals without expressions: t(`hello`)
- * - Metadata extraction from options object
- * - Error reporting for non-static expressions and template literals with expressions
- */
-function processTranslationCall(
-  tPath: NodePath,
-  config: ParsingConfig,
-  output: ParsingOutput
-): void {
-  if (
-    tPath.parent.type !== 'CallExpression' ||
-    tPath.parent.arguments.length === 0
-  ) {
-    return;
-  }
-
-  const arg = tPath.parent.arguments[0];
-  const options = tPath.parent.arguments.at(1);
-
-  processTranslationArgs({
-    tPath,
-    config,
-    output,
-    arg,
-    options,
-  });
 }
 
 /**
