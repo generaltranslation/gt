@@ -38,8 +38,8 @@ export {
   LocaleProperties,
   DataFormat,
   ActionType as EntryActionType,
-  EntryMetadata as EntryMetadata,
-  TranslateManyEntry as TranslateManyEntry,
+  EntryMetadata,
+  TranslateManyEntry,
   Content,
   HashMetadata,
 };

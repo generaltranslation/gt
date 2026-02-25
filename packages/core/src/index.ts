@@ -105,7 +105,7 @@ import _getOrphanedFiles, {
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
-import { SharedMetadata } from './types-dir/api/entry';
+import { TranslateOptions } from './types-dir/api/entry';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -758,12 +758,7 @@ export class GT {
    */
   async translate(
     source: TranslateManyEntry,
-    options:
-      | string
-      | ({
-          targetLocale: string;
-          sourceLocale?: string;
-        } & SharedMetadata),
+    options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult | TranslationError> {
     // Normalize string shorthand to options object
@@ -831,32 +826,17 @@ export class GT {
    */
   async translateMany(
     sources: TranslateManyEntry[],
-    options:
-      | string
-      | ({
-          targetLocale: string;
-          sourceLocale?: string;
-        } & SharedMetadata),
+    options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult>;
   async translateMany(
     sources: Record<string, TranslateManyEntry>,
-    options:
-      | string
-      | ({
-          targetLocale: string;
-          sourceLocale?: string;
-        } & SharedMetadata),
+    options: string | TranslateOptions,
     timeout?: number
   ): Promise<Record<string, TranslationResult>>;
   async translateMany(
     sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
-    options:
-      | string
-      | ({
-          targetLocale: string;
-          sourceLocale?: string;
-        } & SharedMetadata),
+    options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
     // Normalize string shorthand to options object
@@ -884,9 +864,7 @@ export class GT {
 
     // Request the translation
     return await _translateMany(
-      // TypeScript can't narrow the union through the pass-through, so we need to cast to any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sources as any,
+      sources,
       {
         ...options,
         targetLocale,

@@ -3,11 +3,9 @@ import { Content, DataFormat } from '../../types';
 /**
  * ActionType is the type of action to perform on the request.
  *
- * @param standard - The standard action type (standard model).
  * @param fast - The fast action type (mini model).
- * @param string - Other model
  */
-export type ActionType = 'fast';
+export type ActionType = 'fast'; // TODO: Add standard action type when available in the API
 
 /**
  * EntryMetadata is the metadata for a GTRequest.
@@ -26,7 +24,9 @@ export type EntryMetadata = {
   actionType?: ActionType;
 };
 
-export type SharedMetadata = {
+export type TranslateOptions = {
+  targetLocale: string;
+  sourceLocale?: string;
   modelProvider?: string;
 };
 

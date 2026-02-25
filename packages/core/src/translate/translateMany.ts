@@ -6,7 +6,7 @@ import {
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import {
   TranslateManyEntry,
-  SharedMetadata,
+  TranslateOptions,
   EntryMetadata,
 } from '../types-dir/api/entry';
 import apiRequest from './utils/apiRequest';
@@ -25,30 +25,27 @@ import { hashSource } from '../id';
  * @param config - The configuration for the translation.
  * @returns The results of the translation. An array if requests was an array, a record if requests was a record.
  */
-export default async function _translateMany(
-  requests: TranslateManyEntry[],
+export default async function _translateMany<
+  T extends TranslateManyEntry[] | Record<string, TranslateManyEntry>,
+>(
+  requests: T,
   globalMetadata: {
     targetLocale: string;
     sourceLocale: string;
-  } & SharedMetadata,
+  } & TranslateOptions,
   config: TranslationRequestConfig,
   timeout?: number
-): Promise<TranslateManyResult>;
-export default async function _translateMany(
-  requests: Record<string, TranslateManyEntry>,
-  globalMetadata: {
-    targetLocale: string;
-    sourceLocale: string;
-  } & SharedMetadata,
-  config: TranslationRequestConfig,
-  timeout?: number
-): Promise<Record<string, TranslationResult>>;
+): Promise<
+  T extends TranslateManyEntry[]
+    ? TranslateManyResult
+    : Record<string, TranslationResult>
+>;
 export default async function _translateMany(
   requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
   globalMetadata: {
     targetLocale: string;
     sourceLocale: string;
-  } & SharedMetadata,
+  } & TranslateOptions,
   config: TranslationRequestConfig,
   timeout?: number
 ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
