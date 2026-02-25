@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { msg } from '../msg';
 import { decodeMsg } from '../decodeMsg';
 import { declareStatic, declareVar } from 'generaltranslation/internal';
+import type { RegisterableMessages } from '../../types/message';
 
 describe('msg function integration', () => {
   it('should not format messages without variables', () => {
@@ -51,5 +52,25 @@ describe('msg function integration with variables', () => {
     });
     const decoded = decodeMsg(result);
     expect(decoded).toBe('Hello World{}');
+  });
+});
+
+describe('msg function with arrays', () => {
+  it('should return the array unchanged when no options are provided', () => {
+    const input: RegisterableMessages = ['Hello', 'World'];
+    const result = msg(input);
+    expect(result).toBe(input); // same reference
+  });
+
+  it('should apply options to each string in the array', () => {
+    const result = msg(['Hello {name}', 'Goodbye {name}'], { name: 'Alice' });
+    expect(Array.isArray(result)).toBe(true);
+    const decoded = (result as string[]).map(decodeMsg);
+    expect(decoded).toEqual(['Hello Alice', 'Goodbye Alice']);
+  });
+
+  it('should handle an empty array', () => {
+    const result = msg([], { name: 'Alice' });
+    expect(result).toEqual([]);
   });
 });

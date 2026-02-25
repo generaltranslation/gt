@@ -1,42 +1,31 @@
 import { NodePath, Scope, Binding } from '@babel/traverse';
-import { Updates } from '../../../types/index.js';
 import * as t from '@babel/types';
-import { isStaticExpression, isValidIcu } from '../evaluateJsx.js';
+import { isStaticExpression } from '../evaluateJsx.js';
 import {
-  GT_ATTRIBUTES_WITH_SUGAR,
   MSG_REGISTRATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
 } from './constants.js';
-import { mapAttributeName } from './mapAttributeName.js';
-import {
-  warnNonStaticExpressionSync,
-  warnNonStringSync,
-  warnTemplateLiteralSync,
-  warnAsyncUseGT,
-  warnSyncGetGT,
-  warnInvalidIcuSync,
-  warnInvalidMaxCharsSync,
-} from '../../../console/index.js';
-import generateModule from '@babel/generator';
+import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
+
 import traverseModule from '@babel/traverse';
 // Handle CommonJS/ESM interop
-const generate = generateModule.default || generateModule;
 const traverse = traverseModule.default || traverseModule;
 
 import fs from 'node:fs';
-import pathModule from 'node:path';
 import { parse } from '@babel/parser';
-import type { ParsingConfigOptions } from '../../../types/parsing.js';
+import type {
+  ParsingConfig,
+  ParsingState,
+  ParsingOutput,
+} from './stringParsing/types.js';
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
-import { handleStaticExpression } from './parseDeclareStatic.js';
-import { nodeToStrings } from './parseString.js';
-import { isNumberLiteral } from './isNumberLiteral.js';
-import { indexVars } from 'generaltranslation/internal';
-import { randomUUID } from 'node:crypto';
+import { handleStaticTranslationCall } from './stringParsing/handleStaticTranslationCall.js';
+import { handleLiteralTranslationCall } from './stringParsing/handleLiteralTranslationCall.js';
+import { handleInvalidTranslationCall } from './stringParsing/handleInvalidTranslationCall.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -61,34 +50,6 @@ export function clearParsingCaches(): void {
 }
 
 /**
- * Immutable configuration options for string parsing.
- */
-type ParsingConfig = {
-  parsingOptions: ParsingConfigOptions;
-  file: string;
-  ignoreAdditionalData: boolean;
-  ignoreDynamicContent: boolean;
-  ignoreInvalidIcu: boolean;
-};
-
-/**
- * Mutable state for tracking parsing progress.
- */
-type ParsingState = {
-  visited: Set<string>;
-  importMap: Map<string, string>;
-};
-
-/**
- * Collectors for updates, errors, and warnings.
- */
-type ParsingOutput = {
-  updates: Updates;
-  errors: string[];
-  warnings: Set<string>;
-};
-
-/**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
  * Extracts the translatable string content and metadata, then adds it to the updates array.
  *
@@ -108,219 +69,44 @@ function processTranslationCall(
     tPath.parent.arguments.length > 0
   ) {
     const arg = tPath.parent.arguments[0];
-    // if (t.isExpression(arg)) {
+    const options:
+      | t.ArgumentPlaceholder
+      | t.SpreadElement
+      | t.Expression
+      | undefined = tPath.parent.arguments[1];
+
     if (
       !config.ignoreDynamicContent &&
       t.isExpression(arg) &&
       !isStaticExpression(arg).isStatic
     ) {
-      const result = handleStaticExpression(
+      // handle static translation call
+      handleStaticTranslationCall({
         arg,
+        options,
         tPath,
-        config.file,
-        config.parsingOptions,
-        output.errors
-      );
-      if (result) {
-        const strings = nodeToStrings(result).map(indexVars);
-        if (!config.ignoreInvalidIcu) {
-          for (const string of strings) {
-            const { isValid, error } = isValidIcu(string);
-            if (!isValid) {
-              output.warnings.add(
-                warnInvalidIcuSync(
-                  config.file,
-                  string,
-                  error ?? 'Unknown error',
-                  `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-                )
-              );
-              return;
-            }
-          }
-        }
-
-        // get metadata and id from options
-        const options = tPath.parent.arguments[1];
-        const metadata: Record<string, string> = {};
-        if (options && options.type === 'ObjectExpression') {
-          options.properties.forEach((prop) => {
-            if (
-              prop.type === 'ObjectProperty' &&
-              prop.key.type === 'Identifier'
-            ) {
-              const attribute = prop.key.name;
-              if (
-                GT_ATTRIBUTES_WITH_SUGAR.includes(
-                  attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
-                ) &&
-                t.isExpression(prop.value)
-              ) {
-                const result = isStaticExpression(prop.value);
-                if (!result.isStatic) {
-                  output.errors.push(
-                    warnNonStaticExpressionSync(
-                      config.file,
-                      attribute,
-                      generate(prop.value).code,
-                      `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-                    )
-                  );
-                }
-                if (
-                  result.isStatic &&
-                  result.value &&
-                  !config.ignoreAdditionalData
-                ) {
-                  // Map $id and $context to id and context
-                  metadata[mapAttributeName(attribute)] = result.value;
-                }
-              }
-            }
-          });
-        }
-        const temporaryStaticId = `static-temp-id-${randomUUID()}`;
-        for (const string of strings) {
-          output.updates.push({
-            dataFormat: 'ICU',
-            source: string,
-            metadata: { ...metadata, staticId: temporaryStaticId },
-          });
-        }
-        return;
-      }
-      // Nothing returned, push error
-      output.errors.push(
-        warnNonStringSync(
-          config.file,
-          generate(arg).code,
-          `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-        )
-      );
-      // ignore dynamic content flag is triggered, check strings are valid ICU
+        config,
+        output,
+      });
     } else if (
       arg.type === 'StringLiteral' ||
       (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
     ) {
-      const source =
-        arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
-
-      // Validate is ICU
-      if (!config.ignoreInvalidIcu) {
-        const { isValid, error } = isValidIcu(source);
-        if (!isValid) {
-          output.warnings.add(
-            warnInvalidIcuSync(
-              config.file,
-              source,
-              error ?? 'Unknown error',
-              `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-            )
-          );
-          return;
-        }
-      }
-
-      // get metadata and id from options
-      const options = tPath.parent.arguments[1];
-      const metadata: Record<string, string | number | string[]> = {};
-      if (options && options.type === 'ObjectExpression') {
-        options.properties.forEach((prop) => {
-          if (
-            prop.type === 'ObjectProperty' &&
-            prop.key.type === 'Identifier'
-          ) {
-            const attribute = prop.key.name;
-            if (
-              GT_ATTRIBUTES_WITH_SUGAR.includes(
-                attribute as (typeof GT_ATTRIBUTES_WITH_SUGAR)[number]
-              ) &&
-              t.isExpression(prop.value)
-            ) {
-              const result = isStaticExpression(prop.value);
-              if (!result.isStatic) {
-                output.errors.push(
-                  warnNonStaticExpressionSync(
-                    config.file,
-                    attribute,
-                    generate(prop.value).code,
-                    `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-                  )
-                );
-              }
-              if (
-                result.isStatic &&
-                result.value &&
-                !config.ignoreAdditionalData
-              ) {
-                const mappedKey = mapAttributeName(attribute);
-                if (attribute === '$maxChars') {
-                  if (
-                    (typeof result.value === 'string' &&
-                      (isNaN(Number(result.value)) ||
-                        !isNumberLiteral(prop.value))) ||
-                    !Number.isInteger(Number(result.value))
-                  ) {
-                    output.errors.push(
-                      warnInvalidMaxCharsSync(
-                        config.file,
-                        generate(prop).code,
-                        `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-                      )
-                    );
-                  } else if (typeof result.value === 'string') {
-                    // Add the maxChars value to the metadata
-                    metadata[mappedKey] = Math.abs(Number(result.value));
-                  }
-                } else {
-                  // Add the $context or $id or other attributes value to the metadata
-                  metadata[mappedKey] = result.value;
-                }
-              }
-            }
-          }
-        });
-      }
-
-      const relativeFilepath = pathModule.relative(process.cwd(), config.file);
-      if (relativeFilepath) {
-        if (!metadata.filePaths) {
-          metadata.filePaths = [relativeFilepath];
-        } else if (Array.isArray(metadata.filePaths)) {
-          if (!metadata.filePaths.includes(relativeFilepath)) {
-            metadata.filePaths.push(relativeFilepath);
-          }
-        }
-      }
-
-      output.updates.push({
-        dataFormat: 'ICU',
-        source,
-        metadata,
+      // Handle string and template literals
+      handleLiteralTranslationCall({
+        arg,
+        options,
+        config,
+        output,
       });
-    } else if (t.isTemplateLiteral(arg)) {
-      // warn if template literal
-      if (!config.ignoreDynamicContent) {
-        output.errors.push(
-          warnTemplateLiteralSync(
-            config.file,
-            generate(arg).code,
-            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-          )
-        );
-      }
     } else {
-      if (!config.ignoreDynamicContent) {
-        output.errors.push(
-          warnNonStringSync(
-            config.file,
-            generate(arg).code,
-            `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
-          )
-        );
-      }
+      // error on invalid translation call
+      handleInvalidTranslationCall({
+        arg,
+        config,
+        output,
+      });
     }
-    // }
   }
 }
 
