@@ -5,7 +5,6 @@ import { Variable, VariableType } from './types-dir/jsx/variables';
 import {
   IcuMessage,
   I18nextMessage,
-  DateFnsMessage,
   JsxChildren,
   JsxChild,
   JsxElement,
@@ -16,14 +15,17 @@ import {
   DataFormat,
   Content,
 } from './types-dir/jsx/content';
-import { ActionType, EntryMetadata, Entry } from './types-dir/api/entry';
+import {
+  ActionType,
+  EntryMetadata,
+  TranslateManyEntry,
+} from './types-dir/api/entry';
 import { HashMetadata } from './id/types';
 export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 
 export {
   IcuMessage,
   I18nextMessage,
-  DateFnsMessage,
   JsxChildren,
   JsxChild,
   JsxElement,
@@ -36,8 +38,8 @@ export {
   LocaleProperties,
   DataFormat,
   ActionType as EntryActionType,
-  EntryMetadata as EntryMetadata,
-  Entry as Entry,
+  EntryMetadata,
+  TranslateManyEntry,
   Content,
   HashMetadata,
 };

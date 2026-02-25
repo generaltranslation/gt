@@ -7,10 +7,7 @@ import {
   defaultLocaleCookieName,
   Dictionary,
 } from 'gt-react/internal';
-import {
-  createMismatchingHashWarning,
-  runtimeTranslationTimeoutWarning,
-} from '../errors/createErrors';
+import { runtimeTranslationTimeoutWarning } from '../errors/createErrors';
 import { _Content, JsxChildren } from 'generaltranslation/internal';
 import { Translations } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
@@ -24,6 +21,8 @@ import {
 import { defaultLocaleHeaderName } from '../utils/headers';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTTranslationError } from '../utils/errors';
+import type { TranslateManyEntry } from 'generaltranslation/types';
+
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -547,49 +546,43 @@ export default class I18NConfiguration {
     this._activeRequests++;
     try {
       // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
+      const requests: Record<string, TranslateManyEntry> = {};
+      for (const item of batch) {
+        const { source, metadata, dataFormat } = item;
+        requests[metadata.hash] = {
+          source,
+          metadata: { ...metadata, dataFormat },
+        };
+      }
+
       const results = await this.gt.translateMany(
-        batch.map((item) => {
-          const { source, metadata, dataFormat } = item;
-          return { source, metadata, dataFormat };
-        }),
+        requests,
         {
           ...this.metadata,
           targetLocale: batch[0].targetLocale,
-        }
+        },
+        this.renderSettings.timeout
       );
 
       // ----- PROCESS RESPONSE ----- //
-      batch.forEach((request, index) => {
-        // check if entry is missing
-        const result = results[index];
-
-        const errorMsg = 'Translation failed.';
-        const errorCode = 500;
-
+      batch.forEach((request) => {
         const hash = request.metadata.hash;
-        if (result && typeof result === 'object') {
-          if ('translation' in result) {
-            // record translations
-            if (this._translationManager) {
-              this._translationManager.setTranslations(
-                request.targetLocale,
-                hash,
-                result.translation
-              );
-            }
-            // check for mismatching ids or hashes
-            if (result.reference.hash !== hash) {
-              console.warn(
-                createMismatchingHashWarning(
-                  hash,
-                  result.reference?.hash || 'unknown hash'
-                )
-              );
-            }
-            return request.resolve(result.translation);
+        const result = results[hash];
+
+        if (result && result.success) {
+          // record translations
+          if (this._translationManager) {
+            this._translationManager.setTranslations(
+              request.targetLocale,
+              hash,
+              result.translation
+            );
           }
+          return request.resolve(result.translation);
         }
-        return request.reject(new GTTranslationError(errorMsg, errorCode));
+        return request.reject(
+          new GTTranslationError('Translation failed.', 500)
+        );
       });
     } catch (error) {
       // Error logging

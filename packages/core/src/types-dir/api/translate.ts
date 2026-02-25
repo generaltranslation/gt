@@ -2,7 +2,7 @@ import {
   I18nextMessage,
   IcuMessage,
   JsxChildren,
-  DateFnsMessage,
+  StringMessage,
 } from '../jsx/content';
 
 /**
@@ -22,25 +22,25 @@ export type TypedResult =
       dataFormat: 'JSX';
     }
   | {
-      translation: I18nextMessage | IcuMessage | DateFnsMessage;
-      dataFormat: 'ICU' | 'I18NEXT' | 'DATE_FNS';
+      translation: I18nextMessage | IcuMessage | StringMessage;
+      dataFormat: 'ICU' | 'I18NEXT' | 'STRING';
     };
 
 /**
  * RequestError is a type that represents an error that occurred during a translation request.
  */
 export type TranslationError = {
+  success: false;
   error: string;
   code: number;
-  reference?: TranslationResultReference;
 };
 
 /**
  * RequestSuccess is a type that represents a successful translation request.
  */
 export type RequestSuccess = TypedResult & {
+  success: true;
   locale: string;
-  reference: TranslationResultReference;
 };
 
 export type TranslationResult = RequestSuccess | TranslationError;

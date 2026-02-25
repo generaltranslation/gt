@@ -1,5 +1,5 @@
 // `generaltranslation` language toolkit
-// © 2024, General Translation, Inc.
+// © 2026, General Translation, Inc.
 
 // ----- IMPORTS ----- //
 
@@ -16,12 +16,8 @@ import {
   _formatCutoff,
 } from './formatting/format';
 import {
-  Content,
   CustomMapping,
   FormatVariables,
-  I18nextMessage,
-  IcuMessage,
-  DateFnsMessage,
   TranslateManyResult,
   TranslationError,
   TranslationRequestConfig,
@@ -31,8 +27,7 @@ import {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
   DownloadFileOptions,
-  EntryMetadata,
-  Entry,
+  TranslateManyEntry,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
@@ -42,7 +37,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { JsxChildren, libraryDefaultLocale } from './internal';
+import { libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
@@ -53,7 +48,6 @@ import {
   noProjectIdProvidedError,
   noApiKeyProvidedError,
 } from './logging/errors';
-import _translate from './translate/translate';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
 import _setupProject, {
@@ -104,15 +98,14 @@ import _createBranch from './translate/createBranch';
 import type { FileReference } from './types-dir/api/file';
 import _processFileMoves, {
   type MoveMapping,
-  type MoveResult,
   type ProcessMovesResponse,
   type ProcessMovesOptions,
 } from './translate/processFileMoves';
 import _getOrphanedFiles, {
-  type OrphanedFile,
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+import { TranslateOptions } from './types-dir/api/entry';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -746,259 +739,139 @@ export class GT {
   }
 
   /**
-   * Translates the source content to the target locale.
-   * @deprecated Use the {@link translate} method instead.
-   */
-  // Overload for JSX content
-  async _translate(
-    source: JsxChildren,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'JSX';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for ICU content
-  /**
-   * Translates the source content to the target locale.
-   * @deprecated Use the {@link translate} method instead.
-   */
-  async _translate(
-    source: IcuMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'ICU';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for I18next content
-  /**
-   * Translates the source content to the target locale.
-   * @deprecated Use the {@link translate} method instead.
-   */
-  async _translate(
-    source: I18nextMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'I18NEXT';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for DateFns content
-  /**
-   * Translates the source content to the target locale.
-   * @deprecated Use the {@link translate} method instead.
-   */
-  async _translate(
-    source: DateFnsMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'DATE_FNS';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Implementation
-  /**
-   * Translates the source content to the target locale.
-   * @deprecated Use the {@link translate} method instead.
-   */
-  async _translate(
-    source: Content,
-    targetLocale: string | undefined = this.targetLocale,
-    metadata?: EntryMetadata
-  ): Promise<TranslationResult | TranslationError> {
-    // Validation
-    this._validateAuth('translate');
-
-    // Require target locale
-    if (!targetLocale) {
-      const error = noTargetLocaleProvidedError('translate');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // Replace target locale with canonical locale
-    targetLocale = this.resolveCanonicalLocale(targetLocale);
-
-    // Request the translation
-    return await _translate(
-      source,
-      targetLocale,
-      metadata,
-      this._getTranslationConfig()
-    );
-  }
-
-  /**
-   * Translates the source content to the target locale.
+   * Translates a single source string to the target locale.
+   * Routes through {@link translateMany} under the hood.
    *
-   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} | {@link DateFnsMessage} The source content to translate.
-   * @param {string} targetLocale - string The target locale to translate to.
-   * @param {EntryMetadata} metadata - {@link EntryMetadata} The metadata for the translation.
+   * @param {string} source - The source string to translate.
+   * @param {object} options - Translation options including targetLocale and optional entry metadata.
    * @returns {Promise<TranslationResult | TranslationError>} The translated content.
    *
    * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
-   *
-   * const result = await gt.translate('Hello, world!', 'es-ES');
+   * const result = await gt.translate('Hello, world!', { targetLocale: 'es' });
    *
    * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * const result = await gt.translate('Hello, world!', {
+   *   targetLocale: 'es',
+   *   dataFormat: 'ICU',
+   *   context: 'A formal greeting',
    * });
-   *
-   * const result = await gt.translate('Hello, world!', 'es-ES', { context: 'A formal greeting'});
    */
-  // Overload for JSX content
   async translate(
-    source: JsxChildren,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'JSX';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for ICU content
-  async translate(
-    source: IcuMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'ICU';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for I18next content
-  async translate(
-    source: I18nextMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'I18NEXT';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Overload for DateFns content
-  async translate(
-    source: DateFnsMessage,
-    targetLocale: string,
-    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
-      dataFormat?: 'DATE_FNS';
-    }
-  ): Promise<TranslationResult | TranslationError>;
-
-  // Implementation
-  async translate(
-    source: Content,
-    targetLocale: string | undefined = this.targetLocale,
-    metadata?: EntryMetadata
+    source: TranslateManyEntry,
+    options: string | TranslateOptions,
+    timeout?: number
   ): Promise<TranslationResult | TranslationError> {
+    // Normalize string shorthand to options object
+    if (typeof options === 'string') {
+      options = { targetLocale: options };
+    }
+
     // Validation
     this._validateAuth('translate');
 
     // Require target locale
+    let targetLocale = options?.targetLocale || this.targetLocale;
     if (!targetLocale) {
       const error = noTargetLocaleProvidedError('translate');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    if (typeof this.customMapping?.[targetLocale] === 'object') {
-      const { regionCode, scriptCode } = this.customMapping[targetLocale] as {
-        regionCode: string;
-        scriptCode: string;
-      };
-      metadata = {
-        ...(regionCode && { regionCode }),
-        ...(scriptCode && { scriptCode }),
-        ...metadata,
-      };
-    }
-
     // Replace target locale with canonical locale
     targetLocale = this.resolveCanonicalLocale(targetLocale);
 
-    // Request the translation
-    return await _translate(
-      source,
-      targetLocale,
-      metadata,
-      this._getTranslationConfig()
+    const sourceLocale = this.resolveCanonicalLocale(
+      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
     );
+
+    // Request the translation
+    const results = await _translateMany(
+      [source],
+      {
+        ...options,
+        targetLocale,
+        sourceLocale,
+      },
+      this._getTranslationConfig(),
+      timeout
+    );
+    return results[0];
   }
 
   /**
-   * Translates multiple source contents to the target locale.
-   * Override global metadata by supplying a metadata object for each request.
+   * Translates multiple source strings to the target locale.
+   * Each entry can be a plain string or an object with source and metadata fields.
    *
-   * @param {Entry[]} sources - The source contents to translate.
-   * @param {EntryMetadata} globalMetadata - {@link EntryMetadata} The metadata for the translation.
-   * @returns {Promise<TranslateManyResult>} The translated contents.
+   * @param {TranslateManyEntry[] | Record<string, TranslateManyEntry>} sources - The source entries to translate. Can be an array or a record keyed by hash.
+   * @param {object} options - Translation options including targetLocale.
+   * @returns {Promise<TranslateManyResult | Record<string, TranslationResult>>} The translated contents. An array if sources was an array, a record if sources was a record.
    *
    * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
+   * const result = await gt.translateMany(
+   *   ['Hello, world!', 'Goodbye, world!'],
+   *   { targetLocale: 'es' }
+   * );
    *
-   * const result = await gt.translateMany([
-   *   { source: 'Hello, world!' },
-   *   { source: 'Goodbye, world!' },
-   * ], { targetLocale: 'es-ES' });
+   * @example
+   * const result = await gt.translateMany(
+   *   [{ source: 'Hello, world!', dataFormat: 'ICU' }],
+   *   { targetLocale: 'es' }
+   * );
+   *
+   * @example
+   * const result = await gt.translateMany(
+   *   { 'my-hash': 'Hello, world!' },
+   *   { targetLocale: 'es' }
+   * );
    */
   async translateMany(
-    sources: Entry[],
-    globalMetadata?: { targetLocale: string } & EntryMetadata
-  ): Promise<TranslateManyResult> {
+    sources: TranslateManyEntry[],
+    options: string | TranslateOptions,
+    timeout?: number
+  ): Promise<TranslateManyResult>;
+  async translateMany(
+    sources: Record<string, TranslateManyEntry>,
+    options: string | TranslateOptions,
+    timeout?: number
+  ): Promise<Record<string, TranslationResult>>;
+  async translateMany(
+    sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
+    options: string | TranslateOptions,
+    timeout?: number
+  ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
+    // Normalize string shorthand to options object
+    if (typeof options === 'string') {
+      options = { targetLocale: options };
+    }
+
     // Validation
     this._validateAuth('translateMany');
 
     // Require target locale
-    const targetLocale = globalMetadata?.targetLocale || this.targetLocale;
+    let targetLocale = options?.targetLocale || this.targetLocale;
     if (!targetLocale) {
       const error = noTargetLocaleProvidedError('translateMany');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    globalMetadata = {
-      ...globalMetadata,
-      targetLocale,
-    };
-
-    if (typeof this.customMapping?.[targetLocale] === 'object') {
-      const { regionCode, scriptCode } = this.customMapping[targetLocale];
-      globalMetadata = {
-        ...(regionCode && { regionCode }),
-        ...(scriptCode && { scriptCode }),
-        ...globalMetadata,
-      };
-    }
-
     // Replace target locale with canonical locale
-    globalMetadata = {
-      ...globalMetadata,
-      ...(globalMetadata.targetLocale && {
-        targetLocale: this.resolveCanonicalLocale(globalMetadata.targetLocale),
-      }),
-    };
-    sources = sources.map((source) => ({
-      ...source,
-      ...(source.targetLocale && {
-        targetLocale: this.resolveCanonicalLocale(source.targetLocale),
-      }),
-    }));
+    targetLocale = this.resolveCanonicalLocale(targetLocale);
+
+    const sourceLocale = this.resolveCanonicalLocale(
+      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
+    );
 
     // Request the translation
     return await _translateMany(
       sources,
-      globalMetadata,
-      this._getTranslationConfig()
+      {
+        ...options,
+        targetLocale,
+        sourceLocale,
+      },
+      this._getTranslationConfig(),
+      timeout
     );
   }
 

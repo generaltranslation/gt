@@ -40,16 +40,12 @@ export type JsxChild = string | JsxElement | Variable;
 /**
  * The format of the content
  */
-export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT' | 'DATE_FNS';
+export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT' | 'STRING';
 
 /**
  * A content type representing JSX, ICU, and I18next messages
  */
-export type Content =
-  | JsxChildren
-  | IcuMessage
-  | I18nextMessage
-  | DateFnsMessage;
+export type Content = JsxChildren | IcuMessage | StringMessage | I18nextMessage;
 
 /**
  * A content type representing JSX elements
@@ -67,6 +63,6 @@ export type IcuMessage = string;
 export type I18nextMessage = string;
 
 /**
- * A content type representing DateFns messages
+ * A content type representing plain strings
  */
-export type DateFnsMessage = string;
+export type StringMessage = string;

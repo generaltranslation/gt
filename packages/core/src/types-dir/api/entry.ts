@@ -1,24 +1,11 @@
-import {
-  Content,
-  DataFormat,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  JsxChildren,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  IcuMessage,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  I18nextMessage,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  DateFnsMessage,
-} from '../../types';
+import { Content, DataFormat } from '../../types';
 
 /**
  * ActionType is the type of action to perform on the request.
  *
- * @param standard - The standard action type (standard model).
  * @param fast - The fast action type (mini model).
- * @param string - Other model
  */
-export type ActionType = 'standard' | 'fast' | string;
+export type ActionType = 'fast'; // TODO: Add standard action type when available in the API
 
 /**
  * EntryMetadata is the metadata for a GTRequest.
@@ -29,27 +16,24 @@ export type ActionType = 'standard' | 'fast' | string;
  * @param hash - The hash of the request.
  */
 export type EntryMetadata = {
-  context?: string;
   id?: string;
-  maxChars?: number;
   hash?: string;
+  context?: string;
+  maxChars?: number;
   dataFormat?: DataFormat;
-  sourceLocale?: string;
   actionType?: ActionType;
-  timeout?: number;
-  regionCode?: string; // equivalent to regionCode in LocaleProperties, passed via customMapping
-  scriptCode?: string; // equivalent to scriptCode in LocaleProperties, passed via customMapping
+};
+
+export type TranslateOptions = {
+  targetLocale: string;
+  sourceLocale?: string;
+  modelProvider?: string;
 };
 
 /**
- * GTRequest is a translation request object for {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} | {@link DateFnsMessage}
- *
- * @param source - The source content to translate.
- * @param targetLocale - The target locale to translate to.
- * @param metadata - The metadata for the request.
+ * TranslateManyEntry is the input type for translateMany.
+ * Can be a plain string or an object with source and entry metadata fields.
  */
-export type Entry = {
-  source: Content;
-  targetLocale?: string;
-  metadata?: EntryMetadata;
-};
+export type TranslateManyEntry =
+  | string
+  | { source: Content; metadata?: EntryMetadata };
