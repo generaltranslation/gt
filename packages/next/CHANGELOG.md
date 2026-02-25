@@ -1,5 +1,18 @@
 # gt-next
 
+## 6.12.17
+
+### Patch Changes
+
+- [#1046](https://github.com/generaltranslation/gt/pull/1046) [`47918b7`](https://github.com/generaltranslation/gt/commit/47918b7a4c38967fe2148d972f0a3c740e0bc25d) Thanks [@brian-lou](https://github.com/brian-lou)! - Update /translate endpoint
+
+- Updated dependencies [[`47918b7`](https://github.com/generaltranslation/gt/commit/47918b7a4c38967fe2148d972f0a3c740e0bc25d)]:
+  - generaltranslation@8.1.12
+  - gt-react@10.10.14
+  - @generaltranslation/compiler@1.1.21
+  - gt-i18n@0.3.12
+  - @generaltranslation/supported-locales@2.0.45
+
 ## 6.12.16
 
 ### Patch Changes
