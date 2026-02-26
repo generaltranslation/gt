@@ -13,8 +13,6 @@ const generate = generateModule.default || generateModule;
  * For the processTranslationCall function, this function handles the case where a other translation call is used.
  * Error is pushed if the other translation call is used.
  * @param arg - The argument to parse
- * @param options - The options to parse
- * @param tPath - The path to the argument
  * @param config - The configuration to use
  * @param output - The output to use
  */

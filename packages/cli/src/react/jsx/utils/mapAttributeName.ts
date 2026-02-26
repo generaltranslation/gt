@@ -13,8 +13,6 @@ type MapAttributeName<T extends string> = T extends '$id'
  * Map the attribute name to the corresponding attribute name in the metadata
  * @param attrName - The attribute name to map
  * @returns The mapped attribute name
- *
- * TODO: support for $hash?
  */
 export function mapAttributeName<T extends string>(
   attrName: T

@@ -3,7 +3,7 @@ import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isValidIcu } from '../../../evaluateJsx.js';
 import { warnInvalidIcuSync } from '../../../../../console/index.js';
-import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
+import { InlineMetadata } from './extractStringEntryMetadata.js';
 
 /**
  * For the processTranslationCall function, this function handles the case where a string literal or template literal is used.
@@ -12,16 +12,17 @@ import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
  * @param tPath - The path to the argument
  * @param config - The configuration to use
  * @param output - The output to use
+ * @param index - The index of the argument
  */
 export function handleLiteralTranslationCall({
   arg,
-  options,
+  metadata,
   config,
   output,
   index,
 }: {
   arg: t.StringLiteral | t.TemplateLiteral;
-  options?: t.Expression | t.ArgumentPlaceholder | t.SpreadElement;
+  metadata: InlineMetadata;
   config: ParsingConfig;
   output: ParsingOutput;
   index?: number;
@@ -46,17 +47,13 @@ export function handleLiteralTranslationCall({
     }
   }
 
-  // get metadata and id from options
-  const metadata = extractStringEntryMetadata({
-    options,
-    output,
-    config,
-    index,
-  });
-
   output.updates.push({
     dataFormat: 'ICU',
     source,
-    metadata,
+    metadata: {
+      ...metadata,
+      // Add the index if an id and index is provided (for handling when registering an array of strings)
+      ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
+    },
   });
 }

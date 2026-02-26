@@ -15,9 +15,8 @@ const generate = generateModule.default || generateModule;
 
 /**
  * Metadata record type
- * TODO: check if this is being duplicated anywhere
  */
-type InlineMetadata = {
+export type InlineMetadata = {
   maxChars?: number;
   context?: string;
   id?: string;
@@ -33,19 +32,17 @@ type InlineMetadata = {
  * @param config - The configuration to use
  * @returns The inline metadata
  *
- * TODO: support for $hash?
- * TODO: this can be made more efficient when dealing with arrays by creating structured clone and only updating id for each entry
+ * @note - this function does not automatically append the index to the id, this must be done manually in the caller.
+ *
  */
 export function extractStringEntryMetadata({
   options,
   output,
   config,
-  index,
 }: {
   options?: t.CallExpression['arguments'][number];
   output: ParsingOutput;
   config: ParsingConfig;
-  index?: number;
 }): InlineMetadata {
   // extract filepath for entry
   const relativeFilepath = pathModule.relative(process.cwd(), config.file);
@@ -55,7 +52,6 @@ export function extractStringEntryMetadata({
     options,
     output,
     config,
-    index,
   });
 
   return {
@@ -78,12 +74,10 @@ function extractInlineMetadata({
   options,
   output,
   config,
-  index,
 }: {
   options?: t.CallExpression['arguments'][number];
   output: ParsingOutput;
   config: ParsingConfig;
-  index?: number;
 }): InlineMetadata {
   const metadata: Record<string, string | number | string[]> = {};
   if (options && options.type === 'ObjectExpression') {
@@ -132,12 +126,6 @@ function extractInlineMetadata({
                 // Add the maxChars value to the metadata
                 metadata[mappedKey] = Math.abs(Number(result.value));
               }
-            } else if (mappedKey === 'id') {
-              // ignore if $id is an empty string or not defined
-              if (!result.value) return;
-              // For array translation calls, append `.${index}` to the id
-              metadata[mappedKey] =
-                index != null ? `${result.value}.${index}` : result.value;
             } else {
               // Add the $context or $id or other attributes value to the metadata
               // TODO: why are we including everything? arent we only interested in relevant inline metadata?

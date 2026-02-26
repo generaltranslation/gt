@@ -6,6 +6,7 @@ import * as t from '@babel/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { NodePath } from '@babel/traverse';
+import { InlineMetadata } from './extractStringEntryMetadata.js';
 
 /**
  * Helper function for processTranslationCall
@@ -14,7 +15,7 @@ import { NodePath } from '@babel/traverse';
  * @param config - The configuration to use
  * @param output - The output to use
  * @param arg - The argument to parse
- * @param options - The options to parse
+ * @param metadata - The metadata to use
  * @param index - The index of the argument
  * @returns void
  */
@@ -23,14 +24,14 @@ export function routeTranslationCall({
   config,
   output,
   arg,
-  options,
+  metadata,
   index,
 }: {
   tPath: NodePath;
   config: ParsingConfig;
   output: ParsingOutput;
   arg: t.CallExpression['arguments'][number];
-  options: t.CallExpression['arguments'][number] | undefined;
+  metadata: InlineMetadata;
   index?: number;
 }): void {
   if (
@@ -47,8 +48,8 @@ export function routeTranslationCall({
         config,
         output,
         arg: element,
-        options,
         index: i,
+        metadata,
       });
     }
   } else if (
@@ -59,7 +60,7 @@ export function routeTranslationCall({
     // handle static translation call
     handleStaticTranslationCall({
       arg,
-      options,
+      metadata,
       tPath,
       config,
       output,
@@ -72,7 +73,7 @@ export function routeTranslationCall({
     // Handle string and template literals
     handleLiteralTranslationCall({
       arg,
-      options,
+      metadata,
       config,
       output,
       index,
