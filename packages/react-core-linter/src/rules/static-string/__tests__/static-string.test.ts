@@ -83,4 +83,76 @@ describe('static-string rule', () => {
       ],
     });
   });
+
+  it('should allow msg() with static string arrays', () => {
+    ruleTester.run('static-string', staticString, {
+      valid: [
+        {
+          code: `
+            import { msg } from 'gt-i18n';
+            const items = msg(["Hello", "World"]);
+          `,
+          options: [{ libs: ['gt-i18n'] }],
+        },
+        {
+          code: `
+            import { msg } from 'gt-i18n';
+            const items = msg(["Hello", \`World\`]);
+          `,
+          options: [{ libs: ['gt-i18n'] }],
+        },
+      ],
+      invalid: [
+        {
+          code: `
+            import { msg } from 'gt-i18n';
+            const name = "World";
+            const items = msg(["Hello", name]);
+          `,
+          options: [{ libs: ['gt-i18n'] }],
+          errors: [
+            {
+              messageId: 'staticStringRequired',
+            },
+          ],
+        },
+        {
+          code: `
+            import { msg } from 'gt-i18n';
+            const arr = ["Hello"];
+            const items = msg(["Hello", ...arr]);
+          `,
+          options: [{ libs: ['gt-i18n'] }],
+          errors: [
+            {
+              messageId: 'staticStringRequired',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('should NOT allow gt() with arrays', () => {
+    ruleTester.run('static-string', staticString, {
+      valid: [],
+      invalid: [
+        {
+          code: `
+            import { useGT } from '@generaltranslation/react-core';
+            function Component() {
+              const gt = useGT();
+              return gt(["Hello", "World"]);
+            }
+          `,
+          options: [{ libs: ['@generaltranslation/react-core'] }],
+          errors: [
+            {
+              messageId: 'staticStringRequired',
+            },
+          ],
+        },
+      ],
+    });
+  });
 });

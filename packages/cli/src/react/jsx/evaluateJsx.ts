@@ -1,8 +1,5 @@
 import * as t from '@babel/types';
 import { parse } from '@formatjs/icu-messageformat-parser';
-import generateModule from '@babel/generator';
-// Handle CommonJS/ESM interop
-const generate = generateModule.default || generateModule;
 
 const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
 

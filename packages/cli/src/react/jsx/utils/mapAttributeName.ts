@@ -1,11 +1,31 @@
 /**
+ * Type logic implementation
+ */
+type MapAttributeName<T extends string> = T extends '$id'
+  ? 'id'
+  : T extends '$context'
+    ? 'context'
+    : T extends '$maxChars'
+      ? 'maxChars'
+      : T;
+
+/**
  * Map the attribute name to the corresponding attribute name in the metadata
  * @param attrName - The attribute name to map
  * @returns The mapped attribute name
  */
+export function mapAttributeName<T extends string>(
+  attrName: T
+): MapAttributeName<T>;
 export function mapAttributeName(attrName: string): string {
-  if (attrName === '$id') return 'id';
-  if (attrName === '$context') return 'context';
-  if (attrName === '$maxChars') return 'maxChars';
-  return attrName;
+  switch (attrName) {
+    case '$id':
+      return 'id';
+    case '$context':
+      return 'context';
+    case '$maxChars':
+      return 'maxChars';
+    default:
+      return attrName;
+  }
 }

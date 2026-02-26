@@ -71,10 +71,8 @@ export const staticString = createRule({
        * Handle function calls
        */
       CallExpression(node: TSESTree.CallExpression) {
-        if (
-          !isMsgFunction({ context, node, libs }) &&
-          !isGTCallbackFunction({ context, node, libs })
-        ) {
+        const isMsgCall = isMsgFunction({ context, node, libs });
+        if (!isMsgCall && !isGTCallbackFunction({ context, node, libs })) {
           return;
         }
 
@@ -90,15 +88,42 @@ export const staticString = createRule({
           });
         }
 
-        // Validate gt()'s params
-        validateGTInvocation(firstArgument);
+        // Validate params — arrays only allowed for msg()
+        validateGTInvocation(firstArgument, isMsgCall);
 
         /**
          * Helper function to validate gt()'s params
+         * TODO: when enable array support in gt function remove allowArrays parameter as it will always be true
          */
-        function validateGTInvocation(expression: TSESTree.Expression) {
+        function validateGTInvocation(
+          expression: TSESTree.Expression,
+          allowArrays: boolean = false
+        ) {
           // Static string is okay
           if (isStaticString(expression)) return;
+
+          // Array of static strings — only for msg() currently
+          if (
+            allowArrays &&
+            expression.type === TSESTree.AST_NODE_TYPES.ArrayExpression
+          ) {
+            for (const element of expression.elements) {
+              if (
+                element &&
+                element.type !== TSESTree.AST_NODE_TYPES.SpreadElement
+              ) {
+                validateGTInvocation(element, false); // no nested arrays
+              } else if (
+                element?.type === TSESTree.AST_NODE_TYPES.SpreadElement
+              ) {
+                return context.report({
+                  node: element,
+                  messageId: 'staticStringRequired',
+                });
+              }
+            }
+            return;
+          }
 
           // declareStatic() is okay
           if (
