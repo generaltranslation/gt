@@ -1,5 +1,15 @@
 # gt-i18n
 
+## 0.4.0
+
+### Minor Changes
+
+- [#1051](https://github.com/generaltranslation/gt/pull/1051) [`d36d4b8`](https://github.com/generaltranslation/gt/commit/d36d4b8459626c552c143fbdfa6d01f647a66533) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: string list registration
+
+### Patch Changes
+
+- [#1048](https://github.com/generaltranslation/gt/pull/1048) [`065cfaf`](https://github.com/generaltranslation/gt/commit/065cfaf4e6ac220755a9667b58731520d64fef85) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: declareVar support for gt-i18n
+
 ## 0.3.12
 
 ### Patch Changes
