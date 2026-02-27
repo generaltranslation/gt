@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.13.1
+
+### Patch Changes
+
+- [#1055](https://github.com/generaltranslation/gt/pull/1055) [`8f114ec`](https://github.com/generaltranslation/gt/commit/8f114eccffad67c8d7f54d32502d50ce509faf67) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: bump patch
+
 ## 6.13.0
 
 ### Minor Changes
