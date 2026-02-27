@@ -1,0 +1,162 @@
+name: Benchmarks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  repository_dispatch:
+    types: [release-published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+concurrency:
+  group: benchmark-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # --- Change detection ---
+
+      - name: Check if benchmarks should run (PR)
+        id: pr-check
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          if echo "$CHANGED" | grep -qE "^(packages/next/|tests/apps/next/middleware/)"; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if gt-next was published (dispatch)
+        id: dispatch-check
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          PACKAGES='${{ toJSON(github.event.client_payload.publishedPackages) }}'
+          if echo "$PACKAGES" | jq -e '.[] | select(.name == "gt-next")' > /dev/null 2>&1; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            VERSION=$(echo "$PACKAGES" | jq -r '.[] | select(.name == "gt-next") | .version')
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine if benchmarks should run
+        id: should-run
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "run=${{ steps.pr-check.outputs.run }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "run=${{ steps.dispatch-check.outputs.run }}" >> $GITHUB_OUTPUT
+          fi
+
+      # --- Setup ---
+
+      - uses: pnpm/action-setup@v4
+        if: steps.should-run.outputs.run == 'true'
+        name: Install pnpm
+
+      - name: Setup Node.js
+        if: steps.should-run.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        if: steps.should-run.outputs.run == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        if: steps.should-run.outputs.run == 'true'
+        run: pnpm install
+
+      - name: Install Playwright browsers
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: tests/apps/next/middleware
+        run: npx playwright install chromium
+
+      # --- Resolve version ---
+
+      - name: Read gt-next version
+        id: read-version
+        if: steps.should-run.outputs.run == 'true' && github.event_name != 'repository_dispatch'
+        run: |
+          VERSION=$(node -p "require('./packages/next/package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set version output
+        id: version
+        if: steps.should-run.outputs.run == 'true'
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "value=${{ steps.dispatch-check.outputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ steps.read-version.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      # --- Run benchmarks ---
+
+      - name: Run unit benchmarks
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: tests/apps/next/middleware
+        run: pnpm bench:unit:json
+
+      - name: Run E2E benchmarks
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: tests/apps/next/middleware
+        env:
+          BENCH_OUTPUT_NAME: e2e-latest
+        run: node runBenchE2E.mjs
+
+      # --- Transform results ---
+
+      - name: Transform benchmark results
+        if: steps.should-run.outputs.run == 'true'
+        working-directory: tests/apps/next/middleware
+        run: |
+          node benchmarks/transform-results.mjs \
+            --unit benchmarks/results/unit-latest.json \
+            --e2e benchmarks/results/e2e-latest.json \
+            --output benchmarks/results/benchmark-results.json \
+            --package gt-next \
+            --version ${{ steps.version.outputs.value }}
+
+      # --- Store & compare ---
+
+      - name: Store benchmark results
+        if: steps.should-run.outputs.run == 'true'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'Middleware Benchmarks'
+          tool: 'customSmallerIsBetter'
+          output-file-path: tests/apps/next/middleware/benchmarks/results/benchmark-results.json
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Comparison & alerting
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@generaltranslation/core'
+          summary-always: true
+          # Data persistence — only save/push on release dispatches, NEVER on PRs
+          # (security: PRs from forks could store malicious data to gh-pages)
+          save-data-file: ${{ github.event_name != 'pull_request' }}
+          auto-push: ${{ github.event_name != 'pull_request' }}

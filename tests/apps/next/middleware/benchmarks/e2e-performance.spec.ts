@@ -19,8 +19,7 @@ async function getNavigationMetrics(
     )[0] as PerformanceNavigationTiming;
     return {
       ttfb: entry.responseStart - entry.requestStart,
-      domContentLoaded:
-        entry.domContentLoadedEventEnd - entry.requestStart,
+      domContentLoaded: entry.domContentLoadedEventEnd - entry.requestStart,
       load: entry.loadEventEnd - entry.requestStart,
     };
   });
@@ -31,8 +30,9 @@ test.describe('e2e performance benchmarks', () => {
 
   test.afterAll(() => {
     mkdirSync(RESULTS_DIR, { recursive: true });
+    const outputName = process.env.BENCH_OUTPUT_NAME || `perf-${Date.now()}`;
     writeFileSync(
-      join(RESULTS_DIR, `perf-${Date.now()}.json`),
+      join(RESULTS_DIR, `${outputName}.json`),
       JSON.stringify(results, null, 2)
     );
   });
