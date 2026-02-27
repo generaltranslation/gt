@@ -166,7 +166,7 @@ jobs:
 
       - name: Build packages
         if: steps.gtx_cli_changed.outputs.changed == 'true'
-        run: pnpm exec turbo build --filter='./packages/*'
+        run: pnpm exec turbo build --filter='gtx-cli...'
 
       - name: Build CLI binaries
         if: steps.gtx_cli_changed.outputs.changed == 'true'
