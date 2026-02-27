@@ -37,7 +37,9 @@
     "test": "pnpm run test:js && pnpm run test:rust",
     "test:js": "vitest run",
     "test:rust": "cargo test --manifest-path ./swc-plugin/Cargo.toml",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bench": "vitest bench --run --config benchmarks/vitest.config.ts",
+    "bench:unit:json": "vitest bench --run --config benchmarks/vitest.config.ts --outputJson benchmarks/results/unit-latest.json"
   },
   "repository": {
     "type": "git",

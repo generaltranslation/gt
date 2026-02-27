@@ -121,7 +121,7 @@ jobs:
 
       - name: Run unit benchmarks
         if: steps.should-run.outputs.run == 'true'
-        working-directory: tests/apps/next/middleware
+        working-directory: packages/next
         run: pnpm bench:unit:json
 
       - name: Run E2E benchmarks
@@ -135,12 +135,11 @@ jobs:
 
       - name: Transform benchmark results
         if: steps.should-run.outputs.run == 'true'
-        working-directory: tests/apps/next/middleware
         run: |
-          node benchmarks/transform-results.mjs \
-            --unit benchmarks/results/unit-latest.json \
-            --e2e benchmarks/results/e2e-latest.json \
-            --output benchmarks/results/benchmark-results.json \
+          node scripts/transform-bench-results.mjs \
+            --unit packages/next/benchmarks/results/unit-latest.json \
+            --e2e tests/apps/next/middleware/benchmarks/results/e2e-latest.json \
+            --output benchmark-results.json \
             --package gt-next \
             --version ${{ steps.version.outputs.value }}
 
@@ -152,7 +151,7 @@ jobs:
         with:
           name: 'Middleware Benchmarks'
           tool: 'customSmallerIsBetter'
-          output-file-path: tests/apps/next/middleware/benchmarks/results/benchmark-results.json
+          output-file-path: benchmark-results.json
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
           github-token: ${{ secrets.GITHUB_TOKEN }}
