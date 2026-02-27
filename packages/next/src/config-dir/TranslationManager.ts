@@ -148,10 +148,12 @@ export class TranslationManager {
   ) {
     if (!(locale && hash && translation)) return false;
     const reference = this._standardizeLocale(locale);
-    this.translationsMap.set(reference, {
-      ...(this.translationsMap.get(reference) || {}),
-      [hash]: translation,
-    });
+    let existing = this.translationsMap.get(reference);
+    if (!existing) {
+      existing = {};
+      this.translationsMap.set(reference, existing);
+    }
+    existing[hash] = translation;
   }
 }
 
