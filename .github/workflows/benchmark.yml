@@ -111,6 +111,12 @@ jobs:
             echo "value=${{ steps.read-version.outputs.version }}" >> $GITHUB_OUTPUT
           fi
 
+      # --- Build packages (required for unit benchmarks to resolve gt-next/middleware) ---
+
+      - name: Build packages
+        if: steps.should-run.outputs.run == 'true'
+        run: pnpm build
+
       # --- Run benchmarks ---
 
       - name: Run unit benchmarks
