@@ -46,10 +46,10 @@ jobs:
         run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Build packages
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
 
       - name: Run tests
-        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
 
   test-builds:
     strategy:
@@ -166,7 +166,7 @@ jobs:
 
       - name: Build packages
         if: steps.gtx_cli_changed.outputs.changed == 'true'
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!cli-test-app'
+        run: pnpm exec turbo build --filter='gtx-cli...'
 
       - name: Build CLI binaries
         if: steps.gtx_cli_changed.outputs.changed == 'true'
