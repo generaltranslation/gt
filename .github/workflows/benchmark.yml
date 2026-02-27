@@ -118,6 +118,10 @@ jobs:
         run: pnpm build
 
       # --- Run benchmarks ---
+      # Out of scope of current PR
+      # TODO: this should be more generalizable done with a single pnpm call triggering everything
+      # you pass in a list/object of changed packages and their versions, then it executes only the associated benchmarks
+      # explore having a "gt:package" field in the package.json for the test apps so we know which package each app is associated with
 
       - name: Run unit benchmarks
         if: steps.should-run.outputs.run == 'true'
@@ -132,6 +136,8 @@ jobs:
         run: node runBenchE2E.mjs
 
       # --- Transform results ---
+      # Out of scope of current PR
+      # TODO: standardize this so it is one call and all of the package/version/etc mapping searching for output files etc is automatic
 
       - name: Transform benchmark results
         if: steps.should-run.outputs.run == 'true'
