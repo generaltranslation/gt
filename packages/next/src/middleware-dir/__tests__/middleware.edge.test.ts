@@ -434,9 +434,7 @@ describe('Middleware Integration Tests', () => {
       // On redirect, reset cookies should NOT be cleared
       // (they persist until the next non-redirect response)
       const redirectSetCookie = redirectRes.headers.get('set-cookie') || '';
-      expect(redirectSetCookie).not.toContain(
-        `${RESET_COOKIE}=;`
-      );
+      expect(redirectSetCookie).not.toContain(`${RESET_COOKIE}=;`);
 
       // After the redirect to /fr/about, the next request should be a next()
       // that clears the reset cookies

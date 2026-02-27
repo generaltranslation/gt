@@ -43,9 +43,9 @@ describe('extractDynamicParams', () => {
     expect(extractDynamicParams('/user/[userId]', '/user/abc-def')).toEqual([
       'abc-def',
     ]);
-    expect(
-      extractDynamicParams('/posts/[slug]', '/posts/hello-world')
-    ).toEqual(['hello-world']);
+    expect(extractDynamicParams('/posts/[slug]', '/posts/hello-world')).toEqual(
+      ['hello-world']
+    );
   });
 
   it('should extract multiple dynamic parameters', () => {
@@ -53,10 +53,7 @@ describe('extractDynamicParams', () => {
       extractDynamicParams('/user/[id]/post/[postId]', '/user/456/post/789')
     ).toEqual(['456', '789']);
     expect(
-      extractDynamicParams(
-        '/[locale]/[category]/[slug]',
-        '/en/tech/article-1'
-      )
+      extractDynamicParams('/[locale]/[category]/[slug]', '/en/tech/article-1')
     ).toEqual(['en', 'tech', 'article-1']);
   });
 
@@ -90,9 +87,7 @@ describe('extractDynamicParams', () => {
       'y',
       undefined,
     ]);
-    expect(extractDynamicParams('/[param]', '/one/two/three')).toEqual([
-      'one',
-    ]);
+    expect(extractDynamicParams('/[param]', '/one/two/three')).toEqual(['one']);
   });
 
   it('should handle edge cases', () => {
@@ -104,9 +99,7 @@ describe('extractDynamicParams', () => {
 
 describe('replaceDynamicSegments', () => {
   it('should replace single dynamic segment', () => {
-    expect(replaceDynamicSegments('/blog/123', '/blog/[id]')).toBe(
-      '/blog/123'
-    );
+    expect(replaceDynamicSegments('/blog/123', '/blog/[id]')).toBe('/blog/123');
     expect(replaceDynamicSegments('/user/john-doe', '/user/[username]')).toBe(
       '/user/john-doe'
     );
@@ -144,9 +137,7 @@ describe('replaceDynamicSegments', () => {
     expect(replaceDynamicSegments('/blog', '/blog/[id]/[slug]')).toBe(
       '/blog/[id]/[slug]'
     );
-    expect(replaceDynamicSegments('/one', '/[a]/[b]/[c]')).toBe(
-      '/one/[b]/[c]'
-    );
+    expect(replaceDynamicSegments('/one', '/[a]/[b]/[c]')).toBe('/one/[b]/[c]');
   });
 
   it('should handle various dynamic segment formats', () => {
@@ -196,9 +187,7 @@ describe('getLocalizedPath', () => {
 
     expect(getLocalizedPath('/about', 'en', pathConfig)).toBe('/en/about-us');
     expect(getLocalizedPath('/about', 'fr', pathConfig)).toBe('/fr/a-propos');
-    expect(getLocalizedPath('/about', 'es', pathConfig)).toBe(
-      '/es/acerca-de'
-    );
+    expect(getLocalizedPath('/about', 'es', pathConfig)).toBe('/es/acerca-de');
     expect(getLocalizedPath('/about', 'de', pathConfig)).toBe('/de/uber-uns');
     expect(getLocalizedPath('/contact', 'en', pathConfig)).toBe(
       '/en/contact-us'
@@ -225,9 +214,7 @@ describe('getLocalizedPath', () => {
       '/about': '/about-us',
     };
 
-    expect(getLocalizedPath('/nonexistent', 'en', pathConfig)).toBe(
-      undefined
-    );
+    expect(getLocalizedPath('/nonexistent', 'en', pathConfig)).toBe(undefined);
     expect(getLocalizedPath('/missing', 'fr', pathConfig)).toBe(undefined);
   });
 
@@ -342,9 +329,7 @@ describe('createPathToSharedPathMap', () => {
 
     expect(result.pathToSharedPath['/static-page']).toBe('/static-page');
     expect(result.pathToSharedPath['/dynamic/[^/]+']).toBe('/dynamic/[id]');
-    expect(result.pathToSharedPath['/en/dynamic/[^/]+']).toBe(
-      '/dynamic/[id]'
-    );
+    expect(result.pathToSharedPath['/en/dynamic/[^/]+']).toBe('/dynamic/[id]');
     expect(result.pathToSharedPath['/fr/dynamique/[^/]+']).toBe(
       '/dynamic/[id]'
     );
@@ -364,9 +349,7 @@ describe('getSharedPath', () => {
   };
 
   it('should find exact matches first', () => {
-    expect(getSharedPath('/about', pathToSharedPath, undefined)).toBe(
-      '/about'
-    );
+    expect(getSharedPath('/about', pathToSharedPath, undefined)).toBe('/about');
     expect(getSharedPath('/en/about-us', pathToSharedPath, 'en')).toBe(
       '/about'
     );
