@@ -39,7 +39,7 @@ function parseArgs(argv) {
  * Normalize vitest bench --outputJson format.
  * Structure: { files: [{ groups: [{ fullName, benchmarks: [{ name, mean, sd, ... }] }] }] }
  */
-function normalizeVitestBench(json) {
+function normalizeVitestBench(json, pkg) {
   const results = [];
   for (const file of json.files) {
     for (const group of file.groups) {
@@ -50,7 +50,7 @@ function normalizeVitestBench(json) {
 
       for (const bench of group.benchmarks) {
         const entry = {
-          name: `unit > ${groupName} > ${bench.name} (mean)`,
+          name: `${pkg} > unit > ${groupName} > ${bench.name} (mean)`,
           unit: 'ms',
           value: bench.mean,
         };
@@ -68,13 +68,13 @@ function normalizeVitestBench(json) {
  * Normalize Playwright E2E performance JSON.
  * Structure: { "test-name": { metric: number, ... }, ... }
  */
-function normalizeE2EResults(json) {
+function normalizeE2EResults(json, pkg) {
   const results = [];
   for (const [testName, metrics] of Object.entries(json)) {
     for (const [metric, value] of Object.entries(metrics)) {
       if (typeof value !== 'number') continue;
       results.push({
-        name: `e2e > ${testName} > ${metric}`,
+        name: `${pkg} > e2e > ${testName} > ${metric}`,
         unit: 'ms',
         value,
       });
@@ -85,7 +85,8 @@ function normalizeE2EResults(json) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  const extra = `${args.package}@${args.version}`;
+  const pkg = args.package;
+  const extra = JSON.stringify({ package: pkg, version: args.version }, null, 2);
   const results = [];
 
   if (args.unit) {
@@ -94,7 +95,7 @@ function main() {
       process.exit(1);
     }
     const unitJson = JSON.parse(readFileSync(args.unit, 'utf-8'));
-    for (const entry of normalizeVitestBench(unitJson)) {
+    for (const entry of normalizeVitestBench(unitJson, pkg)) {
       results.push({ ...entry, extra });
     }
   }
@@ -105,7 +106,7 @@ function main() {
       process.exit(1);
     }
     const e2eJson = JSON.parse(readFileSync(args.e2e, 'utf-8'));
-    for (const entry of normalizeE2EResults(e2eJson)) {
+    for (const entry of normalizeE2EResults(e2eJson, pkg)) {
       results.push({ ...entry, extra });
     }
   }

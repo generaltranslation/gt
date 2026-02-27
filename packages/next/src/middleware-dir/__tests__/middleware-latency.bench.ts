@@ -38,14 +38,14 @@ function createRequest(pathname: string): NextRequest {
   });
 }
 
-describe('factory creation latency', () => {
+describe('middleware: factory creation latency', () => {
   bench('createNextMiddleware()', async () => {
     const { createNextMiddleware } = await import('gt-next/middleware');
     createNextMiddleware();
   });
 });
 
-describe('per-request execution latency', () => {
+describe('middleware: per-request execution latency', () => {
   bench('default locale request (/)', async () => {
     const { createNextMiddleware } = await import('gt-next/middleware');
     const middleware = createNextMiddleware();

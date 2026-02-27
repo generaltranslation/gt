@@ -40,7 +40,7 @@ test.describe('e2e performance benchmarks', () => {
   test('cold navigation TTFB and load times', async ({ page }) => {
     await page.goto('/');
     const metrics = await getNavigationMetrics(page);
-    results['cold-navigation-home'] = metrics;
+    results['middleware: cold-navigation-home'] = metrics;
     console.log('Cold navigation (/):', metrics);
   });
 
@@ -55,7 +55,7 @@ test.describe('e2e performance benchmarks', () => {
     const elapsed = Date.now() - start;
 
     const metrics = await getNavigationMetrics(page);
-    results['redirect-chain-fr-about'] = { elapsed, ...metrics };
+    results['middleware: redirect-chain-fr-about'] = { elapsed, ...metrics };
     console.log('Redirect chain (fr /about):', { elapsed, ...metrics });
 
     await context.close();
@@ -70,14 +70,14 @@ test.describe('e2e performance benchmarks', () => {
     await page.waitForLoadState('networkidle');
     const elapsed = Date.now() - start;
 
-    results['locale-switch-en-to-fr'] = { elapsed };
+    results['middleware: locale-switch-en-to-fr'] = { elapsed };
     console.log('Locale switch (en -> fr):', { elapsed });
   });
 
   test('about page cold navigation', async ({ page }) => {
     await page.goto('/about');
     const metrics = await getNavigationMetrics(page);
-    results['cold-navigation-about'] = metrics;
+    results['middleware: cold-navigation-about'] = metrics;
     console.log('Cold navigation (/about):', metrics);
   });
 });
