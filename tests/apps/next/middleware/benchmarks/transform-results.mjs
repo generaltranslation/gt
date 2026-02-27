@@ -49,12 +49,15 @@ function normalizeVitestBench(json) {
         : group.fullName;
 
       for (const bench of group.benchmarks) {
-        results.push({
+        const entry = {
           name: `unit > ${groupName} > ${bench.name} (mean)`,
           unit: 'ms',
           value: bench.mean,
-          range: `\u00b1${bench.sd.toFixed(4)}`,
-        });
+        };
+        if (typeof bench.sd === 'number') {
+          entry.range = `\u00b1${bench.sd.toFixed(4)}`;
+        }
+        results.push(entry);
       }
     }
   }
