@@ -64,6 +64,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Trigger benchmark baseline update
+        if: steps.changesets.outputs.published == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          event-type: release-published
+          client-payload: '{"publishedPackages": ${{ steps.changesets.outputs.publishedPackages }}}'
+
       - name: Check if gtx-cli was published
         id: check-gtx-cli
         if: steps.changesets.outputs.published == 'true'

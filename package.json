@@ -16,7 +16,7 @@
     "release:gtx-cli-bin": "pnpm --filter gtx-cli run release:bin",
     "build:clean": "turbo run build:clean --filter='./packages/*'",
     "build:release": "turbo run build:release --filter='./packages/*'",
-    "bench": "turbo run bench --filter=gt-next-middleware-e2e",
+    "bench": "turbo run bench",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "changeset": "changeset",
     "version-packages": "changeset version"

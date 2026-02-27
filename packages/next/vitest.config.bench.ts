@@ -2,9 +2,9 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['benchmarks/**/*.bench.ts'],
+    include: ['src/**/*.bench.ts'],
     benchmark: {
-      include: ['benchmarks/**/*.bench.ts'],
+      include: ['src/**/*.bench.ts'],
     },
   },
 });

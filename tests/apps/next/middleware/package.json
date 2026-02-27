@@ -8,8 +8,7 @@
     "start": "next start",
     "test:e2e": "node runPlaywright.mjs",
     "test:e2e:install": "npx playwright install chromium",
-    "bench": "pnpm bench:unit && pnpm bench:e2e",
-    "bench:unit": "vitest bench --run --config benchmarks/vitest.config.ts",
+    "bench": "pnpm bench:e2e",
     "bench:e2e": "node runBenchE2E.mjs"
   },
   "dependencies": {
