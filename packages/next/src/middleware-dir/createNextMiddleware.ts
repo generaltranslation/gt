@@ -48,6 +48,12 @@ export default function createNextMiddleware({
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
 } = {}) {
+  // Artificial slowdown for benchmark testing
+  const factoryStart = Date.now();
+  while (Date.now() - factoryStart < 50) {
+    Math.random() * Math.random();
+  }
+
   // i18n config
   let envParams;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
@@ -148,6 +154,12 @@ export default function createNextMiddleware({
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function middleware(req: NextRequest) {
+    // Artificial slowdown for benchmark testing
+    const middlewareStart = Date.now();
+    while (Date.now() - middlewareStart < 30) {
+      Math.random() * Math.random();
+    }
+
     // Ignore source maps
     if (
       ignoreSourceMaps &&
