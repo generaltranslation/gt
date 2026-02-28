@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   deployments: write
+  pull-requests: write
 
 concurrency:
   group: benchmark-${{ github.event.pull_request.number || github.run_id }}
@@ -167,7 +168,6 @@ jobs:
           fail-on-alert: false
           alert-comment-cc-users: '@generaltranslation/core'
           summary-always: true
-          # Data persistence — only save/push on release dispatches, NEVER on PRs
-          # (security: PRs from forks could store malicious data to gh-pages)
-          save-data-file: ${{ github.event_name != 'pull_request' }}
-          auto-push: ${{ github.event_name != 'pull_request' }}
+          # Data persistence — only save/push on release dispatches
+          save-data-file: ${{ github.event_name == 'repository_dispatch' }}
+          auto-push: ${{ github.event_name == 'repository_dispatch' }}
