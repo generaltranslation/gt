@@ -1655,7 +1655,8 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
     mockResolveImportPath.mockImplementation(
       (_currentFile: string, importPath: string) => {
-        if (importPath === './libs/utils1') return '/test/derive/libs/utils1.ts';
+        if (importPath === './libs/utils1')
+          return '/test/derive/libs/utils1.ts';
         if (importPath === './utils2') return '/test/derive/libs/utils2.ts';
         if (importPath === './utils3') return '/test/derive/libs/utils3.ts';
         if (importPath === './utils1') return '/test/derive/libs/utils1.ts';
@@ -1724,9 +1725,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(errors).toHaveLength(0);
     expect(updates).toHaveLength(4);
 
-    const staticContents = updates.map(
-      (u) => (u.source[1] as { c: string }).c
-    );
+    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
     expect(staticContents).toContain('utils3-a');
     expect(staticContents).toContain('utils3-b');
     expect(staticContents).toContain('utils1-a');

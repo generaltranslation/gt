@@ -15,9 +15,9 @@
  * @param {T extends string | boolean | number | null | undefined} content - Content to mark as statically analyzable.
  * @returns content
  */
-export function derive<
-  T extends string | boolean | number | null | undefined,
->(content: T): T {
+export function derive<T extends string | boolean | number | null | undefined>(
+  content: T
+): T {
   return content;
 }
 

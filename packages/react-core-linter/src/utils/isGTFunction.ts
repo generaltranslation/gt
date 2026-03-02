@@ -137,17 +137,20 @@ export function isDeriveComponent({
   node,
   libs,
 }: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  return isGTFunction({
-    context,
-    node,
-    libs,
-    targetName: DERIVE_COMPONENT_NAME,
-  }) || isGTFunction({
-    context,
-    node,
-    libs,
-    targetName: STATIC_COMPONENT_NAME,
-  });
+  return (
+    isGTFunction({
+      context,
+      node,
+      libs,
+      targetName: DERIVE_COMPONENT_NAME,
+    }) ||
+    isGTFunction({
+      context,
+      node,
+      libs,
+      targetName: STATIC_COMPONENT_NAME,
+    })
+  );
 }
 
 /**
@@ -212,17 +215,20 @@ export function isDeriveFunction({
   node,
   libs,
 }: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  return isGTFunction({
-    context,
-    node,
-    libs,
-    targetName: DECLARE_DERIVE_FUNCTION_NAME,
-  }) || isGTFunction({
-    context,
-    node,
-    libs,
-    targetName: DECLARE_STATIC_FUNCTION_NAME,
-  });
+  return (
+    isGTFunction({
+      context,
+      node,
+      libs,
+      targetName: DECLARE_DERIVE_FUNCTION_NAME,
+    }) ||
+    isGTFunction({
+      context,
+      node,
+      libs,
+      targetName: DECLARE_STATIC_FUNCTION_NAME,
+    })
+  );
 }
 
 /**

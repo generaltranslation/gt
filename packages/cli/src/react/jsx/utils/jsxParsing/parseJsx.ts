@@ -361,7 +361,10 @@ function buildJSXTree({
     });
 
     if (elementIsVariable) {
-      if (componentType === STATIC_COMPONENT || componentType === DERIVE_COMPONENT) {
+      if (
+        componentType === STATIC_COMPONENT ||
+        componentType === DERIVE_COMPONENT
+      ) {
         const helperElement = helperPath.get('children');
         const results = {
           nodeType: 'element' as const,
