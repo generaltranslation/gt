@@ -2,7 +2,7 @@ import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
-import { handleStaticExpression } from '../../parseDeclareStatic.js';
+import { handleStaticExpression } from '../../parseDerive.js';
 import { nodeToStrings } from '../../parseString.js';
 import { indexVars } from 'generaltranslation/internal';
 import { isValidIcu } from '../../../evaluateJsx.js';

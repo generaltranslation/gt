@@ -236,7 +236,8 @@ function validateDeclareStatic(
     // Validate the function is actually the GT declareStatic function
     if (
       type !== 'generaltranslation' ||
-      canonicalName !== GT_OTHER_FUNCTIONS.declareStatic
+      (canonicalName !== GT_OTHER_FUNCTIONS.declareStatic &&
+        canonicalName !== GT_OTHER_FUNCTIONS.derive)
     ) {
       errors.push('Expression does not use an allowed call expression');
       return { errors };

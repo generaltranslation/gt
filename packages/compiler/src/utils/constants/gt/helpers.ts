@@ -39,6 +39,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'Tx',
     'Var',
     'Static',
+    'Derive',
     'Currency',
     'DateTime',
     'Num',
@@ -93,6 +94,7 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
       GT_COMPONENT_TYPES.Num,
       GT_COMPONENT_TYPES.Currency,
       GT_COMPONENT_TYPES.DateTime,
+      GT_COMPONENT_TYPES.Derive,
       GT_COMPONENT_TYPES.Static,
     ] as string[]
   ).includes(name);
@@ -101,9 +103,14 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
 /**
  * Check if a name is a GT static component
  */
-export function isStaticComponent(name: string): name is GT_COMPONENT_TYPES {
-  return [GT_COMPONENT_TYPES.Static].includes(name as GT_COMPONENT_TYPES);
+export function isDeriveComponent(name: string): name is GT_COMPONENT_TYPES {
+  return [GT_COMPONENT_TYPES.Derive, GT_COMPONENT_TYPES.Static].includes(
+    name as GT_COMPONENT_TYPES
+  );
 }
+
+/** @deprecated Use `isDeriveComponent` instead. */
+export const isStaticComponent = isDeriveComponent;
 /**
  * Check if a name is a GT branch component
  */
@@ -186,6 +193,7 @@ export const defaultVariableNames = {
   [GT_COMPONENT_TYPES.Num]: 'n',
   [GT_COMPONENT_TYPES.DateTime]: 'date',
   [GT_COMPONENT_TYPES.Currency]: 'cost',
+  [GT_COMPONENT_TYPES.Derive]: 'static',
   [GT_COMPONENT_TYPES.Static]: 'static',
 } as const;
 const baseVariablePrefix = '_gt_';

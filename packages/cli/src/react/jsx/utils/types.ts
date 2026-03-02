@@ -1,5 +1,5 @@
 // ===== Tree Construction ===== //
-// Used for parseDeclareStatic.ts
+// Used for parseDerive.ts
 type StringNode = StringTextNode | StringSequenceNode | StringChoiceNode;
 
 type StringTextNode = {

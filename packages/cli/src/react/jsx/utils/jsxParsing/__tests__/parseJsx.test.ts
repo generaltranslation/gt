@@ -1596,6 +1596,147 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
   });
 
+  it('should resolve functions across multiple files with re-exports using Derive', () => {
+    // Same as the first test but uses Derive instead of Static
+    const pageFile = `
+      import { T, Derive } from "gt-next";
+      import { utils1 } from "./libs/utils1";
+
+      function getStatic() {
+        return 1 ? "static" : "dynamic";
+      }
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Derive>{utils1()}</Derive></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      import { utils3 } from "./utils2";
+
+      export function utils1() {
+        if (Math.random() > 0.5) {
+          return utils3();
+        }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+    `;
+
+    const utils2File = `
+      export * from "./utils3";
+    `;
+
+    const utils3File = `
+      import { utils1 } from "./utils1";
+      export function utils3() {
+        if (Math.random() > 0.5) {
+        }
+        return 1 ? "utils3-a" : "utils3-b";
+      }
+    `;
+
+    // Set up file system mocks
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/derive/libs/utils1.ts':
+          return utils1File;
+        case '/test/derive/libs/utils2.ts':
+          return utils2File;
+        case '/test/derive/libs/utils3.ts':
+          return utils3File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1')
+          return '/test/derive/libs/utils1.ts';
+        if (importPath === './utils2') return '/test/derive/libs/utils2.ts';
+        if (importPath === './utils3') return '/test/derive/libs/utils3.ts';
+        if (importPath === './utils1') return '/test/derive/libs/utils1.ts';
+        return null;
+      }
+    );
+
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Derive'
+            ) {
+              importAliases[spec.local.name] = 'Derive';
+            }
+          });
+        }
+      },
+    });
+
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+        if (tBinding) {
+          parseTranslationComponent({
+            originalName: 'T',
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: [Libraries.GT_NEXT],
+              file: '/test/derive/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
+          });
+        }
+      },
+    });
+
+    // Derive is normalized to Static internally, so output is the same
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(4);
+
+    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
+    expect(staticContents).toContain('utils3-a');
+    expect(staticContents).toContain('utils3-b');
+    expect(staticContents).toContain('utils1-a');
+    expect(staticContents).toContain('utils1-b');
+
+    // Derive normalizes to Static type internally
+    updates.forEach((update) => {
+      expect((update.source[1] as any).t).toBe('Static');
+    });
+  });
+
   it('should handle declareStatic imported with alias', () => {
     // Test for declareStatic import aliasing - used within Static component
     const pageFile = `

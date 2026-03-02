@@ -13,10 +13,10 @@ const withWillErrorInNextVersion = (message: string): string =>
 
 // Static function related errors
 const withStaticError = (message: string): string =>
-  `<Static> rules violation: ${message}`;
+  `<Derive> rules violation: ${message}`;
 
 const withDeclareStaticError = (message: string): string =>
-  `declareStatic() rules violation: ${message}`;
+  `derive() rules violation: ${message}`;
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
@@ -59,7 +59,7 @@ export const warnMissingReturnSync = (
 ): string =>
   withLocation(
     file,
-    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does have an explicit return statement. Static functions must have an explicit return statment.`,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} (or ${colorizeComponent('<Static>')}) tags but does not have an explicit return statement. Static functions must have an explicit return statement.`,
     location
   );
 
@@ -257,7 +257,7 @@ export const warnDeclareStaticNotWrappedSync = (
   withLocation(
     file,
     withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive() (or declareStatic()). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
     ),
     location
   );
@@ -270,7 +270,7 @@ export const warnDeclareStaticNoResultsSync = (
   withLocation(
     file,
     withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );

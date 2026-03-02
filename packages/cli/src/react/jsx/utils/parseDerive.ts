@@ -13,7 +13,10 @@ import {
   warnDeclareStaticNoResultsSync,
   warnDeclareStaticNotWrappedSync,
 } from '../../../console/index.js';
-import { DECLARE_STATIC_FUNCTION } from './constants.js';
+import {
+  DECLARE_STATIC_FUNCTION,
+  DECLARE_DERIVE_FUNCTION,
+} from './constants.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -259,8 +262,11 @@ function getDeclareStaticVariants(
       ? imported.name
       : imported.value;
 
-    // Only proceed if the original name is 'declareStatic'
-    if (originalName !== DECLARE_STATIC_FUNCTION) {
+    // Only proceed if the original name is 'declareStatic' or 'derive'
+    if (
+      originalName !== DECLARE_STATIC_FUNCTION &&
+      originalName !== DECLARE_DERIVE_FUNCTION
+    ) {
       return null;
     }
   } else {

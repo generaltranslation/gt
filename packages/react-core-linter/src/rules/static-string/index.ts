@@ -1,7 +1,7 @@
 import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
 import { GT_LIBRARIES, RULE_URL } from '../../utils/constants.js';
 import {
-  isDeclareStaticFunction,
+  isDeriveFunction,
   isGTCallbackFunction,
   isMsgFunction,
 } from '../../utils/isGTFunction.js';
@@ -128,7 +128,7 @@ export const staticString = createRule({
           // declareStatic() is okay
           if (
             expression.type === TSESTree.AST_NODE_TYPES.CallExpression &&
-            isDeclareStaticFunction({ context, node: expression, libs })
+            isDeriveFunction({ context, node: expression, libs })
           ) {
             return;
           }

@@ -21,6 +21,7 @@ import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   STATIC_COMPONENT,
+  DERIVE_COMPONENT,
   TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
 } from '../constants.js';
@@ -360,7 +361,10 @@ function buildJSXTree({
     });
 
     if (elementIsVariable) {
-      if (componentType === STATIC_COMPONENT) {
+      if (
+        componentType === STATIC_COMPONENT ||
+        componentType === DERIVE_COMPONENT
+      ) {
         const helperElement = helperPath.get('children');
         const results = {
           nodeType: 'element' as const,
