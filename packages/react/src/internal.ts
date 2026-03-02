@@ -33,9 +33,11 @@ import {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   Static,
+  Derive,
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/internal';
@@ -101,6 +103,7 @@ export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
 // Function exports
 export {
   Static,
+  Derive,
   addGTIdentifier,
   writeChildrenAsObjects,
   isVariableObject,
@@ -129,6 +132,7 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   mFallback,

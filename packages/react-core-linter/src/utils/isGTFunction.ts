@@ -8,7 +8,9 @@ import {
   BRANCH_COMPONENT_NAME,
   BRANCH_COMPONENT_NAMES,
   STATIC_COMPONENT_NAME,
+  DERIVE_COMPONENT_NAME,
   DECLARE_STATIC_FUNCTION_NAME,
+  DECLARE_DERIVE_FUNCTION_NAME,
   MSG_FUNCTION_NAME,
   GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
 } from './constants.js';
@@ -140,6 +142,11 @@ export function isStaticComponent({
     node,
     libs,
     targetName: STATIC_COMPONENT_NAME,
+  }) || isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: DERIVE_COMPONENT_NAME,
   });
 }
 
@@ -205,6 +212,11 @@ export function isDeclareStaticFunction({
     node,
     libs,
     targetName: DECLARE_STATIC_FUNCTION_NAME,
+  }) || isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: DECLARE_DERIVE_FUNCTION_NAME,
   });
 }
 

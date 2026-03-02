@@ -28,10 +28,12 @@ import {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   _Messages,
   Static as _Static,
+  Derive as _Derive,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -194,6 +196,32 @@ Var._gtt = 'variable-variable';
  * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * `<Derive>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ *
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ *
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * <T>
+ *   <Derive>
+ *      {getSubject()}
+ *   </Derive>
+ *   is going to school today.
+ * </T>
+ * ```
+ *
+ * @param {T extends React.ReactNode} children - Static content to render.
+ * @returns {T} The result of the function invocation.
+ */
+export const Derive: typeof _Derive = () => {
   throw new Error(typesFileError);
 };
 
@@ -471,6 +499,7 @@ export {
   mFallback,
   gtFallback,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
 };

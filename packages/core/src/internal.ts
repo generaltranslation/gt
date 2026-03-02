@@ -28,7 +28,7 @@ export {
 };
 
 // static
-export * from './static';
+export * from './derive';
 
 // backwards compatability
 export {
