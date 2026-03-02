@@ -174,32 +174,6 @@ export const Var: typeof _Var = () => {
 Var._gtt = 'variable-variable';
 
 /**
- * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
- *
- * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
- *
- * @example
- * ```jsx
- * function getSubject() {
- *   return (Math.random() > 0.5) ? "Alice" : "Brian";
- * }
- * ...
- * <T>
- *   <Static>
- *      {getSubject()}
- *   </Static>
- *   is going to school today.
- * </T>
- * ```
- *
- * @param {T extends React.ReactNode} children - Static content to render.
- * @returns {T} The result of the function invocation.
- */
-export const Static: typeof _Static = () => {
-  throw new Error(typesFileError);
-};
-
-/**
  * `<Derive>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
  *
  * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
@@ -222,6 +196,34 @@ export const Static: typeof _Static = () => {
  * @returns {T} The result of the function invocation.
  */
 export const Derive: typeof _Derive = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * @deprecated Use `<Derive>` instead.
+ *
+ * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ *
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ *
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * <T>
+ *   <Static>
+ *      {getSubject()}
+ *   </Static>
+ *   is going to school today.
+ * </T>
+ * ```
+ *
+ * @param {T extends React.ReactNode} children - Static content to render.
+ * @returns {T} The result of the function invocation.
+ */
+export const Static: typeof _Static = () => {
   throw new Error(typesFileError);
 };
 
