@@ -500,8 +500,10 @@ export {
   decodeOptions,
   mFallback,
   gtFallback,
-  declareStatic,
   derive,
   declareVar,
   decodeVars,
 };
+
+/** @deprecated Use derive() instead. */
+export { declareStatic };
