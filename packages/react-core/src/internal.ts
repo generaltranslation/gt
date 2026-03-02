@@ -33,7 +33,7 @@ import { injectFallbacks } from './dictionaries/injectFallbacks';
 import { injectAndMerge } from './dictionaries/injectAndMerge';
 import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
-import { Static, Derive } from './variables/Static';
+import { Static, Derive } from './variables/Derive';
 
 export * from 'gt-i18n/fallbacks';
 export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
