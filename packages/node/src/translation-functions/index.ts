@@ -10,7 +10,7 @@ export { getMessages } from 'gt-i18n/internal';
 export { msg } from 'gt-i18n';
 
 // Static Functions
-export { declareStatic, declareVar } from 'gt-i18n';
+export { declareStatic, derive, declareVar } from 'gt-i18n';
 
 // Decoding Functions
 export { decodeVars, decodeMsg, decodeOptions } from 'gt-i18n';

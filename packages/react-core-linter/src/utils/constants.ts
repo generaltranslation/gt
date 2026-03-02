@@ -17,6 +17,7 @@ export const NUM_COMPONENT_NAME = 'Num';
 export const CURRENCY_COMPONENT_NAME = 'Currency';
 export const DATE_TIME_COMPONENT_NAME = 'DateTime';
 export const STATIC_COMPONENT_NAME = 'Static';
+export const DERIVE_COMPONENT_NAME = 'Derive';
 export const BRANCH_COMPONENT_NAME = 'Branch';
 export const PLURAL_COMPONENT_NAME = 'Plural';
 
@@ -29,6 +30,7 @@ export const USE_MESSAGES_FUNCTION_NAME = 'useMessages';
 export const GET_MESSAGES_FUNCTION_NAME = 'getMessages';
 export const MSG_FUNCTION_NAME = 'msg';
 export const DECLARE_STATIC_FUNCTION_NAME = 'declareStatic';
+export const DECLARE_DERIVE_FUNCTION_NAME = 'derive';
 
 export const GT_COMPONENT_NAMES = [
   T_COMPONENT_NAME,
@@ -37,6 +39,7 @@ export const GT_COMPONENT_NAMES = [
   CURRENCY_COMPONENT_NAME,
   DATE_TIME_COMPONENT_NAME,
   STATIC_COMPONENT_NAME,
+  DERIVE_COMPONENT_NAME,
 ];
 
 export const VARIABLE_COMPONENT_NAMES = [
