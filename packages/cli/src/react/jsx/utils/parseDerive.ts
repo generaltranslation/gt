@@ -9,8 +9,8 @@ import { parse } from '@babel/parser';
 import fs from 'node:fs';
 import {
   warnFunctionNotFoundSync,
-  warnDeclareStaticNoResultsSync,
-  warnDeclareStaticNotWrappedSync,
+  warnDeriveFunctionNoResultsSync,
+  warnDeriveFunctionNotWrappedSync,
 } from '../../../console/index.js';
 import { DECLARE_STATIC_FUNCTION, DERIVE_FUNCTION } from './constants.js';
 
@@ -46,7 +46,7 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param parsingOptions - Parsing configuration
  * @returns Node | null - The parsed node, or null if invalid
  */
-export function handleStaticExpression(
+export function handleDeriveExpression(
   expr: t.Expression,
   tPath: NodePath,
   file: string,
@@ -59,7 +59,7 @@ export function handleStaticExpression(
 
   // Handle expressions
   if (t.isCallExpression(expr)) {
-    const variants = getDeclareStaticVariants(
+    const variants = getDeriveVariants(
       expr,
       tPath,
       file,
@@ -80,7 +80,7 @@ export function handleStaticExpression(
         ? generate(expr.arguments[0]).code
         : 'no arguments';
     errors.push(
-      warnDeclareStaticNoResultsSync(
+      warnDeriveFunctionNoResultsSync(
         file,
         code,
         `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
@@ -106,7 +106,7 @@ export function handleStaticExpression(
       }
       const exprNode = expr.expressions[index];
       if (exprNode && t.isExpression(exprNode)) {
-        const result = handleStaticExpression(
+        const result = handleDeriveExpression(
           exprNode,
           tPath,
           file,
@@ -135,14 +135,14 @@ export function handleStaticExpression(
     if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
       return null;
     }
-    const leftResult = handleStaticExpression(
+    const leftResult = handleDeriveExpression(
       expr.left,
       tPath,
       file,
       parsingOptions,
       errors
     );
-    const rightResult = handleStaticExpression(
+    const rightResult = handleDeriveExpression(
       expr.right,
       tPath,
       file,
@@ -159,7 +159,7 @@ export function handleStaticExpression(
 
   // Handle parenthesized expressions
   if (t.isParenthesizedExpression(expr)) {
-    return handleStaticExpression(
+    return handleDeriveExpression(
       expr.expression,
       tPath,
       file,
@@ -218,7 +218,7 @@ export function handleStaticExpression(
  *
  * Returns null if it can't be resolved.
  */
-function getDeclareStaticVariants(
+function getDeriveVariants(
   call: t.CallExpression,
   tPath: NodePath,
   file: string,
@@ -233,7 +233,7 @@ function getDeclareStaticVariants(
         ? generate(call.arguments[0]).code
         : 'no arguments';
     errors.push(
-      warnDeclareStaticNotWrappedSync(
+      warnDeriveFunctionNotWrappedSync(
         file,
         code,
         `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
@@ -268,7 +268,7 @@ function getDeclareStaticVariants(
   } else {
     // Not an import specifier, so it's not derive
     errors.push(
-      warnDeclareStaticNotWrappedSync(
+      warnDeriveFunctionNotWrappedSync(
         file,
         calleeName,
         `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
@@ -727,7 +727,7 @@ function resolveFunctionInFile(
   } catch (error) {
     // File read or parse error - return null
     errors.push(
-      warnDeclareStaticNoResultsSync(
+      warnDeriveFunctionNoResultsSync(
         filePath,
         functionName,
         'file read/parse error: ' + error

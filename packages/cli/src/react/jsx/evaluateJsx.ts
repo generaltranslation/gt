@@ -52,10 +52,10 @@ export function isStaticExpression(
   value?: string | boolean | null;
 };
 /**
- * Checks if an expression is a derivable (statically analyzable) expression (does not contain any variables which could change at runtime).
+ * Checks if an expression is a static expression (does not contain any variables which could change at runtime).
  * @param expr - The expression to check
  * @param ignoreStaticFunction - Whether to ignore derive functions
- * @returns An object containing the result of the derivable check
+ * @returns An object containing the result of the static check
  */
 export function isStaticExpression(
   expr: t.Expression | t.JSXEmptyExpression,
@@ -136,6 +136,11 @@ export function isStaticExpression(
   return { isStatic: false };
 }
 
+/**
+ * Checks if an expression is a static value (a string, number, or template literal).
+ * @param expr - The expression to check
+ * @returns Whether the expression is a static value
+ */
 export function isStaticValue(
   expr: t.Expression | t.JSXEmptyExpression
 ): boolean {
@@ -151,6 +156,11 @@ export function isStaticValue(
   return false;
 }
 
+/**
+ * Checks if a string is a valid ICU message format.
+ * @param string - The string to check
+ * @returns Whether the string is a valid ICU message format
+ */
 export function isValidIcu(string: string): {
   isValid: boolean;
   error?: string;

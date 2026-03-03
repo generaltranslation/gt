@@ -244,17 +244,6 @@ export function warnHasUnwrappedExpression(
   );
 }
 
-export function warnNonStaticExpression(
-  file: string,
-  attrName: string,
-  value: string
-) {
-  logger.warn(
-    `Found non-derivable (statically analyzable) expression in ${chalk.cyan(file)} for attribute ${attrName}: "${chalk.white(value)}". ` +
-      `Change "${attrName}" to ensure this content is translated.`
-  );
-}
-
 export function warnTemplateLiteral(file: string, value: string) {
   logger.warn(
     `Found template literal with quasis (${value}) in ${chalk.cyan(file)}. ` +

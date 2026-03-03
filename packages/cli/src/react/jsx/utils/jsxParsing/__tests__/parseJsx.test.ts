@@ -251,7 +251,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update837.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils3-a',
       },
@@ -261,7 +261,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update6c4.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils3-b',
       },
@@ -271,7 +271,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update40d.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-a',
       },
@@ -281,7 +281,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update081.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-b',
       },
@@ -804,7 +804,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect(update.source[0]).toBe('test ');
 
       const deriveComponent = update.source[1] as any;
-      expect(deriveComponent.t).toBe('Static');
+      expect(deriveComponent.t).toBe('Derive');
       expect(deriveComponent.i).toBe(1);
       expect(deriveComponent.c).toMatch(/^(utils3-[ab]|utils1-[ab])$/);
     });
@@ -1251,7 +1251,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '40d52de32ba666ce': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils1-a',
         },
@@ -1259,7 +1259,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '081fa70a614caa27': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils1-b',
         },
@@ -1280,7 +1280,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update40d.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-a',
       },
@@ -1290,7 +1290,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update081.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-b',
       },

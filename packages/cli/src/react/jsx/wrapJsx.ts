@@ -1,7 +1,6 @@
 import * as t from '@babel/types';
 import { isStaticExpression, isStaticValue } from './evaluateJsx.js';
 import { ImportItem } from './utils/parseAst.js';
-import { default as generate } from '@babel/generator';
 import { warnTernarySync } from '../../console/index.js';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id

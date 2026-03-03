@@ -14,7 +14,7 @@ import {
   warnFunctionNotFoundSync,
   warnMissingReturnSync,
   warnDuplicateFunctionDefinitionSync,
-  warnInvalidStaticInitSync,
+  warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
@@ -45,8 +45,8 @@ import path from 'node:path';
 const traverse = traverseModule.default || traverseModule;
 
 // For tracking Derive
-type StaticTracker = {
-  isStatic: boolean;
+type DerivableTracker = {
+  isDerivable: boolean;
 };
 
 /**
@@ -91,7 +91,7 @@ type ConfigOptions = {
 type StateTracker = {
   visited: Set<string> | null;
   callStack: string[];
-  staticTracker: StaticTracker;
+  derivableTracker: DerivableTracker;
   importedFunctionsMap: Map<string, string>;
 };
 
@@ -166,7 +166,7 @@ export function parseTranslationComponent({
       state: {
         visited: null,
         callStack: [],
-        staticTracker: { isStatic: false },
+        derivableTracker: { isDerivable: false },
         importedFunctionsMap,
       },
       output,
@@ -180,7 +180,7 @@ export function parseTranslationComponent({
  * @param helperPath - NodePath for AST traversal
  * @param scopeNode - Scope node for binding resolution
  * @param insideT - Whether the current node is inside a <T> component
- * @param inStatic - Whether we're inside a Derive component
+ * @param inDerive - Whether we're inside a <Derive> component
  * @param config - Immutable configuration options
  * @param state - Mutable state tracking
  * @param output - Error/warning collectors
@@ -191,7 +191,7 @@ function buildJSXTree({
   helperPath,
   scopeNode,
   insideT,
-  inStatic,
+  inDerive,
   config,
   state,
   output,
@@ -200,7 +200,7 @@ function buildJSXTree({
   helperPath: NodePath;
   scopeNode: NodePath;
   insideT: boolean;
-  inStatic: boolean;
+  inDerive: boolean;
   config: ConfigOptions;
   state: StateTracker;
   output: OutputCollector;
@@ -211,8 +211,8 @@ function buildJSXTree({
       return null;
     }
 
-    if (inStatic) {
-      return processStaticExpression({
+    if (inDerive) {
+      return processDeriveExpression({
         config,
         state,
         output,
@@ -228,7 +228,7 @@ function buildJSXTree({
       return buildJSXTree({
         node: expr,
         insideT,
-        inStatic,
+        inDerive: inDerive,
         scopeNode,
         helperPath: helperPath.get('expression'),
         config,
@@ -332,7 +332,7 @@ function buildJSXTree({
               attrValue = buildJSXTree({
                 node: attr.value,
                 insideT: true,
-                inStatic,
+                inDerive: inDerive,
                 scopeNode,
                 helperPath: helperValue,
                 config,
@@ -381,7 +381,7 @@ function buildJSXTree({
           const result = buildJSXTree({
             node: helperChild.node,
             insideT: true,
-            inStatic: true,
+            inDerive: true,
             scopeNode,
             helperPath: helperChild,
             config,
@@ -410,7 +410,7 @@ function buildJSXTree({
         buildJSXTree({
           node: child,
           insideT: true,
-          inStatic,
+          inDerive: inDerive,
           scopeNode,
           helperPath: helperPath.get('children')[index],
           config,
@@ -444,7 +444,7 @@ function buildJSXTree({
         buildJSXTree({
           node: child,
           insideT: true,
-          inStatic,
+          inDerive: inDerive,
           scopeNode,
           helperPath: helperPath.get('children')[index],
           config,
@@ -509,7 +509,7 @@ function buildJSXTree({
       t.isCallExpression(node.argument) &&
       t.isIdentifier(node.argument.callee))
   ) {
-    if (inStatic) {
+    if (inDerive) {
       const callExpression = (
         node.type === 'AwaitExpression' ? node.argument : node
       ) as t.CallExpression;
@@ -525,7 +525,7 @@ function buildJSXTree({
         );
         return null;
       }
-      return resolveStaticFunctionInvocationFromBinding({
+      return resolveDeriveFunctionInvocationFromBinding({
         calleeBinding,
         callee,
         config,
@@ -540,7 +540,7 @@ function buildJSXTree({
     return buildJSXTree({
       node: child,
       insideT,
-      inStatic,
+      inDerive: inDerive,
       scopeNode,
       helperPath: helperPath.get('expression'),
       config,
@@ -616,8 +616,8 @@ function parseJSXElement({
   });
 
   // Flag for if contains derivable content
-  const staticTracker: StaticTracker = {
-    isStatic: false,
+  const derivableTracker: DerivableTracker = {
+    isDerivable: false,
   };
 
   // Build the JSX tree for this component
@@ -625,13 +625,13 @@ function parseJSXElement({
     node,
     scopeNode,
     insideT: false,
-    inStatic: false,
+    inDerive: false,
     helperPath: scopeNode,
     config,
     state: {
       visited: null,
       callStack: [],
-      staticTracker,
+      derivableTracker: derivableTracker,
       importedFunctionsMap: state.importedFunctionsMap,
     },
     output: {
@@ -691,8 +691,8 @@ function parseJSXElement({
   }
 
   // Create a temporary unique flag for derivable content
-  const temporaryStaticId = `static-temp-id-${randomUUID()}`;
-  const isStatic = staticTracker.isStatic;
+  // TODO: convert all static-temp-id to derive-temp-id
+  const temporaryDeriveId = `static-temp-id-${randomUUID()}`;
 
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
@@ -705,13 +705,14 @@ function parseJSXElement({
       metadata: {
         // eslint-disable-next-line no-undef
         ...structuredClone(metadata),
-        ...(isStatic && { staticId: temporaryStaticId }),
+        // TODO: should this be deriveId?
+        ...(derivableTracker.isDerivable && { staticId: temporaryDeriveId }),
       },
     });
   }
 }
 
-function resolveStaticFunctionInvocationFromBinding({
+function resolveDeriveFunctionInvocationFromBinding({
   calleeBinding,
   callee,
   config,
@@ -1052,7 +1053,7 @@ function processFunctionDeclarationNodePath({
         return;
       }
       result.branches.push(
-        processStaticExpression({
+        processDeriveExpression({
           config,
           state,
           output,
@@ -1096,7 +1097,7 @@ function processVariableDeclarationNodePath({
   const arrowFunctionPath = path.get('init');
   if (!arrowFunctionPath.isArrowFunctionExpression()) {
     output.errors.push(
-      warnInvalidStaticInitSync(
+      warnInvalidDeriveInitSync(
         config.file,
         functionName,
         `${path.node.loc?.start?.line}:${path.node.loc?.start?.column}`
@@ -1109,7 +1110,7 @@ function processVariableDeclarationNodePath({
   if (bodyNodePath.isExpression()) {
     // process expression return
     result.branches.push(
-      processStaticExpression({
+      processDeriveExpression({
         config,
         state,
         output,
@@ -1129,7 +1130,7 @@ function processVariableDeclarationNodePath({
           return;
         }
         result.branches.push(
-          processStaticExpression({
+          processDeriveExpression({
             config,
             state,
             output,
@@ -1157,7 +1158,7 @@ function processVariableDeclarationNodePath({
 /**
  * Process a <Derive> expression
  */
-function processStaticExpression({
+function processDeriveExpression({
   config,
   state,
   output,
@@ -1171,12 +1172,12 @@ function processStaticExpression({
   scopeNode: NodePath;
 }): JsxTree | MultiplicationNode {
   // Mark the derivable tracker as true
-  state.staticTracker.isStatic = true;
+  state.derivableTracker.isDerivable = true;
 
   // Remove parentheses if they exist
   if (t.isParenthesizedExpression(expressionNodePath.node)) {
     // ex: return (value)
-    return processStaticExpression({
+    return processDeriveExpression({
       config,
       state,
       output,
@@ -1201,7 +1202,7 @@ function processStaticExpression({
       return null;
     }
     // Function is found
-    return resolveStaticFunctionInvocationFromBinding({
+    return resolveDeriveFunctionInvocationFromBinding({
       calleeBinding,
       callee,
       config,
@@ -1227,7 +1228,7 @@ function processStaticExpression({
       return null;
     }
     // Function is found
-    return resolveStaticFunctionInvocationFromBinding({
+    return resolveDeriveFunctionInvocationFromBinding({
       calleeBinding,
       callee,
       config,
@@ -1244,7 +1245,7 @@ function processStaticExpression({
       helperPath: expressionNodePath,
       scopeNode,
       insideT: true,
-      inStatic: true,
+      inDerive: true,
       config,
       state,
       output,
@@ -1258,7 +1259,7 @@ function processStaticExpression({
       nodeType: 'multiplication' as const,
       branches: [consequentNodePath, alternateNodePath].map(
         (expressionNodePath) =>
-          processStaticExpression({
+          processDeriveExpression({
             config,
             state,
             output,
@@ -1274,7 +1275,7 @@ function processStaticExpression({
       helperPath: expressionNodePath,
       scopeNode,
       insideT: true,
-      inStatic: true,
+      inDerive: true,
       config,
       state,
       output,

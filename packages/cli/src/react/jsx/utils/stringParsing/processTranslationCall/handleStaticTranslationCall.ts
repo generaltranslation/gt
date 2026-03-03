@@ -2,7 +2,7 @@ import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
-import { handleStaticExpression } from '../../parseDerive.js';
+import { handleDeriveExpression } from '../../parseDerive.js';
 import { nodeToStrings } from '../../parseString.js';
 import { indexVars } from 'generaltranslation/internal';
 import { isValidIcu } from '../../../evaluateJsx.js';
@@ -25,8 +25,9 @@ const generate = generateModule.default || generateModule;
  * @param config - The configuration to use
  * @param output - The output to use
  * @param index - Current index in array of strings being extracted
+ * TODO: rename this file to handleDeriveTranslationCall.ts
  */
-export function handleStaticTranslationCall({
+export function handleDeriveTranslationCall({
   arg,
   metadata,
   tPath,
@@ -42,7 +43,7 @@ export function handleStaticTranslationCall({
   index?: number;
 }): void {
   // parse derivable expression
-  const result = handleStaticExpression(
+  const result = handleDeriveExpression(
     arg,
     tPath,
     config.file,
@@ -81,7 +82,8 @@ export function handleStaticTranslationCall({
     }
   }
 
-  const temporaryStaticId = `static-temp-id-${randomUUID()}`;
+  // TODO: convert all static-temp-id to derive-temp-id
+  const temporaryDeriveId = `static-temp-id-${randomUUID()}`;
   for (const string of strings) {
     output.updates.push({
       dataFormat: 'ICU',
@@ -90,7 +92,8 @@ export function handleStaticTranslationCall({
         ...metadata,
         // Add the index if an id and index is provided (for handling when registering an array of strings)
         ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
-        staticId: temporaryStaticId,
+        // TODO: should this be deriveId?
+        staticId: temporaryDeriveId,
       },
     });
   }
