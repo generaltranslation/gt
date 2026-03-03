@@ -9,10 +9,9 @@ import _getLocaleProperties from './getLocaleProperties';
  * @internal
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
+  // Extract via textInfo property
   try {
     const locale = intlCache.get('Locale', code);
-
-    // Extract via textInfo property
     const textInfoDirection = extractDirectionWithTextInfo(locale);
     if (textInfoDirection) {
       return textInfoDirection;
