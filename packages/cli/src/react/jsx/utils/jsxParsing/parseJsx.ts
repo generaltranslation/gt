@@ -368,7 +368,7 @@ function buildJSXTree({
         const helperElement = helperPath.get('children');
         const results = {
           nodeType: 'element' as const,
-          type: STATIC_COMPONENT,
+          type: componentType,
           props,
         };
         // Create children array if necessary

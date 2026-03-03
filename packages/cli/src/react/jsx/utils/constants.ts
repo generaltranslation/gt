@@ -1,6 +1,6 @@
 export const DECLARE_VAR_FUNCTION = 'declareVar';
 /**
- * @deprecated Use DERIVE_FUNCTION instead.
+ * COMPAT: Legacy support for declareStatic function.
  */
 export const DECLARE_STATIC_FUNCTION = 'declareStatic';
 export const DERIVE_FUNCTION = 'derive';
@@ -11,7 +11,7 @@ export const INLINE_MESSAGE_HOOK = 'useMessages';
 export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
 /**
- * @deprecated Use DERIVE_COMPONENT instead.
+ * COMPAT: Legacy support for Static component.
  */
 export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
