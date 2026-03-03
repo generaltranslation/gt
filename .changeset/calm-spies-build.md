@@ -2,4 +2,4 @@
 'generaltranslation': patch
 ---
 
-fix: language direction browser compatability
+fix: language direction browser compatibility
