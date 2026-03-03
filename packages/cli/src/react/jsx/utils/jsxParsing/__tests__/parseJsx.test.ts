@@ -499,7 +499,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(
       errors.some((error) =>
         error.includes(
-          'A static function cannot use recursive calls to construct its result'
+          'A derivable (statically analyzable) function cannot use recursive calls to construct its result'
         )
       )
     ).toBe(true);
@@ -650,7 +650,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(
       errors.some((error) =>
         error.includes(
-          'A static function cannot use recursive calls to construct its result'
+          'A derivable (statically analyzable) function cannot use recursive calls to construct its result'
         )
       )
     ).toBe(true);
