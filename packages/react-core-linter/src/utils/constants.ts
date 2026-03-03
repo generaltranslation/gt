@@ -33,8 +33,6 @@ export const MSG_FUNCTION_NAME = 'msg';
 export const DERIVE_FUNCTION_NAME = 'derive';
 /** @deprecated Use `DERIVE_FUNCTION_NAME` instead. */
 export const DECLARE_STATIC_FUNCTION_NAME = 'declareStatic';
-/** @deprecated Use `DERIVE_FUNCTION_NAME` instead. */
-export const DECLARE_DERIVE_FUNCTION_NAME = DERIVE_FUNCTION_NAME;
 
 export const GT_COMPONENT_NAMES = [
   T_COMPONENT_NAME,

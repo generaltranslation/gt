@@ -15,7 +15,7 @@ import {
 } from '../../../console/index.js';
 import {
   DECLARE_STATIC_FUNCTION,
-  DECLARE_DERIVE_FUNCTION,
+  DERIVE_FUNCTION,
 } from './constants.js';
 
 import traverseModule from '@babel/traverse';
@@ -265,7 +265,7 @@ function getDeclareStaticVariants(
     // Only proceed if the original name is 'declareStatic' or 'derive'
     if (
       originalName !== DECLARE_STATIC_FUNCTION &&
-      originalName !== DECLARE_DERIVE_FUNCTION
+      originalName !== DERIVE_FUNCTION
     ) {
       return null;
     }

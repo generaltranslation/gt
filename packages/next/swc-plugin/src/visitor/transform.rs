@@ -337,7 +337,7 @@ impl TransformVisitor {
 /**
  * Validates if an expression is composed only of:
  * - String literals (including static strings)
- * - declareStatic() function calls
+ * - declareStatic()/derive() function calls
  * - Combinations of the above using string concatenation or template literals
  *
  * Valid examples:
@@ -380,19 +380,19 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
             validate_declare_static(call_expr, errors);
           } else {
             errors.push(format!(
-              "Only declareStatic() function calls are allowed, found: {}()",
+              "Only declareStatic()/derive() function calls are allowed, found: {}()",
               ident.sym
             ));
           }
           // If it's declareStatic, it's valid
         } else {
           errors.push(
-            "Only declareStatic() function calls are allowed".to_string()
+            "Only declareStatic()/derive() function calls are allowed".to_string()
           );
         }
       } else {
         errors.push(
-          "Only declareStatic() function calls are allowed".to_string()
+          "Only declareStatic()/derive() function calls are allowed".to_string()
         );
       }
     }
@@ -405,7 +405,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     // Variables are not allowed
     Expr::Ident(ident) => {
       errors.push(format!(
-        "Variables are not allowed. Use a string literal or declareStatic() instead. Found: {}",
+        "Variables are not allowed. Use a string literal or declareStatic()/derive() instead. Found: {}",
         ident.sym
       ));
     }
@@ -413,7 +413,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     // Any other expression type is invalid
     _ => {
       errors.push(
-        "Expression must be a string literal, declareStatic() call, or a combination of both".to_string()
+        "Expression must be a string literal, declareStatic()/derive() call, or a combination of both".to_string()
       );
     }
   }

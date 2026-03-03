@@ -10,7 +10,7 @@ import {
   STATIC_COMPONENT_NAME,
   DERIVE_COMPONENT_NAME,
   DECLARE_STATIC_FUNCTION_NAME,
-  DECLARE_DERIVE_FUNCTION_NAME,
+  DERIVE_FUNCTION_NAME,
   MSG_FUNCTION_NAME,
   GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
 } from './constants.js';
@@ -220,7 +220,7 @@ export function isDeriveFunction({
       context,
       node,
       libs,
-      targetName: DECLARE_DERIVE_FUNCTION_NAME,
+      targetName: DERIVE_FUNCTION_NAME,
     }) ||
     isGTFunction({
       context,
