@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { _getLocaleDirection } from '../getLocaleDirection';
+import { intlCache } from '../../cache/IntlCache';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('_getLocaleDirection', () => {
   it('should return ltr for left-to-right languages', () => {
@@ -115,5 +120,26 @@ describe('_getLocaleDirection', () => {
       const result = _getLocaleDirection(locale);
       expect(['ltr', 'rtl']).toContain(result);
     }
+  });
+
+  it('should use script detection when textInfo is unavailable', () => {
+    const maximize = vi.fn(() => ({ script: 'Arab' as const }));
+    const fakeLocale = {
+      language: 'az',
+      maximize,
+    } as unknown as Intl.Locale;
+
+    vi.spyOn(intlCache, 'get').mockReturnValue(fakeLocale);
+
+    expect(_getLocaleDirection('az-Arab')).toBe('rtl');
+    expect(maximize).toHaveBeenCalled();
+  });
+
+  it('should fall back to known rtl languages when Intl.Locale is not available', () => {
+    vi.spyOn(intlCache, 'get').mockImplementation(() => {
+      throw new Error('Intl.Locale not supported');
+    });
+
+    expect(_getLocaleDirection('ar')).toBe('rtl');
   });
 });
