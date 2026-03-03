@@ -122,24 +122,54 @@ describe('_getLocaleDirection', () => {
     }
   });
 
-  it('should use script detection when textInfo is unavailable', () => {
-    const maximize = vi.fn(() => ({ script: 'Arab' as const }));
-    const fakeLocale = {
-      language: 'az',
-      maximize,
-    } as unknown as Intl.Locale;
+  describe('browser environments', () => {
+    it('should use Intl.Locale.textInfo direction when available', () => {
+      const browserLocale = {
+        textInfo: { direction: 'rtl' as const },
+        language: 'en',
+        maximize: vi.fn(),
+      } as unknown as Intl.Locale;
 
-    vi.spyOn(intlCache, 'get').mockReturnValue(fakeLocale);
+      vi.spyOn(intlCache, 'get').mockReturnValue(browserLocale);
 
-    expect(_getLocaleDirection('az-Arab')).toBe('rtl');
-    expect(maximize).toHaveBeenCalled();
-  });
-
-  it('should fall back to known rtl languages when Intl.Locale is not available', () => {
-    vi.spyOn(intlCache, 'get').mockImplementation(() => {
-      throw new Error('Intl.Locale not supported');
+      expect(_getLocaleDirection('en-US')).toBe('rtl');
+      expect(browserLocale.maximize).not.toHaveBeenCalled();
     });
 
-    expect(_getLocaleDirection('ar')).toBe('rtl');
+    it('should prioritize textInfo direction over script heuristics', () => {
+      const browserLocale = {
+        textInfo: { direction: 'ltr' as const },
+        language: 'ar',
+        maximize: vi.fn(() => ({ script: 'Arab' as const })),
+      } as unknown as Intl.Locale;
+
+      vi.spyOn(intlCache, 'get').mockReturnValue(browserLocale);
+
+      expect(_getLocaleDirection('ar-Arab')).toBe('ltr');
+      expect(browserLocale.maximize).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('node environments', () => {
+    it('should use script detection when Intl.Locale lacks textInfo', () => {
+      const maximize = vi.fn(() => ({ script: 'Arab' as const }));
+      const fakeLocale = {
+        language: 'az',
+        maximize,
+      } as unknown as Intl.Locale;
+
+      vi.spyOn(intlCache, 'get').mockReturnValue(fakeLocale);
+
+      expect(_getLocaleDirection('az-Arab')).toBe('rtl');
+      expect(maximize).toHaveBeenCalled();
+    });
+
+    it('should fall back to known rtl languages when Intl.Locale is not available', () => {
+      vi.spyOn(intlCache, 'get').mockImplementation(() => {
+        throw new Error('Intl.Locale not supported');
+      });
+
+      expect(_getLocaleDirection('ar')).toBe('rtl');
+    });
   });
 });

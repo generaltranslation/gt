@@ -8,6 +8,8 @@ import { intlCache } from '../cache/IntlCache';
  * @internal
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
+  console.log('--------------------------------');
+  console.log('getLocaleDirection', code);
   let script: string | undefined, language: string | undefined;
   try {
     const locale = intlCache.get('Locale', code);
@@ -30,8 +32,8 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
   language ||= extractLanguage(code);
 
   // Handle RTL script or language
-  if (isRtlScript(script)) return 'rtl';
-  if (isRtlLanguage(language)) return 'rtl';
+  if (script) return isRtlScript(script) ? 'rtl' : 'ltr';
+  if (language) return isRtlLanguage(language) ? 'rtl' : 'ltr';
 
   return 'ltr';
 }
@@ -135,9 +137,13 @@ function getLikelyScript(locale: Intl.Locale): string | undefined {
 }
 
 function isRtlScript(script: string | undefined): boolean {
-  return script ? RTL_SCRIPTS.has(script.toLowerCase()) : false;
+  const result = script ? RTL_SCRIPTS.has(script.toLowerCase()) : false;
+  console.log('isRtlScript', script, result);
+  return result;
 }
 
 function isRtlLanguage(language: string | undefined): boolean {
-  return language ? RTL_LANGUAGES.has(language.toLowerCase()) : false;
+  const result = language ? RTL_LANGUAGES.has(language.toLowerCase()) : false;
+  console.log('isRtlLanguage', language, result);
+  return result;
 }
