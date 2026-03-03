@@ -27,7 +27,7 @@ export {
   decode,
 };
 
-// static
+// derive
 export * from './derive';
 
 // backwards compatability
