@@ -18,7 +18,7 @@ import { InlineMetadata } from './extractStringEntryMetadata.js';
 const generate = generateModule.default || generateModule;
 
 /**
- * For the processTranslationCall function, this function handles the case where a string with declareStatic is used.
+ * For the processTranslationCall function, this function handles the case where a string with derive is used.
  * @param arg - The argument to parse
  * @param metadata - The metadata to use
  * @param tPath - The path to the argument
@@ -41,7 +41,7 @@ export function handleStaticTranslationCall({
   output: ParsingOutput;
   index?: number;
 }): void {
-  // parse static expression
+  // parse derivable expression
   const result = handleStaticExpression(
     arg,
     tPath,

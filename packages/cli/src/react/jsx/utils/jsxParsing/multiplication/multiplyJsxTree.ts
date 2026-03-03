@@ -8,7 +8,7 @@ import {
 import { findMultiplicationNode } from './findMultiplicationNode.js';
 
 /**
- * Given a JSX tree, multiply the static function nodes
+ * Given a JSX tree, multiply the derived function nodes
  */
 export function multiplyJsxTree(
   tree: WhitespaceJsxTreeResult | WhitespaceJsxTreeResult[]

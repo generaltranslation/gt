@@ -1,4 +1,7 @@
 export const DECLARE_VAR_FUNCTION = 'declareVar';
+/**
+ * @deprecated Use DERIVE_FUNCTION instead.
+ */
 export const DECLARE_STATIC_FUNCTION = 'declareStatic';
 export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
@@ -7,6 +10,9 @@ export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
 export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
+/**
+ * @deprecated Use DERIVE_COMPONENT instead.
+ */
 export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
 

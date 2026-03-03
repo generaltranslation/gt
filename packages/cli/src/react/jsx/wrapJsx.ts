@@ -308,7 +308,7 @@ function wrapJsxExpression(
     }
   }
   const staticCheck = isStaticExpression(expression);
-  // If the expression is not static or if it's already wrapped in T,
+  // If the expression is not derivable or if it's already wrapped in T,
   // wrap with Var
   if (!staticCheck.isStatic) {
     return {
@@ -318,7 +318,7 @@ function wrapJsxExpression(
     };
   }
 
-  // If it's a static expression, check if it's meaningful
+  // If it's a derivable expression, check if it's meaningful
   return {
     node,
     hasMeaningfulContent: false,
@@ -388,7 +388,7 @@ export function wrapJsxElement(
 
         // Expressions are never meaningful because they will either:
         // 1. be sub-wrapped in a T (if they contain meaningful content)
-        // 2. be wrapped in a Var (if they are not static)
+        // 2. be wrapped in a Var (if they are not marked as derivable)
         return result.node;
       }
       const isMeaningfulVal = isMeaningful(child);

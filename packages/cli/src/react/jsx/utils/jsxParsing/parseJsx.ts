@@ -44,7 +44,7 @@ import path from 'node:path';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 
-// For tracking static
+// For tracking Derive
 type StaticTracker = {
   isStatic: boolean;
 };
@@ -180,7 +180,7 @@ export function parseTranslationComponent({
  * @param helperPath - NodePath for AST traversal
  * @param scopeNode - Scope node for binding resolution
  * @param insideT - Whether the current node is inside a <T> component
- * @param inStatic - Whether we're inside a Static component
+ * @param inStatic - Whether we're inside a Derive component
  * @param config - Immutable configuration options
  * @param state - Mutable state tracking
  * @param output - Error/warning collectors
@@ -477,7 +477,7 @@ function buildJSXTree({
   }
   // If it's a template literal
   else if (t.isTemplateLiteral(node)) {
-    // We've already checked that it's static, and and added a warning if it's not, this check is just for fallback behavior
+    // We've already checked that it's derivable, and and added a warning if it's not, this check is just for fallback behavior
     if (
       !isStaticExpression(node, true).isStatic ||
       node.quasis[0].value.cooked === undefined
@@ -615,7 +615,7 @@ function parseJSXElement({
     file: config.file,
   });
 
-  // Flag for if contains static content
+  // Flag for if contains derivable content
   const staticTracker: StaticTracker = {
     isStatic: false,
   };
@@ -690,7 +690,7 @@ function parseJSXElement({
     return;
   }
 
-  // Create a temporary unique flag for static content
+  // Create a temporary unique flag for derivable content
   const temporaryStaticId = `static-temp-id-${randomUUID()}`;
   const isStatic = staticTracker.isStatic;
 
@@ -1155,7 +1155,7 @@ function processVariableDeclarationNodePath({
 }
 
 /**
- * Process a <Static> expression
+ * Process a <Derive> expression
  */
 function processStaticExpression({
   config,
@@ -1170,7 +1170,7 @@ function processStaticExpression({
   expressionNodePath: NodePath<t.Expression>;
   scopeNode: NodePath;
 }): JsxTree | MultiplicationNode {
-  // Mark the static tracker as true
+  // Mark the derivable tracker as true
   state.staticTracker.isStatic = true;
 
   // Remove parentheses if they exist

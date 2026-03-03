@@ -250,7 +250,7 @@ export function warnNonStaticExpression(
   value: string
 ) {
   logger.warn(
-    `Found non-static expression in ${chalk.cyan(file)} for attribute ${attrName}: "${chalk.white(value)}". ` +
+    `Found non-derivable (statically analyzable) expression in ${chalk.cyan(file)} for attribute ${attrName}: "${chalk.white(value)}". ` +
       `Change "${attrName}" to ensure this content is translated.`
   );
 }

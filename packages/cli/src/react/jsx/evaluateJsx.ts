@@ -52,10 +52,10 @@ export function isStaticExpression(
   value?: string | boolean | null;
 };
 /**
- * Checks if an expression is static (does not contain any variables which could change at runtime).
+ * Checks if an expression is a derivable (statically analyzable) expression (does not contain any variables which could change at runtime).
  * @param expr - The expression to check
- * @param ignoreStaticFunction - Whether to ignore static functions
- * @returns An object containing the result of the static check
+ * @param ignoreStaticFunction - Whether to ignore derive functions
+ * @returns An object containing the result of the derivable check
  */
 export function isStaticExpression(
   expr: t.Expression | t.JSXEmptyExpression,
@@ -82,9 +82,9 @@ export function isStaticExpression(
     };
   }
 
-  // Binary expressions are not static
+  // Binary expressions are not derivable
   if (t.isBinaryExpression(expr)) {
-    // Not a static expression
+    // Not a derivable expression
     return { isStatic: false };
   }
 
@@ -132,7 +132,7 @@ export function isStaticExpression(
     return { isStatic: true, value: jsxStatic ? null : 'null' };
   }
 
-  // Not a static expression
+  // Not a derivable expression
   return { isStatic: false };
 }
 

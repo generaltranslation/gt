@@ -1,6 +1,5 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { logger } from '../../../console/logger.js';
 import { ParsingConfigOptions } from '../../../types/parsing.js';
 import { parseStringExpression, nodeToStrings } from './parseString.js';
 import { StringNode } from './types.js';
@@ -13,10 +12,7 @@ import {
   warnDeclareStaticNoResultsSync,
   warnDeclareStaticNotWrappedSync,
 } from '../../../console/index.js';
-import {
-  DECLARE_STATIC_FUNCTION,
-  DERIVE_FUNCTION,
-} from './constants.js';
+import { DECLARE_STATIC_FUNCTION, DERIVE_FUNCTION } from './constants.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -42,7 +38,7 @@ const resolveImportPathCache = new Map<string, string | null>();
 const processFunctionCache = new Map<string, StringNode | null>();
 
 /**
- * Checks if an expression is static or uses derive()
+ * Extracts content if an expression is derivable (statically analyzable) or uses derive()
  * Returns a Node representing the parsed expression
  * @param expr - The expression to check
  * @param tPath - NodePath for scope resolution
@@ -208,7 +204,7 @@ export function handleStaticExpression(
     return { type: 'text', text: 'null' };
   }
 
-  // Not a static expression
+  // Not a derivable expression
   return null;
 }
 
@@ -310,33 +306,6 @@ function resolveCallStringVariants(
   parsingOptions: ParsingConfigOptions,
   errors: string[]
 ): string[] | null {
-  const results = new Set<string>();
-
-  // // Handle inline arrow functions: declareStatic((() => "day")())
-  // if (
-  //   t.isCallExpression(expression) &&
-  //   t.isParenthesizedExpression(expression.callee) &&
-  //   t.isArrowFunctionExpression(expression.callee.expression)
-  // ) {
-  //   const body = expression.callee.expression.body;
-
-  //   if (t.isStringLiteral(body)) {
-  //     results.add(body.value);
-  //   } else if (t.isConditionalExpression(body)) {
-  //     collectConditionalStringVariants(body, results);
-  //   }
-
-  //   return results.size ? [...results] : null;
-  // }
-
-  // // Handle explicit conditional expression call:
-  // // declareStatic(cond ? "day" : "night")
-  // // TODO: this makes no sense
-  // if (t.isConditionalExpression(expression)) {
-  //   collectConditionalStringVariants(expression, results);
-  //   return results.size ? [...results] : null;
-  // }
-
   // Handle function identifier calls: derive(time())
   if (t.isCallExpression(expression) && t.isIdentifier(expression.callee)) {
     const functionName = expression.callee.name;
@@ -414,7 +383,7 @@ function resolveCallStringVariants(
     }
   }
 
-  // If we get here: analyze this call statically
+  // If we get here: analyze this call as derivable (statically analyzable)
   const node = parseStringExpression(expression, tPath, file, parsingOptions);
   if (node) {
     return nodeToStrings(node);
