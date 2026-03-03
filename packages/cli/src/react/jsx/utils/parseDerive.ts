@@ -42,7 +42,7 @@ const resolveImportPathCache = new Map<string, string | null>();
 const processFunctionCache = new Map<string, StringNode | null>();
 
 /**
- * Checks if an expression is static or uses declareStatic
+ * Checks if an expression is static or uses derive()
  * Returns a Node representing the parsed expression
  * @param expr - The expression to check
  * @param tPath - NodePath for scope resolution
@@ -71,7 +71,7 @@ export function handleStaticExpression(
       errors
     );
     if (variants) {
-      // We found declareStatic -> return as ChoiceNode
+      // We found derive() -> return as ChoiceNode
       return {
         type: 'choice',
         nodes: variants.map((v) => ({ type: 'text', text: v })),
@@ -213,12 +213,12 @@ export function handleStaticExpression(
 }
 
 /**
- * Given a CallExpression, if it is declareStatic(<call>) or declareStatic(await <call>),
+ * Given a CallExpression, if it is derive(<call>) or derive(await <call>),
  * return all possible string outcomes of that argument call as an array of strings.
  *
  * Examples:
- *   declareStatic(time()) -> ["day", "night"]
- *   declareStatic(await time()) -> ["day", "night"]
+ *   derive(time()) -> ["day", "night"]
+ *   derive(await time()) -> ["day", "night"]
  *
  * Returns null if it can't be resolved.
  */
@@ -230,7 +230,7 @@ function getDeclareStaticVariants(
   errors: string[]
 ): string[] | null {
   // --- Validate Callee --- //
-  // Must be declareStatic(...) or an alias of it
+  // Must be derive(...) or an alias of it
   if (!t.isIdentifier(call.callee)) {
     const code =
       call.arguments.length > 0
@@ -246,11 +246,11 @@ function getDeclareStaticVariants(
     return null;
   }
 
-  // Check if this is declareStatic by name or by checking the import
+  // Check if this is derive by name or by checking the import
   const calleeName = call.callee.name;
   const calleeBinding = tPath.scope.getBinding(calleeName);
 
-  // If it's not literally named 'declareStatic', check if it's imported from GT
+  // If it's not literally named 'derive', check if it's imported from GT
   if (!calleeBinding) {
     return null;
   }
@@ -262,7 +262,7 @@ function getDeclareStaticVariants(
       ? imported.name
       : imported.value;
 
-    // Only proceed if the original name is 'declareStatic' or 'derive'
+    // Only proceed if the original name is 'derive' (or the deprecated 'declareStatic')
     if (
       originalName !== DECLARE_STATIC_FUNCTION &&
       originalName !== DERIVE_FUNCTION
@@ -270,7 +270,7 @@ function getDeclareStaticVariants(
       return null;
     }
   } else {
-    // Not an import specifier, so it's not declareStatic
+    // Not an import specifier, so it's not derive
     errors.push(
       warnDeclareStaticNotWrappedSync(
         file,
@@ -288,7 +288,7 @@ function getDeclareStaticVariants(
   const arg = call.arguments[0];
   if (!t.isExpression(arg)) return null;
 
-  // Handle await expression: declareStatic(await time())
+  // Handle await expression: derive(await time())
   if (t.isAwaitExpression(arg)) {
     // Resolve the inner call's possible string outcomes
     return resolveCallStringVariants(
@@ -337,7 +337,7 @@ function resolveCallStringVariants(
   //   return results.size ? [...results] : null;
   // }
 
-  // Handle function identifier calls: declareStatic(time())
+  // Handle function identifier calls: derive(time())
   if (t.isCallExpression(expression) && t.isIdentifier(expression.callee)) {
     const functionName = expression.callee.name;
 
