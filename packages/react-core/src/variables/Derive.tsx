@@ -54,10 +54,4 @@ export function Derive<T extends React.ReactNode>({
  * @param {T extends React.ReactNode} children - Static content to render.
  * @returns {T} The result of the function invocation.
  */
-export function Static<T extends React.ReactNode>({
-  children,
-}: {
-  children: T;
-}): T {
-  return children;
-}
+export const Static = Derive;

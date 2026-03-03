@@ -40,8 +40,4 @@ export function derive<T extends string | boolean | number | null | undefined>(
  * @param {T extends string | boolean | number | null | undefined} content - Content to mark as statically analyzable.
  * @returns content
  */
-export function declareStatic<
-  T extends string | boolean | number | null | undefined,
->(content: T): T {
-  return content;
-}
+export const declareStatic = derive;
