@@ -1,4 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
+import _getLocaleProperties from './getLocaleProperties';
 
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.
@@ -8,9 +9,6 @@ import { intlCache } from '../cache/IntlCache';
  * @internal
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
-  console.log('--------------------------------');
-  console.log('getLocaleDirection', code);
-  let script: string | undefined, language: string | undefined;
   try {
     const locale = intlCache.get('Locale', code);
 
@@ -19,21 +17,16 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
     if (textInfoDirection) {
       return textInfoDirection;
     }
-
-    // Extract via script and language properties
-    script = getLikelyScript(locale);
-    language = locale.language;
   } catch {
     // silent
   }
 
   // Fallback to simple heuristics
-  script ||= extractScript(code);
-  language ||= extractLanguage(code);
+  const { scriptCode, languageCode } = _getLocaleProperties(code);
 
   // Handle RTL script or language
-  if (script) return isRtlScript(script) ? 'rtl' : 'ltr';
-  if (language) return isRtlLanguage(language) ? 'rtl' : 'ltr';
+  if (scriptCode) return isRtlScript(scriptCode) ? 'rtl' : 'ltr';
+  if (languageCode) return isRtlLanguage(languageCode) ? 'rtl' : 'ltr';
 
   return 'ltr';
 }
@@ -100,50 +93,10 @@ function extractDirectionWithTextInfo(
   return undefined;
 }
 
-function extractLanguage(code: string): string | undefined {
-  return code?.split(/[-_]/)[0]?.toLowerCase();
-}
-
-/**
- * Handles extracting direction via script property
- * @param code - The locale code to extract the script from
- * @returns {string | undefined} - The script of the locale
- *
- * Script segment guaranteed to be 4 characters long.
- * Filter by letters to avoid variant: https://datatracker.ietf.org/doc/html/rfc5646#section-2.2.5
- */
-function extractScript(code: string): string | undefined {
-  return code
-    ?.split(/[-_]/)
-    .find((segment) => segment.length === 4 && /^[a-zA-Z]+$/.test(segment))
-    ?.toLowerCase();
-}
-
-function getLikelyScript(locale: Intl.Locale): string | undefined {
-  // Check for script property directly
-  if (locale?.script) {
-    return locale.script.toLowerCase();
-  }
-
-  // Check for script property via maximize()
-  if (typeof locale?.maximize === 'function') {
-    const maximized = locale.maximize();
-    if (maximized?.script) {
-      return maximized.script.toLowerCase();
-    }
-  }
-
-  return undefined;
-}
-
 function isRtlScript(script: string | undefined): boolean {
-  const result = script ? RTL_SCRIPTS.has(script.toLowerCase()) : false;
-  console.log('isRtlScript', script, result);
-  return result;
+  return script ? RTL_SCRIPTS.has(script.toLowerCase()) : false;
 }
 
 function isRtlLanguage(language: string | undefined): boolean {
-  const result = language ? RTL_LANGUAGES.has(language.toLowerCase()) : false;
-  console.log('isRtlLanguage', language, result);
-  return result;
+  return language ? RTL_LANGUAGES.has(language.toLowerCase()) : false;
 }
