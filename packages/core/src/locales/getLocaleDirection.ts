@@ -83,7 +83,6 @@ function extractDirectionWithTextInfo(
     typeof locale.textInfo === 'object' &&
     locale.textInfo !== null &&
     'direction' in locale.textInfo &&
-    locale.textInfo?.direction &&
     (locale.textInfo?.direction === 'rtl' ||
       locale.textInfo?.direction === 'ltr')
   ) {
