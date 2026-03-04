@@ -12,6 +12,7 @@ import { determineLibrary } from '../../fs/determineFramework.js';
 import { isValidMdx } from '../../utils/validateMdx.js';
 import { hashStringSync } from '../../utils/hash.js';
 import { applyMintlifyTitleFallback } from '../../utils/mintlifyTitleFallback.js';
+import wrapPlainUrls from '../../utils/wrapPlainUrls.js';
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
@@ -189,6 +190,13 @@ export async function aggregateFiles(
             );
             processedContent = result.content;
             addedMintlifyTitle = result.addedTitle;
+          }
+
+          if (
+            (fileType === 'md' || fileType === 'mdx') &&
+            settings.framework === 'mintlify'
+          ) {
+            processedContent = wrapPlainUrls(processedContent);
           }
 
           const sanitizedContent = sanitizeFileContent(processedContent);
