@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.6.28
+
+### Patch Changes
+
+- [#1063](https://github.com/generaltranslation/gt/pull/1063) [`e7b1bb0`](https://github.com/generaltranslation/gt/commit/e7b1bb079145809d66296c0ad6628079f784b88e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CJK parser to gt-remark, bumping CLI
+
+- Updated dependencies [[`e7b1bb0`](https://github.com/generaltranslation/gt/commit/e7b1bb079145809d66296c0ad6628079f784b88e)]:
+  - gt-remark@1.0.5
+
 ## 2.6.27
 
 ### Patch Changes
