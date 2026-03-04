@@ -5,8 +5,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import { visit } from 'unist-util-visit';
 import type { Root, Text } from 'mdast';
 
-const URL_REGEX =
-  /https?:\/\/[^\s<>\[\]()]*[^\s<>\[\]().,;:!?'")\]}>]/g;
+const URL_REGEX = /https?:\/\/[^\s<>\[\]()]*[^\s<>\[\]().,;:!?'")\]}>]/g;
 
 /**
  * Wraps plain URLs in markdown link syntax [url](url) so that
@@ -67,8 +66,7 @@ export default function wrapPlainUrls(content: string): string {
   let result = content;
   for (let i = replacements.length - 1; i >= 0; i--) {
     const { start, end, url } = replacements[i];
-    result =
-      result.slice(0, start) + `[${url}](${url})` + result.slice(end);
+    result = result.slice(0, start) + `[${url}](${url})` + result.slice(end);
   }
 
   return result;

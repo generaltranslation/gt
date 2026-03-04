@@ -26,8 +26,7 @@ describe('wrapPlainUrls', () => {
 
   it('wraps http URLs', () => {
     const input = 'Visit http://example.com today.';
-    const expected =
-      'Visit [http://example.com](http://example.com) today.';
+    const expected = 'Visit [http://example.com](http://example.com) today.';
     expect(wrapPlainUrls(input)).toBe(expected);
   });
 
@@ -52,8 +51,7 @@ describe('wrapPlainUrls', () => {
   });
 
   it('does not modify URLs that are both display text and href', () => {
-    const input =
-      'Visit [https://example.com](https://example.com) for info.';
+    const input = 'Visit [https://example.com](https://example.com) for info.';
     expect(wrapPlainUrls(input)).toBe(input);
   });
 
@@ -184,8 +182,7 @@ describe('wrapPlainUrls', () => {
 
   // --- Real-world Mintlify example ---
   it('handles the Korean translation edge case', () => {
-    const input =
-      '1. Sign up for an account at https://www.anthropic.com';
+    const input = '1. Sign up for an account at https://www.anthropic.com';
     const expected =
       '1. Sign up for an account at [https://www.anthropic.com](https://www.anthropic.com)';
     expect(wrapPlainUrls(input)).toBe(expected);
