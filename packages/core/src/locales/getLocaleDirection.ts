@@ -41,6 +41,7 @@ const RTL_SCRIPTS = new Set([
   'samr',
   'syrc',
   'thaa',
+  'yezi',
 ]);
 
 const RTL_LANGUAGES = new Set([
