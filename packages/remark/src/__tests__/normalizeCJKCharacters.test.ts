@@ -54,7 +54,9 @@ describe('normalizeCJKCharacters', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('これは（例: https://api.wandb.ai）とは異なります。'),
+            createTextNode(
+              'これは（例: https://api.wandb.ai）とは異なります。'
+            ),
           ]),
         ],
       };
@@ -69,7 +71,9 @@ describe('normalizeCJKCharacters', () => {
         type: 'root',
         children: [
           createParagraph([
-            createTextNode('`base_url`（例: https://api.wandb.ai）とは異なります。'),
+            createTextNode(
+              '`base_url`（例: https://api.wandb.ai）とは異なります。'
+            ),
           ]),
         ],
       };
@@ -83,9 +87,7 @@ describe('normalizeCJKCharacters', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('項目A（値1）と項目B（値2）です。'),
-          ]),
+          createParagraph([createTextNode('項目A（値1）と項目B（値2）です。')]),
         ],
       };
       const result = processAst(tree);
@@ -96,9 +98,7 @@ describe('normalizeCJKCharacters', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('Regular (parentheses) are fine.'),
-          ]),
+          createParagraph([createTextNode('Regular (parentheses) are fine.')]),
         ],
       };
       const result = processAst(tree);
@@ -136,9 +136,7 @@ describe('normalizeCJKCharacters', () => {
     it('should handle only opening fullwidth parenthesis', () => {
       const tree: Root = {
         type: 'root',
-        children: [
-          createParagraph([createTextNode('テスト（開始')]),
-        ],
+        children: [createParagraph([createTextNode('テスト（開始')])],
       };
       const result = processAst(tree);
       expect(result).toContain('テスト (開始');
@@ -147,9 +145,7 @@ describe('normalizeCJKCharacters', () => {
     it('should handle only closing fullwidth parenthesis', () => {
       const tree: Root = {
         type: 'root',
-        children: [
-          createParagraph([createTextNode('終了）テスト')]),
-        ],
+        children: [createParagraph([createTextNode('終了）テスト')])],
       };
       const result = processAst(tree);
       expect(result).toContain('終了) テスト');
@@ -168,9 +164,7 @@ describe('normalizeCJKCharacters', () => {
       const tree: Root = {
         type: 'root',
         children: [
-          createParagraph([
-            createTextNode('Just regular English text.'),
-          ]),
+          createParagraph([createTextNode('Just regular English text.')]),
         ],
       };
       const result = processAst(tree);
