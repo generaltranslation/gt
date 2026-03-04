@@ -11,12 +11,8 @@ const URL_REGEX = /https?:\/\/[^\s<>\[\]()]*[^\s<>\[\]().,;:!?'")\]}>]/g;
  * Wraps plain URLs in markdown link syntax [url](url) so that
  * translation pipelines preserve the URL separately from surrounding text.
  *
- * Uses remark AST parsing to identify URLs that appear in text nodes only —
- * URLs inside code, frontmatter, JSX attributes, link hrefs, etc. are
- * inherently different node types and are never touched.
+ * Uses remark AST parsing to identify URLs that appear in text nodes only.
  *
- * Applies replacements to the original string using AST positions so that
- * no formatting changes are introduced by remark-stringify.
  */
 export default function wrapPlainUrls(content: string): string {
   let ast: Root;
