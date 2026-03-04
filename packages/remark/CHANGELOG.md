@@ -1,5 +1,11 @@
 # gt-remark
 
+## 1.0.5
+
+### Patch Changes
+
+- [#1063](https://github.com/generaltranslation/gt/pull/1063) [`e7b1bb0`](https://github.com/generaltranslation/gt/commit/e7b1bb079145809d66296c0ad6628079f784b88e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CJK parser to gt-remark, bumping CLI
+
 ## 1.0.4
 
 ### Patch Changes
