@@ -118,7 +118,7 @@
     "fast-glob": "^3.3.3",
     "fast-json-stable-stringify": "^2.1.0",
     "generaltranslation": "workspace:*",
-    "gt-remark": "^1.0.1",
+    "gt-remark": "workspace:*",
     "html-entities": "^2.6.0",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
