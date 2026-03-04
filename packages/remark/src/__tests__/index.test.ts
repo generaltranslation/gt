@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
-import escapeHtmlInTextNodes, { remarkGfmCustom } from '../index';
+import { escapeHtmlInTextNodes, remarkGfmCustom } from '../index';
 import type { Root, Text, Paragraph, Code, InlineCode } from 'mdast';
 
 describe('escapeHtmlInTextNodes', () => {

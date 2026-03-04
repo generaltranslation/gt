@@ -161,8 +161,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       gt-remark:
-        specifier: ^1.0.1
-        version: 1.0.1
+        specifier: workspace:*
+        version: link:../remark
       html-entities:
         specifier: ^2.6.0
         version: 2.6.0

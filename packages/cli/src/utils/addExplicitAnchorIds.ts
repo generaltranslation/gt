@@ -6,7 +6,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Root, Heading, Text, InlineCode, Node } from 'mdast';
 import { logger } from '../console/logger.js';
-import escapeHtmlInTextNodes from 'gt-remark';
+import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { decode } from 'html-entities';
 
 /**
@@ -356,6 +356,7 @@ function applyInlineIds(
     const stringifyProcessor = unified()
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx)
+      .use(normalizeCJKCharacters)
       .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
         handlers: {
@@ -366,7 +367,7 @@ function applyInlineIds(
         },
       });
 
-    const outTree = stringifyProcessor.runSync(processedAst);
+    const outTree = stringifyProcessor.runSync(processedAst) as Root;
     let content = stringifyProcessor.stringify(outTree);
 
     // Handle newline formatting to match original input
