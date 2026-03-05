@@ -13,8 +13,15 @@ export function preprocessMintlify(
 ): string {
   let result = content;
 
-  if (fileType === 'mdx' && settings.options?.mintlify?.inferTitleFromFilename) {
-    result = applyMintlifyTitleFallback(result, filePath, settings.defaultLocale).content;
+  if (
+    fileType === 'mdx' &&
+    settings.options?.mintlify?.inferTitleFromFilename
+  ) {
+    result = applyMintlifyTitleFallback(
+      result,
+      filePath,
+      settings.defaultLocale
+    ).content;
   }
 
   if (fileType === 'mdx') {
