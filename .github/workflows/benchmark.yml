@@ -86,7 +86,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.should-run.outputs.run == 'true'
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Install Playwright browsers
         if: steps.should-run.outputs.run == 'true'
@@ -151,6 +151,11 @@ jobs:
             --version ${{ steps.version.outputs.value }}
 
       # --- Store & compare ---
+
+      # Clean working tree, but leave benchmarks results in place
+      - name: Clean working tree
+        if: steps.should-run.outputs.run == 'true'
+        run: git checkout -- .
 
       - name: Store benchmark results
         if: steps.should-run.outputs.run == 'true'
