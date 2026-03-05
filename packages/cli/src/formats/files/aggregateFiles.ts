@@ -4,15 +4,12 @@ import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
-import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework.js';
-import { isValidMdx } from '../../utils/validateMdx.js';
 import { hashStringSync } from '../../utils/hash.js';
-import { applyMintlifyTitleFallback } from '../../utils/mintlifyTitleFallback.js';
-import wrapPlainUrls from '../../utils/wrapPlainUrls.js';
+import { preprocessContent } from './preprocessContent.js';
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
@@ -160,55 +157,25 @@ export async function aggregateFiles(
           const content = readFile(filePath);
           const relativePath = getRelative(filePath);
 
-          if (fileType === 'mdx') {
-            if (!skipValidation?.mdx) {
-              const validation = isValidMdx(content, filePath);
-              if (!validation.isValid) {
-                logger.warn(
-                  `Skipping ${relativePath}: MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
-                );
-                recordWarning(
-                  'skipped_file',
-                  relativePath,
-                  `MDX file is not AST parsable${validation.error ? `: ${validation.error}` : ''}`
-                );
-                return null;
-              }
-            }
-          }
+          const processed = preprocessContent(
+            content,
+            relativePath,
+            fileType,
+            settings
+          );
 
-          let processedContent = content;
-          let addedMintlifyTitle = false;
-          if (
-            fileType === 'mdx' &&
-            settings.options?.mintlify?.inferTitleFromFilename
-          ) {
-            const result = applyMintlifyTitleFallback(
-              processedContent,
-              relativePath,
-              settings.defaultLocale
-            );
-            processedContent = result.content;
-            addedMintlifyTitle = result.addedTitle;
+          if (typeof processed !== 'string') {
+            logger.warn(`Skipping ${relativePath}: ${processed.skip}`);
+            recordWarning('skipped_file', relativePath, processed.skip);
+            return null;
           }
-
-          if (
-            (fileType === 'md' || fileType === 'mdx') &&
-            settings.framework === 'mintlify'
-          ) {
-            processedContent = wrapPlainUrls(processedContent);
-          }
-
-          const sanitizedContent = sanitizeFileContent(processedContent);
-          // Always hash original content for versionId
-          const computedVersionId = hashStringSync(content);
 
           return {
-            content: sanitizedContent,
+            content: processed,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
             fileId: hashStringSync(relativePath),
-            versionId: computedVersionId,
+            versionId: hashStringSync(content),
             locale: settings.defaultLocale,
           } satisfies FileToUpload;
         })
