@@ -32,6 +32,10 @@ function Branch({
   [key: string]: any;
 }): React.JSX.Element {
   branch = branch?.toString();
+  // ignore data-* attributes
+  if (typeof branch === 'string' && branch.startsWith('data-')) {
+    branch = undefined;
+  }
   const renderedBranch =
     branch && typeof branches[branch] !== 'undefined'
       ? branches[branch]

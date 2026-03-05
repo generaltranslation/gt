@@ -11,6 +11,7 @@ import {
 } from '../../../utils/getVariableName.js';
 import { isAcceptedPluralForm, JsxChild } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
+import { DATA_ATTR_PREFIX } from '../constants.js';
 
 /**
  * Construct the data-_gt prop
@@ -54,7 +55,13 @@ function constructGTProp(
     // Branch
   } else if (type === 'Branch') {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const { children, branch, ...branches } = props;
+    const { children, branch, ...allBranches } = props;
+    // Filter out data-* attributes injected by build tools
+    const branches = Object.fromEntries(
+      Object.entries(allBranches).filter(
+        ([key]) => !key.startsWith(DATA_ATTR_PREFIX)
+      )
+    );
     const resultBranches = Object.entries(branches).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         acc[branchName] = addGTIdentifierToSyntaxTree(branch, id);

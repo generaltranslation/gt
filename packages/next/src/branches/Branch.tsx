@@ -30,8 +30,11 @@ function Branch({
   branch?: string | number | boolean;
   [key: string]: any;
 }): React.JSX.Element {
-  // const { 'data-_gt': generaltranslation, ...branches } = props;
   branch = branch?.toString();
+  // ignore data-* attributes
+  if (typeof branch === 'string' && branch.startsWith('data-')) {
+    branch = undefined;
+  }
   const renderedBranch =
     branch && typeof branches[branch] !== 'undefined'
       ? branches[branch]
