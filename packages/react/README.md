@@ -20,13 +20,13 @@ Automatic i18n for React.
 
 ```bash
 npm install gt-react
-npm install gtx-cli --save-dev
+npm install gt --save-dev
 ```
 
 ## Quick Start
 
 ```bash
-npx gtx-cli init
+npx gt init
 ```
 
 ```jsx

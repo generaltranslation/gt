@@ -152,6 +152,11 @@ jobs:
 
       # --- Store & compare ---
 
+      # Clean working tree, but leave benchmarks results in place
+      - name: Clean working tree
+        if: steps.should-run.outputs.run == 'true'
+        run: git checkout -- .
+
       - name: Store benchmark results
         if: steps.should-run.outputs.run == 'true'
         uses: benchmark-action/github-action-benchmark@v1

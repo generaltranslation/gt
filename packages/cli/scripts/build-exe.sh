@@ -14,32 +14,32 @@ mkdir -p binaries
 
 build_darwin_x64() {
     echo "Building Darwin x64..."
-    bun build src/bin/bin-entry.ts --compile --target=bun-darwin-x64 --outfile=binaries/gtx-cli-darwin-x64 --external ""
-    chmod +x binaries/gtx-cli-darwin-x64
+    bun build src/bin/bin-entry.ts --compile --target=bun-darwin-x64 --outfile=binaries/gt-darwin-x64 --external ""
+    chmod +x binaries/gt-darwin-x64
 }
 
 build_darwin_arm64() {
     echo "Building Darwin ARM64..."
-    bun build src/bin/bin-entry.ts --compile --target=bun-darwin-arm64 --outfile=binaries/gtx-cli-darwin-arm64 --external ""
-    chmod +x binaries/gtx-cli-darwin-arm64
+    bun build src/bin/bin-entry.ts --compile --target=bun-darwin-arm64 --outfile=binaries/gt-darwin-arm64 --external ""
+    chmod +x binaries/gt-darwin-arm64
 }
 
 build_linux_x64() {
     echo "Building Linux x64..."
-    bun build src/bin/bin-entry.ts --compile --target=bun-linux-x64 --outfile=binaries/gtx-cli-linux-x64 --external ""
-    chmod +x binaries/gtx-cli-linux-x64
+    bun build src/bin/bin-entry.ts --compile --target=bun-linux-x64 --outfile=binaries/gt-linux-x64 --external ""
+    chmod +x binaries/gt-linux-x64
 }
 
 build_linux_arm64() {
     echo "Building Linux ARM64..."
-    bun build src/bin/bin-entry.ts --compile --target=bun-linux-arm64 --outfile=binaries/gtx-cli-linux-arm64 --external ""
-    chmod +x binaries/gtx-cli-linux-arm64
+    bun build src/bin/bin-entry.ts --compile --target=bun-linux-arm64 --outfile=binaries/gt-linux-arm64 --external ""
+    chmod +x binaries/gt-linux-arm64
 }
 
 build_windows_x64() {
     echo "Building Windows x64..."
-    bun build src/bin/bin-entry.ts --compile --target=bun-windows-x64 --outfile=binaries/gtx-cli-win32-x64.exe --external ""
-    chmod +x binaries/gtx-cli-win32-x64.exe
+    bun build src/bin/bin-entry.ts --compile --target=bun-windows-x64 --outfile=binaries/gt-win32-x64.exe --external ""
+    chmod +x binaries/gt-win32-x64.exe
 }
 
 case $ARCH in

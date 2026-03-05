@@ -4,13 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx gtx-cli translate && next build",
+    "build": "npx gt translate && next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "gt-next": "latest",
-    "gtx-cli": "latest",
+    "gt": "latest",
     "next": "15.5.9",
     "react": "^19.2.3",
     "react-dom": "^19.2.2"

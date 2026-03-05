@@ -36,11 +36,11 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       ),
       defaultValue: true,
       cancelMessage:
-        'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup',
+        'Operation cancelled. You can re-run this wizard with: npx gt setup',
     });
     if (!answer) {
       logger.info(
-        'Operation cancelled. You can re-run this wizard with: npx gtx-cli setup'
+        'Operation cancelled. You can re-run this wizard with: npx gt setup'
       );
       exitSync(0);
     }

@@ -22,7 +22,7 @@ The API reference for the config file can be found at <https://generaltranslatio
 
 ## Translation
 
-Run `npx gtx-cli translate` to create translation files for your project. You must have an API key to do this.
+Run `npx gt translate` to create translation files for your project. You must have an API key to do this.
 
 ## Documentation
 

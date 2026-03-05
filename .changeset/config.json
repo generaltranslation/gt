@@ -5,7 +5,7 @@
     { "repo": "generaltranslation/gt" }
   ],
   "commit": false,
-  "fixed": [],
+  "fixed": [["gt", "gtx-cli"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

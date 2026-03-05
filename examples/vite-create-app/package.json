@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx gtx-cli translate && tsc -b && vite build",
+    "build": "npx gt translate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "gt-react": "latest",
-    "gtx-cli": "latest",
+    "gt": "latest",
     "react": "^19.2.3",
     "react-dom": "^19.2.2"
   },
