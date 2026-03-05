@@ -300,6 +300,12 @@ function buildJSXTree({
             ? attr.name.name
             : attr.name.name.name;
         let attrValue = null;
+        if (elementIsBranch && attrName.startsWith(DATA_ATTR_PREFIX)) {
+          const location = `${attr.loc?.start?.line}:${attr.loc?.start?.column}`;
+          output.errors.push(
+            warnDataAttrOnBranch(config.file, attrName, location)
+          );
+        }
         if (attr.value) {
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
@@ -356,13 +362,6 @@ function buildJSXTree({
                 attrValue = staticAnalysis.value;
               }
               // Otherwise attrValue stays null and won't be included
-            }
-
-            if (elementIsBranch && attrName.startsWith('data-')) {
-              const location = `${attr.loc?.start?.line}:${attr.loc?.start?.column}`;
-              output.errors.push(
-                warnDataAttrOnBranch(config.file, attrName, location)
-              );
             }
           }
         }
