@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.6.29",
+  "version": "2.6.30-alpha.0",
   "description": "CLI tool for AI-powered i18n (wrapper for gt)",
   "main": "dist/index.js",
   "bin": "dist/main.js",
@@ -33,7 +33,7 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-"./functions": {
+    "./functions": {
       "import": "./dist/functions.js",
       "types": "./dist/functions.d.ts"
     },
