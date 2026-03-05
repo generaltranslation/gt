@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.6.31
+
+### Patch Changes
+
+- [#1070](https://github.com/generaltranslation/gt/pull/1070) [`516979d`](https://github.com/generaltranslation/gt/commit/516979d36cd16c4bc9080ea7dc06b7e299200919) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle case where all jobs fail
+
 ## 2.6.30
 
 ### Patch Changes
