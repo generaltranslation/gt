@@ -60,17 +60,16 @@ export const conflictingConfigurationBuildError = (conflicts: string[]) =>
     '\n'
   )}`;
 
-export const typesFileError = `gt-next Error: There is no scenario in which you should be seeing this error.`;
+export const typesFileError = `gt-next Error: Unexpected error in types file. This should not occur.`;
 
 export const gtProviderUseClientError =
-  `You're attempting to import the Next.js <GTProvider> in a client component. ` +
-  `Are you sure you want to do this? It's better to import <GTProvider> in a file not marked 'use client' so that it can fetch translations on the server. ` +
-  `If you really need to put <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
+  `You are importing the Next.js <GTProvider> in a client component. ` +
+  `Import <GTProvider> in a file not marked 'use client' so it can fetch translations on the server. ` +
+  `If you need <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
 
 export const txUseClientError =
-  `You're attempting to use the <Tx> runtime translation component in a client component. ` +
-  `This is currently unsupported. Please use <T> with variables, ` +
-  `or make sure <Tx> rendered on the server only. `;
+  `The <Tx> runtime translation component is not supported in client components. ` +
+  `Use <T> with variables, or ensure <Tx> renders on the server only.`;
 
 export const missingVariablesError = (variables: string[], message: string) =>
   `gt-next Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
@@ -129,9 +128,8 @@ export const createMismatchingHashWarning = (
 export const projectIdMissingWarn = `gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to withGTConfig(). Find your project ID: generaltranslation.com/dashboard.`;
 
 export const noInitGTWarn =
-  `gt-next: You are running General Translation without the withGTConfig() plugin. ` +
-  `This means that you are not translating your app. To activate translation, add the withGTConfig() plugin to your app, ` +
-  `and set the projectId and apiKey in your environment. ` +
+  `gt-next: General Translation is running without the withGTConfig() plugin. ` +
+  `Your app is not being translated. Add withGTConfig() to your app and set projectId and apiKey in your environment. ` +
   `For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart`;
 
 export const APIKeyMissingWarn =
@@ -151,20 +149,20 @@ export const createTranslationLoadingWarning = ({
   `[DEV ONLY] Warning: gt-next created translation "${source}" -> "${translation}"` +
   (id ? ` for id "${id}"` : '') +
   `. ` +
-  `In development, hot-reloaded translations may not be be displayed until the page is refreshed. ` +
+  `In development, hot-reloaded translations may not be displayed until the page is refreshed. ` +
   `In production, translations will be preloaded and there won't be a warning.`;
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
-export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or [defaultLocale].json), and you have added the withGTConfig() plugin.`;
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Add a dictionary to your project (either dictionary.js or [defaultLocale].json) and add the withGTConfig() plugin.`;
 
 export const standardizedLocalesWarning = (locales: string[]) =>
-  `gt-next: You are using The following locales were standardized: ${locales.join(', ')}.`;
+  `gt-next: The following locales were standardized: ${locales.join(', ')}.`;
 
 export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
-  `gt-next: You are using The following canonical locales were standardized: ${locales.join(', ')}.`;
+  `gt-next: The following canonical locales were standardized: ${locales.join(', ')}.`;
 
-export const deprecatedLocaleMappingWarning = `gt-next: You are using the deprecated localeMapping configuration. Please move "customMapping" to your gt.config.json file.`;
+export const deprecatedLocaleMappingWarning = `gt-next: The localeMapping configuration is deprecated. Move "customMapping" to your gt.config.json file.`;
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;

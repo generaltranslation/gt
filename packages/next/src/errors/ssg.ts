@@ -10,7 +10,7 @@ export const ssgMissingGetStaticLocaleFunctionError =
 
 // This was (1) triggered by SSG without running middleware, or (2) triggered by a request with no locale headers (also no middleware).
 export const noLocalesCouldBeDeterminedWarning =
-  'gt-next: no locales could be determined for this request. If you are using SSG, make sure to follow set up instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
+  'gt-next: no locales could be determined for this request. If you are using SSG, make sure to follow setup instructions here: https://generaltranslation.com/en/docs/next/guides/ssg#ssg-custom-get-locale';
 
 const createCustomSSGFunctionSuffix = (functionName: StaticRequestFunctions) =>
   `If you wish to use ${functionName.replace('Static', '')} during SSG, please define a custom ${functionName.replace('Static', '')}() function for SSG. For more information, visit https://generaltranslation.com/en/docs/next/guides/ssg. To disable this warning, set "disableSSGWarnings" to true.`;
@@ -38,15 +38,15 @@ export const createSsrFunctionDuringSsgWarning = (
 ) =>
   process.env._GENERALTRANSLATION_DISABLE_SSG_WARNINGS === 'true'
     ? ''
-    : `gt-next: ${functionName}() was invoked during SSG. Rendering will like fallback to SSR behavior`;
+    : `gt-next: ${functionName}() was invoked during SSG. Rendering will likely fall back to SSR behavior.`;
 
 export const ssrDetectionFailedWarning =
   'gt-next: Unable to determine if runtime is SSR or SSG. Falling back to SSR behavior.';
 
 export const deprecatedExperimentalEnableSSGWarning =
-  'gt-next: You are using the deprecated experimentalEnableSSG configuration. This will be removed in a future version.';
+  'gt-next: The experimentalEnableSSG configuration is deprecated and will be removed in a future version.';
 
 export const createDeprecatedGetStaticLocaleFunctionWarning = (
   functionName: keyof typeof DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY
 ) =>
-  `gt-next: You are using the deprecated ${functionName} function. Please use ${functionName.replace('Static', '')} instead.`;
+  `gt-next: ${functionName} is deprecated. Use ${functionName.replace('Static', '')} instead.`;
