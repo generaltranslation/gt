@@ -135,7 +135,7 @@ export const createUnsupportedLocaleWarning = (
   );
 };
 
-export const dictionaryMissingWarning = `${PACKAGE_NAME} Warning: No dictionary was found. Ensure you are either passing your dictionary to the <GTProvider>.`;
+export const dictionaryMissingWarning = `${PACKAGE_NAME} Warning: No dictionary found. Ensure you are passing your dictionary to <GTProvider>.`;
 
 export const createStringRenderWarning = (
   message: string,
