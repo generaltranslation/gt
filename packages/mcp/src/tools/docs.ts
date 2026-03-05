@@ -10,7 +10,7 @@ export function addDocsTools(server: McpServer) {
       path: z
         .string()
         .describe(
-          'The path to the documentation file (e.g., "/en-US/docs/cli/auth.mdx" or "/en-US/docs/react/introduction.mdx")'
+          'The path to the documentation file (e.g., "en-US/docs/cli/auth.mdx" or "en-US/docs/react/introduction.mdx")'
         ),
     },
     async ({ path }) => {
