@@ -86,7 +86,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.should-run.outputs.run == 'true'
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         if: steps.should-run.outputs.run == 'true'
