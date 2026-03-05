@@ -1,9 +1,17 @@
 const BASE_URL = 'https://generaltranslation.com';
 
-export const DOCS_URL = `${BASE_URL}/docs`;
+/**
+ * Strips incorrect prefixes from doc paths.
+ * e.g. "/en-US/docs/node/api/initialize-gt" -> "node/api/initialize-gt"
+ */
+function sanitizeDocPath(path: string): string {
+  // Remove leading slash
+  const sanitized = path.replace(/^\/+/, '');
+  return sanitized;
+}
 
 export const getDocs = async (path: string) => {
-  const url = `${DOCS_URL}/${path}`;
+  const url = `${BASE_URL}/${sanitizeDocPath(path)}`;
   console.error(`Fetching document from: ${url}`);
 
   try {
@@ -29,10 +37,7 @@ export const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
  * Fetches content from the docs URL with caching
  * Refreshes cache every 5 minutes
  */
-export async function fetchDocContent(
-  path: string,
-  includeDocsPath: boolean = true
-): Promise<string> {
+export async function fetchDocContent(path: string): Promise<string> {
   const now = Date.now();
 
   // Check if we have a valid cached entry
@@ -41,7 +46,7 @@ export async function fetchDocContent(
   }
 
   // Fetch fresh content
-  const url = includeDocsPath ? `${DOCS_URL}/${path}` : `${BASE_URL}/${path}`;
+  const url = `${BASE_URL}/${path}`;
   console.error(`Fetching document from: ${url}`);
 
   try {
