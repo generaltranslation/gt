@@ -65,7 +65,11 @@ export default function addGTIdentifier(
       if (transformationParts[0] === 'branch') {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
         const { children, branch, ...branches } = props;
-        const resultBranches = Object.entries(branches).reduce(
+        // Filter out data-* attributes injected by build tools
+        const filteredBranches = Object.fromEntries(
+          Object.entries(branches).filter(([key]) => !key.startsWith('data-'))
+        );
+        const resultBranches = Object.entries(filteredBranches).reduce(
           (acc, [branchName, branch]) => {
             (acc as Record<string, TaggedChildren>)[branchName] =
               addGTIdentifier(branch as ReactNode, index);

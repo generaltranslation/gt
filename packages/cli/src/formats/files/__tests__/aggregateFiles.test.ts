@@ -286,6 +286,7 @@ describe('aggregateFiles - Empty File Handling', () => {
           placeholderPaths: {},
         },
         defaultLocale: 'en',
+        framework: 'mintlify',
         options: {
           mintlify: {
             inferTitleFromFilename: true,
@@ -312,6 +313,7 @@ describe('aggregateFiles - Empty File Handling', () => {
           placeholderPaths: {},
         },
         defaultLocale: 'en',
+        framework: 'mintlify',
         options: {
           mintlify: {
             inferTitleFromFilename: true,
@@ -343,6 +345,7 @@ describe('aggregateFiles - Empty File Handling', () => {
           placeholderPaths: {},
         },
         defaultLocale: 'en',
+        framework: 'mintlify',
         options: {
           mintlify: {
             inferTitleFromFilename: true,
@@ -369,6 +372,7 @@ describe('aggregateFiles - Empty File Handling', () => {
           placeholderPaths: {},
         },
         defaultLocale: 'es',
+        framework: 'mintlify',
         options: {
           mintlify: {
             inferTitleFromFilename: true,
