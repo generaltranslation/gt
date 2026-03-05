@@ -312,7 +312,7 @@ describe('parseJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Matching sourceItem not found at path: /test for locale: en. Please check your JSON schema'
+        'Matching sourceItem not found at path: /test for locale: en. Check your JSON schema'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
