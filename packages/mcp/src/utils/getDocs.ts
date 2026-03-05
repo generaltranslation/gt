@@ -2,7 +2,7 @@ const BASE_URL = 'https://generaltranslation.com';
 
 /**
  * Strips incorrect prefixes from doc paths.
- * e.g. "/en-US/docs/node/api/initialize-gt" -> "node/api/initialize-gt"
+ * e.g. "/en-US/docs/node/api/initialize-gt" -> "en-US/docs/node/api/initialize-gt"
  */
 function sanitizeDocPath(path: string): string {
   // Remove leading slash
