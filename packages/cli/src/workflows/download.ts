@@ -137,6 +137,11 @@ export async function runDownloadWorkflow({
           `Failed to translate for locale ${value.locale}`
         );
       }
+
+      // If all files failed translation, exit early
+      if (pollResult.fileTracker.completed.size === 0) {
+        return false;
+      }
     }
 
     // Even if polling timed out, still download whatever completed successfully
