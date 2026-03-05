@@ -35,7 +35,7 @@ export async function addDocsResource(server: McpServer) {
   // Resource for llms-full.txt
   server.resource('llms-full.txt', 'llms://llms-full.txt', async (uri) => {
     try {
-      const content = await fetchDocContent('llms-full.txt', false);
+      const content = await fetchDocContent('llms-full.txt');
 
       return {
         contents: [
@@ -61,7 +61,7 @@ export async function addDocsResource(server: McpServer) {
   // Resource for llms.txt
   server.resource('llms.txt', 'llms://llms.txt', async (uri) => {
     try {
-      const content = await fetchDocContent('llms.txt', false);
+      const content = await fetchDocContent('llms.txt');
 
       return {
         contents: [
@@ -90,8 +90,8 @@ export function startCacheRefreshJob() {
   const refreshCache = async () => {
     try {
       console.error('Refreshing MCP resources cache...');
-      await fetchDocContent('llms.txt', false);
-      await fetchDocContent('llms-full.txt', false);
+      await fetchDocContent('llms.txt');
+      await fetchDocContent('llms-full.txt');
       console.error('Cache refresh complete');
     } catch (error) {
       console.error('Error refreshing cache:', error);

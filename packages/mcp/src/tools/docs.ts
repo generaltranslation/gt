@@ -10,7 +10,7 @@ export function addDocsTools(server: McpServer) {
       path: z
         .string()
         .describe(
-          'The path to the documentation file (e.g., "platform/index.mdx" or "react/introduction.mdx")'
+          'The path to the documentation file (e.g., "en-US/docs/cli/auth.mdx" or "en-US/docs/react/introduction.mdx")'
         ),
     },
     async ({ path }) => {
@@ -65,7 +65,7 @@ export function addDocsTools(server: McpServer) {
     async ({ type }) => {
       try {
         const filename = type === 'full' ? 'llms-full.txt' : 'llms.txt';
-        const content = await fetchDocContent(filename, false);
+        const content = await fetchDocContent(filename);
 
         if (!content) {
           return {
