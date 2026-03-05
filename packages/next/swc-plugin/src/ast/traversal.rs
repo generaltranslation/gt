@@ -535,7 +535,7 @@ impl<'a> JsxTraversal<'a> {
           let prop_name = name_ident.sym.as_ref();
 
           // Skip special props
-          if matches!(prop_name, "branch") {
+          if matches!(prop_name, "branch") || prop_name.starts_with("data-") {
             continue;
           }
 
@@ -1290,7 +1290,7 @@ mod tests {
     fn test_calculate_element_hash_consistency() {
       let visitor = create_test_visitor();
       let mut traversal = JsxTraversal::new(&visitor);
-      
+
       let element1 = create_jsx_element_with_children("T", vec![
         create_jsx_text_child("Hello world")
       ]);
@@ -1300,10 +1300,90 @@ mod tests {
 
       let (hash1, _) = traversal.calculate_element_hash(&element1);
       let (hash2, _) = traversal.calculate_element_hash(&element2);
-      
+
       // Same content should produce same hash
       assert_eq!(hash1, hash2, "Same content should produce same hash");
       assert!(!hash1.is_empty(), "Hash should not be empty for identical content");
+    }
+  }
+
+  mod extract_branch_props_tests {
+    use super::*;
+
+    // Helper to create a JSX string attribute
+    fn create_jsx_attr(name: &str, value: &str) -> JSXAttrOrSpread {
+      JSXAttrOrSpread::JSXAttr(JSXAttr {
+        span: DUMMY_SP,
+        name: JSXAttrName::Ident(IdentName {
+          span: DUMMY_SP,
+          sym: Atom::new(name),
+        }),
+        value: Some(JSXAttrValue::Str(Str {
+          span: DUMMY_SP,
+          value: Atom::new(value).into(),
+          raw: None,
+        })),
+      })
+    }
+
+    #[test]
+    fn filters_data_attributes() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+
+      let attrs = vec![
+        create_jsx_attr("branch", "val"),
+        create_jsx_attr("data-testid", "test"),
+        create_jsx_attr("data-track", "track"),
+        create_jsx_attr("morning", "Good morning"),
+        create_jsx_attr("evening", "Good evening"),
+      ];
+
+      let result = traversal.extract_branch_props(&attrs);
+      assert!(result.is_some());
+      let branches = result.unwrap();
+
+      // Should only contain morning and evening, not branch or data-*
+      assert_eq!(branches.len(), 2);
+      assert!(branches.contains_key("morning"));
+      assert!(branches.contains_key("evening"));
+      assert!(!branches.contains_key("branch"));
+      assert!(!branches.contains_key("data-testid"));
+      assert!(!branches.contains_key("data-track"));
+    }
+
+    #[test]
+    fn returns_none_when_only_data_and_branch_attrs() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+
+      let attrs = vec![
+        create_jsx_attr("branch", "val"),
+        create_jsx_attr("data-testid", "test"),
+      ];
+
+      let result = traversal.extract_branch_props(&attrs);
+      assert!(result.is_none(), "Should return None when no valid branch props remain");
+    }
+
+    #[test]
+    fn allows_non_data_prefixed_attrs() {
+      let visitor = create_test_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+
+      let attrs = vec![
+        create_jsx_attr("database", "postgres"),
+        create_jsx_attr("dataSource", "api"),
+      ];
+
+      let result = traversal.extract_branch_props(&attrs);
+      assert!(result.is_some());
+      let branches = result.unwrap();
+
+      // "database" and "dataSource" don't start with "data-", so they should be kept
+      assert_eq!(branches.len(), 2);
+      assert!(branches.contains_key("database"));
+      assert!(branches.contains_key("dataSource"));
     }
   }
 }

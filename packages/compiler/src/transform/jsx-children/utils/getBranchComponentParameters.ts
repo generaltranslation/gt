@@ -33,6 +33,14 @@ export function getBranchComponentParameters(
         return null;
       }
 
+      // Filter out data-* attributes for Branch components
+      if (
+        canonicalName === GT_COMPONENT_TYPES.Branch &&
+        propertyName.startsWith('data-')
+      ) {
+        return null;
+      }
+
       // Filter by branch component type
       if (
         canonicalName === GT_COMPONENT_TYPES.Branch &&

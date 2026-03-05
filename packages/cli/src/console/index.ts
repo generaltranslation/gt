@@ -1,3 +1,4 @@
+import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
   colorizeComponent,
@@ -233,6 +234,17 @@ export const warnInvalidStaticInitSync = (
 Example: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = () => { ... }`)}
 Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() => { ... }][0]`)}`
     ),
+    location
+  );
+
+export const warnDataAttrOnBranch = (
+  file: string,
+  attrName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `${colorizeComponent(`<${BRANCH_COMPONENT}>`)} component ignores attributes prefixed with ${colorizeIdString('"data-"')}. Found ${colorizeIdString(attrName)}. Remove it or use a different attribute name.`,
     location
   );
 
