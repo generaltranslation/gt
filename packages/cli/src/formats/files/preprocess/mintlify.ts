@@ -11,12 +11,11 @@ export function preprocessMintlify(
   fileType: string,
   settings: Settings
 ): string {
+  if (fileType !== 'mdx') return content;
+
   let result = content;
 
-  if (
-    fileType === 'mdx' &&
-    settings.options?.mintlify?.inferTitleFromFilename
-  ) {
+  if (settings.options?.mintlify?.inferTitleFromFilename) {
     result = applyMintlifyTitleFallback(
       result,
       filePath,
@@ -24,9 +23,7 @@ export function preprocessMintlify(
     ).content;
   }
 
-  if (fileType === 'mdx') {
-    result = wrapPlainUrls(result);
-  }
+  result = wrapPlainUrls(result);
 
   return result;
 }
