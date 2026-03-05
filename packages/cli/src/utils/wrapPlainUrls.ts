@@ -5,8 +5,6 @@ import remarkFrontmatter from 'remark-frontmatter';
 import { visit } from 'unist-util-visit';
 import type { Root, Text } from 'mdast';
 
-const URL_REGEX = /https?:\/\/[^\s<>\[\]()]*[^\s<>\[\]().,;:!?'")\]}>]/g;
-
 /**
  * Wraps plain URLs in markdown link syntax [url](url) so that
  * translation pipelines preserve the URL separately from surrounding text.
@@ -15,6 +13,7 @@ const URL_REGEX = /https?:\/\/[^\s<>\[\]()]*[^\s<>\[\]().,;:!?'")\]}>]/g;
  *
  */
 export default function wrapPlainUrls(content: string): string {
+  const URL_REGEX = /https?:\/\/[^\s<>\[\]]*[^\s<>\[\].,;:!?'"\]}>]/g;
   let ast: Root;
   try {
     const processor = unified()
@@ -40,13 +39,25 @@ export default function wrapPlainUrls(content: string): string {
     if (!pos) return;
 
     const value = node.value;
-    URL_REGEX.lastIndex = 0;
     let match: RegExpExecArray | null;
 
     while ((match = URL_REGEX.exec(value)) !== null) {
-      const url = match[0];
+      let url = match[0];
       const nodeStartOffset = pos.start.offset;
       if (nodeStartOffset === undefined) continue;
+
+      // Trim unbalanced trailing ')' so that prose like "(see https://example.com)"
+      // doesn't absorb the surrounding paren, while Wikipedia-style URLs with
+      // balanced parens (e.g. /wiki/Unix_(operating_system)) are kept intact.
+      while (url.endsWith(')')) {
+        const open = url.split('(').length - 1;
+        const close = url.split(')').length - 1;
+        if (close > open) {
+          url = url.slice(0, -1);
+        } else {
+          break;
+        }
+      }
 
       // Calculate the absolute offset in the original content
       const urlStart = nodeStartOffset + match.index;

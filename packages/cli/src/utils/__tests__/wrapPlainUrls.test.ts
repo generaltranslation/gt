@@ -245,6 +245,15 @@ describe('wrapPlainUrls', () => {
     expect(wrapPlainUrls(input)).toBe(input);
   });
 
+  // --- URL with parentheses in path ---
+  it('wraps URLs with parentheses in the path', () => {
+    const input =
+      'See https://en.wikipedia.org/wiki/Unix_(operating_system) for details.';
+    const expected =
+      'See [https://en.wikipedia.org/wiki/Unix_(operating_system)](https://en.wikipedia.org/wiki/Unix_(operating_system)) for details.';
+    expect(wrapPlainUrls(input)).toBe(expected);
+  });
+
   // --- URL with fragment ---
   it('wraps URL with hash fragment', () => {
     const input = 'See https://example.com/docs#section for details.';
