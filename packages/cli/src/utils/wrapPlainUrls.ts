@@ -1,0 +1,80 @@
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkMdx from 'remark-mdx';
+import remarkFrontmatter from 'remark-frontmatter';
+import { visit } from 'unist-util-visit';
+import type { Root, Text } from 'mdast';
+
+/**
+ * Wraps plain URLs in markdown link syntax [url](url) so that
+ * translation pipelines preserve the URL separately from surrounding text.
+ *
+ * Uses remark AST parsing to identify URLs that appear in text nodes only.
+ *
+ */
+export default function wrapPlainUrls(content: string): string {
+  const URL_REGEX = /https?:\/\/[^\s<>\[\]]*[^\s<>\[\].,;:!?'"\]}>]/g;
+  let ast: Root;
+  try {
+    const processor = unified()
+      .use(remarkParse)
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx);
+
+    ast = processor.parse(content);
+    ast = processor.runSync(ast) as Root;
+  } catch {
+    // If parsing fails, return content unchanged
+    return content;
+  }
+
+  // Collect all URL replacements from text nodes with their positions
+  const replacements: { start: number; end: number; url: string }[] = [];
+
+  visit(ast, 'text', (node: Text, _index, parent) => {
+    // Skip text nodes inside links — those are already display text for a link
+    if (parent && parent.type === 'link') return;
+
+    const pos = node.position;
+    if (!pos) return;
+
+    const value = node.value;
+    let match: RegExpExecArray | null;
+
+    while ((match = URL_REGEX.exec(value)) !== null) {
+      let url = match[0];
+      const nodeStartOffset = pos.start.offset;
+      if (nodeStartOffset === undefined) continue;
+
+      // Trim unbalanced trailing ')' so that prose like "(see https://example.com)"
+      // doesn't absorb the surrounding paren, while Wikipedia-style URLs with
+      // balanced parens (e.g. /wiki/Unix_(operating_system)) are kept intact.
+      while (url.endsWith(')')) {
+        const open = url.split('(').length - 1;
+        const close = url.split(')').length - 1;
+        if (close > open) {
+          url = url.slice(0, -1);
+        } else {
+          break;
+        }
+      }
+
+      // Calculate the absolute offset in the original content
+      const urlStart = nodeStartOffset + match.index;
+      const urlEnd = urlStart + url.length;
+
+      replacements.push({ start: urlStart, end: urlEnd, url });
+    }
+  });
+
+  if (replacements.length === 0) return content;
+
+  // Apply replacements in reverse order to preserve positions
+  let result = content;
+  for (let i = replacements.length - 1; i >= 0; i--) {
+    const { start, end, url } = replacements[i];
+    result = result.slice(0, start) + `[${url}](${url})` + result.slice(end);
+  }
+
+  return result;
+}
