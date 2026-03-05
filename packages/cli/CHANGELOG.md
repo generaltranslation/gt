@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.6.30
+
+### Patch Changes
+
+- [#1068](https://github.com/generaltranslation/gt/pull/1068) [`94b95ef`](https://github.com/generaltranslation/gt/commit/94b95ef662b81dac51416ecc64f3318339171f0b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: runtime calculation for the injection of 'data-' attribute in jsx
+
+- [#1066](https://github.com/generaltranslation/gt/pull/1066) [`7b4837f`](https://github.com/generaltranslation/gt/commit/7b4837fe44e387c4de812d9b3f7fc394cb24e49e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Wrapping text node URLs for Mintlify MDX to align with their parser
+
 ## 2.6.29
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # gt-next
 
+## 6.13.3
+
+### Patch Changes
+
+- [#1068](https://github.com/generaltranslation/gt/pull/1068) [`94b95ef`](https://github.com/generaltranslation/gt/commit/94b95ef662b81dac51416ecc64f3318339171f0b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: runtime calculation for the injection of 'data-' attribute in jsx
+
+- Updated dependencies [[`94b95ef`](https://github.com/generaltranslation/gt/commit/94b95ef662b81dac51416ecc64f3318339171f0b)]:
+  - @generaltranslation/compiler@1.1.23
+  - gt-react@10.11.2
+
 ## 6.13.2
 
 ### Patch Changes
