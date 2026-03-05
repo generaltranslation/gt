@@ -8,8 +8,8 @@ set -e
 
 # Configuration
 BASE_URL="https://assets.gtx.dev/cli/latest"
-BINARY_NAME="gtx"
-INSTALL_DIR="${GTX_INSTALL_DIR:-/usr/local/bin}"
+BINARY_NAME="gt"
+INSTALL_DIR="${GT_INSTALL_DIR:-/usr/local/bin}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -137,7 +137,7 @@ main() {
         if command_exists sudo; then
             sudo mv "$tmp_file" "$install_path"
         else
-            error "Cannot write to ${INSTALL_DIR} and sudo is not available. Try setting GTX_INSTALL_DIR to a writable directory."
+            error "Cannot write to ${INSTALL_DIR} and sudo is not available. Try setting GT_INSTALL_DIR to a writable directory."
         fi
     fi
 

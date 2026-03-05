@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.6.30-alpha.0",
+  "version": "2.6.30",
   "description": "CLI tool for AI-powered i18n (wrapper for gt)",
   "main": "dist/index.js",
   "bin": "dist/main.js",
@@ -40,45 +40,9 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./functions": {
-      "import": "./dist/functions.js",
-      "types": "./dist/functions.d.ts"
-    },
-    "./updates/*": {
-      "import": "./dist/updates/*.js",
-      "types": "./dist/updates/*.d.ts"
-    },
-    "./jsx/*": {
-      "import": "./dist/jsx/*.js",
-      "types": "./dist/jsx/*.d.ts"
-    },
-    "./fs/*": {
-      "import": "./dist/fs/*.js",
-      "types": "./dist/fs/*.d.ts"
-    },
-    "./console/*": {
-      "import": "./dist/console/*.js",
-      "types": "./dist/console/*.d.ts"
-    },
-    "./config/*": {
-      "import": "./dist/config/*.js",
-      "types": "./dist/config/*.d.ts"
-    },
-    "./api/*": {
-      "import": "./dist/api/*.js",
-      "types": "./dist/api/*.d.ts"
-    },
-    "./setup/*": {
-      "import": "./dist/setup/*.js",
-      "types": "./dist/setup/*.d.ts"
-    },
     "./*": {
       "import": "./dist/*.js",
       "types": "./dist/*.d.ts"
-    },
-    "./utils/*": {
-      "import": "./dist/utils/*.js",
-      "types": "./dist/utils/*.d.ts"
     }
   },
   "repository": {
@@ -105,6 +69,7 @@
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.0"
   }
 }
