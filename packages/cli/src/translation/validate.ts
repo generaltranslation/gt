@@ -79,7 +79,7 @@ function parseFileFromMessage(msg: string): { file: string; message: string } {
 
 /**
  * Programmatic API for validation - returns structured results instead of logging/exiting.
- * Equivalent to running `gtx-cli validate` but returns data.
+ * Equivalent to running `gt validate` but returns data.
  */
 export async function getValidateJson(
   settings: Options & Settings,

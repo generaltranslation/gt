@@ -12,14 +12,14 @@
   <a href="https://generaltranslation.com/docs/cli"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
 </p>
 
-# gtx-cli
+# gt
 
 Command-line tool for General Translation's i18n platform.
 
 ## Installation
 
 ```bash
-npm install gtx-cli --save-dev
+npm install gt --save-dev
 ```
 
 ## Quick Start
@@ -27,13 +27,13 @@ npm install gtx-cli --save-dev
 Set up your project:
 
 ```bash
-npx gtx-cli init
+npx gt init
 ```
 
 Generate translations:
 
 ```bash
-npx gtx-cli translate
+npx gt translate
 ```
 
 See the [full documentation](https://generaltranslation.com/docs/cli) for guides and API reference.

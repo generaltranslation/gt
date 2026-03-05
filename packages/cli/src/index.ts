@@ -7,7 +7,7 @@ import { NodeCLI } from './cli/node.js';
 import { Libraries } from './types/libraries.js';
 
 export function main(program: Command) {
-  program.name('gtx-cli');
+  program.name('gt');
 
   const { library, additionalModules } = determineLibrary();
   let cli: BaseCLI;

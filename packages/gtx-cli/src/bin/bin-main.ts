@@ -17,15 +17,15 @@ function detectPlatform() {
   // Map Node.js platform/arch to our binary names
   const platformMap: Record<string, Record<string, string>> = {
     darwin: {
-      x64: 'gt-darwin-x64',
-      arm64: 'gt-darwin-arm64',
+      x64: 'gtx-cli-darwin-x64',
+      arm64: 'gtx-cli-darwin-arm64',
     },
     linux: {
-      x64: 'gt-linux-x64',
-      arm64: 'gt-linux-arm64',
+      x64: 'gtx-cli-linux-x64',
+      arm64: 'gtx-cli-linux-arm64',
     },
     win32: {
-      x64: 'gt-win32-x64.exe',
+      x64: 'gtx-cli-win32-x64.exe',
     },
   };
 

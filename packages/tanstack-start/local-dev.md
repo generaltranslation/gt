@@ -101,4 +101,4 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 ## Some notes
 
 - If you do local translations, make sure the `json` files are in the `src/` directory, not `public/`.
-- I haven't set up `gtx-cli` yet, so import `<T>` from `gt-react` and when you wrap `gt()` around a string, wrap it in `msg()` from `gt-react` as well for registration
+- I haven't set up `gt` yet, so import `<T>` from `gt-react` and when you wrap `gt()` around a string, wrap it in `msg()` from `gt-react` as well for registration

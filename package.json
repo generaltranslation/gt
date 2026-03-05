@@ -13,6 +13,7 @@
     "lint:fix": "turbo run lint:fix --filter='./packages/*'",
     "transpile": "turbo run transpile --filter='./packages/*'",
     "release": "changeset publish",
+    "release:gt-bin": "pnpm --filter gt run release:bin",
     "release:gtx-cli-bin": "pnpm --filter gtx-cli run release:bin",
     "build:clean": "turbo run build:clean --filter='./packages/*'",
     "build:release": "turbo run build:release --filter='./packages/*'",

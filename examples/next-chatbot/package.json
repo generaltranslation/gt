@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "tsx lib/db/migrate && npx gtx-cli translate && next build",
+    "build": "tsx lib/db/migrate && npx gt translate && next build",
     "start": "next start",
     "lint": "next lint && biome lint --write --unsafe",
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
@@ -52,7 +52,7 @@
     "framer-motion": "^11.3.19",
     "geist": "^1.3.1",
     "gt-next": "latest",
-    "gtx-cli": "latest",
+    "gt": "latest",
     "lucide-react": "^0.446.0",
     "nanoid": "^5.0.8",
     "next": "15.5.9",
