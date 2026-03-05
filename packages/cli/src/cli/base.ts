@@ -599,7 +599,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     const files: FilesOptions = {};
     for (const fileExtension of fileExtensions) {
       const paths = await promptText({
-        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
         defaultValue: `./**/[locale]/*.${fileExtension}`,
       });
 

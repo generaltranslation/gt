@@ -104,7 +104,7 @@ export class ReactCLI extends InlineCLI {
         filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
     if (filesUpdated.length > 0) {
-      logger.step(chalk.green('Please verify the changes before committing.'));
+      logger.step(chalk.green('Verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {

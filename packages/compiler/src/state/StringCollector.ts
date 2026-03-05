@@ -71,7 +71,7 @@ export class StringCollector {
   pushTranslationContent(counterId: number, content: TranslationContent): void {
     if (counterId === -1) {
       throw new Error(
-        'Cannot have a counterId of -1. You are likely trying to register content from a namespace method invocation.'
+        'Cannot have a counterId of -1. This likely means you are trying to register content from a namespace method invocation.'
       );
     }
     // Get the agreggator

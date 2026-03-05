@@ -73,7 +73,7 @@ export async function generateSettings(
     gtConfig.projectId !== flags.projectId
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(flags.projectId)}! Please use the same projectId in all configs.`
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(flags.projectId)}! Use the same projectId in all configs.`
     );
   } else if (
     gtConfig.projectId &&
@@ -81,7 +81,7 @@ export async function generateSettings(
     gtConfig.projectId !== projectIdEnv
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(projectIdEnv)}! Please use the same projectId in all configs.`
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(projectIdEnv)}! Use the same projectId in all configs.`
     );
   }
 

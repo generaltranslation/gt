@@ -79,7 +79,7 @@ Please let us know what you would like to see added at https://github.com/genera
   if (!packageJson) {
     logger.error(
       chalk.red(
-        'No package.json found in the current directory. Please run this command from the root of your project.'
+        'No package.json found in the current directory. Run this command from the root of your project.'
       )
     );
     exitSync(1);

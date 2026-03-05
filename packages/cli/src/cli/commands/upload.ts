@@ -122,7 +122,7 @@ export async function upload(
 
   if (allFiles.length === 0) {
     logger.error(
-      'No files to upload were found. Please check your configuration and try again.'
+      'No files to upload were found. Check your configuration and try again.'
     );
     return;
   }
