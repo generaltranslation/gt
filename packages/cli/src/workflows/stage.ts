@@ -13,8 +13,8 @@ import { BranchData } from '../types/branch.js';
  * Helper: Calculate timeout with validation
  */
 function calculateTimeout(timeout: string | number | undefined): number {
-  const value = timeout !== undefined ? Number(timeout) : 600;
-  return (Number.isFinite(value) ? value : 600) * 1000;
+  const value = timeout !== undefined ? Number(timeout) : 900;
+  return (Number.isFinite(value) ? value : 900) * 1000;
 }
 
 /**
