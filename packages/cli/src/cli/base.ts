@@ -69,7 +69,7 @@ import {
 import { determineLibrary } from '../fs/determineFramework.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
-import { handleArt } from './commands/art.js';
+import { handleArt, playIntroAnimation } from './commands/art.js';
 
 export type UploadOptions = {
   config?: string;
@@ -371,6 +371,13 @@ export class BaseCLI {
       )
       .action(async (options: SetupOptions) => {
         const settings = await generateSettings(options);
+
+        // Show animated intro when running interactively without pre-set configs
+        const hasConfigFlags = options.src || options.config;
+        if (!hasConfigFlags && process.stdout.isTTY) {
+          await playIntroAnimation(2);
+        }
+
         displayHeader('Running setup wizard...');
 
         const framework = await detectFramework();

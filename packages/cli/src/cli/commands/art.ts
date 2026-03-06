@@ -18,6 +18,8 @@ const LOGO_LINES = [
   '               --===--        -=- -=              ',
 ];
 
+const FRAME_COUNT = 48;
+
 /**
  * Horizontally scale a line of text by a factor (0..1).
  * At scale=1, the full line is shown. At scale=0, it collapses to center.
@@ -45,18 +47,37 @@ function scaleLineHorizontally(line: string, scale: number): string {
  * by cos(angle) to simulate spinning around the Y axis.
  */
 function generateFrames(): string[][] {
-  const frameCount = 48;
   const frames: string[][] = [];
-  for (let i = 0; i < frameCount; i++) {
-    const angle = (i / frameCount) * 2 * Math.PI;
+  for (let i = 0; i < FRAME_COUNT; i++) {
+    const angle = (i / FRAME_COUNT) * 2 * Math.PI;
     const scale = Math.abs(Math.cos(angle));
     frames.push(LOGO_LINES.map((line) => scaleLineHorizontally(line, scale)));
   }
   return frames;
 }
 
+/**
+ * Render a single frame of the animation.
+ */
+function renderFrame(
+  frame: string[],
+  lineCount: number,
+  isFirst: boolean,
+  color: (s: string) => string
+): void {
+  if (!isFirst) {
+    process.stdout.write(`\x1B[${lineCount}A`);
+  }
+  for (const line of frame) {
+    process.stdout.write(`\x1B[2K${color(line)}\n`);
+  }
+}
+
+/**
+ * Interactive art command — loops until user presses q/Escape.
+ * Used by `gt art`.
+ */
 export async function handleArt(): Promise<void> {
-  // Require interactive terminal to avoid infinite loop in non-TTY contexts
   if (!process.stdin.isTTY) {
     console.log(chalk.yellow('  gt art requires an interactive terminal (TTY).'));
     return;
@@ -77,10 +98,7 @@ export async function handleArt(): Promise<void> {
   };
 
   process.stdin.on('data', onKey);
-
-  // Hide cursor
   process.stdout.write('\x1B[?25l');
-
   console.log(chalk.dim('\n  Press q or Escape to exit\n'));
 
   const lineCount = LOGO_LINES.length;
@@ -93,7 +111,6 @@ export async function handleArt(): Promise<void> {
     console.log();
   };
 
-  // Ensure cleanup runs on unexpected termination
   const sigHandler = () => {
     cleanup();
     process.exit();
@@ -103,18 +120,13 @@ export async function handleArt(): Promise<void> {
 
   try {
     while (running) {
-      const frame = frames[frameIndex % frames.length];
-
-      if (frameIndex > 0) {
-        process.stdout.write(`\x1B[${lineCount}A`);
-      }
-
-      for (const line of frame) {
-        process.stdout.write(`\x1B[2K${chalk.white(line)}\n`);
-      }
-
+      renderFrame(
+        frames[frameIndex % frames.length],
+        lineCount,
+        frameIndex === 0,
+        chalk.white
+      );
       frameIndex++;
-
       await new Promise((resolve) => setTimeout(resolve, 80));
     }
   } finally {
@@ -124,4 +136,48 @@ export async function handleArt(): Promise<void> {
   }
 
   console.log(chalk.white('  ✨ General Translation'));
+}
+
+/**
+ * Brief intro animation — plays a fixed number of rotations then stops.
+ * Used by `gt init` to greet users in interactive mode.
+ * Falls back to a static logo if not running in a TTY.
+ */
+export async function playIntroAnimation(
+  rotations: number = 2
+): Promise<void> {
+  if (!process.stdout.isTTY) {
+    // Non-TTY: just print the static logo
+    console.log();
+    for (const line of LOGO_LINES) {
+      console.log(chalk.white(line));
+    }
+    console.log();
+    return;
+  }
+
+  const frames = generateFrames();
+  const totalFrames = FRAME_COUNT * rotations;
+  const lineCount = LOGO_LINES.length;
+
+  process.stdout.write('\x1B[?25l');
+  console.log();
+
+  for (let i = 0; i < totalFrames; i++) {
+    renderFrame(
+      frames[i % frames.length],
+      lineCount,
+      i === 0,
+      chalk.white
+    );
+    await new Promise((resolve) => setTimeout(resolve, 80));
+  }
+
+  // Clear the animation and show cursor
+  process.stdout.write(`\x1B[${lineCount}A`);
+  for (let i = 0; i < lineCount; i++) {
+    process.stdout.write('\x1B[2K\n');
+  }
+  process.stdout.write(`\x1B[${lineCount}A`);
+  process.stdout.write('\x1B[?25h');
 }
