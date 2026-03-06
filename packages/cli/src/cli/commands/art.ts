@@ -1,20 +1,21 @@
 import chalk from 'chalk';
 
-// GT logo monogram — matches the General Translation brand mark
-// Three concentric strokes on the G, shared top bar, parallel T stems
+// GT logo monogram — generated from assets/no-bg-gt-logo-light.png via jp2a
+// jp2a gt-logo.jpg --width=50 --chars='@#%+=- '
 const LOGO_LINES = [
-  '    ############################  ################',
-  '   ###                      ###  #### #### #### ',
-  '   ###  ##################  ###  #### #### #### ',
-  '   ###  ###            ###  ###  #### #### #### ',
-  '   ###  ###  ########  ###  ###       ####      ',
-  '   ###  ###  ####      ####  ################   ',
-  '   ###  ###  ####       ######################  ',
-  '   ###  ###  ###########              ####      ',
-  '   ###  #################             ####      ',
-  '   ###########################        ####      ',
-  '',
-  '        G E N E R A L   T R A N S L A T I O N   ',
+  '               -============================      ',
+  '          -=%#@#%%%%%%%%%%%%%%#@#%%%%%%%%%%%      ',
+  '        -%@#+--=++++++++++++++%@+ =+++++++++      ',
+  '       +@#--+##%+=============%@+ %@+=======      ',
+  '      +@% =@#=                +@+ %@-             ',
+  '      @@ -@#                  +@+ %@-             ',
+  '     -@# =@+       #@@@@@@@#  +@+ %@-             ',
+  '      @@ -@#       -====- @@  +@+ %@-             ',
+  '      =@% =@#=     %###@+ @@  +@+ %@-             ',
+  '       =@#--+##%+==+%#@@+ @@  +@+ %@-             ',
+  '        -%@#+--=++++=-+@+ #=  +@+ %@-             ',
+  '           =%#@#%%%%###%=     +@+ %@-             ',
+  '               --===--        -=- -=              ',
 ];
 
 /**
@@ -25,11 +26,15 @@ const LOGO_LINES = [
 function scaleLineHorizontally(line: string, scale: number): string {
   if (scale <= 0.05) return '';
   const fullWidth = line.length;
+  if (fullWidth === 0) return '';
   const targetWidth = Math.max(1, Math.round(fullWidth * scale));
   const result: string[] = [];
   for (let i = 0; i < targetWidth; i++) {
-    const srcIndex = Math.round((i / targetWidth) * fullWidth);
-    result.push(line[Math.min(srcIndex, fullWidth - 1)] || ' ');
+    const srcIndex = Math.min(
+      Math.round((i / targetWidth) * fullWidth),
+      fullWidth - 1
+    );
+    result.push(line[srcIndex] || ' ');
   }
   const pad = Math.max(0, Math.floor((fullWidth - targetWidth) / 2));
   return ' '.repeat(pad) + result.join('');
