@@ -69,6 +69,8 @@ import {
 import { determineLibrary } from '../fs/determineFramework.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
+import { handleArt } from './commands/art.js';
+import { playIntroAnimation } from '../console/animation.js';
 
 export type UploadOptions = {
   config?: string;
@@ -100,6 +102,7 @@ export class BaseCLI {
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
     this.setupUpdateInstructionsCommand();
+    this.setupArtCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -369,6 +372,13 @@ export class BaseCLI {
       )
       .action(async (options: SetupOptions) => {
         const settings = await generateSettings(options);
+
+        // Show animated intro when running interactively without pre-set configs
+        const hasConfigFlags = options.src || options.config;
+        if (!hasConfigFlags && process.stdout.isTTY) {
+          await playIntroAnimation(2);
+        }
+
         displayHeader('Running setup wizard...');
 
         const framework = await detectFramework();
@@ -756,5 +766,14 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
         logger.success('Added GT instructions to agent files.');
       }
     }
+  }
+
+  protected setupArtCommand(): void {
+    this.program
+      .command('art')
+      .description('Display a rotating GT logo animation')
+      .action(async () => {
+        await handleArt();
+      });
   }
 }
