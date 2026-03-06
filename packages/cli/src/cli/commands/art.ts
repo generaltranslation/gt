@@ -31,7 +31,7 @@ function scaleLineHorizontally(line: string, scale: number): string {
     const srcIndex = Math.round((i / targetWidth) * fullWidth);
     result.push(line[Math.min(srcIndex, fullWidth - 1)] || ' ');
   }
-  const pad = Math.floor((fullWidth - targetWidth) / 2);
+  const pad = Math.max(0, Math.floor((fullWidth - targetWidth) / 2));
   return ' '.repeat(pad) + result.join('');
 }
 
