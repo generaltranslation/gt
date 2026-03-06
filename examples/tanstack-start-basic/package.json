@@ -1,0 +1,28 @@
+{
+  "name": "tanstack-start-basic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "npx gt translate && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-start": "latest",
+    "@tanstack/router-plugin": "latest",
+    "gt-react": "latest",
+    "gt-tanstack-start": "latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "gt": "latest",
+    "typescript": "^5",
+    "vite": "^7",
+    "vite-tsconfig-paths": "^4"
+  }
+}
