@@ -17,15 +17,6 @@ const LOGO_LINES = [
   '        G E N E R A L   T R A N S L A T I O N   ',
 ];
 
-const COLORS = [
-  chalk.cyan,
-  chalk.blue,
-  chalk.magenta,
-  chalk.red,
-  chalk.yellow,
-  chalk.green,
-];
-
 /**
  * Horizontally scale a line of text by a factor (0..1).
  * At scale=1, the full line is shown. At scale=0, it collapses to center.
@@ -68,7 +59,6 @@ export async function handleArt(): Promise<void> {
 
   const frames = generateFrames();
   let frameIndex = 0;
-  let colorIndex = 0;
   let running = true;
 
   process.stdin.setRawMode(true);
@@ -108,7 +98,6 @@ export async function handleArt(): Promise<void> {
 
   try {
     while (running) {
-      const color = COLORS[colorIndex % COLORS.length];
       const frame = frames[frameIndex % frames.length];
 
       if (frameIndex > 0) {
@@ -116,13 +105,10 @@ export async function handleArt(): Promise<void> {
       }
 
       for (const line of frame) {
-        process.stdout.write(`\x1B[2K${color(line)}\n`);
+        process.stdout.write(`\x1B[2K${chalk.white(line)}\n`);
       }
 
       frameIndex++;
-      if (frameIndex % frames.length === 0) {
-        colorIndex++;
-      }
 
       await new Promise((resolve) => setTimeout(resolve, 80));
     }
@@ -132,5 +118,5 @@ export async function handleArt(): Promise<void> {
     process.off('SIGINT', sigHandler);
   }
 
-  console.log(chalk.green('  ✨ General Translation'));
+  console.log(chalk.white('  ✨ General Translation'));
 }
