@@ -7,14 +7,7 @@ import { SetupStep } from './steps/SetupStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { BranchData } from '../types/branch.js';
 import { logCollectedFiles } from '../console/logging.js';
-
-/**
- * Helper: Calculate timeout with validation
- */
-function calculateTimeout(timeout: string | number | undefined): number {
-  const value = timeout !== undefined ? Number(timeout) : 900;
-  return (Number.isFinite(value) ? value : 900) * 1000;
-}
+import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
 
 /**
  * Sets up a project by uploading files running the setup step
@@ -35,7 +28,7 @@ export async function runSetupProjectWorkflow(
     logCollectedFiles(files);
 
     // Calculate timeout for setup step
-    const timeoutMs = calculateTimeout(options.timeout);
+    const timeoutMs = calculateTimeoutMs(options.timeout);
 
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);

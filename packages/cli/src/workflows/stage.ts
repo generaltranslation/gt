@@ -8,14 +8,7 @@ import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
-
-/**
- * Helper: Calculate timeout with validation
- */
-function calculateTimeout(timeout: string | number | undefined): number {
-  const value = timeout !== undefined ? Number(timeout) : 900;
-  return (Number.isFinite(value) ? value : 900) * 1000;
-}
+import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
 
 /**
  * Sends multiple files for translation to the API using a workflow pattern
@@ -41,7 +34,7 @@ export async function runStageFilesWorkflow({
     logCollectedFiles(files);
 
     // Calculate timeout for setup step
-    const timeoutMs = calculateTimeout(options.timeout);
+    const timeoutMs = calculateTimeoutMs(options.timeout);
 
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);
