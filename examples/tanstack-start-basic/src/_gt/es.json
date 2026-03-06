@@ -1,0 +1,78 @@
+{
+  "7be0c393d34092d8": "Acerca de",
+  "7f9e1070fd437434": [
+    {
+      "c": [
+        "Envuelve con <T>"
+      ],
+      "i": 1,
+      "t": "h2"
+    },
+    {
+      "c": [
+        "Envuelve cualquier contenido JSX en un componente <T> y se traducirá automáticamente."
+      ],
+      "i": 2,
+      "t": "p"
+    }
+  ],
+  "93505deebff4e9d6": [
+    {
+      "c": "Renderizado del lado del servidor",
+      "i": 1,
+      "t": "h2"
+    },
+    {
+      "c": "Las traducciones se cargan en el cargador raíz, por lo que el renderizado inicial ya aparece en el idioma correcto.",
+      "i": 2,
+      "t": "p"
+    }
+  ],
+  "985ef45524728a6f": "Documentación",
+  "c3bedf341bc197c1": [
+    {
+      "c": "TanStack Start + General Translation",
+      "i": 1,
+      "t": "p"
+    },
+    {
+      "c": "Internacionaliza tu aplicación de TanStack Start.",
+      "i": 2,
+      "t": "h1"
+    },
+    {
+      "c": "Este ejemplo muestra gt-tanstack-start con traducciones locales. Usa el selector de idioma en la esquina superior derecha para cambiar de idioma.",
+      "i": 3,
+      "t": "p"
+    }
+  ],
+  "e64b93dc7849f179": [
+    {
+      "c": "Acerca de",
+      "i": 1,
+      "t": "p"
+    },
+    {
+      "c": "Un punto de partida sencillo con margen para crecer.",
+      "i": 2,
+      "t": "h1"
+    },
+    {
+      "c": "Este ejemplo muestra gt-tanstack-start, la integración de General Translation con TanStack Start. Ofrece i18n automática y compatibilidad con renderizado del lado del servidor.",
+      "i": 3,
+      "t": "p"
+    }
+  ],
+  "f54afcdf2fcf87b0": [
+    {
+      "c": "Traducciones locales",
+      "i": 1,
+      "t": "h2"
+    },
+    {
+      "c": "Incluye las traducciones como archivos JSON en la compilación. No requiere CDN ni llamadas a la API en tiempo de ejecución.",
+      "i": 2,
+      "t": "p"
+    }
+  ]
+}
