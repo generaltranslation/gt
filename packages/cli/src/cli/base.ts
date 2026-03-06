@@ -69,7 +69,8 @@ import {
 import { determineLibrary } from '../fs/determineFramework.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
-import { handleArt, playIntroAnimation } from './commands/art.js';
+import { handleArt } from './commands/art.js';
+import { playIntroAnimation } from '../console/animation.js';
 
 export type UploadOptions = {
   config?: string;
