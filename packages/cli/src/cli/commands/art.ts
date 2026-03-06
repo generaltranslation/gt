@@ -1,200 +1,18 @@
 import chalk from 'chalk';
 
-// ASCII art frames generated from the actual GT logo PNG
-// Each frame represents a different rotation angle (cosine-scaled width)
-const FRAMES: string[][] = [
-  // Frame 0: Full front (scale=1.0)
-  [
-    '             .-=++++++++++++++++++++++++++++      ',
-    '          :*%%#++=============#█#===========      ',
-    '        :#@*:.-+**************%█= =*********.     ',
-    '       +█#..*@%+=-------------*█= #█=-------      ',
-    '      =█* -@#:                =█= #█.             ',
-    '      @@ .@%                  =█= #█.             ',
-    '     .█# =█+       #%%%%%%%#  =█= #█.             ',
-    '      @@ .@%       -----::@@  =█= #█.             ',
-    '      =█* -@%:     *##@@= @@  =█= #█.             ',
-    '       +█#..*@%+=---+#@█= @@  =█= #█.             ',
-    '        :#@*:.-=****+-+█= %=  =█= #█.             ',
-    '          :*%%#*+===+*%%-     =█+ #█:             ',
-    '             .-=++++=-.       :+: -+.             ',
-  ],
-  // Frame 1: scale=0.866
-  [
-    '              .-=++++++++++++++++++++++++     ',
-    '            =#%#+============%@+========-     ',
-    '          =@%-.-+************@% -*******+     ',
-    '         +█= =%#+------------%@ +█=-----:     ',
-    '        -█= #@-              #@ +█.           ',
-    '        %% +█:               #@ +█.           ',
-    '        @* #@      =%%%%%%%  #@ +█.           ',
-    '        %% +█:     :----.*@. #@ +█.           ',
-    '        -█= #@-    =##@@ *@. #@ +█.           ',
-    '         +@= =%#+---+#@@ *█. #@ +█.           ',
-    '          -%%-.-+***+-*@ ++  #@ +█.           ',
-    '            =#%#+===+*%#     #@ +█.           ',
-    '              .-=+++=-.      -= :+            ',
-  ],
-  // Frame 2: scale=0.5
-  [
-    '                   -++++++++++++++   ',
-    '                 =%*=======%*=====   ',
-    '                +#:=*******@:+****   ',
-    '               -%.#*-------%-%=--:   ',
-    '               #-*+        #-#.      ',
-    '               %:%         #-#.      ',
-    '              .#:#   -%%%% #-#.      ',
-    '               %:%   .--:% #-#.      ',
-    '               #-*+  -#@-# #-#.      ',
-    '               :%.#*--*@-% #-#.      ',
-    '                +#:=**=#-+ #-#.      ',
-    '                 =%*==*%:  #-%.      ',
-    '                   -++=.   -.=       ',
-  ],
-  // Frame 3: Edge-on (scale≈0.1)
-  [
-    '                        :=',
-    '                        -=',
-    '                        =+',
-    '                        --',
-    '                        ..',
-    '                        :.',
-    '                        --',
-    '                        ::',
-    '                        -:',
-    '                        =:',
-    '                        =:',
-    '                        -:',
-    '                        ..',
-  ],
-  // Frame 4: Back side emerging (scale=-0.1 → mirrored thin)
-  [
-    '                   .=+++++++++++++.  ',
-    '                  +%+======*%=====   ',
-    '                 **:+******%+-****.  ',
-    '                =#:%+------+++*---   ',
-    '                %:#-       -++-      ',
-    '               .#-#        -++=      ',
-    '               :*=+   *%%%--++=      ',
-    '               .#-#   :-:*=-++=      ',
-    '                %:#-  *%*+=-++=      ',
-    '                =#:%+-=%#+=-++=      ',
-    '                 **:+**+*=:-++=      ',
-    '                  +%+=+#*  -*+=      ',
-    '                   .=++:   .-::      ',
-  ],
-  // Frame 5: Back side (scale=-0.866)
-  [
-    '              .-=++++++++++++++++++++++++     ',
-    '            =#%#+============%@+========-     ',
-    '          =@%-.-+************@% -*******+     ',
-    '         +█= =%#+------------%@ +█=-----:     ',
-    '        -█= #@-              #@ +█.           ',
-    '        %% +█:               #@ +█.           ',
-    '        @* #@      =%%%%%%%  #@ +█.           ',
-    '        %% +█:     :----.*@. #@ +█.           ',
-    '        -█= #@-    =##@@ *@. #@ +█.           ',
-    '         +@= =%#+---+#@@ *█. #@ +█.           ',
-    '          -%%-.-+***+-*@ ++  #@ +█.           ',
-    '            =#%#+===+*%#     #@ +█.           ',
-    '              .-=+++=-.      -= :+            ',
-  ],
-  // Frame 6: Full back (scale=-1.0, same as front)
-  [
-    '             .-=++++++++++++++++++++++++++++      ',
-    '          :*%%#++=============#█#===========      ',
-    '        :#@*:.-+**************%█= =*********.     ',
-    '       +█#..*@%+=-------------*█= #█=-------      ',
-    '      =█* -@#:                =█= #█.             ',
-    '      @@ .@%                  =█= #█.             ',
-    '     .█# =█+       #%%%%%%%#  =█= #█.             ',
-    '      @@ .@%       -----::@@  =█= #█.             ',
-    '      =█* -@%:     *##@@= @@  =█= #█.             ',
-    '       +█#..*@%+=---+#@█= @@  =█= #█.             ',
-    '        :#@*:.-=****+-+█= %=  =█= #█.             ',
-    '          :*%%#*+===+*%%-     =█+ #█:             ',
-    '             .-=++++=-.       :+: -+.             ',
-  ],
-  // Frame 7: scale=-0.866
-  [
-    '              .-=++++++++++++++++++++++++     ',
-    '            =#%#+============%@+========-     ',
-    '          =@%-.-+************@% -*******+     ',
-    '         +█= =%#+------------%@ +█=-----:     ',
-    '        -█= #@-              #@ +█.           ',
-    '        %% +█:               #@ +█.           ',
-    '        @* #@      =%%%%%%%  #@ +█.           ',
-    '        %% +█:     :----.*@. #@ +█.           ',
-    '        -█= #@-    =##@@ *@. #@ +█.           ',
-    '         +@= =%#+---+#@@ *█. #@ +█.           ',
-    '          -%%-.-+***+-*@ ++  #@ +█.           ',
-    '            =#%#+===+*%#     #@ +█.           ',
-    '              .-=+++=-.      -= :+            ',
-  ],
-  // Frame 8: scale=-0.5
-  [
-    '                   -++++++++++++++   ',
-    '                 =%*=======%*=====   ',
-    '                +#:=*******@:+****   ',
-    '               -%.#*-------%-%=--:   ',
-    '               #-*+        #-#.      ',
-    '               %:%         #-#.      ',
-    '              .#:#   -%%%% #-#.      ',
-    '               %:%   .--:% #-#.      ',
-    '               #-*+  -#@-# #-#.      ',
-    '               :%.#*--*@-% #-#.      ',
-    '                +#:=**=#-+ #-#.      ',
-    '                 =%*==*%:  #-%.      ',
-    '                   -++=.   -.=       ',
-  ],
-  // Frame 9: Edge-on again
-  [
-    '                        :=',
-    '                        -=',
-    '                        =+',
-    '                        --',
-    '                        ..',
-    '                        :.',
-    '                        --',
-    '                        ::',
-    '                        -:',
-    '                        =:',
-    '                        =:',
-    '                        -:',
-    '                        ..',
-  ],
-  // Frame 10: scale=0.5 (returning)
-  [
-    '                   -++++++++++++++   ',
-    '                 =%*=======%*=====   ',
-    '                +#:=*******@:+****   ',
-    '               -%.#*-------%-%=--:   ',
-    '               #-*+        #-#.      ',
-    '               %:%         #-#.      ',
-    '              .#:#   -%%%% #-#.      ',
-    '               %:%   .--:% #-#.      ',
-    '               #-*+  -#@-# #-#.      ',
-    '               :%.#*--*@-% #-#.      ',
-    '                +#:=**=#-+ #-#.      ',
-    '                 =%*==*%:  #-%.      ',
-    '                   -++=.   -.=       ',
-  ],
-  // Frame 11: scale=0.866 (returning)
-  [
-    '              .-=++++++++++++++++++++++++     ',
-    '            =#%#+============%@+========-     ',
-    '          =@%-.-+************@% -*******+     ',
-    '         +█= =%#+------------%@ +█=-----:     ',
-    '        -█= #@-              #@ +█.           ',
-    '        %% +█:               #@ +█.           ',
-    '        @* #@      =%%%%%%%  #@ +█.           ',
-    '        %% +█:     :----.*@. #@ +█.           ',
-    '        -█= #@-    =##@@ *@. #@ +█.           ',
-    '         +@= =%#+---+#@@ *█. #@ +█.           ',
-    '          -%%-.-+***+-*@ ++  #@ +█.           ',
-    '            =#%#+===+*%#     #@ +█.           ',
-    '              .-=+++=-.      -= :+            ',
-  ],
+// Generated via: figlet -f slant "General" / "Translation"
+const LOGO_LINES = [
+  '    ______                           __',
+  '   / ____/__  ____  ___  _________ _/ /',
+  '  / / __/ _ \\/ __ \\/ _ \\/ ___/ __ `/ / ',
+  ' / /_/ /  __/ / / /  __/ /  / /_/ / /  ',
+  ' \\____/\\___/_/ /_/\\___/_/   \\__,_/_/   ',
+  '                                        ',
+  '  ______                      __      __  _           ',
+  ' /_  __/________ _____  _____/ /___ _/ /_(_)___  ____ ',
+  '  / / / ___/ __ `/ __ \\/ ___/ / __ `/ __/ / __ \\/ __ \\',
+  ' / / / /  / /_/ / / / (__  ) / /_/ / /_/ / /_/ / / / /',
+  '/_/ /_/   \\__,_/_/ /_/____/_/\\__,_/\\__/_/\\____/_/ /_/ ',
 ];
 
 const COLORS = [
@@ -206,22 +24,56 @@ const COLORS = [
   chalk.green,
 ];
 
-const MAX_FRAME_HEIGHT = 13; // All frames have 13 lines
+/**
+ * Horizontally scale a line of text by a factor (0..1).
+ * At scale=1, the full line is shown. At scale=0, it collapses to center.
+ * This simulates a Y-axis rotation effect.
+ */
+function scaleLineHorizontally(line: string, scale: number): string {
+  if (scale <= 0.05) return '';
+  const fullWidth = line.length;
+  const targetWidth = Math.max(1, Math.round(fullWidth * scale));
+  const result: string[] = [];
+  for (let i = 0; i < targetWidth; i++) {
+    const srcIndex = Math.round((i / targetWidth) * fullWidth);
+    result.push(line[Math.min(srcIndex, fullWidth - 1)] || ' ');
+  }
+  const pad = Math.floor((fullWidth - targetWidth) / 2);
+  return ' '.repeat(pad) + result.join('');
+}
+
+/**
+ * Generate rotation frames. Each frame is the logo scaled horizontally
+ * by cos(angle) to simulate spinning around the Y axis.
+ */
+function generateFrames(): string[][] {
+  const frameCount = 48;
+  const frames: string[][] = [];
+  for (let i = 0; i < frameCount; i++) {
+    const angle = (i / frameCount) * 2 * Math.PI;
+    const scale = Math.abs(Math.cos(angle));
+    frames.push(LOGO_LINES.map((line) => scaleLineHorizontally(line, scale)));
+  }
+  return frames;
+}
 
 export async function handleArt(): Promise<void> {
+  // Require interactive terminal to avoid infinite loop in non-TTY contexts
+  if (!process.stdin.isTTY) {
+    console.log(chalk.yellow('  gt art requires an interactive terminal (TTY).'));
+    return;
+  }
+
+  const frames = generateFrames();
   let frameIndex = 0;
   let colorIndex = 0;
   let running = true;
 
-  // Enable raw mode to capture keystrokes
-  if (process.stdin.isTTY) {
-    process.stdin.setRawMode(true);
-  }
+  process.stdin.setRawMode(true);
   process.stdin.resume();
   process.stdin.setEncoding('utf8');
 
   const onKey = (key: string) => {
-    // q, Q, escape, or Ctrl+C
     if (key === 'q' || key === 'Q' || key === '\u001b' || key === '\u0003') {
       running = false;
     }
@@ -234,40 +86,49 @@ export async function handleArt(): Promise<void> {
 
   console.log(chalk.dim('\n  Press q or Escape to exit\n'));
 
+  const lineCount = LOGO_LINES.length;
+
   const cleanup = () => {
-    // Show cursor
     process.stdout.write('\x1B[?25h');
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
-    }
+    process.stdin.setRawMode(false);
     process.stdin.removeListener('data', onKey);
     process.stdin.pause();
     console.log();
   };
 
-  while (running) {
-    const color = COLORS[colorIndex % COLORS.length];
-    const frame = FRAMES[frameIndex % FRAMES.length];
+  // Ensure cleanup runs on unexpected termination
+  const sigHandler = () => {
+    cleanup();
+    process.exit();
+  };
+  process.once('SIGTERM', sigHandler);
+  process.once('SIGINT', sigHandler);
 
-    // Move cursor up to overwrite previous frame (except first frame)
-    if (frameIndex > 0) {
-      process.stdout.write(`\x1B[${MAX_FRAME_HEIGHT}A`);
+  try {
+    while (running) {
+      const color = COLORS[colorIndex % COLORS.length];
+      const frame = frames[frameIndex % frames.length];
+
+      if (frameIndex > 0) {
+        process.stdout.write(`\x1B[${lineCount}A`);
+      }
+
+      for (const line of frame) {
+        process.stdout.write(`\x1B[2K${color(line)}\n`);
+      }
+
+      frameIndex++;
+      if (frameIndex % frames.length === 0) {
+        colorIndex++;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
     }
-
-    // Draw frame
-    for (const line of frame) {
-      process.stdout.write(`\x1B[2K${color(line)}\n`);
-    }
-
-    frameIndex++;
-    if (frameIndex % FRAMES.length === 0) {
-      colorIndex++;
-    }
-
-    // ~120ms per frame ≈ 8 FPS
-    await new Promise((resolve) => setTimeout(resolve, 120));
+  } finally {
+    cleanup();
+    process.off('SIGTERM', sigHandler);
+    process.off('SIGINT', sigHandler);
   }
 
-  cleanup();
   console.log(chalk.green('  ✨ General Translation'));
 }
