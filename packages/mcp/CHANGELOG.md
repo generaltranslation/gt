@@ -1,5 +1,11 @@
 # @generaltranslation/mcp
 
+## 1.0.5
+
+### Patch Changes
+
+- [#1073](https://github.com/generaltranslation/gt/pull/1073) [`3f4d746`](https://github.com/generaltranslation/gt/commit/3f4d7461fdf59afee4fd1d9b8e3d35769acc03e8) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix docs URLs
+
 ## 1.0.4
 
 ### Patch Changes
