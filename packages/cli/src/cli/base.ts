@@ -78,7 +78,7 @@ export type UploadOptions = {
 };
 
 export type LoginOptions = {
-  keyType?: 'development' | 'production';
+  keyType?: 'development' | 'production' | 'all';
 };
 
 export class BaseCLI {
@@ -313,7 +313,7 @@ export class BaseCLI {
   protected setupLoginCommand(): void {
     this.program
       .command('auth')
-      .description('Generate a General Translation API key and project ID')
+      .description('Generate General Translation API keys and project ID')
       .option(
         '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
@@ -321,33 +321,36 @@ export class BaseCLI {
       )
       .option(
         '-t, --key-type <type>',
-        'Type of key to generate, production | development'
+        'Type of key to generate, production | development | all'
       )
       .action(async (options: LoginOptions) => {
         displayHeader('Authenticating with General Translation...');
         if (!options.keyType) {
-          const packageJson = await searchForPackageJson();
-          if (
-            packageJson &&
-            INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson))
-          ) {
-            options.keyType = 'development';
-          } else {
-            options.keyType = 'production';
-          }
+          options.keyType = await promptSelect<
+            'development' | 'production' | 'all'
+          >({
+            message: 'What type of API key would you like to generate?',
+            options: [
+              { value: 'development', label: 'Development' },
+              { value: 'production', label: 'Production' },
+              { value: 'all', label: 'Both' },
+            ],
+            defaultValue: 'all',
+          });
         } else {
           if (
             options.keyType !== 'development' &&
-            options.keyType !== 'production'
+            options.keyType !== 'production' &&
+            options.keyType !== 'all'
           ) {
             logErrorAndExit(
-              'Invalid key type, must be development or production'
+              'Invalid key type, must be development, production, or all'
             );
           }
         }
         await this.handleLoginCommand(options);
         logger.endCommand(
-          `Done! A ${options.keyType} key has been generated and saved to your .env.local file.`
+          `Done! ${options.keyType} keys have been generated and saved to your .env.local file.`
         );
       });
   }
@@ -654,24 +657,33 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({
-            message: `Would you like the wizard to automatically generate a ${
-              isUsingGT ? 'development' : 'production'
-            } API key and project ID for you?`,
+            message:
+              'Would you like the wizard to automatically generate API keys and a project ID for you?',
             defaultValue: true,
           });
       if (loginQuestion) {
         const settings = await generateSettings({});
-        const keyType = isUsingGT ? 'development' : 'production';
+        const keyType = useDefaults
+          ? 'all'
+          : await promptSelect<'development' | 'production' | 'all'>({
+              message: 'What type of API key would you like to generate?',
+              options: [
+                { value: 'development', label: 'Development' },
+                { value: 'production', label: 'Production' },
+                { value: 'all', label: 'Both' },
+              ],
+              defaultValue: 'all',
+            });
         const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, keyType, settings.framework);
+        await setCredentials(credentials, settings.framework);
       }
     }
   }
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({});
-    const keyType = options.keyType || 'production';
+    const keyType = options.keyType || 'all';
     const credentials = await retrieveCredentials(settings, keyType);
-    await setCredentials(credentials, keyType, settings.framework);
+    await setCredentials(credentials, settings.framework);
   }
 
   protected setupUpdateInstructionsCommand(): void {
