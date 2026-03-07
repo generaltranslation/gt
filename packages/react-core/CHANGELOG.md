@@ -1,5 +1,16 @@
 # @generaltranslation/react-core
 
+## 1.5.4
+
+### Patch Changes
+
+- [#1076](https://github.com/generaltranslation/gt/pull/1076) [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Apply style guide to error messages and warnings: remove "Please", simplify verbose phrasing, fix `in-line` → `inline`.
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76)]:
+  - generaltranslation@8.1.14
+  - gt-i18n@0.4.2
+  - @generaltranslation/supported-locales@2.0.47
+
 ## 1.5.3
 
 ### Patch Changes

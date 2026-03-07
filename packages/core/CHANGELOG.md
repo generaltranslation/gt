@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.14
+
+### Patch Changes
+
+- [#1085](https://github.com/generaltranslation/gt/pull/1085) [`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76) Thanks [@brian-lou](https://github.com/brian-lou)! - feat: Auth wizard supports both types of key creation
+
 ## 8.1.13
 
 ### Patch Changes
