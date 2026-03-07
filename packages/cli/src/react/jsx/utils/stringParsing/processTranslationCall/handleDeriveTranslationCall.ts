@@ -25,7 +25,6 @@ const generate = generateModule.default || generateModule;
  * @param config - The configuration to use
  * @param output - The output to use
  * @param index - Current index in array of strings being extracted
- * TODO: rename this file to handleDeriveTranslationCall.ts
  */
 export function handleDeriveTranslationCall({
   arg,
@@ -82,8 +81,7 @@ export function handleDeriveTranslationCall({
     }
   }
 
-  // TODO: convert all static-temp-id to derive-temp-id
-  const temporaryDeriveId = `static-temp-id-${randomUUID()}`;
+  const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
   for (const string of strings) {
     output.updates.push({
       dataFormat: 'ICU',
@@ -92,7 +90,6 @@ export function handleDeriveTranslationCall({
         ...metadata,
         // Add the index if an id and index is provided (for handling when registering an array of strings)
         ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
-        // TODO: should this be deriveId?
         staticId: temporaryDeriveId,
       },
     });

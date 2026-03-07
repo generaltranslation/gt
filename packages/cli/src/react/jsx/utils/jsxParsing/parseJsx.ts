@@ -701,8 +701,7 @@ function parseJSXElement({
   }
 
   // Create a temporary unique flag for derivable content
-  // TODO: convert all static-temp-id to derive-temp-id
-  const temporaryDeriveId = `static-temp-id-${randomUUID()}`;
+  const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
 
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
@@ -715,7 +714,6 @@ function parseJSXElement({
       metadata: {
         // eslint-disable-next-line no-undef
         ...structuredClone(metadata),
-        // TODO: should this be deriveId?
         ...(derivableTracker.isDerivable && { staticId: temporaryDeriveId }),
       },
     });

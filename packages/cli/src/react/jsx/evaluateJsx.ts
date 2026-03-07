@@ -54,7 +54,7 @@ export function isStaticExpression(
 /**
  * Checks if an expression is a static expression (does not contain any variables which could change at runtime).
  * @param expr - The expression to check
- * @param ignoreStaticFunction - Whether to ignore derive functions
+ * @param jsxStatic - Whether to return JSX-compatible values (boolean, null) in addition to strings
  * @returns An object containing the result of the static check
  */
 export function isStaticExpression(
