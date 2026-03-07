@@ -78,6 +78,7 @@ export type UploadOptions = {
 };
 
 export type LoginOptions = {
+  config?: string;
   keyType?: 'development' | 'production' | 'all';
 };
 
@@ -680,7 +681,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     }
   }
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
-    const settings = await generateSettings({});
+    const settings = await generateSettings({ config: options.config });
     const keyType = options.keyType || 'all';
     const credentials = await retrieveCredentials(settings, keyType);
     await setCredentials(credentials, settings.framework);
