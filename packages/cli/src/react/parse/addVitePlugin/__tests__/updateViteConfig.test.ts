@@ -469,7 +469,7 @@ describe('updateViteConfig', () => {
 
       expect(warnings).toHaveLength(1);
       expect(warnings[0]).toContain('Failed to add gt compiler plugin');
-      expect(warnings[0]).toContain('Please add the plugin manually');
+      expect(warnings[0]).toContain('Add the plugin manually');
       expect(filesUpdated).toContain('/path/to/vite.config.ts');
     });
 

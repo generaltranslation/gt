@@ -82,7 +82,7 @@ export function parseJson(
       );
       if (!Object.keys(matchingItems).length) {
         logger.error(
-          `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
+          `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Check your JSON schema`
         );
         return exitSync(1);
       }

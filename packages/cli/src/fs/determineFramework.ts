@@ -20,7 +20,7 @@ export function determineLibrary(): {
     if (!fs.existsSync(packageJsonPath)) {
       logger.warn(
         chalk.yellow(
-          'No package.json found in the current directory. Please run this command from the root of your project.'
+          'No package.json found in the current directory. Run this command from the root of your project.'
         )
       );
       return { library: 'base', additionalModules: [] };

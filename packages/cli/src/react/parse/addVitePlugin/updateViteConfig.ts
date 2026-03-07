@@ -143,7 +143,7 @@ async function updateViteConfigAst({
     success = addPluginInvocation({ ast, alias, namespaces });
     if (!success) {
       warnings.push(
-        `Failed to add gt compiler plugin to ${viteConfigPath}. Please add the plugin manually:
+        `Failed to add gt compiler plugin to ${viteConfigPath}. Add the plugin manually:
 import { vite as gtCompiler } from '@generaltranslation/compiler';
 export default defineConfig({
   plugins: [gtCompiler()],

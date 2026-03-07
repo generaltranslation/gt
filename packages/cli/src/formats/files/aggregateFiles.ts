@@ -203,7 +203,7 @@ export async function aggregateFiles(
 
   if (allFiles.length === 0 && !settings.publish) {
     logger.error(
-      'No files to translate were found. Please check your configuration and try again.'
+      'No files to translate were found. Check your configuration and try again.'
     );
   }
 

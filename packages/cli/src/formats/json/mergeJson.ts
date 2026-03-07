@@ -110,7 +110,7 @@ export function mergeJson(
       );
       if (!Object.keys(matchingDefaultLocaleItems).length) {
         logger.warn(
-          `Matching sourceItems not found at path: ${sourceObjectPointer}. Please check your JSON file includes the key field. Skipping this target`
+          `Matching sourceItems not found at path: ${sourceObjectPointer}. Check that your JSON file includes the key field. Skipping this target`
         );
         continue;
       }
