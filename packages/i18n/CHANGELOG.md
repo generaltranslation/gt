@@ -1,5 +1,13 @@
 # gt-i18n
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76)]:
+  - generaltranslation@8.1.14
+  - @generaltranslation/supported-locales@2.0.47
+
 ## 0.4.1
 
 ### Patch Changes

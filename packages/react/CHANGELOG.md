@@ -1,5 +1,14 @@
 # gt-react
 
+## 10.11.4
+
+### Patch Changes
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76), [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57)]:
+  - generaltranslation@8.1.14
+  - @generaltranslation/react-core@1.5.4
+  - @generaltranslation/supported-locales@2.0.47
+
 ## 10.11.3
 
 ### Patch Changes
