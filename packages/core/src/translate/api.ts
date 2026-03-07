@@ -1,1 +1,1 @@
-export const API_VERSION = '2026-02-18.v1';
+export const API_VERSION = '2026-03-06.v1';

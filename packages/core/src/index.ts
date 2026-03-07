@@ -106,6 +106,7 @@ import _getOrphanedFiles, {
 } from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { TranslateOptions } from './types-dir/api/entry';
+import { API_VERSION as _API_VERSION } from './translate/api';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -1996,3 +1997,5 @@ export function isSupersetLocale(
 ): boolean {
   return _isSupersetLocale(superLocale, subLocale);
 }
+
+export const API_VERSION = _API_VERSION;
