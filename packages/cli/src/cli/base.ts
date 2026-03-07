@@ -634,19 +634,19 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
 
-    // Install gtx-cli if not installed
+    // Install gt if not installed
     const isCLIInstalled = packageJson
-      ? isPackageInstalled('gtx-cli', packageJson, true, true)
+      ? isPackageInstalled('gt', packageJson, true, true)
       : true; // if no package.json, we can't install it
 
     if (!isCLIInstalled) {
       const packageManager = await getPackageManager();
       const spinner = logger.createSpinner();
       spinner.start(
-        `Installing gtx-cli as a dev dependency with ${packageManager.name}...`
+        `Installing gt as a dev dependency with ${packageManager.name}...`
       );
-      await installPackage('gtx-cli', packageManager, true);
-      spinner.stop(chalk.green('Installed gtx-cli.'));
+      await installPackage('gt', packageManager, true);
+      spinner.stop(chalk.green('Installed gt.'));
     }
 
     // Set credentials

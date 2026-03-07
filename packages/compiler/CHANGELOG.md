@@ -1,5 +1,24 @@
 # @generaltranslation/compiler
 
+## 1.1.24
+
+### Patch Changes
+
+- [#1069](https://github.com/generaltranslation/gt/pull/1069) [`ff38c7c`](https://github.com/generaltranslation/gt/commit/ff38c7c72886882ddb8851fc8173e1ba863d0078) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add new gt package
+
+## 1.1.23
+
+### Patch Changes
+
+- [#1068](https://github.com/generaltranslation/gt/pull/1068) [`94b95ef`](https://github.com/generaltranslation/gt/commit/94b95ef662b81dac51416ecc64f3318339171f0b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: runtime calculation for the injection of 'data-' attribute in jsx
+
+## 1.1.22
+
+### Patch Changes
+
+- Updated dependencies [[`21b3304`](https://github.com/generaltranslation/gt/commit/21b33040774f9638fdf7edcfcf7170246a36fbec)]:
+  - generaltranslation@8.1.13
+
 ## 1.1.21
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.13
+
+### Patch Changes
+
+- [#1061](https://github.com/generaltranslation/gt/pull/1061) [`21b3304`](https://github.com/generaltranslation/gt/commit/21b33040774f9638fdf7edcfcf7170246a36fbec) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: language direction browser compatibility
+
 ## 8.1.12
 
 ### Patch Changes

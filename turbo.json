@@ -54,6 +54,9 @@
       "dependsOn": ["^release:beta"],
       "cache": false,
       "outputs": ["dist/**"]
+    },
+    "bench": {
+      "cache": false
     }
   }
 }

@@ -46,10 +46,10 @@ jobs:
         run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Build packages
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
 
       - name: Run tests
-        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
 
   test-builds:
     strategy:
@@ -107,6 +107,82 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x64
+            binary: gt-linux-x64
+          - os: ubuntu-latest
+            arch: arm64
+            binary: gt-linux-arm64
+          - os: macos-latest
+            arch: x64
+            binary: gt-darwin-x64
+          - os: macos-latest
+            arch: arm64
+            binary: gt-darwin-arm64
+          - os: windows-latest
+            arch: x64
+            binary: gt-win32-x64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CLI changed
+        id: gt_cli_changed
+        shell: bash
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/cli/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        name: Install pnpm
+
+      - name: Setup Node.js
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Bun
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        run: pnpm install
+
+      - name: Build packages
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        run: pnpm exec turbo build --filter='gt...'
+
+      - name: Build CLI binaries
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        run: cd packages/cli && pnpm run build:bin:clean
+
+      - name: Test CLI in test environment
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        shell: bash
+        run: cd tests/apps/cli-test-app && pnpm install && pnpm gt --help
+
+  test-gtx-cli-binaries:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
             binary: gtx-cli-linux-x64
           - os: ubuntu-latest
             arch: arm64
@@ -127,11 +203,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if CLI changed
+      - name: Check if gtx-cli wrapper changed
         id: gtx_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/cli/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|gtx-cli)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -166,19 +242,19 @@ jobs:
 
       - name: Build packages
         if: steps.gtx_cli_changed.outputs.changed == 'true'
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!cli-test-app'
+        run: pnpm exec turbo build --filter='gtx-cli...'
 
-      - name: Build CLI binaries
+      - name: Build gtx-cli binaries
         if: steps.gtx_cli_changed.outputs.changed == 'true'
-        run: cd packages/cli && pnpm run build:bin:clean
+        run: cd packages/gtx-cli && pnpm run build:bin:clean
 
-      - name: Test CLI in test environment
+      - name: Test gtx-cli in test environment
         if: steps.gtx_cli_changed.outputs.changed == 'true'
         shell: bash
         run: cd tests/apps/cli-test-app && pnpm install && pnpm gtx-cli --help
 
   run-tests:
-    needs: [tests, test-builds, test-cli-binaries]
+    needs: [tests, test-builds, test-cli-binaries, test-gtx-cli-binaries]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All tests passed"

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import findFilepath from '../fs/findFilepath.js';
 import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 
-const DEFAULT_TIMEOUT = 600;
+const DEFAULT_TIMEOUT = 900;
 
 export function attachSharedFlags(command: Command) {
   command

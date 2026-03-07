@@ -32,7 +32,7 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 | [gt-next](packages/next) | Automatic i18n for Next.js |
 | [gt-react](packages/react) | Automatic i18n for React |
 | [gt-i18n](packages/i18n) | Pure JavaScript i18n library |
-| [gtx-cli](packages/cli) | CLI tool for continuous localization |
+| [gt](packages/cli) | CLI tool for continuous localization |
 | [gt-sanity](packages/sanity) | Plugin for Sanity Studio v3 |
 | [locadex](packages/locadex) | AI agent for automating i18n in complex codebases |
 | [generaltranslation](packages/core) | Core TypeScript library (internal) |
@@ -45,7 +45,7 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 Run the setup wizard:
 
 ```bash
-npx gtx-cli@latest
+npx gt@latest
 ```
 
 Or use [Locadex](https://generaltranslation.com/dashboard/api/integrations/github/start?returnTo=%2Fproject%2Flocadex) to set your project up for you.

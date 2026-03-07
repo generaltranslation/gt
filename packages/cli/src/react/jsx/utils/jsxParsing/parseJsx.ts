@@ -16,10 +16,12 @@ import {
   warnDuplicateFunctionDefinitionSync,
   warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
+  warnDataAttrOnBranch,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
+  DATA_ATTR_PREFIX,
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
   TRANSLATION_COMPONENT,
@@ -299,6 +301,12 @@ function buildJSXTree({
             ? attr.name.name
             : attr.name.name.name;
         let attrValue = null;
+        if (elementIsBranch && attrName.startsWith(DATA_ATTR_PREFIX)) {
+          const location = `${attr.loc?.start?.line}:${attr.loc?.start?.column}`;
+          output.errors.push(
+            warnDataAttrOnBranch(config.file, attrName, location)
+          );
+        }
         if (attr.value) {
           if (t.isStringLiteral(attr.value)) {
             attrValue = attr.value.value;
@@ -314,7 +322,9 @@ function buildJSXTree({
             // If its a plural or branch prop
             if (
               (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
-              (elementIsBranch && attrName !== 'branch')
+              (elementIsBranch &&
+                attrName !== 'branch' &&
+                !attrName.startsWith(DATA_ATTR_PREFIX))
             ) {
               // Make sure that variable strings like {`I have ${count} book`} are invalid!
               if (

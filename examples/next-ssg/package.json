@@ -1,6 +1,6 @@
 {
   "name": "next-ssg",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "gt-next": "latest",
-    "gtx-cli": "latest",
+    "gt": "latest",
     "next": "latest",
     "react": "19.2.3",
     "react-dom": "19.2.3"

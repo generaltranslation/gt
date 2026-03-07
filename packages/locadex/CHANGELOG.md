@@ -1,5 +1,42 @@
 # locadex
 
+## 1.0.110
+
+### Patch Changes
+
+- [#1069](https://github.com/generaltranslation/gt/pull/1069) [`ff38c7c`](https://github.com/generaltranslation/gt/commit/ff38c7c72886882ddb8851fc8173e1ba863d0078) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add new gt package
+
+- Updated dependencies [[`ff38c7c`](https://github.com/generaltranslation/gt/commit/ff38c7c72886882ddb8851fc8173e1ba863d0078)]:
+  - gt@2.7.0
+
+## 1.0.109
+
+### Patch Changes
+
+- Updated dependencies [[`516979d`](https://github.com/generaltranslation/gt/commit/516979d36cd16c4bc9080ea7dc06b7e299200919)]:
+  - gtx-cli@2.6.31
+
+## 1.0.108
+
+### Patch Changes
+
+- Updated dependencies [[`94b95ef`](https://github.com/generaltranslation/gt/commit/94b95ef662b81dac51416ecc64f3318339171f0b), [`7b4837f`](https://github.com/generaltranslation/gt/commit/7b4837fe44e387c4de812d9b3f7fc394cb24e49e)]:
+  - gtx-cli@2.6.30
+
+## 1.0.107
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gtx-cli@2.6.29
+
+## 1.0.106
+
+### Patch Changes
+
+- Updated dependencies [[`e7b1bb0`](https://github.com/generaltranslation/gt/commit/e7b1bb079145809d66296c0ad6628079f784b88e)]:
+  - gtx-cli@2.6.28
+
 ## 1.0.105
 
 ### Patch Changes

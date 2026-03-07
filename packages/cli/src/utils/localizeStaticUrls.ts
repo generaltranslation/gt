@@ -10,7 +10,7 @@ import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
-import escapeHtmlInTextNodes from 'gt-remark';
+import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 
 const { isMatch } = micromatch;
 
@@ -549,6 +549,7 @@ function transformMdxUrls(
     const stringifyProcessor = unified()
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx)
+      .use(normalizeCJKCharacters)
       .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
         handlers: {
@@ -559,7 +560,7 @@ function transformMdxUrls(
         },
       });
 
-    const outTree = stringifyProcessor.runSync(processedAst);
+    const outTree = stringifyProcessor.runSync(processedAst) as Root;
     content = stringifyProcessor.stringify(outTree);
   } catch (error) {
     console.warn(

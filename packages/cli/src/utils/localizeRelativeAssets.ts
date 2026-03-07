@@ -7,7 +7,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
-import escapeHtmlInTextNodes from 'gt-remark';
+import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 
@@ -120,6 +120,7 @@ export function localizeRelativeAssetsForContent(
     const s = unified()
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx)
+      .use(normalizeCJKCharacters)
       .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
         handlers: {

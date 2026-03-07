@@ -68,11 +68,8 @@ describe('_getLocaleDirection', () => {
   });
 
   it('should handle edge cases and special locales', () => {
-    // Test some edge cases
     expect(_getLocaleDirection('root')).toBe('ltr');
     expect(_getLocaleDirection('und')).toBe('ltr');
-
-    // Test mixed scripts - should default to ltr if parsing fails
     expect(_getLocaleDirection('mixed-script-locale')).toBe('ltr');
   });
 

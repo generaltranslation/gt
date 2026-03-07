@@ -1,3 +1,4 @@
+import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
   colorizeComponent,
@@ -236,6 +237,17 @@ Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() =>
     location
   );
 
+export const warnDataAttrOnBranch = (
+  file: string,
+  attrName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `${colorizeComponent(`<${BRANCH_COMPONENT}>`)} component ignores attributes prefixed with ${colorizeIdString('"data-"')}. Found ${colorizeIdString(attrName)}. Remove it or use a different attribute name.`,
+    location
+  );
+
 export const warnRecursiveFunctionCallSync = (
   file: string,
   functionName: string,
@@ -282,7 +294,7 @@ export const noFilesError = `Incorrect or missing files configuration! Please ma
 export const noSourceFileError = `No source file found! Please double check your translations directory and default locale.`;
 export const noSupportedFormatError = `Unsupported data format! Please make sure your translationsDir parameter ends with a supported file extension.`;
 export const noApiKeyError = `No API key found! Please provide an API key using the --api-key flag or set the GT_API_KEY environment variable.`;
-export const devApiKeyError = `You are using a development API key. Please use a production API key to use the General Translation API.\nYou can generate a production API key with the command: npx gtx-cli auth -t production`;
+export const devApiKeyError = `You are using a development API key. Please use a production API key to use the General Translation API.\nYou can generate a production API key with the command: npx gt auth -t production`;
 export const noProjectIdError = `No project ID found! Please provide a project ID using the --project-id flag, specify it in your gt.config.json file, or set the GT_PROJECT_ID environment variable.`;
 export const noVersionIdError = `No version ID found! Please provide a version ID using the --version-id flag or specify it in your gt.config.json file as the _versionId property.`;
 export const invalidConfigurationError = `Invalid files configuration! Please either provide a valid configuration to download local translations or set the --publish flag to true to upload translations to the CDN.`;

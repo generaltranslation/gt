@@ -1,6 +1,6 @@
 {
-  "name": "gtx-cli",
-  "version": "2.6.27",
+  "name": "gt",
+  "version": "2.7.0",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -118,7 +118,7 @@
     "fast-glob": "^3.3.3",
     "fast-json-stable-stringify": "^2.1.0",
     "generaltranslation": "workspace:*",
-    "gt-remark": "^1.0.1",
+    "gt-remark": "workspace:*",
     "html-entities": "^2.6.0",
     "json-pointer": "^0.6.2",
     "jsonpath-plus": "^10.3.0",
@@ -156,6 +156,7 @@
     "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.0"
   }
 }

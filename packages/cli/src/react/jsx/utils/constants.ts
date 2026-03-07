@@ -15,6 +15,7 @@ export const TRANSLATION_COMPONENT = 'T';
  */
 export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
+export const BRANCH_COMPONENT = 'Branch';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
@@ -33,7 +34,7 @@ export const GT_TRANSLATION_FUNCS = [
   'DateTime',
   'Currency',
   'Num',
-  'Branch',
+  BRANCH_COMPONENT,
   'Plural',
 ];
 // Valid variable components
@@ -58,3 +59,6 @@ export const GT_ATTRIBUTES = [
   'maxChars',
   ...GT_ATTRIBUTES_WITH_SUGAR,
 ] as const;
+
+// Data attribute prefix injected by build tools
+export const DATA_ATTR_PREFIX = 'data-' as const;

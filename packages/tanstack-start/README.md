@@ -26,13 +26,13 @@ It is not yet recommended for production use.
 
 ```bash
 npm install gt-tanstack-start
-npm install gtx-cli --save-dev
+npm install gt --save-dev
 ```
 
 ## Quick Start
 
 ```bash
-npx gtx-cli init
+npx gt init
 ```
 
 ```jsx

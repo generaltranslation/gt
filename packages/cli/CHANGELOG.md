@@ -1,5 +1,41 @@
 # gtx-cli
 
+## 2.7.0
+
+### Minor Changes
+
+- [#1069](https://github.com/generaltranslation/gt/pull/1069) [`ff38c7c`](https://github.com/generaltranslation/gt/commit/ff38c7c72886882ddb8851fc8173e1ba863d0078) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add new gt package
+
+## 2.6.31
+
+### Patch Changes
+
+- [#1070](https://github.com/generaltranslation/gt/pull/1070) [`516979d`](https://github.com/generaltranslation/gt/commit/516979d36cd16c4bc9080ea7dc06b7e299200919) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle case where all jobs fail
+
+## 2.6.30
+
+### Patch Changes
+
+- [#1068](https://github.com/generaltranslation/gt/pull/1068) [`94b95ef`](https://github.com/generaltranslation/gt/commit/94b95ef662b81dac51416ecc64f3318339171f0b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: runtime calculation for the injection of 'data-' attribute in jsx
+
+- [#1066](https://github.com/generaltranslation/gt/pull/1066) [`7b4837f`](https://github.com/generaltranslation/gt/commit/7b4837fe44e387c4de812d9b3f7fc394cb24e49e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Wrapping text node URLs for Mintlify MDX to align with their parser
+
+## 2.6.29
+
+### Patch Changes
+
+- Updated dependencies [[`21b3304`](https://github.com/generaltranslation/gt/commit/21b33040774f9638fdf7edcfcf7170246a36fbec)]:
+  - generaltranslation@8.1.13
+
+## 2.6.28
+
+### Patch Changes
+
+- [#1063](https://github.com/generaltranslation/gt/pull/1063) [`e7b1bb0`](https://github.com/generaltranslation/gt/commit/e7b1bb079145809d66296c0ad6628079f784b88e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CJK parser to gt-remark, bumping CLI
+
+- Updated dependencies [[`e7b1bb0`](https://github.com/generaltranslation/gt/commit/e7b1bb079145809d66296c0ad6628079f784b88e)]:
+  - gt-remark@1.0.5
+
 ## 2.6.27
 
 ### Patch Changes

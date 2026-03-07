@@ -88,8 +88,8 @@ export function hasCursorRulesDir(): boolean {
 export function getAgentInstructions(library: SupportedLibraries): string {
   const libraryVersion = getLibraryVersion(library);
   const versionLine = libraryVersion
-    ? `- **${library}**: ${libraryVersion}\n- **gtx-cli**: v${getCLIVersion()}`
-    : `- **gtx-cli**: v${getCLIVersion()}`;
+    ? `- **${library}**: ${libraryVersion}\n- **gt**: v${getCLIVersion()}`
+    : `- **gt**: v${getCLIVersion()}`;
 
   const base = fs.readFileSync(path.join(INSTRUCTIONS_DIR, 'base.md'), 'utf8');
 
