@@ -184,7 +184,10 @@ initialize_gt(
 
 get_locale_gt()
 t("Hello, world!")`;
-      const { results, errors } = await extractFromPythonSource(code, 'main.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'main.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(1);
       expect(results[0].source).toBe('Hello, world!');
@@ -192,7 +195,10 @@ t("Hello, world!")`;
 
     it('extracts _max_chars with snake_case kwarg', async () => {
       const code = `from gt_flask import t\nt("Hello", _max_chars=10)`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(1);
       expect(results[0].metadata.maxChars).toBe(10);
@@ -260,7 +266,11 @@ t("Hello, world!")`;
     });
 
     it('resolves cross-file function in declare_static', async () => {
-      const helperPath = path.join(__dirname, 'fixtures', 'declare_static_helper.py');
+      const helperPath = path.join(
+        __dirname,
+        'fixtures',
+        'declare_static_helper.py'
+      );
       const code = `from gt_flask import t, declare_static
 from declare_static_helper import get_time
 t(f"It is {declare_static(get_time())}!")`;
@@ -313,7 +323,10 @@ t(f"It is {declare_static(get_time())}!")`;
     it('preserves metadata kwargs with declare_static', async () => {
       const code = `from gt_flask import t, declare_static
 t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="greeting")`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(2);
       for (const r of results) {
@@ -325,7 +338,10 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
 
     it('simple t() still works without staticId', async () => {
       const code = `from gt_flask import t\nt("Hello world")`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(1);
       expect(results[0].source).toBe('Hello world');
@@ -364,9 +380,7 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
       // Function returns: declare_var(name) + '!'
       // → {_gt_, select, other {}} + "!" → sequence
       // After indexVars: {_gt_1, select, other {}}
-      expect(results[0].source).toBe(
-        'Hello, {_gt_1, select, other {}}!!'
-      );
+      expect(results[0].source).toBe('Hello, {_gt_1, select, other {}}!!');
       expect(results[0].metadata.staticId).toBeDefined();
     });
 
@@ -391,7 +405,10 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
     it('handles declare_static with inline concat of ternary + string', async () => {
       const code = `from gt_flask import t, declare_static
 t(f"Result: {declare_static(('yes' if x else 'no') + '!')}")`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(2);
       const sources = results.map((r) => r.source).sort();
@@ -401,15 +418,16 @@ t(f"Result: {declare_static(('yes' if x else 'no') + '!')}")`;
     it('handles declare_static with declare_var nested directly', async () => {
       const code = `from gt_flask import t, declare_static, declare_var
 t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(1);
       // declare_var(name) + '!' → "{_gt_, select, other {}}" + "!" → "{_gt_, select, other {}}!"
       // Full f-string: "Hello, {_gt_, select, other {}}!"
       // After indexVars: "Hello, {_gt_1, select, other {}}!"
-      expect(results[0].source).toBe(
-        'Hello, {_gt_1, select, other {}}!'
-      );
+      expect(results[0].source).toBe('Hello, {_gt_1, select, other {}}!');
     });
 
     it('handles aliased imports with functions returning conditionals and declare_var', async () => {
@@ -446,21 +464,25 @@ t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
     it('produces ICU placeholder for basic declare_var', async () => {
       const code = `from gt_flask import t, declare_var
 t(f"Hello {declare_var(name)}!")`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(1);
       // declareVar('') → {_gt_, select, other {}}
       // indexVars → {_gt_1, select, other {}}
-      expect(results[0].source).toBe(
-        'Hello {_gt_1, select, other {}}!'
-      );
+      expect(results[0].source).toBe('Hello {_gt_1, select, other {}}!');
       expect(results[0].metadata.staticId).toBeDefined();
     });
 
     it('produces ICU placeholder with _name kwarg', async () => {
       const code = `from gt_flask import t, declare_var
 t(f"Hello {declare_var(name, _name='user')}!")`;
-      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(1);
       expect(results[0].source).toBe(
@@ -498,9 +520,7 @@ t(f"Hello {declare_var(name, _name='user')}!")`;
     it('nodeToStrings is importable and works', async () => {
       const { nodeToStrings } = await import('../stringNode.js');
 
-      expect(nodeToStrings({ type: 'text', text: 'hello' })).toEqual([
-        'hello',
-      ]);
+      expect(nodeToStrings({ type: 'text', text: 'hello' })).toEqual(['hello']);
 
       expect(
         nodeToStrings({

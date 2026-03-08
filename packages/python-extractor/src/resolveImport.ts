@@ -26,10 +26,7 @@ export function resolveImportPath(
   return result;
 }
 
-function doResolve(
-  moduleName: string,
-  currentFilePath: string
-): string | null {
+function doResolve(moduleName: string, currentFilePath: string): string | null {
   const currentDir = path.dirname(currentFilePath);
 
   // Relative import: starts with dots

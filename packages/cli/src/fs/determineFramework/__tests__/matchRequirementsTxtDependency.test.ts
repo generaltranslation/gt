@@ -92,9 +92,7 @@ describe('matchRequirementsTxtDependency', () => {
 
   it('handles environment markers with semicolon', () => {
     expect(
-      matchRequirementsTxtDependency(
-        'gt-flask>=1.0; python_version >= "3.8"\n'
-      )
+      matchRequirementsTxtDependency('gt-flask>=1.0; python_version >= "3.8"\n')
     ).toBe(Libraries.GT_FLASK);
   });
 
@@ -159,21 +157,15 @@ describe('matchRequirementsTxtDependency', () => {
   // ---- Partial name prevention ----
 
   it('does not match prefix: not-gt-flask', () => {
-    expect(
-      matchRequirementsTxtDependency('not-gt-flask>=1.0\n')
-    ).toBeNull();
+    expect(matchRequirementsTxtDependency('not-gt-flask>=1.0\n')).toBeNull();
   });
 
   it('does not match suffix: gt-flask-extra', () => {
-    expect(
-      matchRequirementsTxtDependency('gt-flask-extra>=1.0\n')
-    ).toBeNull();
+    expect(matchRequirementsTxtDependency('gt-flask-extra>=1.0\n')).toBeNull();
   });
 
   it('does not match gt-flaskify', () => {
-    expect(
-      matchRequirementsTxtDependency('gt-flaskify>=1.0\n')
-    ).toBeNull();
+    expect(matchRequirementsTxtDependency('gt-flaskify>=1.0\n')).toBeNull();
   });
 
   // ---- Whitespace / formatting ----

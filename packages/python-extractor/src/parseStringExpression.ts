@@ -1,10 +1,7 @@
 import type { SyntaxNode } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
-import {
-  PYTHON_DECLARE_STATIC,
-  PYTHON_DECLARE_VAR,
-} from './constants.js';
+import { PYTHON_DECLARE_STATIC, PYTHON_DECLARE_VAR } from './constants.js';
 import {
   resolveFunctionInCurrentFile,
   resolveFunctionInFile,
@@ -31,13 +28,14 @@ export function containsStaticCalls(
   return hasStaticCallRecursive(node, staticNames);
 }
 
-function hasStaticCallRecursive(
-  node: SyntaxNode,
-  names: Set<string>
-): boolean {
+function hasStaticCallRecursive(node: SyntaxNode, names: Set<string>): boolean {
   if (node.type === 'call') {
     const funcNode = node.childForFieldName('function');
-    if (funcNode && funcNode.type === 'identifier' && names.has(funcNode.text)) {
+    if (
+      funcNode &&
+      funcNode.type === 'identifier' &&
+      names.has(funcNode.text)
+    ) {
       return true;
     }
   }
@@ -194,9 +192,7 @@ async function parseBinaryOperator(
   const right = node.childForFieldName('right');
 
   if (!left || !right) {
-    ctx.errors.push(
-      `${locationStr(node)}: binary operator missing operands`
-    );
+    ctx.errors.push(`${locationStr(node)}: binary operator missing operands`);
     return null;
   }
 
@@ -314,9 +310,7 @@ async function resolveStaticBinaryOperator(
   const right = node.childForFieldName('right');
 
   if (!left || !right) {
-    ctx.errors.push(
-      `${locationStr(node)}: binary operator missing operands`
-    );
+    ctx.errors.push(`${locationStr(node)}: binary operator missing operands`);
     return null;
   }
 
@@ -325,9 +319,15 @@ async function resolveStaticBinaryOperator(
   let isPlus = true;
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child && child.type !== 'identifier' && child.type !== 'string' &&
-        child.type !== 'call' && child.type !== 'binary_operator' &&
-        child.type !== 'conditional_expression' && child.type !== 'parenthesized_expression') {
+    if (
+      child &&
+      child.type !== 'identifier' &&
+      child.type !== 'string' &&
+      child.type !== 'call' &&
+      child.type !== 'binary_operator' &&
+      child.type !== 'conditional_expression' &&
+      child.type !== 'parenthesized_expression'
+    ) {
       if (child.text !== '+') {
         isPlus = false;
       }
@@ -483,7 +483,10 @@ async function resolveFunctionCall(
       importInfo.filePath,
       async (node: SyntaxNode, targetRootNode: SyntaxNode) => {
         // Build proper context using target file's root and imports
-        const targetImports = extractImportsFromRoot(targetRootNode, ctx.imports);
+        const targetImports = extractImportsFromRoot(
+          targetRootNode,
+          ctx.imports
+        );
         return resolveStaticValue(node, {
           rootNode: targetRootNode,
           imports: targetImports,
