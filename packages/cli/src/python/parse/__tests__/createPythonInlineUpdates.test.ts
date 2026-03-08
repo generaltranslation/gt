@@ -65,7 +65,7 @@ describe('createPythonInlineUpdates', () => {
         {
           dataFormat: 'ICU',
           source: 'Hello',
-          metadata: { id: 'greeting' },
+          metadata: { id: 'greeting', filePaths: ['/app/routes.py'] },
         },
       ],
       errors: [],
