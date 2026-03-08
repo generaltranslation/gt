@@ -411,6 +411,33 @@ t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
         'Hello, {_gt_1, select, other {}}!'
       );
     });
+
+    it('handles aliased imports with functions returning conditionals and declare_var', async () => {
+      // This exercises:
+      // - aliased declare_static/declare_var imports
+      // - function resolution with conditional return expressions
+      // - declare_var inside a function return branch
+      // - cartesian product across two declare_static calls (2 × 2 = 4 variants)
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_complex_aliased.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(4);
+
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual([
+        'The he is beautiful',
+        'The he is {_gt_1, select, other {}}',
+        'The she is beautiful',
+        'The she is {_gt_1, select, other {}}',
+      ]);
+
+      // All 4 variants share the same staticId
+      const staticId = results[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(results.every((r) => r.metadata.staticId === staticId)).toBe(true);
+    });
   });
 
   // ===== declare_var tests ===== //

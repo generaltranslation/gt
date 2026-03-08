@@ -36,16 +36,7 @@ export async function createPythonInlineUpdates(
         warnings: fileWarnings,
       } = await extractFromPythonSource(code, file);
 
-      // Add filePaths to each result
-      const resultsWithPaths = results.map((result) => ({
-        ...result,
-        metadata: {
-          ...result.metadata,
-          filePaths: [file],
-        },
-      }));
-
-      updates.push(...mapExtractionResultsToUpdates(resultsWithPaths));
+      updates.push(...mapExtractionResultsToUpdates(results));
       errors.push(...fileErrors);
       warnings.push(...fileWarnings);
     } catch (error) {
