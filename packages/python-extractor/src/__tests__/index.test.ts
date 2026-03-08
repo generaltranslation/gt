@@ -621,6 +621,40 @@ t(f"Hello {declare_var(name, _name='user')}!")`;
     });
   });
 
+  // ===== resolveStaticBinaryOperator edge cases ===== //
+
+  describe('static binary operator with unusual operand types', () => {
+    it('handles subscript operand in declare_static concat', async () => {
+      // obj["key"] + "!" inside declare_static — subscript is not in the
+      // exclusion list, so the old code misreports "unsupported binary operator"
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static(obj['key'] + '!')}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      // Should complain about the subscript operand type, NOT the operator
+      expect(errors.join(' ')).not.toContain('unsupported binary operator');
+      expect(errors.join(' ')).toContain('subscript');
+    });
+
+    it('handles attribute operand in declare_static concat', async () => {
+      // obj.attr + "!" inside declare_static — attribute node not in exclusion list
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static(obj.attr + '!')}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).not.toContain('unsupported binary operator');
+      expect(errors.join(' ')).toContain('attribute');
+    });
+
+    it('correctly rejects non-plus operator in static context', async () => {
+      // * operator should mention the operator in the error
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static('a' * 3)}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+  });
+
   // ===== stringNode tests ===== //
 
   describe('stringNode', () => {

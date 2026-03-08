@@ -315,29 +315,11 @@ async function resolveStaticBinaryOperator(
     return null;
   }
 
-  // Check for + operator (tree-sitter may not expose operator as a named field)
-  // Look for a non-expression child that is '+'
-  let isPlus = true;
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
-    if (
-      child &&
-      child.type !== 'identifier' &&
-      child.type !== 'string' &&
-      child.type !== 'call' &&
-      child.type !== 'binary_operator' &&
-      child.type !== 'conditional_expression' &&
-      child.type !== 'parenthesized_expression'
-    ) {
-      if (child.text !== '+') {
-        isPlus = false;
-      }
-    }
-  }
-
-  if (!isPlus) {
+  // Verify it's a + operator
+  const operator = node.childForFieldName('operator');
+  if (operator && operator.text !== '+') {
     ctx.errors.push(
-      `${locationStr(node)}: unsupported binary operator in static expression`
+      `${locationStr(node)}: unsupported binary operator "${operator.text}" in static expression`
     );
     return null;
   }
