@@ -45,6 +45,9 @@ export type GTConfig = {
   runtimeUrl?: string | null;
   modelProvider?: string;
 
+  // local translations
+  translationOutputPath?: string;
+
   // other
   localeCookieName?: string;
 };

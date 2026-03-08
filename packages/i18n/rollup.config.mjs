@@ -10,6 +10,8 @@ const external = [
   'generaltranslation/internal',
   'generaltranslation/id',
   '@generaltranslation/supported-locales',
+  'fs',
+  'path',
 ];
 
 export default [

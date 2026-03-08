@@ -7,6 +7,7 @@ import {
 import { Translations, TranslationsMap } from './utils/types/translation-data';
 import { TranslationsManagerConstructorParams } from './utils/types/translations-manager';
 import { createRemoteTranslationLoader } from './translations-loaders/createRemoteTranslationLoader';
+import { createLocalTranslationLoader } from './translations-loaders/createLocalTranslationLoader';
 import { createFallbackTranslationLoader } from './translations-loaders/createFallbackTranslationLoader';
 import {
   getLoadTranslationsType,
@@ -137,6 +138,7 @@ function determineTranslationLoader(config: {
   _versionId?: string;
   _branchId?: string;
   loadTranslations?: TranslationsLoader;
+  translationOutputPath?: string;
   customMapping?: CustomMapping;
 }): TranslationsLoader {
   const loadTranslationsType = getLoadTranslationsType(config);
@@ -153,6 +155,11 @@ function determineTranslationLoader(config: {
         projectId: config.projectId!,
         _versionId: config._versionId,
         _branchId: config._branchId,
+        customMapping: config.customMapping,
+      });
+    case LoadTranslationsType.LOCAL:
+      return createLocalTranslationLoader({
+        translationOutputPath: config.translationOutputPath!,
         customMapping: config.customMapping,
       });
     case LoadTranslationsType.CUSTOM:

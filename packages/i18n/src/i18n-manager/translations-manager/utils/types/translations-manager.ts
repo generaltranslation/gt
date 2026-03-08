@@ -16,6 +16,7 @@ export type TranslationsManagerConfig = {
   _versionId?: string;
   _branchId?: string;
   customMapping?: CustomMapping;
+  translationOutputPath?: string;
   cacheExpiryTime: number;
 };
 
@@ -24,6 +25,7 @@ export type TranslationsManagerConfig = {
  *
  * @property {number} [cacheExpiryTime] - The cache expiry time in milliseconds.
  * @property {TranslationsLoader} [loadTranslations] - A custom translations loader function.
+ * @property {string} [translationOutputPath] - Path pattern with [locale] placeholder for local translation files.
  */
 export type TranslationsManagerConstructorParams = Partial<
   Pick<TranslationsManagerConfig, 'cacheExpiryTime'>

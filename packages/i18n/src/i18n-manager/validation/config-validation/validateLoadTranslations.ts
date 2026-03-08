@@ -25,9 +25,10 @@ export function validateLoadTranslations(params: {
   projectId?: string;
   cacheUrl?: string | null;
   loadTranslations?: TranslationsLoader;
+  translationOutputPath?: string;
 }): ValidationResult[] {
   const results: ValidationResult[] = [];
-  const { projectId, loadTranslations } = params;
+  const { projectId, loadTranslations, translationOutputPath } = params;
 
   const loadTranslationsType = getLoadTranslationsType(params);
   switch (loadTranslationsType) {
@@ -47,6 +48,21 @@ export function validateLoadTranslations(params: {
           type: 'error',
           message:
             'loadTranslations is required when loading translations from a custom loader',
+        });
+      }
+      break;
+    case LoadTranslationsType.LOCAL:
+      if (!translationOutputPath) {
+        results.push({
+          type: 'error',
+          message:
+            'translationOutputPath is required when loading translations from local files',
+        });
+      } else if (!translationOutputPath.includes('[locale]')) {
+        results.push({
+          type: 'error',
+          message:
+            'translationOutputPath must contain a [locale] placeholder',
         });
       }
       break;
