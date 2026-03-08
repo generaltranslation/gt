@@ -6,6 +6,7 @@ import {
   resolveFunctionInCurrentFile,
   resolveFunctionInFile,
 } from './resolveFunctionVariants.js';
+import { extractImports } from './extractImports.js';
 import { resolveImportPath } from './resolveImport.js';
 import { declareVar } from 'generaltranslation/internal';
 
@@ -496,7 +497,7 @@ async function resolveFunctionCall(
 }
 
 /**
- * Extracts import aliases from a target file's root node.
+ * Extracts GT import aliases from a target file's root node.
  * Merges with parent imports for GT package functions (declare_var, etc.)
  * that may not be imported in the target file.
  */
@@ -504,54 +505,28 @@ function extractImportsFromRoot(
   rootNode: SyntaxNode,
   parentImports: ImportAlias[]
 ): ImportAlias[] {
-  // Import extractImports dynamically to avoid issues
-  const result: ImportAlias[] = [];
+  // Extract GT-only imports from the target file using the same
+  // filtering logic as the main extractImports (filters by GT packages)
+  const fileImports = extractImports(rootNode);
 
-  // Carry over GT package imports from the calling context
-  // (declare_var, declare_static may be used without importing in helper files
-  // if passed through function calls, but the name resolution still needs them)
-  for (const imp of parentImports) {
-    if (
+  // Carry over GT declare_* imports from the calling context
+  // (in case the helper file doesn't import them directly)
+  const parentDeclareImports = parentImports.filter(
+    (imp) =>
       imp.originalName === PYTHON_DECLARE_STATIC ||
       imp.originalName === PYTHON_DECLARE_VAR
-    ) {
-      result.push(imp);
+  );
+
+  // Deduplicate: prefer the target file's own imports over parent's
+  const seen = new Set(fileImports.map((imp) => imp.localName));
+  const merged = [...fileImports];
+  for (const imp of parentDeclareImports) {
+    if (!seen.has(imp.localName)) {
+      merged.push(imp);
     }
   }
 
-  // Also check the target file's own imports for GT functions
-  for (let i = 0; i < rootNode.childCount; i++) {
-    const node = rootNode.child(i);
-    if (!node || node.type !== 'import_from_statement') continue;
-
-    const moduleName = getModuleName(node);
-    if (!moduleName) continue;
-
-    for (let j = 0; j < node.childCount; j++) {
-      const child = node.child(j);
-      if (!child) continue;
-
-      if (child.type === 'dotted_name' && child.text !== moduleName) {
-        result.push({
-          localName: child.text,
-          originalName: child.text,
-          packageName: moduleName,
-        });
-      } else if (child.type === 'aliased_import') {
-        const nameNode = child.childForFieldName('name');
-        const aliasNode = child.childForFieldName('alias');
-        if (nameNode) {
-          result.push({
-            localName: aliasNode?.text ?? nameNode.text,
-            originalName: nameNode.text,
-            packageName: moduleName,
-          });
-        }
-      }
-    }
-  }
-
-  return result;
+  return merged;
 }
 
 /**
