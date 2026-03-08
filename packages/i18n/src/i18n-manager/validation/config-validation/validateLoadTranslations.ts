@@ -61,8 +61,7 @@ export function validateLoadTranslations(params: {
       } else if (!translationOutputPath.includes('[locale]')) {
         results.push({
           type: 'error',
-          message:
-            'translationOutputPath must contain a [locale] placeholder',
+          message: 'translationOutputPath must contain a [locale] placeholder',
         });
       }
       break;
