@@ -458,6 +458,115 @@ t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
     });
   });
 
+  // ===== re-export tests ===== //
+
+  describe('re-exports', () => {
+    it('follows single-level re-export to resolve functions', async () => {
+      // main imports get_gender from reexport_funcs.py,
+      // which re-exports from static_test_defs.py where it's defined
+      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+from reexport_funcs import get_gender
+t(f"The {alias_declare_static(get_gender(variant))}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        path.join(__dirname, 'fixtures', 'reexport_main.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['The he', 'The she']);
+    });
+
+    it('follows re-export with declare_var in the definition file', async () => {
+      // get_adjective is defined in static_test_defs.py with alias_declare_var,
+      // re-exported through reexport_funcs.py
+      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+from reexport_funcs import get_adjective
+t(f"She is {alias_declare_static(get_adjective(variant))}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        path.join(__dirname, 'fixtures', 'reexport_main.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual([
+        'She is beautiful',
+        'She is {_gt_1, select, other {}}',
+      ]);
+    });
+
+    it('follows two-level re-export chain', async () => {
+      // main → reexport_chain_top → reexport_chain_mid → static_test_defs
+      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+from reexport_chain_top import get_gender
+t(f"The {alias_declare_static(get_gender(variant))}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        path.join(__dirname, 'fixtures', 'reexport_chain_main.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['The he', 'The she']);
+    });
+
+    it('handles full complex re-export scenario with cartesian product', async () => {
+      // The exact user scenario: main imports from reexport_funcs,
+      // definitions in static_test_defs with aliased declare_var
+      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+from reexport_funcs import get_gender, get_adjective
+
+def get_string(variant):
+    return t(f'The {alias_declare_static(get_gender(variant))} is {alias_declare_static(get_adjective(variant))}')`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        path.join(__dirname, 'fixtures', 'reexport_main.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(4);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual([
+        'The he is beautiful',
+        'The he is {_gt_1, select, other {}}',
+        'The she is beautiful',
+        'The she is {_gt_1, select, other {}}',
+      ]);
+      const staticId = results[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(results.every((r) => r.metadata.staticId === staticId)).toBe(true);
+    });
+
+    it('handles re-export with aliased name', async () => {
+      // Import with alias in re-export: from static_test_defs import get_gender as gg
+      const code = `from gt_fastapi import t, declare_static
+from reexport_alias import gg
+t(f"{declare_static(gg(v))}")`;
+      // Create aliased re-export inline
+      const aliasReexportPath = path.join(
+        __dirname,
+        'fixtures',
+        'reexport_alias.py'
+      );
+      fs.writeFileSync(
+        aliasReexportPath,
+        'from static_test_defs import get_gender as gg\n'
+      );
+      try {
+        const { results, errors } = await extractFromPythonSource(
+          code,
+          path.join(__dirname, 'fixtures', 'reexport_alias_main.py')
+        );
+        expect(errors).toEqual([]);
+        expect(results).toHaveLength(2);
+        const sources = results.map((r) => r.source).sort();
+        expect(sources).toEqual(['he', 'she']);
+      } finally {
+        fs.unlinkSync(aliasReexportPath);
+      }
+    });
+  });
+
   // ===== declare_var tests ===== //
 
   describe('declare_var', () => {

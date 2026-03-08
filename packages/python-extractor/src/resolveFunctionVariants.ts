@@ -2,15 +2,21 @@ import fs from 'node:fs';
 import type { SyntaxNode } from './parser.js';
 import { getParser } from './parser.js';
 import type { StringNode } from './stringNode.js';
+import { resolveImportPath } from './resolveImport.js';
 
 /**
  * Callback to parse a return expression into a StringNode.
  * Provided by the caller so function resolution doesn't need to know about
  * declare_var, declare_static, imports, etc.
+ *
+ * @param node - The return expression AST node
+ * @param rootNode - The root AST node of the file containing the function
+ * @param filePath - The absolute path of the file containing the function
  */
 export type ExpressionParser = (
   node: SyntaxNode,
-  rootNode: SyntaxNode
+  rootNode: SyntaxNode,
+  filePath: string
 ) => Promise<StringNode | null>;
 
 const crossFileCache = new Map<string, StringNode | null>();
@@ -23,26 +29,38 @@ const crossFileCache = new Map<string, StringNode | null>();
 export async function resolveFunctionInCurrentFile(
   functionName: string,
   rootNode: SyntaxNode,
+  filePath: string,
   parseExpr: ExpressionParser
 ): Promise<StringNode | null> {
   const funcDef = findFunctionDefinition(rootNode, functionName);
   if (!funcDef) return null;
-  return extractReturnVariants(funcDef, rootNode, parseExpr);
+  return extractReturnVariants(funcDef, rootNode, filePath, parseExpr);
 }
 
 /**
  * Resolves all return values of a function defined in an external file.
+ * Follows re-export chains: if the function isn't defined in the target file
+ * but is imported from another module, follows the import to the source.
  * Results are cached by filePath::functionName.
  */
 export async function resolveFunctionInFile(
   functionName: string,
   filePath: string,
-  parseExpr: ExpressionParser
+  parseExpr: ExpressionParser,
+  visited?: Set<string>
 ): Promise<StringNode | null> {
   const cacheKey = `${filePath}::${functionName}`;
   if (crossFileCache.has(cacheKey)) {
     return crossFileCache.get(cacheKey)!;
   }
+
+  // Prevent infinite re-export loops
+  const visitedSet = visited ?? new Set<string>();
+  if (visitedSet.has(cacheKey)) {
+    crossFileCache.set(cacheKey, null);
+    return null;
+  }
+  visitedSet.add(cacheKey);
 
   let source: string;
   try {
@@ -59,13 +77,33 @@ export async function resolveFunctionInFile(
     return null;
   }
 
+  // Try to find function definition in this file
   const result = await resolveFunctionInCurrentFile(
     functionName,
     tree.rootNode,
+    filePath,
     parseExpr
   );
-  crossFileCache.set(cacheKey, result);
-  return result;
+  if (result) {
+    crossFileCache.set(cacheKey, result);
+    return result;
+  }
+
+  // Function not defined here — check for re-exports
+  const reExportInfo = findReExport(functionName, tree.rootNode, filePath);
+  if (reExportInfo) {
+    const reResult = await resolveFunctionInFile(
+      reExportInfo.originalName,
+      reExportInfo.filePath,
+      parseExpr,
+      visitedSet
+    );
+    crossFileCache.set(cacheKey, reResult);
+    return reResult;
+  }
+
+  crossFileCache.set(cacheKey, null);
+  return null;
 }
 
 /**
@@ -107,6 +145,7 @@ function findFunctionDefinition(
 async function extractReturnVariants(
   funcDef: SyntaxNode,
   rootNode: SyntaxNode,
+  filePath: string,
   parseExpr: ExpressionParser
 ): Promise<StringNode | null> {
   const body = funcDef.childForFieldName('body');
@@ -120,7 +159,7 @@ async function extractReturnVariants(
   // Parse each return expression into a StringNode
   const nodes: StringNode[] = [];
   for (const expr of returnExprs) {
-    const node = await parseExpr(expr, rootNode);
+    const node = await parseExpr(expr, rootNode, filePath);
     if (node) nodes.push(node);
   }
 
@@ -158,6 +197,63 @@ function collectReturnExpressions(
     const child = node.child(i);
     if (child) collectReturnExpressions(child, results);
   }
+}
+
+/**
+ * Checks if a function name is re-exported from another module in the given file.
+ * e.g., `from static_test import get_gender` makes `get_gender` a re-export.
+ */
+function findReExport(
+  functionName: string,
+  rootNode: SyntaxNode,
+  currentFilePath: string
+): { originalName: string; filePath: string } | null {
+  for (let i = 0; i < rootNode.childCount; i++) {
+    const node = rootNode.child(i);
+    if (!node || node.type !== 'import_from_statement') continue;
+
+    const moduleName = getModuleName(node);
+    if (!moduleName) continue;
+
+    for (let j = 0; j < node.childCount; j++) {
+      const child = node.child(j);
+      if (!child) continue;
+
+      if (child.type === 'dotted_name' && child.text !== moduleName) {
+        if (child.text === functionName) {
+          const resolved = resolveImportPath(moduleName, currentFilePath);
+          if (resolved) {
+            return { originalName: functionName, filePath: resolved };
+          }
+        }
+      } else if (child.type === 'aliased_import') {
+        const nameNode = child.childForFieldName('name');
+        const aliasNode = child.childForFieldName('alias');
+        const alias = aliasNode?.text ?? nameNode?.text;
+        if (alias === functionName && nameNode) {
+          const resolved = resolveImportPath(moduleName, currentFilePath);
+          if (resolved) {
+            return { originalName: nameNode.text, filePath: resolved };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function getModuleName(importNode: SyntaxNode): string | undefined {
+  const moduleNode = importNode.childForFieldName('module_name');
+  if (moduleNode) return moduleNode.text;
+
+  for (let i = 0; i < importNode.childCount; i++) {
+    const child = importNode.child(i);
+    if (!child) continue;
+    if (child.type === 'import') break;
+    if (child.type === 'dotted_name') return child.text;
+    if (child.type === 'relative_import') return child.text;
+  }
+  return undefined;
 }
 
 export function clearFunctionCache(): void {

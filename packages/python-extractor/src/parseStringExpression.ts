@@ -453,47 +453,38 @@ async function resolveFunctionCall(
   const funcName = funcNode.text;
 
   // Expression parser callback for resolving return expressions.
-  // For local functions, use the current context's imports.
-  // For cross-file, build context from the target file's imports.
-  const makeExprParser = (targetCtx: ParseContext) => {
-    return (node: SyntaxNode, _rootNode: SyntaxNode) =>
-      resolveStaticValue(node, targetCtx);
+  // Receives the actual rootNode and filePath from whichever file
+  // the function is defined in (handles re-exports correctly).
+  const exprParser = (
+    node: SyntaxNode,
+    targetRootNode: SyntaxNode,
+    targetFilePath: string
+  ) => {
+    const targetImports = extractImportsFromRoot(targetRootNode, ctx.imports);
+    return resolveStaticValue(node, {
+      rootNode: targetRootNode,
+      imports: targetImports,
+      filePath: targetFilePath,
+      errors: ctx.errors,
+    });
   };
 
   // Try resolving in current file
   const localResult = await resolveFunctionInCurrentFile(
     funcName,
     ctx.rootNode,
-    makeExprParser(ctx)
+    ctx.filePath,
+    exprParser
   );
   if (localResult) return localResult;
 
-  // Try resolving from imports
+  // Try resolving from imports (follows re-export chains automatically)
   const importInfo = findImportForName(funcName, ctx);
   if (importInfo) {
-    // Build a context for the target file
-    const targetCtx: ParseContext = {
-      rootNode: ctx.rootNode, // Will be replaced by the actual target rootNode inside resolveFunctionInFile
-      imports: ctx.imports, // Use caller's imports as fallback
-      filePath: importInfo.filePath,
-      errors: ctx.errors,
-    };
     const result = await resolveFunctionInFile(
       importInfo.originalName,
       importInfo.filePath,
-      async (node: SyntaxNode, targetRootNode: SyntaxNode) => {
-        // Build proper context using target file's root and imports
-        const targetImports = extractImportsFromRoot(
-          targetRootNode,
-          ctx.imports
-        );
-        return resolveStaticValue(node, {
-          rootNode: targetRootNode,
-          imports: targetImports,
-          filePath: importInfo.filePath,
-          errors: ctx.errors,
-        });
-      }
+      exprParser
     );
     if (result) return result;
   }
