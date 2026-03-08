@@ -66,7 +66,7 @@ import {
   getAgentInstructions,
   appendAgentInstructions,
 } from '../setup/agentInstructions.js';
-import { determineLibrary } from '../fs/determineFramework.js';
+import { determineLibrary } from '../fs/determineFramework/index.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 

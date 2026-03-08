@@ -117,6 +117,7 @@
     "esbuild": "^0.27.2",
     "fast-glob": "^3.3.3",
     "fast-json-stable-stringify": "^2.1.0",
+    "@generaltranslation/python-extractor": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-remark": "workspace:*",
     "html-entities": "^2.6.0",

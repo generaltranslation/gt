@@ -136,6 +136,9 @@ importers:
       '@formatjs/icu-messageformat-parser':
         specifier: ^2.11.4
         version: 2.11.4
+      '@generaltranslation/python-extractor':
+        specifier: workspace:*
+        version: link:../python-extractor
       chalk:
         specifier: ^5.4.1
         version: 5.6.2
@@ -660,6 +663,18 @@ importers:
       typescript:
         specifier: ^5.6.2
         version: 5.9.2
+
+  packages/python-extractor:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.5.1
+        version: 22.13.10
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.2
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@edge-runtime/vm@4.0.4)(@types/node@22.13.10)(jsdom@27.0.0(bufferutil@4.0.9)(postcss@8.5.6))(lightningcss@1.30.1)(terser@5.44.0)
 
   packages/react:
     dependencies:

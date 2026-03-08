@@ -1,0 +1,56 @@
+{
+  "name": "@generaltranslation/python-extractor",
+  "version": "0.0.0",
+  "description": "Python source code extraction for General Translation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "scripts": {
+    "build": "tsc",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint \"src/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./constants": {
+      "import": "./dist/constants.js",
+      "types": "./dist/constants.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "python",
+    "extraction",
+    "translation",
+    "i18n",
+    "flask",
+    "fastapi"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.5.1",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

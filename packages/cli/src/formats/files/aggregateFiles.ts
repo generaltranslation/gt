@@ -7,7 +7,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import YAML from 'yaml';
-import { determineLibrary } from '../../fs/determineFramework.js';
+import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync } from '../../utils/hash.js';
 import { preprocessContent } from './preprocessContent.js';
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];

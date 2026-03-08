@@ -32,6 +32,17 @@ export const DEFAULT_SRC_PATTERNS = [
   'components/**/*.{js,jsx,ts,tsx}',
 ];
 
+export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
+export const DEFAULT_PYTHON_SRC_EXCLUDES = [
+  'venv/**',
+  '.venv/**',
+  '__pycache__/**',
+  '**/migrations/**',
+  '**/tests/**',
+  '**/test_*.py',
+  '**/*_test.py',
+];
+
 /**
  * Generates settings from any
  * @param flags - The CLI flags to generate settings from
