@@ -1,88 +1,98 @@
+import { parse } from 'smol-toml';
 import { Libraries } from '../../types/libraries.js';
 import { resolveGtDependency } from './resolveGtDependency.js';
 
 /**
- * Parse pyproject.toml for GT dependencies.
+ * Parse pyproject.toml for GT dependencies using a proper TOML parser.
  *
- * Looks in dependency sections ([project], [project.dependencies],
- * [project.optional-dependencies.*], [tool.poetry.dependencies],
- * [tool.poetry.group.*.dependencies]) and extracts quoted package names
- * from array entries or bare key names from poetry-style `pkg = "version"` lines.
+ * Checks the following locations:
+ * - PEP 621: project.dependencies, project.optional-dependencies.*
+ * - Poetry: tool.poetry.dependencies, tool.poetry.group.*.dependencies
  */
 export function matchPyprojectDependency(
   content: string
 ): typeof Libraries.GT_FLASK | typeof Libraries.GT_FASTAPI | null {
-  const lines = content.split('\n');
-  // Track which section we're in to determine valid dependency locations
-  let currentSection = '';
-  let inDependencyArray = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let parsed: Record<string, any>;
+  try {
+    parsed = parse(content) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 
-  for (const line of lines) {
-    const trimmed = line.split('#')[0].trim();
-    if (!trimmed) continue;
+  // 1. PEP 621: project.dependencies = ["gt-flask>=1.0", ...]
+  const projectDeps = parsed?.project?.dependencies;
+  if (Array.isArray(projectDeps)) {
+    const result = matchDependencyArray(projectDeps);
+    if (result) return result;
+  }
 
-    // Detect section headers
-    if (trimmed.startsWith('[')) {
-      currentSection = trimmed.toLowerCase();
-      inDependencyArray = false;
-      continue;
-    }
-
-    // Sections where dependency arrays or key-value pairs are valid:
-    // - [project] contains `dependencies = [...]` and `optional-dependencies`
-    // - [project.dependencies] (less common but valid)
-    // - [project.optional-dependencies.*]
-    // - [tool.poetry.dependencies]
-    // - [tool.poetry.group.*.dependencies]
-    const isProjectSection = currentSection === '[project]';
-    const isDependencySection =
-      currentSection === '[project.dependencies]' ||
-      currentSection.startsWith('[project.optional-dependencies') ||
-      currentSection === '[tool.poetry.dependencies]' ||
-      (currentSection.startsWith('[tool.poetry.group.') &&
-        currentSection.endsWith('.dependencies]'));
-
-    if (!isProjectSection && !isDependencySection) continue;
-
-    // Detect start of a dependencies array (e.g., dependencies = ["pkg", ...])
-    // Extract the key name precisely to avoid matching keys like dependencies_list
-    if (!inDependencyArray) {
-      const keyMatch = trimmed.match(/^(dependencies|optional-dependencies)\s*=/);
-      if (keyMatch && trimmed.includes('[')) {
-        inDependencyArray = true;
-      }
-    }
-
-    if (inDependencyArray) {
-      // Extract quoted package names from array entries like "gt-flask>=1.0.0"
-      const matches = trimmed.match(/["']([^"']+)["']/g);
-      if (matches) {
-        for (const match of matches) {
-          const value = match.slice(1, -1); // remove quotes
-          // Extract package name before version specifiers
-          const pkgName = value.split(/[><=!~;@\s[]/)[0].trim();
-          if (pkgName) {
-            const result = resolveGtDependency(pkgName);
-            if (result) return result;
-          }
-        }
-      }
-      if (trimmed.includes(']')) {
-        inDependencyArray = false;
-      }
-      continue;
-    }
-
-    // Handle Poetry style: gt-flask = "^1.0.0" or gt_flask = {version = "^1.0"}
-    // Only valid in dedicated dependency sections, not under [project]
-    if (isDependencySection) {
-      const poetryKeyMatch = trimmed.match(/^([a-zA-Z0-9_\-.]+)\s*=/);
-      if (poetryKeyMatch) {
-        const result = resolveGtDependency(poetryKeyMatch[1]);
+  // 2. PEP 621: project.optional-dependencies.* = ["gt-flask", ...]
+  const optDeps = parsed?.project?.['optional-dependencies'];
+  if (optDeps && typeof optDeps === 'object') {
+    for (const group of Object.values(optDeps)) {
+      if (Array.isArray(group)) {
+        const result = matchDependencyArray(group as string[]);
         if (result) return result;
       }
     }
   }
 
+  // 3. Poetry: tool.poetry.dependencies = { gt-flask = "^1.0", ... }
+  const poetryDeps = parsed?.tool?.poetry?.dependencies;
+  if (poetryDeps && typeof poetryDeps === 'object') {
+    const result = matchDependencyKeys(poetryDeps);
+    if (result) return result;
+  }
+
+  // 4. Poetry groups: tool.poetry.group.*.dependencies
+  const poetryGroups = parsed?.tool?.poetry?.group;
+  if (poetryGroups && typeof poetryGroups === 'object') {
+    for (const group of Object.values(poetryGroups)) {
+      if (group && typeof group === 'object' && 'dependencies' in group) {
+        const result = matchDependencyKeys(
+          (group as Record<string, unknown>).dependencies as Record<
+            string,
+            unknown
+          >
+        );
+        if (result) return result;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check a PEP 508 dependency array (e.g. ["gt-flask>=1.0", "flask[extra]"])
+ * for GT dependencies.
+ */
+function matchDependencyArray(
+  deps: string[]
+): typeof Libraries.GT_FLASK | typeof Libraries.GT_FASTAPI | null {
+  for (const dep of deps) {
+    if (typeof dep !== 'string') continue;
+    // Extract package name before version specifiers, extras, or markers
+    const pkgName = dep.split(/[><=!~;@\s[]/)[0].trim();
+    if (pkgName) {
+      const result = resolveGtDependency(pkgName);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check Poetry-style dependency keys (e.g. { gt-flask = "^1.0" })
+ * for GT dependencies.
+ */
+function matchDependencyKeys(
+  deps: Record<string, unknown>
+): typeof Libraries.GT_FLASK | typeof Libraries.GT_FASTAPI | null {
+  for (const key of Object.keys(deps)) {
+    const result = resolveGtDependency(key);
+    if (result) return result;
+  }
   return null;
 }

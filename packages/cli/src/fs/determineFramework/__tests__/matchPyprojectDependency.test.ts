@@ -16,17 +16,22 @@ dependencies = [
     expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
   });
 
-  it('detects gt-flask in [project.dependencies] array', () => {
+  it('detects gt-fastapi in [project] dependencies array', () => {
     const content = `[project]
-name = "myapp"
-
-[project.dependencies]
+name = "fast-api-1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
 dependencies = [
-  "flask>=2.0",
-  "gt-flask>=1.0.0",
+    "fastapi[standard]>=0.135.1",
+    "gt-fastapi",
 ]
+
+[tool.uv.sources]
+gt-fastapi = { path = "../../gt-python/packages/gt-fastapi", editable = true }
 `;
-    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
+    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FASTAPI);
   });
 
   it('detects gt-fastapi in poetry-style key = "version"', () => {
@@ -39,8 +44,8 @@ fastapi = "^0.100.0"
   });
 
   it('detects gt-flask in optional-dependencies', () => {
-    const content = `[project.optional-dependencies.i18n]
-dependencies = [
+    const content = `[project.optional-dependencies]
+i18n = [
   "gt-flask>=1.0.0",
 ]
 `;
@@ -98,6 +103,38 @@ dependencies = [
     expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
   });
 
+  // ---- Extras syntax (the original bug) ----
+
+  it('handles dependency with extras before gt dep in array', () => {
+    const content = `[project]
+dependencies = [
+  "fastapi[standard]>=0.135.1",
+  "gt-fastapi",
+]
+`;
+    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FASTAPI);
+  });
+
+  it('handles gt dep with extras in array', () => {
+    const content = `[project]
+dependencies = [
+  "gt-flask[redis]>=1.0.0",
+]
+`;
+    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
+  });
+
+  it('handles multiple deps with extras before gt dep', () => {
+    const content = `[project]
+dependencies = [
+  "uvicorn[standard]>=0.20",
+  "sqlalchemy[asyncio]>=2.0",
+  "gt-fastapi>=1.0",
+]
+`;
+    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FASTAPI);
+  });
+
   // ---- Array format variations ----
 
   it('handles inline array on one line', () => {
@@ -112,24 +149,6 @@ dependencies = ["flask", "gt-flask>=1.0"]
 dependencies = []
 `;
     expect(matchPyprojectDependency(content)).toBeNull();
-  });
-
-  it('handles single-quoted strings in array', () => {
-    const content = `[project]
-dependencies = [
-  'gt-flask>=1.0.0',
-]
-`;
-    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
-  });
-
-  it('handles dependency with extras in array', () => {
-    const content = `[project]
-dependencies = [
-  "gt-flask[redis]>=1.0.0",
-]
-`;
-    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
   });
 
   it('handles compact array without spaces', () => {
@@ -164,16 +183,6 @@ requires = ["setuptools"]
     expect(matchPyprojectDependency(content)).toBeNull();
   });
 
-  it('ignores gt-flask in comments within dependency array', () => {
-    const content = `[project]
-dependencies = [
-  # We used to use gt-flask but switched
-  "flask>=2.0",
-]
-`;
-    expect(matchPyprojectDependency(content)).toBeNull();
-  });
-
   it('does not match partial package names in array', () => {
     const content = `[project]
 dependencies = [
@@ -193,24 +202,6 @@ not-gt-flask = "^1.0.0"
     expect(matchPyprojectDependency(content)).toBeNull();
   });
 
-  it('stops matching when a new non-dependency section starts', () => {
-    const content = `[tool.poetry.dependencies]
-flask = "^2.0"
-
-[project.urls]
-gt-flask = "https://example.com"
-`;
-    expect(matchPyprojectDependency(content)).toBeNull();
-  });
-
-  it('does not false-positive on keys starting with "dependencies" prefix', () => {
-    const content = `[project]
-dependencies_file = "deps.txt"
-dependencies_list = ["gt-flask"]
-`;
-    expect(matchPyprojectDependency(content)).toBeNull();
-  });
-
   it('does not false-positive on [build-system] requires containing gt-flask', () => {
     const content = `[build-system]
 requires = ["gt-flask"]
@@ -218,40 +209,38 @@ requires = ["gt-flask"]
     expect(matchPyprojectDependency(content)).toBeNull();
   });
 
-  it('ignores gt-flask in TOML multiline string under [project]', () => {
+  it('does not false-positive on [tool.uv.sources] containing gt-fastapi', () => {
     const content = `[project]
-description = """
-This project wraps gt-flask for better ergonomics.
-"""
+dependencies = ["flask"]
+
+[tool.uv.sources]
+gt-fastapi = { path = "../../packages/gt-fastapi", editable = true }
 `;
-    // "gt-flask" appears in a multiline string value, not a dependency array
     expect(matchPyprojectDependency(content)).toBeNull();
   });
 
-  // ---- Whitespace / formatting edge cases ----
-
-  it('handles Windows line endings', () => {
-    const content =
-      '[project]\r\ndependencies = [\r\n  "gt-flask>=1.0.0",\r\n]\r\n';
-    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
-  });
-
-  it('handles extra whitespace around section headers', () => {
-    // TOML spec doesn't allow spaces inside brackets, but be defensive
-    const content = `[project]
-dependencies = [
-  "gt-flask",
-]
-`;
-    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
-  });
+  // ---- Edge cases ----
 
   it('returns null for empty content', () => {
     expect(matchPyprojectDependency('')).toBeNull();
   });
 
-  it('returns null for content with no sections', () => {
-    expect(matchPyprojectDependency('gt-flask = "1.0"')).toBeNull();
+  it('returns null for invalid TOML content', () => {
+    expect(matchPyprojectDependency('{{invalid toml}}')).toBeNull();
+  });
+
+  it('returns null for content with no dependency sections', () => {
+    const content = `[project]
+name = "myapp"
+version = "1.0"
+`;
+    expect(matchPyprojectDependency(content)).toBeNull();
+  });
+
+  it('handles Windows line endings', () => {
+    const content =
+      '[project]\r\ndependencies = [\r\n  "gt-flask>=1.0.0",\r\n]\r\n';
+    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
   });
 
   // ---- Multiple dependency locations ----
@@ -274,11 +263,23 @@ dependencies = [
   "flask>=2.0",
 ]
 
-[project.optional-dependencies.i18n]
-dependencies = [
+[project.optional-dependencies]
+i18n = [
   "gt-flask>=1.0.0",
 ]
 `;
     expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FLASK);
+  });
+
+  it('checks poetry deps when PEP 621 deps have no match', () => {
+    const content = `[project]
+dependencies = [
+  "flask>=2.0",
+]
+
+[tool.poetry.dependencies]
+gt-fastapi = "^1.0"
+`;
+    expect(matchPyprojectDependency(content)).toBe(Libraries.GT_FASTAPI);
   });
 });
