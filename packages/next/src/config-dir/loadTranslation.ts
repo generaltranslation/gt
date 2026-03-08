@@ -19,7 +19,7 @@ let loadTranslationsFunction: (
 
 /**
  * Loads the translations for the user's current locale.
- * Supports custom translation loaders.
+ * Supports custom translation loaders and local file loading.
  *
  * @returns {Promise<Translations | undefined>} The translation object or undefined if not found or errored
  *
@@ -45,6 +45,33 @@ export default async function loadTranslations(
         return await customLoadTranslations(_props.targetLocale);
       } catch (error) {
         console.error(customLoadTranslationsError(_props.targetLocale), error);
+        return undefined;
+      }
+    };
+  } else if (process.env._GENERALTRANSLATION_TRANSLATION_OUTPUT_PATH) {
+    // ----- USING LOCAL FILE LOADER ----- //
+
+    const translationOutputPath =
+      process.env._GENERALTRANSLATION_TRANSLATION_OUTPUT_PATH;
+
+    loadTranslationsFunction = async (
+      _props: RemoteLoadTranslationsInput
+    ): Promise<any> => {
+      try {
+        const gt = getI18NConfig().getGTClass();
+        const targetLocale = gt.resolveCanonicalLocale(_props.targetLocale);
+        const filePath = translationOutputPath.replace(
+          '[locale]',
+          targetLocale
+        );
+        const { promises: fsPromises } = await import('fs');
+        const content = await fsPromises.readFile(filePath, 'utf-8');
+        return JSON.parse(content);
+      } catch (error) {
+        console.error(
+          `Failed to load local translations for ${_props.targetLocale}:`,
+          error
+        );
         return undefined;
       }
     };

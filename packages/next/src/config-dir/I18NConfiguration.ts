@@ -30,7 +30,7 @@ type I18NConfigurationParams = {
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
   cacheExpiryTime?: number;
-  loadTranslationsType: 'remote' | 'custom' | 'disabled';
+  loadTranslationsType: 'remote' | 'custom' | 'local' | 'disabled';
   loadDictionaryEnabled: boolean;
   defaultLocale: string;
   locales: string[];
@@ -154,7 +154,8 @@ export default class I18NConfiguration {
 
     // buildtime translation enabled
     this.translationEnabled = !!(
-      loadTranslationsType === 'custom' || // load local translation
+      loadTranslationsType === 'custom' || // load custom translation
+      loadTranslationsType === 'local' || // load from local files (files.gt.output)
       (loadTranslationsType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
         this.cacheUrl) ||

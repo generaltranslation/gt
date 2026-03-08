@@ -398,12 +398,17 @@ export function withGTConfig(
   // Run SSG checks
   ssgChecks(mergedConfig, requestFunctionPaths);
 
+  // Extract files.gt.output from the config for local translation loading
+  const filesGtOutput: string | undefined =
+    (mergedConfig as any).files?.gt?.output;
+
   // Run cache component checks
   cacheComponentsChecks({
     mergedConfig,
     nextConfig,
     requestFunctionPaths,
-    localTranslationsEnabled: !!customLoadTranslationsPath,
+    localTranslationsEnabled:
+      !!customLoadTranslationsPath || !!filesGtOutput,
     localDictionaryEnabled: !!customLoadDictionaryPath,
   });
 
@@ -424,6 +429,8 @@ export function withGTConfig(
   }
 
   // Local translations flag
+  let resolvedTranslationOutputPath: string | undefined;
+
   if (customLoadTranslationsPath) {
     // Check: file exists if provided
     if (!fs.existsSync(path.resolve(customLoadTranslationsPath))) {
@@ -433,6 +440,10 @@ export function withGTConfig(
     } else {
       mergedConfig.loadTranslationsType = 'custom';
     }
+  } else if (filesGtOutput) {
+    // Use local translation loading when files.gt.output is configured
+    mergedConfig.loadTranslationsType = 'local';
+    resolvedTranslationOutputPath = path.resolve(filesGtOutput);
   } else {
     mergedConfig.loadTranslationsType = 'remote';
   }
@@ -568,8 +579,13 @@ export function withGTConfig(
       _GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED:
         mergedConfig.loadDictionaryEnabled.toString(),
       _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (
-        mergedConfig.loadTranslationsType === 'custom'
+        mergedConfig.loadTranslationsType === 'custom' ||
+        mergedConfig.loadTranslationsType === 'local'
       ).toString(),
+      ...(resolvedTranslationOutputPath && {
+        _GENERALTRANSLATION_TRANSLATION_OUTPUT_PATH:
+          resolvedTranslationOutputPath,
+      }),
       _GENERALTRANSLATION_DEFAULT_LOCALE: (
         mergedConfig.defaultLocale ||
         defaultWithGTConfigProps.defaultLocale ||
