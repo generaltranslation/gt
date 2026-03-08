@@ -399,16 +399,15 @@ export function withGTConfig(
   ssgChecks(mergedConfig, requestFunctionPaths);
 
   // Extract files.gt.output from the config for local translation loading
-  const filesGtOutput: string | undefined =
-    (mergedConfig as any).files?.gt?.output;
+  const filesGtOutput: string | undefined = (mergedConfig as any).files?.gt
+    ?.output;
 
   // Run cache component checks
   cacheComponentsChecks({
     mergedConfig,
     nextConfig,
     requestFunctionPaths,
-    localTranslationsEnabled:
-      !!customLoadTranslationsPath || !!filesGtOutput,
+    localTranslationsEnabled: !!customLoadTranslationsPath || !!filesGtOutput,
     localDictionaryEnabled: !!customLoadDictionaryPath,
   });
 
