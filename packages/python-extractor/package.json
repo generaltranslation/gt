@@ -9,12 +9,19 @@
   "license": "FSL-1.1-ALv2",
   "scripts": {
     "build": "tsc",
+    "build:watch": "tsc --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "format": "prettier --write src",
+    "patch": "pnpm version patch",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "lint": "eslint \"src/**/*.{js,ts}\"",
-    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix"
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "exports": {
     ".": {
