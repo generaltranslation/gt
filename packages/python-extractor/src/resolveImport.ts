@@ -44,7 +44,12 @@ function doResolve(moduleName: string, currentFilePath: string): string | null {
     }
 
     const remainder = moduleName.slice(dotCount);
-    if (!remainder) return null;
+    if (!remainder) {
+      // Bare dot import (e.g., "from . import X") — resolve to __init__.py
+      const initPath = path.join(baseDir, '__init__.py');
+      if (fs.existsSync(initPath)) return initPath;
+      return null;
+    }
 
     return resolveModulePath(baseDir, remainder);
   }

@@ -458,6 +458,41 @@ t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
     });
   });
 
+  // ===== bare dot relative import tests ===== //
+
+  describe('bare dot relative import', () => {
+    it('resolves function re-exported via "from . import func" from __init__.py', async () => {
+      // Scenario: a package re-exports a function via bare dot import.
+      // pkg/__init__.py defines get_time()
+      // pkg/reexport.py has "from . import get_time" (bare dot → __init__.py)
+      // Main imports from reexport → findReExport sees moduleName='.' → null (BUG)
+      const pkgDir = path.join(__dirname, 'fixtures', 'dotpkg');
+      fs.mkdirSync(pkgDir, { recursive: true });
+      const initFile = path.join(pkgDir, '__init__.py');
+      const reexportFile = path.join(pkgDir, 'reexport.py');
+      fs.writeFileSync(
+        initFile,
+        `def get_time():\n    if is_morning():\n        return "morning"\n    else:\n        return "evening"\n`
+      );
+      fs.writeFileSync(reexportFile, 'from . import get_time\n');
+      try {
+        const code = `from gt_flask import t, declare_static
+from dotpkg.reexport import get_time
+t(f"It is {declare_static(get_time())}!")`;
+        const { results, errors } = await extractFromPythonSource(
+          code,
+          path.join(__dirname, 'fixtures', 'test_dot_import.py')
+        );
+        expect(errors).toEqual([]);
+        expect(results).toHaveLength(2);
+        const sources = results.map((r) => r.source).sort();
+        expect(sources).toEqual(['It is evening!', 'It is morning!']);
+      } finally {
+        fs.rmSync(pkgDir, { recursive: true });
+      }
+    });
+  });
+
   // ===== re-export tests ===== //
 
   describe('re-exports', () => {
