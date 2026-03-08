@@ -34,7 +34,7 @@ export async function createPythonInlineUpdates(
         results,
         errors: fileErrors,
         warnings: fileWarnings,
-      } = extractFromPythonSource(code, file);
+      } = await extractFromPythonSource(code, file);
 
       // Add filePaths to each result
       const resultsWithPaths = results.map((result) => ({

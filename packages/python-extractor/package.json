@@ -52,5 +52,9 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "tree-sitter-python": "^0.25.0",
+    "web-tree-sitter": "^0.26.6"
   }
 }
