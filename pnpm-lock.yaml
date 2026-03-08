@@ -669,6 +669,9 @@ importers:
 
   packages/python-extractor:
     dependencies:
+      generaltranslation:
+        specifier: workspace:*
+        version: link:../core
       tree-sitter-python:
         specifier: ^0.25.0
         version: 0.25.0

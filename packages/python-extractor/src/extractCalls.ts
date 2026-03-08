@@ -1,12 +1,20 @@
 import type { SyntaxNode } from './parser.js';
 import type { ImportAlias } from './extractImports.js';
 import { PYTHON_METADATA_KWARGS } from './constants.js';
+import {
+  containsStaticCalls,
+  parseStringExpression,
+} from './parseStringExpression.js';
+import { nodeToStrings } from './stringNode.js';
+import { indexVars } from 'generaltranslation/internal';
+import { randomUUID } from 'node:crypto';
 
 export type RawTranslationCall = {
   source: string;
   id?: string;
   context?: string;
   maxChars?: number;
+  staticId?: string;
   line: number;
   column: number;
 };
@@ -15,53 +23,90 @@ export type RawTranslationCall = {
  * Extracts translation function calls from a Python AST.
  * Walks all `call` nodes and checks if they reference a tracked import.
  */
-export function extractCalls(
+export async function extractCalls(
   rootNode: SyntaxNode,
-  imports: ImportAlias[]
-): { calls: RawTranslationCall[]; errors: string[]; warnings: string[] } {
+  imports: ImportAlias[],
+  filePath: string
+): Promise<{
+  calls: RawTranslationCall[];
+  errors: string[];
+  warnings: string[];
+}> {
   const calls: RawTranslationCall[] = [];
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const trackedNames = new Set(imports.map((imp) => imp.localName));
+  // Only track t/msg as translation functions (not declare_static/declare_var)
+  const trackedNames = new Set(
+    imports
+      .filter(
+        (imp) =>
+          imp.originalName !== 'declare_static' &&
+          imp.originalName !== 'declare_var'
+      )
+      .map((imp) => imp.localName)
+  );
   if (trackedNames.size === 0) return { calls, errors, warnings };
 
-  walkCalls(rootNode, trackedNames, calls, errors, warnings);
+  await walkCalls(
+    rootNode,
+    trackedNames,
+    imports,
+    filePath,
+    calls,
+    errors,
+    warnings
+  );
 
   return { calls, errors, warnings };
 }
 
-function walkCalls(
+async function walkCalls(
   node: SyntaxNode,
   trackedNames: Set<string>,
+  imports: ImportAlias[],
+  filePath: string,
   calls: RawTranslationCall[],
   errors: string[],
   warnings: string[]
-): void {
+): Promise<void> {
   if (node.type === 'call') {
     const funcNode = node.childForFieldName('function');
-    if (funcNode && funcNode.type === 'identifier' && trackedNames.has(funcNode.text)) {
-      processCall(node, calls, errors, warnings);
+    if (
+      funcNode &&
+      funcNode.type === 'identifier' &&
+      trackedNames.has(funcNode.text)
+    ) {
+      await processCall(node, imports, filePath, calls, errors, warnings);
     }
   }
 
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child) walkCalls(child, trackedNames, calls, errors, warnings);
+    if (child)
+      await walkCalls(
+        child,
+        trackedNames,
+        imports,
+        filePath,
+        calls,
+        errors,
+        warnings
+      );
   }
 }
 
-function processCall(
+async function processCall(
   callNode: SyntaxNode,
+  imports: ImportAlias[],
+  filePath: string,
   calls: RawTranslationCall[],
   errors: string[],
-  warnings: string[]
-): void {
+  _warnings: string[]
+): Promise<void> {
   const argsNode = callNode.childForFieldName('arguments');
   if (!argsNode) {
-    errors.push(
-      `${locationStr(callNode)}: translation call has no arguments`
-    );
+    errors.push(`${locationStr(callNode)}: translation call has no arguments`);
     return;
   }
 
@@ -88,7 +133,54 @@ function processCall(
     return;
   }
 
-  // Validate first argument is a string literal
+  // Check if this expression contains declare_static/declare_var
+  const hasStaticHelpers =
+    (firstArg.type === 'string' &&
+      isFString(firstArg) &&
+      containsStaticCalls(firstArg, imports)) ||
+    (firstArg.type === 'binary_operator' &&
+      containsStaticCalls(firstArg, imports)) ||
+    (firstArg.type === 'call' && containsStaticCalls(firstArg, imports));
+
+  if (hasStaticHelpers) {
+    // Compound expression path: parse into StringNode tree
+    const rootNode = callNode.tree?.rootNode;
+    if (!rootNode) {
+      errors.push(`${locationStr(callNode)}: could not access AST root`);
+      return;
+    }
+
+    const stringNode = await parseStringExpression(firstArg, {
+      rootNode,
+      imports,
+      filePath,
+      errors,
+    });
+
+    if (!stringNode) return;
+
+    const strings = nodeToStrings(stringNode).map(indexVars);
+    if (strings.length === 0) {
+      errors.push(`${locationStr(callNode)}: no string variants produced`);
+      return;
+    }
+
+    const metadata = extractKwargs(argsNode, errors, callNode);
+    const staticId = `static-temp-id-${randomUUID()}`;
+
+    for (const source of strings) {
+      calls.push({
+        source,
+        ...metadata,
+        staticId,
+        line: callNode.startPosition.row + 1,
+        column: callNode.startPosition.column,
+      });
+    }
+    return;
+  }
+
+  // Simple path: validate first argument is a plain string literal
   if (firstArg.type !== 'string') {
     if (firstArg.type === 'identifier') {
       errors.push(
@@ -106,19 +198,17 @@ function processCall(
     return;
   }
 
-  // Check for f-strings
+  // Check for f-strings (without declare_static/declare_var)
   if (isFString(firstArg)) {
     errors.push(
-      `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal`
+      `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal or declare_static()/declare_var()`
     );
     return;
   }
 
   const source = extractStringContent(firstArg);
   if (source === undefined) {
-    errors.push(
-      `${locationStr(callNode)}: could not extract string content`
-    );
+    errors.push(`${locationStr(callNode)}: could not extract string content`);
     return;
   }
 
@@ -159,7 +249,7 @@ function extractKwargs(
         result.maxChars = parseInt(valueNode.text, 10);
       } else {
         errors.push(
-          `${locationStr(callNode)}: _maxChars must be an integer literal`
+          `${locationStr(callNode)}: _max_chars must be an integer literal`
         );
       }
     } else {

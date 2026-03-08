@@ -7,6 +7,8 @@ import {
   PYTHON_GT_PACKAGES,
   PYTHON_GT_DEPENDENCIES,
   PYTHON_T_FUNCTION,
+  PYTHON_DECLARE_STATIC,
+  PYTHON_DECLARE_VAR,
   PYTHON_METADATA_KWARGS,
 } from '../index.js';
 import type { ExtractionResult, ExtractionMetadata } from '../types.js';
@@ -197,6 +199,342 @@ t("Hello, world!")`;
     });
   });
 
+  // ===== declare_static tests ===== //
+
+  describe('declare_static', () => {
+    it('expands simple ternary into 2 variants', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_ternary.py'),
+        'test.py'
+      );
+      // First call: t(f"It is {declare_static('day' if is_day() else 'night')}!")
+      const ternaryResults = results.filter(
+        (r) => r.source === 'It is day!' || r.source === 'It is night!'
+      );
+      expect(ternaryResults).toHaveLength(2);
+      expect(ternaryResults[0].metadata.staticId).toBeDefined();
+      expect(ternaryResults[0].metadata.staticId).toBe(
+        ternaryResults[1].metadata.staticId
+      );
+    });
+
+    it('expands nested ternary into 3 variants', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_ternary.py'),
+        'test.py'
+      );
+      const nestedResults = results.filter(
+        (r) => r.source === 'a' || r.source === 'b' || r.source === 'c'
+      );
+      expect(nestedResults).toHaveLength(3);
+      const staticId = nestedResults[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(nestedResults.every((r) => r.metadata.staticId === staticId)).toBe(
+        true
+      );
+    });
+
+    it('handles plain string in declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_ternary.py'),
+        'test.py'
+      );
+      const plainResult = results.find((r) => r.source === 'Hello world!');
+      expect(plainResult).toBeDefined();
+      expect(plainResult!.metadata.staticId).toBeDefined();
+    });
+
+    it('resolves local function returns in declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_func.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      const morningResult = results.find((r) => r.source === 'It is morning!');
+      const eveningResult = results.find((r) => r.source === 'It is evening!');
+      expect(morningResult).toBeDefined();
+      expect(eveningResult).toBeDefined();
+      expect(morningResult!.metadata.staticId).toBe(
+        eveningResult!.metadata.staticId
+      );
+    });
+
+    it('resolves cross-file function in declare_static', async () => {
+      const helperPath = path.join(__dirname, 'fixtures', 'declare_static_helper.py');
+      const code = `from gt_flask import t, declare_static
+from declare_static_helper import get_time
+t(f"It is {declare_static(get_time())}!")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        path.join(__dirname, 'fixtures', 'declare_static_crossfile.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['It is evening!', 'It is morning!']);
+      expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
+    });
+
+    it('handles concatenation with declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_concat.py'),
+        'test.py'
+      );
+      // t("Hello " + declare_static("day" if x else "night") + "!")
+      const concatResults = results.filter(
+        (r) => r.source === 'Hello day!' || r.source === 'Hello night!'
+      );
+      expect(concatResults).toHaveLength(2);
+      expect(concatResults[0].metadata.staticId).toBe(
+        concatResults[1].metadata.staticId
+      );
+    });
+
+    it('produces cartesian product for multiple declare_statics', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_cartesian.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(4);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual([
+        'bad day',
+        'bad night',
+        'good day',
+        'good night',
+      ]);
+      // All share the same staticId
+      const staticId = results[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(results.every((r) => r.metadata.staticId === staticId)).toBe(true);
+    });
+
+    it('preserves metadata kwargs with declare_static', async () => {
+      const code = `from gt_flask import t, declare_static
+t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="greeting")`;
+      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      for (const r of results) {
+        expect(r.metadata.id).toBe('time_msg');
+        expect(r.metadata.context).toBe('greeting');
+        expect(r.metadata.staticId).toBeDefined();
+      }
+    });
+
+    it('simple t() still works without staticId', async () => {
+      const code = `from gt_flask import t\nt("Hello world")`;
+      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello world');
+      expect(results[0].metadata.staticId).toBeUndefined();
+    });
+
+    it('handles string concatenation inside declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_string_concat.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello, ab!');
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('resolves single-return function in declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_static_func_simple.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello, !!');
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('resolves function returning declare_var + concat in declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_var_in_func_only.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      // Function returns: declare_var(name) + '!'
+      // → {_gt_, select, other {}} + "!" → sequence
+      // After indexVars: {_gt_1, select, other {}}
+      expect(results[0].source).toBe(
+        'Hello, {_gt_1, select, other {}}!!'
+      );
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('resolves function with declare_var in ternary with declare_static', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_var_in_func.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      // Branch 1: get_name() → declare_var(name) + '!' → "{_gt_, select, other {}}!"
+      // Branch 2: 'fallback'
+      // After indexVars on branch 1: "{_gt_1, select, other {}}!"
+      expect(sources).toEqual([
+        'Hello, fallback!',
+        'Hello, {_gt_1, select, other {}}!!',
+      ]);
+      expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
+    });
+
+    it('handles declare_static with inline concat of ternary + string', async () => {
+      const code = `from gt_flask import t, declare_static
+t(f"Result: {declare_static(('yes' if x else 'no') + '!')}")`;
+      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['Result: no!', 'Result: yes!']);
+    });
+
+    it('handles declare_static with declare_var nested directly', async () => {
+      const code = `from gt_flask import t, declare_static, declare_var
+t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
+      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      // declare_var(name) + '!' → "{_gt_, select, other {}}" + "!" → "{_gt_, select, other {}}!"
+      // Full f-string: "Hello, {_gt_, select, other {}}!"
+      // After indexVars: "Hello, {_gt_1, select, other {}}!"
+      expect(results[0].source).toBe(
+        'Hello, {_gt_1, select, other {}}!'
+      );
+    });
+  });
+
+  // ===== declare_var tests ===== //
+
+  describe('declare_var', () => {
+    it('produces ICU placeholder for basic declare_var', async () => {
+      const code = `from gt_flask import t, declare_var
+t(f"Hello {declare_var(name)}!")`;
+      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      // declareVar('') → {_gt_, select, other {}}
+      // indexVars → {_gt_1, select, other {}}
+      expect(results[0].source).toBe(
+        'Hello {_gt_1, select, other {}}!'
+      );
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('produces ICU placeholder with _name kwarg', async () => {
+      const code = `from gt_flask import t, declare_var
+t(f"Hello {declare_var(name, _name='user')}!")`;
+      const { results, errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe(
+        'Hello {_gt_1, select, other {} _gt_var_name {user}}!'
+      );
+    });
+  });
+
+  // ===== mixed declare_static + declare_var tests ===== //
+
+  describe('mixed declare_static + declare_var', () => {
+    it('combines static variants with var placeholders', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('declare_mixed.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      // "day for {_gt_, select, other {}}" and "night for {_gt_, select, other {}}"
+      // After indexVars: {_gt_1, select, other {}}
+      expect(sources).toEqual([
+        'day for {_gt_1, select, other {}}',
+        'night for {_gt_1, select, other {}}',
+      ]);
+      expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
+    });
+  });
+
+  // ===== stringNode tests ===== //
+
+  describe('stringNode', () => {
+    // These are tested indirectly through the integration tests above,
+    // but let's also test nodeToStrings directly
+    it('nodeToStrings is importable and works', async () => {
+      const { nodeToStrings } = await import('../stringNode.js');
+
+      expect(nodeToStrings({ type: 'text', text: 'hello' })).toEqual([
+        'hello',
+      ]);
+
+      expect(
+        nodeToStrings({
+          type: 'sequence',
+          nodes: [
+            { type: 'text', text: 'Hello ' },
+            { type: 'text', text: 'world' },
+          ],
+        })
+      ).toEqual(['Hello world']);
+
+      expect(
+        nodeToStrings({
+          type: 'choice',
+          nodes: [
+            { type: 'text', text: 'day' },
+            { type: 'text', text: 'night' },
+          ],
+        })
+      ).toEqual(['day', 'night']);
+
+      // Cartesian product
+      expect(
+        nodeToStrings({
+          type: 'sequence',
+          nodes: [
+            {
+              type: 'choice',
+              nodes: [
+                { type: 'text', text: 'a' },
+                { type: 'text', text: 'b' },
+              ],
+            },
+            { type: 'text', text: ' and ' },
+            {
+              type: 'choice',
+              nodes: [
+                { type: 'text', text: 'x' },
+                { type: 'text', text: 'y' },
+              ],
+            },
+          ],
+        })
+      ).toEqual(['a and x', 'a and y', 'b and x', 'b and y']);
+
+      // Null
+      expect(nodeToStrings(null)).toEqual([]);
+
+      // Deduplication
+      expect(
+        nodeToStrings({
+          type: 'choice',
+          nodes: [
+            { type: 'text', text: 'same' },
+            { type: 'text', text: 'same' },
+          ],
+        })
+      ).toEqual(['same']);
+    });
+  });
+
   describe('types', () => {
     it('ExtractionResult type is usable', () => {
       const result: ExtractionResult = {
@@ -236,6 +574,14 @@ t("Hello, world!")`;
 
     it('exports PYTHON_T_FUNCTION', () => {
       expect(PYTHON_T_FUNCTION).toBe('t');
+    });
+
+    it('exports PYTHON_DECLARE_STATIC', () => {
+      expect(PYTHON_DECLARE_STATIC).toBe('declare_static');
+    });
+
+    it('exports PYTHON_DECLARE_VAR', () => {
+      expect(PYTHON_DECLARE_VAR).toBe('declare_var');
     });
 
     it('exports PYTHON_METADATA_KWARGS', () => {

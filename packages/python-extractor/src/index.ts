@@ -10,6 +10,8 @@ export {
   PYTHON_GT_DEPENDENCIES,
   PYTHON_T_FUNCTION,
   PYTHON_MSG_FUNCTION,
+  PYTHON_DECLARE_STATIC,
+  PYTHON_DECLARE_VAR,
   PYTHON_TRANSLATION_FUNCTIONS,
   PYTHON_METADATA_KWARGS,
 } from './constants.js';
@@ -39,7 +41,11 @@ export async function extractFromPythonSource(
   }
 
   // Step 2: Extract translation calls
-  const { calls, errors, warnings } = extractCalls(tree.rootNode, imports);
+  const { calls, errors, warnings } = await extractCalls(
+    tree.rootNode,
+    imports,
+    filePath
+  );
 
   // Step 3: Map to ExtractionResult
   const results: ExtractionResult[] = calls.map((call) => ({
@@ -49,6 +55,7 @@ export async function extractFromPythonSource(
       ...(call.id && { id: call.id }),
       ...(call.context && { context: call.context }),
       ...(call.maxChars != null && { maxChars: call.maxChars }),
+      ...(call.staticId && { staticId: call.staticId }),
       filePaths: [filePath],
     },
   }));
