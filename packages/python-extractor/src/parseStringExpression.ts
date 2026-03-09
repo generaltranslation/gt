@@ -56,6 +56,17 @@ export async function parseStringExpression(
   node: SyntaxNode,
   ctx: ParseContext
 ): Promise<StringNode | null> {
+  // Parenthesized expression: unwrap and recurse
+  if (node.type === 'parenthesized_expression') {
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i);
+      if (child && child.type !== '(' && child.type !== ')') {
+        return parseStringExpression(child, ctx);
+      }
+    }
+    return null;
+  }
+
   // Plain string (no f-string)
   if (node.type === 'string' && !isFString(node)) {
     const content = extractStringContent(node);

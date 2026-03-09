@@ -81,8 +81,15 @@ function findMatchingBracket(
     if (!inString && (ch === '"' || ch === "'")) {
       inString = true;
       stringChar = ch;
-    } else if (inString && ch === stringChar && content[i - 1] !== '\\') {
-      inString = false;
+    } else if (inString && ch === stringChar) {
+      // Count consecutive backslashes before this quote
+      let backslashes = 0;
+      let j = i - 1;
+      while (j >= 0 && content[j] === '\\') {
+        backslashes++;
+        j--;
+      }
+      if (backslashes % 2 === 0) inString = false;
     }
 
     if (inString) continue;

@@ -402,6 +402,46 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
       expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
     });
 
+    it('handles parenthesized expression wrapping static concat', async () => {
+      // t(("hello " + declare_static("world"))) — first arg is parenthesized_expression
+      const code = `from gt_flask import t, declare_static
+t(("hello " + declare_static("world")))`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('hello world');
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('handles parenthesized expression wrapping static ternary', async () => {
+      const code = `from gt_flask import t, declare_static
+t((declare_static("day" if x else "night")))`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['day', 'night']);
+    });
+
+    it('handles deeply nested parentheses around static expression', async () => {
+      const code = `from gt_flask import t, declare_static
+t((((("hello " + declare_static("day" if x else "night"))))))`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['hello day', 'hello night']);
+    });
+
     it('handles declare_static with inline concat of ternary + string', async () => {
       const code = `from gt_flask import t, declare_static
 t(f"Result: {declare_static(('yes' if x else 'no') + '!')}")`;

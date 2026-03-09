@@ -140,7 +140,9 @@ async function processCall(
       containsStaticCalls(firstArg, imports)) ||
     (firstArg.type === 'binary_operator' &&
       containsStaticCalls(firstArg, imports)) ||
-    (firstArg.type === 'call' && containsStaticCalls(firstArg, imports));
+    (firstArg.type === 'call' && containsStaticCalls(firstArg, imports)) ||
+    (firstArg.type === 'parenthesized_expression' &&
+      containsStaticCalls(firstArg, imports));
 
   if (hasStaticHelpers) {
     // Compound expression path: parse into StringNode tree

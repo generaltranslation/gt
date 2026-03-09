@@ -180,6 +180,20 @@ setup(
     expect(matchSetupPyDependency(content)).toBeNull();
   });
 
+  it('handles strings ending with escaped backslash', () => {
+    // "path\\" has an escaped backslash before the closing quote.
+    // The old code sees \ before " and thinks the quote is escaped,
+    // so inString stays true forever and findMatchingBracket returns -1.
+    const content = `install_requires=["path\\\\", "gt-flask>=1.0"]`;
+    expect(matchSetupPyDependency(content)).toBe(Libraries.GT_FLASK);
+  });
+
+  it('handles strings with multiple escaped backslashes before quote', () => {
+    // Four backslashes = two escaped backslashes, closing quote is real
+    const content = `install_requires=["C:\\\\Users\\\\", "gt-flask"]`;
+    expect(matchSetupPyDependency(content)).toBe(Libraries.GT_FLASK);
+  });
+
   it('handles nested brackets in extras_require', () => {
     const content = `
 setup(
