@@ -50,7 +50,7 @@ export function getDefaultLocale() {
  * @example
  * const localeProperties = getLocaleProperties('en-US');
  */
-export function getLocaleProperties(locale: string) {
+export function getLocaleProperties(locale?: string) {
   const i18nManager = getI18nManager();
   const gtInstance = i18nManager.getGTClass();
   return gtInstance.getLocaleProperties(locale);
