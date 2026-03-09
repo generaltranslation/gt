@@ -1,5 +1,12 @@
 # gt-react
 
+## 10.11.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@1.5.5
+
 ## 10.11.4
 
 ### Patch Changes

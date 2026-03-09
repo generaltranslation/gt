@@ -1,5 +1,11 @@
 # gt-i18n
 
+## 0.5.0
+
+### Minor Changes
+
+- [#1090](https://github.com/generaltranslation/gt/pull/1090) [`7846d06`](https://github.com/generaltranslation/gt/commit/7846d0672ba357081793706fdf55313b4f5428e0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale utilities
+
 ## 0.4.2
 
 ### Patch Changes
