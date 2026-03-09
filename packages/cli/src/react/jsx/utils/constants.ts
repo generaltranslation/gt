@@ -1,12 +1,20 @@
 export const DECLARE_VAR_FUNCTION = 'declareVar';
+/**
+ * COMPAT: Legacy support for declareStatic function.
+ */
 export const DECLARE_STATIC_FUNCTION = 'declareStatic';
+export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
 export const INLINE_TRANSLATION_HOOK = 'useGT';
 export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
 export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
+/**
+ * COMPAT: Legacy support for Static component.
+ */
 export const STATIC_COMPONENT = 'Static';
+export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
 
 // GT translation functions
@@ -18,8 +26,10 @@ export const GT_TRANSLATION_FUNCS = [
   MSG_REGISTRATION_FUNCTION,
   DECLARE_VAR_FUNCTION,
   DECLARE_STATIC_FUNCTION,
+  DERIVE_FUNCTION,
   TRANSLATION_COMPONENT,
   STATIC_COMPONENT,
+  DERIVE_COMPONENT,
   'Var',
   'DateTime',
   'Currency',
@@ -34,6 +44,7 @@ export const VARIABLE_COMPONENTS = [
   'Currency',
   'Num',
   STATIC_COMPONENT,
+  DERIVE_COMPONENT,
 ];
 
 export const GT_ATTRIBUTES_WITH_SUGAR = [

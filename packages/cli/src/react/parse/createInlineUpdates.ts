@@ -99,7 +99,7 @@ export async function createInlineUpdates(
   // Post processing steps:
   await calculateHashes(updates);
   dedupeUpdates(updates);
-  linkStaticUpdates(updates);
+  linkDeriveUpdates(updates);
 
   return { updates, errors, warnings: [...warnings] };
 }
@@ -177,12 +177,12 @@ function dedupeUpdates(updates: Updates): void {
 }
 
 /**
- * Mark static updates as the related by attaching a shared id to static content
- * Id is calculated as the hash of the static children's combined hashes
+ * Mark derivable updates as the related by attaching a shared id to derivable content
+ * Id is calculated as the hash of the Derive children's combined hashes
  */
-function linkStaticUpdates(updates: Updates): void {
-  // construct map of temporary static ids to updates
-  const temporaryStaticIdToUpdates = updates.reduce(
+function linkDeriveUpdates(updates: Updates): void {
+  // construct map of temporary derive ids to updates
+  const temporaryDeriveIdToUpdates = updates.reduce(
     (acc: Record<string, Updates[number][]>, update: Updates[number]) => {
       if (update.metadata.staticId) {
         if (!acc[update.metadata.staticId]) {
@@ -195,15 +195,15 @@ function linkStaticUpdates(updates: Updates): void {
     {} as Record<string, Updates[number][]>
   );
 
-  // Calculate shared static ids
-  Object.values(temporaryStaticIdToUpdates).forEach((staticUpdates) => {
-    const hashes = staticUpdates
+  // Calculate shared derive ids
+  Object.values(temporaryDeriveIdToUpdates).forEach((deriveUpdates) => {
+    const hashes = deriveUpdates
       .map((update) => update.metadata.hash)
       .sort()
       .join('-');
-    const sharedStaticId = hashString(hashes);
-    staticUpdates.forEach((update) => {
-      update.metadata.staticId = sharedStaticId;
+    const sharedDeriveId = hashString(hashes);
+    deriveUpdates.forEach((update) => {
+      update.metadata.staticId = sharedDeriveId;
     });
   });
 }
