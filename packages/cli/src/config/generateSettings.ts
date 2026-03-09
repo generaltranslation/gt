@@ -32,6 +32,17 @@ export const DEFAULT_SRC_PATTERNS = [
   'components/**/*.{js,jsx,ts,tsx}',
 ];
 
+export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
+export const DEFAULT_PYTHON_SRC_EXCLUDES = [
+  'venv/**',
+  '.venv/**',
+  '__pycache__/**',
+  '**/migrations/**',
+  '**/tests/**',
+  '**/test_*.py',
+  '**/*_test.py',
+];
+
 /**
  * Generates settings from any
  * @param flags - The CLI flags to generate settings from
@@ -158,8 +169,8 @@ export async function generateSettings(
   // Add publish if not provided
   mergedOptions.publish = (gtConfig.publish || flags.publish) ?? false;
 
-  // Populate src if not provided
-  mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
+  // Don't default src here — each pipeline (JS/Python) has its own defaults.
+  // Only set src if the user explicitly provided it via flags or config.
 
   // Resolve all glob patterns in the files object
   const compositePatterns = [
