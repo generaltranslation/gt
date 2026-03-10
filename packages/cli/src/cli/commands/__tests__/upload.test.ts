@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { upload } from '../upload';
-import type { ResolvedFiles, Settings, TransformFiles } from '../../../types/index.js';
+import type {
+  ResolvedFiles,
+  Settings,
+  TransformFiles,
+} from '../../../types/index.js';
 import type { UploadOptions } from '../../base.js';
 
 vi.mock('../../../console/logger.js');
@@ -279,9 +283,7 @@ describe('upload - composite JSON', () => {
     vi.mocked(createFileMapping).mockReturnValue({
       es: { 'plain.json': 'es/plain.json' },
     });
-    vi.mocked(existsSync).mockImplementation(
-      (p) => p === 'es/plain.json'
-    );
+    vi.mocked(existsSync).mockImplementation((p) => p === 'es/plain.json');
     vi.mocked(readFileSync).mockReturnValue(translatedPlain);
 
     await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
