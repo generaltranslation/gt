@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.9.0
+
+### Minor Changes
+
+- [#1099](https://github.com/generaltranslation/gt/pull/1099) [`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add twilio json support for cli
+
+### Patch Changes
+
+- Updated dependencies [[`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8)]:
+  - generaltranslation@8.1.16
+  - @generaltranslation/python-extractor@0.1.2
+
 ## 2.8.2
 
 ### Patch Changes
