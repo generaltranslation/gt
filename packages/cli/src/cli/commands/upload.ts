@@ -130,7 +130,7 @@ export async function upload(
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'TWILIO_CONTENT_JSON' as const,
-          dataFormat,
+          dataFormat: 'STRING' as const,
           locale: settings.defaultLocale,
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(parsedJson),
