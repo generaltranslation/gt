@@ -1,6 +1,6 @@
 import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
 import apiRequest from './utils/apiRequest';
-import type { FileReference } from '../types-dir/api/file';
+import type { FileReferenceOptionalBranchId } from '../types-dir/api/file';
 import { processBatches } from './utils/batch';
 
 export type EnqueueOptions = {
@@ -22,7 +22,7 @@ export type EnqueueOptions = {
  * @returns The result of the API call
  */
 export default async function _enqueueFiles(
-  files: FileReference[],
+  files: FileReferenceOptionalBranchId[],
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
