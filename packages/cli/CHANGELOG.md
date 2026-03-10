@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.8.1
+
+### Patch Changes
+
+- [#1093](https://github.com/generaltranslation/gt/pull/1093) [`69a13a5`](https://github.com/generaltranslation/gt/commit/69a13a5791254ebb4a2679321d24fecebb1fef11) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for temporary structural transforms
+
 ## 2.8.0
 
 ### Minor Changes
