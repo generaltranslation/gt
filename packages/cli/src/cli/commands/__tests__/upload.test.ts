@@ -64,6 +64,90 @@ function makeSettings(
   } as Settings & UploadOptions;
 }
 
+describe('upload - Twilio Content JSON', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should upload Twilio Content JSON files with TWILIO_CONTENT_JSON fileFormat', async () => {
+    const content = JSON.stringify({ body: 'Hello {{1}}' });
+    setMockFiles({ 'twilio/content.json': content });
+
+    const filePaths: ResolvedFiles = {
+      twilioContentJson: ['twilio/content.json'],
+    };
+    const settings = makeSettings({ options: {} });
+
+    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+
+    expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files).toHaveLength(1);
+    expect(call.files[0].source.fileFormat).toBe('TWILIO_CONTENT_JSON');
+  });
+
+  it('should use fileMapping for Twilio Content JSON files (no composite)', async () => {
+    const content = JSON.stringify({ body: 'Hello' });
+    const translatedContent = JSON.stringify({ body: 'Hola' });
+    setMockFiles({ 'twilio/content.json': content });
+
+    const filePaths: ResolvedFiles = {
+      twilioContentJson: ['twilio/content.json'],
+    };
+    const settings = makeSettings({ locales: ['es'], options: {} });
+
+    vi.mocked(createFileMapping).mockReturnValue({
+      es: { 'twilio/content.json': 'twilio/es/content.json' },
+    });
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(translatedContent);
+
+    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    const fileData = call.files[0];
+
+    expect(fileData.translations).toHaveLength(1);
+    expect(fileData.translations[0].locale).toBe('es');
+    expect(fileData.translations[0].content).toBe(translatedContent);
+  });
+
+  it('should handle mix of regular JSON and Twilio Content JSON', async () => {
+    const jsonContent = JSON.stringify({ title: 'Hello' });
+    const twilioContent = JSON.stringify({ body: 'Hi {{1}}' });
+    setMockFiles({
+      'messages.json': jsonContent,
+      'twilio/content.json': twilioContent,
+    });
+
+    const filePaths: ResolvedFiles = {
+      json: ['messages.json'],
+      twilioContentJson: ['twilio/content.json'],
+    };
+    const settings = makeSettings({ locales: ['es'], options: {} });
+
+    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files).toHaveLength(2);
+
+    const jsonFile = call.files.find(
+      (f) => f.source.fileName === 'messages.json'
+    );
+    const twilioFile = call.files.find(
+      (f) => f.source.fileName === 'twilio/content.json'
+    );
+
+    expect(jsonFile?.source.fileFormat).toBe('JSON');
+    expect(twilioFile?.source.fileFormat).toBe('TWILIO_CONTENT_JSON');
+  });
+});
+
 describe('upload - composite JSON', () => {
   beforeEach(() => {
     vi.clearAllMocks();

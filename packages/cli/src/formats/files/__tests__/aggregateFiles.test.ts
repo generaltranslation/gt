@@ -450,6 +450,105 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
+  describe('Twilio Content JSON files', () => {
+    it('should process valid Twilio Content JSON files with correct fileFormat', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: ['/full/path/content.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{"key": "value"}');
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fileFormat).toBe('TWILIO_CONTENT_JSON');
+      expect(result[0].dataFormat).toBe('STRING');
+      expect(result[0].fileName).toBe('content.json');
+    });
+
+    it('should skip empty Twilio Content JSON files and log warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: [
+              '/full/path/empty.json',
+              '/full/path/valid.json',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('') // empty file
+        .mockReturnValueOnce('{"key": "value"}'); // valid file
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.json: JSON file is not parsable'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('valid.json');
+    });
+
+    it('should skip unparsable Twilio Content JSON files', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: ['/full/path/invalid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{ invalid json');
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping invalid.json: JSON file is not parsable'
+      );
+      expect(result).toHaveLength(0);
+    });
+
+    it('should allow invalid JSON when validation is skipped', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: ['/full/path/invalid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {
+          skipFileValidation: {
+            json: true,
+          },
+        },
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{ invalid json');
+
+      const result = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('invalid.json');
+    });
+  });
+
   describe('Mixed file types with empty files', () => {
     it('should skip empty files across all file types and process valid ones', async () => {
       const settings = {
@@ -457,6 +556,7 @@ describe('aggregateFiles - Empty File Handling', () => {
           resolvedPaths: {
             json: ['/full/path/empty.json', '/full/path/valid.json'],
             yaml: ['/full/path/empty.yaml'],
+            twilioContentJson: ['/full/path/valid-twilio.json'],
             md: ['/full/path/valid.md'],
           },
           placeholderPaths: {},
@@ -469,6 +569,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty JSON
         .mockReturnValueOnce('{"key": "value"}') // valid JSON
         .mockReturnValueOnce('') // empty YAML
+        .mockReturnValueOnce('{"twilio": "content"}') // valid Twilio Content JSON
         .mockReturnValueOnce('# Valid markdown'); // valid MD
 
       const result = await aggregateFiles(settings as any);
@@ -481,12 +582,13 @@ describe('aggregateFiles - Empty File Handling', () => {
         'Skipping empty.yaml: YAML file is empty'
       );
 
-      // Should have 2 valid files
-      expect(result).toHaveLength(2);
+      // Should have 3 valid files
+      expect(result).toHaveLength(3);
 
-      // Check the file names are correct (JSON processed first, then MD after YAML)
+      // Check the file names are correct
       const fileNames = result.map((f) => f.fileName);
       expect(fileNames).toContain('valid.json');
+      expect(fileNames).toContain('valid-twilio.json');
       expect(fileNames).toContain('valid.md');
     });
   });

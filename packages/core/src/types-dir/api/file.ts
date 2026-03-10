@@ -10,7 +10,8 @@ export type FileFormat =
   | 'TS'
   | 'JS'
   | 'HTML'
-  | 'TXT';
+  | 'TXT'
+  | 'TWILIO_CONTENT_JSON';
 
 /**
  * Metadata for files or entries

@@ -111,8 +111,42 @@ export async function upload(
     allFiles.push(...yamlFiles);
   }
 
+  // Process Twilio Content JSON files
+  if (filePaths.twilioContentJson) {
+    const twilioContentJsonFiles = filePaths.twilioContentJson.map(
+      (filePath) => {
+        const content = readFile(filePath);
+
+        const parsedJson = parseJson(
+          content,
+          filePath,
+          additionalOptions,
+          settings.defaultLocale
+        );
+
+        const relativePath = getRelative(filePath);
+
+        return {
+          content: parsedJson,
+          fileName: relativePath,
+          fileFormat: 'TWILIO_CONTENT_JSON' as const,
+          dataFormat,
+          locale: settings.defaultLocale,
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(parsedJson),
+        } satisfies FileToUpload;
+      }
+    );
+    allFiles.push(...twilioContentJsonFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (fileType === 'json' || fileType === 'yaml') continue;
+    if (
+      fileType === 'json' ||
+      fileType === 'yaml' ||
+      fileType === 'twilioContentJson'
+    )
+      continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         const content = readFile(filePath);
