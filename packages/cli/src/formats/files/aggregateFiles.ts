@@ -149,8 +149,64 @@ export async function aggregateFiles(
     allFiles.push(...yamlFiles.filter((file) => file !== null));
   }
 
+  // Process Twilio Content JSON files
+  if (filePaths.twilioContentJson) {
+    const twilioContentJsonFiles = filePaths.twilioContentJson
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+
+        // Pre-validate JSON parseability
+        if (!skipValidation?.json) {
+          try {
+            JSON.parse(content);
+          } catch {
+            logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
+            recordWarning(
+              'skipped_file',
+              relativePath,
+              'JSON file is not parsable'
+            );
+            return null;
+          }
+        }
+
+        const parsedJson = parseJson(
+          content,
+          filePath,
+          settings.options || {},
+          settings.defaultLocale
+        );
+
+        return {
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(parsedJson),
+          content: parsedJson,
+          fileName: relativePath,
+          fileFormat: 'TWILIO_CONTENT_JSON' as const,
+          dataFormat: 'STRING' as const,
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => {
+        if (!file) return false;
+        if (typeof file.content !== 'string' || !file.content.trim()) {
+          logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
+          recordWarning('skipped_file', file.fileName, 'JSON file is empty');
+          return false;
+        }
+        return true;
+      });
+    allFiles.push(...twilioContentJsonFiles.filter((file) => file !== null));
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (fileType === 'json' || fileType === 'yaml') continue;
+    if (
+      fileType === 'json' ||
+      fileType === 'yaml' ||
+      fileType === 'twilioContentJson'
+    )
+      continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType]
         .map((filePath) => {

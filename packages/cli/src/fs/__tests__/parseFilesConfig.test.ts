@@ -919,6 +919,46 @@ describe('parseFilesConfig', () => {
     });
   });
 
+  describe('resolveFiles - twilioContentJson', () => {
+    beforeEach(() => {
+      vi.mocked(fg.sync).mockReturnValue([]);
+    });
+
+    const defaultLocales = ['en', 'fr', 'es'];
+
+    it('should resolve twilioContentJson glob patterns', () => {
+      const files = {
+        twilioContentJson: {
+          include: ['src/[locale]/twilio/*.json'],
+        },
+      };
+
+      vi.mocked(fg.sync).mockReturnValue([
+        '/project/src/en/twilio/content.json',
+      ]);
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.resolvedPaths.twilioContentJson).toEqual([
+        '/project/src/en/twilio/content.json',
+      ]);
+      expect(result.placeholderPaths.twilioContentJson).toEqual([
+        '/project/src/[locale]/twilio/content.json',
+      ]);
+    });
+
+    it('should replace [locale] in twilioContentJson paths', () => {
+      const files: ResolvedFiles = {
+        twilioContentJson: ['src/[locale]/twilio/content.json'],
+        gt: 'output/[locale].json',
+      };
+
+      const result = resolveLocaleFiles(files, 'fr');
+
+      expect(result.twilioContentJson).toEqual(['src/fr/twilio/content.json']);
+    });
+  });
+
   describe('resolveFiles - composite patterns', () => {
     beforeEach(() => {
       vi.mocked(fg.sync).mockReturnValue([]);
