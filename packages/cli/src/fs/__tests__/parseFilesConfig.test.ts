@@ -955,9 +955,7 @@ describe('parseFilesConfig', () => {
 
       const result = resolveLocaleFiles(files, 'fr');
 
-      expect(result.twilioContentJson).toEqual([
-        'src/fr/twilio/content.json',
-      ]);
+      expect(result.twilioContentJson).toEqual(['src/fr/twilio/content.json']);
     });
   });
 
