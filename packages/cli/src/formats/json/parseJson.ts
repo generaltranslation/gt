@@ -9,6 +9,7 @@ import {
   generateSourceObjectPointers,
   validateJsonSchema,
 } from './utils.js';
+import { applyStructuralTransforms } from './transformJson.js';
 
 // Parse a JSON file according to a JSON schema
 export function parseJson(
@@ -28,6 +29,14 @@ export function parseJson(
   } catch {
     logger.error(`Invalid JSON file: ${filePath}`);
     return exitSync(1);
+  }
+
+  if (jsonSchema.structuralTransform && jsonSchema.composite) {
+    applyStructuralTransforms(
+      json,
+      jsonSchema.structuralTransform,
+      jsonSchema.composite
+    );
   }
 
   // Handle include

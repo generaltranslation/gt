@@ -246,5 +246,13 @@ export function validateJsonSchema(
     return exitSync(1);
     return null;
   }
+
+  if (jsonSchema.structuralTransform && !jsonSchema.composite) {
+    logger.error(
+      'structuralTransform requires composite to be defined in the JSON schema'
+    );
+    return exitSync(1);
+    return null;
+  }
   return jsonSchema;
 }

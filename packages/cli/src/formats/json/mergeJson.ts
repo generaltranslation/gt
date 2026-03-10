@@ -14,6 +14,10 @@ import { JSONPath } from 'jsonpath-plus';
 import { getLocaleProperties } from 'generaltranslation';
 import { replaceLocalePlaceholders } from '../utils.js';
 import { gt } from '../../utils/gt.js';
+import {
+  applyStructuralTransforms,
+  unapplyStructuralTransforms,
+} from './transformJson.js';
 
 export function mergeJson(
   originalContent: string,
@@ -47,6 +51,14 @@ export function mergeJson(
   const canonicalLocaleOrder = useCanonicalLocaleKeys
     ? localeOrder.map((locale) => gt.resolveCanonicalLocale(locale))
     : localeOrder;
+
+  if (jsonSchema.structuralTransform && jsonSchema.composite) {
+    applyStructuralTransforms(
+      originalJson,
+      jsonSchema.structuralTransform,
+      jsonSchema.composite
+    );
+  }
 
   // Handle include
   if (jsonSchema.include) {
@@ -382,6 +394,14 @@ export function mergeJson(
       JSONPointer.set(mergedJson, sourceObjectPointer, sourceObjectValue);
     }
   }
+  if (jsonSchema.structuralTransform && jsonSchema.composite) {
+    unapplyStructuralTransforms(
+      mergedJson,
+      jsonSchema.structuralTransform,
+      jsonSchema.composite
+    );
+  }
+
   return [JSON.stringify(mergedJson, null, 2)];
 }
 
