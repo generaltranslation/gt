@@ -271,8 +271,14 @@ export type SharedStaticAssetsConfig = {
   mirrorToLocales?: boolean;
 };
 
+export type StructuralTransform = {
+  sourcePointer: string; // e.g., "/msg"
+  destinationPointer: string; // e.g., "/translations/en"
+};
+
 export type JsonSchema = {
   preset?: 'mintlify' | 'openapi';
+  structuralTransform?: StructuralTransform[];
 
   // exactly 1 of include or composite must be provided; not both
 

@@ -1,4 +1,4 @@
-import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
+import { AdditionalOptions } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import {
   findMatchingItemArray,
@@ -8,6 +8,7 @@ import {
 } from './utils.js';
 import { flattenJsonWithStringFilter } from './flattenJson.js';
 import { gt } from '../../utils/gt.js';
+import { applyStructuralTransforms } from './transformJson.js';
 
 /**
  * Extracts translated values from a full JSON file back into composite JSON format.
@@ -51,6 +52,14 @@ export function extractJson(
   const canonicalDefaultLocale = useCanonicalLocaleKeys
     ? gt.resolveCanonicalLocale(defaultLocale)
     : defaultLocale;
+
+  if (jsonSchema.structuralTransform && jsonSchema.composite) {
+    applyStructuralTransforms(
+      localJson,
+      jsonSchema.structuralTransform,
+      jsonSchema.composite
+    );
+  }
 
   // Handle include-style schemas (simple path-based extraction)
   if (jsonSchema.include) {
