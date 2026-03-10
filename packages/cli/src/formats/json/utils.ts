@@ -216,6 +216,13 @@ export function generateSourceObjectPointers(
   return sourceObjectPointers;
 }
 
+/**
+ * Validate the json schema for composite or include schemas
+ * @param options - Additional options containing jsonSchema config
+ * @param filePath - The path to the file (used for matching jsonSchema)
+ * @returns The json schema, or null if no schema is found
+ * @returns exitSync(1) if the json schema is invalid
+ */
 export function validateJsonSchema(
   options: AdditionalOptions,
   filePath: string
