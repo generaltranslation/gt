@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.8.2
+
+### Patch Changes
+
+- [#1098](https://github.com/generaltranslation/gt/pull/1098) [`612ace4`](https://github.com/generaltranslation/gt/commit/612ace4bb30aaa3406b949931c8ffdb3f43ebd9f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: upload supporting composite json
+
+- Updated dependencies [[`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e)]:
+  - generaltranslation@8.1.15
+  - @generaltranslation/python-extractor@0.1.1
+
 ## 2.8.1
 
 ### Patch Changes

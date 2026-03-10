@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.15
+
+### Patch Changes
+
+- [#1096](https://github.com/generaltranslation/gt/pull/1096) [`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove required branchId field for enqueue
+
 ## 8.1.14
 
 ### Patch Changes
