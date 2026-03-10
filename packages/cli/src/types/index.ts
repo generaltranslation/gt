@@ -208,7 +208,7 @@ export type Settings = {
   _versionId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
-  src: string[]; // list of glob patterns for gt-next and gt-react
+  src?: string[]; // list of glob patterns for source file scanning
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
   modelProvider?: string;

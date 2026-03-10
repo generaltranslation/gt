@@ -5,7 +5,7 @@ import { readFile, getRelative } from '../../../fs/findFilepath.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
-import { determineLibrary } from '../../../fs/determineFramework.js';
+import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 
 vi.mock('../../../console/logger.js', () => ({
@@ -18,7 +18,7 @@ vi.mock('../../../fs/findFilepath.js');
 vi.mock('../../json/parseJson.js');
 vi.mock('../../yaml/parseYaml.js');
 vi.mock('../../../utils/sanitizeFileContent.js');
-vi.mock('../../../fs/determineFramework.js');
+vi.mock('../../../fs/determineFramework/index.js');
 vi.mock('../../../utils/validateMdx.js');
 
 const mockLogWarning = vi.mocked(logger.warn);
