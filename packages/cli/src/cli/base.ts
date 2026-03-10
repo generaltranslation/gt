@@ -596,10 +596,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
               { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
               { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
               { value: 'yaml', label: FILE_EXT_TO_EXT_LABEL.yaml },
-              {
-                value: 'twilioContentJson',
-                label: FILE_EXT_TO_EXT_LABEL.twilioContentJson,
-              },
+              // TWILIO_CONTENT_JSON not supported in CLI init as its too niche
             ],
             required: !isUsingGT,
           });
