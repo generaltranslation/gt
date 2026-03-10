@@ -11,6 +11,8 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js
 import { UploadOptions } from '../base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../../formats/json/parseJson.js';
+import { extractJson } from '../../formats/json/extractJson.js';
+import { validateJsonSchema } from '../../formats/json/utils.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -40,6 +42,10 @@ export async function upload(
   // Collect all files to translate
   const allFiles: FileToUpload[] = [];
   const additionalOptions = settings.options || {};
+  const compositeJsonFiles = new Map<
+    string,
+    { filePath: string; content: string }
+  >();
 
   // Process JSON files
   if (filePaths.json) {
@@ -58,6 +64,12 @@ export async function upload(
       );
 
       const relativePath = getRelative(filePath);
+
+      const jsonSchema = validateJsonSchema(additionalOptions, filePath);
+      if (jsonSchema?.composite) {
+        compositeJsonFiles.set(relativePath, { filePath, content });
+      }
+
       return {
         content: parsedJson,
         fileName: relativePath,
@@ -155,19 +167,44 @@ export async function upload(
     };
 
     const translations: FileToUpload[] = [];
+    const compositeInfo = compositeJsonFiles.get(file.fileName);
+
     for (const locale of locales) {
-      const translatedFileName = fileMapping[locale][file.fileName];
-      if (translatedFileName && existsSync(translatedFileName)) {
-        const translatedContent = readFileSync(translatedFileName, 'utf8');
-        translations.push({
-          content: translatedContent,
-          fileName: file.fileName,
-          fileFormat: file.fileFormat,
-          dataFormat: file.dataFormat,
+      if (compositeInfo) {
+        // Composite JSON: extract translations from the same source file
+        const extracted = extractJson(
+          compositeInfo.content,
+          compositeInfo.filePath,
+          additionalOptions,
           locale,
-          fileId: file.fileId,
-          versionId: file.versionId,
-        });
+          settings.defaultLocale
+        );
+        if (extracted) {
+          translations.push({
+            content: extracted,
+            fileName: file.fileName,
+            fileFormat: file.fileFormat,
+            dataFormat: file.dataFormat,
+            locale,
+            fileId: file.fileId,
+            versionId: file.versionId,
+          });
+        }
+      } else {
+        // Non-composite: look for separate translation files
+        const translatedFileName = fileMapping[locale]?.[file.fileName];
+        if (translatedFileName && existsSync(translatedFileName)) {
+          const translatedContent = readFileSync(translatedFileName, 'utf8');
+          translations.push({
+            content: translatedContent,
+            fileName: file.fileName,
+            fileFormat: file.fileFormat,
+            dataFormat: file.dataFormat,
+            locale,
+            fileId: file.fileId,
+            versionId: file.versionId,
+          });
+        }
       }
     }
     return {
