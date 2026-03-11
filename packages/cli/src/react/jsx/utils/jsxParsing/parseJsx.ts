@@ -41,7 +41,7 @@ import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
-import { extractSurroundingLines } from '../extractSurroundingLines.js';
+import { extractSourceCode } from '../extractSourceCode.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../utils/constants.js';
 
 // Handle CommonJS/ESM interop
@@ -616,14 +616,14 @@ function parseJSXElement({
   const startLine = node.loc?.start?.line;
   const endLine = node.loc?.end?.line;
   if (startLine && endLine) {
-    const surroundingLines = extractSurroundingLines(
+    const entry = extractSourceCode(
       config.file,
       startLine,
       endLine,
       SURROUNDING_LINE_COUNT
     );
-    if (surroundingLines) {
-      metadata.surroundingLines = surroundingLines;
+    if (entry && relativeFilepath) {
+      metadata.sourceCode = { [relativeFilepath]: [entry] };
     }
   }
 

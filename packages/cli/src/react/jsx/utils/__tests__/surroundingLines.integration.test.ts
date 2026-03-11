@@ -9,7 +9,7 @@ import { parseStrings } from '../parseStringFunction.js';
 import { parseTranslationComponent } from '../jsxParsing/parseJsx.js';
 import { Updates } from '../../../../types/index.js';
 
-describe('surroundingLines metadata integration', () => {
+describe('sourceCode metadata integration', () => {
   const tempFiles: string[] = [];
 
   function writeTempFile(content: string): string {
@@ -31,7 +31,7 @@ describe('surroundingLines metadata integration', () => {
     tempFiles.length = 0;
   });
 
-  it('should include surroundingLines in metadata for gt() string calls', () => {
+  it('should include sourceCode in metadata for gt() string calls', () => {
     const code = [
       'import { useGT } from "gt-next";',
       '',
@@ -44,6 +44,7 @@ describe('surroundingLines metadata integration', () => {
     ].join('\n');
 
     const filePath = writeTempFile(code);
+    const relativeFilePath = path.relative(process.cwd(), filePath);
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
@@ -81,14 +82,18 @@ describe('surroundingLines metadata integration', () => {
     expect(updates).toHaveLength(1);
     expect(errors).toHaveLength(0);
 
-    const metadata = updates[0].metadata;
-    expect(metadata.surroundingLines).toBeDefined();
-    expect(metadata.surroundingLines.target).toContain('gt("Hello, {name}!")');
-    expect(metadata.surroundingLines.above).toContain('const name = "world"');
-    expect(metadata.surroundingLines.below).toContain('return greeting');
+    const { sourceCode } = updates[0].metadata;
+    expect(sourceCode).toBeDefined();
+    expect(sourceCode[relativeFilePath]).toBeDefined();
+    expect(sourceCode[relativeFilePath]).toHaveLength(1);
+
+    const entry = sourceCode[relativeFilePath][0];
+    expect(entry.target).toContain('gt("Hello, {name}!")');
+    expect(entry.before).toContain('const name = "world"');
+    expect(entry.after).toContain('return greeting');
   });
 
-  it('should include surroundingLines in metadata for <T> components', () => {
+  it('should include sourceCode in metadata for <T> components', () => {
     const code = [
       'import { T } from "gt-next";',
       '',
@@ -103,6 +108,7 @@ describe('surroundingLines metadata integration', () => {
     ].join('\n');
 
     const filePath = writeTempFile(code);
+    const relativeFilePath = path.relative(process.cwd(), filePath);
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
@@ -143,12 +149,15 @@ describe('surroundingLines metadata integration', () => {
     expect(updates).toHaveLength(1);
     expect(errors).toHaveLength(0);
 
-    const metadata = updates[0].metadata;
-    expect(metadata.surroundingLines).toBeDefined();
-    expect(metadata.surroundingLines.target).toContain('<T>');
-    expect(metadata.surroundingLines.target).toContain('</T>');
-    expect(metadata.surroundingLines.above).toContain('return (');
-    expect(metadata.surroundingLines.below).toContain(');');
+    const { sourceCode } = updates[0].metadata;
+    expect(sourceCode).toBeDefined();
+    expect(sourceCode[relativeFilePath]).toBeDefined();
+
+    const entry = sourceCode[relativeFilePath][0];
+    expect(entry.target).toContain('<T>');
+    expect(entry.target).toContain('</T>');
+    expect(entry.before).toContain('return (');
+    expect(entry.after).toContain(');');
   });
 
   it('should handle file at top with fewer lines above than requested', () => {
@@ -159,6 +168,7 @@ describe('surroundingLines metadata integration', () => {
     ].join('\n');
 
     const filePath = writeTempFile(code);
+    const relativeFilePath = path.relative(process.cwd(), filePath);
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
@@ -194,10 +204,11 @@ describe('surroundingLines metadata integration', () => {
     });
 
     expect(updates).toHaveLength(1);
-    const { surroundingLines } = updates[0].metadata;
-    expect(surroundingLines).toBeDefined();
-    expect(surroundingLines.target).toContain('gt("top of file")');
-    // Should have fewer above lines than the default SURROUNDING_LINE_COUNT
-    expect(surroundingLines.above.split('\n').length).toBeLessThanOrEqual(3);
+    const { sourceCode } = updates[0].metadata;
+    expect(sourceCode).toBeDefined();
+
+    const entry = sourceCode[relativeFilePath][0];
+    expect(entry.target).toContain('gt("top of file")');
+    expect(entry.before.split('\n').length).toBeLessThanOrEqual(3);
   });
 });

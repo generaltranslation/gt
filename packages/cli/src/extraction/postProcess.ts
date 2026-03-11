@@ -57,6 +57,26 @@ export function dedupeUpdates(updates: Updates): void {
     if (existingPaths.length) {
       existing.metadata.filePaths = existingPaths;
     }
+
+    // Merge sourceCode entries
+    const newSourceCode = update.metadata.sourceCode as
+      | Record<string, unknown[]>
+      | undefined;
+    if (newSourceCode && typeof newSourceCode === 'object') {
+      if (!existing.metadata.sourceCode) {
+        existing.metadata.sourceCode = {};
+      }
+      const existingSourceCode = existing.metadata.sourceCode as Record<
+        string,
+        unknown[]
+      >;
+      for (const [file, entries] of Object.entries(newSourceCode)) {
+        if (!existingSourceCode[file]) {
+          existingSourceCode[file] = [];
+        }
+        existingSourceCode[file].push(...entries);
+      }
+    }
   }
 
   const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];

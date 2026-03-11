@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
-import { extractSurroundingLines } from '../extractSurroundingLines.js';
+import { extractSourceCode } from '../extractSourceCode.js';
 
 vi.mock('node:fs');
 const mockFs = vi.mocked(fs);
 
-describe('extractSurroundingLines', () => {
+describe('extractSourceCode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -30,12 +30,12 @@ describe('extractSurroundingLines', () => {
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
-    const result = extractSurroundingLines('/test/file.tsx', 6, 6, 3);
+    const result = extractSourceCode('/test/single-line.tsx', 6, 6, 3);
 
     expect(result).toEqual({
-      above: '\nfunction Page() {\n  const gt = useGT();',
+      before: '\nfunction Page() {\n  const gt = useGT();',
       target: '  const greeting = gt("Hello, world!");',
-      below: '  return <div>{greeting}</div>;\n}',
+      after: '  return <div>{greeting}</div>;\n}',
     });
   });
 
@@ -56,13 +56,13 @@ describe('extractSurroundingLines', () => {
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
-    const result = extractSurroundingLines('/test/file.tsx', 5, 9, 2);
+    const result = extractSourceCode('/test/multi-line.tsx', 5, 9, 2);
 
     expect(result).toEqual({
-      above: 'function Page() {\n  return (',
+      before: 'function Page() {\n  return (',
       target:
         '    <T>\n      <div>\n        Hello, world!\n      </div>\n    </T>',
-      below: '  );\n}',
+      after: '  );\n}',
     });
   });
 
@@ -75,12 +75,12 @@ describe('extractSurroundingLines', () => {
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
-    const result = extractSurroundingLines('/test/file.tsx', 1, 1, 5);
+    const result = extractSourceCode('/test/top.tsx', 1, 1, 5);
 
     expect(result).toEqual({
-      above: '',
+      before: '',
       target: 'const greeting = gt("Hello!");',
-      below: 'const farewell = gt("Goodbye!");\nexport { greeting, farewell };',
+      after: 'const farewell = gt("Goodbye!");\nexport { greeting, farewell };',
     });
   });
 
@@ -94,12 +94,12 @@ describe('extractSurroundingLines', () => {
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
-    const result = extractSurroundingLines('/test/file.tsx', 4, 4, 5);
+    const result = extractSourceCode('/test/bottom.tsx', 4, 4, 5);
 
     expect(result).toEqual({
-      above: 'import { useGT } from "gt-next";\n\nconst gt = useGT();',
+      before: 'import { useGT } from "gt-next";\n\nconst gt = useGT();',
       target: 'const msg = gt("Last line");',
-      below: '',
+      after: '',
     });
   });
 
@@ -108,12 +108,12 @@ describe('extractSurroundingLines', () => {
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
-    const result = extractSurroundingLines('/test/file.tsx', 2, 2, 10);
+    const result = extractSourceCode('/test/large-n.tsx', 2, 2, 10);
 
     expect(result).toEqual({
-      above: 'line 1',
+      before: 'line 1',
       target: 'line 2',
-      below: 'line 3',
+      after: 'line 3',
     });
   });
 
@@ -122,12 +122,12 @@ describe('extractSurroundingLines', () => {
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
-    const result = extractSurroundingLines('/test/file.tsx', 2, 2, 0);
+    const result = extractSourceCode('/test/zero-n.tsx', 2, 2, 0);
 
     expect(result).toEqual({
-      above: '',
+      before: '',
       target: 'line 2',
-      below: '',
+      after: '',
     });
   });
 
@@ -136,7 +136,7 @@ describe('extractSurroundingLines', () => {
       throw new Error('ENOENT');
     });
 
-    const result = extractSurroundingLines('/nonexistent/file.tsx', 1, 1, 5);
+    const result = extractSourceCode('/nonexistent/file.tsx', 1, 1, 5);
 
     expect(result).toBeUndefined();
   });
@@ -144,7 +144,7 @@ describe('extractSurroundingLines', () => {
   it('should return undefined if readFileSync returns non-string', () => {
     mockFs.readFileSync.mockReturnValue(undefined as any);
 
-    const result = extractSurroundingLines('/test/file.tsx', 1, 1, 5);
+    const result = extractSourceCode('/test/non-string.tsx', 1, 1, 5);
 
     expect(result).toBeUndefined();
   });
@@ -152,12 +152,12 @@ describe('extractSurroundingLines', () => {
   it('should handle a single-line file', () => {
     mockFs.readFileSync.mockReturnValue('const x = gt("only line");');
 
-    const result = extractSurroundingLines('/test/file.tsx', 1, 1, 5);
+    const result = extractSourceCode('/test/single-line-file.tsx', 1, 1, 5);
 
     expect(result).toEqual({
-      above: '',
+      before: '',
       target: 'const x = gt("only line");',
-      below: '',
+      after: '',
     });
   });
 });
