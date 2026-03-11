@@ -50,7 +50,10 @@ export function extractStringEntryMetadata({
   options?: t.CallExpression['arguments'][number];
   output: ParsingOutput;
   config: ParsingConfig;
-  nodeLoc?: { start?: { line: number } | null; end?: { line: number } | null } | null;
+  nodeLoc?: {
+    start?: { line: number } | null;
+    end?: { line: number } | null;
+  } | null;
   surroundingLineCount?: number;
 }): InlineMetadata {
   // extract filepath for entry

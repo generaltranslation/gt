@@ -60,7 +60,8 @@ describe('extractSurroundingLines', () => {
 
     expect(result).toEqual({
       above: 'function Page() {\n  return (',
-      target: '    <T>\n      <div>\n        Hello, world!\n      </div>\n    </T>',
+      target:
+        '    <T>\n      <div>\n        Hello, world!\n      </div>\n    </T>',
       below: '  );\n}',
     });
   });
@@ -103,11 +104,7 @@ describe('extractSurroundingLines', () => {
   });
 
   it('should handle n larger than available lines', () => {
-    const fileContent = makeFile([
-      'line 1',
-      'line 2',
-      'line 3',
-    ]);
+    const fileContent = makeFile(['line 1', 'line 2', 'line 3']);
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
@@ -121,11 +118,7 @@ describe('extractSurroundingLines', () => {
   });
 
   it('should handle n=0 (no surrounding lines)', () => {
-    const fileContent = makeFile([
-      'line 1',
-      'line 2',
-      'line 3',
-    ]);
+    const fileContent = makeFile(['line 1', 'line 2', 'line 3']);
 
     mockFs.readFileSync.mockReturnValue(fileContent);
 
