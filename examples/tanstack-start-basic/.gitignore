@@ -1,0 +1,4 @@
+node_modules
+dist
+.vinxi
+src/routeTree.gen.ts

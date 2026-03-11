@@ -1,0 +1,42 @@
+{
+  "01ba21e09b6e9f0d": [
+    {
+      "c": "Bienvenido a TanStack Start + General Translation",
+      "i": 1,
+      "t": "h1"
+    },
+    {
+      "c": "Esta aplicación de ejemplo muestra cómo usar gt-tanstack-start para la internacionalización. Usa el selector de idioma de arriba para cambiar el idioma.",
+      "i": 2,
+      "t": "p"
+    }
+  ],
+  "6ac4f628b6e4c75a": [
+    {
+      "c": "Características",
+      "i": 1,
+      "t": "h2"
+    },
+    {
+      "c": [
+        {
+          "c": "Traducciones renderizadas en el servidor",
+          "i": 3,
+          "t": "li"
+        },
+        {
+          "c": "Archivos JSON locales de traducción",
+          "i": 4,
+          "t": "li"
+        },
+        {
+          "c": "Cambio de idioma instantáneo",
+          "i": 5,
+          "t": "li"
+        }
+      ],
+      "i": 2,
+      "t": "ul"
+    }
+  ]
+}
