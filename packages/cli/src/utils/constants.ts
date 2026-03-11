@@ -10,3 +10,6 @@ export const TEMPLATE_FILE_ID = hashStringSync(TEMPLATE_FILE_NAME);
 export const DEFAULT_GIT_REMOTE_NAME = 'origin';
 
 export const DEFAULT_TIMEOUT_SECONDS = 900;
+
+// Number of source code lines to capture above and below a translation site
+export const SURROUNDING_LINE_COUNT = 5;

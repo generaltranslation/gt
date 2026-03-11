@@ -3,7 +3,7 @@ import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { routeTranslationCall } from './routeTranslationCall.js';
 import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
-import { SURROUNDING_LINE_COUNT } from '../../constants.js';
+import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
 
 /**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).

@@ -42,7 +42,7 @@ import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
 import { extractSurroundingLines } from '../extractSurroundingLines.js';
-import { SURROUNDING_LINE_COUNT } from '../constants.js';
+import { SURROUNDING_LINE_COUNT } from '../../../../utils/constants.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
