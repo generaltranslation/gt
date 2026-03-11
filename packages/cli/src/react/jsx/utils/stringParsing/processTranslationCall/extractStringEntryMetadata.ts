@@ -9,6 +9,10 @@ import generateModule from '@babel/generator';
 import { mapAttributeName } from '../../mapAttributeName.js';
 import pathModule from 'node:path';
 import { isNumberLiteral } from '../../isNumberLiteral.js';
+import {
+  extractSurroundingLines,
+  SurroundingLines,
+} from '../../extractSurroundingLines.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -22,6 +26,7 @@ export type InlineMetadata = {
   id?: string;
   hash?: string;
   filePaths?: string[];
+  surroundingLines?: SurroundingLines;
 };
 
 /**
@@ -39,10 +44,14 @@ export function extractStringEntryMetadata({
   options,
   output,
   config,
+  nodeLoc,
+  surroundingLineCount = 5,
 }: {
   options?: t.CallExpression['arguments'][number];
   output: ParsingOutput;
   config: ParsingConfig;
+  nodeLoc?: { start?: { line: number } | null; end?: { line: number } | null } | null;
+  surroundingLineCount?: number;
 }): InlineMetadata {
   // extract filepath for entry
   const relativeFilepath = pathModule.relative(process.cwd(), config.file);
@@ -54,9 +63,21 @@ export function extractStringEntryMetadata({
     config,
   });
 
+  // extract surrounding lines from source file
+  let surroundingLines: SurroundingLines | undefined;
+  if (nodeLoc?.start?.line && nodeLoc?.end?.line) {
+    surroundingLines = extractSurroundingLines(
+      config.file,
+      nodeLoc.start.line,
+      nodeLoc.end.line,
+      surroundingLineCount
+    );
+  }
+
   return {
     ...inlineMetadata,
     filePaths: relativeFilepath ? [relativeFilepath] : undefined,
+    ...(surroundingLines && { surroundingLines }),
   };
 }
 

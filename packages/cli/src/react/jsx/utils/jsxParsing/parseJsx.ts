@@ -41,6 +41,8 @@ import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
+import { extractSurroundingLines } from '../extractSurroundingLines.js';
+import { SURROUNDING_LINE_COUNT } from '../constants.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -609,6 +611,21 @@ function parseJSXElement({
   const metadata: Metadata = {};
   const relativeFilepath = path.relative(process.cwd(), config.file);
   metadata.filePaths = [relativeFilepath];
+
+  // Extract surrounding lines from source file
+  const startLine = node.loc?.start?.line;
+  const endLine = node.loc?.end?.line;
+  if (startLine && endLine) {
+    const surroundingLines = extractSurroundingLines(
+      config.file,
+      startLine,
+      endLine,
+      SURROUNDING_LINE_COUNT
+    );
+    if (surroundingLines) {
+      metadata.surroundingLines = surroundingLines;
+    }
+  }
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
   const unwrappedExpressions: string[] = [];

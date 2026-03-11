@@ -51,3 +51,6 @@ export const GT_ATTRIBUTES = [
 
 // Data attribute prefix injected by build tools
 export const DATA_ATTR_PREFIX = 'data-' as const;
+
+// Number of source code lines to capture above and below a translation site
+export const SURROUNDING_LINE_COUNT = 5;
