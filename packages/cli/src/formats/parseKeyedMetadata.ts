@@ -94,7 +94,7 @@ export function parseKeyedMetadata(
 
   // Determine companion file path and parser
   let metadataFilePath: string | undefined;
-  let parse: (content: string) => ParsedContent;
+  let parse: ((content: string) => ParsedContent) | undefined;
 
   if (ext === '.json') {
     metadataFilePath = `${baseName}.metadata.json`;
@@ -110,7 +110,7 @@ export function parseKeyedMetadata(
     parse = YAML.parse;
   }
 
-  if (!metadataFilePath || !parse!) {
+  if (!metadataFilePath || !parse) {
     return undefined;
   }
 
@@ -134,6 +134,15 @@ export function parseKeyedMetadata(
   } catch {
     const relativePath = path.relative(process.cwd(), metadataFilePath);
     logger.warn(`Skipping metadata file ${relativePath}: file is not parsable`);
+    return undefined;
+  }
+
+  // Reject if root types don't match (array vs object)
+  if (Array.isArray(metadataContent) !== Array.isArray(sourceContent)) {
+    const relativePath = path.relative(process.cwd(), metadataFilePath);
+    logger.warn(
+      `Skipping metadata file ${relativePath}: root type (array vs object) does not match source`
+    );
     return undefined;
   }
 
