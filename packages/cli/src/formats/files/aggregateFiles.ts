@@ -114,14 +114,21 @@ export async function aggregateFiles(
               settings.defaultLocale,
               false
             );
-            const parsed = JSON.parse(transformed) as KeyedMetadata;
-            // Discard if schema transformation produced an empty object
-            if (
-              Array.isArray(parsed)
-                ? parsed.length > 0
-                : Object.keys(parsed).length > 0
-            ) {
-              keyedMetadata = parsed;
+            const transformedMetadata = JSON.parse(transformed);
+
+            // Filter metadata to only keep keys that exist in the transformed source
+            // This prevents misaligned entries from wide JSONPath patterns
+            const sourceKeys = new Set(
+              Object.keys(JSON.parse(parsedJson))
+            );
+            const filtered = Object.fromEntries(
+              Object.entries(transformedMetadata).filter(([k]) =>
+                sourceKeys.has(k)
+              )
+            ) as KeyedMetadata;
+
+            if (Object.keys(filtered).length > 0) {
+              keyedMetadata = filtered;
             }
           }
         } catch {
