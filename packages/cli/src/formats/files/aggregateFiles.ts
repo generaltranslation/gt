@@ -101,9 +101,22 @@ export async function aggregateFiles(
         // Detect companion metadata file
         let keyedMetadata: KeyedMetadata | undefined;
         try {
-          keyedMetadata = parseKeyedMetadata(filePath, JSON.parse(content));
+          const parsed = JSON.parse(content);
+          const rawMetadata = parseKeyedMetadata(filePath, parsed);
+          if (rawMetadata) {
+            // Run metadata through the same composite/include schema as the source
+            // so key paths align at translation time
+            const transformed = parseJson(
+              JSON.stringify(rawMetadata),
+              filePath,
+              settings.options || {},
+              settings.defaultLocale,
+              false
+            );
+            keyedMetadata = JSON.parse(transformed) as KeyedMetadata;
+          }
         } catch {
-          // Content not parsable as JSON — skip metadata detection
+          // Content not parsable or no metadata — skip
         }
 
         return {
