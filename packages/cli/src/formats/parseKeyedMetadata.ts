@@ -56,10 +56,13 @@ function validateMetadataStructure(
       !Array.isArray(sourceValue)
     ) {
       const metaValue = metadata[key];
-      if (
+      if (Array.isArray(metaValue)) {
+        errors.push(
+          `Metadata key "${keyPath.join('.')}" is an array but source is an object`
+        );
+      } else if (
         typeof metaValue === 'object' &&
-        metaValue !== null &&
-        !Array.isArray(metaValue)
+        metaValue !== null
       ) {
         errors.push(
           ...validateMetadataStructure(
