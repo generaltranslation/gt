@@ -1,5 +1,5 @@
 import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
-import { flattenJsonWithStringFilter } from './flattenJson.js';
+import { flattenJson, flattenJsonWithStringFilter } from './flattenJson.js';
 import { JSONPath } from 'jsonpath-plus';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
@@ -16,7 +16,8 @@ export function parseJson(
   content: string,
   filePath: string,
   options: AdditionalOptions,
-  defaultLocale: string
+  defaultLocale: string,
+  filterStrings: boolean = true
 ): string {
   const jsonSchema = validateJsonSchema(options, filePath);
   if (!jsonSchema) {
@@ -41,7 +42,8 @@ export function parseJson(
 
   // Handle include
   if (jsonSchema.include) {
-    const flattenedJson = flattenJsonWithStringFilter(json, jsonSchema.include);
+    const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;
+    const flattenedJson = flatten(json, jsonSchema.include);
     return JSON.stringify(flattenedJson);
   }
 
@@ -162,10 +164,8 @@ export function parseJson(
       const { sourceItem } = matchingItem;
 
       // Get the fields to translate from the includes
-      const itemsToTranslate = flattenJsonWithStringFilter(
-        sourceItem,
-        sourceObjectOptions.include
-      );
+      const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;
+      const itemsToTranslate = flatten(sourceItem, sourceObjectOptions.include);
 
       // Add the items to translate to the result
       sourceObjectsToTranslate[sourceObjectPointer] = itemsToTranslate;
