@@ -154,7 +154,6 @@ export function parseKeyedMetadata(
       for (const error of errors) {
         logger.warn(`Metadata file ${relativePath}: ${error}`);
       }
-      return undefined;
     }
   }
 

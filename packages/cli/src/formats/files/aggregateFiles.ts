@@ -5,6 +5,7 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
+import { validateJsonSchema } from '../json/utils.js';
 import parseYaml from '../yaml/parseYaml.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
@@ -104,16 +105,24 @@ export async function aggregateFiles(
           const parsed = JSON.parse(content);
           const rawMetadata = parseKeyedMetadata(filePath, parsed);
           if (rawMetadata) {
-            // Run metadata through the same composite/include schema as the source
-            // so key paths align at translation time
-            const transformed = parseJson(
-              JSON.stringify(rawMetadata),
-              filePath,
+            const jsonSchema = validateJsonSchema(
               settings.options || {},
-              settings.defaultLocale,
-              false
+              filePath
             );
-            keyedMetadata = JSON.parse(transformed) as KeyedMetadata;
+            if (jsonSchema?.include && !jsonSchema?.composite) {
+              // Run metadata through the same include schema as the source
+              // so key paths align at translation time
+              const transformed = parseJson(
+                JSON.stringify(rawMetadata),
+                filePath,
+                settings.options || {},
+                settings.defaultLocale,
+                false
+              );
+              keyedMetadata = JSON.parse(transformed) as KeyedMetadata;
+            } else {
+              keyedMetadata = rawMetadata;
+            }
           }
         } catch {
           // Content not parsable or no metadata — skip
