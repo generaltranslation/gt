@@ -33,9 +33,7 @@ function validateMetadataStructure(
     const keyPath = [...currentPath, key];
 
     if (sourceValue === undefined) {
-      errors.push(
-        `Key "${keyPath.join('.')}" does not exist in source`
-      );
+      errors.push(`Key "${keyPath.join('.')}" does not exist in source`);
       continue;
     }
 
