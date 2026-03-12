@@ -10,7 +10,10 @@ import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync } from '../../utils/hash.js';
 import { preprocessContent } from './preprocessContent.js';
-import { parseKeyedMetadata, type MetadataObject } from '../parseKeyedMetadata.js';
+import {
+  parseKeyedMetadata,
+  type MetadataObject,
+} from '../parseKeyedMetadata.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -155,10 +158,7 @@ export async function aggregateFiles(
         );
 
         // Detect companion metadata file
-        const keyedMetadata = parseKeyedMetadata(
-          filePath,
-          YAML.parse(content)
-        );
+        const keyedMetadata = parseKeyedMetadata(filePath, YAML.parse(content));
 
         return {
           content: parsedYaml,

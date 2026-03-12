@@ -121,19 +121,19 @@ export function parseKeyedMetadata(
   try {
     const raw = fs.readFileSync(metadataFilePath, 'utf8');
     const parsed = parse(raw);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       const relativePath = path.relative(process.cwd(), metadataFilePath);
-      logger.warn(
-        `Skipping metadata file ${relativePath}: expected an object`
-      );
+      logger.warn(`Skipping metadata file ${relativePath}: expected an object`);
       return undefined;
     }
     metadataContent = parsed as MetadataObject;
   } catch {
     const relativePath = path.relative(process.cwd(), metadataFilePath);
-    logger.warn(
-      `Skipping metadata file ${relativePath}: file is not parsable`
-    );
+    logger.warn(`Skipping metadata file ${relativePath}: file is not parsable`);
     return undefined;
   }
 
