@@ -5,8 +5,9 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
-import { validateJsonSchema } from '../json/utils.js';
 import parseYaml from '../yaml/parseYaml.js';
+import { validateYamlSchema } from '../yaml/utils.js';
+import { flattenJson } from '../json/flattenJson.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync } from '../../utils/hash.js';
@@ -190,7 +191,33 @@ export async function aggregateFiles(
         // Detect companion metadata file
         let keyedMetadata: KeyedMetadata | undefined;
         try {
-          keyedMetadata = parseKeyedMetadata(filePath, YAML.parse(content));
+          const parsedYamlContent = YAML.parse(content);
+          const rawMetadata = parseKeyedMetadata(filePath, parsedYamlContent);
+          if (rawMetadata) {
+            const yamlSchema = validateYamlSchema(
+              settings.options || {},
+              filePath
+            );
+            if (yamlSchema?.include) {
+              // Flatten metadata through the same include schema as the source
+              const flattened = flattenJson(
+                rawMetadata,
+                yamlSchema.include
+              );
+              // Filter to only keep keys that exist in the transformed source
+              const sourceKeys = new Set(
+                Object.keys(JSON.parse(parsedYaml))
+              );
+              const filtered = Object.fromEntries(
+                Object.entries(flattened).filter(([k]) => sourceKeys.has(k))
+              ) as KeyedMetadata;
+              if (Object.keys(filtered).length > 0) {
+                keyedMetadata = filtered;
+              }
+            } else {
+              keyedMetadata = rawMetadata;
+            }
+          }
         } catch {
           // Content not parsable as YAML — skip metadata detection
         }
