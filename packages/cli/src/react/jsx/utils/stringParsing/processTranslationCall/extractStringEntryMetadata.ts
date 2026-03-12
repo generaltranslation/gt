@@ -67,7 +67,11 @@ export function extractStringEntryMetadata({
 
   // extract surrounding lines from source file
   let sourceCode: Record<string, SourceCode[]> | undefined;
-  if (nodeLoc?.start?.line && nodeLoc?.end?.line) {
+  if (
+    config.includeSourceCodeContext &&
+    nodeLoc?.start?.line &&
+    nodeLoc?.end?.line
+  ) {
     const entry = extractSourceCode(
       config.file,
       nodeLoc.start.line,

@@ -31,7 +31,8 @@ export async function aggregateInlineTranslations(
     options.dictionary,
     library,
     false,
-    settings.parsingOptions
+    settings.parsingOptions,
+    settings.options?.includeSourceCodeContext ?? false
   );
 
   if (warnings.length > 0) {

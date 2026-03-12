@@ -26,7 +26,8 @@ export async function createUpdates(
   sourceDictionary: string | undefined,
   pkg: InlineLibrary,
   validate: boolean,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  includeSourceCodeContext: boolean = false
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
@@ -75,7 +76,7 @@ export async function createUpdates(
     warnings: newWarnings,
   } = isPythonLibrary(pkg)
     ? await createPythonInlineUpdates(src)
-    : await createInlineUpdates(pkg, validate, src, parsingOptions);
+    : await createInlineUpdates(pkg, validate, src, parsingOptions, includeSourceCodeContext);
 
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];

@@ -86,6 +86,7 @@ type ConfigOptions = {
   importAliases: Record<string, string>;
   pkgs: GTLibrary[];
   file: string;
+  includeSourceCodeContext?: boolean;
 };
 
 /**
@@ -615,7 +616,7 @@ function parseJSXElement({
   // Extract surrounding lines from source file
   const startLine = node.loc?.start?.line;
   const endLine = node.loc?.end?.line;
-  if (startLine && endLine) {
+  if (config.includeSourceCodeContext && startLine && endLine) {
     const entry = extractSourceCode(
       config.file,
       startLine,
