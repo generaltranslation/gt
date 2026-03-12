@@ -60,10 +60,7 @@ function validateMetadataStructure(
         errors.push(
           `Metadata key "${keyPath.join('.')}" is an array but source is an object`
         );
-      } else if (
-        typeof metaValue === 'object' &&
-        metaValue !== null
-      ) {
+      } else if (typeof metaValue === 'object' && metaValue !== null) {
         errors.push(
           ...validateMetadataStructure(
             sourceValue as ParsedContent,
