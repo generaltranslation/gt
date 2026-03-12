@@ -114,7 +114,15 @@ export async function aggregateFiles(
               settings.defaultLocale,
               false
             );
-            keyedMetadata = JSON.parse(transformed) as KeyedMetadata;
+            const parsed = JSON.parse(transformed) as KeyedMetadata;
+            // Discard if schema transformation produced an empty object
+            if (
+              Array.isArray(parsed)
+                ? parsed.length > 0
+                : Object.keys(parsed).length > 0
+            ) {
+              keyedMetadata = parsed;
+            }
           }
         } catch {
           // Content not parsable or no metadata — skip
