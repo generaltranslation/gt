@@ -200,14 +200,9 @@ export async function aggregateFiles(
             );
             if (yamlSchema?.include) {
               // Flatten metadata through the same include schema as the source
-              const flattened = flattenJson(
-                rawMetadata,
-                yamlSchema.include
-              );
+              const flattened = flattenJson(rawMetadata, yamlSchema.include);
               // Filter to only keep keys that exist in the transformed source
-              const sourceKeys = new Set(
-                Object.keys(JSON.parse(parsedYaml))
-              );
+              const sourceKeys = new Set(Object.keys(JSON.parse(parsedYaml)));
               const filtered = Object.fromEntries(
                 Object.entries(flattened).filter(([k]) => sourceKeys.has(k))
               ) as KeyedMetadata;
