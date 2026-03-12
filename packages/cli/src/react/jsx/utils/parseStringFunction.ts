@@ -431,6 +431,7 @@ export function parseStrings(
         ignoreDynamicContent: false,
         ignoreInvalidIcu: false,
         ignoreInlineListContent: false,
+        includeSourceCodeContext: config.includeSourceCodeContext,
       };
 
       // Check if this is a direct call to msg('string')
@@ -491,6 +492,7 @@ export function parseStrings(
         ignoreInvalidIcu: isMessageHook,
         // TODO: when we add support for array content in gt function, this should just always be false
         ignoreInlineListContent: isInlineGT,
+        includeSourceCodeContext: config.includeSourceCodeContext,
       };
 
       const effectiveParent =

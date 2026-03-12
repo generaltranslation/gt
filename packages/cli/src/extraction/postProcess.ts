@@ -1,5 +1,6 @@
 import { Updates } from '../types/index.js';
 import { hashSource, hashString } from 'generaltranslation/id';
+import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
 
 /**
  * Calculate hashes for all updates in parallel
@@ -56,6 +57,26 @@ export function dedupeUpdates(updates: Updates): void {
 
     if (existingPaths.length) {
       existing.metadata.filePaths = existingPaths;
+    }
+
+    // Merge sourceCode entries
+    const newSourceCode = update.metadata.sourceCode as
+      | Record<string, SourceCode[]>
+      | undefined;
+    if (newSourceCode && typeof newSourceCode === 'object') {
+      if (!existing.metadata.sourceCode) {
+        existing.metadata.sourceCode = {};
+      }
+      const existingSourceCode = existing.metadata.sourceCode as Record<
+        string,
+        SourceCode[]
+      >;
+      for (const [file, entries] of Object.entries(newSourceCode)) {
+        if (!existingSourceCode[file]) {
+          existingSourceCode[file] = [];
+        }
+        existingSourceCode[file].push(...entries);
+      }
     }
   }
 

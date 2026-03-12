@@ -24,6 +24,10 @@ export type ParsingConfig = {
    * eg msg(['hello', 'world', 'foo', 'bar']) will not be registered
    */
   ignoreInlineListContent: boolean;
+  /**
+   * If true, include surrounding source code lines as context for translations
+   */
+  includeSourceCodeContext?: boolean;
 };
 
 /**
