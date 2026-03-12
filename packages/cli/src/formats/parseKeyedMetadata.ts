@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { logger } from '../console/logger.js';
+import { exitSync } from '../console/logging.js';
 import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
 import type { JSONObject } from '../types/data/json.js';
 
@@ -33,7 +34,7 @@ function validateMetadataStructure(
 
     if (sourceValue === undefined) {
       errors.push(
-        `Metadata key "${keyPath.join('.')}" does not exist in source`
+        `Key "${keyPath.join('.')}" does not exist in source`
       );
       continue;
     }
@@ -48,7 +49,7 @@ function validateMetadataStructure(
       const metaValue = metadata[key];
       if (Array.isArray(metaValue)) {
         errors.push(
-          `Metadata key "${keyPath.join('.')}" is an array but source is an object`
+          `Key "${keyPath.join('.')}" is an array but source is an object`
         );
       } else if (typeof metaValue === 'object' && metaValue !== null) {
         errors.push(
@@ -60,7 +61,7 @@ function validateMetadataStructure(
         );
       } else {
         errors.push(
-          `Metadata key "${keyPath.join('.')}" is a primitive but source is an object`
+          `Key "${keyPath.join('.')}" is a primitive but source is an object`
         );
       }
     }
@@ -119,25 +120,25 @@ export function parseKeyedMetadata(
     const parsed = parse(raw);
     if (typeof parsed !== 'object' || parsed === null) {
       const relativePath = path.relative(process.cwd(), metadataFilePath);
-      logger.warn(
-        `Skipping metadata file ${relativePath}: expected an object or array`
+      logger.error(
+        `Metadata file ${relativePath}: Expected an object or array`
       );
-      return undefined;
+      return exitSync(1);
     }
     metadataContent = parsed as KeyedMetadata;
   } catch {
     const relativePath = path.relative(process.cwd(), metadataFilePath);
-    logger.warn(`Skipping metadata file ${relativePath}: file is not parsable`);
-    return undefined;
+    logger.error(`Metadata file ${relativePath}: File is not parsable`);
+    return exitSync(1);
   }
 
   // Reject if root types don't match (array vs object)
   if (Array.isArray(metadataContent) !== Array.isArray(sourceContent)) {
     const relativePath = path.relative(process.cwd(), metadataFilePath);
-    logger.warn(
-      `Skipping metadata file ${relativePath}: root type (array vs object) does not match source`
+    logger.error(
+      `Metadata file ${relativePath}: Root type (array vs object) does not match source`
     );
-    return undefined;
+    return exitSync(1);
   }
 
   // Validate structure against source (only for object-rooted files)
@@ -146,8 +147,9 @@ export function parseKeyedMetadata(
     if (errors.length > 0) {
       const relativePath = path.relative(process.cwd(), metadataFilePath);
       for (const error of errors) {
-        logger.warn(`Metadata file ${relativePath}: ${error}`);
+        logger.error(`Metadata file ${relativePath}: ${error}`);
       }
+      return exitSync(1);
     }
   }
 

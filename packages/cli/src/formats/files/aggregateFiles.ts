@@ -8,6 +8,7 @@ import { parseJson } from '../json/parseJson.js';
 import parseYaml from '../yaml/parseYaml.js';
 import { validateYamlSchema } from '../yaml/utils.js';
 import { flattenJson } from '../json/flattenJson.js';
+import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync } from '../../utils/hash.js';
@@ -102,9 +103,14 @@ export async function aggregateFiles(
 
         // Detect companion metadata file
         let keyedMetadata: KeyedMetadata | undefined;
+        let parsedContent: JSONObject | undefined;
         try {
-          const parsed = JSON.parse(content);
-          const rawMetadata = parseKeyedMetadata(filePath, parsed);
+          parsedContent = JSON.parse(content) as JSONObject;
+        } catch {
+          // Content not parsable — skip metadata detection
+        }
+        if (parsedContent) {
+          const rawMetadata = parseKeyedMetadata(filePath, parsedContent);
           if (rawMetadata) {
             // Run metadata through the same include/composite schema as the source
             // so key paths align at translation time
@@ -134,8 +140,6 @@ export async function aggregateFiles(
               );
             }
           }
-        } catch {
-          // Content not parsable or no metadata — skip
         }
 
         return {
