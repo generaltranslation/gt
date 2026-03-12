@@ -125,7 +125,9 @@ export function parseKeyedMetadata(
     const parsed = parse(raw);
     if (typeof parsed !== 'object' || parsed === null) {
       const relativePath = path.relative(process.cwd(), metadataFilePath);
-      logger.warn(`Skipping metadata file ${relativePath}: expected an object or array`);
+      logger.warn(
+        `Skipping metadata file ${relativePath}: expected an object or array`
+      );
       return undefined;
     }
     metadataContent = parsed as KeyedMetadata;
