@@ -10,6 +10,24 @@ import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync } from '../../utils/hash.js';
 import { preprocessContent } from './preprocessContent.js';
+import { parseKeyedMetadata, type MetadataObject } from '../parseKeyedMetadata.js';
+
+/**
+ * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
+ * AND its corresponding source file (e.g. foo.json) exists in the file list.
+ * If both conditions are true, the metadata file should be skipped as a translation source.
+ */
+function isCompanionMetadataFile(
+  filePath: string,
+  allFilePaths: string[]
+): boolean {
+  const metadataPattern = /\.metadata\.(json|yaml|yml)$/;
+  if (!metadataPattern.test(filePath)) return false;
+
+  // Derive the source file path: foo.metadata.json -> foo.json
+  const sourceFilePath = filePath.replace('.metadata.', '.');
+  return allFilePaths.includes(sourceFilePath);
+}
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
@@ -47,6 +65,7 @@ export async function aggregateFiles(
     }
 
     const jsonFiles = filePaths.json
+      .filter((filePath) => !isCompanionMetadataFile(filePath, filePaths.json!))
       .map((filePath) => {
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
@@ -73,6 +92,14 @@ export async function aggregateFiles(
           settings.defaultLocale
         );
 
+        // Detect companion metadata file
+        let keyedMetadata: MetadataObject | undefined;
+        try {
+          keyedMetadata = parseKeyedMetadata(filePath, JSON.parse(content));
+        } catch {
+          // Content not parsable as JSON — skip metadata detection
+        }
+
         return {
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(parsedJson),
@@ -81,6 +108,9 @@ export async function aggregateFiles(
           fileFormat: 'JSON' as const,
           dataFormat,
           locale: settings.defaultLocale,
+          ...(keyedMetadata && {
+            formatMetadata: { keyedMetadata },
+          }),
         } satisfies FileToUpload;
       })
       .filter((file) => {
@@ -98,6 +128,7 @@ export async function aggregateFiles(
   // Process YAML files
   if (filePaths.yaml) {
     const yamlFiles = filePaths.yaml
+      .filter((filePath) => !isCompanionMetadataFile(filePath, filePaths.yaml!))
       .map((filePath) => {
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
@@ -123,6 +154,12 @@ export async function aggregateFiles(
           settings.options || {}
         );
 
+        // Detect companion metadata file
+        const keyedMetadata = parseKeyedMetadata(
+          filePath,
+          YAML.parse(content)
+        );
+
         return {
           content: parsedYaml,
           fileName: relativePath,
@@ -130,6 +167,9 @@ export async function aggregateFiles(
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(parsedYaml),
           locale: settings.defaultLocale,
+          ...(keyedMetadata && {
+            formatMetadata: { keyedMetadata },
+          }),
         } satisfies FileToUpload;
       })
       .filter((file) => {
