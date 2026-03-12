@@ -27,7 +27,13 @@ async function runValidation(
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
-    return createInlineUpdates(pkg, true, files, settings.parsingOptions, settings.options?.includeSourceCodeContext ?? false);
+    return createInlineUpdates(
+      pkg,
+      true,
+      files,
+      settings.parsingOptions,
+      settings.options?.includeSourceCodeContext ?? false
+    );
   }
 
   // Full project validation

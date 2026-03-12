@@ -76,7 +76,13 @@ export async function createUpdates(
     warnings: newWarnings,
   } = isPythonLibrary(pkg)
     ? await createPythonInlineUpdates(src)
-    : await createInlineUpdates(pkg, validate, src, parsingOptions, includeSourceCodeContext);
+    : await createInlineUpdates(
+        pkg,
+        validate,
+        src,
+        parsingOptions,
+        includeSourceCodeContext
+      );
 
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];
