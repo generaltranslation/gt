@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.10.0
+
+### Minor Changes
+
+- [#1104](https://github.com/generaltranslation/gt/pull/1104) [`51430bd`](https://github.com/generaltranslation/gt/commit/51430bd1d85a4937ff3b4dcd0090d79e3b4c1504) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding metadata support for keyed file types
+
+### Patch Changes
+
+- [#1101](https://github.com/generaltranslation/gt/pull/1101) [`437a389`](https://github.com/generaltranslation/gt/commit/437a3898f1daa0a40ac033c2cc1bb94b4a0fd86b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove tw content json from init
+
+- [#1103](https://github.com/generaltranslation/gt/pull/1103) [`7164ceb`](https://github.com/generaltranslation/gt/commit/7164ceb9785863cdf4dc659fe5bd0f87511a5bed) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Extract code metadata
+
 ## 2.9.0
 
 ### Minor Changes
