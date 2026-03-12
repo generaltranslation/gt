@@ -3,6 +3,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { logger } from '../console/logger.js';
 import type { SourceCode } from '../react/jsx/utils/extractSourceCode.js';
+import type { JSONObject } from '../types/data/json.js';
 
 export type MetadataLeaf = {
   context?: string;
@@ -14,24 +15,13 @@ export type MetadataObject = { [key: string]: MetadataLeaf | MetadataObject };
 export type MetadataArray = (MetadataLeaf | MetadataObject)[];
 export type KeyedMetadata = MetadataObject | MetadataArray;
 
-// JSON/YAML parsed content
-type ParsedContent = {
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | null
-    | ParsedContent
-    | ParsedContent[];
-};
-
 /**
  * Validates that the metadata key structure is a subset of the source key structure.
  * Uses the source to determine whether a metadata value is a leaf (source value is a string)
  * or a nested object (source value is an object).
  */
 function validateMetadataStructure(
-  source: ParsedContent,
+  source: JSONObject,
   metadata: MetadataObject,
   currentPath: string[] = []
 ): string[] {
@@ -63,7 +53,7 @@ function validateMetadataStructure(
       } else if (typeof metaValue === 'object' && metaValue !== null) {
         errors.push(
           ...validateMetadataStructure(
-            sourceValue as ParsedContent,
+            sourceValue as JSONObject,
             metaValue as MetadataObject,
             keyPath
           )
@@ -91,14 +81,14 @@ function validateMetadataStructure(
  */
 export function parseKeyedMetadata(
   sourceFilePath: string,
-  sourceContent: ParsedContent | ParsedContent[]
+  sourceContent: JSONObject | JSONObject[]
 ): KeyedMetadata | undefined {
   const ext = path.extname(sourceFilePath);
   const baseName = sourceFilePath.slice(0, -ext.length);
 
   // Determine companion file path and parser
   let metadataFilePath: string | undefined;
-  let parse: ((content: string) => ParsedContent) | undefined;
+  let parse: ((content: string) => JSONObject) | undefined;
 
   if (ext === '.json') {
     metadataFilePath = `${baseName}.metadata.json`;
