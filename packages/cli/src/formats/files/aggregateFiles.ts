@@ -128,6 +128,10 @@ export async function aggregateFiles(
 
             if (Object.keys(filtered).length > 0) {
               keyedMetadata = filtered;
+            } else {
+              logger.warn(
+                `Companion metadata found for ${relativePath} but no keys aligned with the JSON schema — metadata was not attached`
+              );
             }
           }
         } catch {
