@@ -165,10 +165,7 @@ export function parseJson(
 
       // Get the fields to translate from the includes
       const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;
-      const itemsToTranslate = flatten(
-        sourceItem,
-        sourceObjectOptions.include
-      );
+      const itemsToTranslate = flatten(sourceItem, sourceObjectOptions.include);
 
       // Add the items to translate to the result
       sourceObjectsToTranslate[sourceObjectPointer] = itemsToTranslate;
