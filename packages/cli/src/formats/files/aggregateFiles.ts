@@ -118,9 +118,7 @@ export async function aggregateFiles(
 
             // Filter metadata to only keep keys that exist in the transformed source
             // This prevents misaligned entries from wide JSONPath patterns
-            const sourceKeys = new Set(
-              Object.keys(JSON.parse(parsedJson))
-            );
+            const sourceKeys = new Set(Object.keys(JSON.parse(parsedJson)));
             const filtered = Object.fromEntries(
               Object.entries(transformedMetadata).filter(([k]) =>
                 sourceKeys.has(k)
