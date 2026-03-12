@@ -72,6 +72,7 @@ describe('sourceCode metadata integration', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              includeSourceCodeContext: true,
             },
             { updates, errors, warnings }
           );
@@ -135,6 +136,7 @@ describe('sourceCode metadata integration', () => {
               importAliases: { T: 'T' },
               pkgs: ['gt-next'],
               file: filePath,
+              includeSourceCodeContext: true,
             },
             output: {
               errors,
@@ -196,6 +198,7 @@ describe('sourceCode metadata integration', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              includeSourceCodeContext: true,
             },
             { updates, errors, warnings }
           );
