@@ -11,6 +11,8 @@ export type MetadataLeaf = {
 };
 
 export type MetadataObject = { [key: string]: MetadataLeaf | MetadataObject };
+export type MetadataArray = (MetadataLeaf | MetadataObject)[];
+export type KeyedMetadata = MetadataObject | MetadataArray;
 
 // JSON/YAML parsed content
 type ParsedContent = {
@@ -85,8 +87,8 @@ function validateMetadataStructure(
  */
 export function parseKeyedMetadata(
   sourceFilePath: string,
-  sourceContent: ParsedContent
-): MetadataObject | undefined {
+  sourceContent: ParsedContent | ParsedContent[]
+): KeyedMetadata | undefined {
   const ext = path.extname(sourceFilePath);
   const baseName = sourceFilePath.slice(0, -ext.length);
 
@@ -117,34 +119,32 @@ export function parseKeyedMetadata(
   }
 
   // Read and parse
-  let metadataContent: MetadataObject;
+  let metadataContent: KeyedMetadata;
   try {
     const raw = fs.readFileSync(metadataFilePath, 'utf8');
     const parsed = parse(raw);
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) {
+    if (typeof parsed !== 'object' || parsed === null) {
       const relativePath = path.relative(process.cwd(), metadataFilePath);
-      logger.warn(`Skipping metadata file ${relativePath}: expected an object`);
+      logger.warn(`Skipping metadata file ${relativePath}: expected an object or array`);
       return undefined;
     }
-    metadataContent = parsed as MetadataObject;
+    metadataContent = parsed as KeyedMetadata;
   } catch {
     const relativePath = path.relative(process.cwd(), metadataFilePath);
     logger.warn(`Skipping metadata file ${relativePath}: file is not parsable`);
     return undefined;
   }
 
-  // Validate structure against source
-  const errors = validateMetadataStructure(sourceContent, metadataContent);
-  if (errors.length > 0) {
-    const relativePath = path.relative(process.cwd(), metadataFilePath);
-    for (const error of errors) {
-      logger.warn(`Metadata file ${relativePath}: ${error}`);
+  // Validate structure against source (only for object-rooted files)
+  if (!Array.isArray(metadataContent) && !Array.isArray(sourceContent)) {
+    const errors = validateMetadataStructure(sourceContent, metadataContent);
+    if (errors.length > 0) {
+      const relativePath = path.relative(process.cwd(), metadataFilePath);
+      for (const error of errors) {
+        logger.warn(`Metadata file ${relativePath}: ${error}`);
+      }
+      return undefined;
     }
-    return undefined;
   }
 
   return metadataContent;

@@ -12,7 +12,7 @@ import { hashStringSync } from '../../utils/hash.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
-  type MetadataObject,
+  type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
 
 /**
@@ -99,7 +99,7 @@ export async function aggregateFiles(
         );
 
         // Detect companion metadata file
-        let keyedMetadata: MetadataObject | undefined;
+        let keyedMetadata: KeyedMetadata | undefined;
         try {
           keyedMetadata = parseKeyedMetadata(filePath, JSON.parse(content));
         } catch {
@@ -161,7 +161,7 @@ export async function aggregateFiles(
         );
 
         // Detect companion metadata file
-        let keyedMetadata: MetadataObject | undefined;
+        let keyedMetadata: KeyedMetadata | undefined;
         try {
           keyedMetadata = parseKeyedMetadata(filePath, YAML.parse(content));
         } catch {
