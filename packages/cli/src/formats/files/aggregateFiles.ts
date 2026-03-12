@@ -28,7 +28,7 @@ function isCompanionMetadataFile(
   if (!metadataPattern.test(filePath)) return false;
 
   // Derive the source file path: foo.metadata.json -> foo.json
-  const sourceFilePath = filePath.replace('.metadata.', '.');
+  const sourceFilePath = filePath.replace(/\.metadata\.(json|yaml|yml)$/, '.$1');
   return allFilePaths.includes(sourceFilePath);
 }
 export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
@@ -158,7 +158,12 @@ export async function aggregateFiles(
         );
 
         // Detect companion metadata file
-        const keyedMetadata = parseKeyedMetadata(filePath, YAML.parse(content));
+        let keyedMetadata: MetadataObject | undefined;
+        try {
+          keyedMetadata = parseKeyedMetadata(filePath, YAML.parse(content));
+        } catch {
+          // Content not parsable as YAML — skip metadata detection
+        }
 
         return {
           content: parsedYaml,
