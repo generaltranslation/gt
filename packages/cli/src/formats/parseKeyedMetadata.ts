@@ -68,6 +68,10 @@ function validateMetadataStructure(
             keyPath
           )
         );
+      } else {
+        errors.push(
+          `Metadata key "${keyPath.join('.')}" is a primitive but source is an object`
+        );
       }
     }
   }

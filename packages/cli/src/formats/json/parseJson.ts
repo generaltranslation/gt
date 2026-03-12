@@ -28,8 +28,11 @@ export function parseJson(
   try {
     json = JSON.parse(content);
   } catch {
-    logger.error(`Invalid JSON file: ${filePath}`);
-    return exitSync(1);
+    if (filterStrings) {
+      logger.error(`Invalid JSON file: ${filePath}`);
+      return exitSync(1);
+    }
+    return content;
   }
 
   if (jsonSchema.structuralTransform && jsonSchema.composite) {
@@ -48,8 +51,11 @@ export function parseJson(
   }
 
   if (!jsonSchema.composite) {
-    logger.error('No composite property found in JSON schema');
-    return exitSync(1);
+    if (filterStrings) {
+      logger.error('No composite property found in JSON schema');
+      return exitSync(1);
+    }
+    return content;
   }
 
   // Construct lvl 1
@@ -78,10 +84,13 @@ export function parseJson(
     if (sourceObjectOptions.type === 'array') {
       // Validate type
       if (!Array.isArray(sourceObjectValue)) {
-        logger.error(
-          `Source object value is not an array at path: ${sourceObjectPointer}`
-        );
-        return exitSync(1);
+        if (filterStrings) {
+          logger.error(
+            `Source object value is not an array at path: ${sourceObjectPointer}`
+          );
+          return exitSync(1);
+        }
+        continue;
       }
 
       // Find matching source items
@@ -92,10 +101,13 @@ export function parseJson(
         sourceObjectValue
       );
       if (!Object.keys(matchingItems).length) {
-        logger.error(
-          `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Check your JSON schema`
-        );
-        return exitSync(1);
+        if (filterStrings) {
+          logger.error(
+            `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Check your JSON schema`
+          );
+          return exitSync(1);
+        }
+        continue;
       }
       // Construct lvl 3
       const sourceItemsToTranslate: Record<string, Record<string, string>> = {};
@@ -141,10 +153,13 @@ export function parseJson(
       // Object: use the key in this object with the matching locale property
       // Validate type
       if (typeof sourceObjectValue !== 'object' || sourceObjectValue === null) {
-        logger.error(
-          `Source object value is not an object at path: ${sourceObjectPointer}`
-        );
-        return exitSync(1);
+        if (filterStrings) {
+          logger.error(
+            `Source object value is not an object at path: ${sourceObjectPointer}`
+          );
+          return exitSync(1);
+        }
+        continue;
       }
 
       // Validate localeProperty
@@ -156,10 +171,13 @@ export function parseJson(
       );
       // Validate source item exists
       if (!matchingItem.sourceItem) {
-        logger.error(
-          `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
-        );
-        return exitSync(1);
+        if (filterStrings) {
+          logger.error(
+            `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
+          );
+          return exitSync(1);
+        }
+        continue;
       }
       const { sourceItem } = matchingItem;
 

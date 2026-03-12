@@ -105,24 +105,16 @@ export async function aggregateFiles(
           const parsed = JSON.parse(content);
           const rawMetadata = parseKeyedMetadata(filePath, parsed);
           if (rawMetadata) {
-            const jsonSchema = validateJsonSchema(
+            // Run metadata through the same include/composite schema as the source
+            // so key paths align at translation time
+            const transformed = parseJson(
+              JSON.stringify(rawMetadata),
+              filePath,
               settings.options || {},
-              filePath
+              settings.defaultLocale,
+              false
             );
-            if (jsonSchema?.include && !jsonSchema?.composite) {
-              // Run metadata through the same include schema as the source
-              // so key paths align at translation time
-              const transformed = parseJson(
-                JSON.stringify(rawMetadata),
-                filePath,
-                settings.options || {},
-                settings.defaultLocale,
-                false
-              );
-              keyedMetadata = JSON.parse(transformed) as KeyedMetadata;
-            } else {
-              keyedMetadata = rawMetadata;
-            }
+            keyedMetadata = JSON.parse(transformed) as KeyedMetadata;
           }
         } catch {
           // Content not parsable or no metadata — skip
