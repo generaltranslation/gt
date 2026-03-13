@@ -477,7 +477,6 @@ function sortByLocaleOrder(
       )
     );
 
-    // Use a Map for O(n) grouping instead of O(n²) splice
     const localeGroups = new Map<string, any[]>();
     const ungrouped: any[] = [];
     for (const entry of itemsWithLocale) {
