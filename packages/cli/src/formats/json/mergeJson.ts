@@ -354,11 +354,8 @@ export function mergeJson(
         // JSONPointer operations can't mutate a primitive, so assign directly.
         // The API returns flattened pointers where "" (root) holds the value.
         if (isPrimitiveSourceItem) {
-          let translatedValue: any = targetItems;
-          if (typeof targetItems === 'object' && targetItems !== null) {
-            translatedValue = targetItems[''] ?? defaultLocaleSourceItem;
-          }
-          sourceObjectValue[mutateSourceItemKey] = translatedValue;
+          sourceObjectValue[mutateSourceItemKey] =
+            targetItems?.[''] ?? defaultLocaleSourceItem;
           continue;
         }
 
