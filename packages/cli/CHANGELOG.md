@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.10.1
+
+### Patch Changes
+
+- [#1105](https://github.com/generaltranslation/gt/pull/1105) [`952a515`](https://github.com/generaltranslation/gt/commit/952a51528c298ad2466ca6cb73302eae06f56c45) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix --force behavior
+
 ## 2.10.0
 
 ### Minor Changes
