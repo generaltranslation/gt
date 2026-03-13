@@ -355,10 +355,7 @@ export function mergeJson(
         // The API returns flattened pointers where "" (root) holds the value.
         if (isPrimitiveSourceItem) {
           let translatedValue: any = targetItems;
-          if (
-            typeof targetItems === 'object' &&
-            targetItems !== null
-          ) {
+          if (typeof targetItems === 'object' && targetItems !== null) {
             translatedValue =
               targetItems[''] ??
               Object.values(targetItems)[0] ??

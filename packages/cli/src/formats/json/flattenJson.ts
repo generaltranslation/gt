@@ -34,7 +34,11 @@ function tryFastFlatten(
     }
 
     if (valid) {
-      const pointer = '/' + pointerParts.map((p) => p.replace(/~/g, '~0').replace(/\//g, '~1')).join('/');
+      const pointer =
+        '/' +
+        pointerParts
+          .map((p) => p.replace(/~/g, '~0').replace(/\//g, '~1'))
+          .join('/');
       result[pointer] = value;
     }
   }
