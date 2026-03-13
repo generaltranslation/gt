@@ -356,10 +356,7 @@ export function mergeJson(
         if (isPrimitiveSourceItem) {
           let translatedValue: any = targetItems;
           if (typeof targetItems === 'object' && targetItems !== null) {
-            translatedValue =
-              targetItems[''] ??
-              Object.values(targetItems)[0] ??
-              defaultLocaleSourceItem;
+            translatedValue = targetItems[''] ?? defaultLocaleSourceItem;
           }
           sourceObjectValue[mutateSourceItemKey] = translatedValue;
           continue;
