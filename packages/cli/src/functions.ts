@@ -9,6 +9,11 @@ export type {
   ValidationMessage,
   ValidationLevel,
 } from './translation/validate.js';
+export { getTranslateCheckJson } from './translation/translateCheck.js';
+export type {
+  TranslateCheckResult,
+  SkippedFileInfo,
+} from './translation/translateCheck.js';
 export {
   Libraries,
   GTLibrary,
