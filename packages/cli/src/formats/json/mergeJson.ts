@@ -332,7 +332,7 @@ export function mergeJson(
       for (const target of parsedTargets) {
         // 1. Get the target items
         let targetItems = target.parsedContent[sourceObjectPointer];
-        if (!targetItems) {
+        if (targetItems == null) {
           targetItems = {};
         }
 
@@ -349,11 +349,10 @@ export function mergeJson(
 
         // If the source item is a string, use the translated string directly
         if (typeof defaultLocaleSourceItem === 'string') {
-          const translatedValue =
-            typeof targetItems === 'string'
-              ? targetItems
-              : defaultLocaleSourceItem;
-          sourceObjectValue[mutateSourceItemKey] = translatedValue;
+          if (typeof targetItems === 'string') {
+            sourceObjectValue[mutateSourceItemKey] = targetItems;
+          }
+          // If no translation found, leave the locale slot unchanged
           continue;
         }
 
