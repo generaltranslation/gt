@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.10.2
+
+### Patch Changes
+
+- [#1108](https://github.com/generaltranslation/gt/pull/1108) [`2dff603`](https://github.com/generaltranslation/gt/commit/2dff6036382040438a3fa8bbd4c2475da7617f93) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix string behavior
+
 ## 2.10.1
 
 ### Patch Changes
