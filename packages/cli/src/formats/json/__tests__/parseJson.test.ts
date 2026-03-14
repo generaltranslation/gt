@@ -1249,6 +1249,36 @@ describe('parseJson', () => {
       expect(mockExit).toHaveBeenCalledWith(1);
     });
 
+    it('should handle string sourceItem in object composite schema', () => {
+      const json = JSON.stringify({
+        content: {
+          en: 'Contact name, phone number, email, 2',
+          fr: 'Nom du contact, numéro de téléphone, email, 2',
+        },
+      });
+
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.content': {
+                  type: 'object',
+                  include: ['$.*'],
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+
+      const parsed = JSON.parse(result);
+      expect(parsed['/content']).toBe('Contact name, phone number, email, 2');
+    });
+
     it('should preserve original formatting for non-matching files', () => {
       const originalJson = `{
   "formatted": {

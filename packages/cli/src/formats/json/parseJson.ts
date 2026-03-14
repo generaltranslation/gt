@@ -62,7 +62,7 @@ export function parseJson(
   // Construct lvl 2
   const sourceObjectsToTranslate: Record<
     string,
-    Record<string, Record<string, string>>
+    Record<string, Record<string, string>> | string
   > = {};
   for (const [
     sourceObjectPointer,
@@ -162,6 +162,12 @@ export function parseJson(
         return exitSync(1);
       }
       const { sourceItem } = matchingItem;
+
+      // If the source item is a string, use it directly
+      if (typeof sourceItem === 'string') {
+        sourceObjectsToTranslate[sourceObjectPointer] = sourceItem;
+        continue;
+      }
 
       // Get the fields to translate from the includes
       const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;

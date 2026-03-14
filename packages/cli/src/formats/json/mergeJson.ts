@@ -92,6 +92,12 @@ export function mergeJson(
   // Create a deep copy of the original JSON to avoid mutations
   const mergedJson = structuredClone(originalJson);
 
+  // Pre-parse all target contents ONCE (avoid re-parsing per pointer)
+  const parsedTargets = targets.map((target) => ({
+    ...target,
+    parsedContent: JSON.parse(target.translatedContent),
+  }));
+
   // Create mapping of sourceObjectPointer to SourceObjectOptions
   const sourceObjectPointers: Record<
     string,
@@ -145,9 +151,8 @@ export function mergeJson(
       // 10. Remove all items for the target locale (they can be identified by the key)
       const indiciesToRemove = new Set<number>();
       const itemsToAdd: any[] = [];
-      for (const target of targets) {
-        const targetJson = JSON.parse(target.translatedContent);
-        let targetItems = targetJson[sourceObjectPointer];
+      for (const target of parsedTargets) {
+        let targetItems = target.parsedContent[sourceObjectPointer];
         // 1. Get the target items
         if (!targetItems) {
           // If no translation can be found, a transformation may need to happen still
@@ -324,11 +329,10 @@ export function mergeJson(
       // 5. Override the source item with the translated values
       // 6. Apply additional mutations to the sourceItem
       // 7. Merge the source item with the original JSON (if the source item is not a new item)
-      for (const target of targets) {
-        const targetJson = JSON.parse(target.translatedContent);
+      for (const target of parsedTargets) {
         // 1. Get the target items
-        let targetItems = targetJson[sourceObjectPointer];
-        if (!targetItems) {
+        let targetItems = target.parsedContent[sourceObjectPointer];
+        if (targetItems == null) {
           targetItems = {};
         }
 
@@ -341,10 +345,20 @@ export function mergeJson(
           sourceObjectOptions,
           sourceObjectValue
         );
+        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
+
+        // If the source item is a string, use the translated string directly
+        if (typeof defaultLocaleSourceItem === 'string') {
+          if (typeof targetItems === 'string') {
+            sourceObjectValue[mutateSourceItemKey] = targetItems;
+          }
+          // If no translation found, leave the locale slot unchanged
+          continue;
+        }
+
         // If the target locale has a matching source item, use it to mutate the source item
         // Otherwise, fallback to the default locale source item
         const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
-        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
 
         // 3. Merge the target items with the source item (if there are transformations to perform)
         const mergedItems = {

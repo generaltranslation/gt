@@ -199,9 +199,8 @@ describe('structuralTransform', () => {
       );
 
       const parsed = JSON.parse(result);
-      // Source text extracted with empty-string pointer (value is a string, not an object)
-      expect(parsed['/btn_save/i18n']).toEqual({ '': 'Save changes' });
-      expect(parsed['/btn_cancel/i18n']).toEqual({ '': 'Cancel' });
+      expect(parsed['/btn_save/i18n']).toEqual('Save changes');
+      expect(parsed['/btn_cancel/i18n']).toEqual('Cancel');
     });
   });
 
@@ -307,8 +306,8 @@ describe('structuralTransform', () => {
 
       expect(result).not.toBeNull();
       const extracted = JSON.parse(result!);
-      expect(extracted['/btn_save/i18n']).toEqual({ '': 'Guardar cambios' });
-      expect(extracted['/btn_cancel/i18n']).toEqual({ '': 'Cancelar' });
+      expect(extracted['/btn_save/i18n']).toEqual('Guardar cambios');
+      expect(extracted['/btn_cancel/i18n']).toEqual('Cancelar');
     });
   });
 });

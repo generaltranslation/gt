@@ -165,6 +165,12 @@ export function extractJson(
         continue;
       }
 
+      // If the source item is a string, use it directly
+      if (typeof matchingTargetItem.sourceItem === 'string') {
+        compositeResult[sourceObjectPointer] = matchingTargetItem.sourceItem;
+        continue;
+      }
+
       // Extract values at the include paths
       const extractedValues = flattenJsonWithStringFilter(
         matchingTargetItem.sourceItem,
