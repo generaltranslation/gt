@@ -341,10 +341,21 @@ export function mergeJson(
           sourceObjectOptions,
           sourceObjectValue
         );
+        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
+
+        // If the source item is a string, use the translated string directly
+        if (typeof defaultLocaleSourceItem === 'string') {
+          const translatedValue =
+            typeof targetItems === 'string'
+              ? targetItems
+              : defaultLocaleSourceItem;
+          sourceObjectValue[mutateSourceItemKey] = translatedValue;
+          continue;
+        }
+
         // If the target locale has a matching source item, use it to mutate the source item
         // Otherwise, fallback to the default locale source item
         const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
-        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
 
         // 3. Merge the target items with the source item (if there are transformations to perform)
         const mergedItems = {
