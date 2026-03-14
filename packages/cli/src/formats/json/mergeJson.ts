@@ -92,6 +92,12 @@ export function mergeJson(
   // Create a deep copy of the original JSON to avoid mutations
   const mergedJson = structuredClone(originalJson);
 
+  // Pre-parse all target contents ONCE (avoid re-parsing per pointer)
+  const parsedTargets = targets.map((target) => ({
+    ...target,
+    parsedContent: JSON.parse(target.translatedContent),
+  }));
+
   // Create mapping of sourceObjectPointer to SourceObjectOptions
   const sourceObjectPointers: Record<
     string,
@@ -145,9 +151,8 @@ export function mergeJson(
       // 10. Remove all items for the target locale (they can be identified by the key)
       const indiciesToRemove = new Set<number>();
       const itemsToAdd: any[] = [];
-      for (const target of targets) {
-        const targetJson = JSON.parse(target.translatedContent);
-        let targetItems = targetJson[sourceObjectPointer];
+      for (const target of parsedTargets) {
+        let targetItems = target.parsedContent[sourceObjectPointer];
         // 1. Get the target items
         if (!targetItems) {
           // If no translation can be found, a transformation may need to happen still
@@ -324,10 +329,9 @@ export function mergeJson(
       // 5. Override the source item with the translated values
       // 6. Apply additional mutations to the sourceItem
       // 7. Merge the source item with the original JSON (if the source item is not a new item)
-      for (const target of targets) {
-        const targetJson = JSON.parse(target.translatedContent);
+      for (const target of parsedTargets) {
         // 1. Get the target items
-        let targetItems = targetJson[sourceObjectPointer];
+        let targetItems = target.parsedContent[sourceObjectPointer];
         if (!targetItems) {
           targetItems = {};
         }
