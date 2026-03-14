@@ -534,6 +534,48 @@ describe('mergeJson', () => {
       expect(parsed.translations.fr.desc).toBe('Description Française');
     });
 
+    it('should merge string sourceItem in object composite schema', () => {
+      const originalContent = JSON.stringify({
+        content: {
+          en: 'Contact name, phone number, email, 2',
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/content': 'Nombre del contacto, número de teléfono, email, 2',
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.content': {
+                  type: 'object',
+                  include: ['$.*'],
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed.content.en).toBe('Contact name, phone number, email, 2');
+      expect(parsed.content.es).toBe(
+        'Nombre del contacto, número de teléfono, email, 2'
+      );
+    });
+
     it('should use existing target locale object when available', () => {
       const originalContent = JSON.stringify({
         translations: {
