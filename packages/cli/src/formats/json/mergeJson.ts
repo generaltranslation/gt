@@ -92,6 +92,12 @@ export function mergeJson(
   // Create a deep copy of the original JSON to avoid mutations
   const mergedJson = structuredClone(originalJson);
 
+  // Pre-parse all target contents ONCE (avoid re-parsing per pointer)
+  const parsedTargets = targets.map((target) => ({
+    targetLocale: target.targetLocale,
+    parsedContent: JSON.parse(target.translatedContent),
+  }));
+
   // Create mapping of sourceObjectPointer to SourceObjectOptions
   const sourceObjectPointers: Record<
     string,
@@ -145,9 +151,8 @@ export function mergeJson(
       // 10. Remove all items for the target locale (they can be identified by the key)
       const indiciesToRemove = new Set<number>();
       const itemsToAdd: any[] = [];
-      for (const target of targets) {
-        const targetJson = JSON.parse(target.translatedContent);
-        let targetItems = targetJson[sourceObjectPointer];
+      for (const parsedTarget of parsedTargets) {
+        let targetItems = parsedTarget.parsedContent[sourceObjectPointer];
         // 1. Get the target items
         if (!targetItems) {
           // If no translation can be found, a transformation may need to happen still
@@ -157,8 +162,8 @@ export function mergeJson(
         // 2. Track all array indecies to remove (will be overwritten)
         const targetItemsToRemove = findMatchingItemArray(
           useCanonicalLocaleKeys
-            ? gt.resolveCanonicalLocale(target.targetLocale)
-            : target.targetLocale,
+            ? gt.resolveCanonicalLocale(parsedTarget.targetLocale)
+            : parsedTarget.targetLocale,
           sourceObjectOptions,
           sourceObjectPointer,
           sourceObjectValue
@@ -193,7 +198,7 @@ export function mergeJson(
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
           logger.warn(
-            `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
+            `Translated JSON for locale: ${parsedTarget.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
           );
           continue;
         }
@@ -218,8 +223,8 @@ export function mergeJson(
           const { identifyingLocaleProperty: targetLocaleKeyProperty } =
             getSourceObjectOptionsArray(
               useCanonicalLocaleKeys
-                ? gt.resolveCanonicalLocale(target.targetLocale)
-                : target.targetLocale,
+                ? gt.resolveCanonicalLocale(parsedTarget.targetLocale)
+                : parsedTarget.targetLocale,
               sourceObjectPointer,
               sourceObjectOptions
             );
@@ -258,7 +263,7 @@ export function mergeJson(
           applyTransformations(
             mutatedSourceItem,
             sourceObjectOptions.transform,
-            target.targetLocale,
+            parsedTarget.targetLocale,
             defaultLocale
           );
 
@@ -315,6 +320,9 @@ export function mergeJson(
         return exitSync(1);
       }
       const { sourceItem: defaultLocaleSourceItem } = matchingDefaultLocaleItem;
+      const isPrimitiveSourceItem =
+        typeof defaultLocaleSourceItem !== 'object' ||
+        defaultLocaleSourceItem === null;
 
       // For each target:
       // 1. Get the target items
@@ -324,10 +332,9 @@ export function mergeJson(
       // 5. Override the source item with the translated values
       // 6. Apply additional mutations to the sourceItem
       // 7. Merge the source item with the original JSON (if the source item is not a new item)
-      for (const target of targets) {
-        const targetJson = JSON.parse(target.translatedContent);
+      for (const parsedTarget of parsedTargets) {
         // 1. Get the target items
-        let targetItems = targetJson[sourceObjectPointer];
+        let targetItems = parsedTarget.parsedContent[sourceObjectPointer];
         if (!targetItems) {
           targetItems = {};
         }
@@ -335,16 +342,28 @@ export function mergeJson(
         // 2. Find the source item for the target locale
         const matchingTargetItem = findMatchingItemObject(
           useCanonicalLocaleKeys
-            ? gt.resolveCanonicalLocale(target.targetLocale)
-            : target.targetLocale,
+            ? gt.resolveCanonicalLocale(parsedTarget.targetLocale)
+            : parsedTarget.targetLocale,
           sourceObjectPointer,
           sourceObjectOptions,
           sourceObjectValue
         );
+        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
+
+        // For primitive source items (e.g. translations: {"en": "simple string"}),
+        // JSONPointer operations can't mutate a primitive, so assign directly.
+        // The API returns flattened pointers where "" (root) holds the value.
+        if (isPrimitiveSourceItem) {
+          const translatedValue = targetItems?.[''];
+          if (translatedValue !== undefined) {
+            sourceObjectValue[mutateSourceItemKey] = translatedValue;
+          }
+          continue;
+        }
+
         // If the target locale has a matching source item, use it to mutate the source item
         // Otherwise, fallback to the default locale source item
         const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
-        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
 
         // 3. Merge the target items with the source item (if there are transformations to perform)
         const mergedItems = {
@@ -355,7 +374,7 @@ export function mergeJson(
         // 4. Validate that the mergedItems is not empty
         if (Object.keys(mergedItems).length === 0) {
           logger.warn(
-            `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
+            `Translated JSON for locale: ${parsedTarget.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
           );
           continue;
         }
@@ -384,7 +403,7 @@ export function mergeJson(
         applyTransformations(
           mutateSourceItem,
           sourceObjectOptions.transform,
-          target.targetLocale,
+          parsedTarget.targetLocale,
           defaultLocale
         );
 
@@ -454,22 +473,35 @@ function sortByLocaleOrder(
       )
     );
 
-    const orderedItems: any[] = [];
-    const remainingItems = [...itemsWithLocale];
-
-    for (const localeValue of localeOrderValues) {
-      for (let i = 0; i < remainingItems.length; ) {
-        const entry = remainingItems[i];
-        if (entry.localeValue === localeValue) {
-          orderedItems.push(entry.item);
-          remainingItems.splice(i, 1);
-          continue;
+    const localeGroups = new Map<string, any[]>();
+    const ungrouped: any[] = [];
+    for (const entry of itemsWithLocale) {
+      if (entry.localeValue) {
+        let group = localeGroups.get(entry.localeValue);
+        if (!group) {
+          group = [];
+          localeGroups.set(entry.localeValue, group);
         }
-        i += 1;
+        group.push(entry.item);
+      } else {
+        ungrouped.push(entry.item);
       }
     }
 
-    remainingItems.forEach((entry) => orderedItems.push(entry.item));
+    const orderedItems: any[] = [];
+    for (const localeValue of localeOrderValues) {
+      const group = localeGroups.get(localeValue);
+      if (group) {
+        orderedItems.push(...group);
+      }
+    }
+    // Add any locale groups not in localeOrderValues
+    for (const [localeValue, group] of localeGroups) {
+      if (!localeOrderValues.includes(localeValue)) {
+        orderedItems.push(...group);
+      }
+    }
+    orderedItems.push(...ungrouped);
 
     return orderedItems;
   }
