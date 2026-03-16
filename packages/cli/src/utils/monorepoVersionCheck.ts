@@ -198,7 +198,7 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
 
   lines.push(
     chalk.dim(
-      'To skip this check, use --skip-version-check or set "skipVersionCheck": true in gt.config.json.'
+      'To skip this check, use --skip-version-check or set "skipVersionCheck": true in gt.config.json.\n'
     )
   );
 
