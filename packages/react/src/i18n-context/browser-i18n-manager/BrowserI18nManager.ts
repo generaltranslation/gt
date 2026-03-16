@@ -9,6 +9,7 @@ import { createInvalidLocaleWarning } from '../../shared/messages';
  */
 export class BrowserI18nManager extends I18nManager<BrowserStorageAdapter> {
   constructor(config: I18nManagerConstructorParams<BrowserStorageAdapter>) {
+    console.log('BrowserI18nManager constructor');
     super(config);
   }
 

@@ -38,6 +38,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    * @param params.config - The configuration for the I18nManager
    */
   constructor(params: I18nManagerConstructorParams<T>) {
+    console.log('I18nManager constructor');
     // Validation
     const validationResults = validateConfig(params);
     publishValidationResults(validationResults, 'I18nManager: ');

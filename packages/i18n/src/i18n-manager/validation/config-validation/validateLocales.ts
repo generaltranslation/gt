@@ -11,6 +11,9 @@ import { CustomMapping } from 'generaltranslation/types';
  * Only apply if using GT services
  */
 export function validateLocales(params: {
+  projectId?: string;
+  devApiKey?: string;
+  apiKey?: string;
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;

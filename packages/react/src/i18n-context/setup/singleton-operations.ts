@@ -24,5 +24,6 @@ export function getBrowserI18nManager(): BrowserI18nManager {
 function isBrowserI18nManager(
   i18nManager: I18nManager
 ): i18nManager is BrowserI18nManager {
+  console.log('i18nManager', i18nManager.getAdapterType());
   return i18nManager instanceof BrowserI18nManager;
 }

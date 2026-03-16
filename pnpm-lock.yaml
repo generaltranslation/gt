@@ -401,6 +401,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: 'link:'
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: ^28.0.1
