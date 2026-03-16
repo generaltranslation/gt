@@ -3,22 +3,8 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
+import { REACT_LIBRARIES } from '../types/libraries.js';
 
-/**
- * GT packages to check for version consistency across a monorepo.
- */
-const GT_PACKAGES = [
-  'gt-next',
-  'gt-react',
-  'gt-react-native',
-  'gt-node',
-  'gt-i18n',
-  '@generaltranslation/react-core',
-  'generaltranslation',
-  '@generaltranslation/supported-locales',
-  '@generaltranslation/compiler',
-  '@generaltranslation/next-internal',
-];
 
 interface PackageJson {
   name?: string;
@@ -103,7 +89,16 @@ function createPackageJsonReader(): PackageJsonReader {
 }
 
 /**
+ * Check if a version specifier is a real semver version
+ */
+function isSemverSpecifier(version: string): boolean {
+  return /^[\^~>=<*]?\d/.test(version);
+}
+
+/**
  * Get the declared version specifier for a GT package from a workspace's package.json.
+ * Returns null if the package is not found or uses a non-semver protocol
+ * (e.g. workspace:*, link:, file:, etc.)
  */
 function getDeclaredVersion(
   packageName: string,
@@ -113,7 +108,9 @@ function getDeclaredVersion(
   const pkg = readPkgJson(workspaceDir);
   if (!pkg) return null;
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  return deps[packageName] ?? null;
+  const version = deps[packageName];
+  if (!version || !isSemverSpecifier(version)) return null;
+  return version;
 }
 
 /**
@@ -130,7 +127,7 @@ function findVersionMismatches(
   for (const wsDir of workspaceDirs) {
     const wsName = getWorkspaceName(wsDir, readPkgJson);
 
-    for (const pkg of GT_PACKAGES) {
+    for (const pkg of REACT_LIBRARIES) {
       const version = getDeclaredVersion(pkg, wsDir, readPkgJson);
       if (!version) continue;
 
