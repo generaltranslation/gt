@@ -294,10 +294,22 @@ describe('checkMonorepoVersionConsistency', () => {
 function setupMocks(config: {
   lockfile?: string;
   packageDirs: string[];
-  packages: Record<string, { name: string; dependencies?: Record<string, string>; devDependencies?: Record<string, string> }>;
+  packages: Record<
+    string,
+    {
+      name: string;
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    }
+  >;
   installedVersions: Record<string, Record<string, string>>;
 }) {
-  const { lockfile = 'pnpm-lock.yaml', packageDirs, packages, installedVersions } = config;
+  const {
+    lockfile = 'pnpm-lock.yaml',
+    packageDirs,
+    packages,
+    installedVersions,
+  } = config;
 
   mockExistsSync.mockImplementation((p: unknown) => {
     const pStr = String(p);

@@ -75,9 +75,7 @@ function scanForPackageDirs(rootDir: string): string[] {
     deep: 3,
   });
 
-  return matches
-    .map((m) => path.dirname(m))
-    .filter((dir) => dir !== rootDir);
+  return matches.map((m) => path.dirname(m)).filter((dir) => dir !== rootDir);
 }
 
 /**
