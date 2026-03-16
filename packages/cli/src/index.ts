@@ -6,16 +6,9 @@ import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
-import { checkMonorepoVersionConsistency } from './utils/monorepoVersionCheck.js';
 
 export function main(program: Command) {
   program.name('gt');
-
-  // Check for mismatched GT package versions across monorepo workspaces
-  // before any command runs. Exits with code 1 if mismatches are found.
-  program.hook('preAction', () => {
-    checkMonorepoVersionConsistency();
-  });
 
   const { library, additionalModules } = determineLibrary();
   let cli: BaseCLI;

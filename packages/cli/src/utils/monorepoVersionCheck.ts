@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
-import YAML from 'yaml';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
 
@@ -24,13 +23,8 @@ const GT_PACKAGES = [
 interface PackageJson {
   name?: string;
   version?: string;
-  workspaces?: string[] | { packages: string[] };
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
-}
-
-interface PnpmWorkspace {
-  packages?: string[];
 }
 
 interface VersionInfo {
@@ -45,25 +39,22 @@ interface VersionMismatch {
 
 type PackageJsonReader = (workspaceDir: string) => PackageJson | null;
 
+const LOCKFILES = [
+  'pnpm-lock.yaml',
+  'package-lock.json',
+  'yarn.lock',
+  'bun.lock',
+  'bun.lockb',
+];
+
 /**
- * Walk up from startDir to find the monorepo root.
- * Looks for pnpm-workspace.yaml or package.json with "workspaces" field.
+ * Walk up from startDir to find the monorepo root by looking for a lockfile.
  */
 function findMonorepoRoot(startDir: string): string | null {
   let dir = startDir;
   while (true) {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
+    if (LOCKFILES.some((lf) => fs.existsSync(path.join(dir, lf)))) {
       return dir;
-    }
-
-    const pkgPath = path.join(dir, 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
-        if (pkg.workspaces) return dir;
-      } catch {
-        // ignore parse errors
-      }
     }
 
     const parent = path.dirname(dir);
@@ -73,71 +64,20 @@ function findMonorepoRoot(startDir: string): string | null {
 }
 
 /**
- * Get workspace glob patterns from the monorepo root.
+ * Scan for all directories containing package.json under the root.
  */
-function getWorkspaceGlobs(rootDir: string): string[] {
-  // Check pnpm-workspace.yaml first
-  const pnpmPath = path.join(rootDir, 'pnpm-workspace.yaml');
-  if (fs.existsSync(pnpmPath)) {
-    try {
-      const parsed = YAML.parse(
-        fs.readFileSync(pnpmPath, 'utf8')
-      ) as PnpmWorkspace;
-      if (Array.isArray(parsed?.packages)) {
-        return parsed.packages;
-      }
-    } catch {
-      // fall through to package.json
-    }
-  }
-
-  // Check package.json workspaces
-  const pkgPath = path.join(rootDir, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
-      if (Array.isArray(pkg.workspaces)) return pkg.workspaces;
-      if (Array.isArray(pkg.workspaces?.packages))
-        return pkg.workspaces.packages;
-    } catch {
-      // ignore
-    }
-  }
-
-  return [];
-}
-
-/**
- * Resolve workspace globs to actual directories that contain package.json files.
- */
-function resolveWorkspaceDirs(rootDir: string, globs: string[]): string[] {
-  const positiveGlobs = globs
-    .filter((g) => !g.startsWith('!'))
-    .map((g) => {
-      // Ensure glob ends with /package.json to find workspace roots
-      // e.g. "packages/*" -> "packages/*/package.json"
-      const trimmed = g.endsWith('/') ? g.slice(0, -1) : g;
-      return `${trimmed}/package.json`;
-    });
-
-  // Convert negation globs to ignore patterns for fast-glob
-  const negationGlobs = globs
-    .filter((g) => g.startsWith('!'))
-    .map((g) => {
-      const trimmed = g.slice(1).endsWith('/') ? g.slice(1, -1) : g.slice(1);
-      return `${trimmed}/package.json`;
-    });
-
-  if (positiveGlobs.length === 0) return [];
-
-  const matches = fg.sync(positiveGlobs, {
+function scanForPackageDirs(rootDir: string): string[] {
+  const matches = fg.sync('**/package.json', {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
-    ignore: ['**/node_modules/**', ...negationGlobs],
+    ignore: ['**/node_modules/**'],
+    deep: 3,
   });
 
-  return matches.map((m) => path.dirname(m));
+  return matches
+    .map((m) => path.dirname(m))
+    .filter((dir) => dir !== rootDir);
 }
 
 /**
@@ -312,13 +252,10 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
 export function checkMonorepoVersionConsistency(): void {
   const cwd = process.cwd();
   const rootDir = findMonorepoRoot(cwd);
-  if (!rootDir) return; // Not in a monorepo — nothing to check
+  if (!rootDir) return; // No lockfile found — nothing to check
 
-  const globs = getWorkspaceGlobs(rootDir);
-  if (globs.length === 0) return;
-
-  const workspaceDirs = resolveWorkspaceDirs(rootDir, globs);
-  if (workspaceDirs.length <= 1) return; // Single workspace — no mismatches possible
+  const workspaceDirs = scanForPackageDirs(rootDir);
+  if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
 
   const readPkgJson = createPackageJsonReader();
   const mismatches = findVersionMismatches(rootDir, workspaceDirs, readPkgJson);
