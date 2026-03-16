@@ -11,7 +11,7 @@ import { InitializeGTParams } from './types';
  * import gtConfig from '../gt.config.json';
  *
  * function getTranslations(locale: string) {
- *   return import(`../public/_gt/${locale}.json`);
+ *   return import(`./_gt/${locale}.json`);
  * }
  *
  * await bootstrap({
