@@ -86,6 +86,12 @@ export class BaseCLI {
     this.program = program;
     this.library = library;
     this.additionalModules = additionalModules || [];
+
+    this.program.option(
+      '--skip-version-check',
+      'Skip the monorepo GT package version consistency check'
+    );
+
     this.setupInitCommand();
     this.setupConfigureCommand();
     this.setupUploadCommand();

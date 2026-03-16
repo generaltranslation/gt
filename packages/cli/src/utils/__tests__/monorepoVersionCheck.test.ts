@@ -27,6 +27,7 @@ vi.mock('../../console/logger.js', () => ({
 import fg from 'fast-glob';
 import { logger } from '../../console/logger.js';
 import { checkMonorepoVersionConsistency } from '../monorepoVersionCheck.js';
+import { REACT_LIBRARIES } from '../../types/libraries.js';
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
@@ -49,7 +50,7 @@ describe('checkMonorepoVersionConsistency', () => {
 
   it('should silently return if no lockfile is found', () => {
     mockExistsSync.mockReturnValue(false);
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(process.exit).not.toHaveBeenCalled();
     expect(logger.error).not.toHaveBeenCalled();
   });
@@ -65,7 +66,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(process.exit).not.toHaveBeenCalled();
   });
 
@@ -84,7 +85,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(process.exit).not.toHaveBeenCalled();
   });
 
@@ -103,7 +104,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(logger.error).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -129,7 +130,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(logger.error).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -149,7 +150,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(process.exit).not.toHaveBeenCalled();
   });
 
@@ -169,7 +170,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(logger.error).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -190,7 +191,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(logger.error).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -211,7 +212,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(logger.error).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -239,7 +240,7 @@ describe('checkMonorepoVersionConsistency', () => {
       },
     });
 
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(process.exit).toHaveBeenCalledWith(1);
 
     const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
@@ -264,7 +265,7 @@ describe('checkMonorepoVersionConsistency', () => {
     });
 
     // No node_modules exist at all — should still detect mismatch from package.json
-    checkMonorepoVersionConsistency();
+    checkMonorepoVersionConsistency(REACT_LIBRARIES);
     expect(logger.error).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });

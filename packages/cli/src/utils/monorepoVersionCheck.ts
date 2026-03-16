@@ -3,7 +3,7 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
-import { REACT_LIBRARIES } from '../types/libraries.js';
+import type { GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 
 interface PackageJson {
@@ -119,7 +119,8 @@ function getDeclaredVersion(
  */
 function findVersionMismatches(
   workspaceDirs: string[],
-  readPkgJson: PackageJsonReader
+  readPkgJson: PackageJsonReader,
+  libraries: readonly GTLibrary[]
 ): VersionMismatch[] {
   // Map: packageName -> Map<versionSpecifier, workspaceNames[]>
   const packageVersions = new Map<string, Map<string, string[]>>();
@@ -127,7 +128,7 @@ function findVersionMismatches(
   for (const wsDir of workspaceDirs) {
     const wsName = getWorkspaceName(wsDir, readPkgJson);
 
-    for (const pkg of REACT_LIBRARIES) {
+    for (const pkg of libraries) {
       const version = getDeclaredVersion(pkg, wsDir, readPkgJson);
       if (!version) continue;
 
@@ -211,7 +212,9 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
  * Silently returns if not in a monorepo or if all versions are consistent.
  * Can be skipped via the --skip-version-check flag or "skipVersionCheck": true in gt.config.json.
  */
-export function checkMonorepoVersionConsistency(): void {
+export function checkMonorepoVersionConsistency(
+  libraries: readonly GTLibrary[]
+): void {
   const cwd = process.cwd();
 
   // Check if skipped via config
@@ -225,7 +228,7 @@ export function checkMonorepoVersionConsistency(): void {
   if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
 
   const readPkgJson = createPackageJsonReader();
-  const mismatches = findVersionMismatches(workspaceDirs, readPkgJson);
+  const mismatches = findVersionMismatches(workspaceDirs, readPkgJson, libraries);
   if (mismatches.length === 0) return; // All consistent
 
   logger.error(formatMismatchError(mismatches));
