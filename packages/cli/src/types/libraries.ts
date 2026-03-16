@@ -64,10 +64,7 @@ export type ReactLibrary = (typeof REACT_LIBRARIES)[number];
 /**
  * Node/server-side libraries
  */
-export const NODE_LIBRARIES = [
-  Libraries.GT_NODE,
-  Libraries.GT_I18N,
-] as const;
+export const NODE_LIBRARIES = [Libraries.GT_NODE, Libraries.GT_I18N] as const;
 export type NodeLibrary = (typeof NODE_LIBRARIES)[number];
 
 /**

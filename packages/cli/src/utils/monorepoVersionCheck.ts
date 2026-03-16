@@ -228,7 +228,11 @@ export function checkMonorepoVersionConsistency(
   if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
 
   const readPkgJson = createPackageJsonReader();
-  const mismatches = findVersionMismatches(workspaceDirs, readPkgJson, libraries);
+  const mismatches = findVersionMismatches(
+    workspaceDirs,
+    readPkgJson,
+    libraries
+  );
   if (mismatches.length === 0) return; // All consistent
 
   logger.error(formatMismatchError(mismatches));
