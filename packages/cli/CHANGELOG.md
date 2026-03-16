@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.10.3
+
+### Patch Changes
+
+- [#1110](https://github.com/generaltranslation/gt/pull/1110) [`38ecda0`](https://github.com/generaltranslation/gt/commit/38ecda003b6873464e350aff0463a8dc64030565) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding monorepo GT package version check, remove writing to agent files
+
 ## 2.10.2
 
 ### Patch Changes
