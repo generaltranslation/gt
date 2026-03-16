@@ -14,7 +14,8 @@ import { wrapContentReact } from '../react/parse/wrapContent.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
 import { InlineCLI } from './inline.js';
-import { Libraries } from '../types/libraries.js';
+import { Libraries, REACT_LIBRARIES } from '../types/libraries.js';
+import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 const pkg = Libraries.GT_REACT;
 
@@ -25,6 +26,11 @@ export class ReactCLI extends InlineCLI {
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
+
+    this.program.hook('preAction', () => {
+      if (this.program.opts().skipVersionCheck) return;
+      checkMonorepoVersionConsistency([...REACT_LIBRARIES, Libraries.GT_I18N]);
+    });
   }
   public init() {
     super.init();
