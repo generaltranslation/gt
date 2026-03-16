@@ -1,4 +1,4 @@
-import { BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR } from '../../errors-dir/constants';
+import { BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR } from '../../shared/messages';
 import { BrowserI18nManager } from '../browser-i18n-manager/BrowserI18nManager';
 import { getI18nManager, I18nManager } from 'gt-i18n/internal';
 

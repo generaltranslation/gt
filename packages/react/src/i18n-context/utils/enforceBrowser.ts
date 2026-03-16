@@ -1,4 +1,4 @@
-import { GENERIC_BROWSER_ENVIRONMENT_ERROR } from '../../errors-dir/constants';
+import { GENERIC_BROWSER_ENVIRONMENT_ERROR } from '../../shared/messages';
 
 /**
  * @internal

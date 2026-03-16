@@ -1,6 +1,6 @@
 import { gtFallback, t as internalT } from 'gt-i18n';
 import { SyncResolutionFunction } from 'gt-i18n/types';
-import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../errors-dir/constants';
+import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.

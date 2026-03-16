@@ -2,7 +2,7 @@ import { I18nManager } from 'gt-i18n/internal';
 import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import { determineLocale as gtDetermineLocale } from 'generaltranslation';
-import { createInvalidLocaleWarning } from '../../errors-dir/constants';
+import { createInvalidLocaleWarning } from '../../shared/messages';
 
 /**
  * I18nManager implementation for Browser.

@@ -2,7 +2,7 @@ import { CustomMapping } from 'generaltranslation/types';
 import { determineLocale as gtDetermineLocale } from 'generaltranslation';
 import { getCookieValue } from './cookies';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
-import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from '../../../errors-dir/constants';
+import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from '../../../shared/messages';
 import { GetLocale } from './types';
 
 /**
