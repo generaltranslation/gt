@@ -73,7 +73,6 @@ function scanForPackageDirs(rootDir: string): string[] {
     absolute: true,
     onlyFiles: true,
     ignore: ['**/node_modules/**'],
-    deep: 3,
   });
 
   return matches.map((m) => path.dirname(m)).filter((dir) => dir !== rootDir);
