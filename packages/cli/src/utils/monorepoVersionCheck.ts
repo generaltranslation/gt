@@ -80,7 +80,9 @@ function getWorkspaceGlobs(rootDir: string): string[] {
   const pnpmPath = path.join(rootDir, 'pnpm-workspace.yaml');
   if (fs.existsSync(pnpmPath)) {
     try {
-      const parsed = YAML.parse(fs.readFileSync(pnpmPath, 'utf8')) as PnpmWorkspace;
+      const parsed = YAML.parse(
+        fs.readFileSync(pnpmPath, 'utf8')
+      ) as PnpmWorkspace;
       if (Array.isArray(parsed?.packages)) {
         return parsed.packages;
       }
@@ -157,7 +159,9 @@ function getInstalledVersion(
     );
     if (fs.existsSync(pkgJsonPath)) {
       try {
-        const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8')) as PackageJson;
+        const pkg = JSON.parse(
+          fs.readFileSync(pkgJsonPath, 'utf8')
+        ) as PackageJson;
         return pkg.version ?? null;
       } catch {
         return null;

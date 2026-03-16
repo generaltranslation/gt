@@ -191,15 +191,9 @@ describe('checkMonorepoVersionConsistency', () => {
       if (pStr === '/repo/packages/app-a/package.json') return true;
       if (pStr === '/repo/packages/app-b/package.json') return true;
       // Installed versions
-      if (
-        pStr ===
-        '/repo/packages/app-a/node_modules/gt-react/package.json'
-      )
+      if (pStr === '/repo/packages/app-a/node_modules/gt-react/package.json')
         return true;
-      if (
-        pStr ===
-        '/repo/packages/app-b/node_modules/gt-react/package.json'
-      )
+      if (pStr === '/repo/packages/app-b/node_modules/gt-react/package.json')
         return true;
       return false;
     });
@@ -224,16 +218,10 @@ describe('checkMonorepoVersionConsistency', () => {
           dependencies: { 'gt-react': '^10.11.0' },
         });
       }
-      if (
-        pStr ===
-        '/repo/packages/app-a/node_modules/gt-react/package.json'
-      ) {
+      if (pStr === '/repo/packages/app-a/node_modules/gt-react/package.json') {
         return JSON.stringify({ name: 'gt-react', version: '10.5.3' });
       }
-      if (
-        pStr ===
-        '/repo/packages/app-b/node_modules/gt-react/package.json'
-      ) {
+      if (pStr === '/repo/packages/app-b/node_modules/gt-react/package.json') {
         return JSON.stringify({ name: 'gt-react', version: '10.11.7' });
       }
       return '';
@@ -256,15 +244,9 @@ describe('checkMonorepoVersionConsistency', () => {
       if (pStr === '/repo/package.json') return true;
       if (pStr === '/repo/packages/app-a/package.json') return true;
       if (pStr === '/repo/packages/app-b/package.json') return true;
-      if (
-        pStr ===
-        '/repo/packages/app-a/node_modules/gt-next/package.json'
-      )
+      if (pStr === '/repo/packages/app-a/node_modules/gt-next/package.json')
         return true;
-      if (
-        pStr ===
-        '/repo/packages/app-b/node_modules/gt-next/package.json'
-      )
+      if (pStr === '/repo/packages/app-b/node_modules/gt-next/package.json')
         return true;
       return false;
     });
@@ -289,16 +271,10 @@ describe('checkMonorepoVersionConsistency', () => {
           dependencies: { 'gt-next': '^6.13.0' },
         });
       }
-      if (
-        pStr ===
-        '/repo/packages/app-a/node_modules/gt-next/package.json'
-      ) {
+      if (pStr === '/repo/packages/app-a/node_modules/gt-next/package.json') {
         return JSON.stringify({ name: 'gt-next', version: '6.10.2' });
       }
-      if (
-        pStr ===
-        '/repo/packages/app-b/node_modules/gt-next/package.json'
-      ) {
+      if (pStr === '/repo/packages/app-b/node_modules/gt-next/package.json') {
         return JSON.stringify({ name: 'gt-next', version: '6.13.8' });
       }
       return '';
