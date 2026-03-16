@@ -1,2 +1,2 @@
 export * from './bootstrap';
-export * from './inializeGT';
+export * from './initializeGT';

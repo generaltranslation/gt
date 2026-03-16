@@ -9,3 +9,4 @@ export const createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning = ({
   defaultLocale: string;
 }) =>
   `${PACKAGE_NAME} Warning: Custom getLocale() function returned an unsupported locale: "${customLocale}". Falling back to default locale: "${defaultLocale}".`;
+export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR = `${PACKAGE_NAME} Error: BrowserI18nManager not initialized. Invoke initializeGT() to initialize.`;
