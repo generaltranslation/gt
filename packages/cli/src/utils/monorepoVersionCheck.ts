@@ -4,6 +4,7 @@ import fg from 'fast-glob';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
 import { REACT_LIBRARIES } from '../types/libraries.js';
+import { resolveConfig } from '../config/resolveConfig.js';
 
 interface PackageJson {
   name?: string;
@@ -195,6 +196,12 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
     lines.push('');
   }
 
+  lines.push(
+    chalk.dim(
+      'To skip this check, use --skip-version-check or set "skipVersionCheck": true in gt.config.json.'
+    )
+  );
+
   return lines.join('\n');
 }
 
@@ -202,9 +209,15 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
  * Run the monorepo version consistency check.
  * If mismatched GT package versions are found, logs an error and exits with code 1.
  * Silently returns if not in a monorepo or if all versions are consistent.
+ * Can be skipped via the --skip-version-check flag or "skipVersionCheck": true in gt.config.json.
  */
 export function checkMonorepoVersionConsistency(): void {
   const cwd = process.cwd();
+
+  // Check if skipped via config
+  const resolved = resolveConfig(cwd);
+  if (resolved?.config?.skipVersionCheck) return;
+
   const rootDir = findMonorepoRoot(cwd);
   if (!rootDir) return; // No lockfile found — nothing to check
 

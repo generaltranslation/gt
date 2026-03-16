@@ -27,9 +27,15 @@ export class ReactCLI extends InlineCLI {
   ) {
     super(command, library, additionalModules);
 
+    this.program.option(
+      '--skip-version-check',
+      'Skip the monorepo GT package version consistency check'
+    );
+
     // Check for mismatched GT package versions across monorepo workspaces
     // before any command runs. Exits with code 1 if mismatches are found.
     this.program.hook('preAction', () => {
+      if (this.program.opts().skipVersionCheck) return;
       checkMonorepoVersionConsistency();
     });
   }
