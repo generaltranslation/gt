@@ -38,7 +38,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from '@generaltranslation/react-core/types';
-import { t } from './i18n-context/translation/t';
+import { t } from './i18n-context/functions/translation/t';
 
 export {
   Var,

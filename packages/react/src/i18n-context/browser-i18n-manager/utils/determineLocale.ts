@@ -55,7 +55,7 @@ export function determineLocale({
   if (cookieLocale) candidates.push(cookieLocale);
 
   // (2) Check navigator locales
-  const navigatorLocales = navigator.languages;
+  const navigatorLocales = navigator?.languages || [];
   candidates.push(...navigatorLocales);
 
   return gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;

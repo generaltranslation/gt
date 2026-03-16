@@ -1,5 +1,6 @@
-import { t as internalT } from 'gt-i18n';
+import { gtFallback, t as internalT } from 'gt-i18n';
 import { SyncResolutionFunction } from 'gt-i18n/types';
+import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../errors-dir/constants';
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.
@@ -28,8 +29,11 @@ import { SyncResolutionFunction } from 'gt-i18n/types';
  */
 export const t: SyncResolutionFunction = (message, options) => {
   // Enforce browser environment
-  if (typeof document === 'undefined') {
-    throw new Error('t() must be used in a browser environment');
+  if (typeof window === 'undefined') {
+    console.warn(
+      createTranslationFailedDueToBrowserEnvironmentWarning(message)
+    );
+    return gtFallback(message, options);
   }
   return internalT(message, options);
 };

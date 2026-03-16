@@ -1,6 +1,8 @@
 import { I18nManager } from 'gt-i18n/internal';
 import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
+import { determineLocale as gtDetermineLocale } from 'generaltranslation';
+import { createInvalidLocaleWarning } from '../../errors-dir/constants';
 
 /**
  * I18nManager implementation for Browser.
@@ -17,5 +19,21 @@ export class BrowserI18nManager extends I18nManager<BrowserStorageAdapter> {
    */
   async loadTranslations(locale: string = this.getLocale()): Promise<void> {
     await this.getTranslations(locale);
+  }
+
+  /**
+   * Set the locale
+   * @param {string} locale - The locale to set
+   * @returns {void}
+   *
+   * @note This function causes a page reload
+   */
+  setLocale(locale: string): void {
+    if (!gtDetermineLocale(locale, this.getLocales())) {
+      console.warn(createInvalidLocaleWarning(locale));
+      return;
+    }
+    this.storeAdapter.setItem('locale', locale);
+    window.location.reload();
   }
 }

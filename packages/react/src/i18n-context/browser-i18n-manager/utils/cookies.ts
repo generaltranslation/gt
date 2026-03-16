@@ -8,7 +8,7 @@ export function getCookieValue({
 }: {
   cookieName: string;
 }): string | undefined {
-  const rawCookieValue = document.cookie
+  const rawCookieValue = document?.cookie
     .split('; ')
     .find((row) => row.startsWith(`${cookieName}=`))
     ?.split('=')[1];
@@ -28,5 +28,6 @@ export function setCookieValue({
   cookieName: string;
   value: string;
 }): void {
+  if (typeof document === 'undefined') return;
   document.cookie = `${cookieName}=${value};path=/`;
 }
