@@ -21,6 +21,18 @@ const GT_PACKAGES = [
   '@generaltranslation/next-internal',
 ];
 
+interface PackageJson {
+  name?: string;
+  version?: string;
+  workspaces?: string[] | { packages: string[] };
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
+interface PnpmWorkspace {
+  packages?: string[];
+}
+
 interface VersionInfo {
   version: string;
   workspaces: string[];
@@ -30,6 +42,8 @@ interface VersionMismatch {
   packageName: string;
   versions: VersionInfo[];
 }
+
+type PackageJsonReader = (workspaceDir: string) => PackageJson | null;
 
 /**
  * Walk up from startDir to find the monorepo root.
@@ -45,7 +59,7 @@ function findMonorepoRoot(startDir: string): string | null {
     const pkgPath = path.join(dir, 'package.json');
     if (fs.existsSync(pkgPath)) {
       try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
         if (pkg.workspaces) return dir;
       } catch {
         // ignore parse errors
@@ -66,7 +80,7 @@ function getWorkspaceGlobs(rootDir: string): string[] {
   const pnpmPath = path.join(rootDir, 'pnpm-workspace.yaml');
   if (fs.existsSync(pnpmPath)) {
     try {
-      const parsed = YAML.parse(fs.readFileSync(pnpmPath, 'utf8'));
+      const parsed = YAML.parse(fs.readFileSync(pnpmPath, 'utf8')) as PnpmWorkspace;
       if (Array.isArray(parsed?.packages)) {
         return parsed.packages;
       }
@@ -79,7 +93,7 @@ function getWorkspaceGlobs(rootDir: string): string[] {
   const pkgPath = path.join(rootDir, 'package.json');
   if (fs.existsSync(pkgPath)) {
     try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
       if (Array.isArray(pkg.workspaces)) return pkg.workspaces;
       if (Array.isArray(pkg.workspaces?.packages))
         return pkg.workspaces.packages;
@@ -95,7 +109,6 @@ function getWorkspaceGlobs(rootDir: string): string[] {
  * Resolve workspace globs to actual directories that contain package.json files.
  */
 function resolveWorkspaceDirs(rootDir: string, globs: string[]): string[] {
-  // Filter out negation patterns and normalize
   const positiveGlobs = globs
     .filter((g) => !g.startsWith('!'))
     .map((g) => {
@@ -105,13 +118,21 @@ function resolveWorkspaceDirs(rootDir: string, globs: string[]): string[] {
       return `${trimmed}/package.json`;
     });
 
+  // Convert negation globs to ignore patterns for fast-glob
+  const negationGlobs = globs
+    .filter((g) => g.startsWith('!'))
+    .map((g) => {
+      const trimmed = g.slice(1).endsWith('/') ? g.slice(1, -1) : g.slice(1);
+      return `${trimmed}/package.json`;
+    });
+
   if (positiveGlobs.length === 0) return [];
 
   const matches = fg.sync(positiveGlobs, {
     cwd: rootDir,
     absolute: true,
     onlyFiles: true,
-    ignore: ['**/node_modules/**'],
+    ignore: ['**/node_modules/**', ...negationGlobs],
   });
 
   return matches.map((m) => path.dirname(m));
@@ -136,7 +157,7 @@ function getInstalledVersion(
     );
     if (fs.existsSync(pkgJsonPath)) {
       try {
-        const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+        const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8')) as PackageJson;
         return pkg.version ?? null;
       } catch {
         return null;
@@ -152,22 +173,42 @@ function getInstalledVersion(
 }
 
 /**
+ * Creates a cached reader for workspace package.json files.
+ * Cache is scoped to a single check invocation to avoid stale data.
+ */
+function createPackageJsonReader(): PackageJsonReader {
+  const cache = new Map<string, PackageJson | null>();
+  return (workspaceDir: string) => {
+    if (cache.has(workspaceDir)) return cache.get(workspaceDir) ?? null;
+    const pkgPath = path.join(workspaceDir, 'package.json');
+    if (!fs.existsSync(pkgPath)) {
+      cache.set(workspaceDir, null);
+      return null;
+    }
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
+      cache.set(workspaceDir, pkg);
+      return pkg;
+    } catch {
+      cache.set(workspaceDir, null);
+      return null;
+    }
+  };
+}
+
+/**
  * Check whether a workspace actually depends on a GT package
  * (directly in dependencies or devDependencies).
  */
 function workspaceDependsOn(
   packageName: string,
-  workspaceDir: string
+  workspaceDir: string,
+  readPkgJson: PackageJsonReader
 ): boolean {
-  const pkgPath = path.join(workspaceDir, 'package.json');
-  if (!fs.existsSync(pkgPath)) return false;
-  try {
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-    return packageName in deps;
-  } catch {
-    return false;
-  }
+  const pkg = readPkgJson(workspaceDir);
+  if (!pkg) return false;
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  return packageName in deps;
 }
 
 /**
@@ -176,16 +217,17 @@ function workspaceDependsOn(
  */
 function findVersionMismatches(
   rootDir: string,
-  workspaceDirs: string[]
+  workspaceDirs: string[],
+  readPkgJson: PackageJsonReader
 ): VersionMismatch[] {
   // Map: packageName -> Map<installedVersion, workspaceNames[]>
   const packageVersions = new Map<string, Map<string, string[]>>();
 
   for (const wsDir of workspaceDirs) {
-    const wsName = getWorkspaceName(wsDir);
+    const wsName = getWorkspaceName(wsDir, readPkgJson);
 
     for (const pkg of GT_PACKAGES) {
-      if (!workspaceDependsOn(pkg, wsDir)) continue;
+      if (!workspaceDependsOn(pkg, wsDir, readPkgJson)) continue;
 
       const version = getInstalledVersion(pkg, wsDir, rootDir);
       if (!version) continue;
@@ -222,14 +264,12 @@ function findVersionMismatches(
 /**
  * Get a human-readable name for a workspace directory.
  */
-function getWorkspaceName(wsDir: string): string {
-  const pkgPath = path.join(wsDir, 'package.json');
-  try {
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    return pkg.name ?? path.basename(wsDir);
-  } catch {
-    return path.basename(wsDir);
-  }
+function getWorkspaceName(
+  wsDir: string,
+  readPkgJson: PackageJsonReader
+): string {
+  const pkg = readPkgJson(wsDir);
+  return pkg?.name ?? path.basename(wsDir);
 }
 
 /**
@@ -276,7 +316,8 @@ export function checkMonorepoVersionConsistency(): void {
   const workspaceDirs = resolveWorkspaceDirs(rootDir, globs);
   if (workspaceDirs.length <= 1) return; // Single workspace — no mismatches possible
 
-  const mismatches = findVersionMismatches(rootDir, workspaceDirs);
+  const readPkgJson = createPackageJsonReader();
+  const mismatches = findVersionMismatches(rootDir, workspaceDirs, readPkgJson);
   if (mismatches.length === 0) return; // All consistent
 
   logger.error(formatMismatchError(mismatches));

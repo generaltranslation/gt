@@ -179,6 +179,231 @@ describe('checkMonorepoVersionConsistency', () => {
     checkMonorepoVersionConsistency();
     expect(process.exit).not.toHaveBeenCalled();
   });
+
+  it('should detect monorepo root via package.json workspaces (npm/yarn style)', () => {
+    mockExistsSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      // No pnpm-workspace.yaml anywhere
+      if (pStr.endsWith('pnpm-workspace.yaml')) return false;
+      // Monorepo root has package.json with workspaces
+      if (pStr === '/repo/package.json') return true;
+      // Workspace package.json files
+      if (pStr === '/repo/packages/app-a/package.json') return true;
+      if (pStr === '/repo/packages/app-b/package.json') return true;
+      // Installed versions
+      if (
+        pStr ===
+        '/repo/packages/app-a/node_modules/gt-react/package.json'
+      )
+        return true;
+      if (
+        pStr ===
+        '/repo/packages/app-b/node_modules/gt-react/package.json'
+      )
+        return true;
+      return false;
+    });
+
+    mockReadFileSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr === '/repo/package.json') {
+        return JSON.stringify({
+          name: 'my-monorepo',
+          workspaces: ['packages/*'],
+        });
+      }
+      if (pStr === '/repo/packages/app-a/package.json') {
+        return JSON.stringify({
+          name: 'app-a',
+          dependencies: { 'gt-react': '^10.5.0' },
+        });
+      }
+      if (pStr === '/repo/packages/app-b/package.json') {
+        return JSON.stringify({
+          name: 'app-b',
+          dependencies: { 'gt-react': '^10.11.0' },
+        });
+      }
+      if (
+        pStr ===
+        '/repo/packages/app-a/node_modules/gt-react/package.json'
+      ) {
+        return JSON.stringify({ name: 'gt-react', version: '10.5.3' });
+      }
+      if (
+        pStr ===
+        '/repo/packages/app-b/node_modules/gt-react/package.json'
+      ) {
+        return JSON.stringify({ name: 'gt-react', version: '10.11.7' });
+      }
+      return '';
+    });
+
+    mockFgSync.mockReturnValue([
+      '/repo/packages/app-a/package.json',
+      '/repo/packages/app-b/package.json',
+    ]);
+
+    checkMonorepoVersionConsistency();
+    expect(logger.error).toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it('should handle yarn-style workspaces.packages field', () => {
+    mockExistsSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr.endsWith('pnpm-workspace.yaml')) return false;
+      if (pStr === '/repo/package.json') return true;
+      if (pStr === '/repo/packages/app-a/package.json') return true;
+      if (pStr === '/repo/packages/app-b/package.json') return true;
+      if (
+        pStr ===
+        '/repo/packages/app-a/node_modules/gt-next/package.json'
+      )
+        return true;
+      if (
+        pStr ===
+        '/repo/packages/app-b/node_modules/gt-next/package.json'
+      )
+        return true;
+      return false;
+    });
+
+    mockReadFileSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr === '/repo/package.json') {
+        return JSON.stringify({
+          name: 'my-monorepo',
+          workspaces: { packages: ['packages/*'] },
+        });
+      }
+      if (pStr === '/repo/packages/app-a/package.json') {
+        return JSON.stringify({
+          name: 'app-a',
+          dependencies: { 'gt-next': '^6.10.0' },
+        });
+      }
+      if (pStr === '/repo/packages/app-b/package.json') {
+        return JSON.stringify({
+          name: 'app-b',
+          dependencies: { 'gt-next': '^6.13.0' },
+        });
+      }
+      if (
+        pStr ===
+        '/repo/packages/app-a/node_modules/gt-next/package.json'
+      ) {
+        return JSON.stringify({ name: 'gt-next', version: '6.10.2' });
+      }
+      if (
+        pStr ===
+        '/repo/packages/app-b/node_modules/gt-next/package.json'
+      ) {
+        return JSON.stringify({ name: 'gt-next', version: '6.13.8' });
+      }
+      return '';
+    });
+
+    mockFgSync.mockReturnValue([
+      '/repo/packages/app-a/package.json',
+      '/repo/packages/app-b/package.json',
+    ]);
+
+    checkMonorepoVersionConsistency();
+    expect(logger.error).toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it('should silently return if pnpm-workspace.yaml is malformed', () => {
+    mockExistsSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr === '/repo/pnpm-workspace.yaml') return true;
+      // No package.json with workspaces fallback
+      if (pStr === '/repo/package.json') return true;
+      return false;
+    });
+
+    mockReadFileSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr === '/repo/pnpm-workspace.yaml') {
+        return '{{{{not valid yaml at all';
+      }
+      if (pStr === '/repo/package.json') {
+        // No workspaces field — so no fallback
+        return JSON.stringify({ name: 'my-repo' });
+      }
+      return '';
+    });
+
+    checkMonorepoVersionConsistency();
+    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('should pass negation globs as ignore patterns to fast-glob', () => {
+    mockExistsSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr === '/repo/pnpm-workspace.yaml') return true;
+      return false;
+    });
+
+    mockReadFileSync.mockImplementation((p: any) => {
+      const pStr = String(p);
+      if (pStr === '/repo/pnpm-workspace.yaml') {
+        return 'packages:\n  - "packages/*"\n  - "!packages/internal"\n';
+      }
+      return '';
+    });
+
+    mockFgSync.mockReturnValue([]);
+
+    checkMonorepoVersionConsistency();
+
+    expect(mockFgSync).toHaveBeenCalledWith(
+      ['packages/*/package.json'],
+      expect.objectContaining({
+        ignore: ['**/node_modules/**', 'packages/internal/package.json'],
+      })
+    );
+  });
+
+  it('should group multiple workspaces with the same version together', () => {
+    setupMonorepoMocks({
+      workspaces: [
+        '/repo/packages/app-a',
+        '/repo/packages/app-b',
+        '/repo/packages/app-c',
+      ],
+      packages: {
+        '/repo/packages/app-a': {
+          name: 'app-a',
+          dependencies: { 'gt-react': '^10.5.0' },
+        },
+        '/repo/packages/app-b': {
+          name: 'app-b',
+          dependencies: { 'gt-react': '^10.11.0' },
+        },
+        '/repo/packages/app-c': {
+          name: 'app-c',
+          dependencies: { 'gt-react': '^10.11.0' },
+        },
+      },
+      installedVersions: {
+        '/repo/packages/app-a': { 'gt-react': '10.5.3' },
+        '/repo/packages/app-b': { 'gt-react': '10.11.7' },
+        '/repo/packages/app-c': { 'gt-react': '10.11.7' },
+      },
+    });
+
+    checkMonorepoVersionConsistency();
+    expect(process.exit).toHaveBeenCalledWith(1);
+
+    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
+    // Both app-b and app-c should be grouped under the same version
+    expect(errorMessage).toContain('app-b');
+    expect(errorMessage).toContain('app-c');
+    expect(errorMessage).toContain('app-a');
+  });
 });
 
 // Helper to set up common mock patterns
