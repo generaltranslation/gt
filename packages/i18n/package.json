@@ -95,7 +95,7 @@
       "internal": [
         "./dist/internal.d.ts"
       ],
-      "internal-types": [
+      "internal/types": [
         "./dist/internal-types.d.ts"
       ]
     }
@@ -112,7 +112,7 @@
       "gt-i18n/internal": [
         "/dist/internal"
       ],
-      "gt-i18n/internal-types": [
+      "gt-i18n/internal/types": [
         "/dist/internal-types"
       ]
     }

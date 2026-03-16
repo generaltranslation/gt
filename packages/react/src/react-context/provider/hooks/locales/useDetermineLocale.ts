@@ -8,7 +8,7 @@ import {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
-import { PACKAGE_NAME } from '../../../errors-dir/constants';
+import { PACKAGE_NAME } from '../../../../errors-dir/constants';
 
 export function useDetermineLocale({
   locale: initialLocale = '',

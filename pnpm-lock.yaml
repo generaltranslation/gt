@@ -700,6 +700,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../i18n
       react:
         specifier: '>=16.8.0'
         version: 19.1.1

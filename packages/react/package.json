@@ -16,7 +16,8 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
-    "@generaltranslation/react-core": "workspace:*"
+    "@generaltranslation/react-core": "workspace:*",
+    "gt-i18n": "workspace:*"
   },
   "scripts": {
     "patch": "pnpm version patch",
@@ -77,6 +78,11 @@
       "types": "./dist/client.d.ts",
       "require": "./dist/client.cjs.min.cjs",
       "import": "./dist/client.esm.min.mjs"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "require": "./dist/browser.cjs.min.cjs",
+      "import": "./dist/browser.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -86,6 +92,9 @@
       ],
       "internal": [
         "./dist/internal.d.ts"
+      ],
+      "setup": [
+        "./dist/setup.d.ts"
       ]
     }
   },
@@ -97,6 +106,9 @@
       ],
       "gt-react/internal": [
         "./dist/internal"
+      ],
+      "gt-react/setup": [
+        "./dist/setup.d.ts"
       ]
     }
   },

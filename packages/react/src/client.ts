@@ -1,6 +1,6 @@
-import ClientProvider from './provider/ClientProvider';
-import LocaleSelector from './ui/LocaleSelector';
-import RegionSelector from './ui/RegionSelector';
+import ClientProvider from './react-context/provider/ClientProvider';
+import LocaleSelector from './react-context/ui/LocaleSelector';
+import RegionSelector from './react-context/ui/RegionSelector';
 
 import {
   T,
