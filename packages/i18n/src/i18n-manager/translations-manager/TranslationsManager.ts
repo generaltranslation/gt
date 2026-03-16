@@ -153,6 +153,7 @@ class TranslationsManager {
 
   /**
    * Get translations for a given locale
+   * @note This method does not account for cache expiry
    */
   getTranslationsSync(locale: string): Translations {
     if (!this.resolvedCache.has(locale)) {
