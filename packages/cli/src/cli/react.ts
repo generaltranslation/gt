@@ -29,7 +29,7 @@ export class ReactCLI extends InlineCLI {
 
     this.program.hook('preAction', () => {
       if (this.program.opts().skipVersionCheck) return;
-      checkMonorepoVersionConsistency(REACT_LIBRARIES);
+      checkMonorepoVersionConsistency([...REACT_LIBRARIES, Libraries.GT_I18N]);
     });
   }
   public init() {
