@@ -155,13 +155,8 @@ class TranslationsManager {
    * Get translations for a given locale
    * @note This method does not account for cache expiry
    */
-  getTranslationsSync(locale: string): Translations {
-    if (!this.resolvedCache.has(locale)) {
-      throw new Error(
-        `Translations for locale ${locale} not found. Please load the translations first or use async interfaces instead.`
-      );
-    }
-    return this.resolvedCache.get(locale)!;
+  getTranslationsSync(locale: string): Translations | undefined {
+    return this.resolvedCache.get(locale);
   }
 
   // ----- Utilities ----- //

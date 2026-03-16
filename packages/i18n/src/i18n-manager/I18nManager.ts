@@ -139,8 +139,9 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   resolveTranslationSync: TranslationResolver = (message, options) => {
     const locale = this.getLocale();
     const translations = this.translationsManager.getTranslationsSync(locale);
+    if (!translations) return undefined;
     const hash = hashMessage(message, options);
-    return translations[hash] as string | undefined;
+    return translations[hash] as string;
   };
 
   // ----- Async Operations ----- //
