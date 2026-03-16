@@ -58,15 +58,6 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import {
-  findAgentFiles,
-  findAgentFilesWithInstructions,
-  hasCursorRulesDir,
-  CURSOR_GT_RULES_FILE,
-  getAgentInstructions,
-  appendAgentInstructions,
-} from '../setup/agentInstructions.js';
-import { determineLibrary } from '../fs/determineFramework/index.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 
@@ -100,7 +91,6 @@ export class BaseCLI {
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
-    this.setupUpdateInstructionsCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -396,7 +386,6 @@ export class BaseCLI {
 
         if (useAgent) {
           await setupLocadex(settings);
-          await this.promptAgentInstructions();
           logger.endCommand(
             'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
@@ -452,8 +441,6 @@ export class BaseCLI {
           }
           // Configure gt.config.json
           await this.handleInitCommand(ranReactSetup, useDefaults);
-
-          await this.promptAgentInstructions(useDefaults);
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -688,87 +675,4 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     await setCredentials(credentials, settings.framework);
   }
 
-  protected setupUpdateInstructionsCommand(): void {
-    this.program
-      .command('update-instructions')
-      .description('Update GT usage instructions in AI agent files')
-      .option(
-        '--new',
-        'Add instructions to all agent files, even those without existing GT instructions'
-      )
-      .action(async (options: { new?: boolean }) => {
-        const agentFiles = options.new
-          ? findAgentFiles()
-          : findAgentFilesWithInstructions();
-
-        if (
-          options.new &&
-          hasCursorRulesDir() &&
-          !agentFiles.includes(CURSOR_GT_RULES_FILE)
-        ) {
-          agentFiles.push(CURSOR_GT_RULES_FILE);
-        }
-
-        if (agentFiles.length === 0) {
-          logger.warn(
-            options.new
-              ? 'No agent files found. Create a CLAUDE.md or similar agent file first.'
-              : 'No agent files with GT instructions found. Use --new to add instructions to existing agent files.'
-          );
-          return;
-        }
-
-        const { library } = determineLibrary();
-        const instructions = getAgentInstructions(library);
-        let updatedCount = 0;
-        for (const file of agentFiles) {
-          if (appendAgentInstructions(file, instructions)) {
-            updatedCount++;
-          }
-        }
-
-        if (updatedCount > 0) {
-          logger.success(
-            `Updated GT instructions in ${updatedCount} file${updatedCount > 1 ? 's' : ''}.`
-          );
-        } else {
-          logger.info('All agent instruction files are already up to date.');
-        }
-      });
-  }
-
-  protected async promptAgentInstructions(
-    useDefaults: boolean = false
-  ): Promise<void> {
-    const agentFiles = findAgentFiles();
-
-    // Include .cursor/rules/gt-i18n.mdc if the directory exists but the file doesn't yet
-    if (hasCursorRulesDir() && !agentFiles.includes(CURSOR_GT_RULES_FILE)) {
-      agentFiles.push(CURSOR_GT_RULES_FILE);
-    }
-
-    if (agentFiles.length === 0) return;
-
-    const addInstructions = useDefaults
-      ? true
-      : await promptConfirm({
-          message: `Found AI agent instruction files (${agentFiles.map((f) => path.basename(f)).join(', ')}). Would you like to add GT usage instructions?`,
-          defaultValue: true,
-        });
-
-    if (addInstructions) {
-      // Re-detect library since packages may have been installed during init
-      const { library } = determineLibrary();
-      const instructions = getAgentInstructions(library);
-      let updatedCount = 0;
-      for (const file of agentFiles) {
-        if (appendAgentInstructions(file, instructions)) {
-          updatedCount++;
-        }
-      }
-      if (updatedCount > 0) {
-        logger.success('Added GT instructions to agent files.');
-      }
-    }
-  }
 }
