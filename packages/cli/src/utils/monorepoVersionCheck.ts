@@ -45,6 +45,7 @@ const LOCKFILES = [
   'yarn.lock',
   'bun.lock',
   'bun.lockb',
+  'deno.lock',
 ];
 
 /**
