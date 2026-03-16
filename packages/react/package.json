@@ -83,6 +83,9 @@
       "types": "./dist/browser.d.ts",
       "require": "./dist/browser.cjs.min.cjs",
       "import": "./dist/browser.esm.min.mjs"
+    },
+    "./browser/types": {
+      "types": "./dist/browser.d.ts"
     }
   },
   "typesVersions": {
@@ -95,6 +98,12 @@
       ],
       "setup": [
         "./dist/setup.d.ts"
+      ],
+      "browser": [
+        "./dist/browser.d.ts"
+      ],
+      "browser/types": [
+        "./dist/browser.d.ts"
       ]
     }
   },
@@ -109,6 +118,12 @@
       ],
       "gt-react/setup": [
         "./dist/setup.d.ts"
+      ],
+      "gt-react/browser": [
+        "./dist/browser.d.ts"
+      ],
+      "gt-react/browser/types": [
+        "./dist/browser.d.ts"
       ]
     }
   },

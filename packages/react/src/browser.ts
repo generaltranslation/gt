@@ -5,3 +5,5 @@ if (typeof window === 'undefined') {
 }
 
 export * from './i18n-context/setup/index';
+export * from './i18n-context/translation/t';
+export { t } from './i18n-context/translation/t';

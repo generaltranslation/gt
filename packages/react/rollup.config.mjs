@@ -142,4 +142,14 @@ export default [
     },
     plugins: [dts()],
   },
+
+  // TypeScript declarations for the browser types (browser-types.ts)
+  {
+    input: './src/browser-types.ts',
+    output: {
+      file: './dist/browser-types.d.ts',
+      format: 'esm',
+    },
+    plugins: [dts()],
+  },
 ];

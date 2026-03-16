@@ -1,7 +1,7 @@
 import { setI18nManager } from 'gt-i18n/internal';
 import type { InitializeGTParams } from './types';
-// import { TanstackStorageAdapter } from '../tanstack-i18n-manager/TanstackStorageAdapter';
-// import { TanstackI18nManager } from '../tanstack-i18n-manager/TanstackI18nManager';
+import { BrowserStorageAdapter } from '../browser-i18n-manager/BrowserStorageAdapter';
+import { BrowserI18nManager } from '../browser-i18n-manager/BrowserI18nManager';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
@@ -9,13 +9,13 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * @param {InitializeGTParams} config - The configuration for the GT instance
  */
 export function initializeGT(params: InitializeGTParams): void {
-  // const i18nManager = new TanstackI18nManager({
-  //   ...params,
-  //   storeAdapter: new TanstackStorageAdapter({
-  //     defaultLocale: params.defaultLocale || libraryDefaultLocale,
-  //     locales: params.locales || [libraryDefaultLocale],
-  //     customMapping: params.customMapping,
-  //   }),
-  // });
-  // setI18nManager(i18nManager);
+  const i18nManager = new BrowserI18nManager({
+    ...params,
+    storeAdapter: new BrowserStorageAdapter({
+      ...params,
+      defaultLocale: params.defaultLocale || libraryDefaultLocale,
+      locales: params.locales || [libraryDefaultLocale],
+    }),
+  });
+  setI18nManager(i18nManager);
 }

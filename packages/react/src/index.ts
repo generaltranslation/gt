@@ -38,6 +38,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from '@generaltranslation/react-core/types';
+import { t } from './i18n-context/translation/t';
 
 export {
   Var,
@@ -75,4 +76,5 @@ export {
   useMessages,
   mFallback,
   gtFallback,
+  t,
 };
