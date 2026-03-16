@@ -80,42 +80,6 @@ function scanForPackageDirs(rootDir: string): string[] {
 }
 
 /**
- * Get the installed version of a package from a workspace directory.
- * Checks the workspace's own node_modules first, then walks up to the monorepo root.
- */
-function getInstalledVersion(
-  packageName: string,
-  workspaceDir: string,
-  monorepoRoot: string
-): string | null {
-  let dir = workspaceDir;
-  while (true) {
-    const pkgJsonPath = path.join(
-      dir,
-      'node_modules',
-      packageName,
-      'package.json'
-    );
-    if (fs.existsSync(pkgJsonPath)) {
-      try {
-        const pkg = JSON.parse(
-          fs.readFileSync(pkgJsonPath, 'utf8')
-        ) as PackageJson;
-        return pkg.version ?? null;
-      } catch {
-        return null;
-      }
-    }
-
-    // Don't walk past the monorepo root
-    if (dir === monorepoRoot) return null;
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
-}
-
-/**
  * Creates a cached reader for workspace package.json files.
  * Cache is scoped to a single check invocation to avoid stale data.
  */
@@ -140,39 +104,35 @@ function createPackageJsonReader(): PackageJsonReader {
 }
 
 /**
- * Check whether a workspace actually depends on a GT package
- * (directly in dependencies or devDependencies).
+ * Get the declared version specifier for a GT package from a workspace's package.json.
  */
-function workspaceDependsOn(
+function getDeclaredVersion(
   packageName: string,
   workspaceDir: string,
   readPkgJson: PackageJsonReader
-): boolean {
+): string | null {
   const pkg = readPkgJson(workspaceDir);
-  if (!pkg) return false;
+  if (!pkg) return null;
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  return packageName in deps;
+  return deps[packageName] ?? null;
 }
 
 /**
- * Scan all workspaces in a monorepo for mismatched GT package versions.
- * Returns an array of mismatches, or an empty array if everything is consistent.
+ * Scan all packages for mismatched GT package version specifiers.
+ * Compares the declared versions in each package.json directly.
  */
 function findVersionMismatches(
-  rootDir: string,
   workspaceDirs: string[],
   readPkgJson: PackageJsonReader
 ): VersionMismatch[] {
-  // Map: packageName -> Map<installedVersion, workspaceNames[]>
+  // Map: packageName -> Map<versionSpecifier, workspaceNames[]>
   const packageVersions = new Map<string, Map<string, string[]>>();
 
   for (const wsDir of workspaceDirs) {
     const wsName = getWorkspaceName(wsDir, readPkgJson);
 
     for (const pkg of GT_PACKAGES) {
-      if (!workspaceDependsOn(pkg, wsDir, readPkgJson)) continue;
-
-      const version = getInstalledVersion(pkg, wsDir, rootDir);
+      const version = getDeclaredVersion(pkg, wsDir, readPkgJson);
       if (!version) continue;
 
       if (!packageVersions.has(pkg)) {
@@ -257,7 +217,7 @@ export function checkMonorepoVersionConsistency(): void {
   if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
 
   const readPkgJson = createPackageJsonReader();
-  const mismatches = findVersionMismatches(rootDir, workspaceDirs, readPkgJson);
+  const mismatches = findVersionMismatches(workspaceDirs, readPkgJson);
   if (mismatches.length === 0) return; // All consistent
 
   logger.error(formatMismatchError(mismatches));
