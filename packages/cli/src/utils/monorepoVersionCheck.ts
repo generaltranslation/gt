@@ -81,7 +81,8 @@ function getWorkspaceGlobs(rootDir: string): string[] {
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       if (Array.isArray(pkg.workspaces)) return pkg.workspaces;
-      if (Array.isArray(pkg.workspaces?.packages)) return pkg.workspaces.packages;
+      if (Array.isArray(pkg.workspaces?.packages))
+        return pkg.workspaces.packages;
     } catch {
       // ignore
     }
@@ -208,7 +209,9 @@ function findVersionMismatches(
         versions.push({ version, workspaces });
       }
       // Sort by version descending so the latest appears first
-      versions.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
+      versions.sort((a, b) =>
+        b.version.localeCompare(a.version, undefined, { numeric: true })
+      );
       mismatches.push({ packageName, versions });
     }
   }

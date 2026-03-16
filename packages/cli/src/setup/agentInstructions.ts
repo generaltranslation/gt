@@ -6,9 +6,9 @@ import { getCLIVersion, getPackageVersion } from '../utils/packageJson.js';
 import { Libraries } from '../types/libraries.js';
 
 /*
-* This file is currently unused. We will add back the agent instruction
-* functionality in the future.
-*/
+ * This file is currently unused. We will add back the agent instruction
+ * functionality in the future.
+ */
 
 const INSTRUCTIONS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

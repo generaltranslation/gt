@@ -674,5 +674,4 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     const credentials = await retrieveCredentials(settings, keyType);
     await setCredentials(credentials, settings.framework);
   }
-
 }
