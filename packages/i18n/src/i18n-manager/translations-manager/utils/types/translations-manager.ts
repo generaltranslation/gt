@@ -8,7 +8,8 @@ import type { TranslationsLoader } from '../../translations-loaders/types';
  * @property {string} [cacheUrl] - The cache url.
  * @property {string} [_versionId] - The version id.
  * @property {string} [_branchId] - The branch id.
- * @property {number} cacheExpiryTime - The cache expiry time in milliseconds.
+ * @property {number | null} cacheExpiryTime - The cache expiry time in milliseconds (use null or a negative number to disable expiry).
+ * @property {TranslationsLoader} [loadTranslations] - A custom translations loader function.
  */
 export type TranslationsManagerConfig = {
   projectId?: string;
@@ -16,18 +17,6 @@ export type TranslationsManagerConfig = {
   _versionId?: string;
   _branchId?: string;
   customMapping?: CustomMapping;
-  cacheExpiryTime: number;
+  cacheExpiryTime?: number | null;
+  loadTranslations?: TranslationsLoader;
 };
-
-/**
- * Params for the TranslationsManager constructor
- *
- * @property {number} [cacheExpiryTime] - The cache expiry time in milliseconds.
- * @property {TranslationsLoader} [loadTranslations] - A custom translations loader function.
- */
-export type TranslationsManagerConstructorParams = Partial<
-  Pick<TranslationsManagerConfig, 'cacheExpiryTime'>
-> &
-  Omit<TranslationsManagerConfig, 'cacheExpiryTime'> & {
-    loadTranslations?: TranslationsLoader;
-  };
