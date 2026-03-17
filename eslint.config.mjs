@@ -64,6 +64,35 @@ export default [
     },
   },
   {
+    files: ['packages/react/src/i18n-context/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'gt-i18n',
+              message:
+                'In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['gt-i18n/*', '!gt-i18n/types', '!gt-i18n/internal'],
+              message:
+                'In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from gt-i18n is likely to break i18n context.',
+            },
+            {
+              group: ['gt-i18n/*/*', '!gt-i18n/internal/types'],
+              message:
+                'In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from gt-i18n is likely to break i18n context.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       'dist/',
       'node_modules/',
