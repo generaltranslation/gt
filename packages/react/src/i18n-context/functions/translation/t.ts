@@ -1,6 +1,7 @@
 import { resolveTranslationSync } from 'gt-i18n/internal';
 import { SyncResolutionFunction } from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
+import { gtFallback } from 'gt-i18n/internal';
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.
@@ -21,11 +22,6 @@ import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../
  * @example
  * t('Hello, {name}!', { name: 'John' }); // Translates 'Hello, John!'
  *
- * @example
- * t('Hello, {name}!', { name: 'John' }, { locale: 'en' }); // Translates 'Hello, John!'
- *
- * @example
- * t('Hello, {name}!', { name: 'John' }, { locale: 'fr' }); // Translates 'Bonjour, John!'
  */
 export const t: SyncResolutionFunction = (message, options) => {
   // Enforce browser environment
@@ -33,6 +29,7 @@ export const t: SyncResolutionFunction = (message, options) => {
     console.warn(
       createTranslationFailedDueToBrowserEnvironmentWarning(message)
     );
+    return gtFallback(message, options);
   }
   return resolveTranslationSync(message, options);
 };
