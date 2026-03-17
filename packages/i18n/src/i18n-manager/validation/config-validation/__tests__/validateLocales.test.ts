@@ -5,6 +5,7 @@ describe('validateLocales', () => {
   it('validates invalid locale when GT services enabled', () => {
     const result = validateLocales({
       defaultLocale: 'invalid-locale',
+      projectId: 'test-project',
       cacheUrl: undefined, // GT_REMOTE enabled
     });
     expect(result).toHaveLength(1);
@@ -16,6 +17,7 @@ describe('validateLocales', () => {
     const result = validateLocales({
       locales: ['en', 'invalid-locale'],
       defaultLocale: 'en',
+      projectId: 'test-project',
       runtimeUrl: undefined, // GT enabled
     });
     expect(result).toHaveLength(1);
