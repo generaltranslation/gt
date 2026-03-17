@@ -9,6 +9,11 @@ import { GTProviderProps } from '../provider/types';
 export class TanstackI18nManager extends I18nManager<TanstackStorageAdapter> {
   constructor(config: I18nManagerConstructorParams<TanstackStorageAdapter>) {
     super(config);
+    this.storeAdapter.setConfig({
+      defaultLocale: this.getDefaultLocale(),
+      locales: this.getLocales(),
+      customMapping: config.customMapping,
+    });
   }
 
   /**

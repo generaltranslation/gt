@@ -300,7 +300,7 @@ export async function getPackageManager(
 
   const selectedPackageManager: PackageManager =
     await promptSelect<PackageManager>({
-      message: 'Please select your package manager.',
+      message: 'Select your package manager.',
       options: packageManagers.map((packageManager) => ({
         value: packageManager,
         label: packageManager.label,

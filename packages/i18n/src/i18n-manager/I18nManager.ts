@@ -49,22 +49,6 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
     this.translationsManager = new TranslationsManager(params);
   }
 
-  // ========== Translations ========== //
-
-  /**
-   * Get the translations
-   */
-  async getTranslations(): Promise<Translations> {
-    return this.translationsManager.getTranslations(this.getLocale());
-  }
-
-  /**
-   * Get the translation loader function
-   */
-  getTranslationLoader(): TranslationsLoader {
-    return this.translationsManager.getTranslationLoader();
-  }
-
   // ========== Getters and Setters ========== //
 
   /**
@@ -110,6 +94,71 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   /**
+   * Get a gt class instance
+   * TODO: keep a cache to avoid creating new instances unnecessarily
+   */
+  getGTClass(): GT {
+    return new GT({
+      sourceLocale: this.config.defaultLocale,
+      targetLocale: this.getLocale(),
+      locales: this.config.locales,
+      customMapping: this.config.customMapping,
+      projectId: this.config.projectId,
+      baseUrl: this.config.runtimeUrl || undefined,
+      apiKey: this.config.apiKey,
+      devApiKey: this.config.devApiKey,
+    });
+  }
+
+  /**
+   * Is translation enabled?
+   */
+  isTranslationEnabled(): boolean {
+    return this.config.enableI18n;
+  }
+
+  // ========== Translation Loading ========== //
+
+  /**
+   * Get the translation loader function
+   */
+  getTranslationLoader(): TranslationsLoader {
+    return this.translationsManager.getTranslationLoader();
+  }
+
+  // ========== Translation Resolution ========== //
+
+  // ----- Sync Operations ----- //
+
+  /**
+   * Get the translations (error on unloaded translations)
+   * @param {string} message - The message to get the translation for
+   * @param {InlineTranslationOptions} [options] - The options for the translation
+   * @returns {string | undefined} The translation for the given message and options synchronously
+   */
+  resolveTranslationSync: TranslationResolver = (message, options) => {
+    const locale = this.getLocale();
+    const translations = this.translationsManager.getTranslationsSync(locale);
+    if (!translations) return undefined;
+    const hash = hashMessage(message, options);
+    return translations[hash] as string;
+  };
+
+  // ----- Async Operations ----- //
+
+  /**
+   * Get the translations
+   */
+  async getTranslations(
+    locale: string = this.getLocale()
+  ): Promise<Translations> {
+    if (!this.config.locales.includes(locale)) {
+      throw new Error(`Locale ${locale} not found in config`);
+    }
+    return this.translationsManager.getTranslations(locale);
+  }
+
+  /**
    * Get translation for a given locale and message
    *
    * @param {string} [locale] - The locale to get the translation for (if not provided, will use the current locale)
@@ -139,42 +188,6 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
       // Return translation or undefined
       return translations[hash] as unknown as string | undefined;
     };
-  }
-
-  /**
-   * Get a gt class instance
-   * TODO: keep a cache to avoid creating new instances unnecessarily
-   */
-  getGTClass(): GT {
-    return new GT({
-      sourceLocale: this.config.defaultLocale,
-      targetLocale: this.getLocale(),
-      locales: this.config.locales,
-      customMapping: this.config.customMapping,
-      projectId: this.config.projectId,
-      baseUrl: this.config.runtimeUrl || undefined,
-      apiKey: this.config.apiKey,
-      devApiKey: this.config.devApiKey,
-    });
-  }
-
-  /**
-   * Get translation for a given locale
-   * @param {string} locale - The locale to get the translation for
-   * @returns {Promise<Translations>} The translation for the given locale
-   */
-  async getTranslation(locale: string): Promise<Translations> {
-    if (!this.config.locales.includes(locale)) {
-      throw new Error(`Locale ${locale} not found in config`);
-    }
-    return this.translationsManager.getTranslations(locale);
-  }
-
-  /**
-   * Is translation enabled?
-   */
-  isTranslationEnabled(): boolean {
-    return this.config.enableI18n;
   }
 
   // ========== Metadata ========== //
@@ -312,12 +325,14 @@ function standardizeLocales(config: {
 }
 
 /**
- * Type definition for a synchronous translation resolver function
- * @param {string} message - The message to get the translation for
+ * Type definition for a synchronous translation resolution given a hashable message and options
+ * @template T - The type of the message (default: string)
+ * @template U - The type of the translation (default: string | undefined)
+ * @param {T} message - The message to get the translation for
  * @param {InlineTranslationOptions} [options] - The options for the translation
- * @returns {string | undefined} The translation for the given message and options
+ * @returns {U} The translation for the given message and options
  */
-type TranslationResolver = (
-  message: string,
-  options?: InlineTranslationOptions
-) => string | undefined;
+type TranslationResolver<
+  T extends unknown = string,
+  U extends unknown = string | undefined,
+> = (message: T, options?: InlineTranslationOptions) => U;

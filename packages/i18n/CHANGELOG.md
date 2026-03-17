@@ -1,5 +1,41 @@
 # gt-i18n
 
+## 0.6.0
+
+### Minor Changes
+
+- [#1113](https://github.com/generaltranslation/gt/pull/1113) [`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add string translation function t()
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [[`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8)]:
+  - generaltranslation@8.1.16
+  - @generaltranslation/supported-locales@2.0.49
+
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [[`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e)]:
+  - generaltranslation@8.1.15
+  - @generaltranslation/supported-locales@2.0.48
+
+## 0.5.0
+
+### Minor Changes
+
+- [#1090](https://github.com/generaltranslation/gt/pull/1090) [`7846d06`](https://github.com/generaltranslation/gt/commit/7846d0672ba357081793706fdf55313b4f5428e0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add locale utilities
+
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76)]:
+  - generaltranslation@8.1.14
+  - @generaltranslation/supported-locales@2.0.47
+
 ## 0.4.1
 
 ### Patch Changes

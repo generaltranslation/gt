@@ -1,5 +1,93 @@
 # gtx-cli
 
+## 2.10.4
+
+### Patch Changes
+
+- [#1113](https://github.com/generaltranslation/gt/pull/1113) [`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add string translation function t()
+
+## 2.10.3
+
+### Patch Changes
+
+- [#1110](https://github.com/generaltranslation/gt/pull/1110) [`38ecda0`](https://github.com/generaltranslation/gt/commit/38ecda003b6873464e350aff0463a8dc64030565) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding monorepo GT package version check, remove writing to agent files
+
+## 2.10.2
+
+### Patch Changes
+
+- [#1108](https://github.com/generaltranslation/gt/pull/1108) [`2dff603`](https://github.com/generaltranslation/gt/commit/2dff6036382040438a3fa8bbd4c2475da7617f93) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix string behavior
+
+## 2.10.1
+
+### Patch Changes
+
+- [#1105](https://github.com/generaltranslation/gt/pull/1105) [`952a515`](https://github.com/generaltranslation/gt/commit/952a51528c298ad2466ca6cb73302eae06f56c45) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix --force behavior
+
+## 2.10.0
+
+### Minor Changes
+
+- [#1104](https://github.com/generaltranslation/gt/pull/1104) [`51430bd`](https://github.com/generaltranslation/gt/commit/51430bd1d85a4937ff3b4dcd0090d79e3b4c1504) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding metadata support for keyed file types
+
+### Patch Changes
+
+- [#1101](https://github.com/generaltranslation/gt/pull/1101) [`437a389`](https://github.com/generaltranslation/gt/commit/437a3898f1daa0a40ac033c2cc1bb94b4a0fd86b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove tw content json from init
+
+- [#1103](https://github.com/generaltranslation/gt/pull/1103) [`7164ceb`](https://github.com/generaltranslation/gt/commit/7164ceb9785863cdf4dc659fe5bd0f87511a5bed) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Extract code metadata
+
+## 2.9.0
+
+### Minor Changes
+
+- [#1099](https://github.com/generaltranslation/gt/pull/1099) [`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add twilio json support for cli
+
+### Patch Changes
+
+- Updated dependencies [[`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8)]:
+  - generaltranslation@8.1.16
+  - @generaltranslation/python-extractor@0.1.2
+
+## 2.8.2
+
+### Patch Changes
+
+- [#1098](https://github.com/generaltranslation/gt/pull/1098) [`612ace4`](https://github.com/generaltranslation/gt/commit/612ace4bb30aaa3406b949931c8ffdb3f43ebd9f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: upload supporting composite json
+
+- Updated dependencies [[`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e)]:
+  - generaltranslation@8.1.15
+  - @generaltranslation/python-extractor@0.1.1
+
+## 2.8.1
+
+### Patch Changes
+
+- [#1093](https://github.com/generaltranslation/gt/pull/1093) [`69a13a5`](https://github.com/generaltranslation/gt/commit/69a13a5791254ebb4a2679321d24fecebb1fef11) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for temporary structural transforms
+
+## 2.8.0
+
+### Minor Changes
+
+- [#1088](https://github.com/generaltranslation/gt/pull/1088) [`2cad388`](https://github.com/generaltranslation/gt/commit/2cad38875e4dccdd7d90de3eba6997eb75371db3) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add python support for registration
+
+### Patch Changes
+
+- Updated dependencies [[`2cad388`](https://github.com/generaltranslation/gt/commit/2cad38875e4dccdd7d90de3eba6997eb75371db3)]:
+  - @generaltranslation/python-extractor@0.1.0
+
+## 2.7.1
+
+### Patch Changes
+
+- [#1085](https://github.com/generaltranslation/gt/pull/1085) [`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76) Thanks [@brian-lou](https://github.com/brian-lou)! - feat: Auth wizard supports both types of key creation
+
+- [#1082](https://github.com/generaltranslation/gt/pull/1082) [`3cb3bbd`](https://github.com/generaltranslation/gt/commit/3cb3bbd13046e6c1f6f9d4b5286669b96b4a85b2) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Bumping CLI timeouts
+
+- [#1076](https://github.com/generaltranslation/gt/pull/1076) [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Apply style guide to error messages and warnings: remove "Please", simplify verbose phrasing, fix `in-line` → `inline`.
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76)]:
+  - generaltranslation@8.1.14
+
 ## 2.7.0
 
 ### Minor Changes

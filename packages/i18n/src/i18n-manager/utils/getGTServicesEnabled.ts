@@ -13,6 +13,9 @@ import {
  * @returns True if GT services are enabled
  */
 export function getGTServicesEnabled(config: {
+  projectId?: string;
+  devApiKey?: string;
+  apiKey?: string;
   cacheUrl?: string | null;
   runtimeUrl?: string | null;
 }): boolean {

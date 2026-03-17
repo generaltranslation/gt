@@ -31,7 +31,8 @@ export async function aggregateInlineTranslations(
     options.dictionary,
     library,
     false,
-    settings.parsingOptions
+    settings.parsingOptions,
+    settings.options?.includeSourceCodeContext ?? false
   );
 
   if (warnings.length > 0) {
@@ -72,7 +73,7 @@ export async function aggregateInlineTranslations(
   if (updates.length == 0) {
     logger.error(
       chalk.red(
-        `No in-line content or dictionaries were found for ${chalk.green(
+        `No inline content or dictionaries were found for ${chalk.green(
           library
         )}. Are you sure you're running this command in the right directory?`
       )

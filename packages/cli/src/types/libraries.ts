@@ -8,6 +8,9 @@ export enum Libraries {
   GT_NODE = 'gt-node',
   GT_I18N = 'gt-i18n',
   GT_REACT_CORE = '@generaltranslation/react-core',
+  GT_TANSTACK_START = 'gt-tanstack-start',
+  GT_FLASK = 'gt-flask',
+  GT_FASTAPI = 'gt-fastapi',
 }
 
 /**
@@ -20,6 +23,9 @@ export const GT_LIBRARIES = [
   Libraries.GT_NODE,
   Libraries.GT_I18N,
   Libraries.GT_REACT_CORE,
+  Libraries.GT_TANSTACK_START,
+  Libraries.GT_FLASK,
+  Libraries.GT_FASTAPI,
 ] as const;
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
 
@@ -32,7 +38,10 @@ export const INLINE_LIBRARIES = [
   Libraries.GT_NODE,
   Libraries.GT_REACT_NATIVE,
   Libraries.GT_REACT_CORE,
+  Libraries.GT_TANSTACK_START,
   Libraries.GT_I18N,
+  Libraries.GT_FLASK,
+  Libraries.GT_FASTAPI,
 ] as const;
 export type InlineLibrary = (typeof INLINE_LIBRARIES)[number];
 
@@ -48,8 +57,28 @@ export const REACT_LIBRARIES = [
   Libraries.GT_REACT,
   Libraries.GT_REACT_NATIVE,
   Libraries.GT_REACT_CORE,
+  Libraries.GT_TANSTACK_START,
 ] as const;
 export type ReactLibrary = (typeof REACT_LIBRARIES)[number];
+
+/**
+ * Node/server-side libraries
+ */
+export const NODE_LIBRARIES = [Libraries.GT_NODE, Libraries.GT_I18N] as const;
+export type NodeLibrary = (typeof NODE_LIBRARIES)[number];
+
+/**
+ * Python libraries
+ */
+export const PYTHON_LIBRARIES = [
+  Libraries.GT_FLASK,
+  Libraries.GT_FASTAPI,
+] as const;
+export type PythonLibrary = (typeof PYTHON_LIBRARIES)[number];
+
+export function isPythonLibrary(lib: string): lib is PythonLibrary {
+  return (PYTHON_LIBRARIES as readonly string[]).includes(lib);
+}
 
 /**
  * A mapping of each library to their upstream dependencies for filtering imports
@@ -75,5 +104,13 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
   ],
   [Libraries.GT_NODE]: [Libraries.GT_I18N, Libraries.GT_NODE],
   [Libraries.GT_REACT_CORE]: [Libraries.GT_I18N, Libraries.GT_REACT_CORE],
+  [Libraries.GT_TANSTACK_START]: [
+    Libraries.GT_I18N,
+    Libraries.GT_REACT_CORE,
+    Libraries.GT_REACT,
+    Libraries.GT_TANSTACK_START,
+  ],
   [Libraries.GT_I18N]: [Libraries.GT_I18N],
+  [Libraries.GT_FLASK]: [Libraries.GT_FLASK],
+  [Libraries.GT_FASTAPI]: [Libraries.GT_FASTAPI],
 } as const;

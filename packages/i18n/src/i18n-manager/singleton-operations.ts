@@ -15,8 +15,7 @@ export function getI18nManager<T extends StorageAdapter>():
   | I18nManager<StorageAdapter> {
   if (!i18nManager) {
     logger.warn(
-      'Translation failed because I18nManager not initialized. Falling back to library default locale: ' +
-        libraryDefaultLocale
+      'getI18nManager(): Translation failed because I18nManager not initialized.'
     );
     i18nManager = new I18nManager({
       defaultLocale: libraryDefaultLocale,

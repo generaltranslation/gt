@@ -16,20 +16,6 @@
 
 Pure JavaScript i18n library for General Translation.
 
-## Installation
+## Notes
 
-```bash
-npm install gt-i18n
-```
-
-## Quick Start
-
-```js
-import { initGT, t } from 'gt-i18n';
-
-initGT();
-
-const message = t('Hello, world!');
-```
-
-See the [full documentation](https://generaltranslation.com/docs/i18n) for guides and API reference.
+This package should be runtime agnostic. Runtime compatability should be delegated to consumers.

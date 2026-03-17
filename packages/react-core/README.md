@@ -17,3 +17,7 @@
 Pure React library for internationalization. Used internally by `gt-react` and `gt-next`.
 
 See the [full documentation](https://generaltranslation.com/docs/react) for guides and API reference.
+
+## Notes
+
+This package should be runtime agnostic. Runtime compatability should be delegated to consumers.

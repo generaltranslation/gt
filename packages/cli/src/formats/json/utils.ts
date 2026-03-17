@@ -216,6 +216,13 @@ export function generateSourceObjectPointers(
   return sourceObjectPointers;
 }
 
+/**
+ * Validate the json schema for composite or include schemas
+ * @param options - Additional options containing jsonSchema config
+ * @param filePath - The path to the file (used for matching jsonSchema)
+ * @returns The json schema, or null if no schema is found
+ * @returns exitSync(1) if the json schema is invalid
+ */
 export function validateJsonSchema(
   options: AdditionalOptions,
   filePath: string
@@ -243,6 +250,14 @@ export function validateJsonSchema(
 
   if (!jsonSchema.include && !jsonSchema.composite) {
     logger.error('No include or composite property found in JSON schema');
+    return exitSync(1);
+    return null;
+  }
+
+  if (jsonSchema.structuralTransform && !jsonSchema.composite) {
+    logger.error(
+      'structuralTransform requires composite to be defined in the JSON schema'
+    );
     return exitSync(1);
     return null;
   }

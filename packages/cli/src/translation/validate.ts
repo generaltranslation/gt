@@ -27,7 +27,13 @@ async function runValidation(
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
-    return createInlineUpdates(pkg, true, files, settings.parsingOptions);
+    return createInlineUpdates(
+      pkg,
+      true,
+      files,
+      settings.parsingOptions,
+      settings.options?.includeSourceCodeContext ?? false
+    );
   }
 
   // Full project validation
@@ -49,7 +55,8 @@ async function runValidation(
     dictionary,
     pkg,
     true,
-    settings.parsingOptions
+    settings.parsingOptions,
+    settings.options?.includeSourceCodeContext ?? false
   );
 }
 
@@ -164,7 +171,7 @@ export async function validateProject(
   if (updates.length === 0) {
     logger.error(
       chalk.red(
-        `No in-line content or dictionaries were found for ${chalk.green(
+        `No inline content or dictionaries were found for ${chalk.green(
           pkg
         )}. Are you sure you're running this command in the right directory?`
       )

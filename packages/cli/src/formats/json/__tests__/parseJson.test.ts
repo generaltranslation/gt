@@ -312,7 +312,7 @@ describe('parseJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Matching sourceItem not found at path: /test for locale: en. Please check your JSON schema'
+        'Matching sourceItem not found at path: /test for locale: en. Check your JSON schema'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -1247,6 +1247,36 @@ describe('parseJson', () => {
         'Source item not found at path: /emptyObject. You must specify a source item where its key matches the default locale'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle string sourceItem in object composite schema', () => {
+      const json = JSON.stringify({
+        content: {
+          en: 'Contact name, phone number, email, 2',
+          fr: 'Nom du contact, numéro de téléphone, email, 2',
+        },
+      });
+
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.content': {
+                  type: 'object',
+                  include: ['$.*'],
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+
+      const parsed = JSON.parse(result);
+      expect(parsed['/content']).toBe('Contact name, phone number, email, 2');
     });
 
     it('should preserve original formatting for non-matching files', () => {

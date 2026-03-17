@@ -1,5 +1,55 @@
 # gt-tanstack-start
 
+## 0.1.15
+
+### Patch Changes
+
+- [#1113](https://github.com/generaltranslation/gt/pull/1113) [`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add string translation function t()
+
+- Updated dependencies [[`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636)]:
+  - gt-react@10.12.0
+  - gt-i18n@0.6.0
+  - @generaltranslation/react-core@1.5.8
+
+## 0.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8)]:
+  - generaltranslation@8.1.16
+  - gt-i18n@0.5.2
+  - gt-react@10.11.7
+  - @generaltranslation/react-core@1.5.7
+
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies [[`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e)]:
+  - generaltranslation@8.1.15
+  - gt-i18n@0.5.1
+  - gt-react@10.11.6
+  - @generaltranslation/react-core@1.5.6
+
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [[`7846d06`](https://github.com/generaltranslation/gt/commit/7846d0672ba357081793706fdf55313b4f5428e0)]:
+  - gt-i18n@0.5.0
+  - @generaltranslation/react-core@1.5.5
+  - gt-react@10.11.5
+
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76), [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57)]:
+  - generaltranslation@8.1.14
+  - @generaltranslation/react-core@1.5.4
+  - gt-i18n@0.4.2
+  - gt-react@10.11.4
+
 ## 0.1.10
 
 ### Patch Changes

@@ -1,6 +1,6 @@
-import { GTProvider } from './provider/GTProvider';
-import LocaleSelector from './ui/LocaleSelector';
-import RegionSelector from './ui/RegionSelector';
+import { GTProvider } from './react-context/provider/GTProvider';
+import LocaleSelector from './react-context/ui/LocaleSelector';
+import RegionSelector from './react-context/ui/RegionSelector';
 
 import {
   T,

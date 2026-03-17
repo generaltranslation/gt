@@ -1,5 +1,23 @@
 # generaltranslation
 
+## 8.1.16
+
+### Patch Changes
+
+- [#1099](https://github.com/generaltranslation/gt/pull/1099) [`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add twilio json support for cli
+
+## 8.1.15
+
+### Patch Changes
+
+- [#1096](https://github.com/generaltranslation/gt/pull/1096) [`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove required branchId field for enqueue
+
+## 8.1.14
+
+### Patch Changes
+
+- [#1085](https://github.com/generaltranslation/gt/pull/1085) [`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76) Thanks [@brian-lou](https://github.com/brian-lou)! - feat: Auth wizard supports both types of key creation
+
 ## 8.1.13
 
 ### Patch Changes

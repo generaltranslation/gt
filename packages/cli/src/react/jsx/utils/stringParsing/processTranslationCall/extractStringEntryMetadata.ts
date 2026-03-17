@@ -9,6 +9,9 @@ import generateModule from '@babel/generator';
 import { mapAttributeName } from '../../mapAttributeName.js';
 import pathModule from 'node:path';
 import { isNumberLiteral } from '../../isNumberLiteral.js';
+import { extractSourceCode } from '../../extractSourceCode.js';
+import type { SourceCode } from '../../extractSourceCode.js';
+import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -22,6 +25,7 @@ export type InlineMetadata = {
   id?: string;
   hash?: string;
   filePaths?: string[];
+  sourceCode?: Record<string, SourceCode[]>;
 };
 
 /**
@@ -39,10 +43,17 @@ export function extractStringEntryMetadata({
   options,
   output,
   config,
+  nodeLoc,
+  surroundingLineCount = SURROUNDING_LINE_COUNT,
 }: {
   options?: t.CallExpression['arguments'][number];
   output: ParsingOutput;
   config: ParsingConfig;
+  nodeLoc?: {
+    start?: { line: number } | null;
+    end?: { line: number } | null;
+  } | null;
+  surroundingLineCount?: number;
 }): InlineMetadata {
   // extract filepath for entry
   const relativeFilepath = pathModule.relative(process.cwd(), config.file);
@@ -54,9 +65,28 @@ export function extractStringEntryMetadata({
     config,
   });
 
+  // extract surrounding lines from source file
+  let sourceCode: Record<string, SourceCode[]> | undefined;
+  if (
+    config.includeSourceCodeContext &&
+    nodeLoc?.start?.line &&
+    nodeLoc?.end?.line
+  ) {
+    const entry = extractSourceCode(
+      config.file,
+      nodeLoc.start.line,
+      nodeLoc.end.line,
+      surroundingLineCount
+    );
+    if (entry && relativeFilepath) {
+      sourceCode = { [relativeFilepath]: [entry] };
+    }
+  }
+
   return {
     ...inlineMetadata,
     filePaths: relativeFilepath ? [relativeFilepath] : undefined,
+    ...(sourceCode && { sourceCode }),
   };
 }
 

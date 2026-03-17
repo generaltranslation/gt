@@ -16,6 +16,10 @@
 
 ## Getting Started
 
+```bash
+npx gt@latest
+```
+
 General Translation is a fully integrated suite of internationalization (i18n) tools for React apps. Translate entire React components—not just strings—with a simple `<T>` wrapper. No refactoring into dictionaries. Just write your content and let GT handle the rest.
 
 - Visit our [documentation](https://generaltranslation.com/docs) to get started.

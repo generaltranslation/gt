@@ -7,6 +7,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'yaml',
   'html',
   'txt',
+  'twilioContentJson',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -18,4 +19,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   yaml: 'YAML',
   html: 'HTML',
   txt: 'Text',
+  twilioContentJson: 'Twilio Content JSON',
 };

@@ -61,27 +61,31 @@ export class PollTranslationJobsStep extends WorkflowStep<
     });
 
     // Initial query to check which files already have translations
-    const initialFileData = await this.gt.queryFileData({
-      translatedFiles: fileQueryData.map((item) => ({
-        fileId: item.fileId,
-        versionId: item.versionId,
-        branchId: item.branchId,
-        locale: item.locale,
-      })),
-    });
-    const existingTranslations = initialFileData.translatedFiles || [];
+    // Skip when force retranslation is enabled, since the server
+    // no longer marks force-retranslated files as incomplete
+    if (!forceRetranslation) {
+      const initialFileData = await this.gt.queryFileData({
+        translatedFiles: fileQueryData.map((item) => ({
+          fileId: item.fileId,
+          versionId: item.versionId,
+          branchId: item.branchId,
+          locale: item.locale,
+        })),
+      });
+      const existingTranslations = initialFileData.translatedFiles || [];
 
-    // Mark all existing translations as completed
-    existingTranslations.forEach((translation) => {
-      if (!translation.completedAt) {
-        return;
-      }
-      const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
-      const fileProperties = filePropertiesMap.get(fileKey);
-      if (fileProperties) {
-        fileTracker.completed.set(fileKey, fileProperties);
-      }
-    });
+      // Mark all existing translations as completed
+      existingTranslations.forEach((translation) => {
+        if (!translation.completedAt) {
+          return;
+        }
+        const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
+        const fileProperties = filePropertiesMap.get(fileKey);
+        if (fileProperties) {
+          fileTracker.completed.set(fileKey, fileProperties);
+        }
+      });
+    }
 
     // Build a map of jobs for quick lookup:
     // branchId:fileId:versionId:locale -> job

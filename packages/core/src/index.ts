@@ -95,7 +95,10 @@ import type {
   CreateBranchResult,
 } from './translate/createBranch';
 import _createBranch from './translate/createBranch';
-import type { FileReference } from './types-dir/api/file';
+import type {
+  FileReference,
+  FileReferenceOptionalBranchId,
+} from './types-dir/api/file';
 import _processFileMoves, {
   type MoveMapping,
   type ProcessMovesResponse,
@@ -106,6 +109,7 @@ import _getOrphanedFiles, {
 } from './translate/getOrphanedFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { TranslateOptions } from './types-dir/api/entry';
+import { API_VERSION as _API_VERSION } from './translate/api';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -269,8 +273,7 @@ export class GT {
       this.reverseCustomMapping = Object.fromEntries(
         Object.entries(customMapping)
           .filter(
-            ([_, value]) =>
-              value && typeof value === 'object' && 'code' in value
+            ([, value]) => value && typeof value === 'object' && 'code' in value
           )
           .map(([key, value]) => [(value as { code: string }).code, key])
       );
@@ -450,7 +453,7 @@ export class GT {
    * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
-    files: FileReference[],
+    files: FileReferenceOptionalBranchId[],
     options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
@@ -1996,3 +1999,5 @@ export function isSupersetLocale(
 ): boolean {
   return _isSupersetLocale(superLocale, subLocale);
 }
+
+export const API_VERSION = _API_VERSION;

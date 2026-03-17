@@ -20,14 +20,14 @@ export async function getDesiredLocales(): Promise<{
     validate: (input) => {
       const localeList = input.split(' ');
       if (localeList.length === 0) {
-        return 'Please enter at least one locale';
+        return 'Enter at least one locale';
       }
       if (localeList.some((locale) => !locale.trim())) {
-        return 'Please enter a valid locale (e.g., es fr de)';
+        return 'Enter a valid locale (e.g., es fr de)';
       }
       for (const locale of localeList) {
         if (!gt.isValidLocale(locale)) {
-          return 'Please enter a valid locale (e.g., es fr de)';
+          return 'Enter a valid locale (e.g., es fr de)';
         }
       }
       return true;

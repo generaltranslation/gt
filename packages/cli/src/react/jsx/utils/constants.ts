@@ -5,6 +5,7 @@ export const DECLARE_VAR_FUNCTION = 'declareVar';
 export const DECLARE_STATIC_FUNCTION = 'declareStatic';
 export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
+export const T_REGISTRATION_FUNCTION = 't';
 export const INLINE_TRANSLATION_HOOK = 'useGT';
 export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
@@ -24,6 +25,7 @@ export const GT_TRANSLATION_FUNCS = [
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
   MSG_REGISTRATION_FUNCTION,
+  T_REGISTRATION_FUNCTION,
   DECLARE_VAR_FUNCTION,
   DECLARE_STATIC_FUNCTION,
   DERIVE_FUNCTION,
@@ -37,6 +39,11 @@ export const GT_TRANSLATION_FUNCS = [
   BRANCH_COMPONENT,
   'Plural',
 ];
+// GT String translation functions
+export const STRING_REGISTRATION_FUNCS = [
+  MSG_REGISTRATION_FUNCTION,
+  T_REGISTRATION_FUNCTION,
+] as const;
 // Valid variable components
 export const VARIABLE_COMPONENTS = [
   'Var',

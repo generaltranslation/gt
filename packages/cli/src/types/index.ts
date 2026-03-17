@@ -208,7 +208,7 @@ export type Settings = {
   _versionId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
-  src: string[]; // list of glob patterns for gt-next and gt-react
+  src?: string[]; // list of glob patterns for source file scanning
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
   modelProvider?: string;
@@ -262,6 +262,7 @@ export type AdditionalOptions = {
     replace: string; // replacement prefix, can include [locale] or [defaultLocale]
   }>;
   experimentalCanonicalLocaleKeys?: boolean; // For composite JSON schemas with locale keys, force canonical locale even when alias provided
+  includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
 };
 
 export type SharedStaticAssetsConfig = {
@@ -271,8 +272,14 @@ export type SharedStaticAssetsConfig = {
   mirrorToLocales?: boolean;
 };
 
+export type StructuralTransform = {
+  sourcePointer: string; // e.g., "/msg"
+  destinationPointer: string; // e.g., "/translations/en"
+};
+
 export type JsonSchema = {
   preset?: 'mintlify' | 'openapi';
+  structuralTransform?: StructuralTransform[];
 
   // exactly 1 of include or composite must be provided; not both
 

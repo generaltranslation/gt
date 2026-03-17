@@ -204,7 +204,7 @@ export function addExplicitAnchorIds(
     logger.warn(
       `Header count mismatch detected! ${sourceFile} has ${sourceHeadingMap.length} headers but ${translatedFile} has ${translatedHeadings.length} headers. ` +
         `This likely means your source file was edited after translation was requested, causing a mismatch between ` +
-        `the number of headers in your source file vs the translated file. Please re-translate this file to resolve the issue.`
+        `the number of headers in your source file vs the translated file. Re-translate this file to resolve the issue.`
     );
   }
 

@@ -49,32 +49,7 @@ export default [
     plugins: [dts()],
   },
 
-  // Bundling for the types module
-  {
-    input: 'src/types.ts',
-    output: [
-      {
-        file: 'dist/types.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/types.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(),
-      terser(),
-    ],
-    external,
-  },
-
-  // TypeScript declarations for the types module
+  // TypeScript declarations for the types module (type-only, no JS bundle needed)
   {
     input: 'src/types.ts',
     output: {
@@ -156,33 +131,7 @@ export default [
     plugins: [dts()],
   },
 
-  // Bundling for the internal-types module
-  {
-    input: 'src/internal-types.ts',
-    output: [
-      {
-        file: 'dist/internal-types.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/internal-types.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(),
-      terser(),
-    ],
-    external,
-  },
-
-  // TypeScript declarations for the internal-types module
+  // TypeScript declarations for the internal-types module (type-only, no JS bundle needed)
   {
     input: 'src/internal-types.ts',
     output: {

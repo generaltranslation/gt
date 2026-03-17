@@ -32,7 +32,7 @@ export async function installPackage(
     childProcess.on('error', (error) => {
       logger.error(chalk.red(`Installation error: ${error.message}`));
       logger.info(
-        `Please manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
+        `Manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
       );
       reject(error);
     });
@@ -46,7 +46,7 @@ export async function installPackage(
           logger.error(chalk.red(`Error details: ${errorOutput}`));
         }
         logger.info(
-          `Please manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
+          `Manually install ${packageName} with: ${packageManager.name} ${packageManager.installCommand} ${packageName}`
         );
         reject(new Error(`Process exited with code ${code}`));
       }
@@ -80,7 +80,7 @@ export async function installPackageGlobal(
     childProcess.on('error', (error) => {
       logger.error(chalk.red(`Installation error: ${error.message}`));
       logger.info(
-        `Please manually install ${packageName} with: npm install -g ${packageName}`
+        `Manually install ${packageName} with: npm install -g ${packageName}`
       );
       reject(error);
     });
@@ -94,7 +94,7 @@ export async function installPackageGlobal(
           logger.error(chalk.red(`Error details: ${errorOutput}`));
         }
         logger.info(
-          `Please manually install ${packageName} with: npm install -g ${packageName}`
+          `Manually install ${packageName} with: npm install -g ${packageName}`
         );
         reject(new Error(`Process exited with code ${code}`));
       }
