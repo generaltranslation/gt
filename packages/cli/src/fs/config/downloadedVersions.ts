@@ -190,8 +190,14 @@ export function writeLockfile(
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
     if (originalV1) {
-      originalV1.entries[data.branchId] = convertV2ToV1Branch(data);
-      fs.writeFileSync(filepath, JSON.stringify(originalV1, null, 2));
+      const mergedV1: DownloadedVersionsV1 = {
+        ...originalV1,
+        entries: {
+          ...originalV1.entries,
+          [data.branchId]: convertV2ToV1Branch(data),
+        },
+      };
+      fs.writeFileSync(filepath, JSON.stringify(mergedV1, null, 2));
     } else {
       fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
     }
@@ -214,12 +220,16 @@ export function findOrCreateEntry(
   fileId: string,
   versionId: string
 ): DownloadedVersionEntry {
-  let entry = entries.find(
-    (e) => e.fileId === fileId && e.versionId === versionId
-  );
-  if (!entry) {
-    entry = { fileId, versionId, translations: {} };
-    entries.push(entry);
+  const existingIndex = entries.findIndex((e) => e.fileId === fileId);
+  if (existingIndex !== -1) {
+    const existing = entries[existingIndex];
+    if (existing.versionId === versionId) return existing;
+    // Version changed — replace the old entry
+    const updated = { fileId, versionId, translations: {} };
+    entries[existingIndex] = updated;
+    return updated;
   }
+  const entry = { fileId, versionId, translations: {} };
+  entries.push(entry);
   return entry;
 }

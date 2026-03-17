@@ -324,5 +324,24 @@ describe('readLockfile / writeLockfile', () => {
       expect(entries).toHaveLength(1);
       expect(entry.translations.ja).toEqual({ updatedAt: 'x' });
     });
+
+    it('findOrCreateEntry replaces entry when versionId changes', () => {
+      const entries: DownloadedVersionEntry[] = [
+        {
+          fileId: 'f1',
+          versionId: 'v1',
+          translations: { ja: { updatedAt: 'old' } },
+        },
+      ];
+
+      const entry = findOrCreateEntry(entries, 'f1', 'v2');
+
+      // Should replace, not append
+      expect(entries).toHaveLength(1);
+      expect(entry.versionId).toBe('v2');
+      expect(entry.translations).toEqual({});
+      // findEntry should now return the updated entry
+      expect(findEntry(entries, 'f1')?.versionId).toBe('v2');
+    });
   });
 });
