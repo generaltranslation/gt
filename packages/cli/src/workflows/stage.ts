@@ -64,7 +64,7 @@ export async function runStageFilesWorkflow({
         spinner.stop(chalk.green('Updated translations'));
       } catch {
         // Non-fatal; keep going to enqueue
-        spinner.stop(chalk.green('Updated translations'));
+        spinner.stop(chalk.yellow('Could not update translations'));
       }
     }
 

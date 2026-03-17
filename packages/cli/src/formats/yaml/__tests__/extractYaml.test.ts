@@ -157,4 +157,22 @@ ui:
     expect(parsed['/ui/enabled']).toBeUndefined();
     expect(parsed['/ui/count']).toBeUndefined();
   });
+
+  it('should return null when all matched values are non-string', () => {
+    const yaml = `
+config:
+  debug: true
+  retries: 3
+  verbose: false
+`;
+    const result = extractYaml(yaml, 'test.yaml', {
+      yamlSchema: {
+        '**/*.yaml': {
+          include: ['$.config.*'],
+        },
+      },
+    });
+
+    expect(result).toBeNull();
+  });
 });

@@ -34,5 +34,6 @@ export function extractYaml(
   }
 
   const extracted = flattenJsonWithStringFilter(yaml, yamlSchema.include);
+  if (!Object.keys(extracted).length) return null;
   return JSON.stringify(extracted);
 }
