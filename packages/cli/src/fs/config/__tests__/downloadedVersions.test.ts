@@ -312,7 +312,11 @@ describe('readLockfile / writeLockfile', () => {
 
     it('findOrCreateEntry returns existing entry if found', () => {
       const entries = [
-        { fileId: 'f1', versionId: 'v1', translations: { ja: { updatedAt: 'x' } } },
+        {
+          fileId: 'f1',
+          versionId: 'v1',
+          translations: { ja: { updatedAt: 'x' } },
+        },
       ];
 
       const entry = findOrCreateEntry(entries, 'f1', 'v1');
