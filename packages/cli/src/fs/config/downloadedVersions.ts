@@ -120,9 +120,7 @@ function convertV2ToV1Branch(
 
     for (const [locale, translation] of Object.entries(entry.translations)) {
       branch[entry.fileId][entry.versionId][locale] = {
-        ...(translation.updatedAt
-          ? { updatedAt: translation.updatedAt }
-          : {}),
+        ...(translation.updatedAt ? { updatedAt: translation.updatedAt } : {}),
         ...(translation.postProcessHash
           ? { postProcessHash: translation.postProcessHash }
           : {}),

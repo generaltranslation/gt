@@ -176,11 +176,7 @@ export async function downloadFileBatch(
             : undefined;
         const fileExists = fs.existsSync(outputPath);
 
-        if (
-          !forceDownload &&
-          fileExists &&
-          downloadedTranslation
-        ) {
+        if (!forceDownload && fileExists && downloadedTranslation) {
           // For schema-based files, re-merge with current source in case
           // non-translatable fields changed (skip the API download, not the merge)
           try {
