@@ -187,7 +187,9 @@ function determineTranslationLoader(config: {
   const loadTranslationsType = getLoadTranslationsType(config);
   if (loadTranslationsType === LoadTranslationsType.DISABLED) {
     // TODO: move this warning to validation layer
-    logger.warn('No translation loader found. No translations will be loaded.');
+    logger.warn(
+      'I18nManager: No translation loader found. No translations will be loaded.'
+    );
   }
 
   switch (loadTranslationsType) {

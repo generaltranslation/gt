@@ -14,6 +14,19 @@ export function getLocale() {
 }
 
 /**
+ * Returns the locales that are supported by the application.
+ * @returns {string[]} The locales that are supported by the application.
+ *
+ * @example
+ * const locales = getLocales();
+ * console.log(locales); // ['en-US', 'es-ES']
+ */
+export function getLocales() {
+  const i18nManager = getBrowserI18nManager();
+  return i18nManager.getLocales();
+}
+
+/**
  * Returns the user's current locales.
  * @returns {string[]} The user's current locales.
  *

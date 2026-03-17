@@ -24,16 +24,18 @@ export function LocaleSelector({
     useMemo(() => {
       const i18nManager = getBrowserI18nManager();
       const gt = i18nManager.getGTClass();
-      const setLocale = i18nManager.setLocale;
       const locale = i18nManager.getLocale();
+      const setLocale = (locale: string) => {
+        i18nManager.setLocale(locale);
+      };
       const getLocaleProperties = (locale: string) => {
         return gt.getLocaleProperties(locale);
       };
       if (locales)
         return {
           locale,
-          sortedLocales: locales,
           setLocale,
+          sortedLocales: locales,
           getLocaleProperties,
         };
       const sortedLocales = i18nManager

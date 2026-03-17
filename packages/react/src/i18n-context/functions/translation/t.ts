@@ -1,4 +1,4 @@
-import { gtFallback, t as internalT } from 'gt-i18n';
+import { resolveTranslationSync } from 'gt-i18n/internal';
 import { SyncResolutionFunction } from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
 
@@ -33,7 +33,6 @@ export const t: SyncResolutionFunction = (message, options) => {
     console.warn(
       createTranslationFailedDueToBrowserEnvironmentWarning(message)
     );
-    return gtFallback(message, options);
   }
-  return internalT(message, options);
+  return resolveTranslationSync(message, options);
 };
