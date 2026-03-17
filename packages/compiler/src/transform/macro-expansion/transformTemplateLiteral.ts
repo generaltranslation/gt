@@ -1,5 +1,4 @@
 import * as t from '@babel/types';
-import { deriveVariableName } from '../../utils/parsing/deriveVariableName';
 
 /**
  * Transform a TemplateLiteral AST node into a normalized t() call format.
@@ -22,8 +21,7 @@ export function transformTemplateLiteral(node: t.TemplateLiteral): {
     // If there's a corresponding expression, create a variable placeholder
     if (i < node.expressions.length) {
       const expr = node.expressions[i] as t.Expression;
-      const varName = deriveVariableName(expr);
-      const key = `${varIndex}v_${varName}`;
+      const key = varIndex.toString();
       parts.push(`{${key}}`);
       properties.push(t.objectProperty(t.stringLiteral(key), expr));
       varIndex++;

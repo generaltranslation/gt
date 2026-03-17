@@ -15,17 +15,17 @@ import { injectMacroImport } from '../../transform/macro-expansion/injectMacroIm
 export function processProgram({
   state,
   countBefore,
-  alreadyImported,
+  isAlreadyImported,
 }: {
   state: TransformState;
   countBefore: number;
-  alreadyImported: boolean;
+  isAlreadyImported: () => boolean;
 }): VisitNode<t.Node, t.Program> {
   return {
     exit(path) {
       // (1) Check if the macro expansions count has changed
       const didTransform = state.statistics.macroExpansionsCount > countBefore;
-      if (!didTransform || alreadyImported) return;
+      if (!didTransform || isAlreadyImported()) return;
       // (2) If the macro import injection is disabled, return.
       if (!state.settings.enableMacroImportInjection) return;
       // Inject the macro import.

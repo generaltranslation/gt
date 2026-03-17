@@ -1,5 +1,4 @@
 import * as t from '@babel/types';
-import { deriveVariableName } from '../../utils/parsing/deriveVariableName';
 import { flattenConcatenation } from '../../utils/parsing/flattenConcatenation';
 
 /**
@@ -21,8 +20,7 @@ export function transformConcatenation(node: t.BinaryExpression): {
     if (t.isStringLiteral(operand)) {
       parts.push(operand.value);
     } else {
-      const varName = deriveVariableName(operand);
-      const key = `${varIndex}v_${varName}`;
+      const key = varIndex.toString();
       parts.push(`{${key}}`);
       properties.push(t.objectProperty(t.stringLiteral(key), operand));
       varIndex++;

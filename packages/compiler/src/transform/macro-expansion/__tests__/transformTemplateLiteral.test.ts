@@ -22,11 +22,11 @@ describe('transformTemplateLiteral', () => {
       [t.identifier('name')]
     );
     const { message, variables } = transformTemplateLiteral(node);
-    expect(message.value).toBe('Hello, {0v_name}');
+    expect(message.value).toBe('Hello, {0}');
     expect(variables).not.toBeNull();
     expect(variables!.properties).toHaveLength(1);
     const prop = variables!.properties[0] as t.ObjectProperty;
-    expect((prop.key as t.StringLiteral).value).toBe('0v_name');
+    expect((prop.key as t.StringLiteral).value).toBe('0');
     expect((prop.value as t.Identifier).name).toBe('name');
   });
 
@@ -40,15 +40,15 @@ describe('transformTemplateLiteral', () => {
       [t.identifier('greeting'), t.identifier('name')]
     );
     const { message, variables } = transformTemplateLiteral(node);
-    expect(message.value).toBe('{0v_greeting}, {1v_name}!');
+    expect(message.value).toBe('{0}, {1}!');
     expect(variables!.properties).toHaveLength(2);
     const prop0 = variables!.properties[0] as t.ObjectProperty;
     const prop1 = variables!.properties[1] as t.ObjectProperty;
-    expect((prop0.key as t.StringLiteral).value).toBe('0v_greeting');
-    expect((prop1.key as t.StringLiteral).value).toBe('1v_name');
+    expect((prop0.key as t.StringLiteral).value).toBe('0');
+    expect((prop1.key as t.StringLiteral).value).toBe('1');
   });
 
-  it('handles MemberExpression — uses property name', () => {
+  it('handles MemberExpression', () => {
     const node = t.templateLiteral(
       [
         t.templateElement({ raw: 'Hello, ', cooked: 'Hello, ' }, false),
@@ -57,10 +57,10 @@ describe('transformTemplateLiteral', () => {
       [t.memberExpression(t.identifier('user'), t.identifier('name'))]
     );
     const { message } = transformTemplateLiteral(node);
-    expect(message.value).toBe('Hello, {0v_name}');
+    expect(message.value).toBe('Hello, {0}');
   });
 
-  it('handles complex expression — uses "expr"', () => {
+  it('handles complex expression', () => {
     const node = t.templateLiteral(
       [
         t.templateElement({ raw: 'Result: ', cooked: 'Result: ' }, false),
@@ -69,7 +69,7 @@ describe('transformTemplateLiteral', () => {
       [t.binaryExpression('+', t.identifier('a'), t.identifier('b'))]
     );
     const { message } = transformTemplateLiteral(node);
-    expect(message.value).toBe('Result: {0v_expr}');
+    expect(message.value).toBe('Result: {0}');
   });
 
   it('handles empty template', () => {
@@ -92,6 +92,6 @@ describe('transformTemplateLiteral', () => {
       [t.identifier('a'), t.identifier('b')]
     );
     const { message } = transformTemplateLiteral(node);
-    expect(message.value).toBe('{0v_a}{1v_b}');
+    expect(message.value).toBe('{0}{1}');
   });
 });

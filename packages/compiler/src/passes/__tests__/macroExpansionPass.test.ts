@@ -19,28 +19,27 @@ function transform(code: string, overrides: Record<string, any> = {}): string {
 describe('macroExpansionPass', () => {
   it('transforms tagged template: t`Hello, ${name}`', () => {
     const result = transform('const x = t`Hello, ${name}`;');
-    expect(result).toContain('t("Hello, {0v_name}"');
-    expect(result).toContain('"0v_name": name');
+    expect(result).toContain('t("Hello, {0}"');
+    expect(result).toContain('"0": name');
   });
 
   it('transforms template literal in call: t(`Hello, ${name}`)', () => {
     const result = transform('const x = t(`Hello, ${name}`);');
-    expect(result).toContain('t("Hello, {0v_name}"');
-    expect(result).toContain('"0v_name": name');
+    expect(result).toContain('t("Hello, {0}"');
+    expect(result).toContain('"0": name');
   });
 
   it('transforms concatenation in call: t("Hello, " + name)', () => {
     const result = transform('const x = t("Hello, " + name);');
-    expect(result).toContain('t("Hello, {0v_name}"');
-    expect(result).toContain('"0v_name": name');
+    expect(result).toContain('t("Hello, {0}"');
+    expect(result).toContain('"0": name');
   });
 
   it('leaves plain string call t("Hello") untouched', () => {
     const code = 'const x = t("Hello");';
     const result = transform(code);
     expect(result).toContain('t("Hello")');
-    // Should NOT have variables object
-    expect(result).not.toContain('0v_');
+    expect(result).not.toContain('"0"');
   });
 
   it('transforms custom stringTranslationMacro: __`hello`', () => {
@@ -48,20 +47,10 @@ describe('macroExpansionPass', () => {
       stringTranslationMacro: '__',
     });
     // Output callee should be 't' (enum value), not '__'
-    expect(result).toContain('t("hello {0v_name}"');
+    expect(result).toContain('t("hello {0}"');
   });
 
-  it('does nothing when enableMacroTransform is false', () => {
-    const code = 'const x = t`Hello, ${name}`;';
-    const state = initializeState({ enableMacroTransform: false }, 'test.tsx');
-    // enableMacroTransform is checked in index.ts (pass is not run at all)
-    // But individual gates should still work:
-    const result = transform(code, { enableTaggedTemplate: false });
-    // Tagged template should NOT be transformed
-    expect(result).toContain('t`Hello, ${name}`');
-  });
-
-  it('enableTaggedTemplate: false skips tagged templates', () => {
+  it('does nothing when enableTaggedTemplate is false', () => {
     const code = 'const x = t`Hello, ${name}`;';
     const result = transform(code, { enableTaggedTemplate: false });
     expect(result).toContain('t`Hello, ${name}`');
@@ -95,20 +84,16 @@ const a = t\`hello \${name}\`;
 const b = t\`goodbye \${name}\`;
 `;
     const result = transform(code);
-    // Should have exactly one import
     const importMatches = result.match(/from "gt-react\/browser"/g);
     expect(importMatches).toHaveLength(1);
-    // Both should be transformed
-    expect(result).toContain('t("hello {0v_name}"');
-    expect(result).toContain('t("goodbye {0v_name}"');
+    expect(result).toContain('t("hello {0}"');
+    expect(result).toContain('t("goodbye {0}"');
   });
 
   it('does NOT add import when t is already imported from gt-react/browser', () => {
     const code = `import { t } from 'gt-react/browser';\nconst x = t\`hello \${name}\`;`;
     const result = transform(code);
-    // Should transform the macro
-    expect(result).toContain('t("hello {0v_name}"');
-    // Should NOT add a duplicate import — original import is preserved, no new one added
+    expect(result).toContain('t("hello {0}"');
     const importMatches = result.match(/gt-react\/browser/g);
     expect(importMatches).toHaveLength(1);
   });
@@ -116,7 +101,7 @@ const b = t\`goodbye \${name}\`;
   it('does NOT add import when t is already imported from any GT source', () => {
     const code = `import { t } from 'gt-next';\nconst x = t\`hello \${name}\`;`;
     const result = transform(code);
-    expect(result).toContain('t("hello {0v_name}"');
+    expect(result).toContain('t("hello {0}"');
     expect(result).not.toContain('gt-react/browser');
   });
 

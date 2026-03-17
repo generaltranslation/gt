@@ -24,6 +24,10 @@ export function macroExpansionPass(state: TransformState): TraverseOptions {
     ImportDeclaration: processImportDeclaration(onImportFound),
     TaggedTemplateExpression: processTaggedTemplateExpression(state),
     CallExpression: processCallExpression(state),
-    Program: processProgram({ state, countBefore, alreadyImported }),
+    Program: processProgram({
+      state,
+      countBefore,
+      isAlreadyImported: () => alreadyImported,
+    }),
   };
 }

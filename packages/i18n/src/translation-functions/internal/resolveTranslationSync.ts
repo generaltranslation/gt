@@ -1,6 +1,6 @@
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { SyncResolutionFunction } from '../types/functions';
-import { gtFallback } from '../fallbacks/gtFallback';
+import { interpolateMessage } from '../utils/interpolateMessage';
 
 /**
  * Synchronously resolve a translation for a given message and options
@@ -10,12 +10,12 @@ import { gtFallback } from '../fallbacks/gtFallback';
  */
 export const resolveTranslationSync: SyncResolutionFunction = (
   message,
-  options
+  options = {}
 ) => {
   const i18nManager = getI18nManager();
   const translation = i18nManager.resolveTranslationSync(message, options);
   if (translation) {
-    return gtFallback(translation, { ...options, $_fallback: message });
+    return interpolateMessage(translation, { ...options, $_fallback: message });
   }
-  return gtFallback(message, options);
+  return interpolateMessage(message, options);
 };
