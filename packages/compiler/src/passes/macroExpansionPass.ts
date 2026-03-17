@@ -2,6 +2,7 @@ import { TraverseOptions } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import { processTaggedTemplateExpression } from '../processing/macro-expansion/processTaggedTemplateExpression';
 import { processCallExpression } from '../processing/macro-expansion/processCallExpression';
+import { processImportDeclaration } from '../processing/macro-expansion/processImportDeclaration';
 import { injectMacroImport } from '../transform/macro-expansion/injectMacroImport';
 
 /**
@@ -12,21 +13,24 @@ import { injectMacroImport } from '../transform/macro-expansion/injectMacroImpor
  * reset ScopeTracker/StringCollector state via processProgram.
  */
 export function macroExpansionPass(state: TransformState): TraverseOptions {
-  let needsImport = false;
-  const onTransformed = () => {
-    needsImport = true;
+  let alreadyImported = false;
+  const countBefore = state.statistics.macroExpansionsCount;
+
+  const onImportFound = () => {
+    alreadyImported = true;
   };
 
   return {
-    TaggedTemplateExpression: processTaggedTemplateExpression(
-      state,
-      onTransformed
-    ),
-    CallExpression: processCallExpression(state, onTransformed),
+    ImportDeclaration: processImportDeclaration(onImportFound),
+    TaggedTemplateExpression: processTaggedTemplateExpression(state),
+    CallExpression: processCallExpression(state),
     Program: {
       exit(path) {
-        if (!needsImport || !state.settings.enableMacroImportInjection) return;
-        injectMacroImport(path, state);
+        const didTransform =
+          state.statistics.macroExpansionsCount > countBefore;
+        if (!didTransform || alreadyImported) return;
+        if (!state.settings.enableMacroImportInjection) return;
+        injectMacroImport(path);
       },
     },
   };

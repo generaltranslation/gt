@@ -11,8 +11,7 @@ import { transformConcatenation } from '../../transform/macro-expansion/transfor
  * - t("Hello, " + name) → t("Hello, {0v_name}", { "0v_name": name })
  */
 export function processCallExpression(
-  state: TransformState,
-  onTransformed: () => void
+  state: TransformState
 ): VisitNode<t.Node, t.CallExpression> {
   const symbol = state.settings.stringTranslationMacro;
 
@@ -30,7 +29,6 @@ export function processCallExpression(
       if (variables) {
         mergeVariables(path.node.arguments, variables);
       }
-      onTransformed();
     } else if (
       state.settings.enableConcatenationArg &&
       t.isBinaryExpression(firstArg, { operator: '+' })
@@ -40,7 +38,6 @@ export function processCallExpression(
       if (variables) {
         mergeVariables(path.node.arguments, variables);
       }
-      onTransformed();
     }
   };
 }

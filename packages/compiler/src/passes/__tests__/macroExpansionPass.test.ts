@@ -102,4 +102,29 @@ const b = t\`goodbye \${name}\`;
     expect(result).toContain('t("hello {0v_name}"');
     expect(result).toContain('t("goodbye {0v_name}"');
   });
+
+  it('does NOT add import when t is already imported from gt-react/browser', () => {
+    const code = `import { t } from 'gt-react/browser';\nconst x = t\`hello \${name}\`;`;
+    const result = transform(code);
+    // Should transform the macro
+    expect(result).toContain('t("hello {0v_name}"');
+    // Should NOT add a duplicate import — original import is preserved, no new one added
+    const importMatches = result.match(/gt-react\/browser/g);
+    expect(importMatches).toHaveLength(1);
+  });
+
+  it('does NOT add import when t is already imported from any GT source', () => {
+    const code = `import { t } from 'gt-next';\nconst x = t\`hello \${name}\`;`;
+    const result = transform(code);
+    expect(result).toContain('t("hello {0v_name}"');
+    expect(result).not.toContain('gt-react/browser');
+  });
+
+  it('does NOT add import when enableMacroImportInjection is false', () => {
+    const result = transform('const x = t`hello`;', {
+      enableMacroImportInjection: false,
+    });
+    expect(result).toContain('t("hello")');
+    expect(result).not.toContain('gt-react/browser');
+  });
 });

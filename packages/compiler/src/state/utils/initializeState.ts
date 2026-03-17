@@ -37,6 +37,7 @@ export function initializeState(
     statistics: {
       jsxElementCount: 0,
       dynamicContentViolations: 0,
+      macroExpansionsCount: 0,
     },
   };
 }

@@ -9,8 +9,7 @@ import { transformTemplateLiteral } from '../../transform/macro-expansion/transf
  * Transforms t`Hello, ${name}` → t("Hello, {0v_name}", { "0v_name": name })
  */
 export function processTaggedTemplateExpression(
-  state: TransformState,
-  onTransformed: () => void
+  state: TransformState
 ): VisitNode<t.Node, t.TaggedTemplateExpression> {
   const symbol = state.settings.stringTranslationMacro;
 
@@ -25,6 +24,6 @@ export function processTaggedTemplateExpression(
     path.replaceWith(
       t.callExpression(t.identifier(GT_OTHER_FUNCTIONS.t), args)
     );
-    onTransformed();
+    state.statistics.macroExpansionsCount++;
   };
 }

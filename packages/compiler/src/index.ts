@@ -115,13 +115,20 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // Pass 2: Injection
-          if (!state.stringCollector.hasContent()) {
+          const hasCollectionContent = state.stringCollector.hasContent();
+
+          if (hasCollectionContent) {
+            traverse(ast, injectionPass(state));
+          }
+
+          // Generate code if any pass modified the AST
+          if (
+            !hasCollectionContent &&
+            state.statistics.macroExpansionsCount === 0
+          ) {
             return null;
           }
 
-          traverse(ast, injectionPass(state));
-
-          // Generate code
           return generate(ast, {
             retainLines: true,
             compact: false,
