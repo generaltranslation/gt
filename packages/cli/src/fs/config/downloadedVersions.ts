@@ -141,7 +141,11 @@ export function readLockfile(settings: Settings): {
 } {
   let branchId = settings._branchId ?? '';
   const empty = {
-    data: { version: 2 as const, branchId, entries: [] as DownloadedVersionEntry[] },
+    data: {
+      version: 2 as const,
+      branchId,
+      entries: [] as DownloadedVersionEntry[],
+    },
     originalV1: null,
   };
 
@@ -167,9 +171,7 @@ export function readLockfile(settings: Settings): {
     }
     return { data: convertV1ToV2(v1, branchId), originalV1: v1 };
   } catch (error) {
-    logger.error(
-      `An error occurred while reading ${GT_LOCK_FILE}: ${error}`
-    );
+    logger.error(`An error occurred while reading ${GT_LOCK_FILE}: ${error}`);
     return empty;
   }
 }

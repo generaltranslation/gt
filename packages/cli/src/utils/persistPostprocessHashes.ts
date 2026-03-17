@@ -37,11 +37,7 @@ export function persistPostProcessHashes(
     const content = fs.readFileSync(filePath, 'utf8');
     const hash = hashStringSync(content);
 
-    const entry = findOrCreateEntry(
-      data.entries,
-      meta.fileId,
-      meta.versionId
-    );
+    const entry = findOrCreateEntry(data.entries, meta.fileId, meta.versionId);
 
     const existing = entry.translations[meta.locale] || {};
 
