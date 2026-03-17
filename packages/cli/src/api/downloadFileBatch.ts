@@ -8,6 +8,7 @@ import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
+import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
   getDownloadedVersions,
   saveDownloadedVersions,
@@ -174,26 +175,27 @@ export async function downloadFileBatch(
           // non-translatable fields changed (skip the API download, not the merge)
           try {
             const existingContent = fs.readFileSync(outputPath, 'utf8');
-            // For JSON schema files, extract translatable content first
-            let translatedContent = existingContent;
-            if (options.options?.jsonSchema) {
-              const extracted = extractJson(
-                existingContent,
-                inputPath,
-                options.options,
+            const extracted = options.options?.jsonSchema
+              ? extractJson(
+                  existingContent,
+                  inputPath,
+                  options.options,
+                  locale,
+                  options.defaultLocale
+                )
+              : options.options?.yamlSchema
+                ? extractYaml(existingContent, inputPath, options.options)
+                : null;
+            if (extracted) {
+              const remerged = mergeWithSource(
+                extracted,
                 locale,
-                options.defaultLocale
+                inputPath,
+                options
               );
-              if (extracted) translatedContent = extracted;
-            }
-            const remerged = mergeWithSource(
-              translatedContent,
-              locale,
-              inputPath,
-              options
-            );
-            if (remerged !== existingContent) {
-              await fs.promises.writeFile(outputPath, remerged);
+              if (remerged !== existingContent) {
+                await fs.promises.writeFile(outputPath, remerged);
+              }
             }
           } catch {
             // If re-merge fails, still count as skipped — not worth failing the download
