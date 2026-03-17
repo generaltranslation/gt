@@ -50,6 +50,7 @@ describe('collectAndSendUserEditDiffs', () => {
       config: path.join(tempDir, 'gt.config.json'),
       defaultLocale: 'en',
       locales: ['en', 'ja'],
+      _branchId: 'branch1',
       files: {
         resolvedPaths: {
           md: [path.join(tempDir, 'docs', 'doc.md')],
@@ -102,11 +103,11 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    const lock = getDownloadedVersions(settings.configDirectory, 'branch1');
+    const lock = getDownloadedVersions(settings);
     const entry = findEntry(lock.entries, 'file1');
     expect(entry?.translations?.ja?.postProcessHash).toBeDefined();
 
-    await collectAndSendUserEditDiffs(files as any, settings, 'branch1');
+    await collectAndSendUserEditDiffs(files as any, settings);
 
     expect(gt.queryFileData).not.toHaveBeenCalled();
     expect(gt.downloadFileBatch).not.toHaveBeenCalled();
@@ -181,7 +182,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    await collectAndSendUserEditDiffs(files as any, settings, 'branch1');
+    await collectAndSendUserEditDiffs(files as any, settings);
 
     expect(gt.queryFileData).toHaveBeenCalledTimes(1);
     expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
@@ -248,7 +249,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    await collectAndSendUserEditDiffs(files as any, settings, 'branch1');
+    await collectAndSendUserEditDiffs(files as any, settings);
 
     expect(gt.queryFileData).toHaveBeenCalledTimes(1);
     expect(

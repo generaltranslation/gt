@@ -39,10 +39,6 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const spinner = logger.createSpinner('dots');
   spinner.start('Saving local edits...');
 
-  await collectAndSendUserEditDiffs(
-    uploads,
-    settings,
-    branchResult.currentBranch.id
-  );
+  await collectAndSendUserEditDiffs(uploads, settings);
   spinner.stop(chalk.green('Local edits saved successfully'));
 }

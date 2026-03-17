@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../console/logger.js';
+import type { Settings } from '../../types/index.js';
 
 const GT_LOCK_FILE = 'gt-lock.json';
 
@@ -133,10 +134,8 @@ function convertV2ToV1Branch(
 
 // ── Public API ──────────────────────────────────────────────────────
 
-export function getDownloadedVersions(
-  configDirectory: string,
-  branchId: string
-): DownloadedVersions {
+export function getDownloadedVersions(settings: Settings): DownloadedVersions {
+  let branchId = settings._branchId ?? '';
   try {
     const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
     const filepath = fs.existsSync(rootPath) ? rootPath : null;
@@ -159,6 +158,13 @@ export function getDownloadedVersions(
 
     // V1 file — stash full data, convert current branch to v2
     _stashedV1 = raw as DownloadedVersionsV1;
+    // If no branchId available (e.g. branching disabled), use the first branch in the v1 data
+    if (!branchId) {
+      const branches = Object.keys(_stashedV1.entries);
+      if (branches.length > 0) {
+        branchId = branches[0];
+      }
+    }
     return convertV1ToV2(_stashedV1, branchId);
   } catch (error) {
     logger.error(
@@ -169,10 +175,7 @@ export function getDownloadedVersions(
   }
 }
 
-export function saveDownloadedVersions(
-  configDirectory: string,
-  lock: DownloadedVersions
-): void {
+export function saveDownloadedVersions(lock: DownloadedVersions): void {
   try {
     const filepath = path.join(process.cwd(), GT_LOCK_FILE);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });

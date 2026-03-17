@@ -165,8 +165,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(gt.downloadFileBatch).toHaveBeenCalled();
@@ -212,8 +211,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(fs.mkdirSync).toHaveBeenCalledWith('/output/dir', {
@@ -237,8 +235,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(logger.error).toHaveBeenCalled();
@@ -297,8 +294,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       requestedFiles,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(logger.warn).toHaveBeenCalled();
@@ -333,8 +329,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(result.successful).toHaveLength(1);
@@ -368,8 +363,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(result.successful).toHaveLength(1);
@@ -388,8 +382,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(result.failed).toHaveLength(1);
@@ -407,8 +400,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       [],
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(gt.downloadFileBatch).toHaveBeenCalled();
@@ -443,8 +435,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(result.successful).toHaveLength(1);
@@ -482,8 +473,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(
       fileTracker,
       files,
-      createMockSettings(),
-      'branch-1'
+      createMockSettings()
     );
 
     expect(logger.error).toHaveBeenCalled();

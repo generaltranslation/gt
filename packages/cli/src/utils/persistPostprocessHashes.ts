@@ -20,17 +20,13 @@ type DownloadMeta = {
 export function persistPostProcessHashes(
   settings: Settings,
   includeFiles: Set<string> | undefined,
-  downloadedMeta: Map<string, DownloadMeta>,
-  branchId: string
+  downloadedMeta: Map<string, DownloadMeta>
 ): void {
   if (!includeFiles || includeFiles.size === 0 || downloadedMeta.size === 0) {
     return;
   }
 
-  const downloadedVersions = getDownloadedVersions(
-    settings.configDirectory,
-    branchId
-  );
+  const downloadedVersions = getDownloadedVersions(settings);
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
@@ -59,6 +55,6 @@ export function persistPostProcessHashes(
   }
 
   if (lockUpdated) {
-    saveDownloadedVersions(settings.configDirectory, downloadedVersions);
+    saveDownloadedVersions(downloadedVersions);
   }
 }

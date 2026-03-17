@@ -53,7 +53,6 @@ export async function handleTranslate(
 
 export async function postProcessTranslations(
   settings: Settings,
-  branchId: string,
   includeFiles?: Set<string>
 ) {
   // Mintlify OpenAPI localization (spec routing + validation)
@@ -106,10 +105,5 @@ export async function postProcessTranslations(
   }
 
   // Record postprocessed content hashes for newly downloaded files
-  persistPostProcessHashes(
-    settings,
-    includeFiles,
-    getDownloadedMeta(),
-    branchId
-  );
+  persistPostProcessHashes(settings, includeFiles, getDownloadedMeta());
 }

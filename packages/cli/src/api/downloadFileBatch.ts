@@ -90,14 +90,10 @@ export async function downloadFileBatch(
   fileTracker: FileStatusTracker,
   files: BatchedFiles,
   options: Settings,
-  branchId: string,
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const downloadedVersions = getDownloadedVersions(
-    options.configDirectory,
-    branchId
-  );
+  const downloadedVersions = getDownloadedVersions(options);
   let didUpdateDownloadedLock = false;
 
   // Create a map of requested file keys to the file object
@@ -273,7 +269,7 @@ export async function downloadFileBatch(
 
     // Persist any updates to the downloaded map at the end of a successful cycle
     if (didUpdateDownloadedLock) {
-      saveDownloadedVersions(options.configDirectory, downloadedVersions);
+      saveDownloadedVersions(downloadedVersions);
       didUpdateDownloadedLock = false;
     }
     return result;
@@ -286,7 +282,7 @@ export async function downloadFileBatch(
   // Mark all files as failed if we get here
   result.failed = [...requestedFileMap.values()];
   if (didUpdateDownloadedLock) {
-    saveDownloadedVersions(options.configDirectory, downloadedVersions);
+    saveDownloadedVersions(downloadedVersions);
   }
   return result;
 }

@@ -42,8 +42,7 @@ const findLatestDownloadedVersion = (
  */
 export async function collectAndSendUserEditDiffs(
   files: FileReference[],
-  settings: Settings,
-  branchId: string
+  settings: Settings
 ) {
   if (!settings.files) return;
 
@@ -56,10 +55,7 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const downloadedVersions = getDownloadedVersions(
-    settings.configDirectory,
-    branchId
-  );
+  const downloadedVersions = getDownloadedVersions(settings);
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });

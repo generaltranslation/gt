@@ -60,11 +60,7 @@ export async function runStageFilesWorkflow({
       const spinner = logger.createSpinner('dots');
       spinner.start('Updating translations...');
       try {
-        await collectAndSendUserEditDiffs(
-          uploadedFiles,
-          settings,
-          branchData.currentBranch.id
-        );
+        await collectAndSendUserEditDiffs(uploadedFiles, settings);
         spinner.stop(chalk.green('Updated translations'));
       } catch {
         // Non-fatal; keep going to enqueue

@@ -172,7 +172,6 @@ export async function runDownloadWorkflow({
   const downloadResult = await downloadStep.run({
     fileTracker,
     resolveOutputPath,
-    branchId: branchData.currentBranch.id,
     forceDownload,
   });
   await downloadStep.wait();

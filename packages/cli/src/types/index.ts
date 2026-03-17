@@ -206,6 +206,7 @@ export type Settings = {
   stageTranslations: boolean; // if true, always stage the project during translate command
   publish: boolean; // if true, publish the translations to the CDN
   _versionId?: string; // internal use only
+  _branchId?: string; // internal use only — resolved branch ID (e.g. "brc_xxx"), not the branch name
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
   src?: string[]; // list of glob patterns for source file scanning
