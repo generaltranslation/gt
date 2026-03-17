@@ -153,7 +153,12 @@ export function getDownloadedVersions(settings: Settings): DownloadedVersions {
     // V2 file
     if (raw.version === 2 && Array.isArray(raw.entries)) {
       _stashedV1 = null;
-      return raw as DownloadedVersions;
+      const v2 = raw as DownloadedVersions;
+      // Update branchId to current branch so
+      if (branchId) {
+        v2.branchId = branchId;
+      }
+      return v2;
     }
 
     // V1 file — stash full data, convert current branch to v2
