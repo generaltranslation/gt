@@ -14,6 +14,7 @@ import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
+import { extractYaml } from '../formats/yaml/extractYaml.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -187,6 +188,19 @@ export async function collectAndSendUserEditDiffs(
               settings.options,
               c.locale,
               settings.defaultLocale
+            );
+            if (extractedContent) {
+              localContent = extractedContent;
+            }
+          } else if (
+            (c.fileName.endsWith('.yaml') || c.fileName.endsWith('.yml')) &&
+            settings.options?.yamlSchema &&
+            c.locale !== settings.defaultLocale
+          ) {
+            const extractedContent = extractYaml(
+              rawLocalContent,
+              c.fileName,
+              settings.options
             );
             if (extractedContent) {
               localContent = extractedContent;
