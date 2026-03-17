@@ -192,7 +192,7 @@ Var._gtt = 'variable-variable';
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Static content to render.
+ * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
 export const Derive: typeof _Derive = () => {
@@ -220,7 +220,7 @@ export const Derive: typeof _Derive = () => {
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Static content to render.
+ * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {

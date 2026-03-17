@@ -19,7 +19,7 @@ import React from 'react';
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Static content to render.
+ * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
 export function Derive<T extends React.ReactNode>({
@@ -51,7 +51,7 @@ export function Derive<T extends React.ReactNode>({
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Static content to render.
+ * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
 export const Static = Derive;
