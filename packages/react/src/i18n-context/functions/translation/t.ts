@@ -16,16 +16,16 @@ import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../
  * This is a BROWSER ONLY function.
  *
  * @example
- * const t('Hello, world!'); // Translates 'Hello, world!'
+ * t('Hello, world!'); // Translates 'Hello, world!'
  *
  * @example
- * const t('Hello, {name}!', { name: 'John' }); // Translates 'Hello, John!'
+ * t('Hello, {name}!', { name: 'John' }); // Translates 'Hello, John!'
  *
  * @example
- * const t('Hello, {name}!', { name: 'John' }, { locale: 'en' }); // Translates 'Hello, John!'
+ * t('Hello, {name}!', { name: 'John' }, { locale: 'en' }); // Translates 'Hello, John!'
  *
  * @example
- * const t('Hello, {name}!', { name: 'John' }, { locale: 'fr' }); // Translates 'Hello, John!'
+ * t('Hello, {name}!', { name: 'John' }, { locale: 'fr' }); // Translates 'Bonjour, John!'
  */
 export const t: SyncResolutionFunction = (message, options) => {
   // Enforce browser environment

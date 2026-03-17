@@ -155,7 +155,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
-    return this.translationsManager.getTranslations(this.getLocale());
+    return this.translationsManager.getTranslations(locale);
   }
 
   /**

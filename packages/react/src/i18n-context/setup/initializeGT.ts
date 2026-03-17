@@ -4,7 +4,7 @@ import { BrowserStorageAdapter } from '../browser-i18n-manager/BrowserStorageAda
 import { BrowserI18nManager } from '../browser-i18n-manager/BrowserI18nManager';
 
 /**
- * Configure GT for node runtime. This must be called to setup GT for node runtime.
+ * Configure GT for browser runtime. This must be called to setup GT for browser runtime.
  * @param {InitializeGTParams} config - The configuration for the GT instance
  */
 export function initializeGT(params: InitializeGTParams): void {

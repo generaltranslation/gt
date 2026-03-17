@@ -48,7 +48,7 @@ export function determineLocale({
 
   const candidates = [];
 
-  // (1) Check cookie
+  // (2) Check cookie
   const cookieLocale = getCookieValue({
     cookieName: localeCookieName,
   });
