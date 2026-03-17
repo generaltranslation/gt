@@ -56,7 +56,10 @@ export async function runStageFilesWorkflow({
 
     // optionally run the user edit diffs step
     if (options?.saveLocal) {
-      await userEditDiffsStep.run(uploadedFiles);
+      await userEditDiffsStep.run({
+        files: uploadedFiles,
+        branchId: branchData.currentBranch.id,
+      });
       await userEditDiffsStep.wait();
     }
 

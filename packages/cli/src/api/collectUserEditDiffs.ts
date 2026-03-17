@@ -42,7 +42,8 @@ const findLatestDownloadedVersion = (
  */
 export async function collectAndSendUserEditDiffs(
   files: FileReference[],
-  settings: Settings
+  settings: Settings,
+  branchId: string
 ) {
   if (!settings.files) return;
 
@@ -55,7 +56,6 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const branchId = files[0]?.branchId ?? '';
   const downloadedVersions = getDownloadedVersions(
     settings.configDirectory,
     branchId

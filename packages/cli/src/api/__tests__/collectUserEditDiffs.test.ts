@@ -106,7 +106,7 @@ describe('collectAndSendUserEditDiffs', () => {
     const entry = findEntry(lock.entries, 'file1');
     expect(entry?.translations?.ja?.postProcessHash).toBeDefined();
 
-    await collectAndSendUserEditDiffs(files as any, settings);
+    await collectAndSendUserEditDiffs(files as any, settings, 'branch1');
 
     expect(gt.queryFileData).not.toHaveBeenCalled();
     expect(gt.downloadFileBatch).not.toHaveBeenCalled();
@@ -181,7 +181,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    await collectAndSendUserEditDiffs(files as any, settings);
+    await collectAndSendUserEditDiffs(files as any, settings, 'branch1');
 
     expect(gt.queryFileData).toHaveBeenCalledTimes(1);
     expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
@@ -248,7 +248,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    await collectAndSendUserEditDiffs(files as any, settings);
+    await collectAndSendUserEditDiffs(files as any, settings, 'branch1');
 
     expect(gt.queryFileData).toHaveBeenCalledTimes(1);
     expect(

@@ -5,8 +5,13 @@ import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { collectAndSendUserEditDiffs } from '../../api/collectUserEditDiffs.js';
 
+export type UserEditDiffsInput = {
+  files: FileReference[];
+  branchId: string;
+};
+
 export class UserEditDiffsStep extends WorkflowStep<
-  FileReference[],
+  UserEditDiffsInput,
   FileReference[]
 > {
   private spinner = logger.createSpinner('dots');
@@ -16,11 +21,11 @@ export class UserEditDiffsStep extends WorkflowStep<
     super();
   }
 
-  async run(files: FileReference[]): Promise<FileReference[]> {
+  async run({ files, branchId }: UserEditDiffsInput): Promise<FileReference[]> {
     this.spinner.start('Updating translations...');
 
     try {
-      await collectAndSendUserEditDiffs(files, this.settings);
+      await collectAndSendUserEditDiffs(files, this.settings, branchId);
       this.completed = true;
     } catch {
       // Non-fatal; keep going to enqueue

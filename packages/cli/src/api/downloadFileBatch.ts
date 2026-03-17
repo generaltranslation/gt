@@ -90,10 +90,10 @@ export async function downloadFileBatch(
   fileTracker: FileStatusTracker,
   files: BatchedFiles,
   options: Settings,
+  branchId: string,
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const branchId = files[0]?.branchId ?? '';
   const downloadedVersions = getDownloadedVersions(
     options.configDirectory,
     branchId

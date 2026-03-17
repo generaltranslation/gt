@@ -14,6 +14,7 @@ import { FileStatusTracker } from './PollJobsStep.js';
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
   resolveOutputPath: (sourcePath: string, locale: string) => string | null;
+  branchId: string;
   forceDownload?: boolean;
 };
 
@@ -33,6 +34,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
   async run({
     fileTracker,
     resolveOutputPath,
+    branchId,
     forceDownload,
   }: DownloadTranslationsInput): Promise<boolean> {
     this.spinner = logger.createProgressBar(fileTracker.completed.size);
@@ -42,6 +44,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
     const success = await this.downloadFiles(
       fileTracker,
       resolveOutputPath,
+      branchId,
       forceDownload
     );
     if (success) {
@@ -56,6 +59,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
   private async downloadFiles(
     fileTracker: FileStatusTracker,
     resolveOutputPath: (sourcePath: string, locale: string) => string | null,
+    branchId: string,
     forceDownload?: boolean
   ): Promise<boolean> {
     try {
@@ -118,6 +122,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
         const batchResult = await this.downloadFilesWithRetry(
           fileTracker,
           batchFiles,
+          branchId,
           forceDownload
         );
         this.spinner?.stop(
@@ -154,6 +159,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
   private async downloadFilesWithRetry(
     fileTracker: FileStatusTracker,
     files: BatchedFiles,
+    branchId: string,
     forceDownload?: boolean,
     maxRetries: number = 3,
     initialDelay: number = 1000
@@ -167,6 +173,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
         fileTracker,
         remainingFiles,
         this.settings,
+        branchId,
         forceDownload
       );
 

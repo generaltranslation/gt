@@ -258,6 +258,7 @@ export class BaseCLI {
     // Preprocess shared static assets if configured (move + rewrite sources)
     await processSharedStaticAssets(settings);
 
+    let branchId: string | undefined;
     if (!settings.stageTranslations) {
       const results = await handleStage(
         initOptions,
@@ -266,6 +267,7 @@ export class BaseCLI {
         false
       );
       if (results) {
+        branchId = results.branchData?.currentBranch.id;
         await handleTranslate(
           initOptions,
           settings,
@@ -279,8 +281,8 @@ export class BaseCLI {
     }
     // Only postprocess files downloaded in this run
     const include = getDownloaded();
-    if (include.size > 0) {
-      await postProcessTranslations(settings, include);
+    if (include.size > 0 && branchId) {
+      await postProcessTranslations(settings, branchId, include);
     }
     // Mirror assets after translations are downloaded and locale dirs are populated
     await mirrorAssetsToLocales(settings);

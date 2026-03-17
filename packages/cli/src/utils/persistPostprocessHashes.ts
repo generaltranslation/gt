@@ -20,19 +20,16 @@ type DownloadMeta = {
 export function persistPostProcessHashes(
   settings: Settings,
   includeFiles: Set<string> | undefined,
-  downloadedMeta: Map<string, DownloadMeta>
+  downloadedMeta: Map<string, DownloadMeta>,
+  branchId: string
 ): void {
   if (!includeFiles || includeFiles.size === 0 || downloadedMeta.size === 0) {
     return;
   }
 
-  // Get branchId from the first meta entry
-  const firstMeta = downloadedMeta.values().next().value;
-  if (!firstMeta) return;
-
   const downloadedVersions = getDownloadedVersions(
     settings.configDirectory,
-    firstMeta.branchId
+    branchId
   );
   let lockUpdated = false;
 
