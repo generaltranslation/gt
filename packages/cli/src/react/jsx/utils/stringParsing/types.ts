@@ -28,6 +28,10 @@ export type ParsingConfig = {
    * If true, include surrounding source code lines as context for translations
    */
   includeSourceCodeContext?: boolean;
+  /**
+   * If true, ignore tagged template expressions (e.g., t`hello ${name}`)
+   */
+  ignoreTaggedTemplates: boolean;
 };
 
 /**

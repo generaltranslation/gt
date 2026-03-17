@@ -73,6 +73,7 @@ export async function createInlineUpdates(
           ignoreInvalidIcu: false,
           ignoreInlineListContent: false,
           includeSourceCodeContext,
+          ignoreTaggedTemplates: false,
         },
         { updates, errors, warnings }
       );

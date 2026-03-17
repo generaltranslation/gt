@@ -8,8 +8,8 @@ declare global {
    * @example
    * import 'gt-react/macros';
    *
-   * t`Hello, world!`;
-   * t`Hello, ${name}!`;
+   * t`Hello, world!`; // "Bonjour, le monde!"
+   * t`Hello, ${name}!`; // "Bonjour, Alice!"
    */
   var t: TemplateSyncResolutionFunction;
 }

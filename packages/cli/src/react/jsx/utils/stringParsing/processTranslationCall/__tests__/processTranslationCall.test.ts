@@ -16,6 +16,7 @@ function createConfig(overrides?: Partial<ParsingConfig>): ParsingConfig {
     ignoreDynamicContent: false,
     ignoreInvalidIcu: false,
     ignoreInlineListContent: false,
+    ignoreTaggedTemplates: false,
     ...overrides,
   };
 }
