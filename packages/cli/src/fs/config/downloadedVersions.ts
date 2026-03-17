@@ -15,8 +15,8 @@ export type DownloadedTranslation = {
 
 export type DownloadedVersionEntry = {
   fileId: string;
-  versionId: string; // content hash of parsed source
-  fileName?: string; // source file path, for user visibility
+  versionId: string;
+  fileName?: string; // source file path
   translations: {
     [locale: string]: DownloadedTranslation;
   };
