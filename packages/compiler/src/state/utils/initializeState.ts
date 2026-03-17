@@ -5,6 +5,7 @@ import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
+import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
 
 /**
  * Initialize processing state for a file
@@ -18,6 +19,13 @@ export function initializeState(
     compileTimeHash: options.compileTimeHash || false,
     disableBuildChecks: options.disableBuildChecks || false,
     filename: filename,
+    enableMacroTransform: options.enableMacroTransform ?? true,
+    stringTranslationMacro:
+      options.stringTranslationMacro ?? GT_OTHER_FUNCTIONS.t,
+    enableTaggedTemplate: true,
+    enableTemplateLiteralArg: true,
+    enableConcatenationArg: true,
+    enableMacroImportInjection: true,
   };
 
   return {

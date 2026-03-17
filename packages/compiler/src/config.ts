@@ -14,6 +14,10 @@ export interface PluginConfig {
   compileTimeHash?: boolean;
   /** Disable dynamic content validation checks */
   disableBuildChecks?: boolean;
+  /** Enable macro transform (t`...`, t(`...`), t("a" + b)) */
+  enableMacroTransform?: boolean;
+  /** Name of the string translation macro function */
+  stringTranslationMacro?: string;
 }
 
 /**
@@ -24,4 +28,10 @@ export interface PluginSettings {
   compileTimeHash: boolean;
   disableBuildChecks: boolean;
   filename?: string;
+  enableMacroTransform: boolean;
+  stringTranslationMacro: string;
+  enableTaggedTemplate: boolean;
+  enableTemplateLiteralArg: boolean;
+  enableConcatenationArg: boolean;
+  enableMacroImportInjection: boolean;
 }

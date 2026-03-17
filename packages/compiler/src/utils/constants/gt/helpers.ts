@@ -29,6 +29,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'useMessages',
     'getMessages',
     'msg',
+    't',
     'useGT_callback',
     'getGT_callback',
     'useTranslations_callback',
@@ -147,13 +148,17 @@ export function isJsxFunction(name: string): boolean {
  * Check if it's a GT import source
  */
 export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
-  return Object.values([
-    GT_IMPORT_SOURCES.GT_NEXT,
-    GT_IMPORT_SOURCES.GT_NEXT_CLIENT,
-    GT_IMPORT_SOURCES.GT_NEXT_SERVER,
-    GT_IMPORT_SOURCES.GT_REACT,
-    GT_IMPORT_SOURCES.GT_I18N,
-  ]).includes(name as GT_IMPORT_SOURCES);
+  return (
+    [
+      GT_IMPORT_SOURCES.GT_NEXT,
+      GT_IMPORT_SOURCES.GT_NEXT_CLIENT,
+      GT_IMPORT_SOURCES.GT_NEXT_SERVER,
+      GT_IMPORT_SOURCES.GT_REACT,
+      GT_IMPORT_SOURCES.GT_REACT_CLIENT,
+      GT_IMPORT_SOURCES.GT_REACT_BROWSER,
+      GT_IMPORT_SOURCES.GT_I18N,
+    ] as string[]
+  ).includes(name);
 }
 
 /**

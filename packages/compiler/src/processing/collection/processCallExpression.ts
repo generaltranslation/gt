@@ -79,6 +79,11 @@ export function processCallExpression(
     ) {
       // TODO: Handle msg() function
       // handleMsgFunction(callExpr, state);
+    } else if (
+      type === 'generaltranslation' &&
+      canonicalName === GT_OTHER_FUNCTIONS.t
+    ) {
+      // TODO: Handle t() function
     }
   };
 }
