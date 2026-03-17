@@ -62,23 +62,22 @@ function convertV1ToV2(
   const entries: DownloadedVersionEntry[] = [];
 
   for (const [fileId, versions] of Object.entries(branchEntries)) {
-    // Find the versionId with the latest updatedAt across all locales
-    let latestVersionId: string | null = null;
-    let latestTime = Number.NEGATIVE_INFINITY;
+    const versionIds = Object.keys(versions);
+    if (versionIds.length === 0) continue;
+
+    // Pick the versionId with the most recent updatedAt, defaulting to the first
+    let latestVersionId = versionIds[0];
+    let latestTime = 0;
 
     for (const [versionId, locales] of Object.entries(versions)) {
       for (const entry of Object.values(locales)) {
-        const t = entry.updatedAt
-          ? Date.parse(entry.updatedAt)
-          : Number.NEGATIVE_INFINITY;
+        const t = entry.updatedAt ? Date.parse(entry.updatedAt) : 0;
         if (t > latestTime) {
           latestTime = t;
           latestVersionId = versionId;
         }
       }
     }
-
-    if (!latestVersionId) continue;
 
     const localeEntries = versions[latestVersionId];
     const translations: { [locale: string]: DownloadedTranslation } = {};
