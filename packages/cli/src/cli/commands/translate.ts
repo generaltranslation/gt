@@ -106,5 +106,10 @@ export async function postProcessTranslations(
   }
 
   // Record postprocessed content hashes for newly downloaded files
-  persistPostProcessHashes(settings, includeFiles, getDownloadedMeta(), branchId);
+  persistPostProcessHashes(
+    settings,
+    includeFiles,
+    getDownloadedMeta(),
+    branchId
+  );
 }
