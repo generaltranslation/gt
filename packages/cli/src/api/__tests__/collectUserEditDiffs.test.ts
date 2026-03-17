@@ -8,7 +8,7 @@ import { gt } from '../../utils/gt.js';
 import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import {
-  getDownloadedVersions,
+  readLockfile,
   findEntry,
   DownloadedVersionsV1,
 } from '../../fs/config/downloadedVersions.js';
@@ -103,8 +103,8 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    const lock = getDownloadedVersions(settings);
-    const entry = findEntry(lock.entries, 'file1');
+    const { data } = readLockfile(settings);
+    const entry = findEntry(data.entries, 'file1');
     expect(entry?.translations?.ja?.postProcessHash).toBeDefined();
 
     await collectAndSendUserEditDiffs(files as any, settings);

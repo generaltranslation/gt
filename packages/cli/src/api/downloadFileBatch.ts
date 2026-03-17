@@ -10,8 +10,8 @@ import { extractJson } from '../formats/json/extractJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
-  getDownloadedVersions,
-  saveDownloadedVersions,
+  readLockfile,
+  writeLockfile,
   findEntry,
   findOrCreateEntry,
 } from '../fs/config/downloadedVersions.js';
@@ -91,7 +91,7 @@ export async function downloadFileBatch(
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const downloadedVersions = getDownloadedVersions(options);
+  const { data: downloadedVersions, originalV1 } = readLockfile(options);
   let didUpdateDownloadedLock = false;
 
   // Create a map of requested file keys to the file object
@@ -268,7 +268,7 @@ export async function downloadFileBatch(
 
     // Persist any updates to the downloaded map at the end of a successful cycle
     if (didUpdateDownloadedLock) {
-      saveDownloadedVersions(downloadedVersions);
+      writeLockfile(downloadedVersions, originalV1);
       didUpdateDownloadedLock = false;
     }
     return result;
@@ -281,7 +281,7 @@ export async function downloadFileBatch(
   // Mark all files as failed if we get here
   result.failed = [...requestedFileMap.values()];
   if (didUpdateDownloadedLock) {
-    saveDownloadedVersions(downloadedVersions);
+    writeLockfile(downloadedVersions, originalV1);
   }
   return result;
 }

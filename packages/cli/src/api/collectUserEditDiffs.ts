@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
-  getDownloadedVersions,
+  readLockfile,
   DownloadedTranslation,
   DownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
@@ -55,7 +55,7 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const downloadedVersions = getDownloadedVersions(settings);
+  const { data: downloadedVersions } = readLockfile(settings);
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });

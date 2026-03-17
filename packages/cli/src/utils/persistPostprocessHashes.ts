@@ -1,8 +1,8 @@
 import * as fs from 'node:fs';
 import {
   findOrCreateEntry,
-  getDownloadedVersions,
-  saveDownloadedVersions,
+  readLockfile,
+  writeLockfile,
 } from '../fs/config/downloadedVersions.js';
 import { hashStringSync } from './hash.js';
 import type { Settings } from '../types/index.js';
@@ -26,7 +26,7 @@ export function persistPostProcessHashes(
     return;
   }
 
-  const downloadedVersions = getDownloadedVersions(settings);
+  const { data, originalV1 } = readLockfile(settings);
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
@@ -38,7 +38,7 @@ export function persistPostProcessHashes(
     const hash = hashStringSync(content);
 
     const entry = findOrCreateEntry(
-      downloadedVersions.entries,
+      data.entries,
       meta.fileId,
       meta.versionId
     );
@@ -55,6 +55,6 @@ export function persistPostProcessHashes(
   }
 
   if (lockUpdated) {
-    saveDownloadedVersions(downloadedVersions);
+    writeLockfile(data, originalV1);
   }
 }

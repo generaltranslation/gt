@@ -48,10 +48,6 @@ export type DownloadedVersionsV1 = {
   };
 };
 
-// ── Stashed V1 data (preserved across read→save cycle) ──────────────
-
-let _stashedV1: DownloadedVersionsV1 | null = null;
-
 // ── Conversion helpers ──────────────────────────────────────────────
 
 function convertV1ToV2(
@@ -134,63 +130,68 @@ function convertV2ToV1Branch(
 
 // ── Public API ──────────────────────────────────────────────────────
 
-export function getDownloadedVersions(settings: Settings): DownloadedVersions {
+/**
+ * Reads the lockfile and returns v2 data regardless of the on-disk format.
+ * If the file is v1, `originalV1` contains the full v1 data so that
+ * `writeLockfile` can merge changes back without losing other branches.
+ */
+export function readLockfile(settings: Settings): {
+  data: DownloadedVersions;
+  originalV1: DownloadedVersionsV1 | null;
+} {
   let branchId = settings._branchId ?? '';
+  const empty = {
+    data: { version: 2 as const, branchId, entries: [] as DownloadedVersionEntry[] },
+    originalV1: null,
+  };
+
   try {
     const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
-    const filepath = fs.existsSync(rootPath) ? rootPath : null;
-    if (!filepath) {
-      _stashedV1 = null;
-      return { version: 2, branchId, entries: [] };
-    }
+    if (!fs.existsSync(rootPath)) return empty;
 
-    const raw = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-    if (!raw || typeof raw !== 'object' || !raw.entries) {
-      _stashedV1 = null;
-      return { version: 2, branchId, entries: [] };
-    }
+    const raw = JSON.parse(fs.readFileSync(rootPath, 'utf8'));
+    if (!raw || typeof raw !== 'object' || !raw.entries) return empty;
 
     // V2 file
     if (raw.version === 2 && Array.isArray(raw.entries)) {
-      _stashedV1 = null;
       const v2 = raw as DownloadedVersions;
-      // Update branchId to current branch so
-      if (branchId) {
-        v2.branchId = branchId;
-      }
-      return v2;
+      if (branchId) v2.branchId = branchId;
+      return { data: v2, originalV1: null };
     }
 
-    // V1 file — stash full data, convert current branch to v2
-    _stashedV1 = raw as DownloadedVersionsV1;
-    // If no branchId available (e.g. branching disabled), use the first branch in the v1 data
+    // V1 file — convert current branch to v2
+    const v1 = raw as DownloadedVersionsV1;
     if (!branchId) {
-      const branches = Object.keys(_stashedV1.entries);
-      if (branches.length > 0) {
-        branchId = branches[0];
-      }
+      const branches = Object.keys(v1.entries);
+      if (branches.length > 0) branchId = branches[0];
     }
-    return convertV1ToV2(_stashedV1, branchId);
+    return { data: convertV1ToV2(v1, branchId), originalV1: v1 };
   } catch (error) {
     logger.error(
-      `An error occurred while getting downloaded versions: ${error}`
+      `An error occurred while reading ${GT_LOCK_FILE}: ${error}`
     );
-    _stashedV1 = null;
-    return { version: 2, branchId, entries: [] };
+    return empty;
   }
 }
 
-export function saveDownloadedVersions(lock: DownloadedVersions): void {
+/**
+ * Writes the lockfile. If `originalV1` is provided, merges the current
+ * branch's data back into the v1 structure (preserving other branches)
+ * and writes v1 format. Otherwise writes v2.
+ */
+export function writeLockfile(
+  data: DownloadedVersions,
+  originalV1: DownloadedVersionsV1 | null
+): void {
   try {
     const filepath = path.join(process.cwd(), GT_LOCK_FILE);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
-    if (_stashedV1) {
-      // Merge current branch back into stashed v1, preserve other branches
-      _stashedV1.entries[lock.branchId] = convertV2ToV1Branch(lock);
-      fs.writeFileSync(filepath, JSON.stringify(_stashedV1, null, 2));
+    if (originalV1) {
+      originalV1.entries[data.branchId] = convertV2ToV1Branch(data);
+      fs.writeFileSync(filepath, JSON.stringify(originalV1, null, 2));
     } else {
-      fs.writeFileSync(filepath, JSON.stringify(lock, null, 2));
+      fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
     }
   } catch (error) {
     logger.error(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);
