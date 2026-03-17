@@ -6,9 +6,11 @@ import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
-import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
+import { collectAndSendUserEditDiffs } from '../api/collectUserEditDiffs.js';
+import { logger } from '../console/logger.js';
+import chalk from 'chalk';
 
 /**
  * Sends multiple files for translation to the API using a workflow pattern
@@ -39,7 +41,6 @@ export async function runStageFilesWorkflow({
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);
     const uploadStep = new UploadSourcesStep(gt, settings);
-    const userEditDiffsStep = new UserEditDiffsStep(settings);
     const setupStep = new SetupStep(gt, settings, timeoutMs);
     const enqueueStep = new EnqueueStep(gt, settings, options.force);
 
@@ -54,13 +55,21 @@ export async function runStageFilesWorkflow({
     const uploadedFiles = await uploadStep.run({ files, branchData });
     await uploadStep.wait();
 
-    // optionally run the user edit diffs step
+    // optionally collect and send user edit diffs
     if (options?.saveLocal) {
-      await userEditDiffsStep.run({
-        files: uploadedFiles,
-        branchId: branchData.currentBranch.id,
-      });
-      await userEditDiffsStep.wait();
+      const spinner = logger.createSpinner('dots');
+      spinner.start('Updating translations...');
+      try {
+        await collectAndSendUserEditDiffs(
+          uploadedFiles,
+          settings,
+          branchData.currentBranch.id
+        );
+        spinner.stop(chalk.green('Updated translations'));
+      } catch {
+        // Non-fatal; keep going to enqueue
+        spinner.stop(chalk.green('Updated translations'));
+      }
     }
 
     // then run the setup step
