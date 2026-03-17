@@ -265,9 +265,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
           result.errors.some((e) =>
-            e.includes(
-              'derive() must have a call expression as the argument'
-            )
+            e.includes('derive() must have a call expression as the argument')
           )
         ).toBe(true);
       });
@@ -322,9 +320,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
           result.errors.some((e) =>
-            e.includes(
-              'derive() must have a call expression as the argument'
-            )
+            e.includes('derive() must have a call expression as the argument')
           )
         ).toBe(true);
       });
@@ -398,9 +394,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
           result.errors.some((e) =>
-            e.includes(
-              'derive() must have a call expression as the argument'
-            )
+            e.includes('derive() must have a call expression as the argument')
           )
         ).toBe(true);
       });
