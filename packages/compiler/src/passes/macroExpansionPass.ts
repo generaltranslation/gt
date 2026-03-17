@@ -3,7 +3,7 @@ import { TransformState } from '../state/types';
 import { processTaggedTemplateExpression } from '../processing/macro-expansion/processTaggedTemplateExpression';
 import { processCallExpression } from '../processing/macro-expansion/processCallExpression';
 import { processImportDeclaration } from '../processing/macro-expansion/processImportDeclaration';
-import { injectMacroImport } from '../transform/macro-expansion/injectMacroImport';
+import { processProgram } from '../processing/macro-expansion/processProgram';
 
 /**
  * Macro expansion pass — transforms t`...` tagged templates, t(`...`) template literal args,
@@ -24,14 +24,6 @@ export function macroExpansionPass(state: TransformState): TraverseOptions {
     ImportDeclaration: processImportDeclaration(onImportFound),
     TaggedTemplateExpression: processTaggedTemplateExpression(state),
     CallExpression: processCallExpression(state),
-    Program: {
-      exit(path) {
-        const didTransform =
-          state.statistics.macroExpansionsCount > countBefore;
-        if (!didTransform || alreadyImported) return;
-        if (!state.settings.enableMacroImportInjection) return;
-        injectMacroImport(path);
-      },
-    },
+    Program: processProgram({ state, countBefore, alreadyImported }),
   };
 }
