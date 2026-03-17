@@ -29,40 +29,37 @@ function mergeWithSource(
   inputPath: string,
   options: Settings
 ): string {
-  if (options.options?.jsonSchema) {
-    const jsonSchema = validateJsonSchema(options.options, inputPath);
-    if (jsonSchema) {
-      const sourceContent = fs.readFileSync(inputPath, 'utf8');
-      if (sourceContent) {
-        return mergeJson(
-          sourceContent,
-          inputPath,
-          options.options,
-          [{ translatedContent, targetLocale: locale }],
-          options.defaultLocale,
-          options.locales
-        )[0];
-      }
-    }
-  }
+  if (!options.options) return translatedContent;
 
-  if (options.options?.yamlSchema) {
-    const yamlSchema = validateYamlSchema(options.options, inputPath);
-    if (yamlSchema) {
-      const sourceContent = fs.readFileSync(inputPath, 'utf8');
-      if (sourceContent) {
-        return mergeYaml(
-          sourceContent,
-          inputPath,
-          options.options,
-          [{ translatedContent, targetLocale: locale }],
-          options.defaultLocale
-        )[0];
-      }
-    }
-  }
+  const schema = options.options.jsonSchema
+    ? validateJsonSchema(options.options, inputPath)
+    : options.options.yamlSchema
+      ? validateYamlSchema(options.options, inputPath)
+      : null;
 
-  return translatedContent;
+  if (!schema) return translatedContent;
+
+  const sourceContent = fs.readFileSync(inputPath, 'utf8');
+  if (!sourceContent) return translatedContent;
+
+  if (options.options.jsonSchema) {
+    return mergeJson(
+      sourceContent,
+      inputPath,
+      options.options,
+      [{ translatedContent, targetLocale: locale }],
+      options.defaultLocale,
+      options.locales
+    )[0];
+  } else {
+    return mergeYaml(
+      sourceContent,
+      inputPath,
+      options.options,
+      [{ translatedContent, targetLocale: locale }],
+      options.defaultLocale
+    )[0];
+  }
 }
 
 export type BatchedFiles = {
