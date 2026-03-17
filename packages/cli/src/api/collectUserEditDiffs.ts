@@ -25,28 +25,13 @@ const findLatestDownloadedVersion = (
   fileId: string,
   locale: string
 ): LatestDownloadedVersion | null => {
-  // In v2, find all entries for this fileId and pick the one with the latest
-  // updatedAt for the given locale
-  let latest: LatestDownloadedVersion | null = null;
+  const entry = downloadedVersions.entries.find((e) => e.fileId === fileId);
+  if (!entry) return null;
 
-  for (const entry of downloadedVersions.entries) {
-    if (entry.fileId !== fileId) continue;
-    const translation = entry.translations[locale];
-    if (!translation) continue;
+  const translation = entry.translations[locale];
+  if (!translation) return null;
 
-    const updatedAt = translation.updatedAt
-      ? Date.parse(translation.updatedAt)
-      : Number.NEGATIVE_INFINITY;
-    const latestUpdatedAt = latest?.entry.updatedAt
-      ? Date.parse(latest.entry.updatedAt)
-      : Number.NEGATIVE_INFINITY;
-
-    if (!latest || updatedAt > latestUpdatedAt) {
-      latest = { versionId: entry.versionId, entry: translation };
-    }
-  }
-
-  return latest;
+  return { versionId: entry.versionId, entry: translation };
 };
 
 /**
