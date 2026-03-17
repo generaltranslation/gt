@@ -101,7 +101,7 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
 }
 
 /**
- * Check if a name is a GT static component
+ * Check if a name is a GT derive component
  */
 export function isDeriveComponent(name: string): name is GT_COMPONENT_TYPES {
   return [GT_COMPONENT_TYPES.Derive, GT_COMPONENT_TYPES.Static].includes(
