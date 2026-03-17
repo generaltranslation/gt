@@ -22,7 +22,6 @@ import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 
 /**
  * Merges translated content with the current source file for schema-based formats.
- * Returns the merged content, or the original translatedContent if no schema applies.
  */
 function mergeWithSource(
   translatedContent: string,
