@@ -1,6 +1,5 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { logger } from '../../../console/logger.js';
 import { ParsingConfigOptions } from '../../../types/parsing.js';
 import { parseStringExpression, nodeToStrings } from './parseString.js';
 import { StringNode } from './types.js';

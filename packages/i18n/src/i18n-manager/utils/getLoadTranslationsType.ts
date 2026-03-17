@@ -21,6 +21,7 @@ export enum LoadTranslationsType {
  * cacheUrl = null means disabled
  */
 export function getLoadTranslationsType(config: {
+  projectId?: string;
   cacheUrl?: string | null;
   loadTranslations?: TranslationsLoader;
 }): LoadTranslationsType {
@@ -29,8 +30,8 @@ export function getLoadTranslationsType(config: {
   } else if (config.cacheUrl) {
     return LoadTranslationsType.REMOTE;
   } else if (
-    config.cacheUrl === undefined ||
-    config.cacheUrl === defaultCacheUrl
+    (config.cacheUrl === undefined || config.cacheUrl === defaultCacheUrl) &&
+    config.projectId
   ) {
     return LoadTranslationsType.GT_REMOTE;
   } else {

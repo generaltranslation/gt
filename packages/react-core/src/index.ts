@@ -1,4 +1,4 @@
-import T from './translation/inline/T';
+import T from './translation/T';
 import useGT from './translation/hooks/useGT';
 import useTranslations from './translation/hooks/useTranslations';
 import useDefaultLocale from './hooks/useDefaultLocale';

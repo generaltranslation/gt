@@ -4,8 +4,12 @@ import {
   SafeTranslationsLoader,
   TranslationsLoader,
 } from './translations-loaders/types';
-import { Translations, TranslationsMap } from './utils/types/translation-data';
-import { TranslationsManagerConstructorParams } from './utils/types/translations-manager';
+import {
+  ResolvedTranslationsMap,
+  Translations,
+  TranslationsMap,
+} from './utils/types/translation-data';
+import { TranslationsManagerConfig } from './utils/types/translations-manager';
 import { createRemoteTranslationLoader } from './translations-loaders/createRemoteTranslationLoader';
 import { createFallbackTranslationLoader } from './translations-loaders/createFallbackTranslationLoader';
 import {
@@ -19,11 +23,6 @@ import { CustomMapping } from 'generaltranslation/types';
  */
 class TranslationsManager {
   /**
-   * Cache expiry time
-   */
-  private cacheExpiryTime: number;
-
-  /**
    * Translation loader function
    */
   private translationLoader: SafeTranslationsLoader;
@@ -34,19 +33,35 @@ class TranslationsManager {
   private cache: TranslationsMap = new Map();
 
   /**
-   * Constructor
-   * @param {TranslationsManagerConstructorParams} config - The configuration for the TranslationsManager
-   * TODO: add expiration time on the translation loader
+   * Cache entry time to live (negative value means never expires)
    */
-  constructor(config: TranslationsManagerConstructorParams) {
-    this.cacheExpiryTime = config.cacheExpiryTime ?? DEFAULT_CACHE_EXPIRY_TIME;
+  private translationEntryTTL: number;
+
+  /**
+   * Resolved cache for sync operations
+   */
+  private resolvedCache: ResolvedTranslationsMap = new Map();
+
+  /**
+   * Constructor
+   * @param {TranslationsManagerConfig} config - The configuration for the TranslationsManager
+   */
+  constructor(config: TranslationsManagerConfig) {
+    this.translationEntryTTL =
+      config.cacheExpiryTime === null
+        ? -1
+        : (config.cacheExpiryTime ?? DEFAULT_CACHE_EXPIRY_TIME);
 
     // Set up translation loader
     const unsafeTranslationLoader = determineTranslationLoader(config);
-    this.translationLoader = this.protectTranslationLoader(
-      unsafeTranslationLoader
+    this.translationLoader = this.attachResolveCaptureToTranslationLoader(
+      this.protectTranslationLoader(unsafeTranslationLoader)
     );
   }
+
+  // ========== Private Methods ========== //
+
+  // ----- Translation Loader Wrappers ----- //
 
   /**
    * Wrap the translation loader to handle errors
@@ -59,8 +74,9 @@ class TranslationsManager {
   ): SafeTranslationsLoader {
     return async (locale: string): Promise<Translations> => {
       try {
-        const translations = await unsafeTranslationLoader(locale);
-        return (translations || {}) as Translations;
+        const translations = ((await unsafeTranslationLoader(locale)) ||
+          {}) as Translations;
+        return translations;
       } catch (error) {
         // TODO: centralized logging system
         logger.error('Failed to load translations ' + error);
@@ -72,6 +88,20 @@ class TranslationsManager {
   }
 
   /**
+   * Wrap translation loader to record items to resolved cache for sync operations
+   */
+  private attachResolveCaptureToTranslationLoader(
+    translationLoader: SafeTranslationsLoader
+  ): SafeTranslationsLoader {
+    return async (locale: string): Promise<Translations> => {
+      const translations = await translationLoader(locale);
+      this.resolvedCache.set(locale, translations);
+      return translations;
+    };
+  }
+
+  /**
+   * Handle cache miss for the locale
    * @param locale Handle cache miss for the locale
    */
   private async handleCacheMiss(locale: string): Promise<Translations> {
@@ -80,7 +110,9 @@ class TranslationsManager {
 
     // Get cache expiry time
     const expiresAt =
-      this.cacheExpiryTime === -1 ? -1 : Date.now() + this.cacheExpiryTime;
+      this.translationEntryTTL < 0
+        ? this.translationEntryTTL
+        : Date.now() + this.translationEntryTTL;
 
     // Cache the promise and expiry timestamp
     const entry = { promise, expiresAt };
@@ -89,18 +121,22 @@ class TranslationsManager {
     return promise;
   }
 
+  // ----- Utilities ----- //
+
   /**
    * Determines whether cache hit or miss based on:
    * - Cache entry exists
-   * - Time-stamp (never expires if -1)
+   * - Time-stamp (never expires if negative)
    */
   private isCacheHit(locale: string): boolean {
     if (!this.cache.has(locale)) return false;
 
     const { expiresAt } = this.cache.get(locale)!;
-    if (expiresAt === -1 || expiresAt > Date.now()) return true;
+    if (expiresAt < 0 || expiresAt > Date.now()) return true;
     return false;
   }
+
+  // ========== Public Methods ========== //
 
   /**
    * Get translations for a given locale
@@ -115,7 +151,16 @@ class TranslationsManager {
     return this.handleCacheMiss(locale);
   }
 
-  // ===== Utilities ===== //
+  /**
+   * Get translations for a given locale
+   * @note This method does not account for cache expiry
+   */
+  getTranslationsSync(locale: string): Translations | undefined {
+    return this.resolvedCache.get(locale);
+  }
+
+  // ----- Utilities ----- //
+
   /**
    * Get the translation loader function
    */
@@ -142,7 +187,9 @@ function determineTranslationLoader(config: {
   const loadTranslationsType = getLoadTranslationsType(config);
   if (loadTranslationsType === LoadTranslationsType.DISABLED) {
     // TODO: move this warning to validation layer
-    logger.warn('No translation loader found. No translations will be loaded.');
+    logger.warn(
+      'I18nManager: No translation loader found. No translations will be loaded.'
+    );
   }
 
   switch (loadTranslationsType) {

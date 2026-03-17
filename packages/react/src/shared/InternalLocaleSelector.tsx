@@ -1,6 +1,5 @@
 import React from 'react';
-import { useLocaleSelector } from '@generaltranslation/react-core';
-import { CustomMapping } from 'generaltranslation/types';
+import { CustomMapping, LocaleProperties } from 'generaltranslation/types';
 
 /**
  * Capitalizes the first letter of a string if applicable.
@@ -33,27 +32,33 @@ function _convertCustomNamesToMapping(
 
 /**
  * A dropdown component that allows users to select a locale.
- * @param {string[]} [locales] - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
+ * @param {string} locale - The currently selected locale.
+ * @param {string[]} locales - The list of all available locales.
+ * @param {function} setLocale - Function to update the current locale.
+ * @param {function} getLocaleProperties - Function to retrieve properties for a given locale.
  * @param {object} [customNames] - (deprecated) An optional object to map locales to custom names. Use `customMapping` instead.
  * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
+ *
+ * @internal
  */
-export default function LocaleSelector({
-  locales: _locales,
+export function InternalLocaleSelector({
+  locale,
+  locales,
   customNames,
   customMapping = _convertCustomNamesToMapping(customNames),
+  setLocale,
+  getLocaleProperties,
   ...props
 }: {
-  locales?: string[];
+  locale: string;
+  locales: string[];
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
+  setLocale: (locale: string) => void;
+  getLocaleProperties: (locale: string) => LocaleProperties;
   [key: string]: any;
 }): React.JSX.Element | null {
-  // Get locale selector properties
-  const { locale, locales, setLocale, getLocaleProperties } = useLocaleSelector(
-    _locales ? _locales : undefined
-  );
-
   // Get display name
   const getDisplayName = (locale: string) => {
     if (customMapping && customMapping[locale]) {

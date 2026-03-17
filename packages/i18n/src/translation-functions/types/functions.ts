@@ -5,17 +5,28 @@ import {
 } from './options';
 
 /**
+ * Synchronous resolution function type
+ * @param {string} message - The message to translate.
+ * @param {InlineTranslationOptions} options - The options for the translation.
+ * @returns {string} The translated message.
+ *
+ * @important This is base type for user API
+ *
+ * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ */
+export type SyncResolutionFunction = (
+  message: string,
+  options?: InlineTranslationOptions
+) => string;
+
+/**
  * Type for the gt() function
  * @param {string} message - The message to translate
  * @param {InlineTranslationOptions} options - The options for the translation
  * @returns {string} The translated message
- *
- * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ * TODO: next major version, remove the "...type" suffix, it's redundant
  */
-export type GTFunctionType = (
-  message: string,
-  options?: InlineTranslationOptions
-) => string;
+export type GTFunctionType = SyncResolutionFunction;
 
 /**
  * Type for the m() function
@@ -23,6 +34,7 @@ export type GTFunctionType = (
  * @param {InlineTranslationOptions} options - The options to interpolate.
  * @returns {string | null | undefined} The decoded and interpolated message.
  * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ * TODO: next major version, remove the "...type" suffix, it's redundant
  */
 export type MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
@@ -36,6 +48,7 @@ export type MFunctionType = <T extends string | null | undefined>(
  * @param {string} id - The id of the translation to translate.
  * @param {DictionaryTranslationOptions} options - The options for the translation.
  * @returns {string} The translated message.
+ * TODO: next major version, remove the "...type" suffix, it's redundant
  */
 export type TFunctionType = (
   id: string,
@@ -47,6 +60,7 @@ export type TFunctionType = (
  * @param {string} message - The message to translate.
  * @param {RuntimeTranslationOptions} options - The options for the translation.
  * @returns {string} The translated message.
+ * TODO: next major version, remove the "...type" suffix, it's redundant
  */
 export type TxFunctionType = (
   message: string,

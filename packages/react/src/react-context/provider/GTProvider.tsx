@@ -1,5 +1,5 @@
 import { GTProvider as _GTProvider } from '@generaltranslation/react-core';
-import { readAuthFromEnv } from '../utils/utils';
+import { readAuthFromEnv } from '../utils/readAuthFromEnv';
 import { useRegionState } from './hooks/useRegionState';
 import { useEnableI18n } from './hooks/useEnableI18n';
 import { useDetermineLocale } from './hooks/locales/useDetermineLocale';

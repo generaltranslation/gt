@@ -35,7 +35,7 @@ export function validateLoadTranslations(params: {
     case LoadTranslationsType.GT_REMOTE:
       if (!projectId) {
         results.push({
-          type: 'error',
+          type: 'warning',
           message:
             'projectId is required when loading translations from a remote store',
         });
