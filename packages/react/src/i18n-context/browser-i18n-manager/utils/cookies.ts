@@ -8,7 +8,8 @@ export function getCookieValue({
 }: {
   cookieName: string;
 }): string | undefined {
-  const rawCookieValue = document?.cookie
+  if (typeof document === 'undefined') return undefined;
+  const rawCookieValue = document.cookie
     .split('; ')
     .find((row) => row.startsWith(`${cookieName}=`))
     ?.split('=')[1];

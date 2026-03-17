@@ -75,5 +75,4 @@ export {
   useMessages,
   mFallback,
   gtFallback,
-  t,
 };
