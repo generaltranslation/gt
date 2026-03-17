@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { CustomMapping } from 'generaltranslation/types';
 import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
-import { getBrowserI18nManager } from '../setup/singleton-operations';
+import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
 
 /**
  * A dropdown component that allows users to select a locale.

@@ -1,5 +1,5 @@
 import { initializeGT } from './initializeGT';
-import { getBrowserI18nManager } from './singleton-operations';
+import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
 import { InitializeGTParams } from './types';
 
 /**

@@ -10,6 +10,11 @@ import { createInvalidLocaleWarning } from '../../shared/messages';
 export class BrowserI18nManager extends I18nManager<BrowserStorageAdapter> {
   constructor(config: I18nManagerConstructorParams<BrowserStorageAdapter>) {
     super(config);
+    this.storeAdapter.setConfig({
+      defaultLocale: this.getDefaultLocale(),
+      locales: this.getLocales(),
+      customMapping: config.customMapping,
+    });
   }
 
   /**
@@ -19,6 +24,14 @@ export class BrowserI18nManager extends I18nManager<BrowserStorageAdapter> {
    */
   async loadTranslations(locale: string = this.getLocale()): Promise<void> {
     await this.getTranslations(locale);
+  }
+
+  /**
+   * Returns the current locale
+   * @returns {string} The current locale
+   */
+  getLocale(): string {
+    return this.storeAdapter.getItem('locale') || this.config.defaultLocale;
   }
 
   /**

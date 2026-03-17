@@ -1,13 +1,14 @@
 import { StorageAdapter } from 'gt-i18n/internal';
 import { determineLocale } from '../functions/determineLocale';
 import { CustomMapping } from 'generaltranslation/types';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 const TANSTACK_I18N_STORAGE_ADAPTER_TYPE =
   'tanstack-i18n-storage-adapter' as const;
 
 type TanstackStorageAdapterConstructorParams = {
-  defaultLocale: string;
-  locales: string[];
+  defaultLocale?: string;
+  locales?: string[];
   customMapping?: CustomMapping;
 };
 
@@ -16,19 +17,28 @@ type TanstackStorageAdapterConstructorParams = {
  */
 export class TanstackStorageAdapter extends StorageAdapter {
   readonly type = TANSTACK_I18N_STORAGE_ADAPTER_TYPE;
-  private defaultLocale: string;
-  private locales: string[];
+  private defaultLocale?: string;
+  private locales?: string[];
   private customMapping?: CustomMapping;
 
   constructor({
     defaultLocale,
     locales,
     customMapping,
-  }: TanstackStorageAdapterConstructorParams) {
+  }: TanstackStorageAdapterConstructorParams = {}) {
     super();
     this.defaultLocale = defaultLocale;
     this.locales = locales;
     this.customMapping = customMapping;
+  }
+
+  /**
+   * Set configured items
+   */
+  setConfig(params: TanstackStorageAdapterConstructorParams): void {
+    this.defaultLocale ||= params.defaultLocale;
+    this.locales ||= params.locales;
+    this.customMapping ||= params.customMapping;
   }
 
   /**
@@ -39,8 +49,8 @@ export class TanstackStorageAdapter extends StorageAdapter {
   getItem(key: string): string | undefined {
     if (key === 'locale') {
       return determineLocale({
-        defaultLocale: this.defaultLocale,
-        locales: this.locales,
+        defaultLocale: this.defaultLocale || libraryDefaultLocale,
+        locales: this.locales || [libraryDefaultLocale],
         customMapping: this.customMapping,
       });
     }

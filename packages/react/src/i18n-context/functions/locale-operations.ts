@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../setup/singleton-operations';
+import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
 
 /**
  * Returns the user's current locale.

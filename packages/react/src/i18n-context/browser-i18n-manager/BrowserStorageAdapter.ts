@@ -4,6 +4,7 @@ import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal
 import { setCookieValue } from './utils/cookies';
 import { determineLocale } from './utils/determineLocale';
 import { GetLocale } from './utils/types';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 const BROWSER_I18N_STORAGE_ADAPTER_TYPE =
   'browser-i18n-storage-adapter' as const;
@@ -16,8 +17,8 @@ const BROWSER_I18N_STORAGE_ADAPTER_TYPE =
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
 type BrowserStorageAdapterConstructorParams = {
-  defaultLocale: string;
-  locales: string[];
+  defaultLocale?: string;
+  locales?: string[];
   customMapping?: CustomMapping;
   getLocale?: GetLocale;
   localeCookieName?: string;
@@ -28,8 +29,8 @@ type BrowserStorageAdapterConstructorParams = {
  */
 export class BrowserStorageAdapter extends StorageAdapter {
   readonly type = BROWSER_I18N_STORAGE_ADAPTER_TYPE;
-  private defaultLocale: string;
-  private locales: string[];
+  private defaultLocale?: string;
+  private locales?: string[];
   private customMapping?: CustomMapping;
   private getLocale?: GetLocale;
   private localeCookieName: string;
@@ -43,13 +44,23 @@ export class BrowserStorageAdapter extends StorageAdapter {
     customMapping,
     getLocale,
     localeCookieName = defaultLocaleCookieName,
-  }: BrowserStorageAdapterConstructorParams) {
+  }: BrowserStorageAdapterConstructorParams = {}) {
     super();
     this.defaultLocale = defaultLocale;
     this.locales = locales;
     this.customMapping = customMapping;
     this.getLocale = getLocale;
     this.localeCookieName = localeCookieName;
+  }
+
+  /**
+   * Set configured items
+   */
+  setConfig(params: BrowserStorageAdapterConstructorParams): void {
+    this.defaultLocale ||= params.defaultLocale;
+    this.locales ||= params.locales;
+    this.customMapping ||= params.customMapping;
+    this.getLocale ||= params.getLocale;
   }
 
   /**
@@ -60,8 +71,8 @@ export class BrowserStorageAdapter extends StorageAdapter {
   getItem(key: string): string | undefined {
     if (key === 'locale') {
       const locale = determineLocale({
-        defaultLocale: this.defaultLocale,
-        locales: this.locales,
+        defaultLocale: this.defaultLocale || libraryDefaultLocale,
+        locales: this.locales || [libraryDefaultLocale],
         customMapping: this.customMapping,
         getLocale: this.getLocale,
         localeCookieName: this.localeCookieName,
