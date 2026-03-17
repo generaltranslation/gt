@@ -6,17 +6,64 @@ import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
+import { extractJson } from '../formats/json/extractJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import {
   getDownloadedVersions,
   saveDownloadedVersions,
-  ensureNestedObject,
+  findEntry,
+  findOrCreateEntry,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
-import { hashStringSync } from '../utils/hash.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
+
+/**
+ * Merges translated content with the current source file for schema-based formats.
+ * Returns the merged content, or the original translatedContent if no schema applies.
+ */
+function mergeWithSource(
+  translatedContent: string,
+  locale: string,
+  inputPath: string,
+  options: Settings
+): string {
+  if (options.options?.jsonSchema) {
+    const jsonSchema = validateJsonSchema(options.options, inputPath);
+    if (jsonSchema) {
+      const sourceContent = fs.readFileSync(inputPath, 'utf8');
+      if (sourceContent) {
+        return mergeJson(
+          sourceContent,
+          inputPath,
+          options.options,
+          [{ translatedContent, targetLocale: locale }],
+          options.defaultLocale,
+          options.locales
+        )[0];
+      }
+    }
+  }
+
+  if (options.options?.yamlSchema) {
+    const yamlSchema = validateYamlSchema(options.options, inputPath);
+    if (yamlSchema) {
+      const sourceContent = fs.readFileSync(inputPath, 'utf8');
+      if (sourceContent) {
+        return mergeYaml(
+          sourceContent,
+          inputPath,
+          options.options,
+          [{ translatedContent, targetLocale: locale }],
+          options.defaultLocale
+        )[0];
+      }
+    }
+  }
+
+  return translatedContent;
+}
 
 export type BatchedFiles = {
   branchId: string;
@@ -46,7 +93,11 @@ export async function downloadFileBatch(
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const downloadedVersions = getDownloadedVersions(options.configDirectory);
+  const branchId = files[0]?.branchId ?? '';
+  const downloadedVersions = getDownloadedVersions(
+    options.configDirectory,
+    branchId
+  );
   let didUpdateDownloadedLock = false;
 
   // Create a map of requested file keys to the file object
@@ -118,76 +169,50 @@ export async function downloadFileBatch(
           fs.mkdirSync(dir, { recursive: true });
         }
         // If a local translation already exists for the same source version, skip overwrite
-        const downloadedVersion =
-          downloadedVersions.entries[branchId]?.[fileId]?.[versionId]?.[locale];
+        const existingEntry = findEntry(downloadedVersions.entries, fileId);
+        const downloadedTranslation =
+          existingEntry?.versionId === versionId
+            ? existingEntry.translations[locale]
+            : undefined;
         const fileExists = fs.existsSync(outputPath);
-
-        let sourceChanged = false;
-        if (downloadedVersion?.sourceHash) {
-          try {
-            const currentSourceContent = fs.readFileSync(inputPath, 'utf8');
-            const currentSourceHash = hashStringSync(currentSourceContent);
-            sourceChanged = currentSourceHash !== downloadedVersion.sourceHash;
-          } catch {
-            sourceChanged = true;
-          }
-        }
 
         if (
           !forceDownload &&
-          !sourceChanged &&
           fileExists &&
-          downloadedVersion
+          downloadedTranslation
         ) {
+          // For schema-based files, re-merge with current source in case
+          // non-translatable fields changed (skip the API download, not the merge)
+          try {
+            const existingContent = fs.readFileSync(outputPath, 'utf8');
+            // For JSON schema files, extract translatable content first
+            let translatedContent = existingContent;
+            if (options.options?.jsonSchema) {
+              const extracted = extractJson(
+                existingContent,
+                inputPath,
+                options.options,
+                locale,
+                options.defaultLocale
+              );
+              if (extracted) translatedContent = extracted;
+            }
+            const remerged = mergeWithSource(
+              translatedContent,
+              locale,
+              inputPath,
+              options
+            );
+            if (remerged !== existingContent) {
+              await fs.promises.writeFile(outputPath, remerged);
+            }
+          } catch {
+            // If re-merge fails, still count as skipped — not worth failing the download
+          }
           result.skipped.push(requestedFile);
           continue;
         }
-        let data = file.data;
-        let sourceContentHash: string | undefined;
-        if (options.options?.jsonSchema && locale) {
-          const jsonSchema = validateJsonSchema(options.options, inputPath);
-          if (jsonSchema) {
-            const originalContent = fs.readFileSync(inputPath, 'utf8');
-            if (originalContent) {
-              sourceContentHash = hashStringSync(originalContent);
-              data = mergeJson(
-                originalContent,
-                inputPath,
-                options.options,
-                [
-                  {
-                    translatedContent: file.data,
-                    targetLocale: locale,
-                  },
-                ],
-                options.defaultLocale,
-                options.locales
-              )[0];
-            }
-          }
-        }
-
-        if (options.options?.yamlSchema && locale) {
-          const yamlSchema = validateYamlSchema(options.options, inputPath);
-          if (yamlSchema) {
-            const originalContent = fs.readFileSync(inputPath, 'utf8');
-            if (originalContent) {
-              sourceContentHash = hashStringSync(originalContent);
-              data = mergeYaml(
-                originalContent,
-                inputPath,
-                options.options,
-                [
-                  {
-                    translatedContent: file.data,
-                    targetLocale: locale,
-                  },
-                ],
-                options.defaultLocale
-              )[0];
-            }
-          }
-        }
+        let data = mergeWithSource(file.data, locale, inputPath, options);
 
         // If the file is a GTJSON file, stable sort the order and format the data
         if (file.fileFormat === 'GTJSON') {
@@ -213,16 +238,16 @@ export async function downloadFileBatch(
         });
 
         result.successful.push(requestedFile);
-        if (branchId && fileId && versionId && locale) {
-          ensureNestedObject(downloadedVersions.entries, [
-            branchId,
+        if (fileId && versionId && locale) {
+          const entry = findOrCreateEntry(
+            downloadedVersions.entries,
             fileId,
-            versionId,
-            locale,
-          ]);
-          downloadedVersions.entries[branchId][fileId][versionId][locale] = {
+            versionId
+          );
+          entry.fileName = inputPath;
+          entry.translations[locale] = {
             updatedAt: new Date().toISOString(),
-            ...(sourceContentHash ? { sourceHash: sourceContentHash } : {}),
+            fileName: outputPath,
           };
           didUpdateDownloadedLock = true;
         }

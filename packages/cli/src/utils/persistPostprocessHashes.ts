@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import {
-  ensureNestedObject,
+  findOrCreateEntry,
   getDownloadedVersions,
   saveDownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
@@ -26,7 +26,14 @@ export function persistPostProcessHashes(
     return;
   }
 
-  const downloadedVersions = getDownloadedVersions(settings.configDirectory);
+  // Get branchId from the first meta entry
+  const firstMeta = downloadedMeta.values().next().value;
+  if (!firstMeta) return;
+
+  const downloadedVersions = getDownloadedVersions(
+    settings.configDirectory,
+    firstMeta.branchId
+  );
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
@@ -37,22 +44,16 @@ export function persistPostProcessHashes(
     const content = fs.readFileSync(filePath, 'utf8');
     const hash = hashStringSync(content);
 
-    ensureNestedObject(downloadedVersions.entries, [
-      meta.branchId,
+    const entry = findOrCreateEntry(
+      downloadedVersions.entries,
       meta.fileId,
-      meta.versionId,
-      meta.locale,
-    ]);
+      meta.versionId
+    );
 
-    const existing =
-      downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
-        meta.locale
-      ] || {};
+    const existing = entry.translations[meta.locale] || {};
 
     if (existing.postProcessHash !== hash) {
-      downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
-        meta.locale
-      ] = {
+      entry.translations[meta.locale] = {
         ...existing,
         postProcessHash: hash,
       };

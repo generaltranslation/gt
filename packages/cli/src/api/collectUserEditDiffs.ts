@@ -1,6 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { getDownloadedVersions } from '../fs/config/downloadedVersions.js';
+import {
+  getDownloadedVersions,
+  DownloadedTranslation,
+  DownloadedVersions,
+} from '../fs/config/downloadedVersions.js';
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
@@ -9,42 +13,36 @@ import { FileReference, SubmitUserEditDiff } from 'generaltranslation/types';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
-import {
-  DownloadedVersionEntry,
-  DownloadedVersions,
-} from '../fs/config/downloadedVersions.js';
 import { extractJson } from '../formats/json/extractJson.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
-  entry: DownloadedVersionEntry;
+  entry: DownloadedTranslation;
 };
 
 const findLatestDownloadedVersion = (
   downloadedVersions: DownloadedVersions,
-  branchId: string,
   fileId: string,
   locale: string
 ): LatestDownloadedVersion | null => {
-  const versionsForFile =
-    downloadedVersions.entries?.[branchId]?.[fileId] ?? undefined;
-  if (!versionsForFile) return null;
-
+  // In v2, find all entries for this fileId and pick the one with the latest
+  // updatedAt for the given locale
   let latest: LatestDownloadedVersion | null = null;
 
-  for (const [versionId, locales] of Object.entries(versionsForFile)) {
-    const entry = locales?.[locale];
-    if (!entry) continue;
+  for (const entry of downloadedVersions.entries) {
+    if (entry.fileId !== fileId) continue;
+    const translation = entry.translations[locale];
+    if (!translation) continue;
 
-    const updatedAt = entry.updatedAt
-      ? Date.parse(entry.updatedAt)
+    const updatedAt = translation.updatedAt
+      ? Date.parse(translation.updatedAt)
       : Number.NEGATIVE_INFINITY;
     const latestUpdatedAt = latest?.entry.updatedAt
       ? Date.parse(latest.entry.updatedAt)
       : Number.NEGATIVE_INFINITY;
 
     if (!latest || updatedAt > latestUpdatedAt) {
-      latest = { versionId, entry };
+      latest = { versionId: entry.versionId, entry: translation };
     }
   }
 
@@ -72,7 +70,11 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const downloadedVersions = getDownloadedVersions(settings.configDirectory);
+  const branchId = files[0]?.branchId ?? '';
+  const downloadedVersions = getDownloadedVersions(
+    settings.configDirectory,
+    branchId
+  );
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -96,7 +98,6 @@ export async function collectAndSendUserEditDiffs(
 
       const latestDownloaded = findLatestDownloadedVersion(
         downloadedVersions,
-        uploadedFile.branchId,
         uploadedFile.fileId,
         locale
       );
