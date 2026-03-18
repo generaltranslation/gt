@@ -79,6 +79,7 @@ export function resolveFiles(
   publishPaths: Set<string>;
   unpublishPaths: Set<string>;
   gtPublish?: boolean;
+  includeSourceCodeContext?: boolean;
 } {
   // Initialize result object with empty arrays for each file type
   const result: ResolvedFiles = {};
@@ -158,6 +159,7 @@ export function resolveFiles(
     publishPaths,
     unpublishPaths,
     gtPublish: files.gt?.publish,
+    includeSourceCodeContext: files.gt?.includeSourceCodeContext,
   };
 }
 

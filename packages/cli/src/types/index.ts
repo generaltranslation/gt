@@ -188,6 +188,7 @@ export type FilesOptions = {
   gt?: {
     output: string; // Output glob: /path/[locale].json
     publish?: boolean; // if true, publish gtjson translations to the CDN
+    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
 };
 
@@ -209,6 +210,7 @@ export type Settings = {
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
     gtPublish?: boolean; // if true, publish gtjson translations to the CDN
+    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
   publish: boolean; // if true, publish the translations to the CDN
@@ -270,7 +272,6 @@ export type AdditionalOptions = {
     replace: string; // replacement prefix, can include [locale] or [defaultLocale]
   }>;
   experimentalCanonicalLocaleKeys?: boolean; // For composite JSON schemas with locale keys, force canonical locale even when alias provided
-  includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
 };
 
 export type SharedStaticAssetsConfig = {

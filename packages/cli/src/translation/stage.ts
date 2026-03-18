@@ -32,7 +32,7 @@ export async function aggregateInlineTranslations(
     library,
     false,
     settings.parsingOptions,
-    settings.options?.includeSourceCodeContext ?? false
+    settings.files?.includeSourceCodeContext ?? false
   );
 
   if (warnings.length > 0) {
