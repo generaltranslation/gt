@@ -322,6 +322,14 @@ export default class I18NConfiguration {
     return this.locales;
   }
 
+  /**
+   * Gets the version ID for the current source
+   * @returns {string | undefined} The version ID, if set
+   */
+  getVersionId(): string | undefined {
+    return this._versionId;
+  }
+
   // ----- COOKIES AND HEADERS ----- //
 
   getLocaleCookieName(): string {
