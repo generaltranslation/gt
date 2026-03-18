@@ -54,6 +54,7 @@ export function resolveFiles(
   resolvedPaths: ResolvedFiles;
   placeholderPaths: ResolvedFiles;
   transformPaths: TransformFiles;
+  includeSourceCodeContext?: boolean;
 } {
   // Initialize result object with empty arrays for each file type
   const result: ResolvedFiles = {};
@@ -96,6 +97,7 @@ export function resolveFiles(
     resolvedPaths: result,
     placeholderPaths: placeholderResult,
     transformPaths: transformPaths,
+    includeSourceCodeContext: files.gt?.includeSourceCodeContext,
   };
 }
 
