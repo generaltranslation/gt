@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parse } from '@babel/parser';
 import { getPathsAndAliases } from '../getPathsAndAliases.js';
 import { Libraries } from '../../../../types/libraries.js';
-import { T_MACRO_GLOBAL } from '../constants.js';
+import { T_GLOBAL_REGISTRATION_FUNCTION_MARKER } from '../constants.js';
 
 const pkgs = [Libraries.GT_REACT];
 
@@ -17,7 +17,7 @@ function getGlobalEntries(code: string) {
   const ast = parseCode(code);
   const { inlineTranslationPaths } = getPathsAndAliases(ast, pkgs);
   return inlineTranslationPaths.filter(
-    (p) => p.originalName === T_MACRO_GLOBAL
+    (p) => p.originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER
   );
 }
 
