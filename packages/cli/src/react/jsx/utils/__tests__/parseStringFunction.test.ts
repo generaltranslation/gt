@@ -50,6 +50,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -101,6 +102,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -145,6 +147,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -199,6 +202,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -249,6 +253,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -298,6 +303,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -342,6 +348,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -387,6 +394,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -432,6 +440,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -480,6 +489,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -535,6 +545,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -591,6 +602,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -641,6 +653,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -692,6 +705,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -742,6 +756,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -794,6 +809,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -843,6 +859,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -892,6 +909,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -942,6 +960,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -994,6 +1013,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1048,6 +1068,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1099,6 +1120,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1142,6 +1164,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1197,6 +1220,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1258,6 +1282,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1336,6 +1361,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1426,6 +1452,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1493,6 +1520,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1549,6 +1577,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1607,6 +1636,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1689,6 +1719,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1740,6 +1771,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1793,6 +1825,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1838,6 +1871,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1888,6 +1922,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1936,6 +1971,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -1979,6 +2015,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2023,6 +2060,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2070,6 +2108,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2118,6 +2157,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2181,6 +2221,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2230,6 +2271,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2278,6 +2320,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2328,6 +2371,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2376,6 +2420,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2425,6 +2470,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2469,6 +2515,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2515,6 +2562,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2561,6 +2609,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2606,6 +2655,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2651,6 +2701,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2699,6 +2750,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2754,6 +2806,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2802,6 +2855,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,
@@ -2852,6 +2906,7 @@ describe('parseStrings', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             {
               updates: params.updates,

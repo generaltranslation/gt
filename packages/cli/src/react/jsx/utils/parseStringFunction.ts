@@ -6,6 +6,7 @@ import {
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
   STRING_REGISTRATION_FUNCS,
+  T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from './constants.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 
@@ -424,6 +425,14 @@ export function parseStrings(
   config: ParsingConfig,
   output: ParsingOutput
 ): void {
+  // Handle global t macro directly — path is already the tag identifier
+  if (originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER) {
+    if (!config.ignoreGlobalTaggedTemplates) {
+      processTaggedTemplateCall(path, config, output);
+    }
+    return;
+  }
+
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 
@@ -445,6 +454,7 @@ export function parseStrings(
         ignoreInlineListContent: false,
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
       };
 
       // Check if this is a direct call to msg('string') or t('string')
@@ -514,6 +524,7 @@ export function parseStrings(
         ignoreInlineListContent: isInlineGT,
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
       };
 
       const effectiveParent =

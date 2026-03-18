@@ -74,6 +74,7 @@ export async function createInlineUpdates(
           ignoreInlineListContent: false,
           includeSourceCodeContext,
           ignoreTaggedTemplates: false,
+          ignoreGlobalTaggedTemplates: false,
         },
         { updates, errors, warnings }
       );

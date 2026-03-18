@@ -32,6 +32,10 @@ export type ParsingConfig = {
    * If true, ignore tagged template expressions (e.g., t`hello ${name}`)
    */
   ignoreTaggedTemplates: boolean;
+  /**
+   * If true, ignore global tagged template expressions (t`hello` without import)
+   */
+  ignoreGlobalTaggedTemplates: boolean;
 };
 
 /**
