@@ -9,7 +9,6 @@ import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import {
   readLockfile,
-  findEntry,
   DownloadedVersionsV1,
 } from '../../fs/config/downloadedVersions.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -103,8 +102,8 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    const { data } = readLockfile(settings);
-    const entry = findEntry(data.entries, 'file1');
+    const { entryMap } = readLockfile(settings);
+    const entry = entryMap.get('file1');
     expect(entry?.translations?.ja?.postProcessHash).toBeDefined();
 
     await collectAndSendUserEditDiffs(files as any, settings);

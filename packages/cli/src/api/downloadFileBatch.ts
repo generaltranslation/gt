@@ -12,6 +12,7 @@ import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
   readLockfile,
   writeLockfile,
+  findOrCreateEntry,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -92,7 +93,7 @@ export async function downloadFileBatch(
   // Local record of what version was last downloaded for each fileName:locale
   const {
     data: downloadedVersions,
-    entries,
+    entryMap,
     originalV1,
   } = readLockfile(options);
   let didUpdateDownloadedLock = false;
@@ -166,7 +167,7 @@ export async function downloadFileBatch(
           fs.mkdirSync(dir, { recursive: true });
         }
         // If a local translation already exists for the same source version, skip overwrite
-        const existingEntry = entries.find(fileId);
+        const existingEntry = entryMap.get(fileId);
         const downloadedTranslation =
           existingEntry?.versionId === versionId
             ? existingEntry.translations[locale]
@@ -236,7 +237,12 @@ export async function downloadFileBatch(
 
         result.successful.push(requestedFile);
         if (fileId && versionId && locale) {
-          const entry = entries.findOrCreate(fileId, versionId);
+          const entry = findOrCreateEntry(
+            entryMap,
+            downloadedVersions.entries,
+            fileId,
+            versionId
+          );
           entry.fileName = inputPath;
           entry.translations[locale] = {
             updatedAt: new Date().toISOString(),

@@ -2,8 +2,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   readLockfile,
+  EntryMap,
   DownloadedTranslation,
-  DownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
@@ -22,11 +22,11 @@ type LatestDownloadedVersion = {
 };
 
 const findLatestDownloadedVersion = (
-  downloadedVersions: DownloadedVersions,
+  entryMap: EntryMap,
   fileId: string,
   locale: string
 ): LatestDownloadedVersion | null => {
-  const entry = downloadedVersions.entries.find((e) => e.fileId === fileId);
+  const entry = entryMap.get(fileId);
   if (!entry) return null;
 
   const translation = entry.translations[locale];
@@ -56,7 +56,7 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const { data: downloadedVersions } = readLockfile(settings);
+  const { entryMap } = readLockfile(settings);
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -79,7 +79,7 @@ export async function collectAndSendUserEditDiffs(
       if (!fs.existsSync(outputPath)) continue;
 
       const latestDownloaded = findLatestDownloadedVersion(
-        downloadedVersions,
+        entryMap,
         uploadedFile.fileId,
         locale
       );

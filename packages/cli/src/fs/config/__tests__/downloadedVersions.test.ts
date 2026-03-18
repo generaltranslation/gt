@@ -5,8 +5,8 @@ import os from 'node:os';
 import {
   readLockfile,
   writeLockfile,
-  findEntry,
   findOrCreateEntry,
+  buildEntryMap,
   DownloadedVersionEntry,
 } from '../downloadedVersions.js';
 import { createMockSettings } from '../../../api/__mocks__/settings.js';
@@ -261,10 +261,10 @@ describe('readLockfile / writeLockfile', () => {
       });
 
       // Read as v2
-      const { data, originalV1 } = readLockfile(settings('brc_main'));
+      const { data, entryMap, originalV1 } = readLockfile(settings('brc_main'));
 
       // Mutate — add a translation
-      const entry = findOrCreateEntry(data.entries, 'file1', 'ver1');
+      const entry = findOrCreateEntry(entryMap, data.entries, 'file1', 'ver1');
       entry.translations.es = { updatedAt: '2025-06-01T00:00:00Z' };
 
       // Write back
@@ -289,37 +289,41 @@ describe('readLockfile / writeLockfile', () => {
   });
 
   describe('lookup helpers', () => {
-    it('findEntry returns the matching entry', () => {
-      const entries = [
+    it('buildEntryMap provides O(1) lookup by fileId', () => {
+      const entries: DownloadedVersionEntry[] = [
         { fileId: 'a', versionId: 'v1', translations: {} },
         { fileId: 'b', versionId: 'v2', translations: {} },
       ];
+      const map = buildEntryMap(entries);
 
-      expect(findEntry(entries, 'b')?.versionId).toBe('v2');
-      expect(findEntry(entries, 'c')).toBeUndefined();
+      expect(map.get('b')?.versionId).toBe('v2');
+      expect(map.get('c')).toBeUndefined();
     });
 
     it('findOrCreateEntry creates a new entry if not found', () => {
       const entries: DownloadedVersionEntry[] = [];
+      const map = buildEntryMap(entries);
 
-      const entry = findOrCreateEntry(entries, 'f1', 'v1');
+      const entry = findOrCreateEntry(map, entries, 'f1', 'v1');
 
       expect(entries).toHaveLength(1);
       expect(entry.fileId).toBe('f1');
       expect(entry.versionId).toBe('v1');
       expect(entry.translations).toEqual({});
+      expect(map.get('f1')).toBe(entry);
     });
 
     it('findOrCreateEntry returns existing entry if found', () => {
-      const entries = [
+      const entries: DownloadedVersionEntry[] = [
         {
           fileId: 'f1',
           versionId: 'v1',
           translations: { ja: { updatedAt: 'x' } },
         },
       ];
+      const map = buildEntryMap(entries);
 
-      const entry = findOrCreateEntry(entries, 'f1', 'v1');
+      const entry = findOrCreateEntry(map, entries, 'f1', 'v1');
 
       expect(entries).toHaveLength(1);
       expect(entry.translations.ja).toEqual({ updatedAt: 'x' });
@@ -333,15 +337,16 @@ describe('readLockfile / writeLockfile', () => {
           translations: { ja: { updatedAt: 'old' } },
         },
       ];
+      const map = buildEntryMap(entries);
 
-      const entry = findOrCreateEntry(entries, 'f1', 'v2');
+      const entry = findOrCreateEntry(map, entries, 'f1', 'v2');
 
       // Should replace, not append
       expect(entries).toHaveLength(1);
       expect(entry.versionId).toBe('v2');
       expect(entry.translations).toEqual({});
-      // findEntry should now return the updated entry
-      expect(findEntry(entries, 'f1')?.versionId).toBe('v2');
+      // Map should return the updated entry
+      expect(map.get('f1')?.versionId).toBe('v2');
     });
   });
 });

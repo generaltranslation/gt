@@ -136,43 +136,40 @@ function convertV2ToV1Branch(
  */
 export function readLockfile(settings: Settings): {
   data: DownloadedVersions;
+  entryMap: EntryMap;
   originalV1: DownloadedVersionsV1 | null;
 } {
   let branchId = settings._branchId ?? '';
-  const empty = {
-    data: {
-      version: 2 as const,
-      branchId,
-      entries: [] as DownloadedVersionEntry[],
-    },
-    originalV1: null,
-  };
+
+  let data: DownloadedVersions;
+  let originalV1: DownloadedVersionsV1 | null = null;
 
   try {
     const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
-    if (!fs.existsSync(rootPath)) return empty;
-
-    const raw = JSON.parse(fs.readFileSync(rootPath, 'utf8'));
-    if (!raw || typeof raw !== 'object' || !raw.entries) return empty;
-
-    // V2 file
-    if (raw.version === 2 && Array.isArray(raw.entries)) {
-      const v2 = raw as DownloadedVersions;
-      if (branchId) v2.branchId = branchId;
-      return { data: v2, originalV1: null };
+    if (!fs.existsSync(rootPath)) {
+      data = { version: 2, branchId, entries: [] };
+    } else {
+      const raw = JSON.parse(fs.readFileSync(rootPath, 'utf8'));
+      if (!raw || typeof raw !== 'object' || !raw.entries) {
+        data = { version: 2, branchId, entries: [] };
+      } else if (raw.version === 2 && Array.isArray(raw.entries)) {
+        data = raw as DownloadedVersions;
+        if (branchId) data.branchId = branchId;
+      } else {
+        originalV1 = raw as DownloadedVersionsV1;
+        if (!branchId) {
+          const branches = Object.keys(originalV1.entries);
+          if (branches.length > 0) branchId = branches[0];
+        }
+        data = convertV1ToV2(originalV1, branchId);
+      }
     }
-
-    // V1 file — convert current branch to v2
-    const v1 = raw as DownloadedVersionsV1;
-    if (!branchId) {
-      const branches = Object.keys(v1.entries);
-      if (branches.length > 0) branchId = branches[0];
-    }
-    return { data: convertV1ToV2(v1, branchId), originalV1: v1 };
   } catch (error) {
     logger.error(`An error occurred while reading ${GT_LOCK_FILE}: ${error}`);
-    return empty;
+    data = { version: 2, branchId, entries: [] };
   }
+
+  return { data, entryMap: buildEntryMap(data.entries), originalV1 };
 }
 
 /**
@@ -207,28 +204,42 @@ export function writeLockfile(
 
 // ── Lookup helpers ──────────────────────────────────────────────────
 
-export function findEntry(
-  entries: DownloadedVersionEntry[],
-  fileId: string
-): DownloadedVersionEntry | undefined {
-  return entries.find((e) => e.fileId === fileId);
+export type EntryMap = Map<string, DownloadedVersionEntry>;
+
+export function buildEntryMap(entries: DownloadedVersionEntry[]): EntryMap {
+  return new Map(entries.map((e) => [e.fileId, e]));
 }
 
+/**
+ * Finds or creates an entry, keeping the map and backing array in sync.
+ * If the fileId exists but versionId changed, replaces it in-place.
+ */
 export function findOrCreateEntry(
+  entryMap: EntryMap,
   entries: DownloadedVersionEntry[],
   fileId: string,
   versionId: string
 ): DownloadedVersionEntry {
-  const existingIndex = entries.findIndex((e) => e.fileId === fileId);
-  if (existingIndex !== -1) {
-    const existing = entries[existingIndex];
+  const existing = entryMap.get(fileId);
+  if (existing) {
     if (existing.versionId === versionId) return existing;
-    // Version changed — replace the old entry
-    const updated = { fileId, versionId, translations: {} };
-    entries[existingIndex] = updated;
+    // Version changed — replace in array and map
+    const updated: DownloadedVersionEntry = {
+      fileId,
+      versionId,
+      translations: {},
+    };
+    const idx = entries.indexOf(existing);
+    if (idx !== -1) entries[idx] = updated;
+    entryMap.set(fileId, updated);
     return updated;
   }
-  const entry = { fileId, versionId, translations: {} };
+  const entry: DownloadedVersionEntry = {
+    fileId,
+    versionId,
+    translations: {},
+  };
   entries.push(entry);
+  entryMap.set(fileId, entry);
   return entry;
 }

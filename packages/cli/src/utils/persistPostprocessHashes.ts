@@ -26,7 +26,7 @@ export function persistPostProcessHashes(
     return;
   }
 
-  const { data, originalV1 } = readLockfile(settings);
+  const { data, entryMap, originalV1 } = readLockfile(settings);
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
@@ -37,7 +37,12 @@ export function persistPostProcessHashes(
     const content = fs.readFileSync(filePath, 'utf8');
     const hash = hashStringSync(content);
 
-    const entry = findOrCreateEntry(data.entries, meta.fileId, meta.versionId);
+    const entry = findOrCreateEntry(
+      entryMap,
+      data.entries,
+      meta.fileId,
+      meta.versionId
+    );
 
     const existing = entry.translations[meta.locale] || {};
 
