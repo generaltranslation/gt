@@ -5,7 +5,7 @@ import { mapExtractionResultsToUpdates } from '../../extraction/mapToUpdates.js'
 import {
   calculateHashes,
   dedupeUpdates,
-  linkStaticUpdates,
+  linkDeriveUpdates,
 } from '../../extraction/postProcess.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import {
@@ -47,7 +47,7 @@ export async function createPythonInlineUpdates(
   // Post processing steps
   await calculateHashes(updates);
   dedupeUpdates(updates);
-  linkStaticUpdates(updates);
+  linkDeriveUpdates(updates);
 
   return { updates, errors, warnings };
 }

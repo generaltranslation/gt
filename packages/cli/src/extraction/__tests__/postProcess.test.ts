@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateHashes,
   dedupeUpdates,
-  linkStaticUpdates,
+  linkDeriveUpdates,
 } from '../postProcess.js';
 import type { Updates } from '../../types/index.js';
 
@@ -90,7 +90,7 @@ describe('dedupeUpdates', () => {
   });
 });
 
-describe('linkStaticUpdates', () => {
+describe('linkDeriveUpdates', () => {
   it('groups entries by temporary staticId and assigns shared hash', () => {
     const updates: Updates = [
       {
@@ -105,7 +105,7 @@ describe('linkStaticUpdates', () => {
       },
     ];
 
-    linkStaticUpdates(updates);
+    linkDeriveUpdates(updates);
 
     // Both should now share the same staticId (derived from their hashes)
     expect(updates[0].metadata.staticId).toBe(updates[1].metadata.staticId);
@@ -118,7 +118,7 @@ describe('linkStaticUpdates', () => {
       { dataFormat: 'ICU', source: 'no-static', metadata: { hash: 'h1' } },
     ];
 
-    linkStaticUpdates(updates);
+    linkDeriveUpdates(updates);
 
     expect(updates[0].metadata.staticId).toBeUndefined();
   });

@@ -12,12 +12,12 @@ import { formatCodeClamp } from './formatting.js';
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
 
-// Static function related errors
-const withStaticError = (message: string): string =>
-  `<Static> rules violation: ${message}`;
+// Derive function related errors
+const withDeriveComponentError = (message: string): string =>
+  `<Derive> rules violation: ${message}`;
 
-const withDeclareStaticError = (message: string): string =>
-  `declareStatic() rules violation: ${message}`;
+const withDeriveFunctionError = (message: string): string =>
+  `derive() rules violation: ${message}`;
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
@@ -46,8 +46,8 @@ export const warnInvalidReturnSync = (
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `Function ${colorizeFunctionName(functionName)} does not return a static expression. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, (3) static JSX content, or (4) a ternary expression. Instead got:\n${colorizeContent(expression)}`
+    withDeriveComponentError(
+      `Function ${colorizeFunctionName(functionName)} does not return a derivable (statically analyzable) expression. ${colorizeFunctionName(functionName)} must return either (1) a derivable string literal, (2) another derivable function invocation, (3) derivable JSX content, or (4) a ternary expression. Instead got:\n${colorizeContent(expression)}`
     ),
     location
   );
@@ -60,7 +60,7 @@ export const warnMissingReturnSync = (
 ): string =>
   withLocation(
     file,
-    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does have an explicit return statement. Static functions must have an explicit return statment.`,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} (formerly ${colorizeComponent('<Static>')}) tags but does not have an explicit return statement. Derivable functions must have an explicit return statement.`,
     location
   );
 
@@ -207,7 +207,7 @@ export const warnInvalidDeclareVarNameSync = (
 ): string =>
   withLocation(
     file,
-    `Found invalid declareVar() $name tag. Must be a static expression. Received: ${colorizeContent(value)}.`,
+    `Found invalid declareVar() $name tag. Must be a derivable (statically analyzable) expression. Received: ${colorizeContent(value)}.`,
     location
   );
 
@@ -222,15 +222,15 @@ export const warnDuplicateFunctionDefinitionSync = (
     location
   );
 
-export const warnInvalidStaticInitSync = (
+export const warnInvalidDeriveInitSync = (
   file: string,
   functionName: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `The definition for ${colorizeFunctionName(functionName)} could not be resolved. When using arrow syntax to define a static function, the right hand side or the assignment MUST only contain the arrow function itself and no other expressions.
+    withDeriveComponentError(
+      `The definition for ${colorizeFunctionName(functionName)} could not be resolved. When using arrow syntax to define a derivable (statically analyzable) function, the right hand side or the assignment MUST only contain the arrow function itself and no other expressions.
 Example: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = () => { ... }`)}
 Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() => { ... }][0]`)}`
     ),
@@ -255,34 +255,34 @@ export const warnRecursiveFunctionCallSync = (
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function cannot use recursive calls to construct its result.`
+    withDeriveComponentError(
+      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A derivable (statically analyzable) function cannot use recursive calls to construct its result.`
     ),
     location
   );
 
-export const warnDeclareStaticNotWrappedSync = (
+export const warnDeriveFunctionNotWrappedSync = (
   file: string,
   functionName: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    withDeriveFunctionError(
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive() (formerly declareStatic()). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
     ),
     location
   );
 
-export const warnDeclareStaticNoResultsSync = (
+export const warnDeriveFunctionNoResultsSync = (
   file: string,
   functionName: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+    withDeriveFunctionError(
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() (formerly declareStatic()) can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );

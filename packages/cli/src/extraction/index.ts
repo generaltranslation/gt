@@ -3,5 +3,5 @@ export { mapExtractionResultsToUpdates } from './mapToUpdates.js';
 export {
   calculateHashes,
   dedupeUpdates,
-  linkStaticUpdates,
+  linkDeriveUpdates,
 } from './postProcess.js';

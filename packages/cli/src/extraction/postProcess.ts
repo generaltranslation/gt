@@ -85,11 +85,11 @@ export function dedupeUpdates(updates: Updates): void {
 }
 
 /**
- * Mark static updates as related by attaching a shared id to static content.
- * Id is calculated as the hash of the static children's combined hashes.
+ * Mark derive updates as related by attaching a shared id to derive content.
+ * Id is calculated as the hash of the derive children's combined hashes.
  */
-export function linkStaticUpdates(updates: Updates): void {
-  const temporaryStaticIdToUpdates = updates.reduce(
+export function linkDeriveUpdates(updates: Updates): void {
+  const temporaryDeriveIdToUpdates = updates.reduce(
     (acc: Record<string, Updates[number][]>, update: Updates[number]) => {
       if (update.metadata.staticId) {
         if (!acc[update.metadata.staticId]) {
@@ -102,14 +102,14 @@ export function linkStaticUpdates(updates: Updates): void {
     {} as Record<string, Updates[number][]>
   );
 
-  Object.values(temporaryStaticIdToUpdates).forEach((staticUpdates) => {
-    const hashes = staticUpdates
+  Object.values(temporaryDeriveIdToUpdates).forEach((deriveUpdates) => {
+    const hashes = deriveUpdates
       .map((update) => update.metadata.hash)
       .sort()
       .join('-');
-    const sharedStaticId = hashString(hashes);
-    staticUpdates.forEach((update) => {
-      update.metadata.staticId = sharedStaticId;
+    const sharedDeriveId = hashString(hashes);
+    deriveUpdates.forEach((update) => {
+      update.metadata.staticId = sharedDeriveId;
     });
   });
 }

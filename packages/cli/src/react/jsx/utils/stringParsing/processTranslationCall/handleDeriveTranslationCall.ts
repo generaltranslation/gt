@@ -2,7 +2,7 @@ import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
-import { handleStaticExpression } from '../../parseDeclareStatic.js';
+import { handleDeriveExpression } from '../../parseDerive.js';
 import { nodeToStrings } from '../../parseString.js';
 import { indexVars } from 'generaltranslation/internal';
 import { isValidIcu } from '../../../evaluateJsx.js';
@@ -18,7 +18,7 @@ import { InlineMetadata } from './extractStringEntryMetadata.js';
 const generate = generateModule.default || generateModule;
 
 /**
- * For the processTranslationCall function, this function handles the case where a string with declareStatic is used.
+ * For the processTranslationCall function, this function handles the case where a string with derive is used.
  * @param arg - The argument to parse
  * @param metadata - The metadata to use
  * @param tPath - The path to the argument
@@ -26,7 +26,7 @@ const generate = generateModule.default || generateModule;
  * @param output - The output to use
  * @param index - Current index in array of strings being extracted
  */
-export function handleStaticTranslationCall({
+export function handleDeriveTranslationCall({
   arg,
   metadata,
   tPath,
@@ -41,8 +41,8 @@ export function handleStaticTranslationCall({
   output: ParsingOutput;
   index?: number;
 }): void {
-  // parse static expression
-  const result = handleStaticExpression(
+  // parse derivable expression
+  const result = handleDeriveExpression(
     arg,
     tPath,
     config.file,
@@ -81,7 +81,7 @@ export function handleStaticTranslationCall({
     }
   }
 
-  const temporaryStaticId = `static-temp-id-${randomUUID()}`;
+  const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
   for (const string of strings) {
     output.updates.push({
       dataFormat: 'ICU',
@@ -90,7 +90,7 @@ export function handleStaticTranslationCall({
         ...metadata,
         // Add the index if an id and index is provided (for handling when registering an array of strings)
         ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
-        staticId: temporaryStaticId,
+        staticId: temporaryDeriveId,
       },
     });
   }

@@ -36,6 +36,7 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
 } from 'gt-i18n';
