@@ -128,33 +128,23 @@ export function resolveFiles(
       result[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
 
-      // Track which resolved paths came from publish/unpublish patterns
-      for (const pubPattern of publishPatterns) {
-        const pubPaths = expandGlobPatterns(
-          cwd,
-          [pubPattern],
-          files[fileType]?.exclude || [],
-          locale,
-          locales,
-          transformPaths[fileType] || undefined,
-          compositePatterns
-        );
-        for (const p of pubPaths.resolvedPaths) {
-          publishPaths.add(p);
+      // Match resolved paths against publish/unpublish patterns
+      if (publishPatterns.length > 0 || unpublishPatterns.length > 0) {
+        const resolvedAbsolute = filePaths.resolvedPaths;
+        const toAbsoluteGlob = (p: string) =>
+          path.resolve(cwd, p.replace(/\[locale\]/g, locale));
+
+        for (const pubPattern of publishPatterns) {
+          const matches = micromatch(resolvedAbsolute, toAbsoluteGlob(pubPattern));
+          for (const p of matches) {
+            publishPaths.add(p);
+          }
         }
-      }
-      for (const unpubPattern of unpublishPatterns) {
-        const unpubPaths = expandGlobPatterns(
-          cwd,
-          [unpubPattern],
-          files[fileType]?.exclude || [],
-          locale,
-          locales,
-          transformPaths[fileType] || undefined,
-          compositePatterns
-        );
-        for (const p of unpubPaths.resolvedPaths) {
-          unpublishPaths.add(p);
+        for (const unpubPattern of unpublishPatterns) {
+          const matches = micromatch(resolvedAbsolute, toAbsoluteGlob(unpubPattern));
+          for (const p of matches) {
+            unpublishPaths.add(p);
+          }
         }
       }
     }
