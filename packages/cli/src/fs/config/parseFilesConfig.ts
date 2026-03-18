@@ -129,34 +129,16 @@ export function resolveFiles(
       result[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
 
-      // Match resolved paths against publish/unpublish patterns
-      // Use POSIX paths for micromatch (which expects forward slashes)
-      // but store platform-native paths in the sets for downstream lookups
-      if (publishPatterns.length > 0 || unpublishPatterns.length > 0) {
-        const resolvedAbsolute = filePaths.resolvedPaths;
-        const posixPaths = resolvedAbsolute.map(toPosixPath);
-        const toAbsoluteGlob = (p: string) =>
-          toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
-
-        for (const pubPattern of publishPatterns) {
-          const matched = micromatch(posixPaths, toAbsoluteGlob(pubPattern));
-          const matchedSet = new Set(matched);
-          for (let i = 0; i < posixPaths.length; i++) {
-            if (matchedSet.has(posixPaths[i])) {
-              publishPaths.add(resolvedAbsolute[i]);
-            }
-          }
-        }
-        for (const unpubPattern of unpublishPatterns) {
-          const matched = micromatch(posixPaths, toAbsoluteGlob(unpubPattern));
-          const matchedSet = new Set(matched);
-          for (let i = 0; i < posixPaths.length; i++) {
-            if (matchedSet.has(posixPaths[i])) {
-              unpublishPaths.add(resolvedAbsolute[i]);
-            }
-          }
-        }
-      }
+      // Classify resolved paths into publish/unpublish sets
+      classifyPublishPaths(
+        filePaths.resolvedPaths,
+        publishPatterns,
+        unpublishPatterns,
+        cwd,
+        locale,
+        publishPaths,
+        unpublishPaths
+      );
     }
   }
 
@@ -317,4 +299,43 @@ function buildPlaceholderPathFromPattern(
 
 function toPosixPath(value: string): string {
   return value.split(path.sep).join(path.posix.sep);
+}
+
+/**
+ * Classifies resolved file paths into publish/unpublish sets by matching
+ * them against the given glob patterns. Uses POSIX paths for micromatch
+ * compatibility but stores platform-native paths in the output sets.
+ */
+function classifyPublishPaths(
+  resolvedPaths: string[],
+  publishPatterns: string[],
+  unpublishPatterns: string[],
+  cwd: string,
+  locale: string,
+  publishPaths: Set<string>,
+  unpublishPaths: Set<string>
+): void {
+  if (publishPatterns.length === 0 && unpublishPatterns.length === 0) return;
+
+  const posixPaths = resolvedPaths.map(toPosixPath);
+  const toAbsoluteGlob = (p: string) =>
+    toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
+
+  for (const pattern of publishPatterns) {
+    const matched = new Set(micromatch(posixPaths, toAbsoluteGlob(pattern)));
+    for (let i = 0; i < posixPaths.length; i++) {
+      if (matched.has(posixPaths[i])) {
+        publishPaths.add(resolvedPaths[i]);
+      }
+    }
+  }
+
+  for (const pattern of unpublishPatterns) {
+    const matched = new Set(micromatch(posixPaths, toAbsoluteGlob(pattern)));
+    for (let i = 0; i < posixPaths.length; i++) {
+      if (matched.has(posixPaths[i])) {
+        unpublishPaths.add(resolvedPaths[i]);
+      }
+    }
+  }
 }
