@@ -58,12 +58,11 @@ export async function handleTranslate(
         ([fileId, data]) => ({
           fileId,
           versionId: data.versionId,
-          branchId: branchData?.currentBranch.id ?? '',
-          fileName: data.fileName,
-          fileFormat: 'JSON' as const, // not used by PublishStep
+          branchId: branchData?.currentBranch.id,
+          publish: publishMap.get(fileId) ?? false,
         })
       );
-      const publishStep = new PublishStep(gt, publishMap);
+      const publishStep = new PublishStep(gt);
       await publishStep.run(allFileRefs);
       await publishStep.wait();
     }

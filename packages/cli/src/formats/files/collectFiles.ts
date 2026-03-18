@@ -54,17 +54,16 @@ export async function collectFiles(
         }
       }
       reactComponents = updates.length;
-      const templateFileId = TEMPLATE_FILE_ID;
       allFiles.push({
         fileName: TEMPLATE_FILE_NAME,
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
-        fileId: templateFileId,
+        fileId: TEMPLATE_FILE_ID,
         versionId: hashStringSync(JSON.stringify(Object.keys(fileData).sort())),
         locale: settings.defaultLocale,
       } satisfies FileToUpload);
-      publishMap.set(templateFileId, shouldPublishGt(settings));
+      publishMap.set(TEMPLATE_FILE_ID, shouldPublishGt(settings));
     }
   }
   return { files: allFiles, reactComponents, publishMap };

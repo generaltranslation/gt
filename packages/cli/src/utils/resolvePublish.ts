@@ -25,20 +25,3 @@ export function shouldPublishGt(settings: Settings): boolean {
   return settings.publish;
 }
 
-/**
- * Builds a map of fileId -> shouldPublish for a set of files.
- */
-export function buildPublishMap(
-  files: { fileId: string; resolvedPath?: string }[],
-  settings: Settings
-): Map<string, boolean> {
-  const map = new Map<string, boolean>();
-  for (const file of files) {
-    if (file.resolvedPath) {
-      map.set(file.fileId, shouldPublishFile(file.resolvedPath, settings));
-    } else {
-      map.set(file.fileId, settings.publish);
-    }
-  }
-  return map;
-}
