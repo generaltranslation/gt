@@ -105,6 +105,27 @@ const b = t\`goodbye \${name}\`;
     expect(result).not.toContain('gt-react/browser');
   });
 
+  it('does NOT transform tagged template t imported from a non-GT source', () => {
+    const code = `import { t } from 'i18next';\nconst x = t\`hello \${name}\`;`;
+    const result = transform(code);
+    expect(result).toContain('t`hello ${name}`');
+    expect(result).not.toContain('t("hello {0}"');
+  });
+
+  it('does NOT transform template literal arg t imported from a non-GT source', () => {
+    const code = `import { t } from 'i18next';\nconst x = t(\`hello \${name}\`);`;
+    const result = transform(code);
+    expect(result).toContain('t(`hello ${name}`)');
+    expect(result).not.toContain('t("hello {0}"');
+  });
+
+  it('does NOT transform concatenation arg t imported from a non-GT source', () => {
+    const code = `import { t } from 'i18next';\nconst x = t("hello " + name);`;
+    const result = transform(code);
+    expect(result).toContain('t("hello " + name)');
+    expect(result).not.toContain('t("hello {0}"');
+  });
+
   it('does NOT add import when enableMacroImportInjection is false', () => {
     const result = transform('const x = t`hello`;', {
       enableMacroImportInjection: false,

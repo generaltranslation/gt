@@ -1,14 +1,17 @@
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
+import { isGTImportSource } from '../../utils/constants/gt/helpers';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
 import { transformConcatenation } from '../../transform/macro-expansion/transformConcatenation';
 
 /**
  * Process call expressions for macro expansion.
  * Transforms:
- * - t(`Hello, ${name}`) → t("Hello, {0v_name}", { "0v_name": name })
- * - t("Hello, " + name) → t("Hello, {0v_name}", { "0v_name": name })
+ * - t(`Hello, ${name}`) → t("Hello, {0}", { "0": name })
+ * - t("Hello, " + name) → t("Hello, {0}", { "0": name })
+ *
+ * Skips when t is bound to a non-GT import (e.g., i18next)
  */
 export function processCallExpression(
   state: TransformState
@@ -17,6 +20,19 @@ export function processCallExpression(
 
   return (path) => {
     if (!t.isIdentifier(path.node.callee, { name: symbol })) return;
+
+    // If bound to a non-GT import, skip transformation
+    const binding = path.scope.getBinding(symbol);
+    if (binding?.path.isImportSpecifier()) {
+      const importDecl = binding.path.parentPath;
+      if (
+        importDecl?.isImportDeclaration() &&
+        !isGTImportSource(importDecl.node.source.value)
+      ) {
+        return;
+      }
+    }
+
     const firstArg = path.node.arguments[0];
     if (!firstArg) return;
 
