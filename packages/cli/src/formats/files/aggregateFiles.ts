@@ -44,14 +44,14 @@ export async function aggregateFiles(
   settings: Settings
 ): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
   // Aggregate all files to translate
-  const allFiles: FileToUpload[] = [];
+  const files: FileToUpload[] = [];
   const publishMap = new Map<string, boolean>();
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
       settings.files.placeholderPaths.gt)
   ) {
-    return { files: allFiles, publishMap };
+    return { files, publishMap };
   }
 
   const { resolvedPaths: filePaths } = settings.files;
@@ -177,7 +177,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...jsonFiles.filter((file) => file !== null));
+    files.push(...jsonFiles.filter((file) => file !== null));
   }
 
   // Process YAML files
@@ -268,7 +268,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...yamlFiles.filter((file) => file !== null));
+    files.push(...yamlFiles.filter((file) => file !== null));
   }
 
   // Process Twilio Content JSON files
@@ -319,7 +319,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...twilioContentJsonFiles.filter((file) => file !== null));
+    files.push(...twilioContentJsonFiles.filter((file) => file !== null));
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
@@ -330,7 +330,7 @@ export async function aggregateFiles(
     )
       continue;
     if (filePaths[fileType]) {
-      const files = filePaths[fileType]
+      const parsed = filePaths[fileType]
         .map((filePath) => {
           const content = readFile(filePath);
           const relativePath = getRelative(filePath);
@@ -375,23 +375,23 @@ export async function aggregateFiles(
           }
           return true;
         });
-      allFiles.push(...files.filter((file) => file !== null));
+      files.push(...parsed.filter((file) => file !== null));
     }
   }
 
-  if (allFiles.length === 0 && !settings.publish) {
+  if (files.length === 0 && !settings.publish) {
     logger.error(
       'No files to translate were found. Check your configuration and try again.'
     );
   }
 
   // Remove stale entries for files that were skipped during validation
-  const validFileIds = new Set(allFiles.map((f) => f.fileId));
+  const validFileIds = new Set(files.map((f) => f.fileId));
   for (const fileId of publishMap.keys()) {
     if (!validFileIds.has(fileId)) {
       publishMap.delete(fileId);
     }
   }
 
-  return { files: allFiles, publishMap };
+  return { files, publishMap };
 }
