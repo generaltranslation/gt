@@ -21,9 +21,10 @@ export function processCallExpression(
   return (path) => {
     if (!t.isIdentifier(path.node.callee, { name: symbol })) return;
 
-    // If bound to a non-GT import, skip transformation
+    // Only transform unbound t (global macro) or t imported from a GT source
     const binding = path.scope.getBinding(symbol);
-    if (binding?.path.isImportSpecifier()) {
+    if (binding) {
+      if (!binding.path.isImportSpecifier()) return;
       const importDecl = binding.path.parentPath;
       if (
         importDecl?.isImportDeclaration() &&

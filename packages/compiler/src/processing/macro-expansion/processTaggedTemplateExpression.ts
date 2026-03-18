@@ -2,7 +2,7 @@ import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
-import { isGTImportSource } from '../../utils/constants/gt/helpers';
+import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
 
 /**
@@ -23,13 +23,14 @@ export function processTaggedTemplateExpression(
     if (!state.settings.enableTaggedTemplate) return;
     if (!t.isIdentifier(path.node.tag, { name: symbol })) return;
 
-    // If bound to a non-GT import, skip transformation
+    // Only transform unbound t (global macro) or t imported from gt-react/browser
     const binding = path.scope.getBinding(symbol);
-    if (binding?.path.isImportSpecifier()) {
+    if (binding) {
+      if (!binding.path.isImportSpecifier()) return;
       const importDecl = binding.path.parentPath;
       if (
-        importDecl?.isImportDeclaration() &&
-        !isGTImportSource(importDecl.node.source.value)
+        !importDecl?.isImportDeclaration() ||
+        importDecl.node.source.value !== GT_IMPORT_SOURCES.GT_REACT_BROWSER
       ) {
         return;
       }

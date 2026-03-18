@@ -98,11 +98,11 @@ const b = t\`goodbye \${name}\`;
     expect(importMatches).toHaveLength(1);
   });
 
-  it('does NOT add import when t is already imported from any GT source', () => {
+  it('does NOT transform tagged template t imported from a non-browser GT source', () => {
     const code = `import { t } from 'gt-next';\nconst x = t\`hello \${name}\`;`;
     const result = transform(code);
-    expect(result).toContain('t("hello {0}"');
-    expect(result).not.toContain('gt-react/browser');
+    expect(result).toContain('t`hello ${name}`');
+    expect(result).not.toContain('t("hello {0}"');
   });
 
   it('does NOT transform tagged template t imported from a non-GT source', () => {
@@ -123,6 +123,27 @@ const b = t\`goodbye \${name}\`;
     const code = `import { t } from 'i18next';\nconst x = t("hello " + name);`;
     const result = transform(code);
     expect(result).toContain('t("hello " + name)');
+    expect(result).not.toContain('t("hello {0}"');
+  });
+
+  it('does NOT transform tagged template when t is a local variable', () => {
+    const code = `const t = (s) => s;\nconst x = t\`hello \${name}\`;`;
+    const result = transform(code);
+    expect(result).toContain('t`hello ${name}`');
+    expect(result).not.toContain('t("hello {0}"');
+  });
+
+  it('does NOT transform tagged template when t is destructured from a non-GT call', () => {
+    const code = `const { t } = useTranslation();\nconst x = t\`hello \${name}\`;`;
+    const result = transform(code);
+    expect(result).toContain('t`hello ${name}`');
+    expect(result).not.toContain('t("hello {0}"');
+  });
+
+  it('does NOT transform template literal arg when t is a local variable', () => {
+    const code = `const t = (s) => s;\nconst x = t(\`hello \${name}\`);`;
+    const result = transform(code);
+    expect(result).toContain('t(`hello ${name}`)');
     expect(result).not.toContain('t("hello {0}"');
   });
 

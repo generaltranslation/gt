@@ -16,5 +16,5 @@ export function injectMacroImport(path: NodePath<t.Program>): void {
     t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT_BROWSER)
   );
 
-  path.node.body.unshift(importDecl);
+  path.unshiftContainer('body', importDecl);
 }
