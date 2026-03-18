@@ -1,21 +1,21 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { ParsingConfigOptions } from '../../../types/parsing.js';
-import { parseStringExpression, nodeToStrings } from './parseString.js';
-import { StringNode } from './types.js';
-import { buildImportMap } from './buildImportMap.js';
-import { resolveImportPath } from './resolveImportPath.js';
+import { ParsingConfigOptions } from '../../../../../types/parsing.js';
+import { parseStringExpression, nodeToStrings } from '../../parseString.js';
+import { StringNode } from '../../types.js';
+import { buildImportMap } from '../../buildImportMap.js';
+import { resolveImportPath } from '../../resolveImportPath.js';
 import { parse } from '@babel/parser';
 import fs from 'node:fs';
 import {
   warnFunctionNotFoundSync,
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
-} from '../../../console/index.js';
-import { DECLARE_STATIC_FUNCTION, DERIVE_FUNCTION } from './constants.js';
+} from '../../../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
+import { isDeriveCall } from './isDeriveCall.js';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
@@ -44,28 +44,42 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param tPath - NodePath for scope resolution
  * @param file - Current file path
  * @param parsingOptions - Parsing configuration
+ * @param errors - Errors to add to
+ * @param enableRuntimeInterpolation - For template macros, enables runtime interpolation for non-derive calls
  * @returns Node | null - The parsed node, or null if invalid
+ *
+ * @note enableRuntimeInterpolation
+ *  - Only mark true on entry for template macros, otherwise always false
+ *  - t`Hello {nonDerivableValue}` -> t`Hello {0}`
  */
-export function handleDeriveExpression(
-  expr: t.Expression,
-  tPath: NodePath,
-  file: string,
-  parsingOptions: ParsingConfigOptions,
-  errors: string[]
-): StringNode | null {
+export function handleDeriveExpression({
+  expr,
+  tPath,
+  file,
+  parsingOptions,
+  errors,
+  enableRuntimeInterpolation = false,
+}: {
+  expr: t.Expression;
+  tPath: NodePath;
+  file: string;
+  parsingOptions: ParsingConfigOptions;
+  errors: string[];
+  enableRuntimeInterpolation?: boolean;
+}): StringNode | null {
   if (!expr) {
     return null;
   }
 
   // Handle expressions
   if (t.isCallExpression(expr)) {
-    const variants = getDeriveVariants(
-      expr,
+    const variants = getDeriveVariants({
+      call: expr,
       tPath,
       file,
       parsingOptions,
-      errors
-    );
+      errors,
+    });
     if (variants) {
       // We found derive() -> return as ChoiceNode
       return {
@@ -98,6 +112,7 @@ export function handleDeriveExpression(
   // Handle template literals
   if (t.isTemplateLiteral(expr)) {
     const parts: StringNode[] = [];
+    let runtimeInterpolationIndex = 0;
     for (let index = 0; index < expr.quasis.length; index++) {
       const quasi = expr.quasis[index];
       const text = quasi.value.cooked ?? quasi.value.raw ?? '';
@@ -106,18 +121,26 @@ export function handleDeriveExpression(
       }
       const exprNode = expr.expressions[index];
       if (exprNode && t.isExpression(exprNode)) {
-        const result = handleDeriveExpression(
-          exprNode,
-          tPath,
-          file,
-          parsingOptions,
-          errors
-        );
-        if (result === null) {
-          // Early bailout if we can't handle something inside interpolation
-          return null;
+        if (
+          enableRuntimeInterpolation &&
+          !isDeriveCall({ expr: exprNode, tPath })
+        ) {
+          parts.push({ type: 'text', text: `{${runtimeInterpolationIndex}}` });
+          runtimeInterpolationIndex++;
+        } else {
+          const result = handleDeriveExpression({
+            expr: exprNode,
+            tPath,
+            file,
+            parsingOptions,
+            errors,
+          });
+          if (result === null) {
+            // Early bailout if we can't handle something inside interpolation
+            return null;
+          }
+          parts.push(result);
         }
-        parts.push(result);
       }
     }
 
@@ -135,20 +158,20 @@ export function handleDeriveExpression(
     if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
       return null;
     }
-    const leftResult = handleDeriveExpression(
-      expr.left,
+    const leftResult = handleDeriveExpression({
+      expr: expr.left,
       tPath,
       file,
       parsingOptions,
-      errors
-    );
-    const rightResult = handleDeriveExpression(
-      expr.right,
+      errors,
+    });
+    const rightResult = handleDeriveExpression({
+      expr: expr.right,
       tPath,
       file,
       parsingOptions,
-      errors
-    );
+      errors,
+    });
 
     if (leftResult === null || rightResult === null) {
       return null;
@@ -159,13 +182,13 @@ export function handleDeriveExpression(
 
   // Handle parenthesized expressions
   if (t.isParenthesizedExpression(expr)) {
-    return handleDeriveExpression(
-      expr.expression,
+    return handleDeriveExpression({
+      expr: expr.expression,
       tPath,
       file,
       parsingOptions,
-      errors
-    );
+      errors,
+    });
   }
 
   // Handle numeric literals by converting them to strings
@@ -218,55 +241,26 @@ export function handleDeriveExpression(
  *
  * Returns null if it can't be resolved.
  */
-function getDeriveVariants(
-  call: t.CallExpression,
-  tPath: NodePath,
-  file: string,
-  parsingOptions: ParsingConfigOptions,
-  errors: string[]
-): string[] | null {
+function getDeriveVariants({
+  call,
+  tPath,
+  file,
+  parsingOptions,
+  errors,
+}: {
+  call: t.CallExpression;
+  tPath: NodePath;
+  file: string;
+  parsingOptions: ParsingConfigOptions;
+  errors: string[];
+}): string[] | null {
   // --- Validate Callee --- //
-  // Must be derive(...) or an alias of it
-  if (!t.isIdentifier(call.callee)) {
-    const code =
-      call.arguments.length > 0
-        ? generate(call.arguments[0]).code
-        : 'no arguments';
-    errors.push(
-      warnDeriveFunctionNotWrappedSync(
-        file,
-        code,
-        `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
-      )
-    );
-    return null;
-  }
 
-  // Check if this is derive by name or by checking the import
-  const calleeName = call.callee.name;
-  const calleeBinding = tPath.scope.getBinding(calleeName);
-
-  // If it's not literally named 'derive', check if it's imported from GT
-  if (!calleeBinding) {
-    return null;
-  }
-
-  // Check if it's imported from a GT package
-  if (calleeBinding.path.isImportSpecifier()) {
-    const imported = calleeBinding.path.node.imported;
-    const originalName = t.isIdentifier(imported)
-      ? imported.name
-      : imported.value;
-
-    // Only proceed if the original name is 'derive' (or the deprecated 'declareStatic')
-    if (
-      originalName !== DECLARE_STATIC_FUNCTION &&
-      originalName !== DERIVE_FUNCTION
-    ) {
-      return null;
-    }
-  } else {
-    // Not an import specifier, so it's not derive
+  // Must be a derive(...) call or an alias of it
+  if (!isDeriveCall({ expr: call, tPath })) {
+    const calleeName = t.isIdentifier(call.callee)
+      ? call.callee.name
+      : generate(call.callee).code;
     errors.push(
       warnDeriveFunctionNotWrappedSync(
         file,
@@ -739,16 +733,4 @@ function resolveFunctionInFile(
   // Cache the result
   processFunctionCache.set(cacheKey, result);
   return result;
-}
-
-/**
- * Handle cond ? "a" : "b"
- * Collects string literals from both branches of a conditional expression
- */
-function collectConditionalStringVariants(
-  cond: t.ConditionalExpression,
-  out: Set<string>
-) {
-  if (t.isStringLiteral(cond.consequent)) out.add(cond.consequent.value);
-  if (t.isStringLiteral(cond.alternate)) out.add(cond.alternate.value);
 }

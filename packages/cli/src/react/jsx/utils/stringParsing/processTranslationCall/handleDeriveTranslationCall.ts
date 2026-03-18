@@ -2,7 +2,7 @@ import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
-import { handleDeriveExpression } from '../../parseDerive.js';
+import { handleDeriveExpression } from '../derivation/parseDerive.js';
 import { nodeToStrings } from '../../parseString.js';
 import { indexVars } from 'generaltranslation/internal';
 import { isValidIcu } from '../../../evaluateJsx.js';
@@ -42,16 +42,16 @@ export function handleDeriveTranslationCall({
   index?: number;
 }): void {
   // parse derivable expression
-  const result = handleDeriveExpression(
-    arg,
+  const stringNode = handleDeriveExpression({
+    expr: arg,
     tPath,
-    config.file,
-    config.parsingOptions,
-    output.errors
-  );
+    file: config.file,
+    parsingOptions: config.parsingOptions,
+    errors: output.errors,
+  });
 
   // Nothing returned, push error
-  if (!result) {
+  if (!stringNode) {
     output.errors.push(
       warnNonStringSync(
         config.file,
@@ -63,7 +63,7 @@ export function handleDeriveTranslationCall({
   }
 
   // validate ICU
-  const strings = nodeToStrings(result).map(indexVars);
+  const strings = nodeToStrings(stringNode).map(indexVars);
   if (!config.ignoreInvalidIcu) {
     for (const string of strings) {
       const { isValid, error } = isValidIcu(string);

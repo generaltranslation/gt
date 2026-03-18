@@ -26,6 +26,7 @@ export function processTaggedTemplateCall(
   }
 
   handleTaggedTemplateTranslationCall({
+    tPath,
     quasi: tPath.parent.quasi,
     metadata: {},
     config,
