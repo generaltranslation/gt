@@ -24,4 +24,3 @@ export function shouldPublishGt(settings: Settings): boolean {
   if (settings.files.gtPublish === true) return true;
   return settings.publish;
 }
-
