@@ -1,10 +1,8 @@
 import * as t from '@babel/types';
 
 /**
- * Transform a TemplateLiteral AST node into a normalized t() call format.
- *
  * Converts template literal quasis and expressions into an ICU-style message
- * string with variable placeholders in the format {indexv_varName}.
+ * string with numeric variable placeholders ({0}, {1}, etc.).
  */
 export function transformTemplateLiteral(node: t.TemplateLiteral): {
   message: t.StringLiteral;
