@@ -1,4 +1,4 @@
-import { resolveTranslationSync } from './internal/resolveTranslationSync';
+import { resolveTranslationSyncWithFallback } from './internal/sync-translation-resolution';
 
-// User-facing alias for the resolveTranslationSync function
-export { resolveTranslationSync as t };
+// User facing export
+export { resolveTranslationSyncWithFallback as t };

@@ -1,8 +1,5 @@
-import { resolveTranslationSync } from 'gt-i18n/internal';
-import {
-  InlineTranslationOptions,
-  SyncResolutionFunction,
-} from 'gt-i18n/types';
+import { resolveTranslationSyncWithFallback } from 'gt-i18n/internal';
+import { InlineTranslationOptions } from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
 import { StringOrTemplateSyncResolutionFunction } from './types';
 
@@ -33,40 +30,30 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   messageOrStrings: string | TemplateStringsArray,
   ...values: unknown[]
 ) => {
-  if (typeof messageOrStrings === 'string') {
-    return translateWithFunction(
-      messageOrStrings,
-      values.at(0) as InlineTranslationOptions | undefined
-    );
-  } else {
-    const { message, variables } = extractInterpolatableValues(
-      messageOrStrings,
-      values
-    );
-    return translateWithFunction(message, variables);
-  }
-};
-
-// ----- Helper Functions ----- //
-
-/**
- * Resolve translation and interpolate. Fallback to original message.
- * @param message - The message to translate.
- * @param options - The options for the translation.
- * @returns The translated message.
- */
-const translateWithFunction: SyncResolutionFunction = (
-  message,
-  options = {}
-) => {
   // Trigger browser environment warning
   if (typeof window === 'undefined') {
     console.warn(
-      createTranslationFailedDueToBrowserEnvironmentWarning(message)
+      createTranslationFailedDueToBrowserEnvironmentWarning(messageOrStrings)
     );
   }
-  return resolveTranslationSync(message, options);
+
+  //  t("Hello, {name}!", { name: "John" })
+  if (typeof messageOrStrings === 'string') {
+    return resolveTranslationSyncWithFallback(
+      messageOrStrings,
+      values.at(0) as InlineTranslationOptions | undefined
+    );
+  }
+
+  // t`Hello, ${name}`
+  const { message, variables } = extractInterpolatableValues(
+    messageOrStrings,
+    values
+  );
+  return resolveTranslationSyncWithFallback(message, variables);
 };
+
+// ----- Helper Functions ----- //
 
 /**
  * Given a TemplateStringsArray, and values, return the uninterpolated message and variables.

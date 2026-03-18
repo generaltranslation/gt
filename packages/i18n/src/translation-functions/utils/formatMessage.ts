@@ -1,5 +1,5 @@
 import logger from '../../logs/logger';
-import { interpolationFailureMessage } from './messages';
+import { createInterpolationFailureMessage } from './messages';
 import { formatMessage as _formatMessage } from 'generaltranslation';
 
 /**
@@ -15,8 +15,8 @@ export function formatMessage(
 ): string {
   try {
     return _formatMessage(encodedMsg, { variables });
-  } catch (error) {
-    logger.warn(interpolationFailureMessage + ' Error: ' + error);
+  } catch {
+    logger.warn(createInterpolationFailureMessage(encodedMsg));
     return encodedMsg;
   }
 }

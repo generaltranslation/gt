@@ -8,7 +8,7 @@ import {
   libraryDefaultLocale,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
-import { interpolationFailureMessage } from '../utils/messages';
+import { createInterpolationFailureMessage } from '../utils/messages';
 import logger from '../../logs/logger';
 import { extractVariables } from '../../utils/extractVariables';
 import { hashMessage } from '../../utils/hashMessage';
@@ -84,8 +84,8 @@ export function msg(
         [VAR_IDENTIFIER]: 'other',
       },
     });
-  } catch (error) {
-    logger.warn(interpolationFailureMessage + ' Error: ' + error);
+  } catch {
+    logger.warn(createInterpolationFailureMessage(message));
     return message;
   }
 
