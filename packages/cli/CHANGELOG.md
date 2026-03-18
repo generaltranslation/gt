@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.10.8
+
+### Patch Changes
+
+- [#1123](https://github.com/generaltranslation/gt/pull/1123) [`3f6242c`](https://github.com/generaltranslation/gt/commit/3f6242cd5775ff894fecffe4c8279059eebf008a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Move includeSourceCodeContext flag into files.gt
+
 ## 2.10.7
 
 ### Patch Changes
