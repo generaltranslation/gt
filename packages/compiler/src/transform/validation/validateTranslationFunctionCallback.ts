@@ -37,7 +37,7 @@ export function validateUseGTCallback(
   // Validate first argument
   if (!t.isExpression(callExpr.arguments[0])) {
     errors.push(
-      'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
+      'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
     );
     return { errors };
   }
@@ -49,12 +49,12 @@ export function validateUseGTCallback(
   const content = validatedContent.value;
 
   if (content === undefined) {
-    // expression is not a string literal. Check if it contains a declareStatic function invocation
+    // expression is not a string literal. Check if it contains a derive() function invocation
     validateDeclareStatic(callExpr.arguments[0], state, errors);
     if (errors.length > 0) {
       errors.push(...validatedContent.errors);
       errors.push(
-        'useGT_callback / getGT_callback must use a string literal or declareStatic call as the first argument. Variable content is not allowed.'
+        'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
       );
       return { errors };
     }
@@ -207,7 +207,7 @@ function validateExpressionIsStringLiteral(expr: t.Expression): {
 }
 
 /**
- * Validates if an expression using the declareStatic function correctly
+ * Validates if an expression uses the derive() function correctly
  */
 function validateDeclareStatic(
   expr: t.Expression,
@@ -219,7 +219,7 @@ function validateDeclareStatic(
     return { errors };
   }
 
-  // 1. Direct call: declareStatic(node)
+  // 1. Direct call: derive(node)
   if (t.isCallExpression(expr)) {
     // Find the canonical function name
     const { namespaceName, functionName } = getCalleeNameFromExpression(expr);
@@ -233,10 +233,11 @@ function validateDeclareStatic(
       errors.push('Expression does not use an allowed call expression');
       return { errors };
     }
-    // Validate the function is actually the GT declareStatic function
+    // Validate the function is actually the GT derive function
     if (
       type !== 'generaltranslation' ||
-      canonicalName !== GT_OTHER_FUNCTIONS.declareStatic
+      (canonicalName !== GT_OTHER_FUNCTIONS.declareStatic &&
+        canonicalName !== GT_OTHER_FUNCTIONS.derive)
     ) {
       errors.push('Expression does not use an allowed call expression');
       return { errors };
@@ -246,7 +247,7 @@ function validateDeclareStatic(
     return { errors };
   }
 
-  // 2. String concatenation: "Hello there " + declareStatic(getName())
+  // 2. String concatenation: "Hello there " + derive(getName())
   if (t.isBinaryExpression(expr) && expr.operator === '+') {
     if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
       errors.push('Operands must be expressions');
@@ -257,7 +258,7 @@ function validateDeclareStatic(
     return { errors };
   }
 
-  // 3. Template literal: `Hello there ${declareStatic(getName())}`
+  // 3. Template literal: `Hello there ${derive(getName())}`
   if (t.isTemplateLiteral(expr)) {
     if (
       !expr.expressions.some(
@@ -287,7 +288,7 @@ function validateDeclareStatic(
  * Takes in a call expression to check if:
  * - it has exactly one argument
  * - the argument is a call expression
- * Example: declareStatic(getName())
+ * Example: derive(getName())
  */
 function validateDeclareStaticExpression(
   expr: t.CallExpression,
@@ -297,25 +298,25 @@ function validateDeclareStaticExpression(
 } {
   // Validate that the function has 1 argument
   if (expr.arguments.length !== 1) {
-    errors.push('DeclareStatic must have one argument');
+    errors.push('derive() must have one argument');
     return { errors };
   }
   const [onlyArg] = expr.arguments;
 
-  // Await expression: declareStatic(await ...)
+  // Await expression: derive(await ...)
   if (t.isAwaitExpression(onlyArg)) {
     // Validate that the awaited expression is a call expression
     if (!t.isCallExpression(onlyArg.argument)) {
-      errors.push('DeclareStatic must have a call expression as the argument');
+      errors.push('derive() must have a call expression as the argument');
       return { errors };
     }
-    // Valid: declareStatic(await someFunction())
+    // Valid: derive(await someFunction())
     return { errors };
   }
 
   // Validate that the argument is a call expression
   if (!t.isCallExpression(onlyArg)) {
-    errors.push('DeclareStatic must have a call expression as the argument');
+    errors.push('derive() must have a call expression as the argument');
     return { errors };
   }
 

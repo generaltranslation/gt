@@ -9,10 +9,10 @@ import { parse } from '@babel/parser';
 import fs from 'node:fs';
 import {
   warnFunctionNotFoundSync,
-  warnDeclareStaticNoResultsSync,
-  warnDeclareStaticNotWrappedSync,
+  warnDeriveFunctionNoResultsSync,
+  warnDeriveFunctionNotWrappedSync,
 } from '../../../console/index.js';
-import { DECLARE_STATIC_FUNCTION } from './constants.js';
+import { DECLARE_STATIC_FUNCTION, DERIVE_FUNCTION } from './constants.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -38,7 +38,7 @@ const resolveImportPathCache = new Map<string, string | null>();
 const processFunctionCache = new Map<string, StringNode | null>();
 
 /**
- * Checks if an expression is static or uses declareStatic
+ * Extracts content if an expression is derivable (statically analyzable) or uses derive()
  * Returns a Node representing the parsed expression
  * @param expr - The expression to check
  * @param tPath - NodePath for scope resolution
@@ -46,7 +46,7 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param parsingOptions - Parsing configuration
  * @returns Node | null - The parsed node, or null if invalid
  */
-export function handleStaticExpression(
+export function handleDeriveExpression(
   expr: t.Expression,
   tPath: NodePath,
   file: string,
@@ -59,7 +59,7 @@ export function handleStaticExpression(
 
   // Handle expressions
   if (t.isCallExpression(expr)) {
-    const variants = getDeclareStaticVariants(
+    const variants = getDeriveVariants(
       expr,
       tPath,
       file,
@@ -67,7 +67,7 @@ export function handleStaticExpression(
       errors
     );
     if (variants) {
-      // We found declareStatic -> return as ChoiceNode
+      // We found derive() -> return as ChoiceNode
       return {
         type: 'choice',
         nodes: variants.map((v) => ({ type: 'text', text: v })),
@@ -80,7 +80,7 @@ export function handleStaticExpression(
         ? generate(expr.arguments[0]).code
         : 'no arguments';
     errors.push(
-      warnDeclareStaticNoResultsSync(
+      warnDeriveFunctionNoResultsSync(
         file,
         code,
         `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
@@ -106,7 +106,7 @@ export function handleStaticExpression(
       }
       const exprNode = expr.expressions[index];
       if (exprNode && t.isExpression(exprNode)) {
-        const result = handleStaticExpression(
+        const result = handleDeriveExpression(
           exprNode,
           tPath,
           file,
@@ -135,14 +135,14 @@ export function handleStaticExpression(
     if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
       return null;
     }
-    const leftResult = handleStaticExpression(
+    const leftResult = handleDeriveExpression(
       expr.left,
       tPath,
       file,
       parsingOptions,
       errors
     );
-    const rightResult = handleStaticExpression(
+    const rightResult = handleDeriveExpression(
       expr.right,
       tPath,
       file,
@@ -159,7 +159,7 @@ export function handleStaticExpression(
 
   // Handle parenthesized expressions
   if (t.isParenthesizedExpression(expr)) {
-    return handleStaticExpression(
+    return handleDeriveExpression(
       expr.expression,
       tPath,
       file,
@@ -204,21 +204,21 @@ export function handleStaticExpression(
     return { type: 'text', text: 'null' };
   }
 
-  // Not a static expression
+  // Not a derivable expression
   return null;
 }
 
 /**
- * Given a CallExpression, if it is declareStatic(<call>) or declareStatic(await <call>),
+ * Given a CallExpression, if it is derive(<call>) or derive(await <call>),
  * return all possible string outcomes of that argument call as an array of strings.
  *
  * Examples:
- *   declareStatic(time()) -> ["day", "night"]
- *   declareStatic(await time()) -> ["day", "night"]
+ *   derive(time()) -> ["day", "night"]
+ *   derive(await time()) -> ["day", "night"]
  *
  * Returns null if it can't be resolved.
  */
-function getDeclareStaticVariants(
+function getDeriveVariants(
   call: t.CallExpression,
   tPath: NodePath,
   file: string,
@@ -226,14 +226,14 @@ function getDeclareStaticVariants(
   errors: string[]
 ): string[] | null {
   // --- Validate Callee --- //
-  // Must be declareStatic(...) or an alias of it
+  // Must be derive(...) or an alias of it
   if (!t.isIdentifier(call.callee)) {
     const code =
       call.arguments.length > 0
         ? generate(call.arguments[0]).code
         : 'no arguments';
     errors.push(
-      warnDeclareStaticNotWrappedSync(
+      warnDeriveFunctionNotWrappedSync(
         file,
         code,
         `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
@@ -242,11 +242,11 @@ function getDeclareStaticVariants(
     return null;
   }
 
-  // Check if this is declareStatic by name or by checking the import
+  // Check if this is derive by name or by checking the import
   const calleeName = call.callee.name;
   const calleeBinding = tPath.scope.getBinding(calleeName);
 
-  // If it's not literally named 'declareStatic', check if it's imported from GT
+  // If it's not literally named 'derive', check if it's imported from GT
   if (!calleeBinding) {
     return null;
   }
@@ -258,14 +258,17 @@ function getDeclareStaticVariants(
       ? imported.name
       : imported.value;
 
-    // Only proceed if the original name is 'declareStatic'
-    if (originalName !== DECLARE_STATIC_FUNCTION) {
+    // Only proceed if the original name is 'derive' (or the deprecated 'declareStatic')
+    if (
+      originalName !== DECLARE_STATIC_FUNCTION &&
+      originalName !== DERIVE_FUNCTION
+    ) {
       return null;
     }
   } else {
-    // Not an import specifier, so it's not declareStatic
+    // Not an import specifier, so it's not derive
     errors.push(
-      warnDeclareStaticNotWrappedSync(
+      warnDeriveFunctionNotWrappedSync(
         file,
         calleeName,
         `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
@@ -281,7 +284,7 @@ function getDeclareStaticVariants(
   const arg = call.arguments[0];
   if (!t.isExpression(arg)) return null;
 
-  // Handle await expression: declareStatic(await time())
+  // Handle await expression: derive(await time())
   if (t.isAwaitExpression(arg)) {
     // Resolve the inner call's possible string outcomes
     return resolveCallStringVariants(
@@ -303,34 +306,7 @@ function resolveCallStringVariants(
   parsingOptions: ParsingConfigOptions,
   errors: string[]
 ): string[] | null {
-  const results = new Set<string>();
-
-  // // Handle inline arrow functions: declareStatic((() => "day")())
-  // if (
-  //   t.isCallExpression(expression) &&
-  //   t.isParenthesizedExpression(expression.callee) &&
-  //   t.isArrowFunctionExpression(expression.callee.expression)
-  // ) {
-  //   const body = expression.callee.expression.body;
-
-  //   if (t.isStringLiteral(body)) {
-  //     results.add(body.value);
-  //   } else if (t.isConditionalExpression(body)) {
-  //     collectConditionalStringVariants(body, results);
-  //   }
-
-  //   return results.size ? [...results] : null;
-  // }
-
-  // // Handle explicit conditional expression call:
-  // // declareStatic(cond ? "day" : "night")
-  // // TODO: this makes no sense
-  // if (t.isConditionalExpression(expression)) {
-  //   collectConditionalStringVariants(expression, results);
-  //   return results.size ? [...results] : null;
-  // }
-
-  // Handle function identifier calls: declareStatic(time())
+  // Handle function identifier calls: derive(time())
   if (t.isCallExpression(expression) && t.isIdentifier(expression.callee)) {
     const functionName = expression.callee.name;
 
@@ -407,7 +383,7 @@ function resolveCallStringVariants(
     }
   }
 
-  // If we get here: analyze this call statically
+  // If we get here: analyze this call as derivable (statically analyzable)
   const node = parseStringExpression(expression, tPath, file, parsingOptions);
   if (node) {
     return nodeToStrings(node);
@@ -751,7 +727,7 @@ function resolveFunctionInFile(
   } catch (error) {
     // File read or parse error - return null
     errors.push(
-      warnDeclareStaticNoResultsSync(
+      warnDeriveFunctionNoResultsSync(
         filePath,
         functionName,
         'file read/parse error: ' + error

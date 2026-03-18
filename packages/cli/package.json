@@ -1,6 +1,6 @@
 {
   "name": "gt",
-  "version": "2.10.4",
+  "version": "2.10.5",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [

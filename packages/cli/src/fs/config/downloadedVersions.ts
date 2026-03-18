@@ -1,78 +1,245 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../console/logger.js';
+import type { Settings } from '../../types/index.js';
 
-// New lock file name, use old name for deletion of legacy lock file
 const GT_LOCK_FILE = 'gt-lock.json';
-const LEGACY_DOWNLOADED_VERSIONS_FILE = 'downloaded-versions.json';
+
+// ── V2 types (internal working format) ──────────────────────────────
+
+export type DownloadedTranslation = {
+  updatedAt?: string;
+  postProcessHash?: string;
+  fileName?: string; // output path for this locale, e.g. "es-US/my/file/path.mdx"
+};
 
 export type DownloadedVersionEntry = {
+  fileId: string;
+  versionId: string;
+  fileName?: string; // source file path
+  translations: {
+    [locale: string]: DownloadedTranslation;
+  };
+};
+
+export type DownloadedVersions = {
+  version: 2;
+  branchId: string;
+  entries: DownloadedVersionEntry[];
+};
+
+// ── V1 types (backwards compatibility) ──────────────────────────────
+
+export type DownloadedVersionEntryV1 = {
   fileName?: string;
   updatedAt?: string;
   postProcessHash?: string;
   sourceHash?: string;
 };
 
-export type DownloadedVersions = {
+export type DownloadedVersionsV1 = {
   version: number;
   entries: {
     [branchId: string]: {
       [fileId: string]: {
-        [versionId: string]: { [locale: string]: DownloadedVersionEntry };
+        [versionId: string]: { [locale: string]: DownloadedVersionEntryV1 };
       };
     };
   };
 };
 
-export function getDownloadedVersions(
-  configDirectory: string
+// ── Conversion helpers ──────────────────────────────────────────────
+
+function convertV1ToV2(
+  v1: DownloadedVersionsV1,
+  branchId: string
 ): DownloadedVersions {
-  try {
-    // Clean up legacy lock files inside the config directory
-    const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
-    const legacyPath = path.join(
-      configDirectory,
-      LEGACY_DOWNLOADED_VERSIONS_FILE
-    );
-
-    try {
-      if (fs.existsSync(legacyPath)) {
-        fs.unlinkSync(legacyPath);
-      }
-    } catch {}
-
-    const filepath = fs.existsSync(rootPath) ? rootPath : null;
-    if (!filepath) return { version: 1, entries: {} };
-    const raw = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-    if (raw && typeof raw === 'object' && raw.version && raw.entries) {
-      return raw as DownloadedVersions;
-    }
-    return { version: 1, entries: {} };
-  } catch (error) {
-    logger.error(
-      `An error occurred while getting downloaded versions: ${error}`
-    );
-    return { version: 1, entries: {} };
+  const branchEntries = v1.entries?.[branchId];
+  if (!branchEntries) {
+    return { version: 2, branchId, entries: [] };
   }
+
+  const entries: DownloadedVersionEntry[] = [];
+
+  for (const [fileId, versions] of Object.entries(branchEntries)) {
+    const versionIds = Object.keys(versions);
+    if (versionIds.length === 0) continue;
+
+    // Pick the versionId with the most recent updatedAt, defaulting to the first
+    let latestVersionId = versionIds[0];
+    let latestTime = 0;
+
+    for (const [versionId, locales] of Object.entries(versions)) {
+      for (const entry of Object.values(locales)) {
+        const t = entry.updatedAt ? Date.parse(entry.updatedAt) : 0;
+        if (t > latestTime) {
+          latestTime = t;
+          latestVersionId = versionId;
+        }
+      }
+    }
+
+    const localeEntries = versions[latestVersionId];
+    const translations: { [locale: string]: DownloadedTranslation } = {};
+
+    for (const [locale, entry] of Object.entries(localeEntries)) {
+      translations[locale] = {
+        ...(entry.updatedAt ? { updatedAt: entry.updatedAt } : {}),
+        ...(entry.postProcessHash
+          ? { postProcessHash: entry.postProcessHash }
+          : {}),
+      };
+    }
+
+    entries.push({
+      fileId,
+      versionId: latestVersionId,
+      translations,
+    });
+  }
+
+  return { version: 2, branchId, entries };
 }
 
-export function saveDownloadedVersions(
-  configDirectory: string,
-  lock: DownloadedVersions
+function convertV2ToV1Branch(
+  v2: DownloadedVersions
+): DownloadedVersionsV1['entries'][string] {
+  const branch: DownloadedVersionsV1['entries'][string] = {};
+
+  for (const entry of v2.entries) {
+    if (!branch[entry.fileId]) {
+      branch[entry.fileId] = {};
+    }
+    if (!branch[entry.fileId][entry.versionId]) {
+      branch[entry.fileId][entry.versionId] = {};
+    }
+
+    for (const [locale, translation] of Object.entries(entry.translations)) {
+      branch[entry.fileId][entry.versionId][locale] = {
+        ...(translation.updatedAt ? { updatedAt: translation.updatedAt } : {}),
+        ...(translation.postProcessHash
+          ? { postProcessHash: translation.postProcessHash }
+          : {}),
+      };
+    }
+  }
+
+  return branch;
+}
+
+// ── Public API ──────────────────────────────────────────────────────
+
+/**
+ * Reads the lockfile and returns v2 data regardless of the on-disk format.
+ * If the file is v1, `originalV1` contains the full v1 data so that
+ * `writeLockfile` can merge changes back without losing other branches.
+ */
+export function readLockfile(settings: Settings): {
+  data: DownloadedVersions;
+  entryMap: EntryMap;
+  originalV1: DownloadedVersionsV1 | null;
+} {
+  let branchId = settings._branchId ?? '';
+
+  let data: DownloadedVersions;
+  let originalV1: DownloadedVersionsV1 | null = null;
+
+  try {
+    const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
+    if (!fs.existsSync(rootPath)) {
+      data = { version: 2, branchId, entries: [] };
+    } else {
+      const raw = JSON.parse(fs.readFileSync(rootPath, 'utf8'));
+      if (!raw || typeof raw !== 'object' || !raw.entries) {
+        data = { version: 2, branchId, entries: [] };
+      } else if (raw.version === 2 && Array.isArray(raw.entries)) {
+        data = raw as DownloadedVersions;
+        if (branchId) data.branchId = branchId;
+      } else {
+        originalV1 = raw as DownloadedVersionsV1;
+        if (!branchId) {
+          const branches = Object.keys(originalV1.entries);
+          if (branches.length > 0) branchId = branches[0];
+        }
+        data = convertV1ToV2(originalV1, branchId);
+      }
+    }
+  } catch (error) {
+    logger.error(`An error occurred while reading ${GT_LOCK_FILE}: ${error}`);
+    data = { version: 2, branchId, entries: [] };
+  }
+
+  return { data, entryMap: buildEntryMap(data.entries), originalV1 };
+}
+
+/**
+ * Writes the lockfile. If `originalV1` is provided, merges the current
+ * branch's data back into the v1 structure (preserving other branches)
+ * and writes v1 format. Otherwise writes v2.
+ */
+export function writeLockfile(
+  data: DownloadedVersions,
+  originalV1: DownloadedVersionsV1 | null
 ): void {
   try {
-    // Write the lock file to the repo root
     const filepath = path.join(process.cwd(), GT_LOCK_FILE);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
-    fs.writeFileSync(filepath, JSON.stringify(lock, null, 2));
+
+    if (originalV1) {
+      const mergedV1: DownloadedVersionsV1 = {
+        ...originalV1,
+        entries: {
+          ...originalV1.entries,
+          [data.branchId]: convertV2ToV1Branch(data),
+        },
+      };
+      fs.writeFileSync(filepath, JSON.stringify(mergedV1, null, 2));
+    } else {
+      fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
+    }
   } catch (error) {
     logger.error(`An error occurred while updating ${GT_LOCK_FILE}: ${error}`);
   }
 }
-export function ensureNestedObject(obj: any, path: string[]): any {
-  return path.reduce((current, key, index) => {
-    if (index === path.length - 1) return current;
-    current[key] = current[key] || {};
-    return current[key];
-  }, obj);
+
+// ── Lookup helpers ──────────────────────────────────────────────────
+
+export type EntryMap = Map<string, DownloadedVersionEntry>;
+
+export function buildEntryMap(entries: DownloadedVersionEntry[]): EntryMap {
+  return new Map(entries.map((e) => [e.fileId, e]));
+}
+
+/**
+ * Finds or creates an entry, keeping the map and backing array in sync.
+ * If the fileId exists but versionId changed, replaces it in-place.
+ */
+export function findOrCreateEntry(
+  entryMap: EntryMap,
+  entries: DownloadedVersionEntry[],
+  fileId: string,
+  versionId: string
+): DownloadedVersionEntry {
+  const existing = entryMap.get(fileId);
+  if (existing) {
+    if (existing.versionId === versionId) return existing;
+    // Version changed — replace in array and map
+    const updated: DownloadedVersionEntry = {
+      fileId,
+      versionId,
+      translations: {},
+    };
+    const idx = entries.indexOf(existing);
+    if (idx !== -1) entries[idx] = updated;
+    entryMap.set(fileId, updated);
+    return updated;
+  }
+  const entry: DownloadedVersionEntry = {
+    fileId,
+    versionId,
+    translations: {},
+  };
+  entries.push(entry);
+  entryMap.set(fileId, entry);
+  return entry;
 }
