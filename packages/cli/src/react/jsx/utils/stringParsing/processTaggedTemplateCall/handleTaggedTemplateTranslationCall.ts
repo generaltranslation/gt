@@ -1,20 +1,8 @@
 import * as t from '@babel/types';
 import { ParsingConfig, ParsingOutput } from '../types.js';
-import { isValidIcu } from '../../../evaluateJsx.js';
-import {
-  warnInvalidIcuSync,
-  warnNonStringSync,
-} from '../../../../../console/index.js';
 import { InlineMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
 import { NodePath } from '@babel/traverse';
-import { handleDeriveExpression } from '../derivation/parseDerive.js';
-import { randomUUID } from 'node:crypto';
-import { nodeToStrings } from '../../parseString.js';
-import generateModule from '@babel/generator';
-import { indexVars } from 'generaltranslation/internal';
-
-// Handle CommonJS/ESM interop
-const generate = generateModule.default || generateModule;
+import { deriveExpression } from '../derivation/index.js';
 
 /**
  * Extracts a translatable message from a TaggedTemplateExpression.
@@ -44,56 +32,12 @@ export function handleTaggedTemplateTranslationCall({
   config: ParsingConfig;
   output: ParsingOutput;
 }): void {
-  // parse derivable expression
-  const stringNode = handleDeriveExpression({
-    expr: quasi,
+  deriveExpression({
     tPath,
-    file: config.file,
-    parsingOptions: config.parsingOptions,
-    errors: output.errors,
+    expr: quasi,
+    metadata,
+    config,
+    output,
     enableRuntimeInterpolation: true,
   });
-
-  // Nothing returned, push error
-  if (!stringNode) {
-    output.errors.push(
-      warnNonStringSync(
-        config.file,
-        generate(quasi).code,
-        `${quasi.loc?.start?.line}:${quasi.loc?.start?.column}`
-      )
-    );
-    return;
-  }
-
-  // validate ICU
-  const strings = nodeToStrings(stringNode).map(indexVars);
-  if (!config.ignoreInvalidIcu) {
-    for (const string of strings) {
-      const { isValid, error } = isValidIcu(string);
-      if (!isValid) {
-        output.warnings.add(
-          warnInvalidIcuSync(
-            config.file,
-            string,
-            error ?? 'Unknown error',
-            `${quasi.loc?.start?.line}:${quasi.loc?.start?.column}`
-          )
-        );
-        return;
-      }
-    }
-  }
-
-  const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
-  for (const string of strings) {
-    output.updates.push({
-      dataFormat: 'ICU',
-      source: string,
-      metadata: {
-        ...metadata,
-        staticId: temporaryDeriveId,
-      },
-    });
-  }
 }

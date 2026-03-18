@@ -11,11 +11,18 @@ import {
   warnFunctionNotFoundSync,
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
+  warnNonStringSync,
+  warnInvalidIcuSync,
 } from '../../../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import { isDeriveCall } from './isDeriveCall.js';
+import { InlineMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
+import { ParsingConfig, ParsingOutput } from '../types.js';
+import { isValidIcu } from '../../../evaluateJsx.js';
+import { indexVars } from 'generaltranslation/internal';
+import { randomUUID } from 'node:crypto';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
@@ -52,7 +59,7 @@ const processFunctionCache = new Map<string, StringNode | null>();
  *  - Only mark true on entry for template macros, otherwise always false
  *  - t`Hello {nonDerivableValue}` -> t`Hello {0}`
  */
-export function handleDeriveExpression({
+export function handleDerivation({
   expr,
   tPath,
   file,
@@ -128,7 +135,7 @@ export function handleDeriveExpression({
           parts.push({ type: 'text', text: `{${runtimeInterpolationIndex}}` });
           runtimeInterpolationIndex++;
         } else {
-          const result = handleDeriveExpression({
+          const result = handleDerivation({
             expr: exprNode,
             tPath,
             file,
@@ -158,14 +165,14 @@ export function handleDeriveExpression({
     if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
       return null;
     }
-    const leftResult = handleDeriveExpression({
+    const leftResult = handleDerivation({
       expr: expr.left,
       tPath,
       file,
       parsingOptions,
       errors,
     });
-    const rightResult = handleDeriveExpression({
+    const rightResult = handleDerivation({
       expr: expr.right,
       tPath,
       file,
@@ -182,7 +189,7 @@ export function handleDeriveExpression({
 
   // Handle parenthesized expressions
   if (t.isParenthesizedExpression(expr)) {
-    return handleDeriveExpression({
+    return handleDerivation({
       expr: expr.expression,
       tPath,
       file,
