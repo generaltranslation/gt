@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.10.5
+
+### Patch Changes
+
+- [#1116](https://github.com/generaltranslation/gt/pull/1116) [`31d7229`](https://github.com/generaltranslation/gt/commit/31d7229e3893b712e2007369e8b3d219bcc9bde8) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding v2 of `gt-lock.json`
+
 ## 2.10.4
 
 ### Patch Changes
