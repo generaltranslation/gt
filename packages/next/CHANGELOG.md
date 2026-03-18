@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.13.11
+
+### Patch Changes
+
+- Updated dependencies [[`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769)]:
+  - gt-react@10.13.0
+  - @generaltranslation/compiler@1.1.29
+  - gt-i18n@0.6.2
+
 ## 6.13.10
 
 ### Patch Changes
