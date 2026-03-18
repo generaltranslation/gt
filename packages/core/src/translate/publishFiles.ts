@@ -6,6 +6,7 @@ export type PublishFileEntry = {
   versionId: string;
   branchId?: string;
   publish: boolean;
+  fileName?: string;
 };
 
 export type PublishFilesResult = {

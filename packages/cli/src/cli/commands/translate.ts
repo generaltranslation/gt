@@ -60,6 +60,7 @@ export async function handleTranslate(
           versionId: data.versionId,
           branchId: branchData?.currentBranch.id,
           publish: publishMap.get(fileId) ?? false,
+          fileName: data.fileName,
         })
       );
       const publishStep = new PublishStep(gt);

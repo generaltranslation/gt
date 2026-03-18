@@ -33,8 +33,10 @@ export class PublishStep extends WorkflowStep<PublishFileEntry[], void> {
           )
         );
         for (const f of failed) {
+          const file = filesToPublish.find((p) => p.fileId === f.fileId);
+          const name = file?.fileName ?? f.fileId;
           logger.warn(
-            `Failed to publish ${f.fileId}: ${f.error ?? 'unknown error'}`
+            `Failed to publish ${name}: ${f.error ?? 'unknown error'}`
           );
         }
       } else {
