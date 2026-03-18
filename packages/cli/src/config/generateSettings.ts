@@ -186,7 +186,13 @@ export async function generateSettings(
         cwd,
         compositePatterns
       )
-    : { resolvedPaths: {}, placeholderPaths: {}, transformPaths: {} };
+    : {
+        resolvedPaths: {},
+        placeholderPaths: {},
+        transformPaths: {},
+        publishPaths: new Set<string>(),
+        unpublishPaths: new Set<string>(),
+      };
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),

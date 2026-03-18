@@ -271,7 +271,8 @@ export class BaseCLI {
           settings,
           results.fileVersionData,
           results.jobData,
-          results.branchData
+          results.branchData,
+          results.publishMap
         );
       }
     } else {

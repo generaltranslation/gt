@@ -107,6 +107,10 @@ import _processFileMoves, {
 import _getOrphanedFiles, {
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
+import _publishFiles, {
+  type PublishFileEntry,
+  type PublishFilesResult,
+} from './translate/publishFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { TranslateOptions } from './types-dir/api/entry';
 import { API_VERSION as _API_VERSION } from './translate/api';
@@ -496,6 +500,19 @@ export class GT {
       mergedOptions,
       this._getTranslationConfig()
     );
+  }
+
+  /**
+   * Publishes or unpublishes files on the CDN.
+   *
+   * @param {PublishFileEntry[]} files - Array of file entries with publish flags
+   * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
+   */
+  async publishFiles(
+    files: PublishFileEntry[]
+  ): Promise<PublishFilesResult> {
+    this._validateAuth('publishFiles');
+    return await _publishFiles(files, this._getTranslationConfig());
   }
 
   /**

@@ -16,6 +16,8 @@ import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
+import { PublishStep } from '../../workflows/steps/PublishStep.js';
+import { gt } from '../../utils/gt.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -23,7 +25,8 @@ export async function handleTranslate(
   settings: Settings,
   fileVersionData: FileTranslationData | undefined,
   jobData: EnqueueFilesResult | undefined,
-  branchData: BranchData | undefined
+  branchData: BranchData | undefined,
+  publishMap?: Map<string, boolean>
 ) {
   if (fileVersionData) {
     const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
@@ -48,6 +51,22 @@ export async function handleTranslate(
       forceRetranslation: options.force,
       forceDownload: options.forceDownload || options.force, // if force is true should also force download
     });
+
+    // Publish files after translations are downloaded
+    if (publishMap) {
+      const allFileRefs = Object.entries(fileVersionData).map(
+        ([fileId, data]) => ({
+          fileId,
+          versionId: data.versionId,
+          branchId: branchData?.currentBranch.id ?? '',
+          fileName: data.fileName,
+          fileFormat: 'JSON' as const, // not used by PublishStep
+        })
+      );
+      const publishStep = new PublishStep(gt, publishMap);
+      await publishStep.run(allFileRefs);
+      await publishStep.wait();
+    }
   }
 }
 

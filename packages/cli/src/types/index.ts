@@ -174,16 +174,20 @@ export type TransformFiles = {
   [K in SupportedFileExtension]?: TransformOption | string | TransformOption[]; // if a string, only transform the file name
 };
 
+// Include patterns can be plain strings or objects with a publish flag
+export type IncludePattern = string | { path: string; publish?: boolean };
+
 // Update FilesOptions to fix the error
 export type FilesOptions = {
   [K in SupportedFileExtension]?: {
-    include: string[];
+    include: IncludePattern[];
     exclude?: string[];
     transform?: string | TransformOption | TransformOption[];
   };
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
+    publish?: boolean; // if true, publish gtjson translations to the CDN
   };
 };
 
@@ -202,6 +206,9 @@ export type Settings = {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
     placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
+    publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
+    unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
+    gtPublish?: boolean; // if true, publish gtjson translations to the CDN
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
   publish: boolean; // if true, publish the translations to the CDN

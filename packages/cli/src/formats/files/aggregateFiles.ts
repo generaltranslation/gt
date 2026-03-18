@@ -17,6 +17,7 @@ import {
   parseKeyedMetadata,
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
+import { shouldPublishFile } from '../../utils/resolvePublish.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -41,15 +42,16 @@ export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
   settings: Settings
-): Promise<FileToUpload[]> {
+): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
   // Aggregate all files to translate
   const allFiles: FileToUpload[] = [];
+  const publishMap = new Map<string, boolean>();
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
       settings.files.placeholderPaths.gt)
   ) {
-    return allFiles;
+    return { files: allFiles, publishMap };
   }
 
   const { resolvedPaths: filePaths } = settings.files;
@@ -372,5 +374,30 @@ export async function aggregateFiles(
     );
   }
 
-  return allFiles;
+  // Build a reverse map of fileId -> absolute path for publish resolution
+  // fileId = hashStringSync(relativePath), relativePath = getRelative(absolutePath)
+  // So we can rebuild it from the resolved paths
+  const fileIdToAbsolutePath = new Map<string, string>();
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (filePaths[fileType]) {
+      for (const absolutePath of filePaths[fileType]) {
+        const relativePath = getRelative(absolutePath);
+        const fileId = hashStringSync(relativePath);
+        fileIdToAbsolutePath.set(fileId, absolutePath);
+      }
+    }
+  }
+
+  // Build publish map using per-file resolution logic
+  for (const file of allFiles) {
+    const absolutePath = fileIdToAbsolutePath.get(file.fileId);
+    if (absolutePath) {
+      publishMap.set(file.fileId, shouldPublishFile(absolutePath, settings));
+    } else {
+      // For files without a resolved path (e.g. gtjson template), use global setting
+      publishMap.set(file.fileId, settings.publish);
+    }
+  }
+
+  return { files: allFiles, publishMap };
 }

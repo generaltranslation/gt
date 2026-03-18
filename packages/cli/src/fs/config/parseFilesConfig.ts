@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {
   FilesOptions,
+  IncludePattern,
   ResolvedFiles,
   TransformFiles,
   TransformOption,
@@ -44,6 +45,35 @@ export function resolveLocaleFiles(
  * @param files - The files object
  * @returns The resolved files
  */
+/**
+ * Normalizes include patterns into plain path strings and tracks which
+ * patterns have explicit publish flags.
+ */
+export function normalizeIncludePatterns(patterns: IncludePattern[]): {
+  paths: string[];
+  publishPatterns: string[];
+  unpublishPatterns: string[];
+} {
+  const paths: string[] = [];
+  const publishPatterns: string[] = [];
+  const unpublishPatterns: string[] = [];
+
+  for (const pattern of patterns) {
+    if (typeof pattern === 'string') {
+      paths.push(pattern);
+    } else {
+      paths.push(pattern.path);
+      if (pattern.publish === true) {
+        publishPatterns.push(pattern.path);
+      } else if (pattern.publish === false) {
+        unpublishPatterns.push(pattern.path);
+      }
+    }
+  }
+
+  return { paths, publishPatterns, unpublishPatterns };
+}
+
 export function resolveFiles(
   files: FilesOptions,
   locale: string,
@@ -54,11 +84,16 @@ export function resolveFiles(
   resolvedPaths: ResolvedFiles;
   placeholderPaths: ResolvedFiles;
   transformPaths: TransformFiles;
+  publishPaths: Set<string>;
+  unpublishPaths: Set<string>;
+  gtPublish?: boolean;
 } {
   // Initialize result object with empty arrays for each file type
   const result: ResolvedFiles = {};
   const placeholderResult: ResolvedFiles = {};
   const transformPaths: TransformFiles = {};
+  const publishPaths = new Set<string>();
+  const unpublishPaths = new Set<string>();
 
   // Process GT files
   if (files.gt?.output) {
@@ -78,9 +113,12 @@ export function resolveFiles(
     }
     // ==== PLACEHOLDERS ==== //
     if (files[fileType]?.include) {
+      const { paths, publishPatterns, unpublishPatterns } =
+        normalizeIncludePatterns(files[fileType].include);
+
       const filePaths = expandGlobPatterns(
         cwd,
-        files[fileType].include,
+        paths,
         files[fileType]?.exclude || [],
         locale,
         locales,
@@ -89,6 +127,36 @@ export function resolveFiles(
       );
       result[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
+
+      // Track which resolved paths came from publish/unpublish patterns
+      for (const pubPattern of publishPatterns) {
+        const pubPaths = expandGlobPatterns(
+          cwd,
+          [pubPattern],
+          files[fileType]?.exclude || [],
+          locale,
+          locales,
+          transformPaths[fileType] || undefined,
+          compositePatterns
+        );
+        for (const p of pubPaths.resolvedPaths) {
+          publishPaths.add(p);
+        }
+      }
+      for (const unpubPattern of unpublishPatterns) {
+        const unpubPaths = expandGlobPatterns(
+          cwd,
+          [unpubPattern],
+          files[fileType]?.exclude || [],
+          locale,
+          locales,
+          transformPaths[fileType] || undefined,
+          compositePatterns
+        );
+        for (const p of unpubPaths.resolvedPaths) {
+          unpublishPaths.add(p);
+        }
+      }
     }
   }
 
@@ -96,6 +164,9 @@ export function resolveFiles(
     resolvedPaths: result,
     placeholderPaths: placeholderResult,
     transformPaths: transformPaths,
+    publishPaths,
+    unpublishPaths,
+    gtPublish: files.gt?.publish,
   };
 }
 

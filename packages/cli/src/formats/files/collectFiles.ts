@@ -11,14 +11,19 @@ import type { FileToUpload, JsxChildren } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import { isInlineLibrary } from '../../types/libraries.js';
+import { shouldPublishGt } from '../../utils/resolvePublish.js';
 
 export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries
-): Promise<{ files: FileToUpload[]; reactComponents: number }> {
+): Promise<{
+  files: FileToUpload[];
+  reactComponents: number;
+  publishMap: Map<string, boolean>;
+}> {
   // Aggregate files
-  const allFiles = await aggregateFiles(settings);
+  const { files: allFiles, publishMap } = await aggregateFiles(settings);
 
   // Parse for React components
   let reactComponents = 0;
@@ -49,16 +54,18 @@ export async function collectFiles(
         }
       }
       reactComponents = updates.length;
+      const templateFileId = TEMPLATE_FILE_ID;
       allFiles.push({
         fileName: TEMPLATE_FILE_NAME,
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
-        fileId: TEMPLATE_FILE_ID,
+        fileId: templateFileId,
         versionId: hashStringSync(JSON.stringify(Object.keys(fileData).sort())),
         locale: settings.defaultLocale,
       } satisfies FileToUpload);
+      publishMap.set(templateFileId, shouldPublishGt(settings));
     }
   }
-  return { files: allFiles, reactComponents };
+  return { files: allFiles, reactComponents, publishMap };
 }

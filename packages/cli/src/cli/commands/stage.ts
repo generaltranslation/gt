@@ -25,12 +25,13 @@ export async function handleStage(
   fileVersionData: FileTranslationData | undefined;
   jobData: EnqueueFilesResult | undefined;
   branchData: BranchData | undefined;
+  publishMap: Map<string, boolean>;
 } | null> {
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
-  const { files: allFiles, reactComponents } = await collectFiles(
+  const { files: allFiles, reactComponents, publishMap } = await collectFiles(
     options,
     settings,
     library
@@ -85,5 +86,6 @@ export async function handleStage(
     fileVersionData,
     jobData,
     branchData,
+    publishMap,
   };
 }
