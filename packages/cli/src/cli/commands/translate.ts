@@ -52,8 +52,8 @@ export async function handleTranslate(
       forceDownload: options.forceDownload || options.force, // if force is true should also force download
     });
 
-    // Publish files after translations are downloaded
-    if (publishMap) {
+    // Publish/unpublish files after translations are downloaded
+    if (publishMap && Array.from(publishMap.values()).some(Boolean)) {
       const allFileRefs = Object.entries(fileVersionData).map(
         ([fileId, data]) => ({
           fileId,

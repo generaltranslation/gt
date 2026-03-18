@@ -38,14 +38,6 @@ export function resolveLocaleFiles(
   return result;
 }
 /**
- * Resolves the files from the files object
- * Performs glob pattern expansion on the files
- * Replaces [locale] with the actual locale in the files
- *
- * @param files - The files object
- * @returns The resolved files
- */
-/**
  * Normalizes include patterns into plain path strings and tracks which
  * patterns have explicit publish flags.
  */
