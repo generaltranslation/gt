@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveTranslationSync } from '../resolveTranslationSync';
+import { resolveTranslationSync } from '../sync-translation-resolution';
 import { getI18nManager } from '../../../i18n-manager/singleton-operations';
-import { gtFallback } from '../../fallbacks/gtFallback';
+import { interpolateMessage } from '../../utils/interpolateMessage';
 
 vi.mock('../../../i18n-manager/singleton-operations');
-vi.mock('../../fallbacks/gtFallback');
+vi.mock('../../utils/interpolateMessage');
 
 describe('resolveTranslationSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(gtFallback).mockReturnValue('fallback-result');
+    vi.mocked(interpolateMessage).mockReturnValue('interpolated-result');
   });
 
-  it('should call gtFallback with the translation and $_fallback set to original message when translation found', () => {
+  it('should call interpolateMessage with the translation and $_fallback set to original message when translation found', () => {
     const mockManager = {
       resolveTranslationSync: vi.fn().mockReturnValue('Bonjour {name} !'),
     };
@@ -23,13 +23,13 @@ describe('resolveTranslationSync', () => {
 
     resolveTranslationSync(message, options);
 
-    expect(gtFallback).toHaveBeenCalledWith('Bonjour {name} !', {
+    expect(interpolateMessage).toHaveBeenCalledWith('Bonjour {name} !', {
       name: 'Alice',
       $_fallback: 'Hello {name}!',
     });
   });
 
-  it('should call gtFallback with original message and user options (no $_fallback) when no translation found', () => {
+  it('should return undefined when no translation found', () => {
     const mockManager = {
       resolveTranslationSync: vi.fn().mockReturnValue(undefined),
     };
@@ -38,14 +38,10 @@ describe('resolveTranslationSync', () => {
     const message = 'Hello {name}!';
     const options = { name: 'Alice' };
 
-    resolveTranslationSync(message, options);
+    const result = resolveTranslationSync(message, options);
 
-    expect(gtFallback).toHaveBeenCalledWith('Hello {name}!', {
-      name: 'Alice',
-    });
-    // Verify $_fallback is NOT present
-    const callArgs = vi.mocked(gtFallback).mock.calls[0][1];
-    expect(callArgs).not.toHaveProperty('$_fallback');
+    expect(result).toBeUndefined();
+    expect(interpolateMessage).not.toHaveBeenCalled();
   });
 
   it('should preserve user options alongside $_fallback when translation found', () => {
@@ -59,7 +55,7 @@ describe('resolveTranslationSync', () => {
 
     resolveTranslationSync(message, options);
 
-    expect(gtFallback).toHaveBeenCalledWith('Translated', {
+    expect(interpolateMessage).toHaveBeenCalledWith('Translated', {
       name: 'Bob',
       $context: 'greeting',
       $id: 'hello-msg',

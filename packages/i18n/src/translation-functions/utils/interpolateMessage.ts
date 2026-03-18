@@ -7,7 +7,7 @@ import {
 } from 'generaltranslation/internal';
 import { formatCutoff } from 'generaltranslation';
 import logger from '../../logs/logger';
-import { interpolationFailureMessage } from './messages';
+import { createInterpolationFailureMessage } from './messages';
 import type { InlineTranslationOptions } from '../types/options';
 
 /**
@@ -50,7 +50,7 @@ export function interpolateMessage<T extends string | null | undefined>(
     });
     return cutoffMessage as T extends string ? string : T;
   } catch {
-    logger.warn(interpolationFailureMessage);
+    logger.warn(createInterpolationFailureMessage(encodedMsg));
 
     // If formatting the translation failed and we have a fallback, try formatting the source instead
     if (source != null) {

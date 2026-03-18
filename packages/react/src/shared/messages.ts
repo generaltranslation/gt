@@ -12,9 +12,9 @@ export const createInvalidLocaleWarning = (locale: string) =>
   `${PACKAGE_NAME} Warning: "${locale}" is not a valid locale.`;
 
 export const createTranslationFailedDueToBrowserEnvironmentWarning = (
-  message: string
+  message: string | TemplateStringsArray | undefined
 ) =>
-  `${PACKAGE_NAME} Warning: Translation failed for t("${message}") because it was used outside of a browser environment. Falling back to original message.`;
+  `${PACKAGE_NAME} Warning: Translation failed for t("${typeof message === 'string' ? message : '`' + message?.join('${}') + '`'}") because it was used outside of a browser environment. Falling back to original message.`;
 
 export const createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning = ({
   customLocale,

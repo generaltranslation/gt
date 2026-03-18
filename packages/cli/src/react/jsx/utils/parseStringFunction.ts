@@ -6,6 +6,7 @@ import {
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
   STRING_REGISTRATION_FUNCS,
+  T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from './constants.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 
@@ -23,6 +24,7 @@ import type {
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
 import { processTranslationCall } from './stringParsing/processTranslationCall/index.js';
+import { processTaggedTemplateCall } from './stringParsing/processTaggedTemplateCall/index.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -127,6 +129,13 @@ function handleFunctionCall(
   ) {
     // Direct translation call: t('hello')
     processTranslationCall(tPath, config, output);
+  } else if (
+    !config.ignoreTaggedTemplates &&
+    tPath.parent.type === 'TaggedTemplateExpression' &&
+    tPath.parent.tag === tPath.node
+  ) {
+    // Tagged template: t`hello ${name}`
+    processTaggedTemplateCall(tPath, config, output);
   } else if (
     tPath.parent.type === 'CallExpression' &&
     t.isExpression(tPath.node) &&
@@ -416,6 +425,14 @@ export function parseStrings(
   config: ParsingConfig,
   output: ParsingOutput
 ): void {
+  // Handle global t macro directly — path is already the tag identifier
+  if (originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER) {
+    if (!config.ignoreGlobalTaggedTemplates) {
+      processTaggedTemplateCall(path, config, output);
+    }
+    return;
+  }
+
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 
@@ -436,14 +453,23 @@ export function parseStrings(
         ignoreInvalidIcu: false,
         ignoreInlineListContent: false,
         includeSourceCodeContext: config.includeSourceCodeContext,
+        ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
       };
 
-      // Check if this is a direct call to msg('string')
+      // Check if this is a direct call to msg('string') or t('string')
       if (
         refPath.parent.type === 'CallExpression' &&
         refPath.parent.callee === refPath.node
       ) {
         processTranslationCall(refPath, stringRegistrationConfig, output);
+      } else if (
+        !stringRegistrationConfig.ignoreTaggedTemplates &&
+        refPath.parent.type === 'TaggedTemplateExpression' &&
+        refPath.parent.tag === refPath.node
+      ) {
+        // Tagged template: t`hello ${name}`
+        processTaggedTemplateCall(refPath, stringRegistrationConfig, output);
       }
       continue;
     }
@@ -497,6 +523,8 @@ export function parseStrings(
         // TODO: when we add support for array content in gt function, this should just always be false
         ignoreInlineListContent: isInlineGT,
         includeSourceCodeContext: config.includeSourceCodeContext,
+        ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
       };
 
       const effectiveParent =

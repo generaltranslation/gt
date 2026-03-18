@@ -8,13 +8,28 @@ import {
  * Synchronous resolution function type
  * @param {string} message - The message to translate.
  * @param {InlineTranslationOptions} options - The options for the translation.
- * @returns {string} The translated message.
+ * @returns {string | undefined} The translated message or undefined if the message is not found.
  *
  * @important This is base type for user API
  *
  * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
  */
 export type SyncResolutionFunction = (
+  message: string,
+  options?: InlineTranslationOptions
+) => string | undefined;
+
+/**
+ * Synchronous resolution function type
+ * @param {string} message - The message to translate.
+ * @param {InlineTranslationOptions} options - The options for the translation.
+ * @returns {string} The translated message.
+ *
+ * @important This is base type for user API
+ *
+ * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ */
+export type SyncResolutionFunctionWithFallback = (
   message: string,
   options?: InlineTranslationOptions
 ) => string;

@@ -6,6 +6,7 @@ export const DECLARE_STATIC_FUNCTION = 'declareStatic';
 export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
 export const T_REGISTRATION_FUNCTION = 't';
+export const T_GLOBAL_REGISTRATION_FUNCTION = 't';
 export const INLINE_TRANSLATION_HOOK = 'useGT';
 export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
@@ -69,3 +70,7 @@ export const GT_ATTRIBUTES = [
 
 // Data attribute prefix injected by build tools
 export const DATA_ATTR_PREFIX = 'data-' as const;
+
+// demarcation for global t macro
+export const T_GLOBAL_REGISTRATION_FUNCTION_MARKER =
+  '_gt_internal_t_global_registration_marker';

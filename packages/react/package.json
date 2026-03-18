@@ -86,6 +86,11 @@
     },
     "./browser/types": {
       "types": "./dist/browser.d.ts"
+    },
+    "./macros": {
+      "types": "./dist/macros.d.ts",
+      "require": "./dist/macros.cjs.min.cjs",
+      "import": "./dist/macros.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -104,6 +109,9 @@
       ],
       "browser/types": [
         "./dist/browser.d.ts"
+      ],
+      "macros": [
+        "./dist/macros.d.ts"
       ]
     }
   },
@@ -124,6 +132,9 @@
       ],
       "gt-react/browser/types": [
         "./dist/browser.d.ts"
+      ],
+      "gt-react/macros": [
+        "./dist/macros.d.ts"
       ]
     }
   },

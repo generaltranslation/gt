@@ -73,6 +73,8 @@ describe('sourceCode metadata integration', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               includeSourceCodeContext: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             { updates, errors, warnings }
           );
@@ -199,6 +201,8 @@ describe('sourceCode metadata integration', () => {
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
               includeSourceCodeContext: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
             },
             { updates, errors, warnings }
           );
