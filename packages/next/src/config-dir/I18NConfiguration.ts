@@ -279,6 +279,7 @@ export default class I18NConfiguration {
       localeCookieName,
       resetLocaleCookieName,
       customMapping,
+      _versionId,
     } = this;
     return {
       projectId,
@@ -293,6 +294,7 @@ export default class I18NConfiguration {
       localeCookieName,
       resetLocaleCookieName,
       customMapping,
+      _versionId,
     };
   }
 
