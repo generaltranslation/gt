@@ -26,6 +26,7 @@ export class TanstackI18nManager extends I18nManager<TanstackStorageAdapter> {
       customMapping: this.config.customMapping,
       enableI18n: this.config.enableI18n,
       loadTranslations: this.getTranslationLoader(),
+      _versionId: this.config._versionId,
     };
   }
 }
