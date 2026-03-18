@@ -47,7 +47,10 @@ export const STRING_REGISTRATION_FUNCS = [
 ] as const;
 
 // Derive functions that are imported from GT
-export const GT_DERIVE_FUNCTIONS = [DECLARE_STATIC_FUNCTION, DERIVE_FUNCTION];
+export const GT_DERIVE_STRING_FUNCTIONS = [
+  DECLARE_STATIC_FUNCTION,
+  DERIVE_FUNCTION,
+];
 
 // Valid variable components
 export const VARIABLE_COMPONENTS = [

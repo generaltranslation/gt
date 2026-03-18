@@ -1,4 +1,4 @@
-import { VisitNode } from '@babel/traverse';
+import { NodePath, VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
@@ -36,12 +36,15 @@ export function processCallExpression(
 
     const firstArg = path.node.arguments[0];
     if (!firstArg) return;
+    const firstArgPath = path.get('arguments')?.[0];
 
     if (
       state.settings.enableTemplateLiteralArg &&
       t.isTemplateLiteral(firstArg)
     ) {
-      const { message, variables } = transformTemplateLiteral(firstArg);
+      const { message, variables } = transformTemplateLiteral(
+        firstArgPath as NodePath<t.TemplateLiteral>
+      );
       path.node.arguments[0] = message;
       if (variables) {
         mergeVariables(path.node.arguments, variables);
@@ -50,7 +53,9 @@ export function processCallExpression(
       state.settings.enableConcatenationArg &&
       t.isBinaryExpression(firstArg, { operator: '+' })
     ) {
-      const { message, variables } = transformConcatenation(firstArg);
+      const { message, variables } = transformConcatenation(
+        firstArgPath as NodePath<t.BinaryExpression>
+      );
       path.node.arguments[0] = message;
       if (variables) {
         mergeVariables(path.node.arguments, variables);

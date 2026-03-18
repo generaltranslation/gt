@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { GT_DERIVE_FUNCTIONS } from '../../constants.js';
+import { GT_DERIVE_STRING_FUNCTIONS } from '../../constants.js';
 import { GT_LIBRARIES, GTLibrary } from '../../../../../types/libraries.js';
 
 /**
@@ -38,8 +38,8 @@ export function isDeriveCall({
     ? imported.name
     : imported.value;
   if (
-    !GT_DERIVE_FUNCTIONS.includes(
-      originalName as (typeof GT_DERIVE_FUNCTIONS)[number]
+    !GT_DERIVE_STRING_FUNCTIONS.includes(
+      originalName as (typeof GT_DERIVE_STRING_FUNCTIONS)[number]
     )
   ) {
     return false;

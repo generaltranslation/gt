@@ -1,3 +1,4 @@
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
 /**
@@ -6,12 +7,14 @@ import * as t from '@babel/types';
  *
  * Non-'+' BinaryExpressions are returned as a single element.
  */
-export function flattenConcatenation(node: t.Expression): t.Expression[] {
-  if (t.isBinaryExpression(node) && node.operator === '+') {
+export function flattenConcatenation(
+  path: NodePath<t.Expression>
+): NodePath<t.Expression>[] {
+  if (path.isBinaryExpression() && path.node.operator === '+') {
     return [
-      ...flattenConcatenation(node.left as t.Expression),
-      ...flattenConcatenation(node.right as t.Expression),
+      ...flattenConcatenation(path.get('left') as NodePath<t.Expression>),
+      ...flattenConcatenation(path.get('right') as NodePath<t.Expression>),
     ];
   }
-  return [node];
+  return [path];
 }

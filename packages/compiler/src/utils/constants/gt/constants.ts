@@ -82,6 +82,14 @@ export const GT_FUNCTIONS_TO_CALLBACKS: Record<
 };
 
 /**
+ * GT derive functions
+ */
+export const GT_DERIVE_STRING_FUNCTIONS = [
+  GT_OTHER_FUNCTIONS.declareStatic,
+  GT_OTHER_FUNCTIONS.derive,
+] as const;
+
+/**
  * All gt functions (both regular and callback functions)
  */
 export type GT_ALL_FUNCTIONS =
