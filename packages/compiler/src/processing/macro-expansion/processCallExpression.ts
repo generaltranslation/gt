@@ -1,9 +1,9 @@
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
-import { isGTImportSource } from '../../utils/constants/gt/helpers';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
 import { transformConcatenation } from '../../transform/macro-expansion/transformConcatenation';
+import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 
 /**
  * Process call expressions for macro expansion.
@@ -28,7 +28,7 @@ export function processCallExpression(
       const importDecl = binding.path.parentPath;
       if (
         importDecl?.isImportDeclaration() &&
-        !isGTImportSource(importDecl.node.source.value)
+        importDecl.node.source.value !== GT_IMPORT_SOURCES.GT_REACT_BROWSER
       ) {
         return;
       }
