@@ -30,7 +30,6 @@ export type Updates = ({
  * @param modelProvider - Optional model provider to use
  */
 export type EnqueueFilesOptions = {
-  publish?: boolean;
   requireApproval?: boolean;
   description?: string; // @deprecated Will be removed in v8.0.0
   sourceLocale?: string;
