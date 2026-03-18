@@ -135,13 +135,19 @@ export function resolveFiles(
           path.resolve(cwd, p.replace(/\[locale\]/g, locale));
 
         for (const pubPattern of publishPatterns) {
-          const matches = micromatch(resolvedAbsolute, toAbsoluteGlob(pubPattern));
+          const matches = micromatch(
+            resolvedAbsolute,
+            toAbsoluteGlob(pubPattern)
+          );
           for (const p of matches) {
             publishPaths.add(p);
           }
         }
         for (const unpubPattern of unpublishPatterns) {
-          const matches = micromatch(resolvedAbsolute, toAbsoluteGlob(unpubPattern));
+          const matches = micromatch(
+            resolvedAbsolute,
+            toAbsoluteGlob(unpubPattern)
+          );
           for (const p of matches) {
             unpublishPaths.add(p);
           }
