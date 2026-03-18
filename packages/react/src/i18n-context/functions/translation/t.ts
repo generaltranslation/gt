@@ -1,5 +1,8 @@
 import { resolveTranslationSync } from 'gt-i18n/internal';
-import { SyncResolutionFunction } from 'gt-i18n/types';
+import {
+  InlineTranslationOptions,
+  SyncResolutionFunction,
+} from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
 import { StringOrTemplateSyncResolutionFunction } from './types';
 
@@ -31,7 +34,10 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   ...values: unknown[]
 ) => {
   if (typeof messageOrStrings === 'string') {
-    return translateWithFunction(messageOrStrings, values);
+    return translateWithFunction(
+      messageOrStrings,
+      values.at(0) as InlineTranslationOptions | undefined
+    );
   } else {
     const { message, variables } = extractInterpolatableValues(
       messageOrStrings,
