@@ -32,9 +32,10 @@ function mergeWithSource(
   const jsonSchema = options.options.jsonSchema
     ? validateJsonSchema(options.options, inputPath)
     : null;
-  const yamlSchema = !jsonSchema && options.options.yamlSchema
-    ? validateYamlSchema(options.options, inputPath)
-    : null;
+  const yamlSchema =
+    !jsonSchema && options.options.yamlSchema
+      ? validateYamlSchema(options.options, inputPath)
+      : null;
 
   if (!jsonSchema && !yamlSchema) return translatedContent;
 
@@ -89,7 +90,11 @@ export async function downloadFileBatch(
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const { data: downloadedVersions, entries, originalV1 } = readLockfile(options);
+  const {
+    data: downloadedVersions,
+    entries,
+    originalV1,
+  } = readLockfile(options);
   let didUpdateDownloadedLock = false;
 
   // Create a map of requested file keys to the file object
