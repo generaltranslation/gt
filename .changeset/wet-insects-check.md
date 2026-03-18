@@ -5,4 +5,4 @@
 'gt-next': minor
 ---
 
-Added a VersionID hook for users to better access what Version their GT translations are on
+Added a versionId hook for users to better access what Version their GT translations are on
