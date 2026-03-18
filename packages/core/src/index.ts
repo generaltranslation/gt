@@ -508,9 +508,7 @@ export class GT {
    * @param {PublishFileEntry[]} files - Array of file entries with publish flags
    * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
    */
-  async publishFiles(
-    files: PublishFileEntry[]
-  ): Promise<PublishFilesResult> {
+  async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
     this._validateAuth('publishFiles');
     return await _publishFiles(files, this._getTranslationConfig());
   }

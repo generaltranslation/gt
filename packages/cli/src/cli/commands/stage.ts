@@ -31,11 +31,11 @@ export async function handleStage(
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
-  const { files: allFiles, reactComponents, publishMap } = await collectFiles(
-    options,
-    settings,
-    library
-  );
+  const {
+    files: allFiles,
+    reactComponents,
+    publishMap,
+  } = await collectFiles(options, settings, library);
 
   // Dry run
   if (options.dryRun) {

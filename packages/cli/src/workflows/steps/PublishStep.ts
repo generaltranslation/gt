@@ -4,10 +4,7 @@ import { GT } from 'generaltranslation';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 
-export class PublishStep extends WorkflowStep<
-  FileReference[],
-  void
-> {
+export class PublishStep extends WorkflowStep<FileReference[], void> {
   private spinner = logger.createSpinner('dots');
 
   constructor(
