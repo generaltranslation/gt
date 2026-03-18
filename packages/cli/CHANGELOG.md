@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.10.7
+
+### Patch Changes
+
+- [#1118](https://github.com/generaltranslation/gt/pull/1118) [`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add t macro
+
 ## 2.10.6
 
 ### Patch Changes
