@@ -385,5 +385,13 @@ export async function aggregateFiles(
     );
   }
 
+  // Remove stale entries for files that were skipped during validation
+  const validFileIds = new Set(allFiles.map((f) => f.fileId));
+  for (const fileId of publishMap.keys()) {
+    if (!validFileIds.has(fileId)) {
+      publishMap.delete(fileId);
+    }
+  }
+
   return { files: allFiles, publishMap };
 }
