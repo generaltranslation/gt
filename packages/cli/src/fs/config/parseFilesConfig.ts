@@ -66,6 +66,14 @@ export function normalizeIncludePatterns(patterns: IncludePattern[]): {
   return { paths, publishPatterns, unpublishPatterns };
 }
 
+/**
+ * Resolves the files from the files object.
+ * Performs glob pattern expansion on the files.
+ * Replaces [locale] with the actual locale in the files.
+ *
+ * @param files - The files object
+ * @returns The resolved files
+ */
 export function resolveFiles(
   files: FilesOptions,
   locale: string,
