@@ -52,10 +52,7 @@ function runProcessTaggedTemplateCall(
 
   traverse(ast, {
     TaggedTemplateExpression(path: NodePath<t.TaggedTemplateExpression>) {
-      if (
-        t.isIdentifier(path.node.tag) &&
-        path.node.tag.name === tagName
-      ) {
+      if (t.isIdentifier(path.node.tag) && path.node.tag.name === tagName) {
         const tagPath = path.get('tag') as NodePath;
         processTaggedTemplateCall(tagPath, cfg, output);
       }
