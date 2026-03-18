@@ -12,8 +12,6 @@ import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
   readLockfile,
   writeLockfile,
-  findEntry,
-  findOrCreateEntry,
 } from '../fs/config/downloadedVersions.js';
 import { recordDownloaded } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -31,18 +29,19 @@ function mergeWithSource(
 ): string {
   if (!options.options) return translatedContent;
 
-  const schema = options.options.jsonSchema
+  const jsonSchema = options.options.jsonSchema
     ? validateJsonSchema(options.options, inputPath)
-    : options.options.yamlSchema
-      ? validateYamlSchema(options.options, inputPath)
-      : null;
+    : null;
+  const yamlSchema = !jsonSchema && options.options.yamlSchema
+    ? validateYamlSchema(options.options, inputPath)
+    : null;
 
-  if (!schema) return translatedContent;
+  if (!jsonSchema && !yamlSchema) return translatedContent;
 
   const sourceContent = fs.readFileSync(inputPath, 'utf8');
   if (!sourceContent) return translatedContent;
 
-  if (options.options.jsonSchema) {
+  if (jsonSchema) {
     return mergeJson(
       sourceContent,
       inputPath,
@@ -90,7 +89,7 @@ export async function downloadFileBatch(
   forceDownload: boolean = false
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
-  const { data: downloadedVersions, originalV1 } = readLockfile(options);
+  const { data: downloadedVersions, entries, originalV1 } = readLockfile(options);
   let didUpdateDownloadedLock = false;
 
   // Create a map of requested file keys to the file object
@@ -162,7 +161,7 @@ export async function downloadFileBatch(
           fs.mkdirSync(dir, { recursive: true });
         }
         // If a local translation already exists for the same source version, skip overwrite
-        const existingEntry = findEntry(downloadedVersions.entries, fileId);
+        const existingEntry = entries.find(fileId);
         const downloadedTranslation =
           existingEntry?.versionId === versionId
             ? existingEntry.translations[locale]
@@ -229,11 +228,7 @@ export async function downloadFileBatch(
 
         result.successful.push(requestedFile);
         if (fileId && versionId && locale) {
-          const entry = findOrCreateEntry(
-            downloadedVersions.entries,
-            fileId,
-            versionId
-          );
+          const entry = entries.findOrCreate(fileId, versionId);
           entry.fileName = inputPath;
           entry.translations[locale] = {
             updatedAt: new Date().toISOString(),
