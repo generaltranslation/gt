@@ -23,7 +23,7 @@ export async function collectFiles(
   publishMap: Map<string, boolean>;
 }> {
   // Aggregate files
-  const { files: allFiles, publishMap } = await aggregateFiles(settings);
+  const { files, publishMap } = await aggregateFiles(settings);
 
   // Parse for React components
   let reactComponents = 0;
@@ -54,7 +54,7 @@ export async function collectFiles(
         }
       }
       reactComponents = updates.length;
-      allFiles.push({
+      files.push({
         fileName: TEMPLATE_FILE_NAME,
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
@@ -66,5 +66,5 @@ export async function collectFiles(
       publishMap.set(TEMPLATE_FILE_ID, shouldPublishGt(settings));
     }
   }
-  return { files: allFiles, reactComponents, publishMap };
+  return { files, reactComponents, publishMap };
 }
