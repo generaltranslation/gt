@@ -12,42 +12,30 @@ export class PublishStep extends WorkflowStep<PublishFileEntry[], void> {
   }
 
   async run(files: PublishFileEntry[]): Promise<void> {
-    const filesToPublish = files.filter((f) => f.publish);
+    if (files.length === 0) return;
 
-    if (filesToPublish.length === 0) return;
-
-    this.spinner.start(
-      `Publishing ${filesToPublish.length} file${filesToPublish.length !== 1 ? 's' : ''} to CDN...`
-    );
+    this.spinner.start('Updating CDN...');
 
     try {
-      const result = await this.gt.publishFiles(filesToPublish);
+      const result = await this.gt.publishFiles(files);
 
       const failed = result.results.filter(
         (r: { success: boolean; error?: string }) => !r.success
       );
       if (failed.length > 0) {
-        this.spinner.stop(
-          chalk.yellow(
-            `Published ${filesToPublish.length - failed.length}/${filesToPublish.length} files (${failed.length} failed)`
-          )
-        );
+        this.spinner.stop(chalk.yellow('CDN updated with errors'));
         for (const f of failed) {
-          const file = filesToPublish.find((p) => p.fileId === f.fileId);
+          const file = files.find((p) => p.fileId === f.fileId);
           const name = file?.fileName ?? f.fileId;
           logger.warn(
-            `Failed to publish ${name}: ${f.error ?? 'unknown error'}`
+            `Failed to update ${name}: ${f.error ?? 'unknown error'}`
           );
         }
       } else {
-        this.spinner.stop(
-          chalk.green(
-            `${filesToPublish.length} file${filesToPublish.length !== 1 ? 's' : ''} published to CDN`
-          )
-        );
+        this.spinner.stop(chalk.green('CDN updated'));
       }
     } catch (err) {
-      this.spinner.stop(chalk.red('Failed to publish files to CDN'));
+      this.spinner.stop(chalk.red('Failed to update CDN'));
       logger.warn(
         `Publish error: ${err instanceof Error ? err.message : String(err)}`
       );
