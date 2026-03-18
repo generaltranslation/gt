@@ -184,6 +184,7 @@ export type FilesOptions = {
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
+    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
 };
 
@@ -202,6 +203,7 @@ export type Settings = {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
     placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
+    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
   publish: boolean; // if true, publish the translations to the CDN
@@ -263,7 +265,6 @@ export type AdditionalOptions = {
     replace: string; // replacement prefix, can include [locale] or [defaultLocale]
   }>;
   experimentalCanonicalLocaleKeys?: boolean; // For composite JSON schemas with locale keys, force canonical locale even when alias provided
-  includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
 };
 
 export type SharedStaticAssetsConfig = {
