@@ -129,27 +129,30 @@ export function resolveFiles(
       placeholderResult[fileType] = filePaths.placeholderPaths;
 
       // Match resolved paths against publish/unpublish patterns
+      // Use POSIX paths for micromatch (which expects forward slashes)
+      // but store platform-native paths in the sets for downstream lookups
       if (publishPatterns.length > 0 || unpublishPatterns.length > 0) {
         const resolvedAbsolute = filePaths.resolvedPaths;
+        const posixPaths = resolvedAbsolute.map(toPosixPath);
         const toAbsoluteGlob = (p: string) =>
-          path.resolve(cwd, p.replace(/\[locale\]/g, locale));
+          toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
 
         for (const pubPattern of publishPatterns) {
-          const matches = micromatch(
-            resolvedAbsolute,
-            toAbsoluteGlob(pubPattern)
-          );
-          for (const p of matches) {
-            publishPaths.add(p);
+          const matched = micromatch(posixPaths, toAbsoluteGlob(pubPattern));
+          const matchedSet = new Set(matched);
+          for (let i = 0; i < posixPaths.length; i++) {
+            if (matchedSet.has(posixPaths[i])) {
+              publishPaths.add(resolvedAbsolute[i]);
+            }
           }
         }
         for (const unpubPattern of unpublishPatterns) {
-          const matches = micromatch(
-            resolvedAbsolute,
-            toAbsoluteGlob(unpubPattern)
-          );
-          for (const p of matches) {
-            unpublishPaths.add(p);
+          const matched = micromatch(posixPaths, toAbsoluteGlob(unpubPattern));
+          const matchedSet = new Set(matched);
+          for (let i = 0; i < posixPaths.length; i++) {
+            if (matchedSet.has(posixPaths[i])) {
+              unpublishPaths.add(resolvedAbsolute[i]);
+            }
           }
         }
       }
