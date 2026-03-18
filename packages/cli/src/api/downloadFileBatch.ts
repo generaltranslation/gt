@@ -178,7 +178,7 @@ export async function downloadFileBatch(
           // non-translatable fields changed (skip the API download, not the merge)
           try {
             const existingContent = fs.readFileSync(outputPath, 'utf8');
-            const extracted = options.options?.jsonSchema
+            const jsonExtracted = options.options?.jsonSchema
               ? extractJson(
                   existingContent,
                   inputPath,
@@ -186,9 +186,12 @@ export async function downloadFileBatch(
                   locale,
                   options.defaultLocale
                 )
-              : options.options?.yamlSchema
+              : null;
+            const extracted =
+              jsonExtracted ??
+              (options.options?.yamlSchema
                 ? extractYaml(existingContent, inputPath, options.options)
-                : null;
+                : null);
             if (extracted) {
               const remerged = mergeWithSource(
                 extracted,
