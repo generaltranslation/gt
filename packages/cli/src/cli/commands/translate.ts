@@ -18,6 +18,7 @@ import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
 import { PublishStep } from '../../workflows/steps/PublishStep.js';
 import { gt } from '../../utils/gt.js';
+import { hasPublishConfig } from '../../utils/resolvePublish.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -53,16 +54,16 @@ export async function handleTranslate(
     });
 
     // Publish/unpublish files after translations are downloaded
-    if (publishMap && Array.from(publishMap.values()).some(Boolean)) {
-      const allFileRefs = Object.entries(fileVersionData).map(
-        ([fileId, data]) => ({
+    if (publishMap && hasPublishConfig(settings)) {
+      const allFileRefs = Object.entries(fileVersionData)
+        .filter(([fileId]) => publishMap.has(fileId))
+        .map(([fileId, data]) => ({
           fileId,
           versionId: data.versionId,
           branchId: branchData?.currentBranch.id,
-          publish: publishMap.get(fileId) ?? false,
+          publish: publishMap.get(fileId)!,
           fileName: data.fileName,
-        })
-      );
+        }));
       const publishStep = new PublishStep(gt);
       await publishStep.run(allFileRefs);
       await publishStep.wait();

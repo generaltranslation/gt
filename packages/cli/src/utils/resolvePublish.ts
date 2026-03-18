@@ -16,6 +16,19 @@ export function shouldPublishFile(
 }
 
 /**
+ * Returns true if the user has any explicit publish configuration —
+ * global flag, gt-specific flag, or per-file publish/unpublish patterns.
+ */
+export function hasPublishConfig(settings: Settings): boolean {
+  return (
+    settings.publish ||
+    settings.files.gtPublish !== undefined ||
+    (settings.files.publishPaths?.size ?? 0) > 0 ||
+    (settings.files.unpublishPaths?.size ?? 0) > 0
+  );
+}
+
+/**
  * Determines whether gtjson content should be published.
  * Uses the gt-specific publish flag if set, otherwise falls back to global.
  */
