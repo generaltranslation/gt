@@ -57,6 +57,17 @@ export async function aggregateFiles(
   const { resolvedPaths: filePaths } = settings.files;
   const skipValidation = settings.options?.skipFileValidation;
 
+  // Build publish map upfront from resolved paths
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (filePaths[fileType]) {
+      for (const absolutePath of filePaths[fileType]) {
+        const relativePath = getRelative(absolutePath);
+        const fileId = hashStringSync(relativePath);
+        publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
+      }
+    }
+  }
+
   // Process JSON files
   if (filePaths.json) {
     const { library, additionalModules } = determineLibrary();
@@ -372,31 +383,6 @@ export async function aggregateFiles(
     logger.error(
       'No files to translate were found. Check your configuration and try again.'
     );
-  }
-
-  // Build a reverse map of fileId -> absolute path for publish resolution
-  // fileId = hashStringSync(relativePath), relativePath = getRelative(absolutePath)
-  // So we can rebuild it from the resolved paths
-  const fileIdToAbsolutePath = new Map<string, string>();
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (filePaths[fileType]) {
-      for (const absolutePath of filePaths[fileType]) {
-        const relativePath = getRelative(absolutePath);
-        const fileId = hashStringSync(relativePath);
-        fileIdToAbsolutePath.set(fileId, absolutePath);
-      }
-    }
-  }
-
-  // Build publish map using per-file resolution logic
-  for (const file of allFiles) {
-    const absolutePath = fileIdToAbsolutePath.get(file.fileId);
-    if (absolutePath) {
-      publishMap.set(file.fileId, shouldPublishFile(absolutePath, settings));
-    } else {
-      // For files without a resolved path (e.g. gtjson template), use global setting
-      publishMap.set(file.fileId, settings.publish);
-    }
   }
 
   return { files: allFiles, publishMap };
