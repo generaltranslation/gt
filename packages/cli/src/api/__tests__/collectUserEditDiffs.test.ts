@@ -7,7 +7,10 @@ import { createMockSettings } from '../__mocks__/settings.js';
 import { gt } from '../../utils/gt.js';
 import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
-import { getDownloadedVersions } from '../../fs/config/downloadedVersions.js';
+import {
+  readLockfile,
+  DownloadedVersionsV1,
+} from '../../fs/config/downloadedVersions.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 
 vi.mock('../../utils/gt.js', () => ({
@@ -46,6 +49,7 @@ describe('collectAndSendUserEditDiffs', () => {
       config: path.join(tempDir, 'gt.config.json'),
       defaultLocale: 'en',
       locales: ['en', 'ja'],
+      _branchId: 'branch1',
       files: {
         resolvedPaths: {
           md: [path.join(tempDir, 'docs', 'doc.md')],
@@ -57,7 +61,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-  const writeLockFile = (content: any) => {
+  const writeLockFile = (content: DownloadedVersionsV1) => {
     fs.writeFileSync(
       path.join(tempDir, 'gt-lock.json'),
       JSON.stringify(content, null, 2)
@@ -98,10 +102,9 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    const lock = getDownloadedVersions(settings.configDirectory);
-    expect(
-      lock.entries.branch1?.file1?.version1?.ja?.postProcessHash
-    ).toBeDefined();
+    const { entryMap } = readLockfile(settings);
+    const entry = entryMap.get('file1');
+    expect(entry?.translations?.ja?.postProcessHash).toBeDefined();
 
     await collectAndSendUserEditDiffs(files as any, settings);
 
