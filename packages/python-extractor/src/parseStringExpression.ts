@@ -1,7 +1,7 @@
 import type { SyntaxNode } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
-import { PYTHON_DECLARE_STATIC, PYTHON_DECLARE_VAR } from './constants.js';
+import { PYTHON_DERIVE, PYTHON_DECLARE_STATIC, PYTHON_DECLARE_VAR } from './constants.js';
 import {
   resolveFunctionInCurrentFile,
   resolveFunctionInFile,
@@ -18,18 +18,25 @@ type ParseContext = {
 };
 
 /**
- * Checks if an expression contains declare_static or declare_var calls.
+ * Returns true if the original import name is derive() or declare_static() (deprecated).
+ */
+function isDeriveFunction(originalName: string | null): boolean {
+  return originalName === PYTHON_DERIVE || originalName === PYTHON_DECLARE_STATIC;
+}
+
+/**
+ * Checks if an expression contains derive/declare_static or declare_var calls.
  */
 export function containsStaticCalls(
   node: SyntaxNode,
   imports: ImportAlias[]
 ): boolean {
-  const staticNames = getStaticImportNames(imports);
+  const staticNames = getDeriveImportNames(imports);
   if (staticNames.size === 0) return false;
-  return hasStaticCallRecursive(node, staticNames);
+  return hasDeriveCallRecursive(node, staticNames);
 }
 
-function hasStaticCallRecursive(node: SyntaxNode, names: Set<string>): boolean {
+function hasDeriveCallRecursive(node: SyntaxNode, names: Set<string>): boolean {
   if (node.type === 'call') {
     const funcNode = node.childForFieldName('function');
     if (
@@ -42,15 +49,15 @@ function hasStaticCallRecursive(node: SyntaxNode, names: Set<string>): boolean {
   }
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child && hasStaticCallRecursive(child, names)) return true;
+    if (child && hasDeriveCallRecursive(child, names)) return true;
   }
   return false;
 }
 
 /**
  * Parses the first argument of t() into a StringNode tree.
- * Handles: plain strings, f-strings with declare_static/declare_var,
- * binary + concatenation, and standalone declare_static calls.
+ * Handles: plain strings, f-strings with derive/declare_var,
+ * binary + concatenation, and standalone derive calls.
  */
 export async function parseStringExpression(
   node: SyntaxNode,
@@ -84,12 +91,12 @@ export async function parseStringExpression(
     return parseBinaryOperator(node, ctx);
   }
 
-  // Standalone call: declare_static(...)
+  // Standalone call: derive/declare_static(...)
   if (node.type === 'call') {
     const funcNode = node.childForFieldName('function');
     if (funcNode && funcNode.type === 'identifier') {
       const originalName = getOriginalImportName(funcNode.text, ctx.imports);
-      if (originalName === PYTHON_DECLARE_STATIC) {
+      if (isDeriveFunction(originalName)) {
         return resolveDeclareStaticArg(node, ctx);
       }
       if (originalName === PYTHON_DECLARE_VAR) {
@@ -106,7 +113,7 @@ export async function parseStringExpression(
 
 /**
  * Parses an f-string into a StringNode tree.
- * string_content → text nodes, interpolation → check for declare_static/declare_var
+ * string_content → text nodes, interpolation → check for derive/declare_var
  */
 async function parseFString(
   node: SyntaxNode,
@@ -143,7 +150,7 @@ async function parseFString(
 
 /**
  * Parses an interpolation within an f-string.
- * Must be a declare_static() or declare_var() call.
+ * Must be a derive() or declare_var() call.
  */
 async function parseInterpolation(
   interpNode: SyntaxNode,
@@ -176,7 +183,7 @@ async function parseInterpolation(
     const funcNode = expr.childForFieldName('function');
     if (funcNode && funcNode.type === 'identifier') {
       const originalName = getOriginalImportName(funcNode.text, ctx.imports);
-      if (originalName === PYTHON_DECLARE_STATIC) {
+      if (isDeriveFunction(originalName)) {
         return resolveDeclareStaticArg(expr, ctx);
       }
       if (originalName === PYTHON_DECLARE_VAR) {
@@ -187,7 +194,7 @@ async function parseInterpolation(
 
   // Not a declare_static/declare_var call — error
   ctx.errors.push(
-    `${locationStr(interpNode)}: f-string interpolation must use declare_static() or declare_var(), got "${expr.text}"`
+    `${locationStr(interpNode)}: f-string interpolation must use derive() or declare_var(), got "${expr.text}"`
   );
   return null;
 }
@@ -238,7 +245,7 @@ async function parseBinaryOperator(
 }
 
 /**
- * Resolves the argument of a declare_static() call into a StringNode.
+ * Resolves the argument of a derive() call into a StringNode.
  * Handles: string literals, ternary expressions, function calls.
  */
 async function resolveDeclareStaticArg(
@@ -248,7 +255,7 @@ async function resolveDeclareStaticArg(
   const arg = getFirstPositionalArg(callNode);
   if (!arg) {
     ctx.errors.push(
-      `${locationStr(callNode)}: declare_static() requires an argument`
+      `${locationStr(callNode)}: derive() requires an argument`
     );
     return null;
   }
@@ -259,7 +266,7 @@ async function resolveDeclareStaticArg(
 /**
  * Resolves a value expression that should produce string variants.
  * Handles: string literals, ternary, function calls, binary concat,
- * and declare_var() calls (nested inside declare_static).
+ * and declare_var() calls (nested inside derive).
  */
 async function resolveStaticValue(
   node: SyntaxNode,
@@ -306,7 +313,7 @@ async function resolveStaticValue(
   }
 
   ctx.errors.push(
-    `${locationStr(node)}: unsupported declare_static argument type "${node.type}"`
+    `${locationStr(node)}: unsupported derive() argument type "${node.type}"`
   );
   return null;
 }
@@ -506,7 +513,7 @@ function extractImportsFromRoot(
   // (in case the helper file doesn't import them directly)
   const parentDeclareImports = parentImports.filter(
     (imp) =>
-      imp.originalName === PYTHON_DECLARE_STATIC ||
+      isDeriveFunction(imp.originalName) ||
       imp.originalName === PYTHON_DECLARE_VAR
   );
 
@@ -604,11 +611,11 @@ function getOriginalImportName(
   return null;
 }
 
-function getStaticImportNames(imports: ImportAlias[]): Set<string> {
+function getDeriveImportNames(imports: ImportAlias[]): Set<string> {
   const names = new Set<string>();
   for (const imp of imports) {
     if (
-      imp.originalName === PYTHON_DECLARE_STATIC ||
+      isDeriveFunction(imp.originalName) ||
       imp.originalName === PYTHON_DECLARE_VAR
     ) {
       names.add(imp.localName);

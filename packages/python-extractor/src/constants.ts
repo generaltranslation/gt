@@ -2,12 +2,15 @@ export const PYTHON_GT_PACKAGES = ['gt_flask', 'gt_fastapi'] as const;
 export const PYTHON_GT_DEPENDENCIES = ['gt-flask', 'gt-fastapi'] as const;
 export const PYTHON_T_FUNCTION = 't';
 export const PYTHON_MSG_FUNCTION = 'msg';
+export const PYTHON_DERIVE = 'derive';
+/** @deprecated Use PYTHON_DERIVE instead */
 export const PYTHON_DECLARE_STATIC = 'declare_static';
 export const PYTHON_DECLARE_VAR = 'declare_var';
-/** These imported names are tracked (translation functions + static helpers) */
+/** These imported names are tracked (translation functions + derive helpers) */
 export const PYTHON_TRANSLATION_FUNCTIONS = [
   't',
   'msg',
+  'derive',
   'declare_static',
   'declare_var',
 ] as const;

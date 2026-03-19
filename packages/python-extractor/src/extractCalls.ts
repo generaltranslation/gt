@@ -36,11 +36,12 @@ export async function extractCalls(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Only track t/msg as translation functions (not declare_static/declare_var)
+  // Only track t/msg as translation functions (not derive/declare_static/declare_var)
   const trackedNames = new Set(
     imports
       .filter(
         (imp) =>
+          imp.originalName !== 'derive' &&
           imp.originalName !== 'declare_static' &&
           imp.originalName !== 'declare_var'
       )
@@ -203,7 +204,7 @@ async function processCall(
   // Check for f-strings (without declare_static/declare_var)
   if (isFString(firstArg)) {
     errors.push(
-      `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal or declare_static()/declare_var()`
+      `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal or derive()/declare_var()`
     );
     return;
   }
