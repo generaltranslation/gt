@@ -94,6 +94,13 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   /**
+   * Get the version ID
+   */
+  getVersionId(): string | undefined {
+    return this.config._versionId;
+  }
+
+  /**
    * Get a gt class instance
    * TODO: keep a cache to avoid creating new instances unnecessarily
    */
@@ -248,6 +255,7 @@ function standardizeConfig<T extends StorageAdapter>(
     devApiKey: config.devApiKey,
     apiKey: config.apiKey,
     runtimeUrl: config.runtimeUrl,
+    _versionId: config._versionId,
     ...(gtServicesEnabled
       ? standardizeLocales(dedupedLocales)
       : dedupedLocales),

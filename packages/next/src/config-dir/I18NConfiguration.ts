@@ -279,6 +279,7 @@ export default class I18NConfiguration {
       localeCookieName,
       resetLocaleCookieName,
       customMapping,
+      _versionId,
     } = this;
     return {
       projectId,
@@ -293,6 +294,7 @@ export default class I18NConfiguration {
       localeCookieName,
       resetLocaleCookieName,
       customMapping,
+      _versionId,
     };
   }
 
@@ -320,6 +322,14 @@ export default class I18NConfiguration {
    */
   getLocales(): string[] {
     return this.locales;
+  }
+
+  /**
+   * Gets the version ID for the current source
+   * @returns {string | undefined} The version ID, if set
+   */
+  getVersionId(): string | undefined {
+    return this._versionId;
   }
 
   // ----- COOKIES AND HEADERS ----- //
