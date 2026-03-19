@@ -13,6 +13,8 @@ export type PublishFilesResult = {
   results: {
     fileId: string;
     versionId: string;
+    locale?: string; // if locale is provided, it means this result is for a translation. Else it is for a source file.
+    branchId: string;
     success: boolean;
     error?: string;
   }[];
