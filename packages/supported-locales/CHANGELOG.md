@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.0.54
+
+### Patch Changes
+
+- [#1136](https://github.com/generaltranslation/gt/pull/1136) [`881edc4`](https://github.com/generaltranslation/gt/commit/881edc4ccb5c9685c137da98aa5123b0e645686c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding ha, ig, yo
+
 ## 2.0.53
 
 ### Patch Changes
