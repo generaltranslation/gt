@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773887879405,
+  "lastUpdate": 1773894739091,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -1276,6 +1276,122 @@ window.BENCHMARK_DATA = {
             "value": 130.40000000002328,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "906c8e8cdb407782d0b6a13541f1dac3c4673049",
+          "message": "[ci] release (#1131)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.11.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- [#1132](https://github.com/generaltranslation/gt/pull/1132)\n[`a83a130`](https://github.com/generaltranslation/gt/commit/a83a130944193ec4b9784fb7687808936e175d19)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make\nCDN unpublish behavior opt-in\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n    -   gt-remark@1.0.6\n    -   @generaltranslation/python-extractor@0.1.6\n\n## @generaltranslation/compiler@1.1.32\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n\n## generaltranslation@8.1.20\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n## gtx-cli@2.11.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8),\n[`a83a130`](https://github.com/generaltranslation/gt/commit/a83a130944193ec4b9784fb7687808936e175d19)]:\n    -   gt@2.11.2\n\n## gt-i18n@0.7.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n    -   @generaltranslation/supported-locales@2.0.53\n\n## locadex@1.0.127\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8),\n[`a83a130`](https://github.com/generaltranslation/gt/commit/a83a130944193ec4b9784fb7687808936e175d19)]:\n    -   gt@2.11.2\n\n## @generaltranslation/mcp@1.0.6\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n## gt-next@6.14.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   @generaltranslation/compiler@1.1.32\n    -   generaltranslation@8.1.20\n    -   gt-i18n@0.7.2\n    -   @generaltranslation/next-internal@0.1.1\n    -   gt-react@10.15.1\n    -   @generaltranslation/supported-locales@2.0.53\n\n## @generaltranslation/next-internal@0.1.1\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n## @generaltranslation/gt-next-lint@12.0.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   gt-next@6.14.2\n\n## gt-node@0.4.2\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n    -   gt-i18n@0.7.2\n\n## @generaltranslation/python-extractor@0.1.6\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n\n## gt-react@10.15.1\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n    -   gt-i18n@0.7.2\n    -   @generaltranslation/react-core@1.6.2\n    -   @generaltranslation/supported-locales@2.0.53\n\n## @generaltranslation/react-core@1.6.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n    -   gt-i18n@0.7.2\n    -   @generaltranslation/supported-locales@2.0.53\n\n## @generaltranslation/react-core-linter@0.1.5\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n## gt-remark@1.0.6\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n## gt-sanity@1.1.27\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n\n## @generaltranslation/supported-locales@2.0.53\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n\n## gt-tanstack-start@0.2.2\n\n### Patch Changes\n\n- [#1125](https://github.com/generaltranslation/gt/pull/1125)\n[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo\nURLs in README files (updated to `/brand/gt-logo-*.svg`)\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   generaltranslation@8.1.20\n    -   gt-i18n@0.7.2\n    -   @generaltranslation/react-core@1.6.2\n    -   gt-react@10.15.1\n\n## gt-next-middleware-e2e@0.1.14\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:\n    -   gt-next@6.14.2\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-03-19T04:23:34Z",
+          "url": "https://github.com/generaltranslation/gt/commit/906c8e8cdb407782d0b6a13541f1dac3c4673049"
+        },
+        "date": 1773894738492,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.040491842983237034,
+            "range": "±0.0185",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.2526547746336526,
+            "range": "±0.067",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.44405998134990826,
+            "range": "±0.0656",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.4378948800350283,
+            "range": "±0.0616",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 224.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 235.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 355.3999999999942,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 177,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 22.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 43.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 169.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 587,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.700000000011642,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 133.60000000003492,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.2\"\n}"
           }
         ]
       }
