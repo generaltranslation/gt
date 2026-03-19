@@ -175,7 +175,7 @@ export type TransformFiles = {
 };
 
 // Include patterns can be plain strings or objects with a publish flag
-export type IncludePattern = string | { path: string; publish?: boolean };
+export type IncludePattern = string | { pattern: string; publish?: boolean };
 
 // Update FilesOptions to fix the error
 export type FilesOptions = {
@@ -209,8 +209,10 @@ export type Settings = {
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
-    gtPublish?: boolean; // if true, publish gtjson translations to the CDN
-    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
+    gtJson?: {
+      publish?: boolean; // if true, publish gtjson translations to the CDN
+      includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
+    };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
   publish: boolean; // if true, publish the translations to the CDN

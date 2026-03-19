@@ -54,11 +54,11 @@ export function normalizeIncludePatterns(patterns: IncludePattern[]): {
     if (typeof pattern === 'string') {
       paths.push(pattern);
     } else {
-      paths.push(pattern.path);
+      paths.push(pattern.pattern);
       if (pattern.publish === true) {
-        publishPatterns.push(pattern.path);
+        publishPatterns.push(pattern.pattern);
       } else if (pattern.publish === false) {
-        unpublishPatterns.push(pattern.path);
+        unpublishPatterns.push(pattern.pattern);
       }
     }
   }
@@ -86,8 +86,10 @@ export function resolveFiles(
   transformPaths: TransformFiles;
   publishPaths: Set<string>;
   unpublishPaths: Set<string>;
-  gtPublish?: boolean;
-  includeSourceCodeContext?: boolean;
+  gtJson?: {
+    publish?: boolean;
+    includeSourceCodeContext?: boolean;
+  };
 } {
   // Initialize result object with empty arrays for each file type
   const result: ResolvedFiles = {};
@@ -148,8 +150,14 @@ export function resolveFiles(
     transformPaths: transformPaths,
     publishPaths,
     unpublishPaths,
-    gtPublish: files.gt?.publish,
-    includeSourceCodeContext: files.gt?.includeSourceCodeContext,
+    gtJson:
+      files.gt?.publish !== undefined ||
+      files.gt?.includeSourceCodeContext !== undefined
+        ? {
+            publish: files.gt?.publish,
+            includeSourceCodeContext: files.gt?.includeSourceCodeContext,
+          }
+        : undefined,
   };
 }
 

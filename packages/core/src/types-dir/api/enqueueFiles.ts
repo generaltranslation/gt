@@ -20,7 +20,6 @@ export type Updates = ({
 
 /**
  * Options for enqueueing files
- * @param publish - Whether to publish the files
  * @param requireApproval - Whether to require approval for the files
  * @param description - Optional description for the project
  * @param sourceLocale - The project's source locale
