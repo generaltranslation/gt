@@ -6,6 +6,8 @@ import { gt } from '../utils/gt.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { UploadTranslationsStep } from './steps/UploadTranslationsStep.js';
+import { PublishStep } from './steps/PublishStep.js';
+import { hasPublishConfig } from '../utils/resolvePublish.js';
 import type { FileToUpload } from 'generaltranslation/types';
 
 /**
@@ -17,12 +19,14 @@ import type { FileToUpload } from 'generaltranslation/types';
 export async function runUploadFilesWorkflow({
   files,
   options,
+  publishMap,
 }: {
   files: {
     source: FileToUpload;
     translations: FileToUpload[];
   }[];
   options: Settings;
+  publishMap?: Map<string, boolean>;
 }) {
   try {
     logger.message(
@@ -65,6 +69,22 @@ export async function runUploadFilesWorkflow({
     }
 
     logger.success('All files uploaded successfully');
+
+    // Publish/unpublish files after upload
+    if (publishMap && hasPublishConfig(options)) {
+      const allFileRefs = files
+        .filter((f) => publishMap.has(f.source.fileId))
+        .map((f) => ({
+          fileId: f.source.fileId,
+          versionId: f.source.versionId,
+          branchId: branchData.currentBranch.id,
+          publish: publishMap.get(f.source.fileId)!,
+          fileName: f.source.fileName,
+        }));
+      const publishStep = new PublishStep(gt);
+      await publishStep.run(allFileRefs);
+      await publishStep.wait();
+    }
   } catch (error) {
     return logErrorAndExit('Failed to upload files. ' + error);
   }

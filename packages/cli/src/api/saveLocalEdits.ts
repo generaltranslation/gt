@@ -7,6 +7,8 @@ import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
+import { PublishStep } from '../workflows/steps/PublishStep.js';
+import { hasPublishConfig } from '../utils/resolvePublish.js';
 
 /**
  * Uploads current source files to obtain file references, then collects and sends
@@ -16,7 +18,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   if (!settings.files) return;
 
   // Collect current files from config
-  const { files } = await aggregateFiles(settings);
+  const { files, publishMap } = await aggregateFiles(settings);
   if (!files.length) return;
 
   // run branch query to get branch id
@@ -41,4 +43,20 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
 
   await collectAndSendUserEditDiffs(uploads, settings);
   spinner.stop(chalk.green('Local edits saved successfully'));
+
+  // Publish/unpublish files after saving edits
+  if (hasPublishConfig(settings)) {
+    const allFileRefs = uploads
+      .filter((f) => publishMap.has(f.fileId))
+      .map((f) => ({
+        fileId: f.fileId,
+        versionId: f.versionId,
+        branchId: f.branchId,
+        publish: publishMap.get(f.fileId)!,
+        fileName: f.fileName,
+      }));
+    const publishStep = new PublishStep(gt);
+    await publishStep.run(allFileRefs);
+    await publishStep.wait();
+  }
 }
