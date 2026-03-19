@@ -215,7 +215,7 @@ export type Settings = {
     };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
-  publish: boolean; // if true, publish the translations to the CDN
+  publish?: boolean; // if explicitly set, controls CDN publishing for all files
   _versionId?: string; // internal use only
   _branchId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique

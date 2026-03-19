@@ -24,7 +24,7 @@ export function shouldPublishFile(
  */
 export function hasPublishConfig(settings: Settings): boolean {
   return (
-    settings.publish ||
+    settings.publish !== undefined ||
     settings.files.gtJson?.publish !== undefined ||
     (settings.files.publishPaths?.size ?? 0) > 0 ||
     (settings.files.unpublishPaths?.size ?? 0) > 0
@@ -38,7 +38,7 @@ export function hasPublishConfig(settings: Settings): boolean {
 export function shouldPublishGt(settings: Settings): boolean {
   if (settings.files.gtJson?.publish === false) return false;
   if (settings.files.gtJson?.publish === true) return true;
-  return settings.publish;
+  return settings.publish ?? false;
 }
 
 /**
@@ -54,7 +54,8 @@ export function buildPublishMap(
   settings: Settings
 ): Map<string, boolean> {
   const publishMap = new Map<string, boolean>();
-  const hasGlobal = settings.publish;
+
+  const hasGlobal = settings.publish !== undefined;
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (filePaths[fileType]) {

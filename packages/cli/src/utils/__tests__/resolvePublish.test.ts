@@ -1,10 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   shouldPublishFile,
   shouldPublishGt,
   hasPublishConfig,
+  buildPublishMap,
 } from '../resolvePublish.js';
 import { Settings } from '../../types/index.js';
+
+vi.mock('../../fs/findFilepath.js', () => ({
+  getRelative: vi.fn((p: string) => p),
+}));
+vi.mock('../hash.js', () => ({
+  hashStringSync: vi.fn((s: string) => `hash_${s}`),
+}));
 
 function createSettings(
   overrides: {
@@ -15,7 +23,7 @@ function createSettings(
   } = {}
 ): Settings {
   return {
-    publish: overrides.publish ?? false,
+    publish: overrides.publish,
     files: {
       resolvedPaths: {},
       placeholderPaths: {},
@@ -125,5 +133,72 @@ describe('hasPublishConfig', () => {
       unpublishPaths: new Set(['/abs/file.json']),
     });
     expect(hasPublishConfig(settings)).toBe(true);
+  });
+});
+
+describe('buildPublishMap', () => {
+  it('includes all files when global publish is true', () => {
+    const settings = createSettings({ publish: true });
+    const filePaths = { json: ['/abs/a.json', '/abs/b.json'] };
+    const map = buildPublishMap(filePaths, settings);
+    expect(map.size).toBe(2);
+    expect(map.get('hash_/abs/a.json')).toBe(true);
+    expect(map.get('hash_/abs/b.json')).toBe(true);
+  });
+
+  it('only includes explicitly configured files when no global flag', () => {
+    const settings = createSettings({
+      publishPaths: new Set(['/abs/a.json']),
+    });
+    const filePaths = { json: ['/abs/a.json', '/abs/b.json'] };
+    const map = buildPublishMap(filePaths, settings);
+    expect(map.size).toBe(1);
+    expect(map.get('hash_/abs/a.json')).toBe(true);
+    expect(map.has('hash_/abs/b.json')).toBe(false);
+  });
+
+  it('includes unpublish files when no global flag', () => {
+    const settings = createSettings({
+      unpublishPaths: new Set(['/abs/b.json']),
+    });
+    const filePaths = { json: ['/abs/a.json', '/abs/b.json'] };
+    const map = buildPublishMap(filePaths, settings);
+    expect(map.size).toBe(1);
+    expect(map.get('hash_/abs/b.json')).toBe(false);
+    expect(map.has('hash_/abs/a.json')).toBe(false);
+  });
+
+  it('global true with per-file opt-out', () => {
+    const settings = createSettings({
+      publish: true,
+      unpublishPaths: new Set(['/abs/b.json']),
+    });
+    const filePaths = { json: ['/abs/a.json', '/abs/b.json'] };
+    const map = buildPublishMap(filePaths, settings);
+    expect(map.size).toBe(2);
+    expect(map.get('hash_/abs/a.json')).toBe(true);
+    expect(map.get('hash_/abs/b.json')).toBe(false);
+  });
+
+  it('returns empty map when no files exist', () => {
+    const settings = createSettings({ publish: true });
+    const map = buildPublishMap({}, settings);
+    expect(map.size).toBe(0);
+  });
+
+  it('includes all files when global publish is explicitly false', () => {
+    const settings = createSettings({ publish: false });
+    const filePaths = { json: ['/abs/a.json', '/abs/b.json'] };
+    const map = buildPublishMap(filePaths, settings);
+    expect(map.size).toBe(2);
+    expect(map.get('hash_/abs/a.json')).toBe(false);
+    expect(map.get('hash_/abs/b.json')).toBe(false);
+  });
+
+  it('returns empty map when publish is unset and no explicit config', () => {
+    const settings = createSettings();
+    const filePaths = { json: ['/abs/a.json', '/abs/b.json'] };
+    const map = buildPublishMap(filePaths, settings);
+    expect(map.size).toBe(0);
   });
 });

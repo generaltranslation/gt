@@ -166,8 +166,14 @@ export async function generateSettings(
   // For human review, always stage the project
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
-  // Add publish if not provided
-  mergedOptions.publish = (gtConfig.publish || flags.publish) ?? false;
+  // Only set publish if explicitly provided in config or flags
+  // --publish flag is a boolean flag (true when passed, false as Commander default)
+  // so we only treat it as explicit when it's true
+  if (flags.publish) {
+    mergedOptions.publish = true;
+  } else if (gtConfig.publish !== undefined) {
+    mergedOptions.publish = gtConfig.publish;
+  }
 
   // Don't default src here — each pipeline (JS/Python) has its own defaults.
   // Only set src if the user explicitly provided it via flags or config.
