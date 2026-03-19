@@ -1,5 +1,16 @@
 # gtx-cli
 
+## 2.12.0
+
+### Minor Changes
+
+- [#1137](https://github.com/generaltranslation/gt/pull/1137) [`f8993aa`](https://github.com/generaltranslation/gt/commit/f8993aabe07acdfaf8a97177f038c408a8fc4c45) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: object derivation
+
+### Patch Changes
+
+- Updated dependencies [[`f8993aa`](https://github.com/generaltranslation/gt/commit/f8993aabe07acdfaf8a97177f038c408a8fc4c45)]:
+  - @generaltranslation/python-extractor@0.2.0
+
 ## 2.11.3
 
 ### Patch Changes
