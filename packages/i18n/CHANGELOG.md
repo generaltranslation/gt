@@ -1,5 +1,15 @@
 # gt-i18n
 
+## 0.7.1
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - @generaltranslation/supported-locales@2.0.52
+  - generaltranslation@8.1.19
+
 ## 0.7.0
 
 ### Minor Changes

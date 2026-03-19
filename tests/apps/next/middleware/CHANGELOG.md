@@ -1,5 +1,14 @@
 # gt-next-middleware-e2e
 
+## 0.1.13
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - gt-next@6.14.1
+
 ## 0.1.12
 
 ### Patch Changes
