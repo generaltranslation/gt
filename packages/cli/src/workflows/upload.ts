@@ -13,7 +13,7 @@ import { BranchData } from '../types/branch.js';
  * Uploads multiple files to the API using a workflow pattern
  * @param files - Array of file objects to upload
  * @param options - The options for the API call
- * @returns The uploaded content or version ID
+ * @returns The branch data resolved during the workflow
  */
 export async function runUploadFilesWorkflow({
   files,

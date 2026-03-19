@@ -251,7 +251,7 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    const result = await runUploadFilesWorkflow({
+    const { branchData } = await runUploadFilesWorkflow({
       files: uploadData,
       options: settings,
     });
@@ -261,7 +261,7 @@ export async function upload(
     await runPublishWorkflow(
       allFiles,
       publishMap,
-      result.branchData.currentBranch.id,
+      branchData.currentBranch.id,
       settings
     );
   } catch (error) {
