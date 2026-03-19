@@ -251,11 +251,19 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    const result = await runUploadFilesWorkflow({ files: uploadData, options: settings });
+    const result = await runUploadFilesWorkflow({
+      files: uploadData,
+      options: settings,
+    });
 
     // Publish files to CDN if publish config exists
     const publishMap = buildPublishMap(filePaths, settings);
-    await runPublishWorkflow(allFiles, publishMap, result.branchData.currentBranch.id, settings);
+    await runPublishWorkflow(
+      allFiles,
+      publishMap,
+      result.branchData.currentBranch.id,
+      settings
+    );
   } catch (error) {
     logErrorAndExit(`Error uploading files: ${error}`);
   }

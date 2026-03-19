@@ -45,6 +45,11 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
 
   // Publish files to CDN if diffs were detected and publish config exists
   if (hadDiffs) {
-    await runPublishWorkflow(files, publishMap, branchResult.currentBranch.id, settings);
+    await runPublishWorkflow(
+      files,
+      publishMap,
+      branchResult.currentBranch.id,
+      settings
+    );
   }
 }

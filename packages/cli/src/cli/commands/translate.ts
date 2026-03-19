@@ -58,7 +58,12 @@ export async function handleTranslate(
         versionId: data.versionId,
         fileName: data.fileName,
       }));
-      await runPublishWorkflow(files, publishMap, branchData?.currentBranch.id ?? '', settings);
+      await runPublishWorkflow(
+        files,
+        publishMap,
+        branchData?.currentBranch.id ?? '',
+        settings
+      );
     }
   }
 }

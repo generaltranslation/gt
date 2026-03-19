@@ -200,11 +200,11 @@ export class BaseCLI {
     )
       .option('--publish', 'Publish translations to the CDN', false)
       .action(async (initOptions: SharedFlags) => {
-      displayHeader('Saving local edits...');
-      const settings = await generateSettings(initOptions);
-      await saveLocalEdits(settings);
-      logger.endCommand('Saved local edits');
-    });
+        displayHeader('Saving local edits...');
+        const settings = await generateSettings(initOptions);
+        await saveLocalEdits(settings);
+        logger.endCommand('Saved local edits');
+      });
   }
 
   protected async handleSetupProject(
