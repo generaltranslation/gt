@@ -1,10 +1,8 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import {
-  flattenExpressionToParts,
-  mergeAdjacentStaticParts,
-  buildTransformResult,
-} from '../templates-and-concat/flattenExpressionToParts';
+import { flattenExpressionToParts } from '../templates-and-concat/flattenExpressionToParts';
+import { mergeAdjacentStaticParts } from '../templates-and-concat/mergeAdjacentStaticParts';
+import { buildTransformResult } from '../templates-and-concat/buildTransformationResult';
 
 /**
  * Transform a BinaryExpression with '+' operator into a normalized t() call format.

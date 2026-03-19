@@ -33,7 +33,7 @@ export function flattenExpressionToParts(
   }
 
   if (t.isUnaryExpression(node) && node.operator === 'void') {
-    return [{ type: 'static', value: 'undefined' }];
+    return [{ type: 'dynamic', node }];
   }
 
   if (t.isTemplateLiteral(node)) {
@@ -64,95 +64,4 @@ export function flattenExpressionToParts(
   }
 
   return [{ type: 'dynamic', node }];
-}
-
-/**
- * Collapse consecutive static parts by concatenating their values.
- */
-export function mergeAdjacentStaticParts(parts: Part[]): Part[] {
-  const merged: Part[] = [];
-  for (const part of parts) {
-    if (
-      part.type === 'static' &&
-      merged.length > 0 &&
-      merged[merged.length - 1].type === 'static'
-    ) {
-      (merged[merged.length - 1] as { type: 'static'; value: string }).value +=
-        part.value;
-    } else {
-      merged.push(part);
-    }
-  }
-  return merged;
-}
-
-/**
- * Converts merged parts into an AST message node and optional variables object.
- *
- * - All static → StringLiteral, no variables
- * - Has derive/dynamic → TemplateLiteral with derive expressions preserved
- *   and dynamic values extracted as {n} placeholders
- */
-export function buildTransformResult(parts: Part[]): {
-  message: t.StringLiteral | t.TemplateLiteral;
-  variables: t.ObjectExpression | null;
-} {
-  const hasDerive = parts.some((p) => p.type === 'derive');
-
-  // No derive parts: collapse everything into a StringLiteral with {n} placeholders
-  if (!hasDerive) {
-    const properties: t.ObjectProperty[] = [];
-    let varIndex = 0;
-    let message = '';
-    for (const part of parts) {
-      if (part.type === 'static') {
-        message += part.value;
-      } else {
-        const key = varIndex.toString();
-        message += `{${key}}`;
-        properties.push(t.objectProperty(t.stringLiteral(key), part.node));
-        varIndex++;
-      }
-    }
-    return {
-      message: t.stringLiteral(message),
-      variables: properties.length > 0 ? t.objectExpression(properties) : null,
-    };
-  }
-
-  // Has derive parts: build a TemplateLiteral with derive expressions preserved
-  const quasis: t.TemplateElement[] = [];
-  const expressions: t.Expression[] = [];
-  const properties: t.ObjectProperty[] = [];
-  let varIndex = 0;
-  let quasiBuffer = '';
-
-  function flushQuasi(tail: boolean) {
-    quasis.push(
-      t.templateElement({ raw: quasiBuffer, cooked: quasiBuffer }, tail)
-    );
-    quasiBuffer = '';
-  }
-
-  for (const part of parts) {
-    if (part.type === 'static') {
-      quasiBuffer += part.value;
-    } else if (part.type === 'derive') {
-      flushQuasi(false);
-      expressions.push(part.node);
-    } else {
-      const key = varIndex.toString();
-      quasiBuffer += `{${key}}`;
-      properties.push(t.objectProperty(t.stringLiteral(key), part.node));
-      varIndex++;
-    }
-  }
-
-  // Final quasi (tail)
-  flushQuasi(true);
-
-  return {
-    message: t.templateLiteral(quasis, expressions),
-    variables: properties.length > 0 ? t.objectExpression(properties) : null,
-  };
 }

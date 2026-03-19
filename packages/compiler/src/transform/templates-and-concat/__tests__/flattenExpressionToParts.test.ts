@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
 import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import {
-  flattenExpressionToParts,
-  mergeAdjacentStaticParts,
-  buildTransformResult,
-} from '../flattenExpressionToParts';
+import { flattenExpressionToParts } from '../flattenExpressionToParts';
+import { mergeAdjacentStaticParts } from '../mergeAdjacentStaticParts';
+import { buildTransformResult } from '../buildTransformationResult';
 
 /**
  * Parse code and extract the first expression's NodePath, then run the callback.
