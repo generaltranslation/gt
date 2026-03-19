@@ -1,7 +1,6 @@
 import { TraverseOptions } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import { processTaggedTemplateExpression } from '../processing/macro-expansion/processTaggedTemplateExpression';
-import { processCallExpression } from '../processing/macro-expansion/processCallExpression';
 import { processImportDeclaration } from '../processing/macro-expansion/processImportDeclaration';
 import { processProgram } from '../processing/macro-expansion/processProgram';
 
@@ -23,7 +22,8 @@ export function macroExpansionPass(state: TransformState): TraverseOptions {
   return {
     ImportDeclaration: processImportDeclaration(onImportFound),
     TaggedTemplateExpression: processTaggedTemplateExpression(state),
-    CallExpression: processCallExpression(state),
+    // Disabling this to be re-enabled at stage 4
+    // CallExpression: processCallExpression(state),
     Program: processProgram({
       state,
       countBefore,
