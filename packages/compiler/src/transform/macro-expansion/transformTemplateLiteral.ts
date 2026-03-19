@@ -4,7 +4,7 @@ import {
   flattenExpressionToParts,
   mergeAdjacentStaticParts,
   buildTransformResult,
-} from '../../utils/parsing/flattenExpressionToParts';
+} from '../templates-and-concat/flattenExpressionToParts';
 
 /**
  * Converts template literal quasis and expressions into an ICU-style message

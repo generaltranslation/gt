@@ -5,12 +5,15 @@ import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { handleDerivation } from './handleDerivation.js';
 import { warnNonStringSync } from '../../../../../console/index.js';
-import { generate } from '@babel/generator';
 import { nodeToStrings } from '../../parseString.js';
+import generateModule from '@babel/generator';
 import { indexVars } from 'generaltranslation/internal';
 import { randomUUID } from 'node:crypto';
 import { isValidIcu } from '../../../evaluateJsx.js';
 import { warnInvalidIcuSync } from '../../../../../console/index.js';
+
+// Handle CommonJS/ESM interop
+const generate = generateModule.default || generateModule;
 
 /**
  * Registers an expression with support for derive

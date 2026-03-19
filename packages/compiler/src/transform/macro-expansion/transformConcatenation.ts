@@ -4,7 +4,7 @@ import {
   flattenExpressionToParts,
   mergeAdjacentStaticParts,
   buildTransformResult,
-} from '../../utils/parsing/flattenExpressionToParts';
+} from '../templates-and-concat/flattenExpressionToParts';
 
 /**
  * Transform a BinaryExpression with '+' operator into a normalized t() call format.
