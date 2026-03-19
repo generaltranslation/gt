@@ -344,10 +344,7 @@ function resolveToObjectNodes(
             file,
           });
         }
-        if (
-          t.isObjectExpression(alternate) ||
-          t.isArrayExpression(alternate)
-        ) {
+        if (t.isObjectExpression(alternate) || t.isArrayExpression(alternate)) {
           results.push({
             objExpr: alternate,
             tPath: binding.path,
@@ -862,7 +859,13 @@ export function parseStringExpression(
     const branches: StringNode[] = [];
     for (const { objExpr, tPath: objPath, file: objFile } of objectNodes) {
       const entries = t.isArrayExpression(objExpr)
-        ? collectArrayElements(objExpr, objPath, objFile, parsingOptions, warnings)
+        ? collectArrayElements(
+            objExpr,
+            objPath,
+            objFile,
+            parsingOptions,
+            warnings
+          )
         : collectObjectProperties(
             objExpr,
             objPath,
