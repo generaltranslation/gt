@@ -7,7 +7,7 @@ import { resolveImportPath } from './resolveImport.js';
 /**
  * Callback to parse a return expression into a StringNode.
  * Provided by the caller so function resolution doesn't need to know about
- * declare_var, declare_static, imports, etc.
+ * declare_var, derive, imports, etc.
  *
  * @param node - The return expression AST node
  * @param rootNode - The root AST node of the file containing the function
@@ -201,7 +201,7 @@ function collectReturnExpressions(
 
 /**
  * Checks if a function name is re-exported from another module in the given file.
- * e.g., `from static_test import get_gender` makes `get_gender` a re-export.
+ * e.g., `from derive_test import get_gender` makes `get_gender` a re-export.
  */
 function findReExport(
   functionName: string,
