@@ -20,7 +20,7 @@ import parseYaml from '../../formats/yaml/parseYaml.js';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { hasValidCredentials } from './utils/validation.js';
-import { shouldPublishFile } from '../../utils/resolvePublish.js';
+import { buildPublishMap } from '../../utils/resolvePublish.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -249,16 +249,7 @@ export async function upload(
   });
 
   // Build publish map from resolved paths
-  const publishMap = new Map<string, boolean>();
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (filePaths[fileType]) {
-      for (const absolutePath of filePaths[fileType]) {
-        const relativePath = getRelative(absolutePath);
-        const fileId = hashStringSync(relativePath);
-        publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
-      }
-    }
-  }
+  const publishMap = buildPublishMap(filePaths, settings);
 
   try {
     // Send all files in a single API call

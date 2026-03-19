@@ -1,4 +1,7 @@
-import { Settings } from '../types/index.js';
+import { ResolvedFiles, Settings } from '../types/index.js';
+import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
+import { getRelative } from '../fs/findFilepath.js';
+import { hashStringSync } from './hash.js';
 
 /**
  * Determines whether a file should be published based on the publish resolution logic:
@@ -36,4 +39,25 @@ export function shouldPublishGt(settings: Settings): boolean {
   if (settings.files.gtJson.publish === false) return false;
   if (settings.files.gtJson.publish === true) return true;
   return settings.publish;
+}
+
+/**
+ * Builds a publish map from resolved file paths.
+ * Maps fileId -> shouldPublish for each file.
+ */
+export function buildPublishMap(
+  filePaths: ResolvedFiles,
+  settings: Settings
+): Map<string, boolean> {
+  const publishMap = new Map<string, boolean>();
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (filePaths[fileType]) {
+      for (const absolutePath of filePaths[fileType]) {
+        const relativePath = getRelative(absolutePath);
+        const fileId = hashStringSync(relativePath);
+        publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
+      }
+    }
+  }
+  return publishMap;
 }

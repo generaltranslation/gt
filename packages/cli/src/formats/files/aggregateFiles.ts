@@ -17,7 +17,7 @@ import {
   parseKeyedMetadata,
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
-import { shouldPublishFile } from '../../utils/resolvePublish.js';
+import { buildPublishMap } from '../../utils/resolvePublish.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -58,14 +58,9 @@ export async function aggregateFiles(
   const skipValidation = settings.options?.skipFileValidation;
 
   // Build publish map upfront from resolved paths
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (filePaths[fileType]) {
-      for (const absolutePath of filePaths[fileType]) {
-        const relativePath = getRelative(absolutePath);
-        const fileId = hashStringSync(relativePath);
-        publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
-      }
-    }
+  const resolvedPublishMap = buildPublishMap(filePaths, settings);
+  for (const [fileId, shouldPublish] of resolvedPublishMap) {
+    publishMap.set(fileId, shouldPublish);
   }
 
   // Process JSON files
