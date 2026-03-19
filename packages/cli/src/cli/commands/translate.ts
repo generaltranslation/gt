@@ -52,7 +52,7 @@ export async function handleTranslate(
     });
 
     // Publish/unpublish files after translations are downloaded
-    if (publishMap) {
+    if (publishMap && branchData?.currentBranch.id) {
       const files = Object.entries(fileVersionData).map(([fileId, data]) => ({
         fileId,
         versionId: data.versionId,
@@ -61,7 +61,7 @@ export async function handleTranslate(
       await runPublishWorkflow(
         files,
         publishMap,
-        branchData?.currentBranch.id ?? '',
+        branchData.currentBranch.id,
         settings
       );
     }

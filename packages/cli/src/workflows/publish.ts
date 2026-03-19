@@ -26,6 +26,7 @@ export async function runPublishWorkflow(
         publish: publishMap.get(file.fileId)!,
         fileName: file.fileName,
       }));
+    if (allFileRefs.length === 0) return;
     const publishStep = new PublishStep(gt);
     await publishStep.run(allFileRefs);
     await publishStep.wait();
