@@ -44,15 +44,28 @@ export function shouldPublishGt(settings: Settings): boolean {
 /**
  * Builds a publish map from resolved file paths.
  * Maps fileId -> shouldPublish for each file.
+ *
+ * When a global publish flag is set, all files are included (global determines
+ * the default, per-file config overrides). When there's no global flag, only
+ * files with explicit per-pattern publish config are included.
  */
 export function buildPublishMap(
   filePaths: ResolvedFiles,
   settings: Settings
 ): Map<string, boolean> {
   const publishMap = new Map<string, boolean>();
+  const hasGlobal = settings.publish;
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (filePaths[fileType]) {
       for (const absolutePath of filePaths[fileType]) {
+        const isExplicit =
+          settings.files?.publishPaths?.has(absolutePath) ||
+          settings.files?.unpublishPaths?.has(absolutePath);
+
+        // Only include files with explicit config when there's no global flag
+        if (!hasGlobal && !isExplicit) continue;
+
         const relativePath = getRelative(absolutePath);
         const fileId = hashStringSync(relativePath);
         publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
