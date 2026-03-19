@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773880504446,
+  "lastUpdate": 1773887879405,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -1160,6 +1160,122 @@ window.BENCHMARK_DATA = {
             "value": 127.89999999996508,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.0\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "0488ba28e8c31af187a1daeb06008578d3688e43",
+          "message": "[ci] release (#1130)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt-react@10.15.0\n\n### Minor Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   @generaltranslation/supported-locales@2.0.52\n    -   @generaltranslation/react-core@1.6.1\n    -   generaltranslation@8.1.19\n    -   gt-i18n@0.7.1\n\n## gt@2.11.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281),\n[`84c1443`](https://github.com/generaltranslation/gt/commit/84c1443bda85ccbd8d8dbf56ede341de974db522)]:\n    -   @generaltranslation/python-extractor@0.1.5\n    -   generaltranslation@8.1.19\n\n## @generaltranslation/compiler@1.1.31\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   generaltranslation@8.1.19\n\n## generaltranslation@8.1.19\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n## gtx-cli@2.11.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   gt@2.11.1\n\n## gt-i18n@0.7.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   @generaltranslation/supported-locales@2.0.52\n    -   generaltranslation@8.1.19\n\n## locadex@1.0.126\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   gt@2.11.1\n\n## gt-next@6.14.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   gt-react@10.15.0\n    -   @generaltranslation/supported-locales@2.0.52\n    -   @generaltranslation/compiler@1.1.31\n    -   generaltranslation@8.1.19\n    -   gt-i18n@0.7.1\n\n## @generaltranslation/gt-next-lint@12.0.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   gt-next@6.14.1\n\n## gt-node@0.4.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   generaltranslation@8.1.19\n    -   gt-i18n@0.7.1\n\n## @generaltranslation/python-extractor@0.1.5\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- [#1127](https://github.com/generaltranslation/gt/pull/1127)\n[`84c1443`](https://github.com/generaltranslation/gt/commit/84c1443bda85ccbd8d8dbf56ede341de974db522)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\nsupport for `derive()` as the primary function name (replacing\n`declare_static()`). `declare_static()` remains supported for backwards\ncompatibility.\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   generaltranslation@8.1.19\n\n## @generaltranslation/react-core@1.6.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   @generaltranslation/supported-locales@2.0.52\n    -   generaltranslation@8.1.19\n    -   gt-i18n@0.7.1\n\n## gt-sanity@1.1.26\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   generaltranslation@8.1.19\n\n## @generaltranslation/supported-locales@2.0.52\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   generaltranslation@8.1.19\n\n## gt-tanstack-start@0.2.1\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   gt-react@10.15.0\n    -   @generaltranslation/react-core@1.6.1\n    -   generaltranslation@8.1.19\n    -   gt-i18n@0.7.1\n\n## gt-next-middleware-e2e@0.1.13\n\n### Patch Changes\n\n- [#1129](https://github.com/generaltranslation/gt/pull/1129)\n[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat:\nderivation support for the t macro\n\n- Updated dependencies\n\\[[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:\n    -   gt-next@6.14.1\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-03-19T02:29:26Z",
+          "url": "https://github.com/generaltranslation/gt/commit/0488ba28e8c31af187a1daeb06008578d3688e43"
+        },
+        "date": 1773887879012,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.04013333341359745,
+            "range": "±0.0151",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.25189086347606693,
+            "range": "±0.0554",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.45189267299006364,
+            "range": "±0.0826",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.435947196163913,
+            "range": "±0.0518",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 235.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 271.4000000000233,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 375.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 150,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 28,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 141.59999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 586,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.599999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.599999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 130.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.1\"\n}"
           }
         ]
       }
