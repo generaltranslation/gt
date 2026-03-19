@@ -20,6 +20,8 @@ import parseYaml from '../../formats/yaml/parseYaml.js';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { hasValidCredentials } from './utils/validation.js';
+import { buildPublishMap } from '../../utils/resolvePublish.js';
+import { runPublishWorkflow } from '../../workflows/publish.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -249,7 +251,19 @@ export async function upload(
 
   try {
     // Send all files in a single API call
-    await runUploadFilesWorkflow({ files: uploadData, options: settings });
+    const { branchData } = await runUploadFilesWorkflow({
+      files: uploadData,
+      options: settings,
+    });
+
+    // Publish files to CDN if publish config exists
+    const publishMap = buildPublishMap(filePaths, settings);
+    await runPublishWorkflow(
+      allFiles,
+      publishMap,
+      branchData.currentBranch.id,
+      settings
+    );
   } catch (error) {
     logErrorAndExit(`Error uploading files: ${error}`);
   }

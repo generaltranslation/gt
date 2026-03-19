@@ -16,9 +16,7 @@ import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
-import { PublishStep } from '../../workflows/steps/PublishStep.js';
-import { gt } from '../../utils/gt.js';
-import { hasPublishConfig } from '../../utils/resolvePublish.js';
+import { runPublishWorkflow } from '../../workflows/publish.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -54,19 +52,18 @@ export async function handleTranslate(
     });
 
     // Publish/unpublish files after translations are downloaded
-    if (publishMap && hasPublishConfig(settings)) {
-      const allFileRefs = Object.entries(fileVersionData)
-        .filter(([fileId]) => publishMap.has(fileId))
-        .map(([fileId, data]) => ({
-          fileId,
-          versionId: data.versionId,
-          branchId: branchData?.currentBranch.id,
-          publish: publishMap.get(fileId)!,
-          fileName: data.fileName,
-        }));
-      const publishStep = new PublishStep(gt);
-      await publishStep.run(allFileRefs);
-      await publishStep.wait();
+    if (publishMap && branchData?.currentBranch.id) {
+      const files = Object.entries(fileVersionData).map(([fileId, data]) => ({
+        fileId,
+        versionId: data.versionId,
+        fileName: data.fileName,
+      }));
+      await runPublishWorkflow(
+        files,
+        publishMap,
+        branchData.currentBranch.id,
+        settings
+      );
     }
   }
 }

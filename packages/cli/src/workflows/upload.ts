@@ -7,12 +7,13 @@ import { BranchStep } from './steps/BranchStep.js';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { UploadTranslationsStep } from './steps/UploadTranslationsStep.js';
 import type { FileToUpload } from 'generaltranslation/types';
+import { BranchData } from '../types/branch.js';
 
 /**
  * Uploads multiple files to the API using a workflow pattern
  * @param files - Array of file objects to upload
  * @param options - The options for the API call
- * @returns The uploaded content or version ID
+ * @returns The branch data resolved during the workflow
  */
 export async function runUploadFilesWorkflow({
   files,
@@ -23,7 +24,7 @@ export async function runUploadFilesWorkflow({
     translations: FileToUpload[];
   }[];
   options: Settings;
-}) {
+}): Promise<{ branchData: BranchData }> {
   try {
     logger.message(
       chalk.cyan('Files to upload:') +
@@ -65,6 +66,7 @@ export async function runUploadFilesWorkflow({
     }
 
     logger.success('All files uploaded successfully');
+    return { branchData };
   } catch (error) {
     return logErrorAndExit('Failed to upload files. ' + error);
   }
