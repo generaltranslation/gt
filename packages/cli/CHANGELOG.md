@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.11.3
+
+### Patch Changes
+
+- [#1133](https://github.com/generaltranslation/gt/pull/1133) [`4de22d7`](https://github.com/generaltranslation/gt/commit/4de22d7548b5d34c0d7e465132878d192c2f41e0) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Extending publish step to save-local and upload commands
+
 ## 2.11.2
 
 ### Patch Changes
