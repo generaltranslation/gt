@@ -1,5 +1,51 @@
 # @generaltranslation/gt-next-lint
 
+## 12.0.2
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:
+  - gt-next@6.14.2
+
+## 12.0.1
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - gt-next@6.14.1
+
+## 12.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`b6a58de`](https://github.com/generaltranslation/gt/commit/b6a58de76998b28ce3247aa1a7005fffaeb210a5)]:
+  - gt-next@6.14.0
+
+## 11.0.11
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.13.11
+
+## 11.0.10
+
+### Patch Changes
+
+- Updated dependencies [[`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0)]:
+  - gt-next@6.13.10
+
+## 11.0.9
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.13.9
+
 ## 11.0.8
 
 ### Patch Changes

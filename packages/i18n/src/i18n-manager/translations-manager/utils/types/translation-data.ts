@@ -27,3 +27,9 @@ export type TranslationsMap = Map<
     expiresAt: number;
   }
 >;
+
+/**
+ * A mapping between locales and their {@link Translations} objects
+ * Maps locale to translations object
+ */
+export type ResolvedTranslationsMap = Map<string, Translations>;

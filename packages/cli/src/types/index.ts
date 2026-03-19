@@ -174,16 +174,21 @@ export type TransformFiles = {
   [K in SupportedFileExtension]?: TransformOption | string | TransformOption[]; // if a string, only transform the file name
 };
 
+// Include patterns can be plain strings or objects with a publish flag
+export type IncludePattern = string | { pattern: string; publish?: boolean };
+
 // Update FilesOptions to fix the error
 export type FilesOptions = {
   [K in SupportedFileExtension]?: {
-    include: string[];
+    include: IncludePattern[];
     exclude?: string[];
     transform?: string | TransformOption | TransformOption[];
   };
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
+    publish?: boolean; // if true, publish gtjson translations to the CDN
+    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
 };
 
@@ -202,10 +207,17 @@ export type Settings = {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
     placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
+    publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
+    unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
+    gtJson: {
+      publish?: boolean; // if true, publish gtjson translations to the CDN
+      includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
+    };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
-  publish: boolean; // if true, publish the translations to the CDN
+  publish?: boolean; // if true, publish the translations to the CDN; undefined means no global publish intent
   _versionId?: string; // internal use only
+  _branchId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
   src?: string[]; // list of glob patterns for source file scanning
@@ -262,7 +274,6 @@ export type AdditionalOptions = {
     replace: string; // replacement prefix, can include [locale] or [defaultLocale]
   }>;
   experimentalCanonicalLocaleKeys?: boolean; // For composite JSON schemas with locale keys, force canonical locale even when alias provided
-  includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
 };
 
 export type SharedStaticAssetsConfig = {

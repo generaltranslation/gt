@@ -16,6 +16,7 @@ import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { BranchData } from '../../types/branch.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
+import { runPublishWorkflow } from '../../workflows/publish.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -23,7 +24,8 @@ export async function handleTranslate(
   settings: Settings,
   fileVersionData: FileTranslationData | undefined,
   jobData: EnqueueFilesResult | undefined,
-  branchData: BranchData | undefined
+  branchData: BranchData | undefined,
+  publishMap?: Map<string, boolean>
 ) {
   if (fileVersionData) {
     const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
@@ -48,6 +50,21 @@ export async function handleTranslate(
       forceRetranslation: options.force,
       forceDownload: options.forceDownload || options.force, // if force is true should also force download
     });
+
+    // Publish/unpublish files after translations are downloaded
+    if (publishMap && branchData?.currentBranch.id) {
+      const files = Object.entries(fileVersionData).map(([fileId, data]) => ({
+        fileId,
+        versionId: data.versionId,
+        fileName: data.fileName,
+      }));
+      await runPublishWorkflow(
+        files,
+        publishMap,
+        branchData.currentBranch.id,
+        settings
+      );
+    }
   }
 }
 

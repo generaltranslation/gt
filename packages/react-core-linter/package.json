@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core-linter",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "ESLint plugin for General Translation React Core integration",
   "type": "module",
   "main": "dist/index.js",

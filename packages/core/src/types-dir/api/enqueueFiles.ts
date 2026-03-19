@@ -20,7 +20,6 @@ export type Updates = ({
 
 /**
  * Options for enqueueing files
- * @param publish - Whether to publish the files
  * @param requireApproval - Whether to require approval for the files
  * @param description - Optional description for the project
  * @param sourceLocale - The project's source locale
@@ -30,7 +29,6 @@ export type Updates = ({
  * @param modelProvider - Optional model provider to use
  */
 export type EnqueueFilesOptions = {
-  publish?: boolean;
   requireApproval?: boolean;
   description?: string; // @deprecated Will be removed in v8.0.0
   sourceLocale?: string;

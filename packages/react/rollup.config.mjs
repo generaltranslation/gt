@@ -107,4 +107,84 @@ export default [
     },
     plugins: [dts()],
   },
+
+  /* ---------------------------------------- */
+  // Bundling for the browser library (browser.ts)
+  {
+    input: './src/browser.ts',
+    output: [
+      {
+        file: './dist/browser.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: './dist/browser.esm.min.mjs',
+        format: 'esm',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      ...baseConfig.plugins,
+      terser(), // Minification
+    ],
+    external: baseConfig.external,
+  },
+
+  // TypeScript declarations for the browser library (browser.ts)
+  {
+    input: './src/browser.ts',
+    output: {
+      file: './dist/browser.d.ts',
+      format: 'esm',
+    },
+    plugins: [dts()],
+  },
+
+  // TypeScript declarations for the browser types (browser-types.ts)
+  {
+    input: './src/browser-types.ts',
+    output: {
+      file: './dist/browser-types.d.ts',
+      format: 'esm',
+    },
+    plugins: [dts()],
+  },
+
+  /* ---------------------------------------- */
+  // Bundling for macros (macros.ts)
+  {
+    input: './src/macros.ts',
+    output: [
+      {
+        file: './dist/macros.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: './dist/macros.esm.min.mjs',
+        format: 'esm',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      ...baseConfig.plugins,
+      terser(),
+    ],
+    external: baseConfig.external,
+  },
+
+  // TypeScript declarations for macros (macros.ts)
+  {
+    input: './src/macros.ts',
+    output: {
+      file: './dist/macros.d.ts',
+      format: 'esm',
+    },
+    plugins: [dts()],
+  },
 ];

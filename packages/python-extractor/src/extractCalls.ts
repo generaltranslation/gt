@@ -1,6 +1,11 @@
 import type { SyntaxNode } from './parser.js';
 import type { ImportAlias } from './extractImports.js';
-import { PYTHON_METADATA_KWARGS } from './constants.js';
+import {
+  PYTHON_METADATA_KWARGS,
+  PYTHON_DERIVE,
+  PYTHON_DECLARE_STATIC,
+  PYTHON_DECLARE_VAR,
+} from './constants.js';
 import {
   containsStaticCalls,
   parseStringExpression,
@@ -36,13 +41,14 @@ export async function extractCalls(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Only track t/msg as translation functions (not declare_static/declare_var)
+  // Only track t/msg as translation functions (not derive/declare_static/declare_var)
   const trackedNames = new Set(
     imports
       .filter(
         (imp) =>
-          imp.originalName !== 'declare_static' &&
-          imp.originalName !== 'declare_var'
+          imp.originalName !== PYTHON_DERIVE &&
+          imp.originalName !== PYTHON_DECLARE_STATIC &&
+          imp.originalName !== PYTHON_DECLARE_VAR
       )
       .map((imp) => imp.localName)
   );
@@ -203,7 +209,7 @@ async function processCall(
   // Check for f-strings (without declare_static/declare_var)
   if (isFString(firstArg)) {
     errors.push(
-      `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal or declare_static()/declare_var()`
+      `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal or derive()/declare_var()`
     );
     return;
   }

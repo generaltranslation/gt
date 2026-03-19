@@ -1,5 +1,81 @@
 # gtx-cli
 
+## 2.11.3
+
+### Patch Changes
+
+- Updated dependencies [[`4de22d7`](https://github.com/generaltranslation/gt/commit/4de22d7548b5d34c0d7e465132878d192c2f41e0)]:
+  - gt@2.11.3
+
+## 2.11.2
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8), [`a83a130`](https://github.com/generaltranslation/gt/commit/a83a130944193ec4b9784fb7687808936e175d19)]:
+  - gt@2.11.2
+
+## 2.11.1
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - gt@2.11.1
+
+## 2.11.0
+
+### Patch Changes
+
+- Updated dependencies [[`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a)]:
+  - gt@2.11.0
+
+## 2.10.8
+
+### Patch Changes
+
+- Updated dependencies [[`3f6242c`](https://github.com/generaltranslation/gt/commit/3f6242cd5775ff894fecffe4c8279059eebf008a)]:
+  - gt@2.10.8
+
+## 2.10.7
+
+### Patch Changes
+
+- Updated dependencies [[`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769)]:
+  - gt@2.10.7
+
+## 2.10.6
+
+### Patch Changes
+
+- Updated dependencies [[`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0)]:
+  - gt@2.10.6
+
+## 2.10.5
+
+### Patch Changes
+
+- Updated dependencies [[`31d7229`](https://github.com/generaltranslation/gt/commit/31d7229e3893b712e2007369e8b3d219bcc9bde8)]:
+  - gt@2.10.5
+
+## 2.10.4
+
+### Patch Changes
+
+- [#1113](https://github.com/generaltranslation/gt/pull/1113) [`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add string translation function t()
+
+- Updated dependencies [[`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636)]:
+  - gt@2.10.4
+
+## 2.10.3
+
+### Patch Changes
+
+- Updated dependencies [[`38ecda0`](https://github.com/generaltranslation/gt/commit/38ecda003b6873464e350aff0463a8dc64030565)]:
+  - gt@2.10.3
+
 ## 2.10.2
 
 ### Patch Changes

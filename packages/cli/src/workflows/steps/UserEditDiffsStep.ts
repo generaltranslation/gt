@@ -10,7 +10,8 @@ export class UserEditDiffsStep extends WorkflowStep<
   FileReference[]
 > {
   private spinner = logger.createSpinner('dots');
-  private completed = false;
+  private succeeded = false;
+  private failed = false;
 
   constructor(private settings: Settings) {
     super();
@@ -21,18 +22,20 @@ export class UserEditDiffsStep extends WorkflowStep<
 
     try {
       await collectAndSendUserEditDiffs(files, this.settings);
-      this.completed = true;
+      this.succeeded = true;
     } catch {
       // Non-fatal; keep going to enqueue
-      this.completed = true;
+      this.failed = true;
     }
 
     return files;
   }
 
   async wait(): Promise<void> {
-    if (this.completed) {
+    if (this.succeeded) {
       this.spinner.stop(chalk.green('Updated translations'));
+    } else if (this.failed) {
+      this.spinner.stop(chalk.yellow('Could not update translations'));
     }
   }
 }

@@ -11,14 +11,19 @@ import type { FileToUpload, JsxChildren } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import { isInlineLibrary } from '../../types/libraries.js';
+import { shouldPublishGt } from '../../utils/resolvePublish.js';
 
 export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries
-): Promise<{ files: FileToUpload[]; reactComponents: number }> {
+): Promise<{
+  files: FileToUpload[];
+  reactComponents: number;
+  publishMap: Map<string, boolean>;
+}> {
   // Aggregate files
-  const allFiles = await aggregateFiles(settings);
+  const { files, publishMap } = await aggregateFiles(settings);
 
   // Parse for React components
   let reactComponents = 0;
@@ -49,7 +54,7 @@ export async function collectFiles(
         }
       }
       reactComponents = updates.length;
-      allFiles.push({
+      files.push({
         fileName: TEMPLATE_FILE_NAME,
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
@@ -58,7 +63,12 @@ export async function collectFiles(
         versionId: hashStringSync(JSON.stringify(Object.keys(fileData).sort())),
         locale: settings.defaultLocale,
       } satisfies FileToUpload);
+      // Only add GT JSON to publishMap if there's an explicit publish config
+      const gtPublishValue = shouldPublishGt(settings);
+      if (gtPublishValue !== undefined) {
+        publishMap.set(TEMPLATE_FILE_ID, gtPublishValue);
+      }
     }
   }
-  return { files: allFiles, reactComponents };
+  return { files, reactComponents, publishMap };
 }

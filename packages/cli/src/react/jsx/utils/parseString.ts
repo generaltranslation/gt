@@ -7,7 +7,7 @@ import { resolveImportPath } from './resolveImportPath.js';
 import { parse } from '@babel/parser';
 import fs from 'node:fs';
 import {
-  warnDeclareStaticNoResultsSync,
+  warnDeriveFunctionNoResultsSync,
   warnFunctionNotFoundSync,
   warnInvalidDeclareVarNameSync,
 } from '../../../console/index.js';
@@ -693,7 +693,7 @@ function resolveFunctionInFile(
   } catch (error) {
     // File read or parse error - return null
     warnings.add(
-      warnDeclareStaticNoResultsSync(
+      warnDeriveFunctionNoResultsSync(
         filePath,
         functionName,
         'file read/parse error: ' + error

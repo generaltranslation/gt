@@ -166,8 +166,16 @@ export async function generateSettings(
   // For human review, always stage the project
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
-  // Add publish if not provided
-  mergedOptions.publish = (gtConfig.publish || flags.publish) ?? false;
+  // Add publish — only set if explicitly configured or passed via flag.
+  // When neither is set, leave undefined so the publish step knows
+  // there is no global publish intent.
+  if (flags.publish) {
+    mergedOptions.publish = true;
+  } else if (gtConfig.publish !== undefined) {
+    mergedOptions.publish = gtConfig.publish;
+  } else {
+    mergedOptions.publish = undefined;
+  }
 
   // Don't default src here — each pipeline (JS/Python) has its own defaults.
   // Only set src if the user explicitly provided it via flags or config.
@@ -186,7 +194,14 @@ export async function generateSettings(
         cwd,
         compositePatterns
       )
-    : { resolvedPaths: {}, placeholderPaths: {}, transformPaths: {} };
+    : {
+        resolvedPaths: {},
+        placeholderPaths: {},
+        transformPaths: {},
+        publishPaths: new Set<string>(),
+        unpublishPaths: new Set<string>(),
+        gtJson: {},
+      };
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),

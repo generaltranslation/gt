@@ -17,5 +17,6 @@ export interface TransformState {
   statistics: {
     jsxElementCount: number;
     dynamicContentViolations: number;
+    macroExpansionsCount: number;
   };
 }

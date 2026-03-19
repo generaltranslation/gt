@@ -18,6 +18,7 @@ export enum GT_COMPONENT_TYPES {
   DateTime = 'DateTime',
   Num = 'Num',
   Static = 'Static',
+  Derive = 'Derive',
   Branch = 'Branch',
   Plural = 'Plural',
   LocaleSelector = 'LocaleSelector',
@@ -41,6 +42,8 @@ export enum GT_FUNCTIONS_WITH_CALLBACKS {
 export enum GT_OTHER_FUNCTIONS {
   msg = 'msg',
   declareStatic = 'declareStatic',
+  t = 't',
+  derive = 'derive',
 }
 
 /**
@@ -79,6 +82,14 @@ export const GT_FUNCTIONS_TO_CALLBACKS: Record<
 };
 
 /**
+ * GT derive functions
+ */
+export const GT_DERIVE_STRING_FUNCTIONS = [
+  GT_OTHER_FUNCTIONS.declareStatic,
+  GT_OTHER_FUNCTIONS.derive,
+] as const;
+
+/**
  * All gt functions (both regular and callback functions)
  */
 export type GT_ALL_FUNCTIONS =
@@ -95,6 +106,7 @@ export enum GT_IMPORT_SOURCES {
   GT_NEXT_SERVER = 'gt-next/server',
   GT_REACT = 'gt-react',
   GT_REACT_CLIENT = 'gt-react/client',
+  GT_REACT_BROWSER = 'gt-react/browser',
   GT_I18N = 'gt-i18n',
 }
 
@@ -132,6 +144,7 @@ export const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.Currency]: 'c',
   [GT_COMPONENT_TYPES.DateTime]: 'd',
   [GT_COMPONENT_TYPES.Static]: 's',
+  [GT_COMPONENT_TYPES.Derive]: 's',
   [GT_COMPONENT_TYPES.Branch]: 'b',
   [GT_COMPONENT_TYPES.Plural]: 'p',
 } as const;

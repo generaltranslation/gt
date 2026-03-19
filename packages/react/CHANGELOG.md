@@ -1,5 +1,81 @@
 # gt-react
 
+## 10.15.1
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:
+  - generaltranslation@8.1.20
+  - gt-i18n@0.7.2
+  - @generaltranslation/react-core@1.6.2
+  - @generaltranslation/supported-locales@2.0.53
+
+## 10.15.0
+
+### Minor Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+### Patch Changes
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - @generaltranslation/supported-locales@2.0.52
+  - @generaltranslation/react-core@1.6.1
+  - generaltranslation@8.1.19
+  - gt-i18n@0.7.1
+
+## 10.14.0
+
+### Minor Changes
+
+- [#1121](https://github.com/generaltranslation/gt/pull/1121) [`b6a58de`](https://github.com/generaltranslation/gt/commit/b6a58de76998b28ce3247aa1a7005fffaeb210a5) Thanks [@pie575](https://github.com/pie575)! - Added a versionId hook for users to better access what Version their GT translations are on
+
+### Patch Changes
+
+- Updated dependencies [[`b6a58de`](https://github.com/generaltranslation/gt/commit/b6a58de76998b28ce3247aa1a7005fffaeb210a5), [`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a)]:
+  - @generaltranslation/react-core@1.6.0
+  - gt-i18n@0.7.0
+  - generaltranslation@8.1.18
+  - @generaltranslation/supported-locales@2.0.51
+
+## 10.13.0
+
+### Minor Changes
+
+- [#1118](https://github.com/generaltranslation/gt/pull/1118) [`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add t macro
+
+### Patch Changes
+
+- Updated dependencies [[`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769)]:
+  - gt-i18n@0.6.2
+  - @generaltranslation/react-core@1.5.10
+
+## 10.12.1
+
+### Patch Changes
+
+- [#1062](https://github.com/generaltranslation/gt/pull/1062) [`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: rename static to derive, and deprecate static
+
+- Updated dependencies [[`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0)]:
+  - @generaltranslation/react-core@1.5.9
+  - generaltranslation@8.1.17
+  - gt-i18n@0.6.1
+  - @generaltranslation/supported-locales@2.0.50
+
+## 10.12.0
+
+### Minor Changes
+
+- [#1113](https://github.com/generaltranslation/gt/pull/1113) [`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add string translation function t()
+
+### Patch Changes
+
+- Updated dependencies [[`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636)]:
+  - gt-i18n@0.6.0
+  - @generaltranslation/react-core@1.5.8
+
 ## 10.11.7
 
 ### Patch Changes

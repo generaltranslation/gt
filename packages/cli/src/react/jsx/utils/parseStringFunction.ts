@@ -1,11 +1,12 @@
 import { NodePath, Scope, Binding } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
-  MSG_REGISTRATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
+  STRING_REGISTRATION_FUNCS,
+  T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from './constants.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 
@@ -23,6 +24,7 @@ import type {
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
 import { processTranslationCall } from './stringParsing/processTranslationCall/index.js';
+import { processTaggedTemplateCall } from './stringParsing/processTaggedTemplateCall/index.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -127,6 +129,13 @@ function handleFunctionCall(
   ) {
     // Direct translation call: t('hello')
     processTranslationCall(tPath, config, output);
+  } else if (
+    !config.ignoreTaggedTemplates &&
+    tPath.parent.type === 'TaggedTemplateExpression' &&
+    tPath.parent.tag === tPath.node
+  ) {
+    // Tagged template: t`hello ${name}`
+    processTaggedTemplateCall(tPath, config, output);
   } else if (
     tPath.parent.type === 'CallExpression' &&
     t.isExpression(tPath.node) &&
@@ -400,13 +409,13 @@ function processFunctionInFile(
  * Main entry point for parsing translation strings from useGT() and getGT() calls.
  *
  * Supports complex patterns including:
- * 1. Direct calls: const t = useGT(); t('hello');
- * 2. Translation callback prop drilling: const t = useGT(); getInfo(t); where getInfo uses t() internally
+ * 1. Direct calls: const gt = useGT(); gt('hello');
+ * 2. Translation callback prop drilling: const gt = useGT(); getInfo(gt); where getInfo uses gt() internally
  * 3. Cross-file function calls: imported functions that receive the translation callback as a parameter
  *
  * Example flow:
- * - const t = useGT();
- * - const { home } = getInfo(t); // getInfo is imported from './constants'
+ * - const gt = useGT();
+ * - const { home } = getInfo(gt); // getInfo is imported from './constants'
  * - This will parse constants.ts to find translation calls within getInfo function
  */
 export function parseStrings(
@@ -416,15 +425,27 @@ export function parseStrings(
   config: ParsingConfig,
   output: ParsingOutput
 ): void {
+  // Handle global t macro directly — path is already the tag identifier
+  if (originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER) {
+    if (!config.ignoreGlobalTaggedTemplates) {
+      processTaggedTemplateCall(path, config, output);
+    }
+    return;
+  }
+
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 
   const referencePaths = path.scope.bindings[importName]?.referencePaths || [];
 
   for (const refPath of referencePaths) {
-    // Handle msg() calls directly without variable assignment
-    if (originalName === MSG_REGISTRATION_FUNCTION) {
-      const msgConfig: ParsingConfig = {
+    // Handle msg(), t() calls directly without variable assignment
+    if (
+      STRING_REGISTRATION_FUNCS.includes(
+        originalName as (typeof STRING_REGISTRATION_FUNCS)[number]
+      )
+    ) {
+      const stringRegistrationConfig: ParsingConfig = {
         parsingOptions: config.parsingOptions,
         file: config.file,
         ignoreInlineMetadata: false,
@@ -432,14 +453,23 @@ export function parseStrings(
         ignoreInvalidIcu: false,
         ignoreInlineListContent: false,
         includeSourceCodeContext: config.includeSourceCodeContext,
+        ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
       };
 
-      // Check if this is a direct call to msg('string')
+      // Check if this is a direct call to msg('string') or t('string')
       if (
         refPath.parent.type === 'CallExpression' &&
         refPath.parent.callee === refPath.node
       ) {
-        processTranslationCall(refPath, msgConfig, output);
+        processTranslationCall(refPath, stringRegistrationConfig, output);
+      } else if (
+        !stringRegistrationConfig.ignoreTaggedTemplates &&
+        refPath.parent.type === 'TaggedTemplateExpression' &&
+        refPath.parent.tag === refPath.node
+      ) {
+        // Tagged template: t`hello ${name}`
+        processTaggedTemplateCall(refPath, stringRegistrationConfig, output);
       }
       continue;
     }
@@ -493,6 +523,8 @@ export function parseStrings(
         // TODO: when we add support for array content in gt function, this should just always be false
         ignoreInlineListContent: isInlineGT,
         includeSourceCodeContext: config.includeSourceCodeContext,
+        ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
       };
 
       const effectiveParent =

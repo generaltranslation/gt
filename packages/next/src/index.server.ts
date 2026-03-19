@@ -20,7 +20,9 @@ import {
   declareVar,
   decodeVars,
   declareStatic,
+  derive,
   Static,
+  Derive,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -53,6 +55,10 @@ export function useDefaultLocale() {
   return getI18NConfig().getDefaultLocale();
 }
 
+export function useVersionId() {
+  return getI18NConfig().getVersionId();
+}
+
 export {
   GTProvider,
   T,
@@ -65,6 +71,7 @@ export {
   Currency,
   DateTime,
   Static,
+  Derive,
   Branch,
   Plural,
   useGT,
@@ -79,6 +86,7 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   mFallback,

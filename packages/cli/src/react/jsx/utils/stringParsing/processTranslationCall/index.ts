@@ -13,7 +13,7 @@ import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
  * - String literals: t('hello')
  * - Template literals without expressions: t(`hello`)
  * - Metadata extraction from options object
- * - Error reporting for non-static expressions and template literals with expressions
+ * - Error reporting for non-derivable expressions and template literals with expressions
  *
  * @param tPath - The path to the translation call
  * @param config - The configuration to use

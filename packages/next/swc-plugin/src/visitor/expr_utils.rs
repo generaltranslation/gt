@@ -15,7 +15,7 @@ pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
     // Check if it has only one argument
     if call_expr.args.len() != 1 {
       errors.push(format!(
-        "declareStatic must have exactly one argument, found {}",
+        "declareStatic/derive must have exactly one argument, found {}",
         call_expr.args.len()
       ));
       return;
@@ -38,7 +38,7 @@ pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
 
       if !is_valid {
         errors.push(
-          "declareStatic first argument must be a call expression".to_string()
+          "declareStatic/derive first argument must be a call expression".to_string()
         );
       }
     }

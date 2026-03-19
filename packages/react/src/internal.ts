@@ -33,9 +33,11 @@ import {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   Static,
+  Derive,
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/internal';
@@ -65,7 +67,10 @@ import {
   GTProp,
 } from '@generaltranslation/react-core/types';
 
-import { ClientProviderProps, GTProviderProps } from './types/config';
+import {
+  ClientProviderProps,
+  GTProviderProps,
+} from './react-context/types/config';
 
 // Type exports
 export type {
@@ -101,6 +106,7 @@ export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
 // Function exports
 export {
   Static,
+  Derive,
   addGTIdentifier,
   writeChildrenAsObjects,
   isVariableObject,
@@ -129,6 +135,7 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   mFallback,

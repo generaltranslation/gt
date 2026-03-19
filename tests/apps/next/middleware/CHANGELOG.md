@@ -1,5 +1,49 @@
 # gt-next-middleware-e2e
 
+## 0.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:
+  - gt-next@6.14.2
+
+## 0.1.13
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - gt-next@6.14.1
+
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [[`b6a58de`](https://github.com/generaltranslation/gt/commit/b6a58de76998b28ce3247aa1a7005fffaeb210a5)]:
+  - gt-next@6.14.0
+
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.13.11
+
+## 0.1.10
+
+### Patch Changes
+
+- Updated dependencies [[`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0)]:
+  - gt-next@6.13.10
+
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.13.9
+
 ## 0.1.8
 
 ### Patch Changes

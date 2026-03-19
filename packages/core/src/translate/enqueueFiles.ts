@@ -6,7 +6,6 @@ import { processBatches } from './utils/batch';
 export type EnqueueOptions = {
   sourceLocale: string;
   targetLocales: string[];
-  publish?: boolean;
   requireApproval?: boolean;
   modelProvider?: string;
   force?: boolean;
@@ -38,7 +37,6 @@ export default async function _enqueueFiles(
         })),
         targetLocales: options.targetLocales,
         sourceLocale: options.sourceLocale,
-        publish: options.publish,
         requireApproval: options.requireApproval,
         modelProvider: options.modelProvider,
         force: options.force,

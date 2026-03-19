@@ -31,11 +31,16 @@ export function getLocales(): string[] {
   return getI18NConfig().getLocales();
 }
 
+export function getVersionId(): string | undefined {
+  return getI18NConfig().getVersionId();
+}
+
 export {
   msg,
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
 } from 'gt-i18n';

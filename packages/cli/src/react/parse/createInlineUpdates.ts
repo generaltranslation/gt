@@ -18,7 +18,7 @@ import {
 import {
   calculateHashes,
   dedupeUpdates,
-  linkStaticUpdates,
+  linkDeriveUpdates,
 } from '../../extraction/postProcess.js';
 
 export async function createInlineUpdates(
@@ -73,6 +73,8 @@ export async function createInlineUpdates(
           ignoreInvalidIcu: false,
           ignoreInlineListContent: false,
           includeSourceCodeContext,
+          ignoreTaggedTemplates: false,
+          ignoreGlobalTaggedTemplates: false,
         },
         { updates, errors, warnings }
       );
@@ -106,7 +108,7 @@ export async function createInlineUpdates(
   // Post processing steps:
   await calculateHashes(updates);
   dedupeUpdates(updates);
-  linkStaticUpdates(updates);
+  linkDeriveUpdates(updates);
 
   return { updates, errors, warnings: [...warnings] };
 }

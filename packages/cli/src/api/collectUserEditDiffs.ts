@@ -1,6 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { getDownloadedVersions } from '../fs/config/downloadedVersions.js';
+import {
+  readLockfile,
+  EntryMap,
+  DownloadedTranslation,
+} from '../fs/config/downloadedVersions.js';
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
@@ -9,46 +13,26 @@ import { FileReference, SubmitUserEditDiff } from 'generaltranslation/types';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
-import {
-  DownloadedVersionEntry,
-  DownloadedVersions,
-} from '../fs/config/downloadedVersions.js';
 import { extractJson } from '../formats/json/extractJson.js';
+import { extractYaml } from '../formats/yaml/extractYaml.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
-  entry: DownloadedVersionEntry;
+  entry: DownloadedTranslation;
 };
 
 const findLatestDownloadedVersion = (
-  downloadedVersions: DownloadedVersions,
-  branchId: string,
+  entryMap: EntryMap,
   fileId: string,
   locale: string
 ): LatestDownloadedVersion | null => {
-  const versionsForFile =
-    downloadedVersions.entries?.[branchId]?.[fileId] ?? undefined;
-  if (!versionsForFile) return null;
+  const entry = entryMap.get(fileId);
+  if (!entry) return null;
 
-  let latest: LatestDownloadedVersion | null = null;
+  const translation = entry.translations[locale];
+  if (!translation) return null;
 
-  for (const [versionId, locales] of Object.entries(versionsForFile)) {
-    const entry = locales?.[locale];
-    if (!entry) continue;
-
-    const updatedAt = entry.updatedAt
-      ? Date.parse(entry.updatedAt)
-      : Number.NEGATIVE_INFINITY;
-    const latestUpdatedAt = latest?.entry.updatedAt
-      ? Date.parse(latest.entry.updatedAt)
-      : Number.NEGATIVE_INFINITY;
-
-    if (!latest || updatedAt > latestUpdatedAt) {
-      latest = { versionId, entry };
-    }
-  }
-
-  return latest;
+  return { versionId: entry.versionId, entry: translation };
 };
 
 /**
@@ -60,8 +44,8 @@ const findLatestDownloadedVersion = (
 export async function collectAndSendUserEditDiffs(
   files: FileReference[],
   settings: Settings
-) {
-  if (!settings.files) return;
+): Promise<boolean> {
+  if (!settings.files) return false;
 
   const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
   const fileMapping = createFileMapping(
@@ -72,7 +56,7 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const downloadedVersions = getDownloadedVersions(settings.configDirectory);
+  const { entryMap } = readLockfile(settings);
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -95,8 +79,7 @@ export async function collectAndSendUserEditDiffs(
       if (!fs.existsSync(outputPath)) continue;
 
       const latestDownloaded = findLatestDownloadedVersion(
-        downloadedVersions,
-        uploadedFile.branchId,
+        entryMap,
         uploadedFile.fileId,
         locale
       );
@@ -209,6 +192,19 @@ export async function collectAndSendUserEditDiffs(
             if (extractedContent) {
               localContent = extractedContent;
             }
+          } else if (
+            (c.fileName.endsWith('.yaml') || c.fileName.endsWith('.yml')) &&
+            settings.options?.yamlSchema &&
+            c.locale !== settings.defaultLocale
+          ) {
+            const extractedContent = extractYaml(
+              rawLocalContent,
+              c.fileName,
+              settings.options
+            );
+            if (extractedContent) {
+              localContent = extractedContent;
+            }
           }
 
           collectedDiffs.push({
@@ -230,4 +226,6 @@ export async function collectAndSendUserEditDiffs(
   if (collectedDiffs.length > 0) {
     await gt.submitUserEditDiffs({ diffs: collectedDiffs });
   }
+
+  return collectedDiffs.length > 0;
 }

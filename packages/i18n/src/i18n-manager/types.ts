@@ -26,6 +26,7 @@ export type I18nManagerConfig = {
   devApiKey?: string;
   apiKey?: string;
   runtimeUrl?: string | null;
+  _versionId?: string;
 };
 
 export type { TranslationsLoader, StorageAdapter, StorageAdapterType };

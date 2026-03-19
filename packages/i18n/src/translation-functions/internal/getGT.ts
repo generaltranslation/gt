@@ -1,7 +1,7 @@
-import { gtFallback } from '../fallbacks/gtFallback';
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
+import { interpolateMessage } from '../utils/interpolateMessage';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -35,13 +35,16 @@ export async function getGT(): Promise<GTFunctionType> {
    */
   const gt: GTFunctionType = (
     message: string,
-    options?: InlineTranslationOptions
+    options: InlineTranslationOptions = {}
   ) => {
     const translation = resolveTranslation(message, options);
     if (translation) {
-      return gtFallback(translation, { ...options, $_fallback: message });
+      return interpolateMessage(translation, {
+        ...options,
+        $_fallback: message,
+      });
     }
-    return gtFallback(message, options);
+    return interpolateMessage(message, options);
   };
 
   return gt;

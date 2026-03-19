@@ -17,6 +17,7 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
+  useVersionId as _useVersionId,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
@@ -28,10 +29,12 @@ import {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   _Messages,
   Static as _Static,
+  Derive as _Derive,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -172,6 +175,34 @@ export const Var: typeof _Var = () => {
 Var._gtt = 'variable-variable';
 
 /**
+ * `<Derive>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ *
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ *
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * <T>
+ *   <Derive>
+ *      {getSubject()}
+ *   </Derive>
+ *   is going to school today.
+ * </T>
+ * ```
+ *
+ * @param {T extends React.ReactNode} children - Derived content to render.
+ * @returns {T} The result of the function invocation.
+ */
+export const Derive: typeof _Derive = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * @deprecated Use `<Derive>` instead.
+ *
  * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
  *
  * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
@@ -190,7 +221,7 @@ Var._gtt = 'variable-variable';
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Static content to render.
+ * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {
@@ -393,6 +424,19 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
 };
 
 /**
+ * Returns the version ID for the current source, if set.
+ *
+ * @returns {string | undefined} The version ID.
+ *
+ * @example
+ * const versionId = useVersionId();
+ * console.log(versionId); // 'abc123'
+ */
+export const useVersionId: typeof _useVersionId = () => {
+  throw new Error(typesFileError);
+};
+
+/**
  * A dropdown component that allows users to select a region.
  *
  * @param {string[]} [regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales in the `<GTProvider>` context.
@@ -470,7 +514,10 @@ export {
   decodeOptions,
   mFallback,
   gtFallback,
-  declareStatic,
+  derive,
   declareVar,
   decodeVars,
 };
+
+/** @deprecated Use derive() instead. */
+export { declareStatic };

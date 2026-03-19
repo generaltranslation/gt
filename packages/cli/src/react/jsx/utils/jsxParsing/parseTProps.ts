@@ -40,7 +40,7 @@ export function parseTProps({
         const expr = attr.value.expression;
         const code = generate(expr).code;
 
-        // Only check for static expressions on id and context and maxChars props
+        // Only check for derivable expressions on id and context and maxChars props
         if (
           GT_ATTRIBUTES.includes(attrName as (typeof GT_ATTRIBUTES)[number])
         ) {
@@ -55,7 +55,7 @@ export function parseTProps({
               )
             );
           }
-          // Use the static value if available
+          // Use the derived value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
             // Check for invalid maxChars values
             if (attrName === '$maxChars' || attrName === 'maxChars') {
@@ -83,7 +83,7 @@ export function parseTProps({
               metadata[mapAttributeName(attrName)] = staticAnalysis.value;
             }
           } else {
-            // Only store the code if we couldn't extract a static value
+            // Only store the code if we couldn't extract a derivable value
             metadata[attrName] = code;
           }
         } else {
