@@ -2,7 +2,7 @@
   <a href="https://generaltranslation.com">
     <picture>
       <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/brand/gt-logo-light.svg">
-      <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-dark.svg" height="128">
+      <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-dark.svg" height="64">
     </picture>
   </a>
   <h1>General Translation</h1>
