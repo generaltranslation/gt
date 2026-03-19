@@ -13,6 +13,8 @@ import {
   warnDeriveNonConstVariableSync,
   warnDeriveUnresolvableValueSync,
   warnDeriveOptionalChainingSync,
+  warnDeriveDestructuringSync,
+  warnDeriveCircularSpreadSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -59,6 +61,15 @@ function unwrapTypeAnnotation(node: t.Expression): t.Expression {
 }
 
 // ===== Object Property Collection & Nesting Helpers ===== //
+//
+// Known limitations (not yet supported in derive):
+// - Destructuring syntax: const { x } = obj; const [a, b] = arr;
+// - Enum member values: Color.Red (enum declarations aren't resolved)
+// - Object.freeze / Object.assign wrappers (CallExpression around ObjectExpression)
+// - Logical expressions as values: x || 'default', x ?? 'fallback' (could be undefined)
+// - Optional chaining: O?.a (implies possible undefined)
+// - Angle bracket type assertions in .tsx files (<string>x conflicts with JSX)
+//
 
 interface ObjectEntry {
   key: string | null;
@@ -80,7 +91,8 @@ function collectObjectProperties(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  warnings: Set<string>,
+  errors: string[] = []
 ): ObjectEntry[] {
   const entries: ObjectEntry[] = [];
 
@@ -98,6 +110,22 @@ function collectObjectProperties(
         entries.push({ key, value: prop.value });
       }
     } else if (t.isSpreadElement(prop)) {
+      // Handle inline ObjectExpression spread: { ...({ a: 'x' }) }
+      const spreadArg = unwrapTypeAnnotation(prop.argument);
+      if (t.isObjectExpression(spreadArg)) {
+        entries.push(
+          ...collectObjectProperties(
+            spreadArg,
+            tPath,
+            file,
+            parsingOptions,
+            warnings,
+            errors
+          )
+        );
+        continue;
+      }
+
       if (!t.isIdentifier(prop.argument)) continue;
 
       const spreadBinding = tPath.scope.getBinding(prop.argument.name);
@@ -113,17 +141,34 @@ function collectObjectProperties(
           continue;
         const spreadInit = spreadBinding.path.node.init;
         if (!spreadInit) continue;
+        // Guard against circular spreads
+        if (resolvingIdentifiers.has(spreadInit)) {
+          errors.push(
+            warnDeriveCircularSpreadSync(
+              file,
+              prop.argument.name,
+              `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+            )
+          );
+          continue;
+        }
+        resolvingIdentifiers.add(spreadInit);
         const spreadObj = unwrapTypeAnnotation(spreadInit);
-        if (!t.isObjectExpression(spreadObj)) continue;
+        if (!t.isObjectExpression(spreadObj)) {
+          resolvingIdentifiers.delete(spreadInit);
+          continue;
+        }
         entries.push(
           ...collectObjectProperties(
             spreadObj,
             spreadBinding.path,
             file,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           )
         );
+        resolvingIdentifiers.delete(spreadInit);
       }
       // Cross-file: ImportSpecifier or ImportDefaultSpecifier
       else if (
@@ -171,7 +216,8 @@ function collectObjectProperties(
                 crossObj.tPath,
                 crossObj.file,
                 parsingOptions,
-                warnings
+                warnings,
+                errors
               );
           entries.push(...crossEntries);
         }
@@ -192,7 +238,8 @@ function collectArrayElements(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  warnings: Set<string>,
+  errors: string[] = []
 ): ObjectEntry[] {
   const entries: ObjectEntry[] = [];
   let index = 0;
@@ -214,8 +261,17 @@ function collectArrayElements(
         if (
           spreadDecl?.isVariableDeclaration() &&
           spreadDecl.node.kind !== 'const'
-        )
+        ) {
+          errors.push(
+            warnDeriveNonConstVariableSync(
+              file,
+              el.argument.name,
+              spreadDecl.node.kind,
+              `${el.loc?.start?.line}:${el.loc?.start?.column}`
+            )
+          );
           continue;
+        }
         const spreadInit = spreadBinding.path.node.init;
         if (!spreadInit) continue;
         const spreadUnwrapped = unwrapTypeAnnotation(spreadInit);
@@ -299,7 +355,8 @@ function resolveToObjectNodes(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  warnings: Set<string>,
+  errors: string[] = []
 ): ResolvedObject[] {
   // Case 1: Identifier — base case
   if (t.isIdentifier(node)) {
@@ -329,29 +386,38 @@ function resolveToObjectNodes(
       if (t.isObjectExpression(unwrapped) || t.isArrayExpression(unwrapped)) {
         return [{ objExpr: unwrapped, tPath: binding.path, file }];
       }
-      // Handle conditional: cond ? { ... } : { ... }
+      // Handle identifier chain: const A = B; const B = { ... }
+      if (t.isIdentifier(unwrapped)) {
+        return resolveToObjectNodes(
+          unwrapped,
+          binding.path,
+          file,
+          parsingOptions,
+          warnings,
+          errors
+        );
+      }
+      // Handle conditional: cond ? { ... } : { ... } (including nested ternaries)
       if (t.isConditionalExpression(unwrapped)) {
-        const results: ResolvedObject[] = [];
-        const consequent = unwrapTypeAnnotation(unwrapped.consequent);
-        const alternate = unwrapTypeAnnotation(unwrapped.alternate);
-        if (
-          t.isObjectExpression(consequent) ||
-          t.isArrayExpression(consequent)
-        ) {
-          results.push({
-            objExpr: consequent,
-            tPath: binding.path,
-            file,
-          });
-        }
-        if (t.isObjectExpression(alternate) || t.isArrayExpression(alternate)) {
-          results.push({
-            objExpr: alternate,
-            tPath: binding.path,
-            file,
-          });
-        }
-        return results;
+        const collectConditionalLeaves = (
+          expr: t.Expression
+        ): ResolvedObject[] => {
+          const inner = unwrapTypeAnnotation(expr);
+          if (t.isConditionalExpression(inner)) {
+            return [
+              ...collectConditionalLeaves(inner.consequent),
+              ...collectConditionalLeaves(inner.alternate),
+            ];
+          }
+          if (t.isObjectExpression(inner) || t.isArrayExpression(inner)) {
+            return [{ objExpr: inner, tPath: binding.path, file }];
+          }
+          return [];
+        };
+        return [
+          ...collectConditionalLeaves(unwrapped.consequent),
+          ...collectConditionalLeaves(unwrapped.alternate),
+        ];
       }
       return [];
     }
@@ -402,7 +468,8 @@ function resolveToObjectNodes(
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
     if (parentObjects.length === 0) return [];
 
@@ -422,7 +489,8 @@ function resolveToObjectNodes(
             parent.tPath,
             parent.file,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           );
 
       // Determine if this is a static access (known key)
@@ -782,6 +850,21 @@ export function parseStringExpression(
 
     // Check if it's a const/let/var with an initializer
     if (binding.path.isVariableDeclarator() && binding.path.node.init) {
+      // Check for destructuring patterns (not yet supported)
+      if (
+        t.isObjectPattern(binding.path.node.id) ||
+        t.isArrayPattern(binding.path.node.id)
+      ) {
+        errors.push(
+          warnDeriveDestructuringSync(
+            file,
+            node.name,
+            `${node.loc?.start?.line}:${node.loc?.start?.column}`
+          )
+        );
+        return null;
+      }
+
       // Guard against circular references (e.g., const A = B; const B = A)
       const init = binding.path.node.init;
       if (resolvingIdentifiers.has(init)) {
@@ -825,6 +908,22 @@ export function parseStringExpression(
       }
     }
 
+    // Check for destructuring patterns (not yet supported)
+    if (
+      binding.path.isObjectProperty() ||
+      binding.path.isArrayPattern() ||
+      binding.path.isRestElement()
+    ) {
+      errors.push(
+        warnDeriveDestructuringSync(
+          file,
+          node.name,
+          `${node.loc?.start?.line}:${node.loc?.start?.column}`
+        )
+      );
+      return null;
+    }
+
     // Not a resolvable variable
     return null;
   }
@@ -851,7 +950,8 @@ export function parseStringExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
     if (objectNodes.length === 0) return null;
 
@@ -864,14 +964,16 @@ export function parseStringExpression(
             objPath,
             objFile,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           )
         : collectObjectProperties(
             objExpr,
             objPath,
             objFile,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           );
 
       // Check for static literal subscripts: obj['key'] or obj[0]

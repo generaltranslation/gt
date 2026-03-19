@@ -314,6 +314,32 @@ export const warnDeriveUnresolvableValueSync = (
     location
   );
 
+export const warnDeriveCircularSpreadSync = (
+  file: string,
+  varName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Circular spread detected involving ${colorizeFunctionName(varName)}. Spread references that form a cycle cannot be resolved statically.`
+    ),
+    location
+  );
+
+export const warnDeriveDestructuringSync = (
+  file: string,
+  varName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Variable ${colorizeFunctionName(varName)} uses destructuring syntax, which is not yet supported in derive(). Assign the value to a const variable directly instead.`
+    ),
+    location
+  );
+
 export const warnDeriveOptionalChainingSync = (
   file: string,
   code: string,

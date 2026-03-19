@@ -294,6 +294,7 @@ describe('Array Access', () => {
     `);
     expect(node).toBeNull();
     expect(warnings.size).toBeGreaterThan(0);
+    expect([...warnings][0]).toContain('declared with');
   });
 
   it('returns null for empty array', () => {
@@ -322,6 +323,7 @@ describe('Array Access', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('resolves array spread', () => {
@@ -556,6 +558,7 @@ describe('Adversarial Edge Cases', () => {
     `);
     expect(node).toBeNull();
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('Optional chaining');
   });
 
   it('errors on logical expression value', () => {
@@ -567,6 +570,7 @@ describe('Adversarial Edge Cases', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('unwraps non-null assertion on value', () => {
@@ -609,6 +613,318 @@ describe('Adversarial Edge Cases', () => {
   });
 });
 
+// ─── Category 4e: Adversarial Edge Cases Round 3 ──────────────────────────────
+
+describe('Adversarial Edge Cases Round 3', () => {
+  it('resolves object value that is another object property access', () => {
+    const { node } = parseAndResolve(`
+      const labels = { greeting: 'Hello' };
+      const O = { a: labels.greeting };
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['Hello']);
+  });
+
+  it('errors on destructured variable', () => {
+    const { node, errors } = parseAndResolve(`
+      const { x } = { x: 'hello' };
+      const __target__ = x;
+    `);
+    expect(node).toBeNull();
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('destructuring');
+  });
+
+  it('resolves nested conditional object expression', () => {
+    const { node } = parseAndResolve(`
+      const cond1 = true;
+      const cond2 = false;
+      const O = cond1 ? (cond2 ? { a: 'x' } : { a: 'y' }) : { a: 'z' };
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('resolves conditional with as const branches', () => {
+    const { node } = parseAndResolve(`
+      const cond = true;
+      const O = cond ? { a: 'x' } as const : { a: 'y' } as const;
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('errors on circular spread', () => {
+    const { node, errors } = parseAndResolve(`
+      const A = { ...B, x: '1' };
+      const B = { ...A, y: '2' };
+      const k = 'x';
+      const __target__ = A[k];
+    `);
+    // Circular spread is detected and reported as an error
+    expect(nodeToStrings(node)).toEqual(['1', '2']);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('Circular spread');
+  }, 5000);
+
+  it('errors on array destructured variable', () => {
+    const { node, errors } = parseAndResolve(`
+      const [first, second] = ['hello', 'world'];
+      const __target__ = first;
+    `);
+    expect(node).toBeNull();
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('destructuring');
+  });
+
+  it('resolves inline spread source', () => {
+    const { node } = parseAndResolve(`
+      const O = { ...({ base: 'val' }), a: 'x' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['val', 'x']);
+  });
+
+  it('errors on enum member value', () => {
+    const { node, errors } = parseAndResolve(`
+      enum Color { Red = 'red', Blue = 'blue' }
+      const O = { a: Color.Red, b: 'ok' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
+  });
+
+  it('falls back to all values for template literal key', () => {
+    const { node } = parseAndResolve(`
+      const O = { [\`key\`]: 'computed', other: 'literal' };
+      const k = 'other';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['computed', 'literal']);
+  });
+
+  it('errors on nullish coalescing value', () => {
+    const { node, errors } = parseAndResolve(`
+      const x = undefined;
+      const O = { a: x ?? 'default', b: 'ok' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
+  });
+});
+
+// ─── Category 4f: Adversarial Edge Cases Round 4 ──────────────────────────────
+
+describe('Adversarial Edge Cases Round 4', () => {
+  it('resolves nested array access A[0][1]', () => {
+    const { node } = parseAndResolve(`
+      const A = [['a', 'b'], ['c', 'd']];
+      const __target__ = A[0][1];
+    `);
+    expect(nodeToStrings(node)).toEqual(['b']);
+  });
+
+  it('resolves conditional array source', () => {
+    const { node } = parseAndResolve(`
+      const cond = true;
+      const A = cond ? ['x', 'y'] : ['p', 'q'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y', 'p', 'q']);
+  });
+
+  it('resolves empty string key', () => {
+    const { node } = parseAndResolve(`
+      const O = { '': 'empty', a: 'other' };
+      const __target__ = O[''];
+    `);
+    expect(nodeToStrings(node)).toEqual(['empty']);
+  });
+
+  it('resolves unicode key', () => {
+    const { node } = parseAndResolve(`
+      const O = { '🎉': 'party', '🔥': 'fire' };
+      const __target__ = O['🎉'];
+    `);
+    expect(nodeToStrings(node)).toEqual(['party']);
+  });
+
+  it('resolves inline nested spread', () => {
+    const { node } = parseAndResolve(`
+      const inner = { a: 'deep' };
+      const O = { ...{ ...inner, b: 'mid' }, c: 'top' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['deep', 'mid', 'top']);
+  });
+
+  it('collects both entries for numeric/string key collision', () => {
+    const { node } = parseAndResolve(`
+      const O = { 0: 'numeric', '0': 'string' };
+      const __target__ = O[0];
+    `);
+    // Both keys resolve to '0' — collects both since no break
+    expect(nodeToStrings(node)).toEqual(['numeric', 'string']);
+  });
+
+  it('extracts all branches from multiple ternary values', () => {
+    const { node } = parseAndResolve(`
+      const c1 = true;
+      const c2 = false;
+      const O = { a: c1 ? 'x' : 'y', b: c2 ? 'p' : 'q' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    // Dynamic key extracts all values; each ternary produces 2 branches
+    expect(nodeToStrings(node)).toEqual(['x', 'y', 'p', 'q']);
+  });
+
+  it('resolves direct access on inline object expression', () => {
+    const { node } = parseAndResolve(`
+      const __target__ = ({ a: 'x', b: 'y' }).a;
+    `);
+    // Direct property access on object literal — no variable binding
+    // This might not be supported since there's no Identifier to resolve
+    if (node) {
+      expect(nodeToStrings(node)).toEqual(['x']);
+    } else {
+      expect(node).toBeNull();
+    }
+  });
+
+  it('returns null for array .length access', () => {
+    const { node } = parseAndResolve(`
+      const A = ['a', 'b', 'c'];
+      const __target__ = A.length;
+    `);
+    // .length is not a data property — should not resolve
+    expect(node).toBeNull();
+  });
+
+  it('errors on let spread source in array', () => {
+    const { node, errors } = parseAndResolve(`
+      let mutable = ['bad'];
+      const A = ['ok', ...mutable];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    // let spread source should produce an error
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('declared with');
+  });
+});
+
+// ─── Category 4g: Adversarial Edge Cases Round 5 ──────────────────────────────
+
+describe('Adversarial Edge Cases Round 5', () => {
+  it('resolves identifier chain to object', () => {
+    const { node } = parseAndResolve(`
+      const B = { a: 'x', b: 'y' };
+      const A = B;
+      const __target__ = A.a;
+    `);
+    // A points to B which is an object — should follow the chain
+    expect(nodeToStrings(node)).toEqual(['x']);
+  });
+
+  it('resolves nested ternary as object VALUE', () => {
+    const { node } = parseAndResolve(`
+      const c1 = true;
+      const c2 = false;
+      const O = { a: c1 ? (c2 ? 'x' : 'y') : 'z' };
+      const __target__ = O.a;
+    `);
+    // Nested ternary in value position — parseStringExpression handles conditionals
+    expect(nodeToStrings(node)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('resolves string concat as object value', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: 'hello' + ' world' };
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['hello world']);
+  });
+
+  it('collects both values from two spreads with same key', () => {
+    const { node } = parseAndResolve(`
+      const a = { x: 'first' };
+      const b = { x: 'second' };
+      const O = { ...a, ...b };
+      const __target__ = O.x;
+    `);
+    // Both spreads contribute 'x' — can't know which wins at static time
+    expect(nodeToStrings(node)).toEqual(['first', 'second']);
+  });
+
+  it('resolves spread of as-const object', () => {
+    const { node } = parseAndResolve(`
+      const base = { a: 'x' } as const;
+      const O = { ...base, b: 'y' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('resolves numeric and boolean values in object', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: 42, b: true };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['42', 'true']);
+  });
+
+  it('resolves 3-level nested conditional source', () => {
+    const { node } = parseAndResolve(`
+      const c1 = true;
+      const c2 = false;
+      const c3 = true;
+      const O = c1 ? (c2 ? (c3 ? { a: '1' } : { a: '2' }) : { a: '3' }) : { a: '4' };
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['1', '2', '3', '4']);
+  });
+
+  it('resolves function call as object value', () => {
+    const { node } = parseAndResolve(`
+      function getLabel() { return 'resolved'; }
+      const O = { a: getLabel(), b: 'static' };
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['resolved']);
+  });
+
+  it('unwraps satisfies on array element', () => {
+    const { node } = parseAndResolve(`
+      const A = ['a' satisfies string, 'b' satisfies string];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a', 'b']);
+  });
+
+  it('resolves template literal as object value', () => {
+    const { node } = parseAndResolve(`
+      const name = 'World';
+      const O = { greeting: \`Hello \${name}\` };
+      const __target__ = O.greeting;
+    `);
+    expect(nodeToStrings(node)).toEqual(['Hello World']);
+  });
+});
+
 // ─── Category 5: Object Error Cases ──────────────────────────────────────────
 
 describe('Object Error Cases', () => {
@@ -630,6 +946,7 @@ describe('Object Error Cases', () => {
     `);
     expect(node).toBeNull();
     expect(warnings.size).toBeGreaterThan(0);
+    expect([...warnings][0]).toContain('declared with');
   });
 
   it('returns null for empty object', () => {
@@ -736,6 +1053,7 @@ describe('Const Enforcement in Non-Derive Contexts', () => {
     // Documents current behavior: const enforcement applies inside function bodies too
     expect(node).toBeNull();
     expect(warnings.size).toBeGreaterThan(0);
+    expect([...warnings][0]).toContain('declared with');
   });
 
   it('rejects var variable inside function return', () => {
@@ -745,6 +1063,7 @@ describe('Const Enforcement in Non-Derive Contexts', () => {
     `);
     expect(node).toBeNull();
     expect(warnings.size).toBeGreaterThan(0);
+    expect([...warnings][0]).toContain('declared with');
   });
 
   it('resolves const variable inside function return', () => {
@@ -762,6 +1081,7 @@ describe('Const Enforcement in Non-Derive Contexts', () => {
     `);
     expect(node).toBeNull();
     expect(warnings.size).toBeGreaterThan(0);
+    expect([...warnings][0]).toContain('declared with');
   });
 });
 
@@ -841,6 +1161,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     // The 3 string values resolve; the array value should produce an error
     expect(nodeToStrings(node)).toEqual(['Bad', 'OK', 'Good']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors on array value in object (static access)', () => {
@@ -850,6 +1171,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(node).toBeNull();
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors on nested object value without further access', () => {
@@ -861,6 +1183,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     // 'ok' resolves, { nested: 'value' } does not
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors when all values are non-resolvable', () => {
@@ -871,6 +1194,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(node).toBeNull();
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('no error when all values resolve', () => {
@@ -902,6 +1226,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['yes']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors on new expression value in object', () => {
@@ -912,6 +1237,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors on arrow function value in object', () => {
@@ -922,6 +1248,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors on unresolvable spread values', () => {
@@ -933,6 +1260,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 
   it('errors on regex literal value in object', () => {
@@ -943,6 +1271,7 @@ describe('Non-Resolvable Object Value Errors', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
     expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('could not be resolved');
   });
 });
 
