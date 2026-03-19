@@ -1,6 +1,11 @@
 import type { SyntaxNode } from './parser.js';
 import type { ImportAlias } from './extractImports.js';
-import { PYTHON_METADATA_KWARGS } from './constants.js';
+import {
+  PYTHON_METADATA_KWARGS,
+  PYTHON_DERIVE,
+  PYTHON_DECLARE_STATIC,
+  PYTHON_DECLARE_VAR,
+} from './constants.js';
 import {
   containsStaticCalls,
   parseStringExpression,
@@ -41,9 +46,9 @@ export async function extractCalls(
     imports
       .filter(
         (imp) =>
-          imp.originalName !== 'derive' &&
-          imp.originalName !== 'declare_static' &&
-          imp.originalName !== 'declare_var'
+          imp.originalName !== PYTHON_DERIVE &&
+          imp.originalName !== PYTHON_DECLARE_STATIC &&
+          imp.originalName !== PYTHON_DECLARE_VAR
       )
       .map((imp) => imp.localName)
   );

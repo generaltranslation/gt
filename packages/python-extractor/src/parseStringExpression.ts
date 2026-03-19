@@ -1,7 +1,11 @@
 import type { SyntaxNode } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
-import { PYTHON_DERIVE, PYTHON_DECLARE_STATIC, PYTHON_DECLARE_VAR } from './constants.js';
+import {
+  PYTHON_DERIVE,
+  PYTHON_DECLARE_STATIC,
+  PYTHON_DECLARE_VAR,
+} from './constants.js';
 import {
   resolveFunctionInCurrentFile,
   resolveFunctionInFile,
@@ -21,7 +25,9 @@ type ParseContext = {
  * Returns true if the original import name is derive() or declare_static() (deprecated).
  */
 function isDeriveFunction(originalName: string | null): boolean {
-  return originalName === PYTHON_DERIVE || originalName === PYTHON_DECLARE_STATIC;
+  return (
+    originalName === PYTHON_DERIVE || originalName === PYTHON_DECLARE_STATIC
+  );
 }
 
 /**
@@ -192,7 +198,7 @@ async function parseInterpolation(
     }
   }
 
-  // Not a declare_static/declare_var call — error
+  // Not a derive/declare_var call — error
   ctx.errors.push(
     `${locationStr(interpNode)}: f-string interpolation must use derive() or declare_var(), got "${expr.text}"`
   );
@@ -255,7 +261,7 @@ async function resolveDeclareStaticArg(
   const arg = getFirstPositionalArg(callNode);
   if (!arg) {
     ctx.errors.push(
-      `${locationStr(callNode)}: derive() requires an argument`
+      `${locationStr(callNode)}: derive() / declare_static() requires an argument`
     );
     return null;
   }
