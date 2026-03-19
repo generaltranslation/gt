@@ -912,7 +912,10 @@ async function resolveToDictNodes(
 
     const results: ResolvedDict[] = [];
     for (const parent of parentDicts) {
-      const entries = await collectDictEntries(parent.dictNode, parent.valueCtx);
+      const entries = await collectDictEntries(
+        parent.dictNode,
+        parent.valueCtx
+      );
 
       if (staticKeyValue != null) {
         // Static: narrow to one specific key
@@ -955,7 +958,10 @@ async function resolveToDictNodes(
     const attrName = attrNode.text;
     const results: ResolvedDict[] = [];
     for (const parent of parentDicts) {
-      const entries = await collectDictEntries(parent.dictNode, parent.valueCtx);
+      const entries = await collectDictEntries(
+        parent.dictNode,
+        parent.valueCtx
+      );
       for (const entry of entries) {
         if (entry.key === attrName && entry.valueNode.type === 'dictionary') {
           results.push({
