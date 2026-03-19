@@ -58,6 +58,7 @@ export function handleDerivation({
   file,
   parsingOptions,
   errors,
+  warnings,
   runtimeInterpolationState,
 }: {
   expr: t.Expression;
@@ -65,6 +66,7 @@ export function handleDerivation({
   file: string;
   parsingOptions: ParsingConfigOptions;
   errors: string[];
+  warnings: Set<string>;
   runtimeInterpolationState?: { index: number };
 }): StringNode | null {
   if (!expr) {
@@ -80,6 +82,7 @@ export function handleDerivation({
         file,
         parsingOptions,
         errors,
+        warnings,
       });
       if (variants) {
         return {
@@ -142,6 +145,7 @@ export function handleDerivation({
             file,
             parsingOptions,
             errors,
+            warnings,
           });
           if (result === null) return null;
           parts.push(result);
@@ -153,6 +157,7 @@ export function handleDerivation({
             file,
             parsingOptions,
             errors,
+            warnings,
             runtimeInterpolationState,
           });
           if (result === null) return null;
@@ -181,6 +186,7 @@ export function handleDerivation({
       file,
       parsingOptions,
       errors,
+      warnings,
       runtimeInterpolationState,
     });
     const rightResult = handleDerivation({
@@ -189,6 +195,7 @@ export function handleDerivation({
       file,
       parsingOptions,
       errors,
+      warnings,
       runtimeInterpolationState,
     });
 
@@ -207,6 +214,7 @@ export function handleDerivation({
       file,
       parsingOptions,
       errors,
+      warnings,
       runtimeInterpolationState,
     });
   }
@@ -270,12 +278,14 @@ function getDeriveVariants({
   file,
   parsingOptions,
   errors,
+  warnings,
 }: {
   call: t.CallExpression;
   tPath: NodePath;
   file: string;
   parsingOptions: ParsingConfigOptions;
   errors: string[];
+  warnings: Set<string>;
 }): string[] | null {
   // --- Validate Callee --- //
 
@@ -309,11 +319,19 @@ function getDeriveVariants({
       tPath,
       file,
       parsingOptions,
-      errors
+      errors,
+      warnings
     );
   }
   // Resolve the inner call's possible string outcomes
-  return resolveCallStringVariants(arg, tPath, file, parsingOptions, errors);
+  return resolveCallStringVariants(
+    arg,
+    tPath,
+    file,
+    parsingOptions,
+    errors,
+    warnings
+  );
 }
 
 function resolveCallStringVariants(
@@ -321,7 +339,8 @@ function resolveCallStringVariants(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  errors: string[]
+  errors: string[],
+  warnings: Set<string>
 ): string[] | null {
   // Handle function identifier calls: derive(time())
   if (t.isCallExpression(expression) && t.isIdentifier(expression.callee)) {
@@ -368,7 +387,8 @@ function resolveCallStringVariants(
               filePath,
               originalName,
               parsingOptions,
-              errors
+              errors,
+              warnings
             );
             if (node) {
               return nodeToStrings(node);
@@ -381,7 +401,9 @@ function resolveCallStringVariants(
           calleeBinding,
           tPath,
           file,
-          parsingOptions
+          parsingOptions,
+          warnings,
+          errors
         );
         if (node) {
           return nodeToStrings(node);
@@ -401,7 +423,14 @@ function resolveCallStringVariants(
   }
 
   // If we get here: analyze this call as derivable (statically analyzable)
-  const node = parseStringExpression(expression, tPath, file, parsingOptions);
+  const node = parseStringExpression(
+    expression,
+    tPath,
+    file,
+    parsingOptions,
+    warnings,
+    errors
+  );
   if (node) {
     return nodeToStrings(node);
   }
@@ -415,7 +444,9 @@ function resolveFunctionCallFromBinding(
   calleeBinding: ReturnType<NodePath['scope']['getBinding']>,
   tPath: NodePath,
   file: string,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  warnings: Set<string>,
+  errors: string[]
 ): StringNode | null {
   if (!calleeBinding) {
     return null;
@@ -442,7 +473,9 @@ function resolveFunctionCallFromBinding(
           returnArg,
           returnPath,
           file,
-          parsingOptions
+          parsingOptions,
+          warnings,
+          errors
         );
         if (returnResult !== null) {
           branches.push(returnResult);
@@ -465,7 +498,9 @@ function resolveFunctionCallFromBinding(
         body.node,
         body,
         file,
-        parsingOptions
+        parsingOptions,
+        warnings,
+        errors
       );
       if (bodyResult !== null) {
         branches.push(bodyResult);
@@ -490,7 +525,9 @@ function resolveFunctionCallFromBinding(
             returnArg,
             returnPath,
             file,
-            parsingOptions
+            parsingOptions,
+            warnings,
+            errors
           );
           if (returnResult !== null) {
             branches.push(returnResult);
@@ -518,7 +555,8 @@ function resolveFunctionInFile(
   filePath: string,
   functionName: string,
   parsingOptions: ParsingConfigOptions,
-  errors: string[]
+  errors: string[],
+  warnings: Set<string>
 ): StringNode | null {
   // Check cache first
   const cacheKey = `${filePath}::${functionName}`;
@@ -556,7 +594,8 @@ function resolveFunctionInFile(
               resolvedPath,
               functionName,
               parsingOptions,
-              errors
+              errors,
+              warnings
             );
             if (reexportResult) {
               result = reexportResult;
@@ -617,7 +656,8 @@ function resolveFunctionInFile(
                 resolvedPath,
                 originalName,
                 parsingOptions,
-                errors
+                errors,
+                warnings
               );
               if (reexportResult) {
                 result = reexportResult;
@@ -647,7 +687,9 @@ function resolveFunctionInFile(
                 returnArg,
                 returnPath,
                 filePath,
-                parsingOptions
+                parsingOptions,
+                warnings,
+                errors
               );
               if (returnResult !== null) {
                 branches.push(returnResult);
@@ -689,7 +731,9 @@ function resolveFunctionInFile(
               bodyPath.node,
               bodyPath,
               filePath,
-              parsingOptions
+              parsingOptions,
+              warnings,
+              errors
             );
             if (bodyResult !== null) {
               branches.push(bodyResult);
@@ -724,7 +768,9 @@ function resolveFunctionInFile(
                   returnArg,
                   returnPath,
                   filePath,
-                  parsingOptions
+                  parsingOptions,
+                  warnings,
+                  errors
                 );
                 if (returnResult !== null) {
                   branches.push(returnResult);

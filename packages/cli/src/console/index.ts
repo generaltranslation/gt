@@ -274,6 +274,20 @@ export const warnDeriveFunctionNotWrappedSync = (
     location
   );
 
+export const warnDeriveNonConstVariableSync = (
+  file: string,
+  varName: string,
+  kind: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Variable ${colorizeFunctionName(varName)} is declared with '${kind}' but only 'const' declarations can be resolved statically. Change it to 'const'.`
+    ),
+    location
+  );
+
 export const warnDeriveFunctionNoResultsSync = (
   file: string,
   functionName: string,
@@ -283,6 +297,58 @@ export const warnDeriveFunctionNoResultsSync = (
     file,
     withDeriveFunctionError(
       `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() (formerly declareStatic()) can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+    ),
+    location
+  );
+
+export const warnDeriveUnresolvableValueSync = (
+  file: string,
+  key: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Object property ${colorizeFunctionName(formatCodeClamp(key))} could not be resolved to a static string value. Only string literals, template literals, conditionals, and function calls returning strings are supported.`
+    ),
+    location
+  );
+
+export const warnDeriveCircularSpreadSync = (
+  file: string,
+  varName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Circular spread detected involving ${colorizeFunctionName(varName)}. Spread references that form a cycle cannot be resolved statically.`
+    ),
+    location
+  );
+
+export const warnDeriveDestructuringSync = (
+  file: string,
+  varName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Variable ${colorizeFunctionName(varName)} uses destructuring syntax, which is not yet supported in derive(). Assign the value to a const variable directly instead.`
+    ),
+    location
+  );
+
+export const warnDeriveOptionalChainingSync = (
+  file: string,
+  code: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Optional chaining (${colorizeFunctionName(formatCodeClamp(code))}) is not supported in derive(). Optional chaining implies the value could be undefined, which cannot be resolved statically. Use a non-optional access instead.`
     ),
     location
   );

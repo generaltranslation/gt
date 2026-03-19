@@ -50,6 +50,7 @@ export function deriveExpression({
     file: config.file,
     parsingOptions: config.parsingOptions,
     errors: output.errors,
+    warnings: output.warnings,
     runtimeInterpolationState: enableRuntimeInterpolation
       ? { index: 0 }
       : undefined,

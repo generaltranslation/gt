@@ -1,4 +1,6 @@
+import fs from 'node:fs';
 import type { SyntaxNode } from './parser.js';
+import { getParser } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
 import {
@@ -318,6 +320,27 @@ async function resolveStaticValue(
     return resolveFunctionCall(node, ctx);
   }
 
+  // Identifier: resolve to its assigned value
+  if (node.type === 'identifier') {
+    const result = await resolveIdentifier(node, ctx);
+    if (result) return result;
+
+    ctx.errors.push(
+      `${locationStr(node)}: could not resolve identifier "${node.text}" to a static value`
+    );
+    return null;
+  }
+
+  // Subscript: dictionary access like LABELS[score] — returns all values as choices
+  if (node.type === 'subscript') {
+    return resolveSubscript(node, ctx);
+  }
+
+  // Attribute: dictionary access like obj.attr — returns the specific value
+  if (node.type === 'attribute') {
+    return resolveAttribute(node, ctx);
+  }
+
   ctx.errors.push(
     `${locationStr(node)}: unsupported derive() argument type "${node.type}"`
   );
@@ -582,6 +605,591 @@ async function resolveDeclareVarArg(
   const icuText = declareVar('', options);
 
   return { type: 'text', text: icuText };
+}
+
+// ===== Constant / Dictionary Resolution ===== //
+
+/**
+ * Finds a top-level assignment `name = <value>` in the given root node.
+ * Returns the right-hand side (value) node, or null if not found.
+ */
+function findConstantAssignment(
+  name: string,
+  rootNode: SyntaxNode
+): SyntaxNode | null {
+  for (let i = 0; i < rootNode.childCount; i++) {
+    const child = rootNode.child(i);
+    if (!child || child.type !== 'expression_statement') continue;
+    const expr = child.child(0);
+    if (!expr || expr.type !== 'assignment') continue;
+    const left = expr.childForFieldName('left');
+    const right = expr.childForFieldName('right');
+    if (left?.type === 'identifier' && left.text === name && right) {
+      return right;
+    }
+  }
+  return null;
+}
+
+/**
+ * Guard against infinite recursion when resolving identifier chains.
+ * Tracks variable names currently being resolved to detect circular references.
+ */
+const resolvingIdentifiers = new Set<string>();
+
+/**
+ * Resolves an identifier to its static value by finding the assignment
+ * in the current file or cross-file via imports.
+ */
+async function resolveIdentifier(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<StringNode | null> {
+  const name = node.text;
+
+  // Guard against circular references (e.g., x = y; y = x)
+  const guardKey = `${ctx.filePath}::${name}`;
+  if (resolvingIdentifiers.has(guardKey)) {
+    return null;
+  }
+
+  resolvingIdentifiers.add(guardKey);
+  try {
+    // Try local assignment first
+    const localValue = findConstantAssignment(name, ctx.rootNode);
+    if (localValue) {
+      return await resolveStaticValue(localValue, ctx);
+    }
+
+    // Try cross-file via imports
+    const importInfo = findImportForName(name, ctx);
+    if (importInfo) {
+      let source: string;
+      try {
+        source = fs.readFileSync(importInfo.filePath, 'utf8');
+      } catch {
+        return null;
+      }
+
+      const parser = await getParser();
+      const tree = parser.parse(source);
+      if (!tree) return null;
+
+      const externalValue = findConstantAssignment(
+        importInfo.originalName,
+        tree.rootNode
+      );
+      if (externalValue) {
+        const externalImports = extractImportsFromRoot(
+          tree.rootNode,
+          ctx.imports
+        );
+        return await resolveStaticValue(externalValue, {
+          rootNode: tree.rootNode,
+          imports: externalImports,
+          filePath: importInfo.filePath,
+          errors: ctx.errors,
+        });
+      }
+    }
+
+    return null;
+  } finally {
+    resolvingIdentifiers.delete(guardKey);
+  }
+}
+
+/**
+ * Finds a dictionary assignment and returns the dictionary node.
+ * Searches locally first, then cross-file via imports.
+ * Returns the dictionary node and the context (rootNode, filePath, imports)
+ * for resolving values within it.
+ */
+async function findDictionaryAssignment(
+  name: string,
+  ctx: ParseContext
+): Promise<{ dictNode: SyntaxNode; valueCtx: ParseContext } | null> {
+  // Try local assignment
+  const localValue = findConstantAssignment(name, ctx.rootNode);
+  if (
+    localValue &&
+    (localValue.type === 'dictionary' || localValue.type === 'list')
+  ) {
+    return { dictNode: localValue, valueCtx: ctx };
+  }
+
+  // Try cross-file
+  const importInfo = findImportForName(name, ctx);
+  if (importInfo) {
+    let source: string;
+    try {
+      source = fs.readFileSync(importInfo.filePath, 'utf8');
+    } catch {
+      return null;
+    }
+
+    const parser = await getParser();
+    const tree = parser.parse(source);
+    if (!tree) return null;
+
+    const externalValue = findConstantAssignment(
+      importInfo.originalName,
+      tree.rootNode
+    );
+    if (
+      externalValue &&
+      (externalValue.type === 'dictionary' || externalValue.type === 'list')
+    ) {
+      const externalImports = extractImportsFromRoot(
+        tree.rootNode,
+        ctx.imports
+      );
+      return {
+        dictNode: externalValue,
+        valueCtx: {
+          rootNode: tree.rootNode,
+          imports: externalImports,
+          filePath: importInfo.filePath,
+          errors: ctx.errors,
+        },
+      };
+    }
+  }
+
+  return null;
+}
+
+// ===== Dictionary Entry Collection & Nesting Helpers ===== //
+
+interface DictEntry {
+  key: string | null;
+  valueNode: SyntaxNode;
+}
+
+interface ResolvedDict {
+  dictNode: SyntaxNode;
+  valueCtx: ParseContext;
+}
+
+/**
+ * Collects all key-value entries from a dictionary node,
+ * including entries from spread sources (**base).
+ */
+async function collectDictEntries(
+  dictNode: SyntaxNode,
+  ctx: ParseContext
+): Promise<DictEntry[]> {
+  const entries: DictEntry[] = [];
+
+  for (let i = 0; i < dictNode.childCount; i++) {
+    const child = dictNode.child(i);
+    if (!child) continue;
+
+    if (child.type === 'pair') {
+      const keyNode = child.childForFieldName('key');
+      const valueNode = child.childForFieldName('value');
+      if (!valueNode) continue;
+
+      let key: string | null = null;
+      if (keyNode) {
+        if (keyNode.type === 'string' && !isFString(keyNode)) {
+          key = extractStringContent(keyNode) ?? null;
+        } else if (keyNode.type === 'identifier') {
+          key = keyNode.text;
+        } else if (keyNode.type === 'integer') {
+          key = keyNode.text;
+        }
+      }
+      entries.push({ key, valueNode });
+    } else if (child.type === 'dictionary_splat') {
+      // Get the spread source expression (child after **)
+      let splatExpr: SyntaxNode | null = null;
+      for (let j = 0; j < child.childCount; j++) {
+        const splatChild = child.child(j);
+        if (splatChild && splatChild.type !== '**') {
+          splatExpr = splatChild;
+          break;
+        }
+      }
+      if (!splatExpr || splatExpr.type !== 'identifier') continue;
+
+      const name = splatExpr.text;
+
+      // Try local first
+      const localDict = findConstantAssignment(name, ctx.rootNode);
+      if (localDict && localDict.type === 'dictionary') {
+        entries.push(...(await collectDictEntries(localDict, ctx)));
+      } else {
+        // Try cross-file
+        const importInfo = findImportForName(name, ctx);
+        if (importInfo) {
+          let source: string;
+          try {
+            source = fs.readFileSync(importInfo.filePath, 'utf8');
+          } catch {
+            continue;
+          }
+          const parser = await getParser();
+          const tree = parser.parse(source);
+          if (!tree) continue;
+          const externalValue = findConstantAssignment(
+            importInfo.originalName,
+            tree.rootNode
+          );
+          if (externalValue && externalValue.type === 'dictionary') {
+            const externalImports = extractImportsFromRoot(
+              tree.rootNode,
+              ctx.imports
+            );
+            const externalCtx: ParseContext = {
+              rootNode: tree.rootNode,
+              imports: externalImports,
+              filePath: importInfo.filePath,
+              errors: ctx.errors,
+            };
+            entries.push(
+              ...(await collectDictEntries(externalValue, externalCtx))
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Collects all elements from a list node as DictEntry[] with index as key.
+ * Handles list_splat (*spread).
+ */
+async function collectListEntries(
+  listNode: SyntaxNode,
+  ctx: ParseContext
+): Promise<DictEntry[]> {
+  const entries: DictEntry[] = [];
+  let index = 0;
+  for (let i = 0; i < listNode.childCount; i++) {
+    const child = listNode.child(i);
+    if (!child) continue;
+    // Skip brackets and commas
+    if (child.type === '[' || child.type === ']' || child.type === ',')
+      continue;
+
+    if (child.type === 'list_splat') {
+      // *base spread — resolve the source identifier
+      let splatExpr: SyntaxNode | null = null;
+      for (let j = 0; j < child.childCount; j++) {
+        const sc = child.child(j);
+        if (sc && sc.type !== '*') {
+          splatExpr = sc;
+          break;
+        }
+      }
+      if (!splatExpr || splatExpr.type !== 'identifier') continue;
+
+      const localList = findConstantAssignment(splatExpr.text, ctx.rootNode);
+      if (localList && localList.type === 'list') {
+        const spreadEntries = await collectListEntries(localList, ctx);
+        for (const e of spreadEntries) {
+          entries.push({ key: String(index++), valueNode: e.valueNode });
+        }
+      } else {
+        // Try cross-file
+        const importInfo = findImportForName(splatExpr.text, ctx);
+        if (importInfo) {
+          let source: string;
+          try {
+            source = fs.readFileSync(importInfo.filePath, 'utf8');
+          } catch {
+            continue;
+          }
+          const parser = await getParser();
+          const tree = parser.parse(source);
+          if (!tree) continue;
+          const externalValue = findConstantAssignment(
+            importInfo.originalName,
+            tree.rootNode
+          );
+          if (externalValue && externalValue.type === 'list') {
+            const externalImports = extractImportsFromRoot(
+              tree.rootNode,
+              ctx.imports
+            );
+            const externalCtx: ParseContext = {
+              rootNode: tree.rootNode,
+              imports: externalImports,
+              filePath: importInfo.filePath,
+              errors: ctx.errors,
+            };
+            const spreadEntries = await collectListEntries(
+              externalValue,
+              externalCtx
+            );
+            for (const e of spreadEntries) {
+              entries.push({ key: String(index++), valueNode: e.valueNode });
+            }
+          }
+        }
+      }
+      continue;
+    }
+
+    // Regular element — any expression
+    entries.push({ key: String(index), valueNode: child });
+    index++;
+  }
+  return entries;
+}
+
+/**
+ * Resolves an expression to dictionary AST node(s).
+ * Handles identifier, subscript chains, and attribute chains.
+ */
+async function resolveToDictNodes(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<ResolvedDict[]> {
+  // Case 1: identifier — base case
+  if (node.type === 'identifier') {
+    const result = await findDictionaryAssignment(node.text, ctx);
+    if (result) return [result];
+    return [];
+  }
+
+  // Case 2: subscript (e.g., D["a"] in D["a"]["x"])
+  if (node.type === 'subscript') {
+    const valueNode = node.childForFieldName('value');
+    if (!valueNode) return [];
+
+    const parentDicts = await resolveToDictNodes(valueNode, ctx);
+    if (parentDicts.length === 0) return [];
+
+    const subscriptKey = node.childForFieldName('subscript');
+    if (!subscriptKey) return [];
+
+    // Check if key is a static string literal
+    const isStaticKey =
+      subscriptKey.type === 'string' && !isFString(subscriptKey);
+    const staticKeyValue = isStaticKey
+      ? extractStringContent(subscriptKey)
+      : null;
+
+    const isStaticIntKey = subscriptKey.type === 'integer';
+    const staticIntKeyValue = isStaticIntKey ? subscriptKey.text : null;
+
+    const results: ResolvedDict[] = [];
+    for (const parent of parentDicts) {
+      const entries =
+        parent.dictNode.type === 'list'
+          ? await collectListEntries(parent.dictNode, parent.valueCtx)
+          : await collectDictEntries(parent.dictNode, parent.valueCtx);
+
+      if (staticKeyValue != null || staticIntKeyValue != null) {
+        const keyToMatch = staticKeyValue ?? staticIntKeyValue;
+        // Static: narrow to matching keys
+        for (const entry of entries) {
+          if (
+            entry.key === keyToMatch &&
+            (entry.valueNode.type === 'dictionary' ||
+              entry.valueNode.type === 'list')
+          ) {
+            results.push({
+              dictNode: entry.valueNode,
+              valueCtx: parent.valueCtx,
+            });
+          }
+        }
+      } else {
+        // Dynamic: collect ALL entries whose values are dicts/lists
+        for (const entry of entries) {
+          if (
+            entry.valueNode.type === 'dictionary' ||
+            entry.valueNode.type === 'list'
+          ) {
+            results.push({
+              dictNode: entry.valueNode,
+              valueCtx: parent.valueCtx,
+            });
+          }
+        }
+      }
+    }
+    return results;
+  }
+
+  // Case 3: attribute (e.g., D.a in D.a.x)
+  if (node.type === 'attribute') {
+    const objectNode = node.childForFieldName('object');
+    const attrNode = node.childForFieldName('attribute');
+    if (!objectNode || !attrNode) return [];
+
+    const parentDicts = await resolveToDictNodes(objectNode, ctx);
+    if (parentDicts.length === 0) return [];
+
+    const attrName = attrNode.text;
+    const results: ResolvedDict[] = [];
+    for (const parent of parentDicts) {
+      const entries = await collectDictEntries(
+        parent.dictNode,
+        parent.valueCtx
+      );
+      for (const entry of entries) {
+        if (
+          entry.key === attrName &&
+          (entry.valueNode.type === 'dictionary' ||
+            entry.valueNode.type === 'list')
+        ) {
+          results.push({
+            dictNode: entry.valueNode,
+            valueCtx: parent.valueCtx,
+          });
+        }
+      }
+    }
+    return results;
+  }
+
+  return [];
+}
+
+/**
+ * Resolves a subscript expression (e.g., `LABELS[score]` or `D["a"]["x"]`)
+ * by extracting values from the resolved dictionary.
+ * Supports nested access chains and spread resolution.
+ */
+async function resolveSubscript(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<StringNode | null> {
+  const valueNode = node.childForFieldName('value');
+  if (!valueNode) {
+    ctx.errors.push(`${locationStr(node)}: subscript missing value`);
+    return null;
+  }
+
+  // Resolve the object to dict node(s) — supports nesting
+  const dicts = await resolveToDictNodes(valueNode, ctx);
+  if (dicts.length === 0) {
+    ctx.errors.push(
+      `${locationStr(node)}: could not find dictionary or list for "${valueNode.text}"`
+    );
+    return null;
+  }
+
+  const subscriptKey = node.childForFieldName('subscript');
+  const isStaticStringKey =
+    subscriptKey?.type === 'string' && !isFString(subscriptKey);
+  const staticStringKeyValue = isStaticStringKey
+    ? extractStringContent(subscriptKey!)
+    : null;
+  const isStaticIntKey = subscriptKey?.type === 'integer';
+  const staticIntKeyValue = isStaticIntKey ? subscriptKey!.text : null;
+  const staticKeyValue = staticStringKeyValue ?? staticIntKeyValue;
+
+  const branches: StringNode[] = [];
+  for (const { dictNode, valueCtx } of dicts) {
+    const entries =
+      dictNode.type === 'list'
+        ? await collectListEntries(dictNode, valueCtx)
+        : await collectDictEntries(dictNode, valueCtx);
+
+    if (staticKeyValue != null) {
+      // Static key: resolve matching values (no break — collect all for spread overrides)
+      for (const entry of entries) {
+        if (entry.key === staticKeyValue) {
+          const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
+          if (resolved) {
+            if (resolved.type === 'choice') {
+              branches.push(...resolved.nodes);
+            } else {
+              branches.push(resolved);
+            }
+          }
+        }
+      }
+    } else {
+      // Dynamic key: extract ALL values
+      for (const entry of entries) {
+        const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
+        if (resolved) {
+          if (resolved.type === 'choice') {
+            branches.push(...resolved.nodes);
+          } else {
+            branches.push(resolved);
+          }
+        }
+      }
+    }
+  }
+
+  if (branches.length === 0) {
+    ctx.errors.push(
+      `${locationStr(node)}: collection has no resolvable values`
+    );
+    return null;
+  }
+
+  if (branches.length === 1) return branches[0];
+  return { type: 'choice', nodes: branches };
+}
+
+/**
+ * Resolves an attribute access expression (e.g., `obj.attr` or `obj.a.b`)
+ * by finding the specific dictionary pair with a matching key.
+ * Supports nested access chains and spread resolution.
+ */
+async function resolveAttribute(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<StringNode | null> {
+  const objectNode = node.childForFieldName('object');
+  const attrNode = node.childForFieldName('attribute');
+
+  if (!objectNode || !attrNode) {
+    ctx.errors.push(
+      `${locationStr(node)}: attribute access missing object or attribute`
+    );
+    return null;
+  }
+
+  const attrName = attrNode.text;
+
+  // Resolve the object to dict node(s) — supports nesting
+  const dicts = await resolveToDictNodes(objectNode, ctx);
+  if (dicts.length === 0) {
+    ctx.errors.push(
+      `${locationStr(node)}: could not find dictionary or list for "${objectNode.text}"`
+    );
+    return null;
+  }
+
+  const branches: StringNode[] = [];
+  for (const { dictNode, valueCtx } of dicts) {
+    const entries = await collectDictEntries(dictNode, valueCtx);
+    for (const entry of entries) {
+      if (entry.key === attrName) {
+        const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
+        if (resolved) {
+          if (resolved.type === 'choice') {
+            branches.push(...resolved.nodes);
+          } else {
+            branches.push(resolved);
+          }
+        }
+      }
+    }
+  }
+
+  if (branches.length === 0) {
+    ctx.errors.push(
+      `${locationStr(node)}: could not find key "${attrName}" in dictionary or list`
+    );
+    return null;
+  }
+
+  if (branches.length === 1) return branches[0];
+  return { type: 'choice', nodes: branches };
 }
 
 // ===== Helpers ===== //
