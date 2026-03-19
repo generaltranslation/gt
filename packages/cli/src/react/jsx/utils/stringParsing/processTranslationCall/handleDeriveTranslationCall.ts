@@ -47,7 +47,8 @@ export function handleDeriveTranslationCall({
     tPath,
     config.file,
     config.parsingOptions,
-    output.errors
+    output.errors,
+    output.warnings
   );
 
   // Nothing returned, push error

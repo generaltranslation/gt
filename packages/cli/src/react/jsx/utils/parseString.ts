@@ -11,7 +11,7 @@ import {
   warnFunctionNotFoundSync,
   warnInvalidDeclareVarNameSync,
   warnDeriveNonConstVariableSync,
-  warnDeriveChainedObjectAccessSync,
+  warnDeriveUnresolvableValueSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -40,6 +40,403 @@ const processFunctionCache = new Map<string, StringNode | null>();
  */
 const resolvingIdentifiers = new Set<t.Node>();
 
+// ===== Object Property Collection & Nesting Helpers ===== //
+
+interface ObjectEntry {
+  key: string | null;
+  value: t.Expression;
+}
+
+interface ResolvedObject {
+  objExpr: t.ObjectExpression;
+  tPath: NodePath;
+  file: string;
+}
+
+/**
+ * Collects all resolvable property entries from an ObjectExpression,
+ * including entries from spread sources.
+ */
+function collectObjectProperties(
+  objExpr: t.ObjectExpression,
+  tPath: NodePath,
+  file: string,
+  parsingOptions: ParsingConfigOptions,
+  warnings: Set<string>
+): ObjectEntry[] {
+  const entries: ObjectEntry[] = [];
+
+  for (const prop of objExpr.properties) {
+    if (t.isObjectProperty(prop)) {
+      const key = t.isIdentifier(prop.key)
+        ? prop.key.name
+        : t.isStringLiteral(prop.key)
+          ? prop.key.value
+          : t.isNumericLiteral(prop.key)
+            ? String(prop.key.value)
+            : null;
+      if (t.isExpression(prop.value)) {
+        entries.push({ key, value: prop.value });
+      }
+    } else if (t.isSpreadElement(prop)) {
+      if (!t.isIdentifier(prop.argument)) continue;
+
+      const spreadBinding = tPath.scope.getBinding(prop.argument.name);
+      if (!spreadBinding) continue;
+
+      // Same-file: VariableDeclarator
+      if (spreadBinding.path.isVariableDeclarator()) {
+        const spreadDecl = spreadBinding.path.parentPath;
+        if (
+          spreadDecl?.isVariableDeclaration() &&
+          spreadDecl.node.kind !== 'const'
+        )
+          continue;
+        const spreadInit = spreadBinding.path.node.init;
+        if (!spreadInit) continue;
+        const spreadObj = t.isTSAsExpression(spreadInit)
+          ? spreadInit.expression
+          : spreadInit;
+        if (!t.isObjectExpression(spreadObj)) continue;
+        entries.push(
+          ...collectObjectProperties(
+            spreadObj,
+            spreadBinding.path,
+            file,
+            parsingOptions,
+            warnings
+          )
+        );
+      }
+      // Cross-file: ImportSpecifier or ImportDefaultSpecifier
+      else if (
+        spreadBinding.path.isImportSpecifier() ||
+        spreadBinding.path.isImportDefaultSpecifier()
+      ) {
+        const programPath = tPath.scope.getProgramParent().path;
+        const importMap = buildImportMap(programPath);
+        const importPath = importMap.get(prop.argument.name);
+        if (!importPath) continue;
+
+        let originalName = prop.argument.name;
+        if (spreadBinding.path.isImportSpecifier()) {
+          const imported = spreadBinding.path.node.imported;
+          originalName = t.isIdentifier(imported)
+            ? imported.name
+            : imported.value;
+        }
+
+        const resolvedFilePath = resolveImportPath(
+          file,
+          importPath,
+          parsingOptions,
+          resolveImportPathCache
+        );
+        if (!resolvedFilePath) continue;
+
+        const crossFileObjects = resolveObjectNodesInFile(
+          resolvedFilePath,
+          originalName,
+          parsingOptions,
+          warnings
+        );
+        for (const crossObj of crossFileObjects) {
+          entries.push(
+            ...collectObjectProperties(
+              crossObj.objExpr,
+              crossObj.tPath,
+              crossObj.file,
+              parsingOptions,
+              warnings
+            )
+          );
+        }
+      }
+    }
+    // Skip ObjectMethod (getters, setters, methods)
+  }
+
+  return entries;
+}
+
+/**
+ * Resolves an expression to ObjectExpression AST node(s).
+ * Handles Identifier (local + imported) and MemberExpression (nested access chains).
+ */
+function resolveToObjectNodes(
+  node: t.Expression,
+  tPath: NodePath,
+  file: string,
+  parsingOptions: ParsingConfigOptions,
+  warnings: Set<string>
+): ResolvedObject[] {
+  // Case 1: Identifier — base case
+  if (t.isIdentifier(node)) {
+    const binding = tPath.scope.getBinding(node.name);
+    if (!binding) return [];
+
+    // Local variable
+    if (binding.path.isVariableDeclarator()) {
+      const declaration = binding.path.parentPath;
+      if (
+        declaration?.isVariableDeclaration() &&
+        declaration.node.kind !== 'const'
+      ) {
+        warnings.add(
+          warnDeriveNonConstVariableSync(
+            file,
+            node.name,
+            declaration.node.kind,
+            `${node.loc?.start?.line}:${node.loc?.start?.column}`
+          )
+        );
+        return [];
+      }
+      const init = binding.path.node.init;
+      if (!init) return [];
+      const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
+      if (t.isObjectExpression(unwrapped)) {
+        return [{ objExpr: unwrapped, tPath: binding.path, file }];
+      }
+      return [];
+    }
+
+    // Imported
+    if (
+      binding.path.isImportSpecifier() ||
+      binding.path.isImportDefaultSpecifier()
+    ) {
+      const programPath = tPath.scope.getProgramParent().path;
+      const importMap = buildImportMap(programPath);
+      const importPath = importMap.get(node.name);
+      if (!importPath) return [];
+
+      let originalName = node.name;
+      if (binding.path.isImportSpecifier()) {
+        const imported = binding.path.node.imported;
+        originalName = t.isIdentifier(imported)
+          ? imported.name
+          : imported.value;
+      }
+
+      const resolvedFilePath = resolveImportPath(
+        file,
+        importPath,
+        parsingOptions,
+        resolveImportPathCache
+      );
+      if (!resolvedFilePath) return [];
+
+      return resolveObjectNodesInFile(
+        resolvedFilePath,
+        originalName,
+        parsingOptions,
+        warnings
+      );
+    }
+
+    return [];
+  }
+
+  // Case 2: MemberExpression — recursive
+  if (t.isMemberExpression(node)) {
+    if (!t.isExpression(node.object)) return [];
+
+    const parentObjects = resolveToObjectNodes(
+      node.object,
+      tPath,
+      file,
+      parsingOptions,
+      warnings
+    );
+    if (parentObjects.length === 0) return [];
+
+    const results: ResolvedObject[] = [];
+
+    for (const parent of parentObjects) {
+      const entries = collectObjectProperties(
+        parent.objExpr,
+        parent.tPath,
+        parent.file,
+        parsingOptions,
+        warnings
+      );
+
+      // Determine if this is a static access (known key)
+      let staticKey: string | null = null;
+      if (!node.computed && t.isIdentifier(node.property)) {
+        staticKey = node.property.name;
+      } else if (node.computed && t.isStringLiteral(node.property)) {
+        staticKey = node.property.value;
+      } else if (node.computed && t.isNumericLiteral(node.property)) {
+        staticKey = String(node.property.value);
+      }
+
+      if (staticKey !== null) {
+        // Static: narrow to one specific key
+        for (const entry of entries) {
+          if (entry.key === staticKey) {
+            const unwrapped = t.isTSAsExpression(entry.value)
+              ? entry.value.expression
+              : entry.value;
+            if (t.isObjectExpression(unwrapped)) {
+              results.push({
+                objExpr: unwrapped,
+                tPath: parent.tPath,
+                file: parent.file,
+              });
+            }
+            break;
+          }
+        }
+      } else {
+        // Dynamic: collect ALL entries whose values are ObjectExpressions
+        for (const entry of entries) {
+          const unwrapped = t.isTSAsExpression(entry.value)
+            ? entry.value.expression
+            : entry.value;
+          if (t.isObjectExpression(unwrapped)) {
+            results.push({
+              objExpr: unwrapped,
+              tPath: parent.tPath,
+              file: parent.file,
+            });
+          }
+        }
+      }
+    }
+
+    return results;
+  }
+
+  return [];
+}
+
+/**
+ * Resolves an object declaration from an external file.
+ * Finds a const VariableDeclarator with ObjectExpression init.
+ * Follows re-export chains.
+ */
+function resolveObjectNodesInFile(
+  filePath: string,
+  name: string,
+  parsingOptions: ParsingConfigOptions,
+  warnings: Set<string>
+): ResolvedObject[] {
+  try {
+    const code = fs.readFileSync(filePath, 'utf8');
+    const ast = parse(code, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    const results: ResolvedObject[] = [];
+
+    traverse(ast, {
+      VariableDeclarator(path) {
+        if (
+          t.isIdentifier(path.node.id) &&
+          path.node.id.name === name &&
+          results.length === 0
+        ) {
+          const init = path.node.init;
+          if (!init) return;
+          const declaration = path.parentPath;
+          if (
+            declaration?.isVariableDeclaration() &&
+            declaration.node.kind !== 'const'
+          )
+            return;
+          const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
+          if (t.isObjectExpression(unwrapped)) {
+            results.push({
+              objExpr: unwrapped,
+              tPath: path,
+              file: filePath,
+            });
+          }
+        }
+      },
+      ExportAllDeclaration(path) {
+        if (results.length > 0) return;
+        if (t.isStringLiteral(path.node.source)) {
+          const reexportPath = path.node.source.value;
+          const resolvedPath = resolveImportPath(
+            filePath,
+            reexportPath,
+            parsingOptions,
+            resolveImportPathCache
+          );
+          if (resolvedPath) {
+            results.push(
+              ...resolveObjectNodesInFile(
+                resolvedPath,
+                name,
+                parsingOptions,
+                warnings
+              )
+            );
+          }
+        }
+      },
+      ExportNamedDeclaration(path) {
+        if (results.length > 0) return;
+        if (path.node.source && t.isStringLiteral(path.node.source)) {
+          const hasMatch = path.node.specifiers.some((spec) => {
+            if (t.isExportSpecifier(spec)) {
+              const exportedName = t.isIdentifier(spec.exported)
+                ? spec.exported.name
+                : spec.exported.value;
+              return exportedName === name;
+            }
+            return false;
+          });
+          if (hasMatch) {
+            const reexportPath = path.node.source.value;
+            const resolvedPath = resolveImportPath(
+              filePath,
+              reexportPath,
+              parsingOptions,
+              resolveImportPathCache
+            );
+            if (resolvedPath) {
+              const specifier = path.node.specifiers.find((spec) => {
+                if (t.isExportSpecifier(spec)) {
+                  const exportedName = t.isIdentifier(spec.exported)
+                    ? spec.exported.name
+                    : spec.exported.value;
+                  return exportedName === name;
+                }
+                return false;
+              });
+              let originalName = name;
+              if (
+                specifier &&
+                t.isExportSpecifier(specifier) &&
+                t.isIdentifier(specifier.local)
+              ) {
+                originalName = specifier.local.name;
+              }
+              results.push(
+                ...resolveObjectNodesInFile(
+                  resolvedPath,
+                  originalName,
+                  parsingOptions,
+                  warnings
+                )
+              );
+            }
+          }
+        }
+      },
+    });
+
+    return results;
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Processes a string expression node and resolves any function calls within it
  * This handles cases like:
@@ -60,7 +457,8 @@ export function parseStringExpression(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string> = new Set()
+  warnings: Set<string>,
+  errors: string[]
 ): StringNode | null {
   // Handle string literals
   if (t.isStringLiteral(node)) {
@@ -99,7 +497,8 @@ export function parseStringExpression(
           tPath,
           file,
           parsingOptions,
-          warnings
+          warnings,
+          errors
         );
         if (result === null) {
           return null;
@@ -128,14 +527,16 @@ export function parseStringExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
     const rightResult = parseStringExpression(
       node.right,
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
 
     if (leftResult === null || rightResult === null) {
@@ -156,14 +557,16 @@ export function parseStringExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
     const alternateResult = parseStringExpression(
       node.alternate,
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
 
     if (consequentResult === null || alternateResult === null) {
@@ -222,7 +625,8 @@ export function parseStringExpression(
             binding.path,
             file,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           );
         } finally {
           resolvingIdentifiers.delete(init);
@@ -234,93 +638,88 @@ export function parseStringExpression(
     return null;
   }
 
-  // Handle member expressions: obj[key] or obj.prop
+  // Handle member expressions: obj[key], obj.prop, and nested obj.a.b / obj[a][b]
   if (t.isMemberExpression(node)) {
-    // Reject chained access: obj[a][b]
-    if (t.isMemberExpression(node.object)) {
-      warnings.add(
-        warnDeriveChainedObjectAccessSync(
-          file,
-          generate(node).code,
-          `${node.loc?.start?.line}:${node.loc?.start?.column}`
-        )
+    if (!t.isExpression(node.object)) return null;
+
+    // Resolve the object part to ObjectExpression node(s)
+    const objectNodes = resolveToObjectNodes(
+      node.object,
+      tPath,
+      file,
+      parsingOptions,
+      warnings
+    );
+    if (objectNodes.length === 0) return null;
+
+    // Apply the final access to each resolved object
+    const branches: StringNode[] = [];
+    for (const { objExpr, tPath: objPath, file: objFile } of objectNodes) {
+      const entries = collectObjectProperties(
+        objExpr,
+        objPath,
+        objFile,
+        parsingOptions,
+        warnings
       );
-      return null;
-    }
 
-    // Object must be an identifier
-    if (!t.isIdentifier(node.object)) return null;
-
-    const binding = tPath.scope.getBinding(node.object.name);
-    if (!binding || !binding.path.isVariableDeclarator()) return null;
-
-    // Enforce const-only
-    const declaration = binding.path.parentPath;
-    if (
-      declaration?.isVariableDeclaration() &&
-      declaration.node.kind !== 'const'
-    ) {
-      warnings.add(
-        warnDeriveNonConstVariableSync(
-          file,
-          node.object.name,
-          declaration.node.kind,
-          `${node.loc?.start?.line}:${node.loc?.start?.column}`
-        )
-      );
-      return null;
-    }
-
-    const init = binding.path.node.init;
-    if (!init) return null;
-
-    // Unwrap TSAsExpression (for `as const`)
-    const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
-    if (!t.isObjectExpression(unwrapped)) return null;
-
-    if (node.computed) {
-      // COMPUTED: obj[key] → extract ALL values as choice
-      const branches: StringNode[] = [];
-      for (const prop of unwrapped.properties) {
-        if (!t.isObjectProperty(prop)) continue; // skip spread, methods
-        if (!t.isExpression(prop.value)) continue;
-        const resolved = parseStringExpression(
-          prop.value,
-          binding.path,
-          file,
-          parsingOptions,
-          warnings
-        );
-        if (resolved) branches.push(resolved);
-      }
-      if (branches.length === 0) return null;
-      if (branches.length === 1) return branches[0];
-      return { type: 'choice', nodes: branches };
-    } else {
-      // NON-COMPUTED: obj.prop → resolve specific property
-      if (!t.isIdentifier(node.property)) return null;
-      const propName = node.property.name;
-      for (const prop of unwrapped.properties) {
-        if (!t.isObjectProperty(prop)) continue;
-        const key = t.isIdentifier(prop.key)
-          ? prop.key.name
-          : t.isStringLiteral(prop.key)
-            ? prop.key.value
-            : t.isNumericLiteral(prop.key)
-              ? String(prop.key.value)
-              : null;
-        if (key === propName && t.isExpression(prop.value)) {
-          return parseStringExpression(
-            prop.value,
-            binding.path,
-            file,
+      if (node.computed) {
+        // COMPUTED: extract ALL values
+        for (const entry of entries) {
+          const resolved = parseStringExpression(
+            entry.value,
+            objPath,
+            objFile,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           );
+          if (resolved) {
+            branches.push(resolved);
+          } else if (entry.key !== null) {
+            warnings.add(
+              warnDeriveUnresolvableValueSync(
+                objFile,
+                entry.key,
+                `${entry.value.loc?.start?.line}:${entry.value.loc?.start?.column}`
+              )
+            );
+          }
+        }
+      } else {
+        // STATIC: extract ONE specific property
+        if (!t.isIdentifier(node.property)) continue;
+        const propName = node.property.name;
+        for (const entry of entries) {
+          if (entry.key === propName) {
+            const resolved = parseStringExpression(
+              entry.value,
+              objPath,
+              objFile,
+              parsingOptions,
+              warnings,
+              errors
+            );
+            if (resolved) {
+              branches.push(resolved);
+            } else {
+              warnings.add(
+                warnDeriveUnresolvableValueSync(
+                  objFile,
+                  propName,
+                  `${entry.value.loc?.start?.line}:${entry.value.loc?.start?.column}`
+                )
+              );
+            }
+            break; // static access → only one match per object
+          }
         }
       }
-      return null;
     }
+
+    if (branches.length === 0) return null;
+    if (branches.length === 1) return branches[0];
+    return { type: 'choice', nodes: branches };
   }
 
   // Handle function calls (e.g., getName())
@@ -420,7 +819,8 @@ export function parseStringExpression(
           filePath,
           originalName,
           parsingOptions,
-          warnings
+          warnings,
+          errors
         );
       }
       return null;
@@ -432,7 +832,8 @@ export function parseStringExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
   }
 
@@ -443,7 +844,8 @@ export function parseStringExpression(
       tPath,
       file,
       parsingOptions,
-      warnings
+      warnings,
+      errors
     );
   }
 
@@ -478,7 +880,8 @@ function resolveFunctionCall(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  warnings: Set<string>,
+  errors: string[]
 ): StringNode | null {
   if (!calleeBinding) {
     return null;
@@ -509,7 +912,8 @@ function resolveFunctionCall(
           returnPath,
           file,
           parsingOptions,
-          warnings
+          warnings,
+          errors
         );
         if (returnResult !== null) {
           branches.push(returnResult);
@@ -533,7 +937,8 @@ function resolveFunctionCall(
         body,
         file,
         parsingOptions,
-        warnings
+        warnings,
+        errors
       );
       if (bodyResult !== null) {
         branches.push(bodyResult);
@@ -562,7 +967,8 @@ function resolveFunctionCall(
             returnPath,
             file,
             parsingOptions,
-            warnings
+            warnings,
+            errors
           );
           if (returnResult !== null) {
             branches.push(returnResult);
@@ -590,7 +996,8 @@ function resolveFunctionInFile(
   filePath: string,
   functionName: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  warnings: Set<string>,
+  errors: string[]
 ): StringNode | null {
   // Check cache first
   const cacheKey = `${filePath}::${functionName}`;
@@ -628,7 +1035,8 @@ function resolveFunctionInFile(
               resolvedPath,
               functionName,
               parsingOptions,
-              warnings
+              warnings,
+              errors
             );
             if (reexportResult) {
               result = reexportResult;
@@ -689,7 +1097,8 @@ function resolveFunctionInFile(
                 resolvedPath,
                 originalName,
                 parsingOptions,
-                warnings
+                warnings,
+                errors
               );
               if (reexportResult) {
                 result = reexportResult;
@@ -720,7 +1129,8 @@ function resolveFunctionInFile(
                 returnPath,
                 filePath,
                 parsingOptions,
-                warnings
+                warnings,
+                errors
               );
               if (returnResult !== null) {
                 branches.push(returnResult);
@@ -768,7 +1178,8 @@ function resolveFunctionInFile(
                 bodyPath,
                 filePath,
                 parsingOptions,
-                warnings
+                warnings,
+                errors
               );
               if (bodyResult !== null) {
                 branches.push(bodyResult);
@@ -804,7 +1215,8 @@ function resolveFunctionInFile(
                     returnPath,
                     filePath,
                     parsingOptions,
-                    warnings
+                    warnings,
+                    errors
                   );
                   if (returnResult !== null) {
                     branches.push(returnResult);
@@ -844,7 +1256,8 @@ function resolveFunctionInFile(
                   path,
                   filePath,
                   parsingOptions,
-                  warnings
+                  warnings,
+                  errors
                 );
                 if (exprResult === null) {
                   failed = true;
@@ -880,7 +1293,8 @@ function resolveFunctionInFile(
                 path,
                 filePath,
                 parsingOptions,
-                warnings
+                warnings,
+                errors
               );
               if (resolved) branches.push(resolved);
             }

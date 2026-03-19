@@ -836,43 +836,39 @@ t(f"{declare_static(LABELS[k])}")`;
       expect(errors.length).toBeGreaterThan(0);
     });
 
-    it('errors on chained subscript', async () => {
+    it('resolves chained subscript access', async () => {
       const code = `from gt_flask import t, declare_static
 LABELS = {0: {"a": "x"}}
-t(f"{declare_static(LABELS[k][j])}")`;
-      const { errors } = await extractFromPythonSource(code, 'test.py');
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.join(' ')).toContain('chained');
+t(f"{declare_static(LABELS[k]["a"])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('x');
     });
   });
 
   // ===== infinite recursion guard ===== //
 
   describe('infinite recursion guard', () => {
-    it(
-      'handles circular variable references without hanging',
-      async () => {
-        const code = `from gt_flask import t, declare_static
+    it('handles circular variable references without hanging', async () => {
+      const code = `from gt_flask import t, declare_static
 x = y
 y = x
 t(f"{declare_static(x)}")`;
-        const { errors } = await extractFromPythonSource(code, 'test.py');
-        expect(errors.length).toBeGreaterThan(0);
-      },
-      5000
-    );
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    }, 5000);
 
-    it(
-      'handles self-referencing variable without hanging',
-      async () => {
-        const code = `from gt_flask import t, declare_static
+    it('handles self-referencing variable without hanging', async () => {
+      const code = `from gt_flask import t, declare_static
 x = x
 t(f"{declare_static(x)}")`;
-        const { errors } = await extractFromPythonSource(code, 'test.py');
-        expect(errors.length).toBeGreaterThan(0);
-      },
-      5000
-    );
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    }, 5000);
   });
 
   // ===== reassignment behavior ===== //
@@ -944,6 +940,57 @@ t(f"{declare_static(D[k])}")`;
       expect(results).toHaveLength(2);
       const sources = results.map((r: any) => r.source).sort();
       expect(sources).toEqual(['alpha', 'zero']);
+    });
+  });
+
+  // ===== non-resolvable dict value errors ===== //
+
+  describe('non-resolvable dict value errors', () => {
+    it('errors on list value in dict (dynamic key)', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {0: "Bad", 1: "OK", 2: "Good", 3: ["yyoyoo"]}
+t(f"{declare_static(D[score])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // The 3 string values should still resolve
+      expect(results).toHaveLength(3);
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('errors on list value in dict (static key)', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"items": ["a", "b"]}
+t(f"{declare_static(D['items'])}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('errors on nested dict value without further access', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": "ok", "b": {"nested": "value"}}
+t(f"{declare_static(D[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(results).toHaveLength(1);
+      const sources = results.map((r: any) => r.source);
+      expect(sources).toContain('ok');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('errors on tuple value in dict', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {0: "ok", 1: ("a", "b")}
+t(f"{declare_static(D[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(results).toHaveLength(1);
+      expect(errors.length).toBeGreaterThan(0);
     });
   });
 
@@ -1098,6 +1145,128 @@ t(f"{declare_static(None)}")`;
         _context: 'context',
         _max_chars: 'maxChars',
       });
+    });
+  });
+
+  // ===== nested dictionary access ===== //
+
+  describe('nested dictionary access', () => {
+    it('PN1: static.static subscript', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": {"x": "hello"}}
+t(f"{declare_static(D['a']['x'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('hello');
+    });
+
+    it('PN2: computed all values from nested', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": {"x": "p", "y": "q"}}
+t(f"{declare_static(D['a'][k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['p', 'q']);
+    });
+
+    it('PN3: outer computed, inner static', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": {"x": "p"}, "b": {"x": "q"}}
+t(f"{declare_static(D[k]['x'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['p', 'q']);
+    });
+
+    it('PN4: 3-deep static', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": {"b": {"c": "deep"}}}
+t(f"{declare_static(D['a']['b']['c'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('deep');
+    });
+  });
+
+  // ===== dict spread resolution ===== //
+
+  describe('dict spread resolution', () => {
+    it('PS1: dict unpacking', async () => {
+      const code = `from gt_flask import t, declare_static
+base = {"a": "x"}
+D = {**base, "b": "y"}
+t(f"{declare_static(D[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['x', 'y']);
+    });
+
+    it('PS2: unpack static access', async () => {
+      const code = `from gt_flask import t, declare_static
+base = {"greeting": "Hi"}
+D = {**base}
+t(f"{declare_static(D['greeting'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hi');
+    });
+  });
+
+  // ===== nested dict false-positive guards ===== //
+
+  describe('nested dict false-positive guards', () => {
+    it('PF1: static key excludes siblings', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": {"x": "yes"}, "b": {"x": "no"}}
+t(f"{declare_static(D['a']['x'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('yes');
+    });
+
+    it('PF2: computed.static only gets matching prop', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"a": {"label": "A", "desc": "AA"}, "b": {"label": "B", "desc": "BB"}}
+t(f"{declare_static(D[k]['label'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['A', 'B']);
     });
   });
 });

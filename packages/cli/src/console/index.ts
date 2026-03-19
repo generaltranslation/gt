@@ -314,6 +314,19 @@ export const warnDeriveFunctionNoResultsSync = (
     location
   );
 
+export const warnDeriveUnresolvableValueSync = (
+  file: string,
+  key: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Object property ${colorizeFunctionName(formatCodeClamp(key))} could not be resolved to a static string value. Only string literals, template literals, conditionals, and function calls returning strings are supported.`
+    ),
+    location
+  );
+
 // Re-export error messages
 export const noLocalesError = `No locales found! Provide a list of locales for translation, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Provide a default locale, or specify it in your gt.config.json file.`;

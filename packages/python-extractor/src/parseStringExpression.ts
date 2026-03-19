@@ -764,9 +764,205 @@ async function findDictionaryAssignment(
   return null;
 }
 
+// ===== Dictionary Entry Collection & Nesting Helpers ===== //
+
+interface DictEntry {
+  key: string | null;
+  valueNode: SyntaxNode;
+}
+
+interface ResolvedDict {
+  dictNode: SyntaxNode;
+  valueCtx: ParseContext;
+}
+
 /**
- * Resolves a subscript expression (e.g., `LABELS[score]`) by extracting
- * ALL values from the dictionary as choices.
+ * Collects all key-value entries from a dictionary node,
+ * including entries from spread sources (**base).
+ */
+async function collectDictEntries(
+  dictNode: SyntaxNode,
+  ctx: ParseContext
+): Promise<DictEntry[]> {
+  const entries: DictEntry[] = [];
+
+  for (let i = 0; i < dictNode.childCount; i++) {
+    const child = dictNode.child(i);
+    if (!child) continue;
+
+    if (child.type === 'pair') {
+      const keyNode = child.childForFieldName('key');
+      const valueNode = child.childForFieldName('value');
+      if (!valueNode) continue;
+
+      let key: string | null = null;
+      if (keyNode) {
+        if (keyNode.type === 'string' && !isFString(keyNode)) {
+          key = extractStringContent(keyNode) ?? null;
+        } else if (keyNode.type === 'identifier') {
+          key = keyNode.text;
+        } else if (keyNode.type === 'integer') {
+          key = keyNode.text;
+        }
+      }
+      entries.push({ key, valueNode });
+    } else if (child.type === 'dictionary_splat') {
+      // Get the spread source expression (child after **)
+      let splatExpr: SyntaxNode | null = null;
+      for (let j = 0; j < child.childCount; j++) {
+        const splatChild = child.child(j);
+        if (splatChild && splatChild.type !== '**') {
+          splatExpr = splatChild;
+          break;
+        }
+      }
+      if (!splatExpr || splatExpr.type !== 'identifier') continue;
+
+      const name = splatExpr.text;
+
+      // Try local first
+      const localDict = findConstantAssignment(name, ctx.rootNode);
+      if (localDict && localDict.type === 'dictionary') {
+        entries.push(...(await collectDictEntries(localDict, ctx)));
+      } else {
+        // Try cross-file
+        const importInfo = findImportForName(name, ctx);
+        if (importInfo) {
+          let source: string;
+          try {
+            source = fs.readFileSync(importInfo.filePath, 'utf8');
+          } catch {
+            continue;
+          }
+          const parser = await getParser();
+          const tree = parser.parse(source);
+          if (!tree) continue;
+          const externalValue = findConstantAssignment(
+            importInfo.originalName,
+            tree.rootNode
+          );
+          if (externalValue && externalValue.type === 'dictionary') {
+            const externalImports = extractImportsFromRoot(
+              tree.rootNode,
+              ctx.imports
+            );
+            const externalCtx: ParseContext = {
+              rootNode: tree.rootNode,
+              imports: externalImports,
+              filePath: importInfo.filePath,
+              errors: ctx.errors,
+            };
+            entries.push(
+              ...(await collectDictEntries(externalValue, externalCtx))
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Resolves an expression to dictionary AST node(s).
+ * Handles identifier, subscript chains, and attribute chains.
+ */
+async function resolveToDictNodes(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<ResolvedDict[]> {
+  // Case 1: identifier — base case
+  if (node.type === 'identifier') {
+    const result = await findDictionaryAssignment(node.text, ctx);
+    if (result) return [result];
+    return [];
+  }
+
+  // Case 2: subscript (e.g., D["a"] in D["a"]["x"])
+  if (node.type === 'subscript') {
+    const valueNode = node.childForFieldName('value');
+    if (!valueNode) return [];
+
+    const parentDicts = await resolveToDictNodes(valueNode, ctx);
+    if (parentDicts.length === 0) return [];
+
+    const subscriptKey = node.childForFieldName('subscript');
+    if (!subscriptKey) return [];
+
+    // Check if key is a static string literal
+    const isStaticKey =
+      subscriptKey.type === 'string' && !isFString(subscriptKey);
+    const staticKeyValue = isStaticKey
+      ? extractStringContent(subscriptKey)
+      : null;
+
+    const results: ResolvedDict[] = [];
+    for (const parent of parentDicts) {
+      const entries = await collectDictEntries(parent.dictNode, parent.valueCtx);
+
+      if (staticKeyValue != null) {
+        // Static: narrow to one specific key
+        for (const entry of entries) {
+          if (
+            entry.key === staticKeyValue &&
+            entry.valueNode.type === 'dictionary'
+          ) {
+            results.push({
+              dictNode: entry.valueNode,
+              valueCtx: parent.valueCtx,
+            });
+            break;
+          }
+        }
+      } else {
+        // Dynamic: collect ALL entries whose values are dictionaries
+        for (const entry of entries) {
+          if (entry.valueNode.type === 'dictionary') {
+            results.push({
+              dictNode: entry.valueNode,
+              valueCtx: parent.valueCtx,
+            });
+          }
+        }
+      }
+    }
+    return results;
+  }
+
+  // Case 3: attribute (e.g., D.a in D.a.x)
+  if (node.type === 'attribute') {
+    const objectNode = node.childForFieldName('object');
+    const attrNode = node.childForFieldName('attribute');
+    if (!objectNode || !attrNode) return [];
+
+    const parentDicts = await resolveToDictNodes(objectNode, ctx);
+    if (parentDicts.length === 0) return [];
+
+    const attrName = attrNode.text;
+    const results: ResolvedDict[] = [];
+    for (const parent of parentDicts) {
+      const entries = await collectDictEntries(parent.dictNode, parent.valueCtx);
+      for (const entry of entries) {
+        if (entry.key === attrName && entry.valueNode.type === 'dictionary') {
+          results.push({
+            dictNode: entry.valueNode,
+            valueCtx: parent.valueCtx,
+          });
+          break;
+        }
+      }
+    }
+    return results;
+  }
+
+  return [];
+}
+
+/**
+ * Resolves a subscript expression (e.g., `LABELS[score]` or `D["a"]["x"]`)
+ * by extracting values from the resolved dictionary.
+ * Supports nested access chains and spread resolution.
  */
 async function resolveSubscript(
   node: SyntaxNode,
@@ -774,61 +970,63 @@ async function resolveSubscript(
 ): Promise<StringNode | null> {
   const valueNode = node.childForFieldName('value');
   if (!valueNode) {
+    ctx.errors.push(`${locationStr(node)}: subscript missing value`);
+    return null;
+  }
+
+  // Resolve the object to dict node(s) — supports nesting
+  const dicts = await resolveToDictNodes(valueNode, ctx);
+  if (dicts.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: subscript missing value`
+      `${locationStr(node)}: could not find dictionary for "${valueNode.text}"`
     );
     return null;
   }
 
-  // Reject chained subscript access (e.g., LABELS[x][y])
-  if (valueNode.type === 'subscript') {
-    ctx.errors.push(
-      `${locationStr(node)}: chained subscript access is not supported`
-    );
-    return null;
-  }
+  const subscriptKey = node.childForFieldName('subscript');
+  const isStaticKey =
+    subscriptKey?.type === 'string' && !isFString(subscriptKey);
+  const staticKeyValue = isStaticKey
+    ? extractStringContent(subscriptKey!)
+    : null;
 
-  // Object must be a simple identifier
-  if (valueNode.type !== 'identifier') {
-    ctx.errors.push(
-      `${locationStr(node)}: subscript object must be a simple identifier, got "${valueNode.type}"`
-    );
-    return null;
-  }
-
-  const dictName = valueNode.text;
-  const dictResult = await findDictionaryAssignment(dictName, ctx);
-  if (!dictResult) {
-    ctx.errors.push(
-      `${locationStr(node)}: could not find dictionary "${dictName}"`
-    );
-    return null;
-  }
-
-  const { dictNode, valueCtx } = dictResult;
-
-  // Extract ALL values from the dictionary as choices
   const branches: StringNode[] = [];
-  for (let i = 0; i < dictNode.childCount; i++) {
-    const child = dictNode.child(i);
-    if (!child || child.type !== 'pair') continue;
+  for (const { dictNode, valueCtx } of dicts) {
+    const entries = await collectDictEntries(dictNode, valueCtx);
 
-    const pairValue = child.childForFieldName('value');
-    if (!pairValue) continue;
-
-    const resolved = await resolveStaticValue(pairValue, valueCtx);
-    if (resolved) {
-      if (resolved.type === 'choice') {
-        branches.push(...resolved.nodes);
-      } else {
-        branches.push(resolved);
+    if (staticKeyValue != null) {
+      // Static key: resolve that specific value
+      for (const entry of entries) {
+        if (entry.key === staticKeyValue) {
+          const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
+          if (resolved) {
+            if (resolved.type === 'choice') {
+              branches.push(...resolved.nodes);
+            } else {
+              branches.push(resolved);
+            }
+          }
+          break;
+        }
+      }
+    } else {
+      // Dynamic key: extract ALL values
+      for (const entry of entries) {
+        const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
+        if (resolved) {
+          if (resolved.type === 'choice') {
+            branches.push(...resolved.nodes);
+          } else {
+            branches.push(resolved);
+          }
+        }
       }
     }
   }
 
   if (branches.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: dictionary "${dictName}" has no resolvable values`
+      `${locationStr(node)}: dictionary has no resolvable values`
     );
     return null;
   }
@@ -838,8 +1036,9 @@ async function resolveSubscript(
 }
 
 /**
- * Resolves an attribute access expression (e.g., `obj.attr`) by finding
- * the specific dictionary pair with a matching key.
+ * Resolves an attribute access expression (e.g., `obj.attr` or `obj.a.b`)
+ * by finding the specific dictionary pair with a matching key.
+ * Supports nested access chains and spread resolution.
  */
 async function resolveAttribute(
   node: SyntaxNode,
@@ -855,59 +1054,44 @@ async function resolveAttribute(
     return null;
   }
 
-  // Reject chained access (e.g., a.b.c)
-  if (objectNode.type === 'attribute') {
-    ctx.errors.push(
-      `${locationStr(node)}: chained attribute access is not supported`
-    );
-    return null;
-  }
-
-  // Object must be a simple identifier
-  if (objectNode.type !== 'identifier') {
-    ctx.errors.push(
-      `${locationStr(node)}: attribute object must be a simple identifier, got "${objectNode.type}"`
-    );
-    return null;
-  }
-
-  const dictName = objectNode.text;
   const attrName = attrNode.text;
 
-  const dictResult = await findDictionaryAssignment(dictName, ctx);
-  if (!dictResult) {
+  // Resolve the object to dict node(s) — supports nesting
+  const dicts = await resolveToDictNodes(objectNode, ctx);
+  if (dicts.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: could not find dictionary "${dictName}"`
+      `${locationStr(node)}: could not find dictionary for "${objectNode.text}"`
     );
     return null;
   }
 
-  const { dictNode, valueCtx } = dictResult;
-
-  // Find the specific pair with matching key
-  for (let i = 0; i < dictNode.childCount; i++) {
-    const child = dictNode.child(i);
-    if (!child || child.type !== 'pair') continue;
-
-    const keyNode = child.childForFieldName('key');
-    if (!keyNode) continue;
-
-    // Extract key content — dictionary keys are strings
-    if (keyNode.type === 'string') {
-      const keyContent = extractStringContent(keyNode);
-      if (keyContent === attrName) {
-        const pairValue = child.childForFieldName('value');
-        if (pairValue) {
-          return resolveStaticValue(pairValue, valueCtx);
+  const branches: StringNode[] = [];
+  for (const { dictNode, valueCtx } of dicts) {
+    const entries = await collectDictEntries(dictNode, valueCtx);
+    for (const entry of entries) {
+      if (entry.key === attrName) {
+        const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
+        if (resolved) {
+          if (resolved.type === 'choice') {
+            branches.push(...resolved.nodes);
+          } else {
+            branches.push(resolved);
+          }
         }
+        break;
       }
     }
   }
 
-  ctx.errors.push(
-    `${locationStr(node)}: could not find key "${attrName}" in dictionary "${dictName}"`
-  );
-  return null;
+  if (branches.length === 0) {
+    ctx.errors.push(
+      `${locationStr(node)}: could not find key "${attrName}" in dictionary`
+    );
+    return null;
+  }
+
+  if (branches.length === 1) return branches[0];
+  return { type: 'choice', nodes: branches };
 }
 
 // ===== Helpers ===== //

@@ -7,7 +7,7 @@ import {
 } from '../../jsx/utils/parseString.js';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse = (traverseModule as any).default || traverseModule;
 
 const defaultParsingOptions: ParsingConfigOptions = {
   conditionNames: [],
@@ -20,6 +20,7 @@ const defaultParsingOptions: ParsingConfigOptions = {
 function parseAndResolve(code: string): {
   node: ReturnType<typeof parseStringExpression>;
   warnings: Set<string>;
+  errors: string[];
 } {
   const ast = parse(code, {
     sourceType: 'module',
@@ -28,6 +29,7 @@ function parseAndResolve(code: string): {
 
   let result: ReturnType<typeof parseStringExpression> = null;
   const warnings = new Set<string>();
+  const errors: string[] = [];
 
   traverse(ast, {
     VariableDeclarator(path) {
@@ -42,14 +44,15 @@ function parseAndResolve(code: string): {
             path,
             'test.tsx',
             defaultParsingOptions,
-            warnings
+            warnings,
+            errors
           );
         }
       }
     },
   });
 
-  return { node: result, warnings };
+  return { node: result, warnings, errors };
 }
 
 // ─── Category 1: String Constants ────────────────────────────────────────────
@@ -212,15 +215,14 @@ describe('Object Static Access', () => {
 // ─── Category 5: Object Error Cases ──────────────────────────────────────────
 
 describe('Object Error Cases', () => {
-  it('warns on chained access', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('resolves chained computed access', () => {
+    const { node } = parseAndResolve(`
       const O = { a: { x: 'hi' } };
       const a = 'a';
       const b = 'x';
       const __target__ = O[a][b];
     `);
-    expect(node).toBeNull();
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(nodeToStrings(node)).toEqual(['hi']);
   });
 
   it('warns on non-const object', () => {
@@ -259,15 +261,14 @@ describe('as const', () => {
 // ─── Category 7: Edge Cases ──────────────────────────────────────────────────
 
 describe('Edge Cases', () => {
-  it('skips spread properties', () => {
+  it('resolves spread properties', () => {
     const { node } = parseAndResolve(`
       const base = { z: 'base' };
       const O = { ...base, a: 'x' };
       const k = 'a';
       const __target__ = O[k];
     `);
-    // Spread is skipped, only 'x' is extracted
-    expect(nodeToStrings(node)).toEqual(['x']);
+    expect(nodeToStrings(node)).toEqual(['base', 'x']);
   });
 
   it('skips method properties', () => {
@@ -298,45 +299,33 @@ describe('Edge Cases', () => {
 // ─── Category A: Infinite Recursion Guard ─────────────────────────────────────
 
 describe('Infinite Recursion Guard', () => {
-  it(
-    'handles circular const references without hanging',
-    () => {
-      const { node } = parseAndResolve(`
+  it('handles circular const references without hanging', () => {
+    const { node } = parseAndResolve(`
         const A = B;
         const B = A;
         const __target__ = A;
       `);
-      // Should return null, not hang
-      expect(node).toBeNull();
-    },
-    5000
-  );
+    // Should return null, not hang
+    expect(node).toBeNull();
+  }, 5000);
 
-  it(
-    'handles self-referencing const without hanging',
-    () => {
-      const { node } = parseAndResolve(`
+  it('handles self-referencing const without hanging', () => {
+    const { node } = parseAndResolve(`
         const A = A;
         const __target__ = A;
       `);
-      expect(node).toBeNull();
-    },
-    5000
-  );
+    expect(node).toBeNull();
+  }, 5000);
 
-  it(
-    'handles three-way circular references without hanging',
-    () => {
-      const { node } = parseAndResolve(`
+  it('handles three-way circular references without hanging', () => {
+    const { node } = parseAndResolve(`
         const A = B;
         const B = C;
         const C = A;
         const __target__ = A;
       `);
-      expect(node).toBeNull();
-    },
-    5000
-  );
+    expect(node).toBeNull();
+  }, 5000);
 });
 
 // ─── Category B: Const Enforcement in Non-Derive Contexts ─────────────────────
@@ -391,13 +380,13 @@ describe('MemberExpression Edge Cases', () => {
     expect(node).toBeNull();
   });
 
-  it('returns null for nested object value with computed access', () => {
+  it('returns null for nested object value with computed access (no string leaf)', () => {
     const { node } = parseAndResolve(`
-      const O = { a: { inner: 'x' } };
+      const O = { a: { inner: { deep: 'x' } } };
       const k = 'a';
       const __target__ = O[k];
     `);
-    // Object value { inner: 'x' } is not a string — parseStringExpression
+    // Object value { inner: { deep: 'x' } } is not a string — parseStringExpression
     // will return null for it since ObjectExpression is not a handled literal type
     expect(node).toBeNull();
   });
@@ -450,6 +439,123 @@ describe('MemberExpression Edge Cases', () => {
   });
 });
 
+// ─── Category C2: Non-Resolvable Object Value Warnings ────────────────────────
+
+describe('Non-Resolvable Object Value Warnings', () => {
+  it('warns on array value in object (computed access)', () => {
+    const { node, warnings } = parseAndResolve(`
+      const LABELS = { 0: 'Bad', 1: 'OK', 2: 'Good', 3: ['yyoyoo'] };
+      const score = 0;
+      const __target__ = LABELS[score];
+    `);
+    // The 3 string values resolve; the array value should produce a warning
+    expect(nodeToStrings(node)).toEqual(['Bad', 'OK', 'Good']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns on array value in object (static access)', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { items: ['a', 'b', 'c'] };
+      const __target__ = O.items;
+    `);
+    expect(node).toBeNull();
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns on nested object value without further access', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'ok', b: { nested: 'value' } };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    // 'ok' resolves, { nested: 'value' } does not
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns when all values are non-resolvable', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: ['x'], b: ['y'] };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(node).toBeNull();
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('no warning when all values resolve', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'x', b: 'y' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+    expect(warnings.size).toBe(0);
+  });
+
+  it('resolves null value as string (no warning)', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'yes', b: null };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    // null is resolved as the string "null"
+    expect(nodeToStrings(node)).toEqual(['yes', 'null']);
+    expect(warnings.size).toBe(0);
+  });
+
+  it('warns on undefined value in object', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'yes', b: undefined };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['yes']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns on new expression value in object', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'ok', b: new Date() };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns on arrow function value in object', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'ok', b: () => 'hello' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns on unresolvable spread values', () => {
+    const { node, warnings } = parseAndResolve(`
+      const base = { x: [1, 2] };
+      const O = { ...base, a: 'ok' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('warns on regex literal value in object', () => {
+    const { node, warnings } = parseAndResolve(`
+      const O = { a: 'ok', pattern: /hello/g };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+});
+
 // ─── Category D: TSAsExpression Edge Cases ────────────────────────────────────
 
 describe('TSAsExpression Edge Cases', () => {
@@ -486,6 +592,227 @@ describe('TSAsExpression Edge Cases', () => {
     // another TSAsExpression. The inner TSAsExpression is not unwrapped
     // by parseStringExpression (only the Identifier handler unwraps it).
     // This is a known limitation — nested `as` casts are not supported.
+    expect(node).toBeNull();
+  });
+});
+
+// ─── Category E: Nested Object Access ─────────────────────────────────────────
+
+describe('Nested Object Access', () => {
+  it('N1: static.static', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: 'hello' } };
+      const __target__ = O.a.x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['hello']);
+  });
+
+  it('N2: static.computed', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: 'p', y: 'q' } };
+      const k = 'x';
+      const __target__ = O.a[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['p', 'q']);
+  });
+
+  it('N3: computed.static', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: 'p' }, b: { x: 'q' } };
+      const k = 'a';
+      const __target__ = O[k].x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['p', 'q']);
+  });
+
+  it('N4: computed.computed', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: '1', y: '2' }, b: { x: '3', y: '4' } };
+      const k1 = 'a';
+      const k2 = 'x';
+      const __target__ = O[k1][k2];
+    `);
+    expect(nodeToStrings(node)).toEqual(['1', '2', '3', '4']);
+  });
+
+  it('N5: static narrows', () => {
+    const { node } = parseAndResolve(`
+      const O = { good: { x: 'yes' }, bad: { x: 'no' } };
+      const k = 'x';
+      const __target__ = O.good[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['yes']);
+  });
+
+  it('N6: numeric keys nested', () => {
+    const { node } = parseAndResolve(`
+      const O = { 0: { label: 'Bad' }, 1: { label: 'Good' } };
+      const s = 0;
+      const __target__ = O[s].label;
+    `);
+    expect(nodeToStrings(node)).toEqual(['Bad', 'Good']);
+  });
+
+  it('N7: mixed 3-deep static', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { b: { c: 'deep' } } };
+      const __target__ = O.a.b.c;
+    `);
+    expect(nodeToStrings(node)).toEqual(['deep']);
+  });
+
+  it('N8: as const nested', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: 'p' } } as const;
+      const __target__ = O.a.x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['p']);
+  });
+});
+
+// ─── Category F: Spread Resolution ────────────────────────────────────────────
+
+describe('Spread Resolution', () => {
+  it('S1: spread const obj', () => {
+    const { node } = parseAndResolve(`
+      const base = { a: 'x' };
+      const O = { ...base, b: 'y' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('S2: spread overwrites — extracts all since key is dynamic', () => {
+    const { node } = parseAndResolve(`
+      const base = { a: 'old' };
+      const O = { ...base, a: 'new' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    // Both "old" (from spread) and "new" (own prop) — can't know runtime key
+    expect(nodeToStrings(node)).toEqual(['old', 'new']);
+  });
+
+  it('S3: spread static access', () => {
+    const { node } = parseAndResolve(`
+      const base = { greeting: 'Hi' };
+      const O = { ...base };
+      const __target__ = O.greeting;
+    `);
+    expect(nodeToStrings(node)).toEqual(['Hi']);
+  });
+
+  it('S4: multiple spreads', () => {
+    const { node } = parseAndResolve(`
+      const a = { x: '1' };
+      const b = { y: '2' };
+      const O = { ...a, ...b, z: '3' };
+      const k = 'x';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['1', '2', '3']);
+  });
+
+  it('S5: spread non-resolvable', () => {
+    const { node } = parseAndResolve(`
+      const O = { ...unknownVar, a: 'x' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    // Skip unresolvable spread, extract what we can
+    expect(nodeToStrings(node)).toEqual(['x']);
+  });
+
+  it('S6: spread nested obj', () => {
+    const { node } = parseAndResolve(`
+      const base = { a: { x: 'inner' } };
+      const O = { ...base };
+      const __target__ = O.a.x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['inner']);
+  });
+});
+
+// ─── Category G: False-Positive Guards ────────────────────────────────────────
+
+describe('False-Positive Guards', () => {
+  it('F1: static path excludes siblings', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: 'yes' }, b: { x: 'no' } };
+      const __target__ = O.a.x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['yes']);
+  });
+
+  it('F2: static outer, computed inner excludes other branches', () => {
+    const { node } = parseAndResolve(`
+      const O = { good: { x: 'p', y: 'q' }, bad: { x: 'r', y: 's' } };
+      const k = 'x';
+      const __target__ = O.good[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['p', 'q']);
+  });
+
+  it('F3: static narrows at every level', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { b: { target: 'hit' }, c: { target: 'miss' } } };
+      const __target__ = O.a.b.target;
+    `);
+    expect(nodeToStrings(node)).toEqual(['hit']);
+  });
+
+  it('F4: computed then static only gets matching prop', () => {
+    const { node } = parseAndResolve(`
+      const O = { x: { label: 'A', desc: 'AA' }, y: { label: 'B', desc: 'BB' } };
+      const k = 'x';
+      const __target__ = O[k].label;
+    `);
+    expect(nodeToStrings(node)).toEqual(['A', 'B']);
+  });
+
+  it('F5: mix of value types — only strings extracted', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { text: 'hello', count: 42, nested: { x: 'nope' } } };
+      const __target__ = O.a.text;
+    `);
+    expect(nodeToStrings(node)).toEqual(['hello']);
+  });
+
+  it('F6: sibling at same depth ignored', () => {
+    const { node } = parseAndResolve(`
+      const O = { target: { msg: 'yes' }, decoy: { msg: 'no' } };
+      const __target__ = O.target.msg;
+    `);
+    expect(nodeToStrings(node)).toEqual(['yes']);
+  });
+});
+
+// ─── Category H: Nested Error / Edge Cases ────────────────────────────────────
+
+describe('Nested Error / Edge Cases', () => {
+  it('E1: non-object nested value', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: 'string' };
+      const __target__ = O.a.x;
+    `);
+    expect(node).toBeNull();
+  });
+
+  it('E2: nested empty inner', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: {} };
+      const k = 'x';
+      const __target__ = O.a[k];
+    `);
+    expect(node).toBeNull();
+  });
+
+  it('E3: static access on non-existent nested prop', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: { x: 'hi' } };
+      const __target__ = O.a.missing;
+    `);
     expect(node).toBeNull();
   });
 });
