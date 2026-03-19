@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.11.1",
+  "version": "2.11.2",
   "description": "CLI tool for AI-powered i18n (wrapper for gt)",
   "main": "dist/index.js",
   "bin": "dist/main.js",
