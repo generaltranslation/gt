@@ -31,9 +31,7 @@ describe('normalizeIncludePatterns', () => {
   });
 
   it('handles objects with no publish flag', () => {
-    const result = normalizeIncludePatterns([
-      { pattern: './docs/**/*.mdx' },
-    ]);
+    const result = normalizeIncludePatterns([{ pattern: './docs/**/*.mdx' }]);
     expect(result.paths).toEqual(['./docs/**/*.mdx']);
     expect(result.publishPatterns).toEqual([]);
     expect(result.unpublishPatterns).toEqual([]);
