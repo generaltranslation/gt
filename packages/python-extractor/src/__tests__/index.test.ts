@@ -700,31 +700,274 @@ t(f"Hello {declare_var(name, _name='user')}!")`;
 
   describe('static binary operator with unusual operand types', () => {
     it('handles subscript operand in declare_static concat', async () => {
-      // obj["key"] + "!" inside declare_static — subscript is not in the
-      // exclusion list, so the old code misreports "unsupported binary operator"
+      // obj["key"] + "!" inside declare_static — subscript handler tries to
+      // resolve obj as a dictionary but can't find it
       const code = `from gt_flask import t, declare_static
 t(f"{declare_static(obj['key'] + '!')}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
-      // Should complain about the subscript operand type, NOT the operator
+      // Should complain about the subscript/dictionary, NOT the operator
       expect(errors.join(' ')).not.toContain('unsupported binary operator');
-      expect(errors.join(' ')).toContain('subscript');
+      expect(errors.join(' ')).toContain('dictionary');
     });
 
     it('handles attribute operand in declare_static concat', async () => {
-      // obj.attr + "!" inside declare_static — attribute node not in exclusion list
+      // obj.attr + "!" inside declare_static — attribute handler tries to
+      // resolve obj as a dictionary but can't find it
       const code = `from gt_flask import t, declare_static
 t(f"{declare_static(obj.attr + '!')}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).not.toContain('unsupported binary operator');
-      expect(errors.join(' ')).toContain('attribute');
+      expect(errors.join(' ')).toContain('dictionary');
     });
 
     it('correctly rejects non-plus operator in static context', async () => {
       // * operator should mention the operator in the error
       const code = `from gt_flask import t, declare_static
 t(f"{declare_static('a' * 3)}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ===== identifier resolution ===== //
+
+  describe('identifier resolution', () => {
+    it('resolves constant string identifier', async () => {
+      const code = `from gt_flask import t, declare_static
+GREETING = "hello"
+t(f"{declare_static(GREETING)}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('hello');
+    });
+
+    it('resolves chained constant assignment', async () => {
+      const code = `from gt_flask import t, declare_static
+A = "hi"
+B = A
+t(f"{declare_static(B)}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('hi');
+    });
+
+    it('resolves constant in template', async () => {
+      const code = `from gt_flask import t, declare_static
+PREFIX = "Hello"
+t(f"{declare_static(PREFIX)} world")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello world');
+    });
+
+    it('errors on unresolvable identifier', async () => {
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static(NONEXISTENT)}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('identifier');
+    });
+  });
+
+  // ===== dictionary access ===== //
+
+  describe('dictionary access', () => {
+    it('extracts all dict values with subscript', async () => {
+      const code = `from gt_flask import t, declare_static
+LABELS = {0: "Bad", 1: "OK", 2: "Good"}
+t(f"{declare_static(LABELS[score])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['Bad', 'Good', 'OK']);
+    });
+
+    it('handles dict with conditional values', async () => {
+      const code = `from gt_flask import t, declare_static
+LABELS = {0: "x" if cond else "y", 1: "z"}
+t(f"{declare_static(LABELS[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['x', 'y', 'z']);
+    });
+
+    it('handles dict in f-string template', async () => {
+      const code = `from gt_flask import t, declare_static
+LABELS = {0: "Bad", 1: "Good"}
+t(f"Score: {declare_static(LABELS[s])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['Score: Bad', 'Score: Good']);
+    });
+
+    it('errors on empty dict', async () => {
+      const code = `from gt_flask import t, declare_static
+LABELS = {}
+t(f"{declare_static(LABELS[k])}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('errors on chained subscript', async () => {
+      const code = `from gt_flask import t, declare_static
+LABELS = {0: {"a": "x"}}
+t(f"{declare_static(LABELS[k][j])}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('chained');
+    });
+  });
+
+  // ===== infinite recursion guard ===== //
+
+  describe('infinite recursion guard', () => {
+    it(
+      'handles circular variable references without hanging',
+      async () => {
+        const code = `from gt_flask import t, declare_static
+x = y
+y = x
+t(f"{declare_static(x)}")`;
+        const { errors } = await extractFromPythonSource(code, 'test.py');
+        expect(errors.length).toBeGreaterThan(0);
+      },
+      5000
+    );
+
+    it(
+      'handles self-referencing variable without hanging',
+      async () => {
+        const code = `from gt_flask import t, declare_static
+x = x
+t(f"{declare_static(x)}")`;
+        const { errors } = await extractFromPythonSource(code, 'test.py');
+        expect(errors.length).toBeGreaterThan(0);
+      },
+      5000
+    );
+  });
+
+  // ===== reassignment behavior ===== //
+
+  describe('reassignment behavior', () => {
+    it('resolves first assignment for reassigned variable', async () => {
+      const code = `from gt_flask import t, declare_static
+x = "old"
+x = "new"
+t(f"{declare_static(x)}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // Documents current behavior: findConstantAssignment returns first match
+      // This is a known limitation — ideally should resolve to "new"
+      if (errors.length === 0) {
+        expect(results).toHaveLength(1);
+        // First-match returns "old" — documenting this behavior
+        expect(results[0].source).toBe('old');
+      }
+    });
+
+    it('resolves first dict for reassigned dict', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {0: "a"}
+D = {0: "b"}
+t(f"{declare_static(D[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      if (errors.length === 0) {
+        expect(results).toHaveLength(1);
+        expect(results[0].source).toBe('a');
+      }
+    });
+  });
+
+  // ===== subscript edge cases ===== //
+
+  describe('subscript edge cases', () => {
+    it('errors on list subscript (not dict)', async () => {
+      const code = `from gt_flask import t, declare_static
+L = ["a", "b"]
+t(f"{declare_static(L[0])}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('dictionary');
+    });
+
+    it('errors on tuple subscript', async () => {
+      const code = `from gt_flask import t, declare_static
+T = ("a", "b")
+t(f"{declare_static(T[0])}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('extracts values from dict with mixed key types', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {0: "zero", "a": "alpha"}
+t(f"{declare_static(D[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: any) => r.source).sort();
+      expect(sources).toEqual(['alpha', 'zero']);
+    });
+  });
+
+  // ===== identifier edge cases ===== //
+
+  describe('identifier edge cases', () => {
+    it('errors on Python builtin True in declare_static', async () => {
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static(True)}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      // True is tree-sitter type 'true', not 'identifier'
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('errors on integer literal in declare_static', async () => {
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static(42)}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('errors on None in declare_static', async () => {
+      const code = `from gt_flask import t, declare_static
+t(f"{declare_static(None)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     });

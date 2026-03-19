@@ -650,76 +650,149 @@ function resolveFunctionInFile(
         if (
           t.isIdentifier(path.node.id) &&
           path.node.id.name === functionName &&
-          path.node.init &&
-          (t.isArrowFunctionExpression(path.node.init) ||
-            t.isFunctionExpression(path.node.init)) &&
           result === null
         ) {
-          const init = path.get('init');
+          const init = path.node.init;
+          if (!init) return;
+
+          // Handle arrow/function expressions
           if (
-            !init.isArrowFunctionExpression() &&
-            !init.isFunctionExpression()
+            t.isArrowFunctionExpression(init) ||
+            t.isFunctionExpression(init)
           ) {
-            return;
-          }
+            const initPath = path.get('init');
+            if (
+              !initPath.isArrowFunctionExpression() &&
+              !initPath.isFunctionExpression()
+            ) {
+              return;
+            }
 
-          const bodyPath = init.get('body');
-          const branches: StringNode[] = [];
+            const bodyPath = initPath.get('body');
+            const branches: StringNode[] = [];
 
-          // Handle expression body: () => "day"
-          if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
-            const bodyResult = parseStringExpression(
-              bodyPath.node,
-              bodyPath,
-              filePath,
-              parsingOptions
-            );
-            if (bodyResult !== null) {
-              branches.push(bodyResult);
+            // Handle expression body: () => "day"
+            if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
+              const bodyResult = parseStringExpression(
+                bodyPath.node,
+                bodyPath,
+                filePath,
+                parsingOptions
+              );
+              if (bodyResult !== null) {
+                branches.push(bodyResult);
+              }
+            }
+            // Handle block body: () => { return "day"; }
+            else if (
+              !Array.isArray(bodyPath) &&
+              t.isBlockStatement(bodyPath.node)
+            ) {
+              const arrowFunction = initPath.node;
+              bodyPath.traverse({
+                Function(innerPath: NodePath) {
+                  // Skip nested functions
+                  innerPath.skip();
+                },
+                ReturnStatement(returnPath: NodePath) {
+                  // Only process return statements that are direct children of this function
+                  const parentFunction = returnPath.getFunctionParent();
+                  if (parentFunction?.node !== arrowFunction) {
+                    return;
+                  }
+
+                  if (!t.isReturnStatement(returnPath.node)) {
+                    return;
+                  }
+                  const returnArg = returnPath.node.argument;
+                  if (!returnArg || !t.isExpression(returnArg)) {
+                    return;
+                  }
+                  const returnResult = parseStringExpression(
+                    returnArg,
+                    returnPath,
+                    filePath,
+                    parsingOptions
+                  );
+                  if (returnResult !== null) {
+                    branches.push(returnResult);
+                  }
+                },
+              });
+            }
+
+            if (branches.length === 1) {
+              result = branches[0];
+            } else if (branches.length > 1) {
+              result = { type: 'choice', nodes: branches };
             }
           }
-          // Handle block body: () => { return "day"; }
-          else if (
-            !Array.isArray(bodyPath) &&
-            t.isBlockStatement(bodyPath.node)
-          ) {
-            const arrowFunction = init.node;
-            bodyPath.traverse({
-              Function(innerPath: NodePath) {
-                // Skip nested functions
-                innerPath.skip();
-              },
-              ReturnStatement(returnPath: NodePath) {
-                // Only process return statements that are direct children of this function
-                const parentFunction = returnPath.getFunctionParent();
-                if (parentFunction?.node !== arrowFunction) {
-                  return;
-                }
-
-                if (!t.isReturnStatement(returnPath.node)) {
-                  return;
-                }
-                const returnArg = returnPath.node.argument;
-                if (!returnArg || !t.isExpression(returnArg)) {
-                  return;
-                }
-                const returnResult = parseStringExpression(
-                  returnArg,
-                  returnPath,
+          // Handle string/numeric/boolean/null constants
+          else if (t.isStringLiteral(init)) {
+            result = { type: 'text', text: init.value };
+          } else if (t.isNumericLiteral(init)) {
+            result = { type: 'text', text: String(init.value) };
+          } else if (t.isBooleanLiteral(init)) {
+            result = { type: 'text', text: String(init.value) };
+          }
+          // Handle template literals
+          else if (t.isTemplateLiteral(init)) {
+            const parts: StringNode[] = [];
+            let failed = false;
+            for (let index = 0; index < init.quasis.length; index++) {
+              const quasi = init.quasis[index];
+              const text = quasi.value.cooked ?? quasi.value.raw ?? '';
+              if (text) {
+                parts.push({ type: 'text', text });
+              }
+              const exprNode = init.expressions[index];
+              if (exprNode && t.isExpression(exprNode)) {
+                const exprResult = parseStringExpression(
+                  exprNode,
+                  path,
                   filePath,
                   parsingOptions
                 );
-                if (returnResult !== null) {
-                  branches.push(returnResult);
+                if (exprResult === null) {
+                  failed = true;
+                  break;
                 }
-              },
-            });
+                parts.push(exprResult);
+              }
+            }
+            if (!failed) {
+              if (parts.length === 0) {
+                result = { type: 'text', text: '' };
+              } else if (parts.length === 1) {
+                result = parts[0];
+              } else {
+                result = { type: 'sequence', nodes: parts };
+              }
+            }
           }
-
-          if (branches.length === 1) {
-            result = branches[0];
-          } else if (branches.length > 1) {
-            result = { type: 'choice', nodes: branches };
+          // Handle object expressions (and `as const`)
+          else if (
+            t.isObjectExpression(init) ||
+            (t.isTSAsExpression(init) && t.isObjectExpression(init.expression))
+          ) {
+            const objExpr = t.isTSAsExpression(init)
+              ? (init.expression as t.ObjectExpression)
+              : init;
+            const branches: StringNode[] = [];
+            for (const prop of objExpr.properties) {
+              if (!t.isObjectProperty(prop) || !t.isExpression(prop.value))
+                continue;
+              const resolved = parseStringExpression(
+                prop.value,
+                path,
+                filePath,
+                parsingOptions
+              );
+              if (resolved) branches.push(resolved);
+            }
+            if (branches.length === 1) result = branches[0];
+            else if (branches.length > 1)
+              result = { type: 'choice', nodes: branches };
           }
         }
       },
@@ -739,16 +812,4 @@ function resolveFunctionInFile(
   // Cache the result
   processFunctionCache.set(cacheKey, result);
   return result;
-}
-
-/**
- * Handle cond ? "a" : "b"
- * Collects string literals from both branches of a conditional expression
- */
-function collectConditionalStringVariants(
-  cond: t.ConditionalExpression,
-  out: Set<string>
-) {
-  if (t.isStringLiteral(cond.consequent)) out.add(cond.consequent.value);
-  if (t.isStringLiteral(cond.alternate)) out.add(cond.alternate.value);
 }

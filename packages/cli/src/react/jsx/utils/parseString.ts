@@ -10,6 +10,8 @@ import {
   warnDeriveFunctionNoResultsSync,
   warnFunctionNotFoundSync,
   warnInvalidDeclareVarNameSync,
+  warnDeriveNonConstVariableSync,
+  warnDeriveChainedObjectAccessSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -31,6 +33,12 @@ const resolveImportPathCache = new Map<string, string | null>();
  * Cache for processed functions to avoid re-parsing the same files.
  */
 const processFunctionCache = new Map<string, StringNode | null>();
+
+/**
+ * Guard against infinite recursion when resolving identifier chains.
+ * Tracks AST nodes currently being resolved to detect circular references.
+ */
+const resolvingIdentifiers = new Set<t.Node>();
 
 /**
  * Processes a string expression node and resolves any function calls within it
@@ -180,21 +188,139 @@ export function parseStringExpression(
 
     // Check if it's a const/let/var with an initializer
     if (binding.path.isVariableDeclarator() && binding.path.node.init) {
+      // Guard against circular references (e.g., const A = B; const B = A)
       const init = binding.path.node.init;
-      if (t.isExpression(init)) {
-        // Recursively resolve the initializer
-        return parseStringExpression(
-          init,
-          binding.path,
-          file,
-          parsingOptions,
-          warnings
+      if (resolvingIdentifiers.has(init)) {
+        return null;
+      }
+
+      // Enforce const-only
+      const declaration = binding.path.parentPath;
+      if (
+        declaration?.isVariableDeclaration() &&
+        declaration.node.kind !== 'const'
+      ) {
+        warnings.add(
+          warnDeriveNonConstVariableSync(
+            file,
+            node.name,
+            declaration.node.kind,
+            `${node.loc?.start?.line}:${node.loc?.start?.column}`
+          )
         );
+        return null;
+      }
+
+      // Unwrap TSAsExpression (for `as const`)
+      const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
+      if (t.isExpression(unwrapped)) {
+        // Recursively resolve the initializer with recursion guard
+        resolvingIdentifiers.add(init);
+        try {
+          return parseStringExpression(
+            unwrapped,
+            binding.path,
+            file,
+            parsingOptions,
+            warnings
+          );
+        } finally {
+          resolvingIdentifiers.delete(init);
+        }
       }
     }
 
     // Not a resolvable variable
     return null;
+  }
+
+  // Handle member expressions: obj[key] or obj.prop
+  if (t.isMemberExpression(node)) {
+    // Reject chained access: obj[a][b]
+    if (t.isMemberExpression(node.object)) {
+      warnings.add(
+        warnDeriveChainedObjectAccessSync(
+          file,
+          generate(node).code,
+          `${node.loc?.start?.line}:${node.loc?.start?.column}`
+        )
+      );
+      return null;
+    }
+
+    // Object must be an identifier
+    if (!t.isIdentifier(node.object)) return null;
+
+    const binding = tPath.scope.getBinding(node.object.name);
+    if (!binding || !binding.path.isVariableDeclarator()) return null;
+
+    // Enforce const-only
+    const declaration = binding.path.parentPath;
+    if (
+      declaration?.isVariableDeclaration() &&
+      declaration.node.kind !== 'const'
+    ) {
+      warnings.add(
+        warnDeriveNonConstVariableSync(
+          file,
+          node.object.name,
+          declaration.node.kind,
+          `${node.loc?.start?.line}:${node.loc?.start?.column}`
+        )
+      );
+      return null;
+    }
+
+    const init = binding.path.node.init;
+    if (!init) return null;
+
+    // Unwrap TSAsExpression (for `as const`)
+    const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
+    if (!t.isObjectExpression(unwrapped)) return null;
+
+    if (node.computed) {
+      // COMPUTED: obj[key] → extract ALL values as choice
+      const branches: StringNode[] = [];
+      for (const prop of unwrapped.properties) {
+        if (!t.isObjectProperty(prop)) continue; // skip spread, methods
+        if (!t.isExpression(prop.value)) continue;
+        const resolved = parseStringExpression(
+          prop.value,
+          binding.path,
+          file,
+          parsingOptions,
+          warnings
+        );
+        if (resolved) branches.push(resolved);
+      }
+      if (branches.length === 0) return null;
+      if (branches.length === 1) return branches[0];
+      return { type: 'choice', nodes: branches };
+    } else {
+      // NON-COMPUTED: obj.prop → resolve specific property
+      if (!t.isIdentifier(node.property)) return null;
+      const propName = node.property.name;
+      for (const prop of unwrapped.properties) {
+        if (!t.isObjectProperty(prop)) continue;
+        const key = t.isIdentifier(prop.key)
+          ? prop.key.name
+          : t.isStringLiteral(prop.key)
+            ? prop.key.value
+            : t.isNumericLiteral(prop.key)
+              ? String(prop.key.value)
+              : null;
+        if (key === propName && t.isExpression(prop.value)) {
+          return parseStringExpression(
+            prop.value,
+            binding.path,
+            file,
+            parsingOptions,
+            warnings
+          );
+        }
+      }
+      return null;
+    }
   }
 
   // Handle function calls (e.g., getName())
@@ -614,78 +740,153 @@ function resolveFunctionInFile(
         if (
           t.isIdentifier(path.node.id) &&
           path.node.id.name === functionName &&
-          path.node.init &&
-          (t.isArrowFunctionExpression(path.node.init) ||
-            t.isFunctionExpression(path.node.init)) &&
           result === null
         ) {
-          const init = path.get('init');
+          const init = path.node.init;
+          if (!init) return;
+
+          // Handle arrow/function expressions
           if (
-            !init.isArrowFunctionExpression() &&
-            !init.isFunctionExpression()
+            t.isArrowFunctionExpression(init) ||
+            t.isFunctionExpression(init)
           ) {
-            return;
-          }
+            const initPath = path.get('init');
+            if (
+              !initPath.isArrowFunctionExpression() &&
+              !initPath.isFunctionExpression()
+            ) {
+              return;
+            }
 
-          const bodyPath = init.get('body');
-          const branches: StringNode[] = [];
+            const bodyPath = initPath.get('body');
+            const branches: StringNode[] = [];
 
-          // Handle expression body: () => "day"
-          if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
-            const bodyResult = parseStringExpression(
-              bodyPath.node,
-              bodyPath,
-              filePath,
-              parsingOptions,
-              warnings
-            );
-            if (bodyResult !== null) {
-              branches.push(bodyResult);
+            // Handle expression body: () => "day"
+            if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
+              const bodyResult = parseStringExpression(
+                bodyPath.node,
+                bodyPath,
+                filePath,
+                parsingOptions,
+                warnings
+              );
+              if (bodyResult !== null) {
+                branches.push(bodyResult);
+              }
+            }
+            // Handle block body: () => { return "day"; }
+            else if (
+              !Array.isArray(bodyPath) &&
+              t.isBlockStatement(bodyPath.node)
+            ) {
+              const arrowFunction = initPath.node;
+              bodyPath.traverse({
+                Function(innerPath: NodePath) {
+                  // Skip nested functions
+                  innerPath.skip();
+                },
+                ReturnStatement(returnPath: NodePath) {
+                  // Only process return statements that are direct children of this function
+                  const parentFunction = returnPath.getFunctionParent();
+                  if (parentFunction?.node !== arrowFunction) {
+                    return;
+                  }
+
+                  if (!t.isReturnStatement(returnPath.node)) {
+                    return;
+                  }
+                  const returnArg = returnPath.node.argument;
+                  if (!returnArg || !t.isExpression(returnArg)) {
+                    return;
+                  }
+                  const returnResult = parseStringExpression(
+                    returnArg,
+                    returnPath,
+                    filePath,
+                    parsingOptions,
+                    warnings
+                  );
+                  if (returnResult !== null) {
+                    branches.push(returnResult);
+                  }
+                },
+              });
+            }
+
+            if (branches.length === 1) {
+              result = branches[0];
+            } else if (branches.length > 1) {
+              result = { type: 'choice', nodes: branches };
             }
           }
-          // Handle block body: () => { return "day"; }
-          else if (
-            !Array.isArray(bodyPath) &&
-            t.isBlockStatement(bodyPath.node)
-          ) {
-            const arrowFunction = init.node;
-            bodyPath.traverse({
-              Function(innerPath: NodePath) {
-                // Skip nested functions
-                innerPath.skip();
-              },
-              ReturnStatement(returnPath: NodePath) {
-                // Only process return statements that are direct children of this function
-                const parentFunction = returnPath.getFunctionParent();
-                if (parentFunction?.node !== arrowFunction) {
-                  return;
-                }
-
-                if (!t.isReturnStatement(returnPath.node)) {
-                  return;
-                }
-                const returnArg = returnPath.node.argument;
-                if (!returnArg || !t.isExpression(returnArg)) {
-                  return;
-                }
-                const returnResult = parseStringExpression(
-                  returnArg,
-                  returnPath,
+          // Handle string/numeric/boolean/null constants
+          else if (t.isStringLiteral(init)) {
+            result = { type: 'text', text: init.value };
+          } else if (t.isNumericLiteral(init)) {
+            result = { type: 'text', text: String(init.value) };
+          } else if (t.isBooleanLiteral(init)) {
+            result = { type: 'text', text: String(init.value) };
+          }
+          // Handle template literals
+          else if (t.isTemplateLiteral(init)) {
+            const parts: StringNode[] = [];
+            let failed = false;
+            for (let index = 0; index < init.quasis.length; index++) {
+              const quasi = init.quasis[index];
+              const text = quasi.value.cooked ?? quasi.value.raw ?? '';
+              if (text) {
+                parts.push({ type: 'text', text });
+              }
+              const exprNode = init.expressions[index];
+              if (exprNode && t.isExpression(exprNode)) {
+                const exprResult = parseStringExpression(
+                  exprNode,
+                  path,
                   filePath,
                   parsingOptions,
                   warnings
                 );
-                if (returnResult !== null) {
-                  branches.push(returnResult);
+                if (exprResult === null) {
+                  failed = true;
+                  break;
                 }
-              },
-            });
+                parts.push(exprResult);
+              }
+            }
+            if (!failed) {
+              if (parts.length === 0) {
+                result = { type: 'text', text: '' };
+              } else if (parts.length === 1) {
+                result = parts[0];
+              } else {
+                result = { type: 'sequence', nodes: parts };
+              }
+            }
           }
-
-          if (branches.length === 1) {
-            result = branches[0];
-          } else if (branches.length > 1) {
-            result = { type: 'choice', nodes: branches };
+          // Handle object expressions (and `as const`)
+          else if (
+            t.isObjectExpression(init) ||
+            (t.isTSAsExpression(init) && t.isObjectExpression(init.expression))
+          ) {
+            const objExpr = t.isTSAsExpression(init)
+              ? (init.expression as t.ObjectExpression)
+              : init;
+            const branches: StringNode[] = [];
+            for (const prop of objExpr.properties) {
+              if (!t.isObjectProperty(prop) || !t.isExpression(prop.value))
+                continue;
+              const resolved = parseStringExpression(
+                prop.value,
+                path,
+                filePath,
+                parsingOptions,
+                warnings
+              );
+              if (resolved) branches.push(resolved);
+            }
+            if (branches.length === 1) result = branches[0];
+            else if (branches.length > 1)
+              result = { type: 'choice', nodes: branches };
           }
         }
       },

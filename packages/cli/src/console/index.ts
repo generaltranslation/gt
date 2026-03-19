@@ -274,6 +274,33 @@ export const warnDeriveFunctionNotWrappedSync = (
     location
   );
 
+export const warnDeriveNonConstVariableSync = (
+  file: string,
+  varName: string,
+  kind: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Variable ${colorizeFunctionName(varName)} is declared with '${kind}' but only 'const' declarations can be resolved statically. Change it to 'const'.`
+    ),
+    location
+  );
+
+export const warnDeriveChainedObjectAccessSync = (
+  file: string,
+  code: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Chained object access ${colorizeFunctionName(formatCodeClamp(code))} is not supported. Only single-depth object access (e.g., obj[key]) is allowed in derive().`
+    ),
+    location
+  );
+
 export const warnDeriveFunctionNoResultsSync = (
   file: string,
   functionName: string,

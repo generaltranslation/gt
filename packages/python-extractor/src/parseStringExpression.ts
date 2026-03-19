@@ -1,4 +1,6 @@
+import fs from 'node:fs';
 import type { SyntaxNode } from './parser.js';
+import { getParser } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
 import { PYTHON_DECLARE_STATIC, PYTHON_DECLARE_VAR } from './constants.js';
@@ -305,6 +307,27 @@ async function resolveStaticValue(
     return resolveFunctionCall(node, ctx);
   }
 
+  // Identifier: resolve to its assigned value
+  if (node.type === 'identifier') {
+    const result = await resolveIdentifier(node, ctx);
+    if (result) return result;
+
+    ctx.errors.push(
+      `${locationStr(node)}: could not resolve identifier "${node.text}" to a static value`
+    );
+    return null;
+  }
+
+  // Subscript: dictionary access like LABELS[score] — returns all values as choices
+  if (node.type === 'subscript') {
+    return resolveSubscript(node, ctx);
+  }
+
+  // Attribute: dictionary access like obj.attr — returns the specific value
+  if (node.type === 'attribute') {
+    return resolveAttribute(node, ctx);
+  }
+
   ctx.errors.push(
     `${locationStr(node)}: unsupported declare_static argument type "${node.type}"`
   );
@@ -569,6 +592,322 @@ async function resolveDeclareVarArg(
   const icuText = declareVar('', options);
 
   return { type: 'text', text: icuText };
+}
+
+// ===== Constant / Dictionary Resolution ===== //
+
+/**
+ * Finds a top-level assignment `name = <value>` in the given root node.
+ * Returns the right-hand side (value) node, or null if not found.
+ */
+function findConstantAssignment(
+  name: string,
+  rootNode: SyntaxNode
+): SyntaxNode | null {
+  for (let i = 0; i < rootNode.childCount; i++) {
+    const child = rootNode.child(i);
+    if (!child || child.type !== 'expression_statement') continue;
+    const expr = child.child(0);
+    if (!expr || expr.type !== 'assignment') continue;
+    const left = expr.childForFieldName('left');
+    const right = expr.childForFieldName('right');
+    if (left?.type === 'identifier' && left.text === name && right) {
+      return right;
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolves a constant assignment from an external file.
+ * Reads the file, parses it with tree-sitter, finds the assignment,
+ * and resolves the value using resolveStaticValue in that file's context.
+ */
+async function resolveConstantInFile(
+  name: string,
+  filePath: string,
+  ctx: ParseContext
+): Promise<SyntaxNode | null> {
+  let source: string;
+  try {
+    source = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+
+  const parser = await getParser();
+  const tree = parser.parse(source);
+  if (!tree) return null;
+
+  return findConstantAssignment(name, tree.rootNode);
+}
+
+/**
+ * Guard against infinite recursion when resolving identifier chains.
+ * Tracks variable names currently being resolved to detect circular references.
+ */
+const resolvingIdentifiers = new Set<string>();
+
+/**
+ * Resolves an identifier to its static value by finding the assignment
+ * in the current file or cross-file via imports.
+ */
+async function resolveIdentifier(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<StringNode | null> {
+  const name = node.text;
+
+  // Guard against circular references (e.g., x = y; y = x)
+  const guardKey = `${ctx.filePath}::${name}`;
+  if (resolvingIdentifiers.has(guardKey)) {
+    return null;
+  }
+
+  resolvingIdentifiers.add(guardKey);
+  try {
+    // Try local assignment first
+    const localValue = findConstantAssignment(name, ctx.rootNode);
+    if (localValue) {
+      return await resolveStaticValue(localValue, ctx);
+    }
+
+    // Try cross-file via imports
+    const importInfo = findImportForName(name, ctx);
+    if (importInfo) {
+      let source: string;
+      try {
+        source = fs.readFileSync(importInfo.filePath, 'utf8');
+      } catch {
+        return null;
+      }
+
+      const parser = await getParser();
+      const tree = parser.parse(source);
+      if (!tree) return null;
+
+      const externalValue = findConstantAssignment(
+        importInfo.originalName,
+        tree.rootNode
+      );
+      if (externalValue) {
+        const externalImports = extractImportsFromRoot(
+          tree.rootNode,
+          ctx.imports
+        );
+        return await resolveStaticValue(externalValue, {
+          rootNode: tree.rootNode,
+          imports: externalImports,
+          filePath: importInfo.filePath,
+          errors: ctx.errors,
+        });
+      }
+    }
+
+    return null;
+  } finally {
+    resolvingIdentifiers.delete(guardKey);
+  }
+}
+
+/**
+ * Finds a dictionary assignment and returns the dictionary node.
+ * Searches locally first, then cross-file via imports.
+ * Returns the dictionary node and the context (rootNode, filePath, imports)
+ * for resolving values within it.
+ */
+async function findDictionaryAssignment(
+  name: string,
+  ctx: ParseContext
+): Promise<{ dictNode: SyntaxNode; valueCtx: ParseContext } | null> {
+  // Try local assignment
+  const localValue = findConstantAssignment(name, ctx.rootNode);
+  if (localValue && localValue.type === 'dictionary') {
+    return { dictNode: localValue, valueCtx: ctx };
+  }
+
+  // Try cross-file
+  const importInfo = findImportForName(name, ctx);
+  if (importInfo) {
+    let source: string;
+    try {
+      source = fs.readFileSync(importInfo.filePath, 'utf8');
+    } catch {
+      return null;
+    }
+
+    const parser = await getParser();
+    const tree = parser.parse(source);
+    if (!tree) return null;
+
+    const externalValue = findConstantAssignment(
+      importInfo.originalName,
+      tree.rootNode
+    );
+    if (externalValue && externalValue.type === 'dictionary') {
+      const externalImports = extractImportsFromRoot(
+        tree.rootNode,
+        ctx.imports
+      );
+      return {
+        dictNode: externalValue,
+        valueCtx: {
+          rootNode: tree.rootNode,
+          imports: externalImports,
+          filePath: importInfo.filePath,
+          errors: ctx.errors,
+        },
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolves a subscript expression (e.g., `LABELS[score]`) by extracting
+ * ALL values from the dictionary as choices.
+ */
+async function resolveSubscript(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<StringNode | null> {
+  const valueNode = node.childForFieldName('value');
+  if (!valueNode) {
+    ctx.errors.push(
+      `${locationStr(node)}: subscript missing value`
+    );
+    return null;
+  }
+
+  // Reject chained subscript access (e.g., LABELS[x][y])
+  if (valueNode.type === 'subscript') {
+    ctx.errors.push(
+      `${locationStr(node)}: chained subscript access is not supported`
+    );
+    return null;
+  }
+
+  // Object must be a simple identifier
+  if (valueNode.type !== 'identifier') {
+    ctx.errors.push(
+      `${locationStr(node)}: subscript object must be a simple identifier, got "${valueNode.type}"`
+    );
+    return null;
+  }
+
+  const dictName = valueNode.text;
+  const dictResult = await findDictionaryAssignment(dictName, ctx);
+  if (!dictResult) {
+    ctx.errors.push(
+      `${locationStr(node)}: could not find dictionary "${dictName}"`
+    );
+    return null;
+  }
+
+  const { dictNode, valueCtx } = dictResult;
+
+  // Extract ALL values from the dictionary as choices
+  const branches: StringNode[] = [];
+  for (let i = 0; i < dictNode.childCount; i++) {
+    const child = dictNode.child(i);
+    if (!child || child.type !== 'pair') continue;
+
+    const pairValue = child.childForFieldName('value');
+    if (!pairValue) continue;
+
+    const resolved = await resolveStaticValue(pairValue, valueCtx);
+    if (resolved) {
+      if (resolved.type === 'choice') {
+        branches.push(...resolved.nodes);
+      } else {
+        branches.push(resolved);
+      }
+    }
+  }
+
+  if (branches.length === 0) {
+    ctx.errors.push(
+      `${locationStr(node)}: dictionary "${dictName}" has no resolvable values`
+    );
+    return null;
+  }
+
+  if (branches.length === 1) return branches[0];
+  return { type: 'choice', nodes: branches };
+}
+
+/**
+ * Resolves an attribute access expression (e.g., `obj.attr`) by finding
+ * the specific dictionary pair with a matching key.
+ */
+async function resolveAttribute(
+  node: SyntaxNode,
+  ctx: ParseContext
+): Promise<StringNode | null> {
+  const objectNode = node.childForFieldName('object');
+  const attrNode = node.childForFieldName('attribute');
+
+  if (!objectNode || !attrNode) {
+    ctx.errors.push(
+      `${locationStr(node)}: attribute access missing object or attribute`
+    );
+    return null;
+  }
+
+  // Reject chained access (e.g., a.b.c)
+  if (objectNode.type === 'attribute') {
+    ctx.errors.push(
+      `${locationStr(node)}: chained attribute access is not supported`
+    );
+    return null;
+  }
+
+  // Object must be a simple identifier
+  if (objectNode.type !== 'identifier') {
+    ctx.errors.push(
+      `${locationStr(node)}: attribute object must be a simple identifier, got "${objectNode.type}"`
+    );
+    return null;
+  }
+
+  const dictName = objectNode.text;
+  const attrName = attrNode.text;
+
+  const dictResult = await findDictionaryAssignment(dictName, ctx);
+  if (!dictResult) {
+    ctx.errors.push(
+      `${locationStr(node)}: could not find dictionary "${dictName}"`
+    );
+    return null;
+  }
+
+  const { dictNode, valueCtx } = dictResult;
+
+  // Find the specific pair with matching key
+  for (let i = 0; i < dictNode.childCount; i++) {
+    const child = dictNode.child(i);
+    if (!child || child.type !== 'pair') continue;
+
+    const keyNode = child.childForFieldName('key');
+    if (!keyNode) continue;
+
+    // Extract key content — dictionary keys are strings
+    if (keyNode.type === 'string') {
+      const keyContent = extractStringContent(keyNode);
+      if (keyContent === attrName) {
+        const pairValue = child.childForFieldName('value');
+        if (pairValue) {
+          return resolveStaticValue(pairValue, valueCtx);
+        }
+      }
+    }
+  }
+
+  ctx.errors.push(
+    `${locationStr(node)}: could not find key "${attrName}" in dictionary "${dictName}"`
+  );
+  return null;
 }
 
 // ===== Helpers ===== //
