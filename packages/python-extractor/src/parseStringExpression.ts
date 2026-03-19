@@ -735,7 +735,10 @@ async function findDictionaryAssignment(
 ): Promise<{ dictNode: SyntaxNode; valueCtx: ParseContext } | null> {
   // Try local assignment
   const localValue = findConstantAssignment(name, ctx.rootNode);
-  if (localValue && localValue.type === 'dictionary') {
+  if (
+    localValue &&
+    (localValue.type === 'dictionary' || localValue.type === 'list')
+  ) {
     return { dictNode: localValue, valueCtx: ctx };
   }
 
@@ -757,7 +760,10 @@ async function findDictionaryAssignment(
       importInfo.originalName,
       tree.rootNode
     );
-    if (externalValue && externalValue.type === 'dictionary') {
+    if (
+      externalValue &&
+      (externalValue.type === 'dictionary' || externalValue.type === 'list')
+    ) {
       const externalImports = extractImportsFromRoot(
         tree.rootNode,
         ctx.imports
@@ -878,6 +884,89 @@ async function collectDictEntries(
 }
 
 /**
+ * Collects all elements from a list node as DictEntry[] with index as key.
+ * Handles list_splat (*spread).
+ */
+async function collectListEntries(
+  listNode: SyntaxNode,
+  ctx: ParseContext
+): Promise<DictEntry[]> {
+  const entries: DictEntry[] = [];
+  let index = 0;
+  for (let i = 0; i < listNode.childCount; i++) {
+    const child = listNode.child(i);
+    if (!child) continue;
+    // Skip brackets and commas
+    if (child.type === '[' || child.type === ']' || child.type === ',')
+      continue;
+
+    if (child.type === 'list_splat') {
+      // *base spread — resolve the source identifier
+      let splatExpr: SyntaxNode | null = null;
+      for (let j = 0; j < child.childCount; j++) {
+        const sc = child.child(j);
+        if (sc && sc.type !== '*') {
+          splatExpr = sc;
+          break;
+        }
+      }
+      if (!splatExpr || splatExpr.type !== 'identifier') continue;
+
+      const localList = findConstantAssignment(splatExpr.text, ctx.rootNode);
+      if (localList && localList.type === 'list') {
+        const spreadEntries = await collectListEntries(localList, ctx);
+        for (const e of spreadEntries) {
+          entries.push({ key: String(index++), valueNode: e.valueNode });
+        }
+      } else {
+        // Try cross-file
+        const importInfo = findImportForName(splatExpr.text, ctx);
+        if (importInfo) {
+          let source: string;
+          try {
+            source = fs.readFileSync(importInfo.filePath, 'utf8');
+          } catch {
+            continue;
+          }
+          const parser = await getParser();
+          const tree = parser.parse(source);
+          if (!tree) continue;
+          const externalValue = findConstantAssignment(
+            importInfo.originalName,
+            tree.rootNode
+          );
+          if (externalValue && externalValue.type === 'list') {
+            const externalImports = extractImportsFromRoot(
+              tree.rootNode,
+              ctx.imports
+            );
+            const externalCtx: ParseContext = {
+              rootNode: tree.rootNode,
+              imports: externalImports,
+              filePath: importInfo.filePath,
+              errors: ctx.errors,
+            };
+            const spreadEntries = await collectListEntries(
+              externalValue,
+              externalCtx
+            );
+            for (const e of spreadEntries) {
+              entries.push({ key: String(index++), valueNode: e.valueNode });
+            }
+          }
+        }
+      }
+      continue;
+    }
+
+    // Regular element — any expression
+    entries.push({ key: String(index), valueNode: child });
+    index++;
+  }
+  return entries;
+}
+
+/**
  * Resolves an expression to dictionary AST node(s).
  * Handles identifier, subscript chains, and attribute chains.
  */
@@ -910,31 +999,38 @@ async function resolveToDictNodes(
       ? extractStringContent(subscriptKey)
       : null;
 
+    const isStaticIntKey = subscriptKey.type === 'integer';
+    const staticIntKeyValue = isStaticIntKey ? subscriptKey.text : null;
+
     const results: ResolvedDict[] = [];
     for (const parent of parentDicts) {
-      const entries = await collectDictEntries(
-        parent.dictNode,
-        parent.valueCtx
-      );
+      const entries =
+        parent.dictNode.type === 'list'
+          ? await collectListEntries(parent.dictNode, parent.valueCtx)
+          : await collectDictEntries(parent.dictNode, parent.valueCtx);
 
-      if (staticKeyValue != null) {
-        // Static: narrow to one specific key
+      if (staticKeyValue != null || staticIntKeyValue != null) {
+        const keyToMatch = staticKeyValue ?? staticIntKeyValue;
+        // Static: narrow to matching keys
         for (const entry of entries) {
           if (
-            entry.key === staticKeyValue &&
-            entry.valueNode.type === 'dictionary'
+            entry.key === keyToMatch &&
+            (entry.valueNode.type === 'dictionary' ||
+              entry.valueNode.type === 'list')
           ) {
             results.push({
               dictNode: entry.valueNode,
               valueCtx: parent.valueCtx,
             });
-            break;
           }
         }
       } else {
-        // Dynamic: collect ALL entries whose values are dictionaries
+        // Dynamic: collect ALL entries whose values are dicts/lists
         for (const entry of entries) {
-          if (entry.valueNode.type === 'dictionary') {
+          if (
+            entry.valueNode.type === 'dictionary' ||
+            entry.valueNode.type === 'list'
+          ) {
             results.push({
               dictNode: entry.valueNode,
               valueCtx: parent.valueCtx,
@@ -963,12 +1059,15 @@ async function resolveToDictNodes(
         parent.valueCtx
       );
       for (const entry of entries) {
-        if (entry.key === attrName && entry.valueNode.type === 'dictionary') {
+        if (
+          entry.key === attrName &&
+          (entry.valueNode.type === 'dictionary' ||
+            entry.valueNode.type === 'list')
+        ) {
           results.push({
             dictNode: entry.valueNode,
             valueCtx: parent.valueCtx,
           });
-          break;
         }
       }
     }
@@ -997,24 +1096,30 @@ async function resolveSubscript(
   const dicts = await resolveToDictNodes(valueNode, ctx);
   if (dicts.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: could not find dictionary for "${valueNode.text}"`
+      `${locationStr(node)}: could not find dictionary or list for "${valueNode.text}"`
     );
     return null;
   }
 
   const subscriptKey = node.childForFieldName('subscript');
-  const isStaticKey =
+  const isStaticStringKey =
     subscriptKey?.type === 'string' && !isFString(subscriptKey);
-  const staticKeyValue = isStaticKey
+  const staticStringKeyValue = isStaticStringKey
     ? extractStringContent(subscriptKey!)
     : null;
+  const isStaticIntKey = subscriptKey?.type === 'integer';
+  const staticIntKeyValue = isStaticIntKey ? subscriptKey!.text : null;
+  const staticKeyValue = staticStringKeyValue ?? staticIntKeyValue;
 
   const branches: StringNode[] = [];
   for (const { dictNode, valueCtx } of dicts) {
-    const entries = await collectDictEntries(dictNode, valueCtx);
+    const entries =
+      dictNode.type === 'list'
+        ? await collectListEntries(dictNode, valueCtx)
+        : await collectDictEntries(dictNode, valueCtx);
 
     if (staticKeyValue != null) {
-      // Static key: resolve that specific value
+      // Static key: resolve matching values (no break — collect all for spread overrides)
       for (const entry of entries) {
         if (entry.key === staticKeyValue) {
           const resolved = await resolveStaticValue(entry.valueNode, valueCtx);
@@ -1025,7 +1130,6 @@ async function resolveSubscript(
               branches.push(resolved);
             }
           }
-          break;
         }
       }
     } else {
@@ -1045,7 +1149,7 @@ async function resolveSubscript(
 
   if (branches.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: dictionary has no resolvable values`
+      `${locationStr(node)}: collection has no resolvable values`
     );
     return null;
   }
@@ -1079,7 +1183,7 @@ async function resolveAttribute(
   const dicts = await resolveToDictNodes(objectNode, ctx);
   if (dicts.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: could not find dictionary for "${objectNode.text}"`
+      `${locationStr(node)}: could not find dictionary or list for "${objectNode.text}"`
     );
     return null;
   }
@@ -1097,14 +1201,13 @@ async function resolveAttribute(
             branches.push(resolved);
           }
         }
-        break;
       }
     }
   }
 
   if (branches.length === 0) {
     ctx.errors.push(
-      `${locationStr(node)}: could not find key "${attrName}" in dictionary`
+      `${locationStr(node)}: could not find key "${attrName}" in dictionary or list`
     );
     return null;
   }

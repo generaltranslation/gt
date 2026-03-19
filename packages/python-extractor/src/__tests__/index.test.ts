@@ -1076,13 +1076,17 @@ t(f"{declare_static(D[k])}")`;
   // ===== subscript edge cases ===== //
 
   describe('subscript edge cases', () => {
-    it('errors on list subscript (not dict)', async () => {
+    it('resolves list subscript with static integer key', async () => {
       const code = `from gt_flask import t, declare_static
 L = ["a", "b"]
 t(f"{declare_static(L[0])}")`;
-      const { errors } = await extractFromPythonSource(code, 'test.py');
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.join(' ')).toContain('dictionary');
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('a');
     });
 
     it('errors on tuple subscript', async () => {
@@ -1091,6 +1095,7 @@ T = ("a", "b")
 t(f"{declare_static(T[0])}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('dictionary or list');
     });
 
     it('extracts values from dict with mixed key types', async () => {
@@ -1122,6 +1127,7 @@ t(f"{declare_static(D[score])}")`;
       // The 3 string values should still resolve
       expect(results).toHaveLength(3);
       expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('unsupported derive() argument type');
     });
 
     it('errors on list value in dict (static key)', async () => {
@@ -1130,6 +1136,7 @@ D = {"items": ["a", "b"]}
 t(f"{declare_static(D['items'])}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('unsupported derive() argument type');
     });
 
     it('errors on nested dict value without further access', async () => {
@@ -1144,6 +1151,7 @@ t(f"{declare_static(D[k])}")`;
       const sources = results.map((r: any) => r.source);
       expect(sources).toContain('ok');
       expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('unsupported derive() argument type');
     });
 
     it('errors on tuple value in dict', async () => {
@@ -1156,6 +1164,7 @@ t(f"{declare_static(D[k])}")`;
       );
       expect(results).toHaveLength(1);
       expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('unsupported derive() argument type');
     });
   });
 
@@ -1436,6 +1445,349 @@ t(f"{declare_static(D[k]['label'])}")`;
       expect(results).toHaveLength(2);
       const sources = results.map((r: any) => r.source).sort();
       expect(sources).toEqual(['A', 'B']);
+    });
+  });
+
+  // ===== list access ===== //
+
+  describe('list access', () => {
+    it('extracts all list values with dynamic subscript', async () => {
+      const code = `from gt_flask import t, declare_static
+L = ["Bad", "OK", "Good"]
+t(f"{declare_static(L[score])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['Bad', 'Good', 'OK']);
+    });
+
+    it('narrows to one value with static integer subscript', async () => {
+      const code = `from gt_flask import t, declare_static
+L = ["zero", "one", "two"]
+t(f"{declare_static(L[0])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('zero');
+    });
+
+    it('handles list with conditional values', async () => {
+      const code = `from gt_flask import t, declare_static
+L = ["a" if cond else "b", "c"]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['a', 'b', 'c']);
+    });
+
+    it('handles list in f-string template', async () => {
+      const code = `from gt_flask import t, declare_static
+L = ["Bad", "Good"]
+t(f"Score: {declare_static(L[s])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['Score: Bad', 'Score: Good']);
+    });
+
+    it('errors on empty list', async () => {
+      const code = `from gt_flask import t, declare_static
+L = []
+t(f"{declare_static(L[k])}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('no resolvable values');
+    });
+
+    it('errors on unresolvable list element', async () => {
+      const code = `from gt_flask import t, declare_static
+L = ["ok", ["nested"]]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('ok');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('unsupported derive() argument type');
+    });
+  });
+
+  // ===== list spread resolution ===== //
+
+  describe('list spread resolution', () => {
+    it('resolves list spread (*base)', async () => {
+      const code = `from gt_flask import t, declare_static
+base = ["a", "b"]
+L = [*base, "c"]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['a', 'b', 'c']);
+    });
+
+    it('resolves multiple list spreads', async () => {
+      const code = `from gt_flask import t, declare_static
+a = ["x"]
+b = ["y"]
+L = [*a, *b, "z"]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['x', 'y', 'z']);
+    });
+  });
+
+  // ===== nested list/dict access ===== //
+
+  describe('nested list/dict access', () => {
+    it('resolves nested list access L[0][1]', async () => {
+      const code = `from gt_flask import t, declare_static
+L = [["a", "b"], ["c", "d"]]
+t(f"{declare_static(L[0][1])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('b');
+    });
+
+    it('resolves dict nested in list', async () => {
+      const code = `from gt_flask import t, declare_static
+L = [{"x": "hi"}, {"x": "bye"}]
+t(f"{declare_static(L[k]['x'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['bye', 'hi']);
+    });
+
+    it('resolves list nested in dict', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"items": ["a", "b"]}
+t(f"{declare_static(D['items'][k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['a', 'b']);
+    });
+  });
+
+  // ===== dict spread override (break bug fix) ===== //
+
+  describe('dict spread override', () => {
+    it('collects both entries for spread + own key', async () => {
+      const code = `from gt_flask import t, declare_static
+base = {"x": "first"}
+D = {**base, "x": "second"}
+t(f"{declare_static(D['x'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      // Both 'first' (from spread) and 'second' (own) should be collected
+      expect(results).toHaveLength(2);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['first', 'second']);
+    });
+  });
+
+  // ===== edge cases: unintuitive outcomes ===== //
+
+  describe('edge cases: unintuitive outcomes', () => {
+    it('negative index falls through to dynamic mode (returns all values)', async () => {
+      // L[-1] in Python would resolve to "c", but tree-sitter parses -1 as
+      // a unary_operator (not an integer literal), so we treat it as a
+      // dynamic key and return ALL values instead of narrowing.
+      const code = `from gt_flask import t, declare_static
+L = ["a", "b", "c"]
+t(f"{declare_static(L[-1])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      // Returns all 3 values, not just "c"
+      expect(results).toHaveLength(3);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['a', 'b', 'c']);
+    });
+
+    it('out-of-bounds index produces empty result and error', async () => {
+      // L[5] on a 2-element list: resolveSubscript finds no matching entry,
+      // pushes an error, returns null. But the f-string wrapper still
+      // produces an empty-string result from the remaining (empty) template.
+      const code = `from gt_flask import t, declare_static
+L = ["a", "b"]
+t(f"{declare_static(L[5])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('no resolvable values');
+      // An empty-string result is still emitted from the f-string shell
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('');
+    });
+
+    it('integer and string keys cross-match (unlike Python)', async () => {
+      // In Python, D[0] and D["0"] access different keys.
+      // Our extractor normalizes both to the string "0", so they match.
+      const code = `from gt_flask import t, declare_static
+D = {0: "zero"}
+t(f"{declare_static(D['0'])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      // Matches despite key type mismatch
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('zero');
+    });
+
+    it('string key matches integer subscript (unlike Python)', async () => {
+      const code = `from gt_flask import t, declare_static
+D = {"0": "zero", "1": "one"}
+t(f"{declare_static(D[0])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('zero');
+    });
+
+    it('spread of non-list (dict) silently drops with no error', async () => {
+      // *base where base is a dict — collectListEntries only handles
+      // list_splat sources that resolve to lists. A dict is silently skipped.
+      const code = `from gt_flask import t, declare_static
+base = {"x": "y"}
+L = [*base, "c"]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // Only "c" is collected; the spread is silently dropped
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('c');
+    });
+
+    it('spread of non-list (tuple) silently drops with no error', async () => {
+      const code = `from gt_flask import t, declare_static
+base = ("a", "b")
+L = [*base, "c"]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // Only "c" is collected; tuple spread is silently dropped
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('c');
+    });
+
+    it('spread of undefined variable silently drops with no error', async () => {
+      const code = `from gt_flask import t, declare_static
+L = [*missing, "c"]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // Only "c" is collected; unresolvable spread is silently dropped
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('c');
+    });
+
+    it('attribute access on list reports "dictionary or list" in error', async () => {
+      // L.x on a list — the attribute handler looks for a dict key "x",
+      // which doesn't exist. Error message should mention both types.
+      const code = `from gt_flask import t, declare_static
+L = ["a", "b"]
+t(f"{declare_static(L.x)}")`;
+      const { errors } = await extractFromPythonSource(code, 'test.py');
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.join(' ')).toContain('dictionary or list');
+    });
+
+    it('list with non-string elements errors per element', async () => {
+      // Non-string elements (integer, None) each produce their own error
+      // while string elements still resolve successfully.
+      const code = `from gt_flask import t, declare_static
+L = ["ok", 42, None]
+t(f"{declare_static(L[k])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('ok');
+      expect(errors).toHaveLength(2);
+      expect(errors[0]).toContain(
+        'unsupported derive() argument type "integer"'
+      );
+      expect(errors[1]).toContain('unsupported derive() argument type "none"');
+    });
+
+    it('nested dynamic-dynamic list access returns all leaf values', async () => {
+      // L[i][j] where both indices are dynamic: first resolves all
+      // inner lists, then resolves all elements within each.
+      const code = `from gt_flask import t, declare_static
+L = [["a", "b"], ["c", "d"]]
+t(f"{declare_static(L[i][j])}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toHaveLength(0);
+      expect(results).toHaveLength(4);
+      const sources = results.map((r: ExtractionResult) => r.source).sort();
+      expect(sources).toEqual(['a', 'b', 'c', 'd']);
     });
   });
 });
