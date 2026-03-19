@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/python-extractor",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Python source code extraction for General Translation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

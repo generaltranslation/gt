@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.1.18
+
+### Patch Changes
+
+- [#1122](https://github.com/generaltranslation/gt/pull/1122) [`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CDN publishing for all file types
+
 ## 8.1.17
 
 ### Patch Changes
