@@ -439,120 +439,120 @@ describe('MemberExpression Edge Cases', () => {
   });
 });
 
-// ─── Category C2: Non-Resolvable Object Value Warnings ────────────────────────
+// ─── Category C2: Non-Resolvable Object Value Errors ──────────────────────────
 
-describe('Non-Resolvable Object Value Warnings', () => {
-  it('warns on array value in object (computed access)', () => {
-    const { node, warnings } = parseAndResolve(`
+describe('Non-Resolvable Object Value Errors', () => {
+  it('errors on array value in object (computed access)', () => {
+    const { node, errors } = parseAndResolve(`
       const LABELS = { 0: 'Bad', 1: 'OK', 2: 'Good', 3: ['yyoyoo'] };
       const score = 0;
       const __target__ = LABELS[score];
     `);
-    // The 3 string values resolve; the array value should produce a warning
+    // The 3 string values resolve; the array value should produce an error
     expect(nodeToStrings(node)).toEqual(['Bad', 'OK', 'Good']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns on array value in object (static access)', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on array value in object (static access)', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { items: ['a', 'b', 'c'] };
       const __target__ = O.items;
     `);
     expect(node).toBeNull();
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns on nested object value without further access', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on nested object value without further access', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'ok', b: { nested: 'value' } };
       const k = 'a';
       const __target__ = O[k];
     `);
     // 'ok' resolves, { nested: 'value' } does not
     expect(nodeToStrings(node)).toEqual(['ok']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns when all values are non-resolvable', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors when all values are non-resolvable', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: ['x'], b: ['y'] };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(node).toBeNull();
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('no warning when all values resolve', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('no error when all values resolve', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'x', b: 'y' };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(nodeToStrings(node)).toEqual(['x', 'y']);
-    expect(warnings.size).toBe(0);
+    expect(errors.length).toBe(0);
   });
 
-  it('resolves null value as string (no warning)', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('resolves null value as string (no error)', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'yes', b: null };
       const k = 'a';
       const __target__ = O[k];
     `);
     // null is resolved as the string "null"
     expect(nodeToStrings(node)).toEqual(['yes', 'null']);
-    expect(warnings.size).toBe(0);
+    expect(errors.length).toBe(0);
   });
 
-  it('warns on undefined value in object', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on undefined value in object', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'yes', b: undefined };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(nodeToStrings(node)).toEqual(['yes']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns on new expression value in object', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on new expression value in object', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'ok', b: new Date() };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns on arrow function value in object', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on arrow function value in object', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'ok', b: () => 'hello' };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns on unresolvable spread values', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on unresolvable spread values', () => {
+    const { node, errors } = parseAndResolve(`
       const base = { x: [1, 2] };
       const O = { ...base, a: 'ok' };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('warns on regex literal value in object', () => {
-    const { node, warnings } = parseAndResolve(`
+  it('errors on regex literal value in object', () => {
+    const { node, errors } = parseAndResolve(`
       const O = { a: 'ok', pattern: /hello/g };
       const k = 'a';
       const __target__ = O[k];
     `);
     expect(nodeToStrings(node)).toEqual(['ok']);
-    expect(warnings.size).toBeGreaterThan(0);
+    expect(errors.length).toBeGreaterThan(0);
   });
 });
 

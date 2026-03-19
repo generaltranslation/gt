@@ -677,7 +677,7 @@ export function parseStringExpression(
           if (resolved) {
             branches.push(resolved);
           } else if (entry.key !== null) {
-            warnings.add(
+            errors.push(
               warnDeriveUnresolvableValueSync(
                 objFile,
                 entry.key,
@@ -703,7 +703,7 @@ export function parseStringExpression(
             if (resolved) {
               branches.push(resolved);
             } else {
-              warnings.add(
+              errors.push(
                 warnDeriveUnresolvableValueSync(
                   objFile,
                   propName,
