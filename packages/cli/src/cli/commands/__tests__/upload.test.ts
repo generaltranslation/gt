@@ -60,6 +60,14 @@ function makeSettings(
     locales: ['es', 'fr'],
     projectId: 'test-project',
     apiKey: 'test-key',
+    files: {
+      resolvedPaths: {},
+      placeholderPaths: {},
+      transformPaths: {},
+      publishPaths: new Set<string>(),
+      unpublishPaths: new Set<string>(),
+      gtJson: {},
+    },
     ...overrides,
   } as Settings & UploadOptions;
 }
