@@ -63,7 +63,11 @@ export async function collectFiles(
         versionId: hashStringSync(JSON.stringify(Object.keys(fileData).sort())),
         locale: settings.defaultLocale,
       } satisfies FileToUpload);
-      publishMap.set(TEMPLATE_FILE_ID, shouldPublishGt(settings));
+      // Only add GT JSON to publishMap if there's an explicit publish config
+      const gtPublishValue = shouldPublishGt(settings);
+      if (gtPublishValue !== undefined) {
+        publishMap.set(TEMPLATE_FILE_ID, gtPublishValue);
+      }
     }
   }
   return { files, reactComponents, publishMap };
