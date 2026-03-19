@@ -197,7 +197,9 @@ export class BaseCLI {
         .description(
           'Save local edits for all configured files by sending diffs (no translation enqueued)'
         )
-    ).action(async (initOptions: SharedFlags) => {
+    )
+      .option('--publish', 'Publish translations to the CDN', false)
+      .action(async (initOptions: SharedFlags) => {
       displayHeader('Saving local edits...');
       const settings = await generateSettings(initOptions);
       await saveLocalEdits(settings);

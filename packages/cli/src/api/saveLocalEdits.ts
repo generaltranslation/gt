@@ -7,6 +7,7 @@ import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
+import { runPublishWorkflow } from '../workflows/publish.js';
 
 /**
  * Uploads current source files to obtain file references, then collects and sends
@@ -16,7 +17,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   if (!settings.files) return;
 
   // Collect current files from config
-  const { files } = await aggregateFiles(settings);
+  const { files, publishMap } = await aggregateFiles(settings);
   if (!files.length) return;
 
   // run branch query to get branch id
@@ -39,6 +40,11 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const spinner = logger.createSpinner('dots');
   spinner.start('Saving local edits...');
 
-  await collectAndSendUserEditDiffs(uploads, settings);
+  const hadDiffs = await collectAndSendUserEditDiffs(uploads, settings);
   spinner.stop(chalk.green('Local edits saved successfully'));
+
+  // Publish files to CDN if diffs were detected and publish config exists
+  if (hadDiffs) {
+    await runPublishWorkflow(files, publishMap, branchResult.currentBranch.id, settings);
+  }
 }

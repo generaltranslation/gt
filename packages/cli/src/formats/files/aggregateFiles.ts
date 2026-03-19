@@ -17,7 +17,7 @@ import {
   parseKeyedMetadata,
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
-import { shouldPublishFile } from '../../utils/resolvePublish.js';
+import { buildPublishMap } from '../../utils/resolvePublish.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -45,37 +45,19 @@ export async function aggregateFiles(
 ): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
   // Aggregate all files to translate
   const files: FileToUpload[] = [];
-  const publishMap = new Map<string, boolean>();
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
       settings.files.placeholderPaths.gt)
   ) {
-    return { files, publishMap };
+    return { files, publishMap: new Map<string, boolean>() };
   }
 
   const { resolvedPaths: filePaths } = settings.files;
   const skipValidation = settings.options?.skipFileValidation;
 
   // Build publish map upfront from resolved paths.
-  // Only include files that have an explicit publish config or when a global
-  // publish flag is defined. Files without any config are left out of the map
-  // so the publish endpoint is never called for them.
-  const hasGlobalPublish = settings.publish !== undefined;
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (filePaths[fileType]) {
-      for (const absolutePath of filePaths[fileType]) {
-        const hasExplicitConfig =
-          settings.files.publishPaths?.has(absolutePath) ||
-          settings.files.unpublishPaths?.has(absolutePath);
-        if (hasGlobalPublish || hasExplicitConfig) {
-          const relativePath = getRelative(absolutePath);
-          const fileId = hashStringSync(relativePath);
-          publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
-        }
-      }
-    }
-  }
+  const publishMap = buildPublishMap(filePaths, settings);
 
   // Process JSON files
   if (filePaths.json) {
