@@ -210,6 +210,403 @@ describe('Object Static Access', () => {
     `);
     expect(nodeToStrings(node)).toEqual(['x']);
   });
+
+  it('narrows to one value with string literal subscript', () => {
+    const { node } = parseAndResolve(`
+      const O = { good: 'yes', bad: 'no' };
+      const __target__ = O['good'];
+    `);
+    expect(nodeToStrings(node)).toEqual(['yes']);
+  });
+
+  it('narrows to one value with numeric literal subscript', () => {
+    const { node } = parseAndResolve(`
+      const O = { 0: 'zero', 1: 'one', 2: 'two' };
+      const __target__ = O[0];
+    `);
+    expect(nodeToStrings(node)).toEqual(['zero']);
+  });
+
+  it('falls back to all values when object has computed keys', () => {
+    const { node } = parseAndResolve(`
+      const g = 'good';
+      const O = { [g]: 'yes', [g + '2']: 'no' };
+      const __target__ = O['good'];
+    `);
+    // Can't resolve computed keys, so falls back to extracting all values
+    expect(nodeToStrings(node)).toEqual(['yes', 'no']);
+  });
+
+  it('narrows when all keys are literal despite static subscript', () => {
+    const { node } = parseAndResolve(`
+      const O = { good: 'yes', bad: 'no' };
+      const __target__ = O['good'];
+    `);
+    // All keys are literals, so we can narrow
+    expect(nodeToStrings(node)).toEqual(['yes']);
+  });
+});
+
+// ─── Category 4b: Array Access ────────────────────────────────────────────────
+
+describe('Array Access', () => {
+  it('extracts all values from array[key]', () => {
+    const { node } = parseAndResolve(`
+      const A = ['yes', 'no', 'maybe'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['yes', 'no', 'maybe']);
+  });
+
+  it('narrows to one value with numeric literal subscript on array', () => {
+    const { node } = parseAndResolve(`
+      const A = ['zero', 'one', 'two'];
+      const __target__ = A[0];
+    `);
+    expect(nodeToStrings(node)).toEqual(['zero']);
+  });
+
+  it('handles array with conditional values', () => {
+    const { node } = parseAndResolve(`
+      const cond = true;
+      const A = [cond ? 'a' : 'b', 'c'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('handles array in template literal', () => {
+    const { node } = parseAndResolve(`
+      const A = ['Bad', 'Good'];
+      const s = 0;
+      const __target__ = \`Score: \${A[s]}\`;
+    `);
+    expect(nodeToStrings(node)).toEqual(['Score: Bad', 'Score: Good']);
+  });
+
+  it('warns on non-const array', () => {
+    const { node, warnings } = parseAndResolve(`
+      let A = ['x'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(node).toBeNull();
+    expect(warnings.size).toBeGreaterThan(0);
+  });
+
+  it('returns null for empty array', () => {
+    const { node } = parseAndResolve(`
+      const A: string[] = [];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(node).toBeNull();
+  });
+
+  it('handles array as const', () => {
+    const { node } = parseAndResolve(`
+      const A = ['x', 'y'] as const;
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('errors on unresolvable array element', () => {
+    const { node, errors } = parseAndResolve(`
+      const A = ['ok', ['nested']];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('resolves array spread', () => {
+    const { node } = parseAndResolve(`
+      const base = ['a', 'b'];
+      const A = [...base, 'c'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('resolves multiple array spreads', () => {
+    const { node } = parseAndResolve(`
+      const a = ['x'];
+      const b = ['y'];
+      const A = [...a, ...b, 'z'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('skips holes in sparse arrays', () => {
+    const { node } = parseAndResolve(`
+      const A = ['a', , 'c'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a', 'c']);
+  });
+
+  it('resolves function call element in array', () => {
+    const { node } = parseAndResolve(`
+      function getVal() { return 'resolved'; }
+      const A = [getVal(), 'static'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['resolved', 'static']);
+  });
+
+  it('resolves object nested in array with static access', () => {
+    const { node } = parseAndResolve(`
+      const A = [{ x: 'hi' }];
+      const __target__ = A[0].x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['hi']);
+  });
+
+  it('resolves object nested in array with dynamic access', () => {
+    const { node } = parseAndResolve(`
+      const A = [{ x: 'hi' }, { x: 'bye' }];
+      const k = 0;
+      const __target__ = A[k].x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['hi', 'bye']);
+  });
+
+  it('resolves array nested in object', () => {
+    const { node } = parseAndResolve(`
+      const O = { items: ['a', 'b'] };
+      const k = 0;
+      const __target__ = O.items[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a', 'b']);
+  });
+
+  it('resolves array nested in object with static subscript', () => {
+    const { node } = parseAndResolve(`
+      const O = { items: ['a', 'b', 'c'] };
+      const __target__ = O.items[1];
+    `);
+    expect(nodeToStrings(node)).toEqual(['b']);
+  });
+});
+
+// ─── Category 4c: Array/Object Edge Cases ─────────────────────────────────────
+
+describe('Array/Object Edge Cases', () => {
+  it('skips missing key in array-of-objects access', () => {
+    const { node } = parseAndResolve(`
+      const A = [{ x: 'hi' }, { y: 'bye' }];
+      const k = 0;
+      const __target__ = A[k].x;
+    `);
+    // Second element has no 'x' — should only get 'hi'
+    expect(nodeToStrings(node)).toEqual(['hi']);
+  });
+
+  it('resolves nested spread (spread of spread)', () => {
+    const { node } = parseAndResolve(`
+      const a = ['x'];
+      const b = [...a, 'y'];
+      const C = [...b, 'z'];
+      const k = 0;
+      const __target__ = C[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('handles as const on array elements', () => {
+    const { node } = parseAndResolve(`
+      const A = ['a' as const, 'b' as const];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a', 'b']);
+  });
+
+  it('handles duplicate keys in object — collects all', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: 'first', a: 'second' };
+      const __target__ = O.a;
+    `);
+    // Collects all matching keys (can't statically determine which "wins")
+    expect(nodeToStrings(node)).toEqual(['first', 'second']);
+  });
+
+  it('resolves deeply nested mixed array/object — 4 levels', () => {
+    const { node } = parseAndResolve(`
+      const D = { a: [{ b: ['deep'] }] };
+      const __target__ = D.a[0].b[0];
+    `);
+    expect(nodeToStrings(node)).toEqual(['deep']);
+  });
+
+  it('narrows conditional element with static array subscript', () => {
+    const { node } = parseAndResolve(`
+      const cond = true;
+      const A = [cond ? 'a' : 'b', 'c'];
+      const __target__ = A[0];
+    `);
+    // Static subscript narrows to index 0, which is a conditional
+    expect(nodeToStrings(node)).toEqual(['a', 'b']);
+  });
+
+  it('handles empty spread source', () => {
+    const { node } = parseAndResolve(`
+      const empty: string[] = [];
+      const A = [...empty, 'only'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['only']);
+  });
+
+  it('rejects let spread source in const array', () => {
+    const { node } = parseAndResolve(`
+      let base = ['mutable'];
+      const A = [...base, 'ok'];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    // let spread source should be skipped; only 'ok' collected
+    expect(nodeToStrings(node)).toEqual(['ok']);
+  });
+
+  it('handles object spread with array value override', () => {
+    const { node } = parseAndResolve(`
+      const base = { items: ['a'] };
+      const O = { ...base, items: ['b', 'c'] };
+      const k = 0;
+      const __target__ = O.items[k];
+    `);
+    // Both spread and own 'items' collected, all array elements extracted
+    expect(nodeToStrings(node)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('handles satisfies operator on array', () => {
+    const { node } = parseAndResolve(`
+      const A = ['x', 'y'] satisfies string[];
+      const k = 0;
+      const __target__ = A[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('handles satisfies operator on object', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: 'x', b: 'y' } satisfies Record<string, string>;
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('scans all values when object has computed keys with static subscript', () => {
+    const { node } = parseAndResolve(`
+      const a = 'good';
+      const b = 'good' as string;
+      const O = { [a]: 'yes', [b]: 'no' };
+      const __target__ = O['good'];
+    `);
+    // Computed keys can't be resolved, so fallback to extracting all values
+    expect(nodeToStrings(node)).toEqual(['yes', 'no']);
+  });
+});
+
+// ─── Category 4d: Adversarial Edge Cases ──────────────────────────────────────
+
+describe('Adversarial Edge Cases', () => {
+  it('resolves shorthand property', () => {
+    const { node } = parseAndResolve(`
+      const x = 'val';
+      const O = { x };
+      const __target__ = O.x;
+    `);
+    expect(nodeToStrings(node)).toEqual(['val']);
+  });
+
+  it('matches numeric key with string subscript', () => {
+    const { node } = parseAndResolve(`
+      const O = { 0: 'a', 1: 'b' };
+      const __target__ = O['0'];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a']);
+  });
+
+  it('matches string key with numeric subscript', () => {
+    const { node } = parseAndResolve(`
+      const O = { '0': 'a', '1': 'b' };
+      const __target__ = O[0];
+    `);
+    expect(nodeToStrings(node)).toEqual(['a']);
+  });
+
+  it('errors on optional chaining', () => {
+    const { node, errors } = parseAndResolve(`
+      const O = { a: 'x' };
+      const __target__ = O?.a;
+    `);
+    expect(node).toBeNull();
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('errors on logical expression value', () => {
+    const { node, errors } = parseAndResolve(`
+      const x = undefined;
+      const O = { a: x || 'default', b: 'ok' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['ok']);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('unwraps non-null assertion on value', () => {
+    const { node } = parseAndResolve(`
+      const x = 'hello';
+      const O = { a: x!, b: 'ok' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['hello', 'ok']);
+  });
+
+  it('resolves conditional object expression', () => {
+    const { node } = parseAndResolve(`
+      const cond = true;
+      const O = cond ? { a: 'x' } : { a: 'y' };
+      const __target__ = O.a;
+    `);
+    expect(nodeToStrings(node)).toEqual(['x', 'y']);
+  });
+
+  it('returns null for Object.freeze wrapped object', () => {
+    const { node } = parseAndResolve(`
+      const O = Object.freeze({ a: 'x' });
+      const __target__ = O.a;
+    `);
+    expect(node).toBeNull();
+  });
+
+  // Angle bracket assertions (<string>x) are invalid in .tsx files (conflicts with JSX).
+  // No test needed — the `as` syntax covers the same unwrap path.
+
+  it('falls back to all values for negative numeric key', () => {
+    const { node } = parseAndResolve(`
+      const O = { a: 'pos', [-1]: 'neg' };
+      const k = 'a';
+      const __target__ = O[k];
+    `);
+    expect(nodeToStrings(node)).toEqual(['pos', 'neg']);
+  });
 });
 
 // ─── Category 5: Object Error Cases ──────────────────────────────────────────
@@ -371,13 +768,13 @@ describe('Const Enforcement in Non-Derive Contexts', () => {
 // ─── Category C: MemberExpression Edge Cases ──────────────────────────────────
 
 describe('MemberExpression Edge Cases', () => {
-  it('returns null for array access (not object)', () => {
+  it('resolves array access with static subscript', () => {
     const { node } = parseAndResolve(`
       const arr = ['a', 'b'];
       const __target__ = arr[0];
     `);
-    // ArrayExpression is not ObjectExpression
-    expect(node).toBeNull();
+    // ArrayExpression is now supported — narrows to index 0
+    expect(nodeToStrings(node)).toEqual(['a']);
   });
 
   it('returns null for nested object value with computed access (no string leaf)', () => {
@@ -391,20 +788,13 @@ describe('MemberExpression Edge Cases', () => {
     expect(node).toBeNull();
   });
 
-  it('returns null for literal numeric property access', () => {
+  it('narrows for literal numeric property access', () => {
     const { node } = parseAndResolve(`
       const O = { 0: 'x', 1: 'y' };
       const __target__ = O[0];
     `);
-    // O[0] where 0 is a NumericLiteral — this is a computed MemberExpression
-    // but the subscript is a literal, not an identifier scope lookup.
-    // The handler treats it as computed (extracts ALL values).
-    // If it resolves, it would give all values. Let's document.
-    if (node) {
-      expect(nodeToStrings(node)).toEqual(['x', 'y']);
-    } else {
-      expect(node).toBeNull();
-    }
+    // O[0] where 0 is a NumericLiteral — narrowed to key '0'
+    expect(nodeToStrings(node)).toEqual(['x']);
   });
 
   it('skips getter properties in computed access', () => {
@@ -583,16 +973,13 @@ describe('TSAsExpression Edge Cases', () => {
     expect(nodeToStrings(node)).toEqual(['x']);
   });
 
-  it('returns null for nested as expressions (known limitation)', () => {
+  it('resolves nested as expressions', () => {
     const { node } = parseAndResolve(`
       const X = ('hello' as string) as const;
       const __target__ = X;
     `);
-    // Outer TSAsExpression unwraps to ParenthesizedExpression containing
-    // another TSAsExpression. The inner TSAsExpression is not unwrapped
-    // by parseStringExpression (only the Identifier handler unwraps it).
-    // This is a known limitation — nested `as` casts are not supported.
-    expect(node).toBeNull();
+    // Type annotations are now unwrapped at the top of parseStringExpression
+    expect(nodeToStrings(node)).toEqual(['hello']);
   });
 });
 

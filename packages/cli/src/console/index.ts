@@ -288,19 +288,6 @@ export const warnDeriveNonConstVariableSync = (
     location
   );
 
-export const warnDeriveChainedObjectAccessSync = (
-  file: string,
-  code: string,
-  location?: string
-): string =>
-  withLocation(
-    file,
-    withDeriveFunctionError(
-      `Chained object access ${colorizeFunctionName(formatCodeClamp(code))} is not supported. Only single-depth object access (e.g., obj[key]) is allowed in derive().`
-    ),
-    location
-  );
-
 export const warnDeriveFunctionNoResultsSync = (
   file: string,
   functionName: string,
@@ -323,6 +310,19 @@ export const warnDeriveUnresolvableValueSync = (
     file,
     withDeriveFunctionError(
       `Object property ${colorizeFunctionName(formatCodeClamp(key))} could not be resolved to a static string value. Only string literals, template literals, conditionals, and function calls returning strings are supported.`
+    ),
+    location
+  );
+
+export const warnDeriveOptionalChainingSync = (
+  file: string,
+  code: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Optional chaining (${colorizeFunctionName(formatCodeClamp(code))}) is not supported in derive(). Optional chaining implies the value could be undefined, which cannot be resolved statically. Use a non-optional access instead.`
     ),
     location
   );

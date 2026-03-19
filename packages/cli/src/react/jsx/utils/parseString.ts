@@ -12,6 +12,7 @@ import {
   warnInvalidDeclareVarNameSync,
   warnDeriveNonConstVariableSync,
   warnDeriveUnresolvableValueSync,
+  warnDeriveOptionalChainingSync,
 } from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -35,10 +36,27 @@ const resolveImportPathCache = new Map<string, string | null>();
 const processFunctionCache = new Map<string, StringNode | null>();
 
 /**
+ * Cache for resolved object nodes to avoid re-parsing the same files.
+ */
+const resolveObjectNodeCache = new Map<string, ResolvedObject[]>();
+
+/**
  * Guard against infinite recursion when resolving identifier chains.
  * Tracks AST nodes currently being resolved to detect circular references.
  */
 const resolvingIdentifiers = new Set<t.Node>();
+
+/**
+ * Unwraps TypeScript type annotations to get the underlying expression.
+ * Handles: as, satisfies, non-null assertion (!), and angle-bracket assertions.
+ */
+function unwrapTypeAnnotation(node: t.Expression): t.Expression {
+  if (t.isTSAsExpression(node)) return node.expression;
+  if (t.isTSSatisfiesExpression(node)) return node.expression;
+  if (t.isTSNonNullExpression(node)) return node.expression;
+  if (t.isTSTypeAssertion(node)) return node.expression;
+  return node;
+}
 
 // ===== Object Property Collection & Nesting Helpers ===== //
 
@@ -48,7 +66,7 @@ interface ObjectEntry {
 }
 
 interface ResolvedObject {
-  objExpr: t.ObjectExpression;
+  objExpr: t.ObjectExpression | t.ArrayExpression;
   tPath: NodePath;
   file: string;
 }
@@ -68,13 +86,14 @@ function collectObjectProperties(
 
   for (const prop of objExpr.properties) {
     if (t.isObjectProperty(prop)) {
-      const key = t.isIdentifier(prop.key)
-        ? prop.key.name
-        : t.isStringLiteral(prop.key)
-          ? prop.key.value
-          : t.isNumericLiteral(prop.key)
-            ? String(prop.key.value)
-            : null;
+      const key =
+        !prop.computed && t.isIdentifier(prop.key)
+          ? prop.key.name
+          : t.isStringLiteral(prop.key)
+            ? prop.key.value
+            : t.isNumericLiteral(prop.key)
+              ? String(prop.key.value)
+              : null;
       if (t.isExpression(prop.value)) {
         entries.push({ key, value: prop.value });
       }
@@ -94,9 +113,7 @@ function collectObjectProperties(
           continue;
         const spreadInit = spreadBinding.path.node.init;
         if (!spreadInit) continue;
-        const spreadObj = t.isTSAsExpression(spreadInit)
-          ? spreadInit.expression
-          : spreadInit;
+        const spreadObj = unwrapTypeAnnotation(spreadInit);
         if (!t.isObjectExpression(spreadObj)) continue;
         entries.push(
           ...collectObjectProperties(
@@ -141,15 +158,22 @@ function collectObjectProperties(
           warnings
         );
         for (const crossObj of crossFileObjects) {
-          entries.push(
-            ...collectObjectProperties(
-              crossObj.objExpr,
-              crossObj.tPath,
-              crossObj.file,
-              parsingOptions,
-              warnings
-            )
-          );
+          const crossEntries = t.isArrayExpression(crossObj.objExpr)
+            ? collectArrayElements(
+                crossObj.objExpr,
+                crossObj.tPath,
+                crossObj.file,
+                parsingOptions,
+                warnings
+              )
+            : collectObjectProperties(
+                crossObj.objExpr,
+                crossObj.tPath,
+                crossObj.file,
+                parsingOptions,
+                warnings
+              );
+          entries.push(...crossEntries);
         }
       }
     }
@@ -160,7 +184,114 @@ function collectObjectProperties(
 }
 
 /**
- * Resolves an expression to ObjectExpression AST node(s).
+ * Collects elements from an ArrayExpression as ObjectEntry[] with index as key.
+ * Handles spread elements by resolving the source array.
+ */
+function collectArrayElements(
+  arrExpr: t.ArrayExpression,
+  tPath: NodePath,
+  file: string,
+  parsingOptions: ParsingConfigOptions,
+  warnings: Set<string>
+): ObjectEntry[] {
+  const entries: ObjectEntry[] = [];
+  let index = 0;
+  for (const el of arrExpr.elements) {
+    if (!el) {
+      index++;
+      continue;
+    } // sparse hole
+    if (t.isSpreadElement(el)) {
+      if (!t.isIdentifier(el.argument)) {
+        continue;
+      }
+      const spreadBinding = tPath.scope.getBinding(el.argument.name);
+      if (!spreadBinding) continue;
+
+      // Same-file spread
+      if (spreadBinding.path.isVariableDeclarator()) {
+        const spreadDecl = spreadBinding.path.parentPath;
+        if (
+          spreadDecl?.isVariableDeclaration() &&
+          spreadDecl.node.kind !== 'const'
+        )
+          continue;
+        const spreadInit = spreadBinding.path.node.init;
+        if (!spreadInit) continue;
+        const spreadUnwrapped = unwrapTypeAnnotation(spreadInit);
+        if (t.isArrayExpression(spreadUnwrapped)) {
+          const spreadEntries = collectArrayElements(
+            spreadUnwrapped,
+            spreadBinding.path,
+            file,
+            parsingOptions,
+            warnings
+          );
+          for (const e of spreadEntries) {
+            entries.push({ key: String(index++), value: e.value });
+          }
+          continue;
+        }
+      }
+      // Cross-file spread
+      else if (
+        spreadBinding.path.isImportSpecifier() ||
+        spreadBinding.path.isImportDefaultSpecifier()
+      ) {
+        const programPath = tPath.scope.getProgramParent().path;
+        const importMap = buildImportMap(programPath);
+        const importPath = importMap.get(el.argument.name);
+        if (!importPath) continue;
+
+        let originalName = el.argument.name;
+        if (spreadBinding.path.isImportSpecifier()) {
+          const imported = spreadBinding.path.node.imported;
+          originalName = t.isIdentifier(imported)
+            ? imported.name
+            : imported.value;
+        }
+
+        const resolvedFilePath = resolveImportPath(
+          file,
+          importPath,
+          parsingOptions,
+          resolveImportPathCache
+        );
+        if (!resolvedFilePath) continue;
+
+        const crossFileNodes = resolveObjectNodesInFile(
+          resolvedFilePath,
+          originalName,
+          parsingOptions,
+          warnings
+        );
+        for (const crossNode of crossFileNodes) {
+          if (t.isArrayExpression(crossNode.objExpr)) {
+            const spreadEntries = collectArrayElements(
+              crossNode.objExpr,
+              crossNode.tPath,
+              crossNode.file,
+              parsingOptions,
+              warnings
+            );
+            for (const e of spreadEntries) {
+              entries.push({ key: String(index++), value: e.value });
+            }
+          }
+        }
+      }
+      continue;
+    }
+    if (t.isExpression(el)) {
+      entries.push({ key: String(index), value: unwrapTypeAnnotation(el) });
+    }
+    index++;
+  }
+  return entries;
+}
+
+/**
+ * Resolves an expression to ObjectExpression or ArrayExpression AST node(s).
  * Handles Identifier (local + imported) and MemberExpression (nested access chains).
  */
 function resolveToObjectNodes(
@@ -194,9 +325,36 @@ function resolveToObjectNodes(
       }
       const init = binding.path.node.init;
       if (!init) return [];
-      const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
-      if (t.isObjectExpression(unwrapped)) {
+      const unwrapped = unwrapTypeAnnotation(init);
+      if (t.isObjectExpression(unwrapped) || t.isArrayExpression(unwrapped)) {
         return [{ objExpr: unwrapped, tPath: binding.path, file }];
+      }
+      // Handle conditional: cond ? { ... } : { ... }
+      if (t.isConditionalExpression(unwrapped)) {
+        const results: ResolvedObject[] = [];
+        const consequent = unwrapTypeAnnotation(unwrapped.consequent);
+        const alternate = unwrapTypeAnnotation(unwrapped.alternate);
+        if (
+          t.isObjectExpression(consequent) ||
+          t.isArrayExpression(consequent)
+        ) {
+          results.push({
+            objExpr: consequent,
+            tPath: binding.path,
+            file,
+          });
+        }
+        if (
+          t.isObjectExpression(alternate) ||
+          t.isArrayExpression(alternate)
+        ) {
+          results.push({
+            objExpr: alternate,
+            tPath: binding.path,
+            file,
+          });
+        }
+        return results;
       }
       return [];
     }
@@ -254,13 +412,21 @@ function resolveToObjectNodes(
     const results: ResolvedObject[] = [];
 
     for (const parent of parentObjects) {
-      const entries = collectObjectProperties(
-        parent.objExpr,
-        parent.tPath,
-        parent.file,
-        parsingOptions,
-        warnings
-      );
+      const entries = t.isArrayExpression(parent.objExpr)
+        ? collectArrayElements(
+            parent.objExpr,
+            parent.tPath,
+            parent.file,
+            parsingOptions,
+            warnings
+          )
+        : collectObjectProperties(
+            parent.objExpr,
+            parent.tPath,
+            parent.file,
+            parsingOptions,
+            warnings
+          );
 
       // Determine if this is a static access (known key)
       let staticKey: string | null = null;
@@ -273,29 +439,30 @@ function resolveToObjectNodes(
       }
 
       if (staticKey !== null) {
-        // Static: narrow to one specific key
+        // Static: narrow to matching key(s) — don't break, spreads may duplicate keys
         for (const entry of entries) {
           if (entry.key === staticKey) {
-            const unwrapped = t.isTSAsExpression(entry.value)
-              ? entry.value.expression
-              : entry.value;
-            if (t.isObjectExpression(unwrapped)) {
+            const unwrapped = unwrapTypeAnnotation(entry.value);
+            if (
+              t.isObjectExpression(unwrapped) ||
+              t.isArrayExpression(unwrapped)
+            ) {
               results.push({
                 objExpr: unwrapped,
                 tPath: parent.tPath,
                 file: parent.file,
               });
             }
-            break;
           }
         }
       } else {
-        // Dynamic: collect ALL entries whose values are ObjectExpressions
+        // Dynamic: collect ALL entries whose values are ObjectExpressions or ArrayExpressions
         for (const entry of entries) {
-          const unwrapped = t.isTSAsExpression(entry.value)
-            ? entry.value.expression
-            : entry.value;
-          if (t.isObjectExpression(unwrapped)) {
+          const unwrapped = unwrapTypeAnnotation(entry.value);
+          if (
+            t.isObjectExpression(unwrapped) ||
+            t.isArrayExpression(unwrapped)
+          ) {
             results.push({
               objExpr: unwrapped,
               tPath: parent.tPath,
@@ -323,6 +490,11 @@ function resolveObjectNodesInFile(
   parsingOptions: ParsingConfigOptions,
   warnings: Set<string>
 ): ResolvedObject[] {
+  const cacheKey = `${filePath}::${name}`;
+  if (resolveObjectNodeCache.has(cacheKey)) {
+    return resolveObjectNodeCache.get(cacheKey)!;
+  }
+
   try {
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
@@ -347,8 +519,11 @@ function resolveObjectNodesInFile(
             declaration.node.kind !== 'const'
           )
             return;
-          const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
-          if (t.isObjectExpression(unwrapped)) {
+          const unwrapped = unwrapTypeAnnotation(init);
+          if (
+            t.isObjectExpression(unwrapped) ||
+            t.isArrayExpression(unwrapped)
+          ) {
             results.push({
               objExpr: unwrapped,
               tPath: path,
@@ -431,8 +606,10 @@ function resolveObjectNodesInFile(
       },
     });
 
+    resolveObjectNodeCache.set(cacheKey, results);
     return results;
   } catch {
+    resolveObjectNodeCache.set(cacheKey, []);
     return [];
   }
 }
@@ -460,6 +637,23 @@ export function parseStringExpression(
   warnings: Set<string>,
   errors: string[]
 ): StringNode | null {
+  // Unwrap TypeScript type annotations (as, satisfies, !, <Type>)
+  if (
+    t.isTSAsExpression(node) ||
+    t.isTSSatisfiesExpression(node) ||
+    t.isTSNonNullExpression(node) ||
+    t.isTSTypeAssertion(node)
+  ) {
+    return parseStringExpression(
+      (node as t.TSAsExpression).expression,
+      tPath,
+      file,
+      parsingOptions,
+      warnings,
+      errors
+    );
+  }
+
   // Handle string literals
   if (t.isStringLiteral(node)) {
     return { type: 'text', text: node.value };
@@ -615,7 +809,7 @@ export function parseStringExpression(
       }
 
       // Unwrap TSAsExpression (for `as const`)
-      const unwrapped = t.isTSAsExpression(init) ? init.expression : init;
+      const unwrapped = unwrapTypeAnnotation(init);
       if (t.isExpression(unwrapped)) {
         // Recursively resolve the initializer with recursion guard
         resolvingIdentifiers.add(init);
@@ -638,6 +832,18 @@ export function parseStringExpression(
     return null;
   }
 
+  // Handle optional chaining — not supported, emit error
+  if (t.isOptionalMemberExpression(node)) {
+    errors.push(
+      warnDeriveOptionalChainingSync(
+        file,
+        generate(node).code,
+        `${node.loc?.start?.line}:${node.loc?.start?.column}`
+      )
+    );
+    return null;
+  }
+
   // Handle member expressions: obj[key], obj.prop, and nested obj.a.b / obj[a][b]
   if (t.isMemberExpression(node)) {
     if (!t.isExpression(node.object)) return null;
@@ -655,41 +861,37 @@ export function parseStringExpression(
     // Apply the final access to each resolved object
     const branches: StringNode[] = [];
     for (const { objExpr, tPath: objPath, file: objFile } of objectNodes) {
-      const entries = collectObjectProperties(
-        objExpr,
-        objPath,
-        objFile,
-        parsingOptions,
-        warnings
-      );
-
-      if (node.computed) {
-        // COMPUTED: extract ALL values
-        for (const entry of entries) {
-          const resolved = parseStringExpression(
-            entry.value,
+      const entries = t.isArrayExpression(objExpr)
+        ? collectArrayElements(objExpr, objPath, objFile, parsingOptions, warnings)
+        : collectObjectProperties(
+            objExpr,
             objPath,
             objFile,
             parsingOptions,
-            warnings,
-            errors
+            warnings
           );
-          if (resolved) {
-            branches.push(resolved);
-          } else if (entry.key !== null) {
-            errors.push(
-              warnDeriveUnresolvableValueSync(
-                objFile,
-                entry.key,
-                `${entry.value.loc?.start?.line}:${entry.value.loc?.start?.column}`
-              )
-            );
-          }
-        }
-      } else {
+
+      // Check for static literal subscripts: obj['key'] or obj[0]
+      let staticLiteralKey: string | null = null;
+      if (node.computed && t.isStringLiteral(node.property)) {
+        staticLiteralKey = node.property.value;
+      } else if (node.computed && t.isNumericLiteral(node.property)) {
+        staticLiteralKey = String(node.property.value);
+      }
+
+      // Determine the access key (if statically known)
+      const propName =
+        staticLiteralKey ??
+        (!node.computed && t.isIdentifier(node.property)
+          ? node.property.name
+          : null);
+
+      // Check if we can narrow: need a known access key AND all object keys must be resolvable
+      const hasUnresolvableKeys = entries.some((e) => e.key === null);
+      const canNarrow = propName !== null && !hasUnresolvableKeys;
+
+      if (canNarrow) {
         // STATIC: extract ONE specific property
-        if (!t.isIdentifier(node.property)) continue;
-        const propName = node.property.name;
         for (const entry of entries) {
           if (entry.key === propName) {
             const resolved = parseStringExpression(
@@ -711,7 +913,30 @@ export function parseStringExpression(
                 )
               );
             }
-            break; // static access → only one match per object
+            // Don't break — spreads may introduce duplicate keys
+          }
+        }
+      } else {
+        // DYNAMIC: extract ALL values (can't determine which key matches)
+        for (const entry of entries) {
+          const resolved = parseStringExpression(
+            entry.value,
+            objPath,
+            objFile,
+            parsingOptions,
+            warnings,
+            errors
+          );
+          if (resolved) {
+            branches.push(resolved);
+          } else if (entry.key !== null) {
+            errors.push(
+              warnDeriveUnresolvableValueSync(
+                objFile,
+                entry.key,
+                `${entry.value.loc?.start?.line}:${entry.value.loc?.start?.column}`
+              )
+            );
           }
         }
       }
@@ -1276,14 +1501,12 @@ function resolveFunctionInFile(
               }
             }
           }
-          // Handle object expressions (and `as const`)
+          // Handle object expressions (and `as const` / `satisfies`)
           else if (
             t.isObjectExpression(init) ||
-            (t.isTSAsExpression(init) && t.isObjectExpression(init.expression))
+            t.isObjectExpression(unwrapTypeAnnotation(init))
           ) {
-            const objExpr = t.isTSAsExpression(init)
-              ? (init.expression as t.ObjectExpression)
-              : init;
+            const objExpr = unwrapTypeAnnotation(init) as t.ObjectExpression;
             const branches: StringNode[] = [];
             for (const prop of objExpr.properties) {
               if (!t.isObjectProperty(prop) || !t.isExpression(prop.value))
