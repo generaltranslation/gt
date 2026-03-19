@@ -259,10 +259,7 @@ async function resolveDeclareStaticArg(
   ctx: ParseContext
 ): Promise<StringNode | null> {
   const arg = getFirstPositionalArg(callNode);
-  if (!arg) {
-    ctx.errors.push(
       `${locationStr(callNode)}: derive() / declare_static() requires an argument`
-    );
     return null;
   }
 
