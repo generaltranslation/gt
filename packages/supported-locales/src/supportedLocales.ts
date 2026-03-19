@@ -67,12 +67,14 @@ const supportedLocales = {
     'fr-SN', // Senegal
   ],
   gu: ['gu'], // Gujarati
+  ha: ['ha'], // Hausa
   hi: ['hi'], // Hindi
   he: ['he'], // Hebrew
   hr: ['hr'], // Croatian
   hu: ['hu'], // Hungarian
   hy: ['hy'], // Armenian
   id: ['id'], // Indonesian
+  ig: ['ig'], // Igbo
   is: ['is'], // Icelandic
   it: [
     // Italian
@@ -146,6 +148,7 @@ const supportedLocales = {
   ur: ['ur'], // Urdu
   uz: ['uz'], // Uzbek
   vi: ['vi'], // Vietnamese
+  yo: ['yo'], // Yoruba
   zh: [
     // Chinese
     'zh',
