@@ -209,7 +209,7 @@ export type Settings = {
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
-    gtJson?: {
+    gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
       includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
     };

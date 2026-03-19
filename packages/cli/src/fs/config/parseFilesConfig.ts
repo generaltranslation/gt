@@ -86,7 +86,7 @@ export function resolveFiles(
   transformPaths: TransformFiles;
   publishPaths: Set<string>;
   unpublishPaths: Set<string>;
-  gtJson?: {
+  gtJson: {
     publish?: boolean;
     includeSourceCodeContext?: boolean;
   };
@@ -150,14 +150,10 @@ export function resolveFiles(
     transformPaths: transformPaths,
     publishPaths,
     unpublishPaths,
-    gtJson:
-      files.gt?.publish !== undefined ||
-      files.gt?.includeSourceCodeContext !== undefined
-        ? {
-            publish: files.gt?.publish,
-            includeSourceCodeContext: files.gt?.includeSourceCodeContext,
-          }
-        : undefined,
+    gtJson: {
+      publish: files.gt?.publish,
+      includeSourceCodeContext: files.gt?.includeSourceCodeContext,
+    },
   };
 }
 

@@ -192,6 +192,7 @@ export async function generateSettings(
         transformPaths: {},
         publishPaths: new Set<string>(),
         unpublishPaths: new Set<string>(),
+        gtJson: {},
       };
 
   mergedOptions.options = {

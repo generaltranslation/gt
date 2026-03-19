@@ -22,7 +22,7 @@ export function shouldPublishFile(
 export function hasPublishConfig(settings: Settings): boolean {
   return (
     settings.publish ||
-    settings.files.gtJson?.publish !== undefined ||
+    settings.files.gtJson.publish !== undefined ||
     (settings.files.publishPaths?.size ?? 0) > 0 ||
     (settings.files.unpublishPaths?.size ?? 0) > 0
   );
@@ -33,7 +33,7 @@ export function hasPublishConfig(settings: Settings): boolean {
  * Uses the gt-specific publish flag if set, otherwise falls back to global.
  */
 export function shouldPublishGt(settings: Settings): boolean {
-  if (settings.files.gtJson?.publish === false) return false;
-  if (settings.files.gtJson?.publish === true) return true;
+  if (settings.files.gtJson.publish === false) return false;
+  if (settings.files.gtJson.publish === true) return true;
   return settings.publish;
 }
