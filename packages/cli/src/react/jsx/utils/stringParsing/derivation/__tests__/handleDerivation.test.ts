@@ -215,28 +215,19 @@ describe('handleDerivation', () => {
     });
 
     it('should inline static concat and assign {n} to dynamic parts', () => {
-      const { strings, errors } = runTaggedTemplate(
-        't`A${"B" + name}C`',
-        true
-      );
+      const { strings, errors } = runTaggedTemplate('t`A${"B" + name}C`', true);
       expect(strings).toEqual(['AB{0}C']);
       expect(errors).toHaveLength(0);
     });
 
     it('should handle nested template with static + dynamic concat', () => {
-      const { strings, errors } = runTaggedTemplate(
-        't`X${name + "Y"}Z`',
-        true
-      );
+      const { strings, errors } = runTaggedTemplate('t`X${name + "Y"}Z`', true);
       expect(strings).toEqual(['X{0}YZ']);
       expect(errors).toHaveLength(0);
     });
 
     it('should handle multiple dynamic expressions with correct indices', () => {
-      const { strings, errors } = runTaggedTemplate(
-        't`${a}${b}${c}`',
-        true
-      );
+      const { strings, errors } = runTaggedTemplate('t`${a}${b}${c}`', true);
       expect(strings).toEqual(['{0}{1}{2}']);
       expect(errors).toHaveLength(0);
     });
