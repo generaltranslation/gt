@@ -6,5 +6,6 @@ enforceBrowser(BROWSER_ENVIRONMENT_ERROR);
 
 export * from './i18n-context/setup/index';
 export * from './i18n-context/functions/locale-operations';
+export * from './i18n-context/functions/versionId';
 export { t } from './i18n-context/functions/translation/t';
 export { LocaleSelector } from './i18n-context/ui/LocaleSelector';

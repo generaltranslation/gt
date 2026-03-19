@@ -16,7 +16,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   if (!settings.files) return;
 
   // Collect current files from config
-  const files = await aggregateFiles(settings);
+  const { files } = await aggregateFiles(settings);
   if (!files.length) return;
 
   // run branch query to get branch id

@@ -55,6 +55,10 @@ export function useDefaultLocale() {
   return getI18NConfig().getDefaultLocale();
 }
 
+export function useVersionId() {
+  return getI18NConfig().getVersionId();
+}
+
 export {
   GTProvider,
   T,

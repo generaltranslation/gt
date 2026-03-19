@@ -17,6 +17,7 @@ import {
   parseKeyedMetadata,
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
+import { shouldPublishFile } from '../../utils/resolvePublish.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -41,19 +42,31 @@ export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
   settings: Settings
-): Promise<FileToUpload[]> {
+): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
   // Aggregate all files to translate
-  const allFiles: FileToUpload[] = [];
+  const files: FileToUpload[] = [];
+  const publishMap = new Map<string, boolean>();
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
       settings.files.placeholderPaths.gt)
   ) {
-    return allFiles;
+    return { files, publishMap };
   }
 
   const { resolvedPaths: filePaths } = settings.files;
   const skipValidation = settings.options?.skipFileValidation;
+
+  // Build publish map upfront from resolved paths
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (filePaths[fileType]) {
+      for (const absolutePath of filePaths[fileType]) {
+        const relativePath = getRelative(absolutePath);
+        const fileId = hashStringSync(relativePath);
+        publishMap.set(fileId, shouldPublishFile(absolutePath, settings));
+      }
+    }
+  }
 
   // Process JSON files
   if (filePaths.json) {
@@ -164,7 +177,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...jsonFiles.filter((file) => file !== null));
+    files.push(...jsonFiles.filter((file) => file !== null));
   }
 
   // Process YAML files
@@ -255,7 +268,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...yamlFiles.filter((file) => file !== null));
+    files.push(...yamlFiles.filter((file) => file !== null));
   }
 
   // Process Twilio Content JSON files
@@ -306,7 +319,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    allFiles.push(...twilioContentJsonFiles.filter((file) => file !== null));
+    files.push(...twilioContentJsonFiles.filter((file) => file !== null));
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
@@ -317,7 +330,7 @@ export async function aggregateFiles(
     )
       continue;
     if (filePaths[fileType]) {
-      const files = filePaths[fileType]
+      const parsed = filePaths[fileType]
         .map((filePath) => {
           const content = readFile(filePath);
           const relativePath = getRelative(filePath);
@@ -362,15 +375,23 @@ export async function aggregateFiles(
           }
           return true;
         });
-      allFiles.push(...files.filter((file) => file !== null));
+      files.push(...parsed.filter((file) => file !== null));
     }
   }
 
-  if (allFiles.length === 0 && !settings.publish) {
+  if (files.length === 0 && !settings.publish) {
     logger.error(
       'No files to translate were found. Check your configuration and try again.'
     );
   }
 
-  return allFiles;
+  // Remove stale entries for files that were skipped during validation
+  const validFileIds = new Set(files.map((f) => f.fileId));
+  for (const fileId of publishMap.keys()) {
+    if (!validFileIds.has(fileId)) {
+      publishMap.delete(fileId);
+    }
+  }
+
+  return { files, publishMap };
 }

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {
   FilesOptions,
+  IncludePattern,
   ResolvedFiles,
   TransformFiles,
   TransformOption,
@@ -37,9 +38,38 @@ export function resolveLocaleFiles(
   return result;
 }
 /**
- * Resolves the files from the files object
- * Performs glob pattern expansion on the files
- * Replaces [locale] with the actual locale in the files
+ * Normalizes include patterns into plain path strings and tracks which
+ * patterns have explicit publish flags.
+ */
+export function normalizeIncludePatterns(patterns: IncludePattern[]): {
+  paths: string[];
+  publishPatterns: string[];
+  unpublishPatterns: string[];
+} {
+  const paths: string[] = [];
+  const publishPatterns: string[] = [];
+  const unpublishPatterns: string[] = [];
+
+  for (const pattern of patterns) {
+    if (typeof pattern === 'string') {
+      paths.push(pattern);
+    } else {
+      paths.push(pattern.pattern);
+      if (pattern.publish === true) {
+        publishPatterns.push(pattern.pattern);
+      } else if (pattern.publish === false) {
+        unpublishPatterns.push(pattern.pattern);
+      }
+    }
+  }
+
+  return { paths, publishPatterns, unpublishPatterns };
+}
+
+/**
+ * Resolves the files from the files object.
+ * Performs glob pattern expansion on the files.
+ * Replaces [locale] with the actual locale in the files.
  *
  * @param files - The files object
  * @returns The resolved files
@@ -54,11 +84,19 @@ export function resolveFiles(
   resolvedPaths: ResolvedFiles;
   placeholderPaths: ResolvedFiles;
   transformPaths: TransformFiles;
+  publishPaths: Set<string>;
+  unpublishPaths: Set<string>;
+  gtJson: {
+    publish?: boolean;
+    includeSourceCodeContext?: boolean;
+  };
 } {
   // Initialize result object with empty arrays for each file type
   const result: ResolvedFiles = {};
   const placeholderResult: ResolvedFiles = {};
   const transformPaths: TransformFiles = {};
+  const publishPaths = new Set<string>();
+  const unpublishPaths = new Set<string>();
 
   // Process GT files
   if (files.gt?.output) {
@@ -78,9 +116,12 @@ export function resolveFiles(
     }
     // ==== PLACEHOLDERS ==== //
     if (files[fileType]?.include) {
+      const { paths, publishPatterns, unpublishPatterns } =
+        normalizeIncludePatterns(files[fileType].include);
+
       const filePaths = expandGlobPatterns(
         cwd,
-        files[fileType].include,
+        paths,
         files[fileType]?.exclude || [],
         locale,
         locales,
@@ -89,6 +130,17 @@ export function resolveFiles(
       );
       result[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
+
+      // Classify resolved paths into publish/unpublish sets
+      classifyPublishPaths(
+        filePaths.resolvedPaths,
+        publishPatterns,
+        unpublishPatterns,
+        cwd,
+        locale,
+        publishPaths,
+        unpublishPaths
+      );
     }
   }
 
@@ -96,6 +148,12 @@ export function resolveFiles(
     resolvedPaths: result,
     placeholderPaths: placeholderResult,
     transformPaths: transformPaths,
+    publishPaths,
+    unpublishPaths,
+    gtJson: {
+      publish: files.gt?.publish,
+      includeSourceCodeContext: files.gt?.includeSourceCodeContext,
+    },
   };
 }
 
@@ -245,4 +303,43 @@ function buildPlaceholderPathFromPattern(
 
 function toPosixPath(value: string): string {
   return value.split(path.sep).join(path.posix.sep);
+}
+
+/**
+ * Classifies resolved file paths into publish/unpublish sets by matching
+ * them against the given glob patterns. Uses POSIX paths for micromatch
+ * compatibility but stores platform-native paths in the output sets.
+ */
+function classifyPublishPaths(
+  resolvedPaths: string[],
+  publishPatterns: string[],
+  unpublishPatterns: string[],
+  cwd: string,
+  locale: string,
+  publishPaths: Set<string>,
+  unpublishPaths: Set<string>
+): void {
+  if (publishPatterns.length === 0 && unpublishPatterns.length === 0) return;
+
+  const posixPaths = resolvedPaths.map(toPosixPath);
+  const toAbsoluteGlob = (p: string) =>
+    toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
+
+  for (const pattern of publishPatterns) {
+    const matched = new Set(micromatch(posixPaths, toAbsoluteGlob(pattern)));
+    for (let i = 0; i < posixPaths.length; i++) {
+      if (matched.has(posixPaths[i])) {
+        publishPaths.add(resolvedPaths[i]);
+      }
+    }
+  }
+
+  for (const pattern of unpublishPatterns) {
+    const matched = new Set(micromatch(posixPaths, toAbsoluteGlob(pattern)));
+    for (let i = 0; i < posixPaths.length; i++) {
+      if (matched.has(posixPaths[i])) {
+        unpublishPaths.add(resolvedPaths[i]);
+      }
+    }
+  }
 }

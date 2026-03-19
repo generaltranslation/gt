@@ -31,6 +31,10 @@ export function getLocales(): string[] {
   return getI18NConfig().getLocales();
 }
 
+export function getVersionId(): string | undefined {
+  return getI18NConfig().getVersionId();
+}
+
 export {
   msg,
   decodeMsg,

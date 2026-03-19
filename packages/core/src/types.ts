@@ -69,6 +69,10 @@ export type {
   EnqueueEntriesResult,
 } from './types-dir/api/enqueueEntries';
 export type { FileReference } from './types-dir/api/file';
+export type {
+  PublishFileEntry,
+  PublishFilesResult,
+} from './translate/publishFiles';
 export type { DownloadedFile } from './types-dir/api/downloadFileBatch';
 export type { DownloadFileOptions } from './types-dir/api/downloadFile';
 export type { FileFormat } from './types-dir/api/file';

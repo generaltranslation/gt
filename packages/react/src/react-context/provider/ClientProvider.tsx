@@ -252,6 +252,7 @@ export default function ClientProvider({
         dialectTranslationRequired,
         renderSettings,
         developmentApiEnabled,
+        _versionId,
       }}
     >
       <React.Suspense fallback={display && children}>

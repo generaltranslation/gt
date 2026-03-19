@@ -27,7 +27,6 @@ export class EnqueueStep extends WorkflowStep<
     this.result = await this.gt.enqueueFiles(files, {
       sourceLocale: this.settings.defaultLocale,
       targetLocales: this.settings.locales,
-      publish: this.settings.publish,
       requireApproval: this.settings.stageTranslations,
       modelProvider: this.settings.modelProvider,
       force: this.force,
