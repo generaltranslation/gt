@@ -1,5 +1,46 @@
 # gtx-cli
 
+## 2.11.3
+
+### Patch Changes
+
+- [#1133](https://github.com/generaltranslation/gt/pull/1133) [`4de22d7`](https://github.com/generaltranslation/gt/commit/4de22d7548b5d34c0d7e465132878d192c2f41e0) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Extending publish step to save-local and upload commands
+
+## 2.11.2
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+- [#1132](https://github.com/generaltranslation/gt/pull/1132) [`a83a130`](https://github.com/generaltranslation/gt/commit/a83a130944193ec4b9784fb7687808936e175d19) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make CDN unpublish behavior opt-in
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:
+  - generaltranslation@8.1.20
+  - gt-remark@1.0.6
+  - @generaltranslation/python-extractor@0.1.6
+
+## 2.11.1
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281), [`84c1443`](https://github.com/generaltranslation/gt/commit/84c1443bda85ccbd8d8dbf56ede341de974db522)]:
+  - @generaltranslation/python-extractor@0.1.5
+  - generaltranslation@8.1.19
+
+## 2.11.0
+
+### Minor Changes
+
+- [#1122](https://github.com/generaltranslation/gt/pull/1122) [`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CDN publishing for all file types
+
+### Patch Changes
+
+- Updated dependencies [[`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a)]:
+  - generaltranslation@8.1.18
+  - @generaltranslation/python-extractor@0.1.4
+
 ## 2.10.8
 
 ### Patch Changes

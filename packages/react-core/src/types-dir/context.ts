@@ -47,4 +47,5 @@ export type GTContextType = {
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
   projectId?: string;
+  _versionId?: string;
 };

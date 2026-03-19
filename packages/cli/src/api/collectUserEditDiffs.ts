@@ -44,8 +44,8 @@ const findLatestDownloadedVersion = (
 export async function collectAndSendUserEditDiffs(
   files: FileReference[],
   settings: Settings
-) {
-  if (!settings.files) return;
+): Promise<boolean> {
+  if (!settings.files) return false;
 
   const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
   const fileMapping = createFileMapping(
@@ -226,4 +226,6 @@ export async function collectAndSendUserEditDiffs(
   if (collectedDiffs.length > 0) {
     await gt.submitUserEditDiffs({ diffs: collectedDiffs });
   }
+
+  return collectedDiffs.length > 0;
 }

@@ -3,6 +3,7 @@ import useGT from './translation/hooks/useGT';
 import useTranslations from './translation/hooks/useTranslations';
 import useDefaultLocale from './hooks/useDefaultLocale';
 import useLocale from './hooks/useLocale';
+import useVersionId from './hooks/useVersionId';
 import useRegion from './hooks/useRegion';
 import GTProvider from './provider/GTProvider';
 import Var from './variables/Var';
@@ -60,6 +61,7 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  useVersionId,
   LocaleSelector,
   RegionSelector,
   DictionaryTranslationOptions,

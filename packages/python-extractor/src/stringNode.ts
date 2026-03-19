@@ -1,5 +1,5 @@
 // ===== Tree Construction ===== //
-// Used for declare_static / declare_var parsing
+// Used for derive / declare_var parsing
 
 type StringNode = StringTextNode | StringSequenceNode | StringChoiceNode;
 

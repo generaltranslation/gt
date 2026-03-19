@@ -36,7 +36,7 @@ export function processTaggedTemplateExpression(
       }
     }
 
-    const { message, variables } = transformTemplateLiteral(path.node.quasi);
+    const { message, variables } = transformTemplateLiteral(path.get('quasi'));
     const args: t.Expression[] = [message];
     if (variables) args.push(variables);
 

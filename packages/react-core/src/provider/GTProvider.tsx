@@ -277,6 +277,7 @@ export default function GTProvider({
         dialectTranslationRequired,
         projectId,
         renderSettings,
+        _versionId,
       }}
     >
       <Suspense fallback={fallback}>{display ? children : fallback}</Suspense>

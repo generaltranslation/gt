@@ -32,7 +32,7 @@ async function runValidation(
       true,
       files,
       settings.parsingOptions,
-      settings.files?.includeSourceCodeContext ?? false
+      settings.files?.gtJson.includeSourceCodeContext ?? false
     );
   }
 
@@ -56,7 +56,7 @@ async function runValidation(
     pkg,
     true,
     settings.parsingOptions,
-    settings.files?.includeSourceCodeContext ?? false
+    settings.files?.gtJson.includeSourceCodeContext ?? false
   );
 }
 

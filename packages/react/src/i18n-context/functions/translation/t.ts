@@ -1,4 +1,7 @@
-import { resolveTranslationSyncWithFallback } from 'gt-i18n/internal';
+import {
+  resolveTranslationSync,
+  resolveTranslationSyncWithFallback,
+} from 'gt-i18n/internal';
 import { InlineTranslationOptions } from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
 import { StringOrTemplateSyncResolutionFunction } from './types';
@@ -46,14 +49,43 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   }
 
   // t`Hello, ${name}`
+  return handleTaggedTemplateLiteralTranslation(messageOrStrings, values);
+};
+
+// ----- Helper Functions ----- //
+
+/**
+ * Handle tagged template literal translation
+ * @param messageOrStrings - The message or strings to translate.
+ * @param values - The values to interpolate.
+ * @returns The translated message.
+ *
+ * This is triggered when there has been no compiler transformation
+ *
+ * Try looking up interpolated template first
+ * If not found, resolve uninterpolated message
+ */
+function handleTaggedTemplateLiteralTranslation(
+  messageOrStrings: TemplateStringsArray,
+  values: unknown[]
+): string {
+  // for tagged template literals, there has been no compiler transformation
+  // (1) lookup interpolated template (aka derived message)
+  const interpolatedTemplate = interpolateTemplateLiteral(
+    messageOrStrings,
+    values
+  );
+  const translatedInterpolatedTemplate =
+    resolveTranslationSync(interpolatedTemplate);
+  if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
+
+  // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
     values
   );
   return resolveTranslationSyncWithFallback(message, variables);
-};
-
-// ----- Helper Functions ----- //
+}
 
 /**
  * Given a TemplateStringsArray, and values, return the uninterpolated message and variables.
@@ -91,4 +123,21 @@ function extractInterpolatableValues(
     message: parts.join(''),
     variables,
   };
+}
+
+/**
+ * Interpolate a template literal
+ * @param message - The message to interpolate.
+ * @param variables - The variables to interpolate.
+ * @returns The interpolated message.
+ */
+function interpolateTemplateLiteral(
+  strings: TemplateStringsArray,
+  values: unknown[]
+): string {
+  return strings
+    .map((string, index) => {
+      return string + (values[index] ?? '');
+    })
+    .join('');
 }

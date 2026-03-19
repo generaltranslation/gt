@@ -1,21 +1,21 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { ParsingConfigOptions } from '../../../types/parsing.js';
-import { parseStringExpression, nodeToStrings } from './parseString.js';
-import { StringNode } from './types.js';
-import { buildImportMap } from './buildImportMap.js';
-import { resolveImportPath } from './resolveImportPath.js';
+import { ParsingConfigOptions } from '../../../../../types/parsing.js';
+import { parseStringExpression, nodeToStrings } from '../../parseString.js';
+import { StringNode } from '../../types.js';
+import { buildImportMap } from '../../buildImportMap.js';
+import { resolveImportPath } from '../../resolveImportPath.js';
 import { parse } from '@babel/parser';
 import fs from 'node:fs';
 import {
   warnFunctionNotFoundSync,
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
-} from '../../../console/index.js';
-import { DECLARE_STATIC_FUNCTION, DERIVE_FUNCTION } from './constants.js';
+} from '../../../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
+import { isDeriveCall } from './isDeriveCall.js';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
@@ -44,51 +44,80 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param tPath - NodePath for scope resolution
  * @param file - Current file path
  * @param parsingOptions - Parsing configuration
+ * @param errors - Errors to add to
+ * @param runtimeInterpolationState - When provided, non-derive dynamic expressions become {n} placeholders instead of errors. Pass { index: 0 } at the entry point for template macros.
  * @returns Node | null - The parsed node, or null if invalid
+ *
+ * @note runtimeInterpolationState
+ *  - Only provide at entry for template macros, otherwise omit
+ *  - t`Hello {nonDerivableValue}` -> t`Hello {0}`
  */
-export function handleDeriveExpression(
-  expr: t.Expression,
-  tPath: NodePath,
-  file: string,
-  parsingOptions: ParsingConfigOptions,
-  errors: string[],
-  warnings: Set<string>
-): StringNode | null {
+export function handleDerivation({
+  expr,
+  tPath,
+  file,
+  parsingOptions,
+  errors,
+  warnings,
+  runtimeInterpolationState,
+}: {
+  expr: t.Expression;
+  tPath: NodePath;
+  file: string;
+  parsingOptions: ParsingConfigOptions;
+  errors: string[];
+  warnings: Set<string>;
+  runtimeInterpolationState?: { index: number };
+}): StringNode | null {
   if (!expr) {
     return null;
   }
 
   // Handle expressions
   if (t.isCallExpression(expr)) {
-    const variants = getDeriveVariants(
-      expr,
-      tPath,
-      file,
-      parsingOptions,
-      errors,
-      warnings
-    );
-    if (variants) {
-      // We found derive() -> return as ChoiceNode
-      return {
-        type: 'choice',
-        nodes: variants.map((v) => ({ type: 'text', text: v })),
-      };
-    }
-
-    // Call has no results
-    const code =
-      expr.arguments.length > 0
-        ? generate(expr.arguments[0]).code
-        : 'no arguments';
-    errors.push(
-      warnDeriveFunctionNoResultsSync(
+    if (isDeriveCall({ expr, tPath })) {
+      const variants = getDeriveVariants({
+        call: expr,
+        tPath,
         file,
-        code,
-        `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+        parsingOptions,
+        errors,
+        warnings,
+      });
+      if (variants) {
+        return {
+          type: 'choice',
+          nodes: variants.map((v) => ({ type: 'text', text: v })),
+        };
+      }
+      // derive() had no resolvable results
+      const code =
+        expr.arguments.length > 0
+          ? generate(expr.arguments[0]).code
+          : 'no arguments';
+      errors.push(
+        warnDeriveFunctionNoResultsSync(
+          file,
+          code,
+          `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+        )
+      );
+      return null;
+    }
+    // Non-derive call
+    if (runtimeInterpolationState) {
+      return { type: 'text', text: `{${runtimeInterpolationState.index++}}` };
+    }
+    const calleeName = t.isIdentifier(expr.callee)
+      ? expr.callee.name
+      : generate(expr.callee).code;
+    errors.push(
+      warnDeriveFunctionNotWrappedSync(
+        file,
+        calleeName,
+        `${expr.callee.loc?.start?.line}:${expr.callee.loc?.start?.column}`
       )
     );
-
     return null;
   }
 
@@ -108,19 +137,32 @@ export function handleDeriveExpression(
       }
       const exprNode = expr.expressions[index];
       if (exprNode && t.isExpression(exprNode)) {
-        const result = handleDeriveExpression(
-          exprNode,
-          tPath,
-          file,
-          parsingOptions,
-          errors,
-          warnings
-        );
-        if (result === null) {
-          // Early bailout if we can't handle something inside interpolation
-          return null;
+        if (isDeriveCall({ expr: exprNode, tPath })) {
+          // Derive — resolve fully (no runtime interpolation forwarding)
+          const result = handleDerivation({
+            expr: exprNode,
+            tPath,
+            file,
+            parsingOptions,
+            errors,
+            warnings,
+          });
+          if (result === null) return null;
+          parts.push(result);
+        } else {
+          // Non-derive — recurse with runtime interpolation forwarded
+          const result = handleDerivation({
+            expr: exprNode,
+            tPath,
+            file,
+            parsingOptions,
+            errors,
+            warnings,
+            runtimeInterpolationState,
+          });
+          if (result === null) return null;
+          parts.push(result);
         }
-        parts.push(result);
       }
     }
 
@@ -138,22 +180,24 @@ export function handleDeriveExpression(
     if (!t.isExpression(expr.left) || !t.isExpression(expr.right)) {
       return null;
     }
-    const leftResult = handleDeriveExpression(
-      expr.left,
+    const leftResult = handleDerivation({
+      expr: expr.left,
       tPath,
       file,
       parsingOptions,
       errors,
-      warnings
-    );
-    const rightResult = handleDeriveExpression(
-      expr.right,
+      warnings,
+      runtimeInterpolationState,
+    });
+    const rightResult = handleDerivation({
+      expr: expr.right,
       tPath,
       file,
       parsingOptions,
       errors,
-      warnings
-    );
+      warnings,
+      runtimeInterpolationState,
+    });
 
     if (leftResult === null || rightResult === null) {
       return null;
@@ -164,14 +208,15 @@ export function handleDeriveExpression(
 
   // Handle parenthesized expressions
   if (t.isParenthesizedExpression(expr)) {
-    return handleDeriveExpression(
-      expr.expression,
+    return handleDerivation({
+      expr: expr.expression,
       tPath,
       file,
       parsingOptions,
       errors,
-      warnings
-    );
+      warnings,
+      runtimeInterpolationState,
+    });
   }
 
   // Handle numeric literals by converting them to strings
@@ -211,6 +256,9 @@ export function handleDeriveExpression(
   }
 
   // Not a derivable expression
+  if (runtimeInterpolationState) {
+    return { type: 'text', text: `{${runtimeInterpolationState.index++}}` };
+  }
   return null;
 }
 
@@ -224,56 +272,28 @@ export function handleDeriveExpression(
  *
  * Returns null if it can't be resolved.
  */
-function getDeriveVariants(
-  call: t.CallExpression,
-  tPath: NodePath,
-  file: string,
-  parsingOptions: ParsingConfigOptions,
-  errors: string[],
-  warnings: Set<string>
-): string[] | null {
+function getDeriveVariants({
+  call,
+  tPath,
+  file,
+  parsingOptions,
+  errors,
+  warnings,
+}: {
+  call: t.CallExpression;
+  tPath: NodePath;
+  file: string;
+  parsingOptions: ParsingConfigOptions;
+  errors: string[];
+  warnings: Set<string>;
+}): string[] | null {
   // --- Validate Callee --- //
-  // Must be derive(...) or an alias of it
-  if (!t.isIdentifier(call.callee)) {
-    const code =
-      call.arguments.length > 0
-        ? generate(call.arguments[0]).code
-        : 'no arguments';
-    errors.push(
-      warnDeriveFunctionNotWrappedSync(
-        file,
-        code,
-        `${call.callee.loc?.start?.line}:${call.callee.loc?.start?.column}`
-      )
-    );
-    return null;
-  }
 
-  // Check if this is derive by name or by checking the import
-  const calleeName = call.callee.name;
-  const calleeBinding = tPath.scope.getBinding(calleeName);
-
-  // If it's not literally named 'derive', check if it's imported from GT
-  if (!calleeBinding) {
-    return null;
-  }
-
-  // Check if it's imported from a GT package
-  if (calleeBinding.path.isImportSpecifier()) {
-    const imported = calleeBinding.path.node.imported;
-    const originalName = t.isIdentifier(imported)
-      ? imported.name
-      : imported.value;
-
-    // Only proceed if the original name is 'derive' (or the deprecated 'declareStatic')
-    if (
-      originalName !== DECLARE_STATIC_FUNCTION &&
-      originalName !== DERIVE_FUNCTION
-    ) {
-      return null;
-    }
-  } else {
-    // Not an import specifier, so it's not derive
+  // Must be a derive(...) call or an alias of it
+  if (!isDeriveCall({ expr: call, tPath })) {
+    const calleeName = t.isIdentifier(call.callee)
+      ? call.callee.name
+      : generate(call.callee).code;
     errors.push(
       warnDeriveFunctionNotWrappedSync(
         file,
@@ -689,157 +709,80 @@ function resolveFunctionInFile(
         if (
           t.isIdentifier(path.node.id) &&
           path.node.id.name === functionName &&
+          path.node.init &&
+          (t.isArrowFunctionExpression(path.node.init) ||
+            t.isFunctionExpression(path.node.init)) &&
           result === null
         ) {
-          const init = path.node.init;
-          if (!init) return;
-
-          // Handle arrow/function expressions
+          const init = path.get('init');
           if (
-            t.isArrowFunctionExpression(init) ||
-            t.isFunctionExpression(init)
+            !init.isArrowFunctionExpression() &&
+            !init.isFunctionExpression()
           ) {
-            const initPath = path.get('init');
-            if (
-              !initPath.isArrowFunctionExpression() &&
-              !initPath.isFunctionExpression()
-            ) {
-              return;
-            }
+            return;
+          }
 
-            const bodyPath = initPath.get('body');
-            const branches: StringNode[] = [];
+          const bodyPath = init.get('body');
+          const branches: StringNode[] = [];
 
-            // Handle expression body: () => "day"
-            if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
-              const bodyResult = parseStringExpression(
-                bodyPath.node,
-                bodyPath,
-                filePath,
-                parsingOptions,
-                warnings,
-                errors
-              );
-              if (bodyResult !== null) {
-                branches.push(bodyResult);
-              }
-            }
-            // Handle block body: () => { return "day"; }
-            else if (
-              !Array.isArray(bodyPath) &&
-              t.isBlockStatement(bodyPath.node)
-            ) {
-              const arrowFunction = initPath.node;
-              bodyPath.traverse({
-                Function(innerPath: NodePath) {
-                  // Skip nested functions
-                  innerPath.skip();
-                },
-                ReturnStatement(returnPath: NodePath) {
-                  // Only process return statements that are direct children of this function
-                  const parentFunction = returnPath.getFunctionParent();
-                  if (parentFunction?.node !== arrowFunction) {
-                    return;
-                  }
-
-                  if (!t.isReturnStatement(returnPath.node)) {
-                    return;
-                  }
-                  const returnArg = returnPath.node.argument;
-                  if (!returnArg || !t.isExpression(returnArg)) {
-                    return;
-                  }
-                  const returnResult = parseStringExpression(
-                    returnArg,
-                    returnPath,
-                    filePath,
-                    parsingOptions,
-                    warnings,
-                    errors
-                  );
-                  if (returnResult !== null) {
-                    branches.push(returnResult);
-                  }
-                },
-              });
-            }
-
-            if (branches.length === 1) {
-              result = branches[0];
-            } else if (branches.length > 1) {
-              result = { type: 'choice', nodes: branches };
+          // Handle expression body: () => "day"
+          if (!Array.isArray(bodyPath) && t.isExpression(bodyPath.node)) {
+            const bodyResult = parseStringExpression(
+              bodyPath.node,
+              bodyPath,
+              filePath,
+              parsingOptions,
+              warnings,
+              errors
+            );
+            if (bodyResult !== null) {
+              branches.push(bodyResult);
             }
           }
-          // Handle string/numeric/boolean/null constants
-          else if (t.isStringLiteral(init)) {
-            result = { type: 'text', text: init.value };
-          } else if (t.isNumericLiteral(init)) {
-            result = { type: 'text', text: String(init.value) };
-          } else if (t.isBooleanLiteral(init)) {
-            result = { type: 'text', text: String(init.value) };
-          }
-          // Handle template literals
-          else if (t.isTemplateLiteral(init)) {
-            const parts: StringNode[] = [];
-            let failed = false;
-            for (let index = 0; index < init.quasis.length; index++) {
-              const quasi = init.quasis[index];
-              const text = quasi.value.cooked ?? quasi.value.raw ?? '';
-              if (text) {
-                parts.push({ type: 'text', text });
-              }
-              const exprNode = init.expressions[index];
-              if (exprNode && t.isExpression(exprNode)) {
-                const exprResult = parseStringExpression(
-                  exprNode,
-                  path,
+          // Handle block body: () => { return "day"; }
+          else if (
+            !Array.isArray(bodyPath) &&
+            t.isBlockStatement(bodyPath.node)
+          ) {
+            const arrowFunction = init.node;
+            bodyPath.traverse({
+              Function(innerPath: NodePath) {
+                // Skip nested functions
+                innerPath.skip();
+              },
+              ReturnStatement(returnPath: NodePath) {
+                // Only process return statements that are direct children of this function
+                const parentFunction = returnPath.getFunctionParent();
+                if (parentFunction?.node !== arrowFunction) {
+                  return;
+                }
+
+                if (!t.isReturnStatement(returnPath.node)) {
+                  return;
+                }
+                const returnArg = returnPath.node.argument;
+                if (!returnArg || !t.isExpression(returnArg)) {
+                  return;
+                }
+                const returnResult = parseStringExpression(
+                  returnArg,
+                  returnPath,
                   filePath,
                   parsingOptions,
                   warnings,
                   errors
                 );
-                if (exprResult === null) {
-                  failed = true;
-                  break;
+                if (returnResult !== null) {
+                  branches.push(returnResult);
                 }
-                parts.push(exprResult);
-              }
-            }
-            if (!failed) {
-              if (parts.length === 0) {
-                result = { type: 'text', text: '' };
-              } else if (parts.length === 1) {
-                result = parts[0];
-              } else {
-                result = { type: 'sequence', nodes: parts };
-              }
-            }
+              },
+            });
           }
-          // Handle object expressions (and `as const`)
-          else if (
-            t.isObjectExpression(init) ||
-            (t.isTSAsExpression(init) && t.isObjectExpression(init.expression))
-          ) {
-            const objExpr = t.isTSAsExpression(init)
-              ? (init.expression as t.ObjectExpression)
-              : init;
-            const branches: StringNode[] = [];
-            for (const prop of objExpr.properties) {
-              if (!t.isObjectProperty(prop) || !t.isExpression(prop.value))
-                continue;
-              const resolved = parseStringExpression(
-                prop.value,
-                path,
-                filePath,
-                parsingOptions,
-                warnings,
-                errors
-              );
-              if (resolved) branches.push(resolved);
-            }
-            if (branches.length === 1) result = branches[0];
-            else if (branches.length > 1)
-              result = { type: 'choice', nodes: branches };
+
+          if (branches.length === 1) {
+            result = branches[0];
+          } else if (branches.length > 1) {
+            result = { type: 'choice', nodes: branches };
           }
         }
       },

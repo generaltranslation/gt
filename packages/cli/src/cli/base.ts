@@ -197,12 +197,14 @@ export class BaseCLI {
         .description(
           'Save local edits for all configured files by sending diffs (no translation enqueued)'
         )
-    ).action(async (initOptions: SharedFlags) => {
-      displayHeader('Saving local edits...');
-      const settings = await generateSettings(initOptions);
-      await saveLocalEdits(settings);
-      logger.endCommand('Saved local edits');
-    });
+    )
+      .option('--publish', 'Publish translations to the CDN', false)
+      .action(async (initOptions: SharedFlags) => {
+        displayHeader('Saving local edits...');
+        const settings = await generateSettings(initOptions);
+        await saveLocalEdits(settings);
+        logger.endCommand('Saved local edits');
+      });
   }
 
   protected async handleSetupProject(
@@ -271,7 +273,8 @@ export class BaseCLI {
           settings,
           results.fileVersionData,
           results.jobData,
-          results.branchData
+          results.branchData,
+          results.publishMap
         );
       }
     } else {

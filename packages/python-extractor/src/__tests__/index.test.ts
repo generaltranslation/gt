@@ -7,6 +7,7 @@ import {
   PYTHON_GT_PACKAGES,
   PYTHON_GT_DEPENDENCIES,
   PYTHON_T_FUNCTION,
+  PYTHON_DERIVE,
   PYTHON_DECLARE_STATIC,
   PYTHON_DECLARE_VAR,
   PYTHON_METADATA_KWARGS,
@@ -205,9 +206,173 @@ t("Hello, world!")`;
     });
   });
 
-  // ===== declare_static tests ===== //
+  // ===== derive() tests ===== //
 
-  describe('declare_static', () => {
+  describe('derive', () => {
+    it('expands simple ternary into 2 variants', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('derive_ternary.py'),
+        'test.py'
+      );
+      const ternaryResults = results.filter(
+        (r) => r.source === 'It is day!' || r.source === 'It is night!'
+      );
+      expect(ternaryResults).toHaveLength(2);
+      expect(ternaryResults[0].metadata.staticId).toBeDefined();
+      expect(ternaryResults[0].metadata.staticId).toBe(
+        ternaryResults[1].metadata.staticId
+      );
+    });
+
+    it('expands nested ternary into 3 variants', async () => {
+      const { results } = await extractFromPythonSource(
+        fixture('derive_ternary.py'),
+        'test.py'
+      );
+      const nestedResults = results.filter(
+        (r) => r.source === 'a' || r.source === 'b' || r.source === 'c'
+      );
+      expect(nestedResults).toHaveLength(3);
+      const staticId = nestedResults[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(nestedResults.every((r) => r.metadata.staticId === staticId)).toBe(
+        true
+      );
+    });
+
+    it('handles plain string in derive', async () => {
+      const { results } = await extractFromPythonSource(
+        fixture('derive_ternary.py'),
+        'test.py'
+      );
+      const plainResult = results.find((r) => r.source === 'Hello world!');
+      expect(plainResult).toBeDefined();
+      expect(plainResult!.metadata.staticId).toBeDefined();
+    });
+
+    it('resolves local function returns in derive', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('derive_func.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      const morningResult = results.find((r) => r.source === 'It is morning!');
+      const eveningResult = results.find((r) => r.source === 'It is evening!');
+      expect(morningResult).toBeDefined();
+      expect(eveningResult).toBeDefined();
+      expect(morningResult!.metadata.staticId).toBe(
+        eveningResult!.metadata.staticId
+      );
+    });
+
+    it('handles concatenation with derive', async () => {
+      const { results } = await extractFromPythonSource(
+        fixture('derive_concat.py'),
+        'test.py'
+      );
+      const concatResults = results.filter(
+        (r) => r.source === 'Hello day!' || r.source === 'Hello night!'
+      );
+      expect(concatResults).toHaveLength(2);
+      expect(concatResults[0].metadata.staticId).toBe(
+        concatResults[1].metadata.staticId
+      );
+    });
+
+    it('handles string concatenation inside derive', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('derive_string_concat.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello, ab!');
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('resolves single-return function in derive', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('derive_func_simple.py'),
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello, !!');
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('preserves metadata kwargs with derive', async () => {
+      const code = `from gt_flask import t, derive
+t(f"It is {derive('day' if x else 'night')}", _id="time_msg", _context="greeting")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      for (const r of results) {
+        expect(r.metadata.id).toBe('time_msg');
+        expect(r.metadata.context).toBe('greeting');
+        expect(r.metadata.staticId).toBeDefined();
+      }
+    });
+
+    it('handles parenthesized expression wrapping derive concat', async () => {
+      const code = `from gt_flask import t, derive
+t(("hello " + derive("world")))`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('hello world');
+      expect(results[0].metadata.staticId).toBeDefined();
+    });
+
+    it('handles derive with declare_var nested directly', async () => {
+      const code = `from gt_flask import t, derive, declare_var
+t(f"Hello, {derive(declare_var(name) + '!')}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello, {_gt_1, select, other {}}!');
+    });
+
+    it('handles aliased derive import', async () => {
+      const code = `from gt_fastapi import t, derive as d
+t(f"The {d('he' if x else 'she')}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['The he', 'The she']);
+    });
+
+    it('works with re-exports using derive', async () => {
+      const code = `from gt_fastapi import t, derive
+from reexport_funcs import get_gender
+t(f"The {derive(get_gender(variant))}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        path.join(__dirname, 'fixtures', 'reexport_main.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+      const sources = results.map((r) => r.source).sort();
+      expect(sources).toEqual(['The he', 'The she']);
+    });
+  });
+
+  // ===== declare_static tests (backwards compatibility) ===== //
+
+  describe('declare_static (backwards compatibility)', () => {
     it('expands simple ternary into 2 variants', async () => {
       const { results, errors } = await extractFromPythonSource(
         fixture('declare_static_ternary.py'),
@@ -1131,7 +1296,11 @@ t(f"{declare_static(None)}")`;
       expect(PYTHON_T_FUNCTION).toBe('t');
     });
 
-    it('exports PYTHON_DECLARE_STATIC', () => {
+    it('exports PYTHON_DERIVE', () => {
+      expect(PYTHON_DERIVE).toBe('derive');
+    });
+
+    it('exports PYTHON_DECLARE_STATIC (deprecated)', () => {
       expect(PYTHON_DECLARE_STATIC).toBe('declare_static');
     });
 
