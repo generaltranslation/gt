@@ -1,9 +1,8 @@
 <p align="center">
   <a href="https://generaltranslation.com/docs/cli">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/gt-logo-light.svg">
-      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" width="100" height="100">
+      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/brand/gt-logo-light.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-dark.svg" width="100" height="100">
     </picture>
   </a>
 </p>
