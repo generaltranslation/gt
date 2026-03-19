@@ -632,30 +632,6 @@ function findConstantAssignment(
 }
 
 /**
- * Resolves a constant assignment from an external file.
- * Reads the file, parses it with tree-sitter, finds the assignment,
- * and resolves the value using resolveStaticValue in that file's context.
- */
-async function resolveConstantInFile(
-  name: string,
-  filePath: string,
-  ctx: ParseContext
-): Promise<SyntaxNode | null> {
-  let source: string;
-  try {
-    source = fs.readFileSync(filePath, 'utf8');
-  } catch {
-    return null;
-  }
-
-  const parser = await getParser();
-  const tree = parser.parse(source);
-  if (!tree) return null;
-
-  return findConstantAssignment(name, tree.rootNode);
-}
-
-/**
  * Guard against infinite recursion when resolving identifier chains.
  * Tracks variable names currently being resolved to detect circular references.
  */
