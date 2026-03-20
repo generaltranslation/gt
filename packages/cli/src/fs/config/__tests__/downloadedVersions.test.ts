@@ -7,6 +7,8 @@ import {
   writeLockfile,
   findOrCreateEntry,
   buildEntryMap,
+  writeStagedEntries,
+  getStagedEntriesFromLockfile,
   DownloadedVersionEntry,
 } from '../downloadedVersions.js';
 import { createMockSettings } from '../../../api/__mocks__/settings.js';
@@ -347,6 +349,294 @@ describe('readLockfile / writeLockfile', () => {
       expect(entry.translations).toEqual({});
       // Map should return the updated entry
       expect(map.get('f1')?.versionId).toBe('v2');
+    });
+  });
+
+  describe('writeStagedEntries', () => {
+    it('writes staged entries to an empty lockfile', () => {
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'f1', versionId: 'v1', fileName: 'src/page.mdx' },
+        { fileId: 'f2', versionId: 'v2', fileName: 'src/other.mdx' },
+      ]);
+
+      const written = readLockFile();
+      expect(written.version).toBe(2);
+      expect(written.entries).toHaveLength(2);
+      expect(written.entries[0]).toMatchObject({
+        fileId: 'f1',
+        versionId: 'v1',
+        fileName: 'src/page.mdx',
+        staged: true,
+        translations: {},
+      });
+      expect(written.entries[1]).toMatchObject({
+        fileId: 'f2',
+        staged: true,
+      });
+    });
+
+    it('preserves existing translations when versionId is unchanged', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z', postProcessHash: 'h1' },
+            },
+          },
+        ],
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'f1', versionId: 'v1', fileName: 'src/page.mdx' },
+      ]);
+
+      const written = readLockFile();
+      expect(written.entries).toHaveLength(1);
+      expect(written.entries[0].staged).toBe(true);
+      // Existing translations preserved
+      expect(written.entries[0].translations.es.updatedAt).toBe(
+        '2025-01-01T00:00:00Z'
+      );
+      expect(written.entries[0].translations.es.postProcessHash).toBe('h1');
+    });
+
+    it('replaces entry and wipes translations when versionId changes', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'f1', versionId: 'v2', fileName: 'src/page.mdx' },
+      ]);
+
+      const written = readLockFile();
+      expect(written.entries).toHaveLength(1);
+      expect(written.entries[0].versionId).toBe('v2');
+      expect(written.entries[0].staged).toBe(true);
+      expect(written.entries[0].translations).toEqual({});
+    });
+
+    it('does not clobber non-staged entries', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'existing',
+            versionId: 'v_existing',
+            fileName: 'src/existing.mdx',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'new', versionId: 'v_new', fileName: 'src/new.mdx' },
+      ]);
+
+      const written = readLockFile();
+      expect(written.entries).toHaveLength(2);
+      // Existing entry untouched (except staged flag not set on it)
+      const existing = written.entries.find(
+        (e: DownloadedVersionEntry) => e.fileId === 'existing'
+      );
+      expect(existing?.translations.es.updatedAt).toBe(
+        '2025-01-01T00:00:00Z'
+      );
+      // New entry added
+      const newEntry = written.entries.find(
+        (e: DownloadedVersionEntry) => e.fileId === 'new'
+      );
+      expect(newEntry?.staged).toBe(true);
+    });
+  });
+
+  describe('getStagedEntriesFromLockfile', () => {
+    it('returns only staged entries', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            staged: true,
+            translations: {},
+          },
+          {
+            fileId: 'f2',
+            versionId: 'v2',
+            fileName: 'src/downloaded.mdx',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+          {
+            fileId: 'f3',
+            versionId: 'v3',
+            fileName: 'src/also-staged.mdx',
+            staged: true,
+            translations: {},
+          },
+        ],
+      });
+
+      const result = getStagedEntriesFromLockfile(settings('brc_main'));
+
+      expect(Object.keys(result)).toHaveLength(2);
+      expect(result['f1']).toEqual({
+        versionId: 'v1',
+        fileName: 'src/page.mdx',
+      });
+      expect(result['f3']).toEqual({
+        versionId: 'v3',
+        fileName: 'src/also-staged.mdx',
+      });
+      expect(result['f2']).toBeUndefined();
+    });
+
+    it('returns empty object when no entries are staged', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      const result = getStagedEntriesFromLockfile(settings('brc_main'));
+      expect(Object.keys(result)).toHaveLength(0);
+    });
+
+    it('returns empty object when lockfile does not exist', () => {
+      const result = getStagedEntriesFromLockfile(settings('brc_main'));
+      expect(Object.keys(result)).toHaveLength(0);
+    });
+  });
+
+  describe('V1 lockfile upgrade on staged writes', () => {
+    it('upgrades V1 to V2 when staging entries', () => {
+      writeLockFile({
+        version: 1,
+        entries: {
+          brc_main: {
+            file1: {
+              ver1: {
+                ja: { updatedAt: '2025-01-01T00:00:00Z' },
+              },
+            },
+          },
+        },
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'file2', versionId: 'ver2', fileName: 'src/new.mdx' },
+      ]);
+
+      const written = readLockFile();
+      // Should have been upgraded to V2 since staged entries are present
+      expect(written.version).toBe(2);
+      expect(written.entries).toHaveLength(2);
+
+      const existing = written.entries.find(
+        (e: DownloadedVersionEntry) => e.fileId === 'file1'
+      );
+      expect(existing?.versionId).toBe('ver1');
+      expect(existing?.translations.ja.updatedAt).toBe(
+        '2025-01-01T00:00:00Z'
+      );
+
+      const staged = written.entries.find(
+        (e: DownloadedVersionEntry) => e.fileId === 'file2'
+      );
+      expect(staged?.staged).toBe(true);
+      expect(staged?.fileName).toBe('src/new.mdx');
+    });
+
+    it('staged entries survive V2 round-trip after upgrade', () => {
+      writeLockFile({
+        version: 1,
+        entries: {
+          brc_main: {
+            file1: {
+              ver1: {
+                ja: { updatedAt: '2025-01-01T00:00:00Z' },
+              },
+            },
+          },
+        },
+      });
+
+      // Stage an entry (upgrades to V2)
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'file2', versionId: 'ver2', fileName: 'src/new.mdx' },
+      ]);
+
+      // Read back and verify staged entries are retrievable
+      const result = getStagedEntriesFromLockfile(settings('brc_main'));
+      expect(result['file2']).toEqual({
+        versionId: 'ver2',
+        fileName: 'src/new.mdx',
+      });
+    });
+
+    it('preserves V1 format when writing non-staged entries', () => {
+      const v1Content = {
+        version: 1,
+        entries: {
+          brc_main: {
+            file1: {
+              ver1: {
+                ja: { updatedAt: '2025-01-01T00:00:00Z' },
+              },
+            },
+          },
+          brc_other: {
+            file2: {
+              ver2: {
+                fr: { updatedAt: '2025-02-01T00:00:00Z' },
+              },
+            },
+          },
+        },
+      };
+      writeLockFile(v1Content);
+
+      // Read, mutate (no staging), write back
+      const { data, entryMap, originalV1 } = readLockfile(settings('brc_main'));
+      const entry = findOrCreateEntry(entryMap, data.entries, 'file1', 'ver1');
+      entry.translations.es = { updatedAt: '2025-06-01T00:00:00Z' };
+      writeLockfile(data, originalV1);
+
+      const written = readLockFile();
+      // Should stay V1 since no staged entries
+      expect(written.version).toBe(1);
+      expect(written.entries.brc_other).toBeDefined();
     });
   });
 });
