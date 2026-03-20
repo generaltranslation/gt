@@ -29,8 +29,7 @@ export async function createInlineUpdates(
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingFlags: GTParsingFlags,
-  parsingOptions: ParsingConfigOptions,
-  includeSourceCodeContext: boolean = false
+  parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
@@ -76,7 +75,7 @@ export async function createInlineUpdates(
           ignoreDynamicContent: false,
           ignoreInvalidIcu: false,
           ignoreInlineListContent: false,
-          includeSourceCodeContext,
+          includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
           ignoreTaggedTemplates: false,
           ignoreGlobalTaggedTemplates: false,
           // User configurable, otherwise default to AUTO
@@ -99,7 +98,7 @@ export async function createInlineUpdates(
             parsingOptions,
             pkgs,
             file,
-            includeSourceCodeContext,
+            includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
           },
           output: {
             errors,

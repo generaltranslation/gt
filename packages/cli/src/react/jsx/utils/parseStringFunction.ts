@@ -431,7 +431,17 @@ export function parseStrings(
   // then we need to add support for skipDeriveInvocation here
   if (originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER) {
     if (!config.ignoreGlobalTaggedTemplates) {
-      processTaggedTemplateCall(path, config, output);
+      processTaggedTemplateCall(
+        path,
+        {
+          ...config,
+          enableAutoDerive:
+            config.enableAutoDerive === 'AUTO'
+              ? 'DISABLED'
+              : config.enableAutoDerive,
+        },
+        output
+      );
     }
     return;
   }

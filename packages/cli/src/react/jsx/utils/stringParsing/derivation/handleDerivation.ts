@@ -77,40 +77,9 @@ export function handleDerivation({
     return null;
   }
 
-  const isDeriveInvocation = isDeriveCall({ expr, tPath });
-
-  // Skip derive invocation check
-  // We still want derive invocations to be treated normally, so we route those to the other getDeriveVariants logic
-  if (skipDeriveInvocation && !isDeriveInvocation) {
-    const variants = resolveCallStringVariants(
-      expr,
-      tPath,
-      file,
-      parsingOptions,
-      errors,
-      warnings
-    );
-    if (variants) {
-      return {
-        type: 'choice',
-        nodes: variants.map((v) => ({ type: 'text', text: v })),
-      };
-    }
-    // derive() had no resolvable results
-    const code = generate(expr).code;
-    errors.push(
-      warnDeriveFunctionNoResultsSync(
-        file,
-        code,
-        `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
-      )
-    );
-    return null;
-  }
-
   // Handle expressions
   if (t.isCallExpression(expr)) {
-    if (isDeriveInvocation) {
+    if (isDeriveCall({ expr, tPath })) {
       const variants = getDeriveVariants({
         call: expr,
         tPath,
@@ -292,6 +261,35 @@ export function handleDerivation({
   // Handle null literal
   if (t.isNullLiteral(expr)) {
     return { type: 'text', text: 'null' };
+  }
+
+  // Non-static expression
+  if (skipDeriveInvocation) {
+    // Skip pass a `derive()` invocation to do derivation
+    const variants = resolveCallStringVariants(
+      expr,
+      tPath,
+      file,
+      parsingOptions,
+      errors,
+      warnings
+    );
+    if (variants) {
+      return {
+        type: 'choice',
+        nodes: variants.map((v) => ({ type: 'text', text: v })),
+      };
+    }
+    // derive() had no resolvable results
+    const code = generate(expr).code;
+    errors.push(
+      warnDeriveFunctionNoResultsSync(
+        file,
+        code,
+        `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+      )
+    );
+    return null;
   }
 
   // Not a derivable expression
