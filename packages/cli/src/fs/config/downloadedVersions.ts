@@ -17,6 +17,7 @@ export type DownloadedVersionEntry = {
   fileId: string;
   versionId: string;
   fileName?: string; // source file path
+  staged?: boolean; // true if this entry was staged but not yet downloaded
   translations: {
     [locale: string]: DownloadedTranslation;
   };
@@ -185,7 +186,8 @@ export function writeLockfile(
     const filepath = path.join(process.cwd(), GT_LOCK_FILE);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
-    if (originalV1) {
+    // V1 format can't represent the staged flag — upgrade to V2 if any entries are staged
+    if (originalV1 && !data.entries.some((e) => e.staged)) {
       const mergedV1: DownloadedVersionsV1 = {
         ...originalV1,
         entries: {
@@ -242,4 +244,53 @@ export function findOrCreateEntry(
   entries.push(entry);
   entryMap.set(fileId, entry);
   return entry;
+}
+
+// ── Staging helpers ─────────────────────────────────────────────────
+
+/**
+ * Writes staged file entries into the lockfile.
+ * Each entry is marked with `staged: true` and empty translations.
+ */
+export function writeStagedEntries(
+  settings: Settings,
+  stagedFiles: { fileId: string; versionId: string; fileName: string }[]
+): void {
+  const { data, entryMap, originalV1 } = readLockfile(settings);
+
+  for (const file of stagedFiles) {
+    const entry = findOrCreateEntry(
+      entryMap,
+      data.entries,
+      file.fileId,
+      file.versionId
+    );
+    entry.fileName = file.fileName;
+    entry.staged = true;
+  }
+
+  writeLockfile(data, originalV1);
+}
+
+/**
+ * Reads staged entries from the lockfile.
+ * Returns the same shape as FileTranslationData for compatibility
+ * with the download workflow.
+ */
+export function getStagedEntriesFromLockfile(
+  settings: Settings
+): Record<string, { versionId: string; fileName: string }> {
+  const { data } = readLockfile(settings);
+  const result: Record<string, { versionId: string; fileName: string }> = {};
+
+  for (const entry of data.entries) {
+    if (entry.staged && entry.fileName) {
+      result[entry.fileId] = {
+        versionId: entry.versionId,
+        fileName: entry.fileName,
+      };
+    }
+  }
+
+  return result;
 }

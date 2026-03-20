@@ -244,6 +244,7 @@ export async function downloadFileBatch(
             versionId
           );
           entry.fileName = inputPath;
+          entry.staged = false;
           entry.translations[locale] = {
             updatedAt: new Date().toISOString(),
             fileName: outputPath,

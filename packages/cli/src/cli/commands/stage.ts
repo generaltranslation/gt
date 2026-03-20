@@ -6,7 +6,7 @@ import {
   TranslateFlags,
 } from '../../types/index.js';
 import { runStageFilesWorkflow } from '../../workflows/stage.js';
-import { updateVersions } from '../../fs/config/updateVersions.js';
+import { writeStagedEntries } from '../../fs/config/downloadedVersions.js';
 import type { EnqueueFilesResult } from 'generaltranslation/types';
 import updateConfig from '../../fs/config/updateConfig.js';
 import { FileTranslationData } from '../../workflows/download.js';
@@ -56,12 +56,16 @@ export async function handleStage(
 
     fileVersionData = convertToFileTranslationData(allFiles);
 
-    // This logic is a little scuffed because stage is async from the API
+    // Write staged entries to the lockfile
     if (stage) {
-      await updateVersions({
-        configDirectory: settings.configDirectory,
-        versionData: fileVersionData,
-      });
+      const stagedFiles = Object.entries(fileVersionData).map(
+        ([fileId, data]) => ({
+          fileId,
+          versionId: data.versionId,
+          fileName: data.fileName,
+        })
+      );
+      writeStagedEntries(settings, stagedFiles);
     }
     const templateData = allFiles.find(
       (file) => file.fileId === TEMPLATE_FILE_ID
