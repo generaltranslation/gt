@@ -457,9 +457,7 @@ describe('readLockfile / writeLockfile', () => {
       const existing = written.entries.find(
         (e: DownloadedVersionEntry) => e.fileId === 'existing'
       );
-      expect(existing?.translations.es.updatedAt).toBe(
-        '2025-01-01T00:00:00Z'
-      );
+      expect(existing?.translations.es.updatedAt).toBe('2025-01-01T00:00:00Z');
       // New entry added
       const newEntry = written.entries.find(
         (e: DownloadedVersionEntry) => e.fileId === 'new'
@@ -567,9 +565,7 @@ describe('readLockfile / writeLockfile', () => {
         (e: DownloadedVersionEntry) => e.fileId === 'file1'
       );
       expect(existing?.versionId).toBe('ver1');
-      expect(existing?.translations.ja.updatedAt).toBe(
-        '2025-01-01T00:00:00Z'
-      );
+      expect(existing?.translations.ja.updatedAt).toBe('2025-01-01T00:00:00Z');
 
       const staged = written.entries.find(
         (e: DownloadedVersionEntry) => e.fileId === 'file2'
