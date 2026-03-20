@@ -3173,6 +3173,7 @@ describe('parseStrings', () => {
                 ignoreInlineListContent: true,
                 ignoreTaggedTemplates: false,
                 ignoreGlobalTaggedTemplates: false,
+                enableAutoDerive: 'AUTO',
               },
               {
                 updates: params.updates,

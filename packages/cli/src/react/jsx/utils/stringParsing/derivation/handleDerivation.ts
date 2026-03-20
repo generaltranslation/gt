@@ -82,15 +82,14 @@ export function handleDerivation({
   // Skip derive invocation check
   // We still want derive invocations to be treated normally, so we route those to the other getDeriveVariants logic
   if (skipDeriveInvocation && !isDeriveInvocation) {
-    const variants = getDeriveVariants({
-      call: expr as unknown as t.CallExpression,
+    const variants = resolveCallStringVariants(
+      expr,
       tPath,
       file,
       parsingOptions,
       errors,
-      warnings,
-      skipDeriveInvocation,
-    });
+      warnings
+    );
     if (variants) {
       return {
         type: 'choice',
@@ -312,33 +311,21 @@ export function handleDerivation({
  *
  * Returns null if it can't be resolved.
  */
-function getDeriveVariants({
+function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
   call,
   tPath,
   file,
   parsingOptions,
   errors,
   warnings,
-  skipDeriveInvocation = false,
 }: {
-  call: t.CallExpression;
+  call: T;
   tPath: NodePath;
   file: string;
   parsingOptions: ParsingConfigOptions;
   errors: string[];
   warnings: Set<string>;
-  skipDeriveInvocation?: boolean;
 }): string[] | null {
-  if (skipDeriveInvocation) {
-    return resolveCallStringVariants(
-      call,
-      tPath,
-      file,
-      parsingOptions,
-      errors,
-      warnings
-    );
-  }
   // --- Validate Callee --- //
 
   // Must be a derive(...) call or an alias of it

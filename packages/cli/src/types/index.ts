@@ -226,7 +226,7 @@ export type Settings = {
       parsingFlags: GTParsingFlags; // Flags for parsing inline content
       /**
        * @deprecated
-       * use {@link GTParsingFlags['parsingFlags']} instead
+       * use {@link files.gt.GTParsingFlags.parsingFlags.includeSourceCodeContext} instead
        */
       includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
     };
