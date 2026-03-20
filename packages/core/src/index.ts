@@ -85,6 +85,10 @@ import {
   _checkJobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
+import _awaitJobs, {
+  AwaitJobsOptions,
+  AwaitJobsResult,
+} from './translate/awaitJobs';
 import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
 import _queryFileData from './translate/queryFileData';
 import type { BranchQuery } from './translate/queryBranchData';
@@ -95,10 +99,7 @@ import type {
   CreateBranchResult,
 } from './translate/createBranch';
 import _createBranch from './translate/createBranch';
-import type {
-  FileReference,
-  FileReferenceOptionalBranchId,
-} from './types-dir/api/file';
+import type { FileReference, FileReferenceIds } from './types-dir/api/file';
 import _processFileMoves, {
   type MoveMapping,
   type ProcessMovesResponse,
@@ -444,6 +445,25 @@ export class GT {
   }
 
   /**
+   * Polls job statuses until all jobs from enqueueFiles are finished or the timeout is reached.
+   *
+   * @param {EnqueueFilesResult} enqueueResult - The result returned from enqueueFiles
+   * @param {AwaitJobsOptions} [options] - Polling configuration (interval, timeout)
+   * @returns {Promise<AwaitJobsResult>} The final status of all jobs and whether they all completed
+   */
+  async awaitJobs(
+    enqueueResult: EnqueueFilesResult,
+    options?: AwaitJobsOptions
+  ): Promise<AwaitJobsResult> {
+    this._validateAuth('awaitJobs');
+    return await _awaitJobs(
+      enqueueResult,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
    * Enqueues translation jobs for previously uploaded source files.
    *
    * This method creates translation jobs that will process existing source files
@@ -452,12 +472,12 @@ export class GT {
    * uploadSourceFiles. The translation jobs are queued for processing and will
    * generate translated content based on the source files and target locales provided.
    *
-   * @param {FileReference[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {FileReferenceIds[]} files - Array of file references containing IDs of previously uploaded source files
    * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
    * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
-    files: FileReferenceOptionalBranchId[],
+    files: FileReferenceIds[],
     options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
@@ -703,7 +723,9 @@ export class GT {
         {
           fileId: file.fileId,
           branchId: file.branchId,
-          locale: this.resolveCanonicalLocale(file.locale),
+          locale: file.locale
+            ? this.resolveCanonicalLocale(file.locale)
+            : undefined,
           versionId: file.versionId,
           useLatestAvailableVersion: file.useLatestAvailableVersion,
         },
@@ -711,7 +733,7 @@ export class GT {
       options,
       this._getTranslationConfig()
     );
-    return result.data[0].data;
+    return result.data?.[0]?.data ?? '';
   }
 
   /**
@@ -739,7 +761,9 @@ export class GT {
 
     requests = requests.map((request) => ({
       ...request,
-      locale: this.resolveCanonicalLocale(request.locale),
+      locale: request.locale
+        ? this.resolveCanonicalLocale(request.locale)
+        : undefined,
     }));
 
     // Request the batch download
@@ -752,7 +776,9 @@ export class GT {
     return {
       files: result.data.map((file) => ({
         ...file,
-        ...(file.locale && { locale: this.resolveAliasLocale(file.locale) }),
+        ...(file.locale && {
+          locale: this.resolveAliasLocale(file.locale),
+        }),
       })),
       count: result.count,
     };

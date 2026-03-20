@@ -100,6 +100,11 @@ export type {
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
 export type {
+  AwaitJobsOptions,
+  AwaitJobsResult,
+  JobResult,
+} from './translate/awaitJobs';
+export type {
   SubmitUserEditDiff,
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
