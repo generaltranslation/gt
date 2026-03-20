@@ -469,7 +469,10 @@ export function parseStrings(
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
         // User configurable, otherwise default to AUTO
-        enableAutoDerive: config.enableAutoDerive,
+        enableAutoDerive:
+          config.enableAutoDerive === 'AUTO'
+            ? 'DISABLED'
+            : config.enableAutoDerive,
       };
 
       // Check if this is a direct call to msg('string') or t('string')
@@ -494,7 +497,7 @@ export function parseStrings(
         if (originalName === T_REGISTRATION_FUNCTION) {
           processTranslationCall(
             refPath,
-            stringRegistrationConfig.enableAutoDerive === 'AUTO'
+            config.enableAutoDerive === 'AUTO'
               ? {
                   ...stringRegistrationConfig,
                   enableAutoDerive: 'ENABLED',
