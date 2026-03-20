@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.12.1
+
+### Patch Changes
+
+- [#1140](https://github.com/generaltranslation/gt/pull/1140) [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding staged status to `gt-lock.json`, adding `useLatestAvailableVersion` flag to core download
+
+- Updated dependencies [[`d688831`](https://github.com/generaltranslation/gt/commit/d688831d124f9719357100a93e5a7c37729e751e), [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e)]:
+  - generaltranslation@8.1.21
+  - @generaltranslation/python-extractor@0.2.1
+
 ## 2.12.0
 
 ### Minor Changes
