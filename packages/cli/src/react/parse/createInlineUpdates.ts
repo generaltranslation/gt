@@ -75,6 +75,7 @@ export async function createInlineUpdates(
           includeSourceCodeContext,
           ignoreTaggedTemplates: false,
           ignoreGlobalTaggedTemplates: false,
+          enableAutoDerive: 'AUTO',
         },
         { updates, errors, warnings }
       );

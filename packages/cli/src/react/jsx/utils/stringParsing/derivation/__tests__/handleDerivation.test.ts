@@ -37,9 +37,11 @@ function runHandleDerivation(
         file: FILE_PATH,
         parsingOptions: PARSING_OPTIONS,
         errors,
+        warnings: new Set(),
         runtimeInterpolationState: runtimeInterpolation
           ? { index: 0 }
           : undefined,
+        skipDeriveInvocation: false,
       });
       path.stop();
     },
@@ -75,9 +77,11 @@ function runTaggedTemplate(
           file: FILE_PATH,
           parsingOptions: PARSING_OPTIONS,
           errors,
+          warnings: new Set(),
           runtimeInterpolationState: runtimeInterpolation
             ? { index: 0 }
             : undefined,
+          skipDeriveInvocation: false,
         });
         path.stop();
       }

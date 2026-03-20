@@ -36,6 +36,13 @@ export type ParsingConfig = {
    * If true, ignore global tagged template expressions (t`hello` without import)
    */
   ignoreGlobalTaggedTemplates: boolean;
+  /**
+   * Skip requirement for a derive() invocation to trigger derivation
+   * - ENABLED: Always auto-derive
+   * - DISABLED: Never auto-derive
+   * - AUTO: Only auto-derive for the t() function
+   */
+  enableAutoDerive: 'ENABLED' | 'DISABLED' | 'AUTO';
 };
 
 /**

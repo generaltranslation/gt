@@ -3145,4 +3145,98 @@ describe('parseStrings', () => {
       expect(params.errors.length).toBeGreaterThan(0);
     });
   });
+
+  describe('auto-derive for t() function', () => {
+    const runParseStrings = (
+      code: string,
+      functionName: string,
+      params: ReturnType<typeof createMockParams>
+    ) => {
+      const ast = parseCode(code);
+      traverse(ast, {
+        ImportSpecifier(path) {
+          if (
+            t.isIdentifier(path.node.imported) &&
+            path.node.imported.name === functionName &&
+            t.isIdentifier(path.node.local)
+          ) {
+            parseStrings(
+              path.node.local.name,
+              functionName,
+              path,
+              {
+                parsingOptions: params.parsingOptions,
+                file: params.file,
+                ignoreInlineMetadata: false,
+                ignoreDynamicContent: false,
+                ignoreInvalidIcu: false,
+                ignoreInlineListContent: true,
+                ignoreTaggedTemplates: false,
+                ignoreGlobalTaggedTemplates: false,
+              },
+              {
+                updates: params.updates,
+                errors: params.errors,
+                warnings: params.warnings,
+              }
+            );
+          }
+        },
+      });
+    };
+
+    it('should auto-derive t() with template literal interpolation', () => {
+      const code = `
+        import { t } from 'gt-react/browser';
+        const name = "John";
+        t(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 't', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive t() with concatenation', () => {
+      const code = `
+        import { t } from 'gt-react/browser';
+        const name = "John";
+        t("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 't', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should error for msg() with template literal interpolation', () => {
+      const code = `
+        import { msg } from 'gt-react';
+        const name = "John";
+        msg(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'msg', params);
+
+      expect(params.updates).toHaveLength(0);
+      expect(params.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should error for msg() with concatenation', () => {
+      const code = `
+        import { msg } from 'gt-react';
+        const name = "John";
+        msg("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'msg', params);
+
+      expect(params.updates).toHaveLength(0);
+      expect(params.errors.length).toBeGreaterThan(0);
+    });
+  });
 });

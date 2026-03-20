@@ -46,11 +46,13 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param parsingOptions - Parsing configuration
  * @param errors - Errors to add to
  * @param runtimeInterpolationState - When provided, non-derive dynamic expressions become {n} placeholders instead of errors. Pass { index: 0 } at the entry point for template macros.
+ * @param skipDeriveInvocation - If true, skip derive invocation check
  * @returns Node | null - The parsed node, or null if invalid
  *
  * @note runtimeInterpolationState
  *  - Only provide at entry for template macros, otherwise omit
  *  - t`Hello {nonDerivableValue}` -> t`Hello {0}`
+ *
  */
 export function handleDerivation({
   expr,
@@ -60,6 +62,7 @@ export function handleDerivation({
   errors,
   warnings,
   runtimeInterpolationState,
+  skipDeriveInvocation,
 }: {
   expr: t.Expression;
   tPath: NodePath;
@@ -68,14 +71,47 @@ export function handleDerivation({
   errors: string[];
   warnings: Set<string>;
   runtimeInterpolationState?: { index: number };
+  skipDeriveInvocation?: boolean;
 }): StringNode | null {
   if (!expr) {
     return null;
   }
 
+  const isDeriveInvocation = isDeriveCall({ expr, tPath });
+
+  // Skip derive invocation check
+  // We still want derive invocations to be treated normally, so we route those to the other getDeriveVariants logic
+  if (skipDeriveInvocation && !isDeriveInvocation) {
+    const variants = getDeriveVariants({
+      call: expr as unknown as t.CallExpression,
+      tPath,
+      file,
+      parsingOptions,
+      errors,
+      warnings,
+      skipDeriveInvocation,
+    });
+    if (variants) {
+      return {
+        type: 'choice',
+        nodes: variants.map((v) => ({ type: 'text', text: v })),
+      };
+    }
+    // derive() had no resolvable results
+    const code = generate(expr).code;
+    errors.push(
+      warnDeriveFunctionNoResultsSync(
+        file,
+        code,
+        `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+      )
+    );
+    return null;
+  }
+
   // Handle expressions
   if (t.isCallExpression(expr)) {
-    if (isDeriveCall({ expr, tPath })) {
+    if (isDeriveInvocation) {
       const variants = getDeriveVariants({
         call: expr,
         tPath,
@@ -159,6 +195,7 @@ export function handleDerivation({
             errors,
             warnings,
             runtimeInterpolationState,
+            skipDeriveInvocation,
           });
           if (result === null) return null;
           parts.push(result);
@@ -188,6 +225,7 @@ export function handleDerivation({
       errors,
       warnings,
       runtimeInterpolationState,
+      skipDeriveInvocation,
     });
     const rightResult = handleDerivation({
       expr: expr.right,
@@ -197,6 +235,7 @@ export function handleDerivation({
       errors,
       warnings,
       runtimeInterpolationState,
+      skipDeriveInvocation,
     });
 
     if (leftResult === null || rightResult === null) {
@@ -216,6 +255,7 @@ export function handleDerivation({
       errors,
       warnings,
       runtimeInterpolationState,
+      skipDeriveInvocation,
     });
   }
 
@@ -279,6 +319,7 @@ function getDeriveVariants({
   parsingOptions,
   errors,
   warnings,
+  skipDeriveInvocation = false,
 }: {
   call: t.CallExpression;
   tPath: NodePath;
@@ -286,7 +327,18 @@ function getDeriveVariants({
   parsingOptions: ParsingConfigOptions;
   errors: string[];
   warnings: Set<string>;
+  skipDeriveInvocation?: boolean;
 }): string[] | null {
+  if (skipDeriveInvocation) {
+    return resolveCallStringVariants(
+      call,
+      tPath,
+      file,
+      parsingOptions,
+      errors,
+      warnings
+    );
+  }
   // --- Validate Callee --- //
 
   // Must be a derive(...) call or an alias of it
