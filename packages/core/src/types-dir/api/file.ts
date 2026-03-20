@@ -27,10 +27,11 @@ type FormatMetadata = Record<string, any> | Updates[number]['metadata'];
  * @property {string} [incomingBranchId] - The ID of the incoming branch of the file
  * @property {string} [checkedOutBranchId] - The ID of the checked out branch of the file
  */
-export type FileToUpload = FileReferenceOptionalBranchId & {
+export type FileToUpload = Omit<FileReference, 'branchId'> & {
   content: string;
   locale: string;
   formatMetadata?: FormatMetadata;
+  branchId?: string;
   incomingBranchId?: string;
   checkedOutBranchId?: string;
 };
@@ -52,15 +53,6 @@ export type FileReference = {
   fileName: string;
   fileFormat: FileFormat;
   dataFormat?: DataFormat;
-};
-
-/**
- * File reference object structure for referencing files
- * @see {@link FileReference}
- * @property {string} [branchId] - The ID of the branch of the file
- */
-export type FileReferenceOptionalBranchId = Omit<FileReference, 'branchId'> & {
-  branchId?: string;
 };
 
 /**
