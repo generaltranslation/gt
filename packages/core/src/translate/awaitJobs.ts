@@ -5,7 +5,7 @@ import { _checkJobStatus, JobStatus } from './checkJobStatus';
 export type AwaitJobsOptions = {
   /** Polling interval in seconds. Defaults to 5. */
   pollingIntervalSeconds?: number;
-  /** Timeout in seconds. If reached, resolves with whatever status is current. */
+  /** Timeout in seconds. Defaults to 600 (10 minutes). If reached, resolves with whatever status is current. */
   timeoutSeconds?: number;
 };
 
@@ -35,9 +35,11 @@ export default async function _awaitJobs(
   config: TranslationRequestConfig
 ): Promise<AwaitJobsResult> {
   const pollingInterval = (options?.pollingIntervalSeconds ?? 5) * 1000;
-  const timeout = options?.timeoutSeconds
-    ? options.timeoutSeconds * 1000
-    : undefined;
+  const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+  const timeout =
+    options?.timeoutSeconds !== undefined
+      ? options.timeoutSeconds * 1000
+      : DEFAULT_TIMEOUT_MS;
 
   const jobIds = Object.keys(enqueueResult.jobData);
 
@@ -46,7 +48,9 @@ export default async function _awaitJobs(
   }
 
   const startTime = Date.now();
-  const finalStatuses = new Map<string, JobResult>();
+  const finalStatuses = new Map<string, JobResult>(
+    jobIds.map((id) => [id, { jobId: id, status: 'unknown' as JobStatus }])
+  );
   const pendingJobIds = new Set(jobIds);
 
   while (pendingJobIds.size > 0) {
@@ -74,7 +78,7 @@ export default async function _awaitJobs(
 
     if (pendingJobIds.size === 0) break;
 
-    if (timeout && Date.now() - startTime >= timeout) break;
+    if (Date.now() - startTime >= timeout) break;
 
     await new Promise((resolve) => setTimeout(resolve, pollingInterval));
   }

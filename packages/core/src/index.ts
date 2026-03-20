@@ -775,9 +775,7 @@ export class GT {
       files: result.data.map((file) => ({
         ...file,
         ...(file.locale && {
-          locale: file.locale
-            ? this.resolveAliasLocale(file.locale)
-            : undefined,
+          locale: this.resolveAliasLocale(file.locale),
         }),
       })),
       count: result.count,
