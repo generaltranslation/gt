@@ -7,7 +7,10 @@ import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
-import type { ParsingConfigOptions } from '../../types/parsing.js';
+import type {
+  ParsingConfigOptions,
+  GTParsingFlags,
+} from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
@@ -25,6 +28,7 @@ export async function createInlineUpdates(
   pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
+  parsingFlags: GTParsingFlags,
   parsingOptions: ParsingConfigOptions,
   includeSourceCodeContext: boolean = false
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
@@ -75,7 +79,8 @@ export async function createInlineUpdates(
           includeSourceCodeContext,
           ignoreTaggedTemplates: false,
           ignoreGlobalTaggedTemplates: false,
-          enableAutoDerive: 'AUTO',
+          // User configurable, otherwise default to AUTO
+          enableAutoDerive: parsingFlags.autoDerive ? 'AUTO' : 'DISABLED',
         },
         { updates, errors, warnings }
       );

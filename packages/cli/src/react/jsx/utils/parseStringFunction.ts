@@ -458,8 +458,8 @@ export function parseStrings(
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
-        // TODO: user should be able to override this
-        enableAutoDerive: 'AUTO',
+        // User configurable, otherwise default to AUTO
+        enableAutoDerive: config.enableAutoDerive,
       };
 
       // Check if this is a direct call to msg('string') or t('string')
@@ -557,8 +557,11 @@ export function parseStrings(
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
-        // TODO: user should be able to override this
-        enableAutoDerive: 'DISABLED',
+        // User configurable, otherwise default to DISABLED
+        enableAutoDerive:
+          config.enableAutoDerive === 'AUTO'
+            ? 'DISABLED'
+            : config.enableAutoDerive,
       };
 
       const effectiveParent =

@@ -3,6 +3,7 @@ import {
   exitSync,
   logErrorAndExit,
   warnApiKeyInConfig,
+  warnDeprecatedField,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings, SupportedFrameworks } from '../types/index.js';
@@ -24,6 +25,7 @@ import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
+import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -124,6 +126,14 @@ export async function generateSettings(
     }
   }
 
+  // Warn on deprecated includeSourceCodeContext
+  if (gtConfig.files?.gt?.includeSourceCodeContext != null) {
+    warnDeprecatedField(
+      'files.gt.includeSourceCodeContext',
+      'files.gt.parsingFlags.includeSourceCodeContext'
+    );
+  }
+
   // merge options
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
@@ -200,7 +210,10 @@ export async function generateSettings(
         transformPaths: {},
         publishPaths: new Set<string>(),
         unpublishPaths: new Set<string>(),
-        gtJson: {},
+        parsingFlags: {},
+        gtJson: {
+          parsingFlags: GT_PARSING_FLAGS_DEFAULT,
+        },
       };
 
   mergedOptions.options = {

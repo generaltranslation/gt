@@ -7,7 +7,7 @@ import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { createPythonInlineUpdates } from '../python/parse/createPythonInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
-import type { ParsingConfigOptions } from '../types/parsing.js';
+import type { ParsingConfigOptions, GTParsingFlags } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
 import { InlineLibrary, isPythonLibrary } from '../types/libraries.js';
 
@@ -26,8 +26,8 @@ export async function createUpdates(
   sourceDictionary: string | undefined,
   pkg: InlineLibrary,
   validate: boolean,
-  parsingOptions: ParsingConfigOptions,
-  includeSourceCodeContext: boolean = false
+  parsingFlags: GTParsingFlags,
+  parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
@@ -80,8 +80,8 @@ export async function createUpdates(
         pkg,
         validate,
         src,
-        parsingOptions,
-        includeSourceCodeContext
+        parsingFlags,
+        parsingOptions
       );
 
   errors = [...errors, ...newErrors];

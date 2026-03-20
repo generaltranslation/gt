@@ -260,6 +260,16 @@ export function warnTernary(file: string) {
   );
 }
 
+export function warnDeprecatedField(
+  deprecatedField: string,
+  replacement: string
+) {
+  logger.warn(
+    `${chalk.green(deprecatedField)} is deprecated. ` +
+      chalk.white(`Use ${chalk.green(replacement)} instead.`)
+  );
+}
+
 /**
  * Helper: Log all collected files
  */

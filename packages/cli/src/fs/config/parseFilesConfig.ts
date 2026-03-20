@@ -3,6 +3,7 @@ import {
   FilesOptions,
   IncludePattern,
   ResolvedFiles,
+  Settings,
   TransformFiles,
   TransformOption,
 } from '../../types/index.js';
@@ -11,6 +12,11 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js
 import { logger } from '../../console/logger.js';
 import chalk from 'chalk';
 import micromatch from 'micromatch';
+import { ParseFlagsByFileType } from '../../types/parsing.js';
+import {
+  BASE_PARSING_FLAGS_DEFAULT,
+  GT_PARSING_FLAGS_DEFAULT,
+} from '../../config/defaults.js';
 
 /**
  * Resolves the files from the files object
@@ -80,23 +86,14 @@ export function resolveFiles(
   locales: string[],
   cwd: string,
   compositePatterns?: string[]
-): {
-  resolvedPaths: ResolvedFiles;
-  placeholderPaths: ResolvedFiles;
-  transformPaths: TransformFiles;
-  publishPaths: Set<string>;
-  unpublishPaths: Set<string>;
-  gtJson: {
-    publish?: boolean;
-    includeSourceCodeContext?: boolean;
-  };
-} {
+): Settings['files'] {
   // Initialize result object with empty arrays for each file type
-  const result: ResolvedFiles = {};
+  const resolvedPaths: ResolvedFiles = {};
   const placeholderResult: ResolvedFiles = {};
   const transformPaths: TransformFiles = {};
   const publishPaths = new Set<string>();
   const unpublishPaths = new Set<string>();
+  const parsingFlags: ParseFlagsByFileType = {};
 
   // Process GT files
   if (files.gt?.output) {
@@ -128,7 +125,7 @@ export function resolveFiles(
         transformPaths[fileType] || undefined,
         compositePatterns
       );
-      result[fileType] = filePaths.resolvedPaths;
+      resolvedPaths[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
 
       // Classify resolved paths into publish/unpublish sets
@@ -142,17 +139,28 @@ export function resolveFiles(
         unpublishPaths
       );
     }
+    // ==== OTHER ==== //
+    if (files[fileType]?.parsingFlags) {
+      parsingFlags[fileType] = {
+        ...BASE_PARSING_FLAGS_DEFAULT,
+        ...files[fileType].parsingFlags,
+      };
+    }
   }
 
   return {
-    resolvedPaths: result,
+    resolvedPaths,
     placeholderPaths: placeholderResult,
     transformPaths: transformPaths,
     publishPaths,
     unpublishPaths,
+    parsingFlags,
     gtJson: {
       publish: files.gt?.publish,
-      includeSourceCodeContext: files.gt?.includeSourceCodeContext,
+      parsingFlags: {
+        ...GT_PARSING_FLAGS_DEFAULT,
+        ...(files.gt?.parsingFlags || {}),
+      },
     },
   };
 }

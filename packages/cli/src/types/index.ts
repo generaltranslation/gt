@@ -1,6 +1,11 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
-import { ParsingConfigOptions } from './parsing.js';
+import {
+  ParsingConfigOptions,
+  GTParsingFlags,
+  BaseParsingFlags,
+  ParseFlagsByFileType,
+} from './parsing.js';
 import { Libraries, InlineLibrary } from './libraries.js';
 
 export type { Updates } from 'generaltranslation/types';
@@ -183,11 +188,17 @@ export type FilesOptions = {
     include: IncludePattern[];
     exclude?: string[];
     transform?: string | TransformOption | TransformOption[];
+    parsingFlags?: BaseParsingFlags; // Flags for parsing inline content
   };
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
     publish?: boolean; // if true, publish gtjson translations to the CDN
+    parsingFlags?: GTParsingFlags; // Flags for parsing inline content
+    /**
+     * @deprecated
+     * use {@link GTParsingFlags['includeSourceCodeContext']} instead
+     */
     includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
 };
@@ -209,8 +220,14 @@ export type Settings = {
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
+    parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
+      parsingFlags: GTParsingFlags; // Flags for parsing inline content
+      /**
+       * @deprecated
+       * use {@link GTParsingFlags['parsingFlags']} instead
+       */
       includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
     };
   };
