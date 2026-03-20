@@ -246,6 +246,109 @@ describe('handleDerivation', () => {
     });
   });
 
+  describe('auto-derive (skipDeriveInvocation: true)', () => {
+    /**
+     * Runs handleDerivation with skipDeriveInvocation: true.
+     */
+    function runHandleDerivationAutoDerive(
+      code: string,
+      runtimeInterpolation: boolean = false
+    ): { result: ReturnType<typeof handleDerivation>; errors: string[] } {
+      const ast = parse(code, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let result: ReturnType<typeof handleDerivation> = null;
+      const errors: string[] = [];
+
+      traverse(ast, {
+        ExpressionStatement(path: NodePath<t.ExpressionStatement>) {
+          const expr = path.node.expression;
+          if (!t.isExpression(expr)) return;
+          result = handleDerivation({
+            expr,
+            tPath: path,
+            file: FILE_PATH,
+            parsingOptions: PARSING_OPTIONS,
+            errors,
+            warnings: new Set(),
+            runtimeInterpolationState: runtimeInterpolation
+              ? { index: 0 }
+              : undefined,
+            skipDeriveInvocation: true,
+          });
+          path.stop();
+        },
+      });
+
+      return { result, errors };
+    }
+
+    it('should resolve identifier via scope when variable is defined', () => {
+      const { result, errors } = runHandleDerivationAutoDerive(
+        'const greeting = "hello";\ngreeting'
+      );
+      // resolveCallStringVariants -> parseStringExpression resolves the const binding
+      expect(result).toEqual({
+        type: 'choice',
+        nodes: [{ type: 'text', text: 'hello' }],
+      });
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should error for non-resolvable identifier', () => {
+      const { result, errors } = runHandleDerivationAutoDerive('unknown');
+      // No binding in scope -> parseStringExpression returns null -> error
+      expect(result).toBeNull();
+      expect(errors).toHaveLength(1);
+    });
+
+    it('should still return static text for string literals', () => {
+      const { result, errors } = runHandleDerivationAutoDerive('("hello")');
+      // Static string literals are handled before the skipDeriveInvocation fallback
+      expect(result).toEqual({ type: 'text', text: 'hello' });
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should still handle binary expression with static parts', () => {
+      const { result, errors } = runHandleDerivationAutoDerive('"A" + "B"');
+      expect(result).toEqual({
+        type: 'sequence',
+        nodes: [
+          { type: 'text', text: 'A' },
+          { type: 'text', text: 'B' },
+        ],
+      });
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should still error for non-derive call expression', () => {
+      const { result, errors } = runHandleDerivationAutoDerive('foo()');
+      // Call expressions are handled at the top of handleDerivation, not by skipDeriveInvocation
+      expect(result).toBeNull();
+      expect(errors).toHaveLength(1);
+    });
+
+    it('should resolve identifier inside template literal via skipDeriveInvocation', () => {
+      const code = 'const name = "world";\n`Hello ${name}`';
+      const { result, errors } = runHandleDerivationAutoDerive(code);
+      // Template literal handler recurses with skipDeriveInvocation for non-derive expressions
+      // The identifier 'name' hits the skipDeriveInvocation fallback and resolves
+      expect(result).toEqual({
+        type: 'sequence',
+        nodes: [
+          { type: 'text', text: 'Hello ' },
+          {
+            type: 'choice',
+            nodes: [{ type: 'text', text: 'world' }],
+          },
+        ],
+      });
+      expect(errors).toHaveLength(0);
+    });
+  });
+
   describe('tagged template WITHOUT runtime interpolation', () => {
     it('should return null for dynamic expression in template', () => {
       const { strings } = runTaggedTemplate('t`Hello, ${name}`', false);
