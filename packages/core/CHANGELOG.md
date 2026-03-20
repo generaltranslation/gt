@@ -1,5 +1,13 @@
 # generaltranslation
 
+## 8.1.21
+
+### Patch Changes
+
+- [#1142](https://github.com/generaltranslation/gt/pull/1142) [`d688831`](https://github.com/generaltranslation/gt/commit/d688831d124f9719357100a93e5a7c37729e751e) Thanks [@brian-lou](https://github.com/brian-lou)! - Add new helper awaitJobs() function
+
+- [#1140](https://github.com/generaltranslation/gt/pull/1140) [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding staged status to `gt-lock.json`, adding `useLatestAvailableVersion` flag to core download
+
 ## 8.1.20
 
 ### Patch Changes
