@@ -186,7 +186,8 @@ export function writeLockfile(
     const filepath = path.join(process.cwd(), GT_LOCK_FILE);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
-    if (originalV1) {
+    // V1 format can't represent the staged flag — upgrade to V2 if any entries are staged
+    if (originalV1 && !data.entries.some((e) => e.staged)) {
       const mergedV1: DownloadedVersionsV1 = {
         ...originalV1,
         entries: {
