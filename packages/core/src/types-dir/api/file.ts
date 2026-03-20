@@ -62,3 +62,18 @@ export type FileReference = {
 export type FileReferenceOptionalBranchId = Omit<FileReference, 'branchId'> & {
   branchId?: string;
 };
+
+/**
+ * File reference object structure for referencing files
+ * @see {@link FileReference}
+ * @property {string} [branchId] - The ID of the branch of the file
+ */
+export type FileReferenceIds = Omit<
+  FileReference,
+  'branchId' | 'fileName' | 'fileFormat' | 'dataFormat'
+> & {
+  branchId?: string;
+  fileName?: string;
+  fileFormat?: FileFormat;
+  dataFormat?: DataFormat;
+};
