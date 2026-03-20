@@ -691,6 +691,7 @@ export class GT {
       branchId?: string;
       locale?: string;
       versionId?: string;
+      useLatestAvailableVersion?: boolean;
     },
     options: DownloadFileOptions = {}
   ): Promise<string> {
@@ -704,6 +705,7 @@ export class GT {
           branchId: file.branchId,
           locale: this.resolveCanonicalLocale(file.locale),
           versionId: file.versionId,
+          useLatestAvailableVersion: file.useLatestAvailableVersion,
         },
       ],
       options,

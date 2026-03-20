@@ -6,6 +6,7 @@ export type DownloadFileBatchRequest = {
   branchId?: string; // if not provided, will use the default branch
   versionId?: string; // if not provided, will use the latest version
   locale?: string; // if not provided, will download the source file
+  useLatestAvailableVersion?: boolean; // if true and versionId is not found, falls back to the latest available version
 }[];
 
 export type DownloadFileBatchOptions = {

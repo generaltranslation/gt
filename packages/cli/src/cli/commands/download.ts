@@ -2,7 +2,7 @@ import { noVersionIdError, noFilesError } from '../../console/index.js';
 import { SupportedLibraries, TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import { getStagedVersions } from '../../fs/config/updateVersions.js';
+import { getStagedEntriesFromLockfile } from '../../fs/config/downloadedVersions.js';
 import {
   runDownloadWorkflow,
   FileTranslationData,
@@ -46,7 +46,7 @@ export async function handleDownload(
   // Collect the hashes for all files we need to download
   let fileVersionData: FileTranslationData;
   if (settings.stageTranslations) {
-    fileVersionData = await getStagedVersions(settings.configDirectory);
+    fileVersionData = getStagedEntriesFromLockfile(settings);
   } else {
     const { files } = await collectFiles(options, settings, library);
     fileVersionData = convertToFileTranslationData(files);

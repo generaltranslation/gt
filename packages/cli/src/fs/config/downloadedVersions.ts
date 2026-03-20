@@ -17,6 +17,7 @@ export type DownloadedVersionEntry = {
   fileId: string;
   versionId: string;
   fileName?: string; // source file path
+  staged?: boolean; // true if this entry was staged but not yet downloaded
   translations: {
     [locale: string]: DownloadedTranslation;
   };
@@ -242,4 +243,53 @@ export function findOrCreateEntry(
   entries.push(entry);
   entryMap.set(fileId, entry);
   return entry;
+}
+
+// ── Staging helpers ─────────────────────────────────────────────────
+
+/**
+ * Writes staged file entries into the lockfile.
+ * Each entry is marked with `staged: true` and empty translations.
+ */
+export function writeStagedEntries(
+  settings: Settings,
+  stagedFiles: { fileId: string; versionId: string; fileName: string }[]
+): void {
+  const { data, entryMap, originalV1 } = readLockfile(settings);
+
+  for (const file of stagedFiles) {
+    const entry = findOrCreateEntry(
+      entryMap,
+      data.entries,
+      file.fileId,
+      file.versionId
+    );
+    entry.fileName = file.fileName;
+    entry.staged = true;
+  }
+
+  writeLockfile(data, originalV1);
+}
+
+/**
+ * Reads staged entries from the lockfile.
+ * Returns the same shape as FileTranslationData for compatibility
+ * with the download workflow.
+ */
+export function getStagedEntriesFromLockfile(
+  settings: Settings
+): Record<string, { versionId: string; fileName: string }> {
+  const { data } = readLockfile(settings);
+  const result: Record<string, { versionId: string; fileName: string }> = {};
+
+  for (const entry of data.entries) {
+    if (entry.staged && entry.fileName) {
+      result[entry.fileId] = {
+        versionId: entry.versionId,
+        fileName: entry.fileName,
+      };
+    }
+  }
+
+  return result;
 }
