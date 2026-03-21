@@ -301,6 +301,17 @@ export const warnDeriveFunctionNoResultsSync = (
     location
   );
 
+export const warnAutoDeriveNoResultsSync = (
+  file: string,
+  expression: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Auto-derive could not resolve ${colorizeFunctionName(formatCodeClamp(expression))}. Only function calls with statically determinable return values can be used directly in t(). Consider wrapping with derive() for explicit derivation, or use an interpolation variable instead.`,
+    location
+  );
+
 export const warnDeriveUnresolvableValueSync = (
   file: string,
   key: string,

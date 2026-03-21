@@ -194,10 +194,10 @@ export type FilesOptions = {
   gt?: {
     output: string; // Output glob: /path/[locale].json
     publish?: boolean; // if true, publish gtjson translations to the CDN
-    parsingFlags?: GTParsingFlags; // Flags for parsing inline content
+    parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
     /**
      * @deprecated
-     * use {@link GTParsingFlags['includeSourceCodeContext']} instead
+     * use `files.gtJson.parsingFlags.includeSourceCodeContext` instead
      */
     includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
