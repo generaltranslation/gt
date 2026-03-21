@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.13.0
+
+### Minor Changes
+
+- [#1141](https://github.com/generaltranslation/gt/pull/1141) [`4820643`](https://github.com/generaltranslation/gt/commit/4820643665d5aecacc34c52707c0c81bf4da18ca) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: auto derive for the t() function
+
 ## 2.12.1
 
 ### Patch Changes
