@@ -197,7 +197,7 @@ export type FilesOptions = {
     parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
     /**
      * @deprecated
-     * use `files.gtJson.parsingFlags.includeSourceCodeContext` instead
+     * use `files.gt.parsingFlags.includeSourceCodeContext` instead
      */
     includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
