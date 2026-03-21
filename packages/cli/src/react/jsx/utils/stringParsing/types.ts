@@ -42,7 +42,7 @@ export type ParsingConfig = {
    * - DISABLED: Never auto-derive
    * - AUTO: Only auto-derive for the t() function
    */
-  enableAutoDerive: 'ENABLED' | 'DISABLED' | 'AUTO';
+  autoDeriveMethod: 'ENABLED' | 'DISABLED' | 'AUTO';
 };
 
 /**

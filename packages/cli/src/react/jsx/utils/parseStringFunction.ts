@@ -435,10 +435,10 @@ export function parseStrings(
         path,
         {
           ...config,
-          enableAutoDerive:
-            config.enableAutoDerive === 'AUTO'
+          autoDeriveMethod:
+            config.autoDeriveMethod === 'AUTO'
               ? 'DISABLED'
-              : config.enableAutoDerive,
+              : config.autoDeriveMethod,
         },
         output
       );
@@ -469,10 +469,10 @@ export function parseStrings(
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
         // User configurable, otherwise default to AUTO
-        enableAutoDerive:
-          config.enableAutoDerive === 'AUTO'
+        autoDeriveMethod:
+          config.autoDeriveMethod === 'AUTO'
             ? 'DISABLED'
-            : config.enableAutoDerive,
+            : config.autoDeriveMethod,
       };
 
       // Check if this is a direct call to msg('string') or t('string')
@@ -497,10 +497,10 @@ export function parseStrings(
         if (originalName === T_REGISTRATION_FUNCTION) {
           processTranslationCall(
             refPath,
-            config.enableAutoDerive === 'AUTO'
+            config.autoDeriveMethod === 'AUTO'
               ? {
                   ...stringRegistrationConfig,
-                  enableAutoDerive: 'ENABLED',
+                  autoDeriveMethod: 'ENABLED',
                 }
               : stringRegistrationConfig,
             output
@@ -571,10 +571,10 @@ export function parseStrings(
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
         // User configurable, otherwise default to DISABLED
-        enableAutoDerive:
-          config.enableAutoDerive === 'AUTO'
+        autoDeriveMethod:
+          config.autoDeriveMethod === 'AUTO'
             ? 'DISABLED'
-            : config.enableAutoDerive,
+            : config.autoDeriveMethod,
       };
 
       const effectiveParent =
