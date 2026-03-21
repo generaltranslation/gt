@@ -7,7 +7,10 @@ import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
-import type { ParsingConfigOptions } from '../../types/parsing.js';
+import type {
+  ParsingConfigOptions,
+  GTParsingFlags,
+} from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
@@ -25,8 +28,8 @@ export async function createInlineUpdates(
   pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
-  parsingOptions: ParsingConfigOptions,
-  includeSourceCodeContext: boolean = false
+  parsingFlags: GTParsingFlags,
+  parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
@@ -72,9 +75,11 @@ export async function createInlineUpdates(
           ignoreDynamicContent: false,
           ignoreInvalidIcu: false,
           ignoreInlineListContent: false,
-          includeSourceCodeContext,
+          includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
           ignoreTaggedTemplates: false,
           ignoreGlobalTaggedTemplates: false,
+          // User configurable, otherwise default to AUTO
+          autoDeriveMethod: parsingFlags.autoDerive ? 'AUTO' : 'DISABLED',
         },
         { updates, errors, warnings }
       );
@@ -93,7 +98,7 @@ export async function createInlineUpdates(
             parsingOptions,
             pkgs,
             file,
-            includeSourceCodeContext,
+            includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
           },
           output: {
             errors,

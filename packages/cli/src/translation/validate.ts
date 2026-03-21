@@ -31,8 +31,8 @@ async function runValidation(
       pkg,
       true,
       files,
-      settings.parsingOptions,
-      settings.files?.gtJson.includeSourceCodeContext ?? false
+      settings.files.gtJson.parsingFlags,
+      settings.parsingOptions
     );
   }
 
@@ -55,8 +55,8 @@ async function runValidation(
     dictionary,
     pkg,
     true,
-    settings.parsingOptions,
-    settings.files?.gtJson.includeSourceCodeContext ?? false
+    settings.files.gtJson.parsingFlags,
+    settings.parsingOptions
   );
 }
 

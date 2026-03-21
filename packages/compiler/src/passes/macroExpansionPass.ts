@@ -22,8 +22,6 @@ export function macroExpansionPass(state: TransformState): TraverseOptions {
   return {
     ImportDeclaration: processImportDeclaration(onImportFound),
     TaggedTemplateExpression: processTaggedTemplateExpression(state),
-    // Disabling this to be re-enabled at stage 4
-    // CallExpression: processCallExpression(state),
     Program: processProgram({
       state,
       countBefore,

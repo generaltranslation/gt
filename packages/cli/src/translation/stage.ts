@@ -31,8 +31,8 @@ export async function aggregateInlineTranslations(
     options.dictionary,
     library,
     false,
-    settings.parsingOptions,
-    settings.files?.gtJson.includeSourceCodeContext ?? false
+    settings.files.gtJson.parsingFlags,
+    settings.parsingOptions
   );
 
   if (warnings.length > 0) {

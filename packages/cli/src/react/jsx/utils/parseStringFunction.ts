@@ -7,6 +7,7 @@ import {
   INLINE_MESSAGE_HOOK_ASYNC,
   STRING_REGISTRATION_FUNCS,
   T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
+  T_REGISTRATION_FUNCTION,
 } from './constants.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 
@@ -114,8 +115,8 @@ export function resolveVariableAliases(
 
 /**
  * Handles how translation callbacks are used within code.
- * This covers both direct translation calls (t('hello')) and prop drilling
- * where the translation callback is passed to other functions (getData(t)).
+ * This covers both direct translation calls (gt('hello')) and prop drilling
+ * where the translation callback is passed to other functions (getData(gt)).
  */
 function handleFunctionCall(
   tPath: NodePath,
@@ -426,9 +427,21 @@ export function parseStrings(
   output: ParsingOutput
 ): void {
   // Handle global t macro directly — path is already the tag identifier
+  // NOTE: if we decide to add support for a global t() function in addition to the macro,
+  // then we need to add support for skipDeriveInvocation here
   if (originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER) {
     if (!config.ignoreGlobalTaggedTemplates) {
-      processTaggedTemplateCall(path, config, output);
+      processTaggedTemplateCall(
+        path,
+        {
+          ...config,
+          autoDeriveMethod:
+            config.autoDeriveMethod === 'AUTO'
+              ? 'DISABLED'
+              : config.autoDeriveMethod,
+        },
+        output
+      );
     }
     return;
   }
@@ -455,6 +468,11 @@ export function parseStrings(
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
+        // User configurable, otherwise default to AUTO
+        autoDeriveMethod:
+          config.autoDeriveMethod === 'AUTO'
+            ? 'DISABLED'
+            : config.autoDeriveMethod,
       };
 
       // Check if this is a direct call to msg('string') or t('string')
@@ -462,7 +480,34 @@ export function parseStrings(
         refPath.parent.type === 'CallExpression' &&
         refPath.parent.callee === refPath.node
       ) {
-        processTranslationCall(refPath, stringRegistrationConfig, output);
+        /**
+         * SPECIAL CASE: Auto-derive t() function
+         * The t() function, will treat variable content as if it was marked for derivation
+         * without explicit calls to derive().
+         *
+         * @example
+         * const derivedValue = 'John';
+         * const interpolatedValue = "Ernest"
+         * t(
+         *   "Hello, " + derivedValue + "! My name is {interpolatedValue}",
+         *   { interpolatedValue }
+         * );
+         * // "Hello, John! My name is {interpolatedValue}"
+         */
+        if (originalName === T_REGISTRATION_FUNCTION) {
+          processTranslationCall(
+            refPath,
+            config.autoDeriveMethod === 'AUTO'
+              ? {
+                  ...stringRegistrationConfig,
+                  autoDeriveMethod: 'ENABLED',
+                }
+              : stringRegistrationConfig,
+            output
+          );
+        } else {
+          processTranslationCall(refPath, stringRegistrationConfig, output);
+        }
       } else if (
         !stringRegistrationConfig.ignoreTaggedTemplates &&
         refPath.parent.type === 'TaggedTemplateExpression' &&
@@ -525,6 +570,11 @@ export function parseStrings(
         includeSourceCodeContext: config.includeSourceCodeContext,
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
+        // User configurable, otherwise default to DISABLED
+        autoDeriveMethod:
+          config.autoDeriveMethod === 'AUTO'
+            ? 'DISABLED'
+            : config.autoDeriveMethod,
       };
 
       const effectiveParent =

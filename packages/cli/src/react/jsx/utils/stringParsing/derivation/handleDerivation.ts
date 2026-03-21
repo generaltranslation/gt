@@ -11,6 +11,7 @@ import {
   warnFunctionNotFoundSync,
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
+  warnAutoDeriveNoResultsSync,
 } from '../../../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -46,11 +47,13 @@ const processFunctionCache = new Map<string, StringNode | null>();
  * @param parsingOptions - Parsing configuration
  * @param errors - Errors to add to
  * @param runtimeInterpolationState - When provided, non-derive dynamic expressions become {n} placeholders instead of errors. Pass { index: 0 } at the entry point for template macros.
+ * @param skipDeriveInvocation - If true, skip derive invocation check
  * @returns Node | null - The parsed node, or null if invalid
  *
  * @note runtimeInterpolationState
  *  - Only provide at entry for template macros, otherwise omit
  *  - t`Hello {nonDerivableValue}` -> t`Hello {0}`
+ *
  */
 export function handleDerivation({
   expr,
@@ -60,6 +63,7 @@ export function handleDerivation({
   errors,
   warnings,
   runtimeInterpolationState,
+  skipDeriveInvocation,
 }: {
   expr: t.Expression;
   tPath: NodePath;
@@ -68,6 +72,7 @@ export function handleDerivation({
   errors: string[];
   warnings: Set<string>;
   runtimeInterpolationState?: { index: number };
+  skipDeriveInvocation?: boolean;
 }): StringNode | null {
   if (!expr) {
     return null;
@@ -159,6 +164,7 @@ export function handleDerivation({
             errors,
             warnings,
             runtimeInterpolationState,
+            skipDeriveInvocation,
           });
           if (result === null) return null;
           parts.push(result);
@@ -188,6 +194,7 @@ export function handleDerivation({
       errors,
       warnings,
       runtimeInterpolationState,
+      skipDeriveInvocation,
     });
     const rightResult = handleDerivation({
       expr: expr.right,
@@ -197,6 +204,7 @@ export function handleDerivation({
       errors,
       warnings,
       runtimeInterpolationState,
+      skipDeriveInvocation,
     });
 
     if (leftResult === null || rightResult === null) {
@@ -216,6 +224,7 @@ export function handleDerivation({
       errors,
       warnings,
       runtimeInterpolationState,
+      skipDeriveInvocation,
     });
   }
 
@@ -255,6 +264,35 @@ export function handleDerivation({
     return { type: 'text', text: 'null' };
   }
 
+  // Non-static expression
+  if (skipDeriveInvocation) {
+    // Skip pass a `derive()` invocation to do derivation
+    const variants = resolveCallStringVariants(
+      expr,
+      tPath,
+      file,
+      parsingOptions,
+      errors,
+      warnings
+    );
+    if (variants) {
+      return {
+        type: 'choice',
+        nodes: variants.map((v) => ({ type: 'text', text: v })),
+      };
+    }
+    // Auto-derive had no resolvable results
+    const code = generate(expr).code;
+    errors.push(
+      warnAutoDeriveNoResultsSync(
+        file,
+        code,
+        `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+      )
+    );
+    return null;
+  }
+
   // Not a derivable expression
   if (runtimeInterpolationState) {
     return { type: 'text', text: `{${runtimeInterpolationState.index++}}` };
@@ -272,7 +310,7 @@ export function handleDerivation({
  *
  * Returns null if it can't be resolved.
  */
-function getDeriveVariants({
+function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
   call,
   tPath,
   file,
@@ -280,7 +318,7 @@ function getDeriveVariants({
   errors,
   warnings,
 }: {
-  call: t.CallExpression;
+  call: T;
   tPath: NodePath;
   file: string;
   parsingOptions: ParsingConfigOptions;
