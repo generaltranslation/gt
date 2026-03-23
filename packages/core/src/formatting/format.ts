@@ -71,7 +71,6 @@ export function _formatMessageICU(
  * @returns {string} The formatted message.
  * @internal
  *
- * Will fallback to an empty string
  * TODO: add this to custom formats
  */
 export function _formatMessageString(message: string): string {

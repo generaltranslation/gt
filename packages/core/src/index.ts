@@ -1646,7 +1646,7 @@ export function formatCutoff(
  * @param {string} message - The message to format.
  * @param {string | string[]} [locales='en'] - The locales to use for formatting.
  * @param {FormatVariables} [variables={}] - The variables to use for formatting.
- * @param {StringFormat} [dataFormat='ICU'] - The format of the message.
+ * @param {StringFormat} [dataFormat='ICU'] - The format of the message. (When STRING, the message is returned as is)
  * @returns {string} The formatted message.
  *
  * @example
