@@ -71,7 +71,6 @@ export default async function _translateMany(
       metadata?.hash ??
       hashSource({
         source,
-        dataFormat: metadata?.dataFormat ?? 'STRING',
         ...(metadata ?? {}),
       });
     hashOrder?.push(hash);

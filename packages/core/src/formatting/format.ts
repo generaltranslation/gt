@@ -55,13 +55,27 @@ export function _formatCutoff({
  * Will fallback to an empty string
  * TODO: add this to custom formats
  */
-export function _formatMessage(
+export function _formatMessageICU(
   message: string,
   locales: string | string[] = libraryDefaultLocale,
   variables: FormatVariables = {}
 ): string {
   const messageFormat = new IntlMessageFormat(message, locales);
   return messageFormat.format(variables)?.toString() ?? '';
+}
+
+/**
+ * Formats a message according to the specified locales and options.
+ *
+ * @param {string} message - The message to format.
+ * @returns {string} The formatted message.
+ * @internal
+ *
+ * Will fallback to an empty string
+ * TODO: add this to custom formats
+ */
+export function _formatMessageString(message: string): string {
+  return message;
 }
 
 /**
@@ -251,7 +265,7 @@ export function _formatRelativeTime({
 
 /**
  * @experimental This function is not currently supported but will be implemented in a future version.
- * Use {@link _formatMessage} for current ICU message format support.
+ * Use {@link _formatMessageICU} for current ICU message format support.
  * Formats an I18next message according to the specified locales and options.
  *
  * @param message - The I18next message to format.
@@ -270,7 +284,7 @@ export function _formatI18next(
 
 /**
  * @experimental This function is not currently supported but will be implemented in a future version.
- * Use {@link _formatMessage} for current ICU message format support.
+ * Use {@link _formatMessageICU} for current ICU message format support.
  * Formats a JSX message according to the specified locales and options.
  *
  * @param message - The JSX message to format.

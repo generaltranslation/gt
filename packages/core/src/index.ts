@@ -11,9 +11,10 @@ import {
   _formatList,
   _formatRelativeTime,
   _formatDateTime,
-  _formatMessage,
+  _formatMessageICU,
   _formatListToParts,
   _formatCutoff,
+  _formatMessageString,
 } from './formatting/format';
 import {
   CustomMapping,
@@ -115,6 +116,7 @@ import _publishFiles, {
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { TranslateOptions } from './types-dir/api/entry';
 import { API_VERSION as _API_VERSION } from './translate/api';
+import { StringFormat } from './types-dir/jsx/content';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -1080,6 +1082,7 @@ export class GT {
    * @param {string} message - The message to format.
    * @param {string | string[]} [locales='en'] - The locales to use for formatting.
    * @param {FormatVariables} [variables={}] - The variables to use for formatting.
+   * @param {StringFormat} [dataFormat='ICU'] - The format of the message.
    * @returns {string} The formatted message.
    *
    * @example
@@ -1094,6 +1097,7 @@ export class GT {
     options?: {
       locales?: string | string[];
       variables?: FormatVariables;
+      dataFormat?: StringFormat;
     }
   ): string {
     return formatMessage(message, {
@@ -1642,6 +1646,7 @@ export function formatCutoff(
  * @param {string} message - The message to format.
  * @param {string | string[]} [locales='en'] - The locales to use for formatting.
  * @param {FormatVariables} [variables={}] - The variables to use for formatting.
+ * @param {StringFormat} [dataFormat='ICU'] - The format of the message.
  * @returns {string} The formatted message.
  *
  * @example
@@ -1656,9 +1661,15 @@ export function formatMessage(
   options?: {
     locales?: string | string[];
     variables?: FormatVariables;
+    dataFormat?: StringFormat;
   }
 ): string {
-  return _formatMessage(message, options?.locales, options?.variables);
+  switch (options?.dataFormat) {
+    case 'STRING':
+      return _formatMessageString(message);
+    default:
+      return _formatMessageICU(message, options?.locales, options?.variables);
+  }
 }
 
 /**
