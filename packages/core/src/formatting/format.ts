@@ -65,10 +65,10 @@ export function _formatMessageICU(
 }
 
 /**
- * Formats a message according to the specified locales and options.
+ * Returns the message as-is without any formatting.
  *
- * @param {string} message - The message to format.
- * @returns {string} The formatted message.
+ * @param {string} message - The message to return.
+ * @returns {string} The original message, unchanged.
  * @internal
  *
  * TODO: add this to custom formats
