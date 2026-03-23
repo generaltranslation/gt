@@ -4,5 +4,5 @@ export type HashMetadata = {
   context?: string;
   id?: string;
   maxChars?: number;
-  dataFormat: DataFormat;
+  dataFormat?: DataFormat;
 };

@@ -23,11 +23,11 @@ export function hashString(string: string): string {
  * Calculates a unique ID for the given children objects by hashing their sanitized JSON string representation.
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
- * @param {string} context - The context for the children
- * @param {string} id - The id for the JSX Children object
- * @param {number} maxChars - The maxChars for the JSX Children object
- * @param {string} dataFormat - The data format of the sources
- * @param {function} hashFunction custom hash function
+ * @param {string} [context] - The context for the children
+ * @param {string} [id] - The id for the JSX Children object
+ * @param {number} [maxChars] - The maxChars for the JSX Children object
+ * @param {string} [dataFormat] - The data format of the sources
+ * @param {function} [hashFunction] custom hash function
  * @returns {string} - The unique has of the children.
  */
 export function hashSource(
@@ -42,19 +42,20 @@ export function hashSource(
   } & HashMetadata,
   hashFunction: (string: string) => string = hashString
 ): string {
-  let sanitizedData: {
-    source?: SanitizedChildren;
-  } & HashMetadata = { dataFormat };
+  let sanitizedSource: SanitizedChildren | string;
   if (dataFormat === 'JSX') {
-    sanitizedData.source = sanitizeJsxChildren(source);
+    sanitizedSource = sanitizeJsxChildren(source);
   } else {
-    sanitizedData.source = source as string;
+    sanitizedSource = source as string;
   }
-  sanitizedData = {
-    ...sanitizedData,
+  const sanitizedData: {
+    source?: SanitizedChildren;
+  } & HashMetadata = {
+    source: sanitizedSource,
     ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+    ...(dataFormat && { dataFormat }),
   };
   const stringifiedData = stringify(sanitizedData);
   return hashFunction(stringifiedData);
