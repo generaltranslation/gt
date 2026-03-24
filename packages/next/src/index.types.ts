@@ -24,6 +24,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+import type { StringFormat } from 'generaltranslation/types';
 import {
   msg,
   decodeMsg,
@@ -303,6 +304,11 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
  * Returns the string translation function `t`.
  *
  * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
+ * @param {InlineTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
+ * @param {string} [options.$context] - Additional context for the translation.
+ * @param {string} [options.$id] - Optional identifier for the translation string.
+ * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
+ * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
  *
  * @example
  * const t = useGT();
@@ -327,6 +333,9 @@ export const useGT: (
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ * The returned function accepts `DictionaryTranslationOptions` which includes:
+ * - `$format` - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
+ * - `$maxChars` - Maximum number of characters for the translated message.
  *
  * @example
  * const t = useTranslations('user');
@@ -507,6 +516,8 @@ export {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 };
+
+export type { StringFormat };
 
 export {
   msg,

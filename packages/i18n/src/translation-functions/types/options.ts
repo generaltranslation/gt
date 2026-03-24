@@ -13,6 +13,7 @@ export type DictionaryTranslationOptions = BaseTranslationOptions;
 export type InlineTranslationOptions = BaseTranslationOptions & {
   $context?: string;
   $id?: string;
+  /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
   $format?: StringFormat;
   $_locales?: string | string[];
   $_hash?: string;

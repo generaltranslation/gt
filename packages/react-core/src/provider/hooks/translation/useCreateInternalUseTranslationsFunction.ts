@@ -24,6 +24,7 @@ import {
   VAR_IDENTIFIER,
   condenseVars,
 } from 'generaltranslation/internal';
+import { StringFormat } from 'generaltranslation/types';
 
 export default function useCreateInternalUseTranslationsFunction(
   gt: GT,
@@ -68,6 +69,10 @@ export default function useCreateInternalUseTranslationsFunction(
       // Check: reject invalid content
       if (!entry || typeof entry !== 'string') return '';
 
+      // Extract format from options
+      const { $format: format, ...variableOptions } =
+        options as DictionaryTranslationOptions & { $format?: StringFormat };
+
       // Render method
       const renderMessage = (
         message: string,
@@ -82,10 +87,11 @@ export default function useCreateInternalUseTranslationsFunction(
             {
               locales,
               variables: {
-                ...options,
+                ...variableOptions,
                 ...declaredVars,
                 [VAR_IDENTIFIER]: 'other',
               },
+              dataFormat: format,
             }
           );
           const cutoffMessage = gt.formatCutoff(formattedMessage, {

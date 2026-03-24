@@ -39,12 +39,16 @@ import {
   VAR_IDENTIFIER,
   indexVars,
 } from 'generaltranslation/internal';
+import { StringFormat } from 'generaltranslation/types';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ * The returned function accepts `DictionaryTranslationOptions` which includes:
+ * - `$format` - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
+ * - `$maxChars` - Maximum number of characters for the translated message.
  *
  * @example
  * const t = await getTranslations('user');
@@ -125,6 +129,12 @@ export async function getTranslations(id?: string): Promise<
     // Validate entry
     if (!entry || typeof entry !== 'string') return '';
 
+    // Extract format from options
+    const { $format: format, ...variableOptions } = options as Record<
+      string,
+      any
+    > & { $format?: StringFormat };
+
     // Render method
     const renderContent = (
       message: string,
@@ -139,10 +149,11 @@ export async function getTranslations(id?: string): Promise<
           {
             locales,
             variables: {
-              ...options,
+              ...variableOptions,
               ...declaredVars,
               [VAR_IDENTIFIER]: 'other',
             },
+            dataFormat: format,
           }
         );
         const cutoffMessage = gt.formatCutoff(formattedMessage, {

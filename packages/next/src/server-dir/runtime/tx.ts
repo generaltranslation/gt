@@ -25,6 +25,7 @@ import {
  * @param {number} [options.maxChars] - The maximum number of characters to translate.
  * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
  * @param {Object} [options.variableOptions] - Options for formatting numbers and dates using `Intl.NumberFormat` or `Intl.DateTimeFormat`.
+ * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
  *
  * @returns {Promise<string>} - A promise that resolves to the translated content string, or the original content if no translation is needed.
  *
@@ -53,6 +54,7 @@ export default async function tx(
     $locale,
     $context: context,
     $maxChars: maxChars,
+    $format: format,
     ...variables
   } = options;
 
@@ -77,6 +79,7 @@ export default async function tx(
           ...declaredVars,
           [VAR_IDENTIFIER]: 'other',
         },
+        dataFormat: format,
       }
     );
     const cutoffMessage = gt.formatCutoff(formattedMessage, {

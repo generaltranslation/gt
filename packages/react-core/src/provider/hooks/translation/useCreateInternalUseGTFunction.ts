@@ -5,6 +5,7 @@ import {
   _Messages,
   _Message,
 } from '../../../types-dir/types';
+import { StringFormat } from 'generaltranslation/types';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import { GT } from 'generaltranslation';
 import {
@@ -29,6 +30,7 @@ type RenderMessageParams = {
   fallback?: string;
   id?: string;
   maxChars?: number;
+  format?: StringFormat;
 };
 
 export default function useCreateInternalUseGTFunction({
@@ -80,6 +82,7 @@ export default function useCreateInternalUseGTFunction({
     fallback,
     id,
     maxChars,
+    format,
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
@@ -93,6 +96,7 @@ export default function useCreateInternalUseGTFunction({
             ...declaredVars,
             [VAR_IDENTIFIER]: 'other',
           },
+          dataFormat: format,
         }
       );
       // Apply cutoff formatting
@@ -144,6 +148,7 @@ export default function useCreateInternalUseGTFunction({
       $context: context,
       $maxChars: maxChars,
       $_hash: _hash,
+      $format: format,
       ...variables
     } = options;
 
@@ -160,6 +165,7 @@ export default function useCreateInternalUseGTFunction({
         id,
         fallback,
         maxChars,
+        format,
       });
     };
 
@@ -355,6 +361,7 @@ export default function useCreateInternalUseGTFunction({
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
       $id,
       $maxChars: maxChars,
+      $format: format,
       ...decodedVariables
     } = decodedOptions;
 
@@ -369,6 +376,7 @@ export default function useCreateInternalUseGTFunction({
         variables: decodedVariables,
         fallback,
         maxChars,
+        format,
       });
     };
 

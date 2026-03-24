@@ -834,4 +834,98 @@ describe('useCreateInternalUseGTFunction', () => {
       });
     });
   });
+
+  describe('$format option', () => {
+    describe('_gtFunction', () => {
+      it('should pass dataFormat to formatMessage when $format is provided', () => {
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        _gtFunction('Hello World', { $format: 'STRING' });
+        expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello World', {
+          locales: ['en'],
+          variables: { [VAR_IDENTIFIER]: 'other' },
+          dataFormat: 'STRING',
+        });
+      });
+
+      it('should not include $format in variables', () => {
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        _gtFunction('Hello {name}', { name: 'John', $format: 'STRING' });
+        expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello {name}', {
+          locales: ['en'],
+          variables: { name: 'John', [VAR_IDENTIFIER]: 'other' },
+          dataFormat: 'STRING',
+        });
+      });
+
+      it('should pass dataFormat through when translation is available', () => {
+        const translations: Translations = {
+          'hash-hello-world': 'Hola Mundo',
+        };
+
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translations,
+        });
+
+        _gtFunction('Hello World', { $format: 'STRING' });
+        expect(mockGT.formatMessage).toHaveBeenCalledWith('Hola Mundo', {
+          locales: ['es', 'en'],
+          variables: { [VAR_IDENTIFIER]: 'other' },
+          dataFormat: 'STRING',
+        });
+      });
+
+      it('should pass undefined dataFormat when $format is not provided', () => {
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        _gtFunction('Hello World');
+        expect(mockGT.formatMessage).toHaveBeenCalledWith('Hello World', {
+          locales: ['en'],
+          variables: { [VAR_IDENTIFIER]: 'other' },
+          dataFormat: undefined,
+        });
+      });
+    });
+
+    describe('_mFunction', () => {
+      it('should pass dataFormat from decoded $format option', () => {
+        const { _mFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translationRequired: false,
+        });
+
+        // The mock decodeOptions returns { $_hash, $_source, $context, $id, name: 'World' }
+        // for encoded messages. Since our mock doesn't include $format,
+        // we test via a non-encoded message path which delegates to _gtFunction
+        _mFunction('Hello World', { $format: 'STRING' });
+        expect(mockGT.formatMessage).toHaveBeenCalledWith(
+          'Hello World',
+          expect.objectContaining({
+            dataFormat: 'STRING',
+          })
+        );
+      });
+    });
+  });
 });
