@@ -19,6 +19,7 @@ export const resolveTranslationSync: SyncResolutionFunction = (
   const translation = i18nManager.resolveTranslationSync(message, options);
   if (!translation) return undefined;
   return interpolateMessage(translation, {
+    $_locales: i18nManager.getLocale(),
     ...options,
     $_fallback: message,
   });
@@ -34,5 +35,10 @@ export const resolveTranslationSyncWithFallback: SyncResolutionFunctionWithFallb
   (message, options = {}) => {
     const translation = resolveTranslationSync(message, options);
     if (translation) return translation;
-    return interpolateMessage(message, options);
+    const i18nManager = getI18nManager();
+    return interpolateMessage(message, {
+      $_locales: i18nManager.getDefaultLocale(),
+      ...options,
+      $_fallback: message,
+    });
   };

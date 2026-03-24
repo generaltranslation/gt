@@ -39,11 +39,16 @@ export function interpolateMessage<T extends string | null | undefined>(
       : encodedMsg;
 
     // Interpolate the message
-    const interpolatedMessage = formatMessage(message, {
-      ...variables,
-      ...declaredVars,
-      [VAR_IDENTIFIER]: 'other',
-    });
+    const interpolatedMessage = formatMessage(
+      message,
+      {
+        ...variables,
+        ...declaredVars,
+        [VAR_IDENTIFIER]: 'other',
+      },
+      options.$locales,
+      options.$format
+    );
     // Apply cutoff formatting
     const cutoffMessage = formatCutoff(interpolatedMessage, {
       maxChars: options.$maxChars,

@@ -1,3 +1,5 @@
+import { StringFormat } from 'generaltranslation/types';
+
 // TODO: next major version, this should be Record<string, string>
 export type BaseTranslationOptions = Record<string, any>;
 
@@ -11,6 +13,8 @@ export type DictionaryTranslationOptions = BaseTranslationOptions;
 export type InlineTranslationOptions = BaseTranslationOptions & {
   $context?: string;
   $id?: string;
+  $format?: StringFormat;
+  $_locales?: string | string[];
   $_hash?: string;
   $maxChars?: number;
   /** @internal Used to carry the original source when rendering a translation */
