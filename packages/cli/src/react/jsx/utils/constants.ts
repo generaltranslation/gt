@@ -66,6 +66,7 @@ export const GT_ATTRIBUTES_WITH_SUGAR = [
   '$id',
   '$context',
   '$maxChars',
+  '$format',
 ] as const;
 
 export const GT_ATTRIBUTES = [

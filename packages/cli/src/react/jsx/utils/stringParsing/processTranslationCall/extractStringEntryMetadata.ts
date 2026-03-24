@@ -3,6 +3,7 @@ import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isStaticExpression } from '../../../evaluateJsx.js';
 import { warnInvalidMaxCharsSync } from '../../../../../console/index.js';
+import { warnInvalidFormatSync } from '../../../../../console/index.js';
 import { warnNonStaticExpressionSync } from '../../../../../console/index.js';
 import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
 import generateModule from '@babel/generator';
@@ -24,6 +25,7 @@ export type InlineMetadata = {
   context?: string;
   id?: string;
   hash?: string;
+  format?: string;
   filePaths?: string[];
   sourceCode?: Record<string, SourceCode[]>;
 };
@@ -155,6 +157,23 @@ function extractInlineMetadata({
               } else if (typeof result.value === 'string') {
                 // Add the maxChars value to the metadata
                 metadata[mappedKey] = Math.abs(Number(result.value));
+              }
+            } else if (mappedKey === 'format') {
+              // Handle format attribute - validate allowed values
+              const validFormats = ['ICU', 'STRING', 'I18NEXT'];
+              if (
+                typeof result.value === 'string' &&
+                validFormats.includes(result.value)
+              ) {
+                metadata[mappedKey] = result.value;
+              } else {
+                output.warnings.add(
+                  warnInvalidFormatSync(
+                    config.file,
+                    String(result.value),
+                    `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                  )
+                );
               }
             } else {
               // Add the $context or $id or other attributes value to the metadata

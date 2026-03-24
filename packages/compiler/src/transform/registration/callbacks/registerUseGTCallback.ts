@@ -1,5 +1,6 @@
 import { TransformState } from '../../../state/types';
 import hashSource from '../../../utils/calculateHash';
+import type { DataFormat } from 'generaltranslation/types';
 
 /**
  * Track gt() function invocations
@@ -13,6 +14,7 @@ export function registerUseGTCallback({
   id,
   maxChars,
   hash,
+  format,
 }: {
   identifier: number;
   state: TransformState;
@@ -21,6 +23,7 @@ export function registerUseGTCallback({
   id?: string;
   maxChars?: number;
   hash?: string;
+  format?: string;
 }): void {
   // Calculate hash for the call expression
   hash ||= hashSource({
@@ -28,7 +31,7 @@ export function registerUseGTCallback({
     id,
     context,
     maxChars,
-    dataFormat: 'ICU',
+    dataFormat: (format || 'ICU') as DataFormat,
   });
 
   // Add the translation content to the string collector (under identifier mapping to useGT call)

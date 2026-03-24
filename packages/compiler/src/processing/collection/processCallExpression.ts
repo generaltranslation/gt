@@ -148,6 +148,7 @@ function handleUseGTCallback(
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,
     hash: useGTCallbackParams.hash,
+    format: useGTCallbackParams.format,
   });
 }
 

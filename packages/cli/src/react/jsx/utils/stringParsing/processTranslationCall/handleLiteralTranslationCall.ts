@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import type { DataFormat } from 'generaltranslation/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isValidIcu } from '../../../evaluateJsx.js';
@@ -47,7 +48,7 @@ export function handleLiteralTranslationCall({
   }
 
   output.updates.push({
-    dataFormat: 'ICU',
+    dataFormat: (metadata.format || 'ICU') as DataFormat,
     source,
     metadata: {
       ...metadata,

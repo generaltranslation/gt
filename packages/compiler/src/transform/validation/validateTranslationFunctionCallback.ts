@@ -23,6 +23,7 @@ export function validateUseGTCallback(
   hash?: string;
   id?: string;
   maxChars?: number;
+  format?: string;
 } {
   const errors: string[] = [];
 
@@ -64,6 +65,7 @@ export function validateUseGTCallback(
   let id: string | undefined;
   let hash: string | undefined;
   let maxChars: number | undefined;
+  let format: string | undefined;
   if (callExpr.arguments.length === 1) {
     return { errors, content };
   }
@@ -96,9 +98,16 @@ export function validateUseGTCallback(
     );
     errors.push(...hashProperty.errors);
     hash = hashProperty.value;
+    const formatProperty = validatePropertyFromObjectExpression(
+      callExpr.arguments[1],
+      USEGT_CALLBACK_OPTIONS.$format,
+      'string'
+    );
+    errors.push(...formatProperty.errors);
+    format = formatProperty.value;
   }
 
-  return { errors, content, context, id, hash, maxChars };
+  return { errors, content, context, id, hash, maxChars, format };
 }
 
 /**

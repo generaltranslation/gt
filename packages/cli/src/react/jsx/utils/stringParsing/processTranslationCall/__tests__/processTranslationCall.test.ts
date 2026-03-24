@@ -209,3 +209,61 @@ describe('processTranslationCall - array support', () => {
     expect(output.errors.length).toBeGreaterThan(0);
   });
 });
+
+describe('$format option support', () => {
+  it('should extract $format from options and set dataFormat', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $format: "STRING" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'STRING',
+      source: 'Hello',
+    });
+    expect(output.errors).toHaveLength(0);
+  });
+
+  it('should default to ICU when $format is not provided', () => {
+    const output = runProcessTranslationCall(`t("Hello")`);
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'ICU',
+      source: 'Hello',
+    });
+  });
+
+  it('should extract $format alongside other metadata', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $id: "greeting", $context: "home", $format: "I18NEXT" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'I18NEXT',
+      source: 'Hello',
+      metadata: { id: 'greeting', context: 'home' },
+    });
+  });
+
+  it('should warn on invalid $format value', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $format: "INVALID" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    // Invalid format should fall back to ICU
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'ICU',
+      source: 'Hello',
+    });
+    // Should produce a warning
+    expect(output.warnings.size).toBeGreaterThan(0);
+  });
+
+  it('should extract $format for array of strings', () => {
+    const output = runProcessTranslationCall(
+      `t(["Hello", "World"], { $format: "STRING" })`
+    );
+    expect(output.updates).toHaveLength(2);
+    expect(output.updates[0]).toMatchObject({ dataFormat: 'STRING' });
+    expect(output.updates[1]).toMatchObject({ dataFormat: 'STRING' });
+  });
+});

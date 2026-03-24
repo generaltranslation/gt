@@ -171,7 +171,7 @@ impl TransformVisitor {
     let options = call_expr.args.get(1);
 
     // Get context and id
-    let (context, id, max_chars) = extract_id_and_context_from_options(options);
+    let (context, id, max_chars, _format) = extract_id_and_context_from_options(options);
 
     // Calculate hash for the call expression
     let (hash, _) = self.calculate_hash_for_call_expr(string, options);
@@ -432,7 +432,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     }
 
     // Extract the options content
-    let (id, context, max_chars) = extract_id_and_context_from_options(options);
+    let (id, context, max_chars, format) = extract_id_and_context_from_options(options);
 
     // Construct the json object
     use crate::hash::{SanitizedChild, SanitizedChildren, SanitizedData};
@@ -443,7 +443,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
       id,
       context,
       max_chars,
-      data_format: Some("ICU".to_string()),
+      data_format: Some(format.unwrap_or_else(|| "ICU".to_string())),
     };
     // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
     use crate::hash::JsxHasher;

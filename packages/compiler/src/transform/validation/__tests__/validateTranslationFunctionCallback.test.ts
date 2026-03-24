@@ -766,4 +766,73 @@ describe('validateTranslationFunctionCallback', () => {
       expect(result.errors).toHaveLength(0);
     });
   });
+
+  describe('$format option', () => {
+    it('should extract $format from options object', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.stringLiteral('Hello world'),
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier('$format'),
+            t.stringLiteral('STRING')
+          ),
+        ]),
+      ]);
+      const result = validateUseGTCallback(callExpr, state);
+      expect(result.errors).toHaveLength(0);
+      expect(result.content).toBe('Hello world');
+      expect(result.format).toBe('STRING');
+    });
+
+    it('should return undefined format when $format not provided', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.stringLiteral('Hello world'),
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier('$context'),
+            t.stringLiteral('greeting')
+          ),
+        ]),
+      ]);
+      const result = validateUseGTCallback(callExpr, state);
+      expect(result.errors).toHaveLength(0);
+      expect(result.format).toBeUndefined();
+    });
+
+    it('should extract $format alongside other options', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.stringLiteral('Hello'),
+        t.objectExpression([
+          t.objectProperty(t.identifier('$id'), t.stringLiteral('hello')),
+          t.objectProperty(
+            t.identifier('$context'),
+            t.stringLiteral('greeting')
+          ),
+          t.objectProperty(
+            t.identifier('$format'),
+            t.stringLiteral('I18NEXT')
+          ),
+        ]),
+      ]);
+      const result = validateUseGTCallback(callExpr, state);
+      expect(result.errors).toHaveLength(0);
+      expect(result.id).toBe('hello');
+      expect(result.context).toBe('greeting');
+      expect(result.format).toBe('I18NEXT');
+    });
+
+    it('should error when $format is not a string literal', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.stringLiteral('Hello'),
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier('$format'),
+            t.identifier('someVar')
+          ),
+        ]),
+      ]);
+      const result = validateUseGTCallback(callExpr, state);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
 });

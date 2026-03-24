@@ -101,16 +101,17 @@ pub fn extract_number_from_expr(expr: &Expr) -> Option<i32> {
   }
 }
 
-// Helper function to extract id and context from options
+// Helper function to extract id, context, maxChars, and format from options
 pub fn extract_id_and_context_from_options(
   options: Option<&ExprOrSpread>,
-) -> (Option<String>, Option<String>, Option<i32>) {
-  let (id, context, max_chars) = match options {
+) -> (Option<String>, Option<String>, Option<i32>, Option<String>) {
+  let (id, context, max_chars, format) = match options {
     Some(options) => match options.expr.as_ref() {
       Expr::Object(obj) => {
         let mut id_value = None;
         let mut context_value = None;
         let mut max_chars_value = None;
+        let mut format_value = None;
 
         for prop in &obj.props {
           if let PropOrSpread::Prop(prop) = prop {
@@ -126,6 +127,9 @@ pub fn extract_id_and_context_from_options(
                   "$maxChars" => {
                     max_chars_value = extract_number_from_expr(&key_value.value);
                   }
+                  "$format" => {
+                    format_value = extract_string_from_expr(&key_value.value);
+                  }
                   _ => {}
                 }
               }
@@ -133,13 +137,13 @@ pub fn extract_id_and_context_from_options(
           }
         }
 
-        (id_value, context_value, max_chars_value)
+        (id_value, context_value, max_chars_value, format_value)
       }
-      _ => (None, None, None),
+      _ => (None, None, None, None),
     },
-    None => (None, None, None),
+    None => (None, None, None, None),
   };
-  (id, context, max_chars)
+  (id, context, max_chars, format)
 }
 
 pub fn create_string_prop(key: &str, value: &str, span: Span) -> PropOrSpread {
