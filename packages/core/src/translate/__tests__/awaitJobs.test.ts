@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import _awaitJobs from '../awaitJobs';
 import { _checkJobStatus } from '../checkJobStatus';
 import { TranslationRequestConfig } from '../../types';
@@ -28,10 +28,13 @@ function makeEnqueueResult(jobIds: string[]): EnqueueFilesResult {
   return { jobData, locales: ['es'], message: 'ok' };
 }
 
-describe('_awaitJobs', () => {
+describe.sequential('_awaitJobs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should return immediately for empty jobData', async () => {
@@ -50,9 +53,10 @@ describe('_awaitJobs', () => {
       { jobId: 'job-2', status: 'completed' },
     ]);
 
+    // Use real timers — first poll resolves immediately with 'completed'
     const result = await _awaitJobs(
       makeEnqueueResult(['job-1', 'job-2']),
-      { pollingIntervalSeconds: 1 },
+      { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
 
@@ -67,16 +71,11 @@ describe('_awaitJobs', () => {
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'processing' }])
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'completed' }]);
 
-    const promise = _awaitJobs(
+    const result = await _awaitJobs(
       makeEnqueueResult(['job-1']),
-      { pollingIntervalSeconds: 1 },
+      { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
-
-    // First poll returns processing, then we need to advance the timer
-    await vi.advanceTimersByTimeAsync(1000);
-
-    const result = await promise;
 
     expect(result.complete).toBe(true);
     expect(result.jobs).toEqual([{ jobId: 'job-1', status: 'completed' }]);
@@ -94,7 +93,7 @@ describe('_awaitJobs', () => {
 
     const result = await _awaitJobs(
       makeEnqueueResult(['job-1']),
-      undefined,
+      { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
 
@@ -115,7 +114,7 @@ describe('_awaitJobs', () => {
 
     const result = await _awaitJobs(
       makeEnqueueResult(['job-1']),
-      undefined,
+      { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
 
@@ -131,15 +130,11 @@ describe('_awaitJobs', () => {
       ])
       .mockResolvedValueOnce([{ jobId: 'job-2', status: 'completed' }]);
 
-    const promise = _awaitJobs(
+    const result = await _awaitJobs(
       makeEnqueueResult(['job-1', 'job-2']),
-      { pollingIntervalSeconds: 1 },
+      { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
-
-    await vi.advanceTimersByTimeAsync(1000);
-
-    const result = await promise;
 
     expect(result.complete).toBe(true);
     expect(result.jobs).toHaveLength(2);
@@ -148,41 +143,44 @@ describe('_awaitJobs', () => {
   });
 
   it('should respect timeout and return incomplete', async () => {
+    // Always return 'processing' so the timeout fires
     vi.mocked(_checkJobStatus).mockResolvedValue([
       { jobId: 'job-1', status: 'processing' },
     ]);
 
-    const promise = _awaitJobs(
+    const result = await _awaitJobs(
       makeEnqueueResult(['job-1']),
-      { pollingIntervalSeconds: 1, timeoutSeconds: 3 },
+      { pollingIntervalSeconds: 0.01, timeoutSeconds: 0.05 },
       mockConfig
     );
-
-    // Advance past the timeout
-    await vi.advanceTimersByTimeAsync(5000);
-
-    const result = await promise;
 
     expect(result.complete).toBe(false);
     expect(result.jobs).toEqual([{ jobId: 'job-1', status: 'processing' }]);
   });
 
-  it('should use default 5s polling interval', async () => {
+  it('should use default polling interval of 5 seconds', async () => {
+    // Verify via fake timers that polling waits 5s between polls
+    vi.useFakeTimers();
+
     vi.mocked(_checkJobStatus)
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'processing' }])
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'completed' }]);
 
     const promise = _awaitJobs(
       makeEnqueueResult(['job-1']),
-      undefined,
+      undefined, // uses default 5s interval
       mockConfig
     );
 
-    // Advance less than 5s — should not trigger second poll
+    // Flush first poll
+    await vi.advanceTimersByTimeAsync(0);
+    expect(_checkJobStatus).toHaveBeenCalledTimes(1);
+
+    // 4s: still waiting
     await vi.advanceTimersByTimeAsync(4000);
     expect(_checkJobStatus).toHaveBeenCalledTimes(1);
 
-    // Advance to 5s — should trigger second poll
+    // 5s: second poll
     await vi.advanceTimersByTimeAsync(1000);
 
     const result = await promise;
@@ -196,8 +194,15 @@ describe('_awaitJobs', () => {
       new Error('Network error')
     );
 
-    await expect(
-      _awaitJobs(makeEnqueueResult(['job-1']), undefined, mockConfig)
-    ).rejects.toThrow('Network error');
+    // Attach .catch immediately to prevent unhandled rejection
+    const promise = _awaitJobs(
+      makeEnqueueResult(['job-1']),
+      { pollingIntervalSeconds: 0.01 },
+      mockConfig
+    ).catch((err: Error) => err);
+
+    const result = await promise;
+    expect(result).toBeInstanceOf(Error);
+    expect((result as Error).message).toBe('Network error');
   });
 });
