@@ -1,5 +1,14 @@
 # @generaltranslation/compiler
 
+## 1.1.36
+
+### Patch Changes
+
+- [#1147](https://github.com/generaltranslation/gt/pull/1147) [`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: add support for multiple format types
+
+- Updated dependencies [[`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f)]:
+  - generaltranslation@8.1.23
+
 ## 1.1.35
 
 ### Patch Changes
