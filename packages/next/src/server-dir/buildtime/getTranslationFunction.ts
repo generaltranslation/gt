@@ -184,7 +184,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
-        dataFormat: 'ICU',
+        dataFormat: format || 'ICU',
       });
 
     return {

@@ -99,7 +99,7 @@ export default async function tx(
     source: indexVars(message),
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
-    dataFormat: 'ICU',
+    dataFormat: format || 'ICU',
   });
 
   // ----- CHECK LOCAL CACHE ----- //

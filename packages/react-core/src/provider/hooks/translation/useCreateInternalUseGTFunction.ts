@@ -176,7 +176,7 @@ export default function useCreateInternalUseGTFunction({
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
-        dataFormat: 'ICU',
+        dataFormat: format || 'ICU',
       });
 
     return {
