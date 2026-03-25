@@ -266,4 +266,33 @@ describe('$format option support', () => {
     expect(output.updates[0]).toMatchObject({ dataFormat: 'STRING' });
     expect(output.updates[1]).toMatchObject({ dataFormat: 'STRING' });
   });
+
+  it('should not warn on invalid ICU when $format is STRING', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello {{plain}} string", { $format: "STRING" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'STRING',
+      source: 'Hello {{plain}} string',
+    });
+    expect(output.errors).toHaveLength(0);
+    expect(output.warnings.size).toBe(0);
+  });
+
+  it('should still warn on invalid ICU when $format is ICU', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello {{plain}} string", { $format: "ICU" })`
+    );
+    expect(output.updates).toHaveLength(0);
+    expect(output.warnings.size).toBeGreaterThan(0);
+  });
+
+  it('should still warn on invalid ICU when no $format specified', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello {{plain}} string")`
+    );
+    expect(output.updates).toHaveLength(0);
+    expect(output.warnings.size).toBeGreaterThan(0);
+  });
 });

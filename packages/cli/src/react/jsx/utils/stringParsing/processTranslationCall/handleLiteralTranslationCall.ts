@@ -31,8 +31,11 @@ export function handleLiteralTranslationCall({
   const source =
     arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
 
-  // Validate is ICU
-  if (!config.ignoreInvalidIcu) {
+  // Validate is ICU — skip for non-ICU formats
+  if (
+    !config.ignoreInvalidIcu &&
+    (!metadata.format || metadata.format === 'ICU')
+  ) {
     const { isValid, error } = isValidIcu(source);
     if (!isValid) {
       output.warnings.add(
