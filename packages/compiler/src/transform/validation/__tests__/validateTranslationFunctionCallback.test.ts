@@ -772,10 +772,7 @@ describe('validateTranslationFunctionCallback', () => {
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.stringLiteral('Hello world'),
         t.objectExpression([
-          t.objectProperty(
-            t.identifier('$format'),
-            t.stringLiteral('STRING')
-          ),
+          t.objectProperty(t.identifier('$format'), t.stringLiteral('STRING')),
         ]),
       ]);
       const result = validateUseGTCallback(callExpr, state);
@@ -808,10 +805,7 @@ describe('validateTranslationFunctionCallback', () => {
             t.identifier('$context'),
             t.stringLiteral('greeting')
           ),
-          t.objectProperty(
-            t.identifier('$format'),
-            t.stringLiteral('I18NEXT')
-          ),
+          t.objectProperty(t.identifier('$format'), t.stringLiteral('I18NEXT')),
         ]),
       ]);
       const result = validateUseGTCallback(callExpr, state);
@@ -825,10 +819,7 @@ describe('validateTranslationFunctionCallback', () => {
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.stringLiteral('Hello'),
         t.objectExpression([
-          t.objectProperty(
-            t.identifier('$format'),
-            t.identifier('someVar')
-          ),
+          t.objectProperty(t.identifier('$format'), t.identifier('someVar')),
         ]),
       ]);
       const result = validateUseGTCallback(callExpr, state);

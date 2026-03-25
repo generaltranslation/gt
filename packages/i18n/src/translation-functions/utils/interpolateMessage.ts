@@ -46,7 +46,7 @@ export function interpolateMessage<T extends string | null | undefined>(
         ...declaredVars,
         [VAR_IDENTIFIER]: 'other',
       },
-      options.$locales,
+      options.$_locales,
       options.$format
     );
     // Apply cutoff formatting
