@@ -60,6 +60,7 @@ export default function useMessages(_messages?: _Messages): MFunctionType {
   /**
    * @param {string} encodedMsg - The encoded message string, typically created by the `msg()` utility.
    * @param {InlineTranslationOptions} options
+   * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
    * @returns A translation
    *
    * @example

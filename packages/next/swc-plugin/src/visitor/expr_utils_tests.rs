@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::visitor::expr_utils::{extract_number_from_expr, is_allowed_dynamic_content, validate_declare_static};
+    use crate::visitor::expr_utils::{extract_id_and_context_from_options, extract_number_from_expr, is_allowed_dynamic_content, validate_declare_static};
     use swc_core::common::{DUMMY_SP, SyntaxContext};
     use swc_core::ecma::atoms::Atom;
     use swc_core::ecma::ast::*;
@@ -522,5 +522,75 @@ mod tests {
             })),
         });
         assert_eq!(extract_number_from_expr(&plus_ident), None);
+    }
+
+    // Helper to build an options object expression with given properties
+    fn make_options_arg(props: Vec<(&str, Box<Expr>)>) -> ExprOrSpread {
+        ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: props
+                    .into_iter()
+                    .map(|(key, value)| {
+                        PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                            key: PropName::Ident(IdentName {
+                                span: DUMMY_SP,
+                                sym: Atom::new(key),
+                            }),
+                            value,
+                        })))
+                    })
+                    .collect(),
+            })),
+        }
+    }
+
+    fn str_expr(s: &str) -> Box<Expr> {
+        Box::new(Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP,
+            value: Atom::new(s).into(),
+            raw: None,
+        })))
+    }
+
+    #[test]
+    fn test_extract_format_from_options() {
+        let options = make_options_arg(vec![("$format", str_expr("STRING"))]);
+        let (id, context, max_chars, format) =
+            extract_id_and_context_from_options(Some(&options));
+        assert_eq!(format, Some("STRING".to_string()));
+        assert_eq!(id, None);
+        assert_eq!(context, None);
+        assert_eq!(max_chars, None);
+    }
+
+    #[test]
+    fn test_extract_format_none_when_absent() {
+        let options = make_options_arg(vec![("$context", str_expr("greeting"))]);
+        let (_id, _context, _max_chars, format) =
+            extract_id_and_context_from_options(Some(&options));
+        assert_eq!(format, None);
+    }
+
+    #[test]
+    fn test_extract_format_with_other_options() {
+        let options = make_options_arg(vec![
+            ("$id", str_expr("hello")),
+            ("$context", str_expr("greeting")),
+            ("$format", str_expr("I18NEXT")),
+        ]);
+        let (id, context, _max_chars, format) =
+            extract_id_and_context_from_options(Some(&options));
+        assert_eq!(id, Some("hello".to_string()));
+        assert_eq!(context, Some("greeting".to_string()));
+        assert_eq!(format, Some("I18NEXT".to_string()));
+    }
+
+    #[test]
+    fn test_extract_format_none_when_no_options() {
+        let (_id, _context, _max_chars, format) =
+            extract_id_and_context_from_options(None);
+        assert_eq!(format, None);
     }
 }

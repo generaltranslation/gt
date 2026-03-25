@@ -15,6 +15,7 @@ describe('resolveTranslationSync', () => {
   it('should call interpolateMessage with the translation and $_fallback set to original message when translation found', () => {
     const mockManager = {
       resolveTranslationSync: vi.fn().mockReturnValue('Bonjour {name} !'),
+      getLocale: vi.fn().mockReturnValue('fr'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -24,6 +25,7 @@ describe('resolveTranslationSync', () => {
     resolveTranslationSync(message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith('Bonjour {name} !', {
+      $_locales: 'fr',
       name: 'Alice',
       $_fallback: 'Hello {name}!',
     });
@@ -47,6 +49,7 @@ describe('resolveTranslationSync', () => {
   it('should preserve user options alongside $_fallback when translation found', () => {
     const mockManager = {
       resolveTranslationSync: vi.fn().mockReturnValue('Translated'),
+      getLocale: vi.fn().mockReturnValue('es'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -56,9 +59,30 @@ describe('resolveTranslationSync', () => {
     resolveTranslationSync(message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith('Translated', {
+      $_locales: 'es',
       name: 'Bob',
       $context: 'greeting',
       $id: 'hello-msg',
+      $_fallback: 'Hello {name}!',
+    });
+  });
+
+  it('should preserve $format in options passed to interpolateMessage', () => {
+    const mockManager = {
+      resolveTranslationSync: vi.fn().mockReturnValue('Translated'),
+      getLocale: vi.fn().mockReturnValue('fr'),
+    };
+    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+
+    const message = 'Hello {name}!';
+    const options = { name: 'Alice', $format: 'STRING' };
+
+    resolveTranslationSync(message, options);
+
+    expect(interpolateMessage).toHaveBeenCalledWith('Translated', {
+      $_locales: 'fr',
+      name: 'Alice',
+      $format: 'STRING',
       $_fallback: 'Hello {name}!',
     });
   });

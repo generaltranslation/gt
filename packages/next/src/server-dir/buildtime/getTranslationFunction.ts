@@ -23,6 +23,7 @@ import {
   VAR_IDENTIFIER,
   indexVars,
 } from 'generaltranslation/internal';
+import { StringFormat } from 'generaltranslation/types';
 import use from '../../utils/use';
 
 type RenderFn = (msg: string, locales: string[], fallback?: string) => string;
@@ -34,6 +35,7 @@ type RenderMessageParams = {
   fallback?: string;
   id?: string;
   maxChars?: number;
+  format?: StringFormat;
 };
 
 type InitResult = {
@@ -90,6 +92,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     fallback,
     id,
     maxChars,
+    format,
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
@@ -103,6 +106,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
             ...declaredVars,
             [VAR_IDENTIFIER]: 'other',
           },
+          dataFormat: format,
         }
       );
       const cutoffMessage = gtClass.formatCutoff(formattedMessage, {
@@ -158,6 +162,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $context: context,
       $maxChars: maxChars,
       $_hash: _hash,
+      $format: format,
       ...variables
     } = options;
 
@@ -169,6 +174,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         id,
         fallback,
         maxChars,
+        format,
       });
     };
 
@@ -178,7 +184,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
-        dataFormat: 'ICU',
+        dataFormat: format || 'ICU',
       });
 
     return {
@@ -364,8 +370,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       return gt(encodedMsg, options) as T extends string ? string : T;
     }
 
-    const { $_hash, $_source, $context, $id, $maxChars, ...decodedVariables } =
-      decodedOptions;
+    const {
+      $_hash,
+      $_source,
+      $context,
+      $id,
+      $maxChars,
+      $format,
+      ...decodedVariables
+    } = decodedOptions;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
       return renderMessageHelper({
@@ -374,6 +387,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         variables: decodedVariables,
         fallback,
         maxChars: $maxChars,
+        format: $format,
       });
     };
 
@@ -447,7 +461,12 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 /**
  * getGT() returns a function that translates an ICU message string.
  *
- * @returns A promise of the t() function used for translating strings
+ * @returns A promise of the t() function used for translating strings.
+ * The returned function accepts `InlineTranslationOptions` which includes:
+ * - `$format` - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
+ * - `$context` - Additional context for the translation.
+ * - `$id` - Optional identifier for the translation string.
+ * - `$maxChars` - Maximum number of characters for the translated message.
  *
  * @example
  * const t = await getGT();

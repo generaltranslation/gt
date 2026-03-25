@@ -125,6 +125,17 @@ export const warnInvalidMaxCharsSync = (
     location
   );
 
+export const warnInvalidFormatSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid $format value: ${colorizeContent(value)}. Must be one of: 'ICU', 'STRING', 'I18NEXT'.`,
+    location
+  );
+
 export const warnInvalidIcuSync = (
   file: string,
   value: string,

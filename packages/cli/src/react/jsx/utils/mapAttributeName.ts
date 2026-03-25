@@ -7,7 +7,9 @@ type MapAttributeName<T extends string> = T extends '$id'
     ? 'context'
     : T extends '$maxChars'
       ? 'maxChars'
-      : T;
+      : T extends '$format'
+        ? 'format'
+        : T;
 
 /**
  * Map the attribute name to the corresponding attribute name in the metadata
@@ -25,6 +27,8 @@ export function mapAttributeName(attrName: string): string {
       return 'context';
     case '$maxChars':
       return 'maxChars';
+    case '$format':
+      return 'format';
     default:
       return attrName;
   }

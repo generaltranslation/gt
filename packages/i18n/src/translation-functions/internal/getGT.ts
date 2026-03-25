@@ -41,10 +41,15 @@ export async function getGT(): Promise<GTFunctionType> {
     if (translation) {
       return interpolateMessage(translation, {
         ...options,
+        $_locales: i18nManager.getLocale(),
         $_fallback: message,
       });
     }
-    return interpolateMessage(message, options);
+    return interpolateMessage(message, {
+      ...options,
+      $_locales: i18nManager.getDefaultLocale(),
+      $_fallback: message,
+    });
   };
 
   return gt;

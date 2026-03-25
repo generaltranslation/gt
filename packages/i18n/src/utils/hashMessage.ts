@@ -16,6 +16,6 @@ export function hashMessage(
     ...(options?.$maxChars != null && {
       maxChars: Math.abs(options.$maxChars),
     }),
-    dataFormat: 'ICU',
+    dataFormat: options?.$format || 'ICU',
   });
 }

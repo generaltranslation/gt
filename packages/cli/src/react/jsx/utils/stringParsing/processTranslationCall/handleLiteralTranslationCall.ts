@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import type { DataFormat } from 'generaltranslation/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isValidIcu } from '../../../evaluateJsx.js';
@@ -30,8 +31,11 @@ export function handleLiteralTranslationCall({
   const source =
     arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
 
-  // Validate is ICU
-  if (!config.ignoreInvalidIcu) {
+  // Validate is ICU — skip for non-ICU formats
+  if (
+    !config.ignoreInvalidIcu &&
+    (!metadata.format || metadata.format === 'ICU')
+  ) {
     const { isValid, error } = isValidIcu(source);
     if (!isValid) {
       output.warnings.add(
@@ -47,7 +51,7 @@ export function handleLiteralTranslationCall({
   }
 
   output.updates.push({
-    dataFormat: 'ICU',
+    dataFormat: (metadata.format || 'ICU') as DataFormat,
     source,
     metadata: {
       ...metadata,

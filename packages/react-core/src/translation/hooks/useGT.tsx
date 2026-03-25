@@ -62,6 +62,10 @@ export default function useGT(_messages?: _Messages) {
   /**
    * @param {string} message
    * @param {InlineTranslationOptions} options Interpolated variables and translation context.
+   * @param {string} [options.$context] - Additional context for the translation.
+   * @param {string} [options.$id] - Optional identifier for the translation string.
+   * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
+   * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
    * @returns The translated version of content
    *
    * @example

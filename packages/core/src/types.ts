@@ -14,6 +14,7 @@ import {
   HTML_CONTENT_PROPS,
   DataFormat,
   Content,
+  StringFormat,
 } from './types-dir/jsx/content';
 import {
   ActionType,
@@ -41,6 +42,7 @@ export {
   EntryMetadata,
   TranslateManyEntry,
   Content,
+  StringFormat,
   HashMetadata,
 };
 

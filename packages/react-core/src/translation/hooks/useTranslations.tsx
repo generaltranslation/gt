@@ -33,6 +33,8 @@ export default function useTranslations(id?: string): ((
    * @description A function that translates a dictionary entry based on its `id` and options.
    * @param {string} id The identifier of the dictionary entry to translate.
    * @param {DictionaryTranslationOptions} options for translating strings.
+   * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
+   * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
    * @returns The translated version of the dictionary entry.
    *
    * @example
