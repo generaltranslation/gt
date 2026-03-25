@@ -143,19 +143,26 @@ describe.sequential('_awaitJobs', () => {
   });
 
   it('should respect timeout and return incomplete', async () => {
+    vi.useFakeTimers();
+
     // Always return 'processing' so the timeout fires
     vi.mocked(_checkJobStatus).mockResolvedValue([
       { jobId: 'job-1', status: 'processing' },
     ]);
 
-    const result = await _awaitJobs(
+    const promise = _awaitJobs(
       makeEnqueueResult(['job-1']),
-      { pollingIntervalSeconds: 0.01, timeoutSeconds: 0.05 },
+      { pollingIntervalSeconds: 1, timeoutSeconds: 3 },
       mockConfig
     );
 
+    await vi.advanceTimersByTimeAsync(3001);
+    const result = await promise;
+
     expect(result.complete).toBe(false);
     expect(result.jobs).toEqual([{ jobId: 'job-1', status: 'processing' }]);
+
+    vi.useRealTimers();
   });
 
   it('should use default polling interval of 5 seconds', async () => {
