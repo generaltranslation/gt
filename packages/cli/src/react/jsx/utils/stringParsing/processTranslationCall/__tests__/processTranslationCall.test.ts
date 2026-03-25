@@ -289,9 +289,7 @@ describe('$format option support', () => {
   });
 
   it('should still warn on invalid ICU when no $format specified', () => {
-    const output = runProcessTranslationCall(
-      `t("Hello {{plain}} string")`
-    );
+    const output = runProcessTranslationCall(`t("Hello {{plain}} string")`);
     expect(output.updates).toHaveLength(0);
     expect(output.warnings.size).toBeGreaterThan(0);
   });
