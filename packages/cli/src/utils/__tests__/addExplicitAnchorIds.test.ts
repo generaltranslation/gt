@@ -786,6 +786,76 @@ This is just an example
     });
   });
 
+  describe('Mintlify mode skips headings with existing anchor IDs', () => {
+    const mintlifyOnlySettings = {
+      options: { experimentalAddHeaderAnchorIds: 'mintlify' as const },
+    };
+
+    it('should not div-wrap a heading that already has {#id} syntax', () => {
+      const source = `## Getting Started {#getting-started}`;
+      const translated = `## Empezando {#getting-started}`;
+
+      const sourceHeadingMap = extractHeadingInfo(source);
+      const result = addExplicitAnchorIds(
+        translated,
+        sourceHeadingMap,
+        mintlifyOnlySettings as any
+      );
+
+      expect(result.hasChanges).toBe(false);
+      expect(result.content).toBe(translated);
+      expect(result.content).not.toContain('<div id=');
+    });
+
+    it('should not div-wrap a heading that has escaped \\{#id\\} syntax', () => {
+      const source = `## Getting Started {#getting-started}`;
+      const translated = `## Empezando \\{#getting-started\\}`;
+
+      const sourceHeadingMap = extractHeadingInfo(source);
+      const result = addExplicitAnchorIds(
+        translated,
+        sourceHeadingMap,
+        mintlifyOnlySettings as any
+      );
+
+      expect(result.hasChanges).toBe(false);
+      expect(result.content).toBe(translated);
+      expect(result.content).not.toContain('<div id=');
+    });
+
+    it('should div-wrap headings without {#id} but skip ones that have it', () => {
+      const source = `## First Heading {#first-heading}
+
+## Second Heading
+
+## Third Heading {#custom-id}
+`;
+
+      const translated = `## Primer Encabezado {#first-heading}
+
+## Segundo Encabezado
+
+## Tercer Encabezado {#custom-id}
+`;
+
+      const sourceHeadingMap = extractHeadingInfo(source);
+      const result = addExplicitAnchorIds(
+        translated,
+        sourceHeadingMap,
+        mintlifyOnlySettings as any
+      );
+
+      expect(result.hasChanges).toBe(true);
+      // Only the second heading (without {#id}) should be div-wrapped
+      expect(result.content).toContain(
+        '<div id="second-heading">\n  ## Segundo Encabezado\n</div>'
+      );
+      // The others should NOT be div-wrapped
+      expect(result.content).not.toContain('<div id="first-heading">');
+      expect(result.content).not.toContain('<div id="custom-id">');
+    });
+  });
+
   describe('Header Count Validation', () => {
     it('should work when source and translated files have same header count', () => {
       const sourceContent = `## Header 1

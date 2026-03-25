@@ -508,6 +508,12 @@ function applyDivWrappedIds(
       });
 
       if (matchingLine) {
+        // Skip if heading already has explicit {#id} syntax —
+        // the translation will have naturally adopted it
+        const lineText = matchingLine.line.replace(/^#{1,6}\s+/, '');
+        if (/(\{#[^}]+\}|\\\{#[^}]+\\\})\s*$/.test(lineText)) {
+          return;
+        }
         headingsToWrap.push({
           originalLine: matchingLine.line,
           id,
