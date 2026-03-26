@@ -41,7 +41,7 @@ export type SyncResolutionFunctionWithFallback = (
  * @returns {string} The translated message
  * TODO: next major version, remove the "...type" suffix, it's redundant
  */
-export type GTFunctionType = SyncResolutionFunction;
+export type GTFunctionType = SyncResolutionFunctionWithFallback;
 
 /**
  * Type for the m() function
