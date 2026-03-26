@@ -1,5 +1,11 @@
 # gt-i18n
 
+## 0.7.7
+
+### Patch Changes
+
+- [#1154](https://github.com/generaltranslation/gt/pull/1154) [`10a0f2e`](https://github.com/generaltranslation/gt/commit/10a0f2ef28003c2767129ba8ba88a61f8d6c3f04) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Restore `GTFunctionType` return type to `string`
+
 ## 0.7.6
 
 ### Patch Changes
