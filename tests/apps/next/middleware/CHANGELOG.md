@@ -1,5 +1,12 @@
 # gt-next-middleware-e2e
 
+## 0.1.20
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.14.8
+
 ## 0.1.19
 
 ### Patch Changes

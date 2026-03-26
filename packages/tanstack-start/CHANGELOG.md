@@ -1,5 +1,14 @@
 # gt-tanstack-start
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [[`10a0f2e`](https://github.com/generaltranslation/gt/commit/10a0f2ef28003c2767129ba8ba88a61f8d6c3f04)]:
+  - gt-i18n@0.7.7
+  - gt-react@10.15.6
+  - @generaltranslation/react-core@1.6.7
+
 ## 0.2.6
 
 ### Patch Changes
