@@ -10,6 +10,7 @@ import {
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
   DateTime as _DateTime,
+  RelativeTime as _RelativeTime,
   Num as _Num,
   Var as _Var,
   Branch as _Branch,
@@ -131,6 +132,29 @@ export const DateTime: typeof _DateTime = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 DateTime._gtt = 'variable-datetime';
+
+/**
+ * The `<RelativeTime>` component renders a localized relative time string
+ * (e.g., "2 hours ago", "in 3 days") using `Intl.RelativeTimeFormat`.
+ *
+ * @example
+ * ```jsx
+ * <RelativeTime>
+ *    {someDate}
+ * </RelativeTime>
+ * ```
+ *
+ * @param {Date} [children] - A date to compute relative time from now.
+ * @param {number} [value] - Explicit numeric value. Requires `unit`.
+ * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
+ * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.
+ * @returns {Promise<React.JSX.Element>} The formatted relative time component.
+ */
+export const RelativeTime: typeof _RelativeTime = () => {
+  throw new Error(typesFileError);
+};
+/** @internal _gtt - The GT transformation for the component. */
+RelativeTime._gtt = 'variable-relative-time';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.

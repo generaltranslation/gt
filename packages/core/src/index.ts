@@ -10,6 +10,8 @@ import {
   _formatCurrency,
   _formatList,
   _formatRelativeTime,
+  _formatRelativeTimeFromDate,
+  _selectRelativeTimeUnit,
   _formatDateTime,
   _formatMessageICU,
   _formatListToParts,
@@ -1259,6 +1261,31 @@ export class GT {
       ...options,
     });
   }
+
+  /**
+   * Formats a relative time string from a Date, automatically selecting the best unit.
+   *
+   * @param {Date} date - The date to format relative to now
+   * @param {Object} [options] - Additional options for relative time formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
+   * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days")
+   *
+   * @example
+   * gt.formatRelativeTimeFromDate(new Date(Date.now() - 3600000));
+   * // Returns: "1 hour ago"
+   */
+  formatRelativeTimeFromDate(
+    date: Date,
+    options?: {
+      locales?: string | string[];
+    } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+  ): string {
+    return formatRelativeTimeFromDate(date, {
+      locales: this._renderingLocales,
+      ...options,
+    });
+  }
+
   // -------------- Locale Properties -------------- //
 
   /**
@@ -1803,6 +1830,28 @@ export function formatRelativeTime(
     options,
   });
 }
+
+/**
+ * Formats a relative time string from a Date, automatically selecting the best unit.
+ * @param {Date} date - The date to format relative to now.
+ * @param {Object} options - Formatting options.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
+ * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options.
+ * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days").
+ */
+export function formatRelativeTimeFromDate(
+  date: Date,
+  options: {
+    locales: string | string[];
+  } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+): string {
+  return _formatRelativeTimeFromDate({
+    date,
+    locales: options.locales,
+    options,
+  });
+}
+
 // -------------- Locale Properties -------------- //
 
 /**

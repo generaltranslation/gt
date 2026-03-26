@@ -242,6 +242,52 @@ export function _formatListToParts<T>({
  * @returns {string} The formatted relative time string.
  * @internal
  */
+/**
+ * Selects the best unit and computes the value for relative time formatting
+ * based on the difference between a date and now.
+ * @internal
+ */
+export function _selectRelativeTimeUnit(date: Date): {
+  value: number;
+  unit: Intl.RelativeTimeFormatUnit;
+} {
+  const now = Date.now();
+  const diffMs = date.getTime() - now;
+  const absDiffMs = Math.abs(diffMs);
+  const sign = diffMs < 0 ? -1 : 1;
+
+  const seconds = Math.round(absDiffMs / 1000);
+  const minutes = Math.round(absDiffMs / (1000 * 60));
+  const hours = Math.round(absDiffMs / (1000 * 60 * 60));
+  const days = Math.round(absDiffMs / (1000 * 60 * 60 * 24));
+  const months = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 30));
+  const years = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 365));
+
+  if (seconds < 60) return { value: sign * seconds, unit: 'second' };
+  if (minutes < 60) return { value: sign * minutes, unit: 'minute' };
+  if (hours < 24) return { value: sign * hours, unit: 'hour' };
+  if (days < 30) return { value: sign * days, unit: 'day' };
+  if (months < 12) return { value: sign * months, unit: 'month' };
+  return { value: sign * years, unit: 'year' };
+}
+
+/**
+ * Formats a relative time from a Date, automatically selecting the best unit.
+ * @internal
+ */
+export function _formatRelativeTimeFromDate({
+  date,
+  locales = [libraryDefaultLocale],
+  options = {},
+}: {
+  date: Date;
+  locales?: string | string[];
+  options?: Intl.RelativeTimeFormatOptions;
+}): string {
+  const { value, unit } = _selectRelativeTimeUnit(date);
+  return _formatRelativeTime({ value, unit, locales, options });
+}
+
 export function _formatRelativeTime({
   value,
   unit,
