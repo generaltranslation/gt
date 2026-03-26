@@ -260,13 +260,15 @@ export function _selectRelativeTimeUnit(date: Date): {
   const minutes = Math.round(absDiffMs / (1000 * 60));
   const hours = Math.round(absDiffMs / (1000 * 60 * 60));
   const days = Math.round(absDiffMs / (1000 * 60 * 60 * 24));
+  const weeks = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 7));
   const months = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 30));
   const years = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 365));
 
   if (seconds < 60) return { value: sign * seconds, unit: 'second' };
   if (minutes < 60) return { value: sign * minutes, unit: 'minute' };
   if (hours < 24) return { value: sign * hours, unit: 'hour' };
-  if (days < 30) return { value: sign * days, unit: 'day' };
+  if (days < 7) return { value: sign * days, unit: 'day' };
+  if (days < 28) return { value: sign * weeks, unit: 'week' };
   if (months < 12) return { value: sign * months, unit: 'month' };
   return { value: sign * years, unit: 'year' };
 }
