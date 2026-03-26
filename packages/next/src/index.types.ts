@@ -139,12 +139,10 @@ DateTime._gtt = 'variable-datetime';
  *
  * @example
  * ```jsx
- * <RelativeTime>
- *    {someDate}
- * </RelativeTime>
+ * <RelativeTime date={someDate} />
  * ```
  *
- * @param {Date} [children] - A date to compute relative time from now.
+ * @param {Date} [date] - A date to compute relative time from now.
  * @param {number} [value] - Explicit numeric value. Requires `unit`.
  * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
  * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.

@@ -256,13 +256,15 @@ export function _selectRelativeTimeUnit(date: Date): {
   const absDiffMs = Math.abs(diffMs);
   const sign = diffMs < 0 ? -1 : 1;
 
-  const seconds = Math.round(absDiffMs / 1000);
-  const minutes = Math.round(absDiffMs / (1000 * 60));
-  const hours = Math.round(absDiffMs / (1000 * 60 * 60));
-  const days = Math.round(absDiffMs / (1000 * 60 * 60 * 24));
-  const weeks = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 7));
-  const months = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 30));
-  const years = Math.round(absDiffMs / (1000 * 60 * 60 * 24 * 365));
+  // Use Math.floor to avoid confusing jumps near boundaries
+  // (e.g. 3.5 days rounding to "1 week ago" instead of "3 days ago")
+  const seconds = Math.floor(absDiffMs / 1000);
+  const minutes = Math.floor(absDiffMs / (1000 * 60));
+  const hours = Math.floor(absDiffMs / (1000 * 60 * 60));
+  const days = Math.floor(absDiffMs / (1000 * 60 * 60 * 24));
+  const weeks = Math.floor(absDiffMs / (1000 * 60 * 60 * 24 * 7));
+  const months = Math.floor(absDiffMs / (1000 * 60 * 60 * 24 * 30));
+  const years = Math.floor(absDiffMs / (1000 * 60 * 60 * 24 * 365));
 
   if (seconds < 60) return { value: sign * seconds, unit: 'second' };
   if (minutes < 60) return { value: sign * minutes, unit: 'minute' };

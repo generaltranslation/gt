@@ -15,6 +15,12 @@ describe('_selectRelativeTimeUnit', () => {
     vi.useRealTimers();
   });
 
+  it('should return 0 seconds for the same instant', () => {
+    const date = new Date(Date.now());
+    const result = _selectRelativeTimeUnit(date);
+    expect(result).toEqual({ value: 0, unit: 'second' });
+  });
+
   it('should select seconds for < 60s ago', () => {
     const date = new Date(Date.now() - 30 * 1000);
     const result = _selectRelativeTimeUnit(date);
@@ -67,6 +73,20 @@ describe('_selectRelativeTimeUnit', () => {
     const date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const result = _selectRelativeTimeUnit(date);
     expect(result).toEqual({ value: -1, unit: 'week' });
+  });
+
+  it('should transition from weeks to months at ~30 days', () => {
+    // 30 days = 4 weeks by floor, but days >= 28 triggers month path
+    const date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const result = _selectRelativeTimeUnit(date);
+    expect(result).toEqual({ value: -1, unit: 'month' });
+  });
+
+  it('should not round up near boundaries (floor behavior)', () => {
+    // 3.5 days should be 3 days, not 4 or 1 week
+    const date = new Date(Date.now() - 3.5 * 24 * 60 * 60 * 1000);
+    const result = _selectRelativeTimeUnit(date);
+    expect(result).toEqual({ value: -3, unit: 'day' });
   });
 });
 
@@ -152,7 +172,9 @@ describe('_formatRelativeTime', () => {
       unit: 'day',
       locales: ['es'],
     });
-    // Spanish may use "anteayer" (day before yesterday) for -2 days
+    // Intl.RelativeTimeFormat output varies by implementation —
+    // Spanish may return "anteayer" (day before yesterday) for -2 days
+    // instead of "hace 2 días", so we just verify it returns a non-empty string.
     expect(result).toBeTruthy();
     expect(typeof result).toBe('string');
   });

@@ -10,9 +10,7 @@ import { GTContext } from '../provider/GTContext';
  * @example
  * ```jsx
  * // Auto-select unit from a Date
- * <RelativeTime>
- *    {someDate}
- * </RelativeTime>
+ * <RelativeTime date={someDate} />
  * // → "2 hours ago"
  * ```
  *
@@ -23,21 +21,25 @@ import { GTContext } from '../provider/GTContext';
  * // → "yesterday"
  * ```
  *
- * @param {Date} [children] - A date to compute relative time from now. Mutually exclusive with `value`/`unit`.
+ * @param {Date} [date] - A date to compute relative time from now. Mutually exclusive with `value`/`unit`.
  * @param {number} [value] - Explicit numeric value for relative time. Requires `unit`.
- * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'month', 'year'). Required when using `value`.
+ * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year'). Required when using `value`.
+ * @param {string} [name] - Optional name for the variable, used by the GT CLI for additional context during extraction.
  * @param {string[]} [locales] - Optional locales for formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.RelativeTimeFormatOptions} [options={}] - Optional formatting options following `Intl.RelativeTimeFormatOptions`.
  * @returns {JSX.Element | null} The formatted relative time string.
  */
 function RelativeTime({
+  date,
   children,
   value,
   unit,
   locales,
   options = {},
 }: {
+  date?: Date | null | undefined;
   children?: Date | null | undefined;
+  /** Used by the GT CLI for additional context during extraction. */
   name?: string;
   value?: number;
   unit?: Intl.RelativeTimeFormatUnit;
@@ -53,20 +55,28 @@ function RelativeTime({
     if (context?.defaultLocale) locales.push(context.defaultLocale);
   }
 
+  // Resolve the date from either `date` prop or `children` (for backwards compat)
+  const resolvedDate = date ?? children;
+
   let result: string;
 
   if (value !== undefined && unit) {
     // Explicit value + unit mode
-    result = gt.formatRelativeTime(value, unit, { locales, ...options });
-  } else if (children != null) {
+    result = gt.formatRelativeTime(value, unit, {
+      locales,
+      numeric: options.numeric,
+      style: options.style,
+    });
+  } else if (resolvedDate != null) {
     // Auto-select unit from Date
-    result = gt.formatRelativeTimeFromDate(children, { locales, ...options });
+    result = gt.formatRelativeTimeFromDate(resolvedDate, {
+      locales,
+      numeric: options.numeric,
+      style: options.style,
+    });
   } else {
     return null;
   }
-
-  // Strip RTL override characters
-  result = result.replace(/[\u200F\u202B\u202E]/g, '');
 
   return <>{result}</>;
 }

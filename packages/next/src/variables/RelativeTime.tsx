@@ -8,7 +8,7 @@ import React from 'react';
  *
  * @example
  * ```jsx
- * <RelativeTime>{someDate}</RelativeTime>
+ * <RelativeTime date={someDate} />
  * // → "2 hours ago"
  * ```
  *
@@ -18,21 +18,25 @@ import React from 'react';
  * // → "yesterday"
  * ```
  *
- * @param {Date} [children] - A date to compute relative time from now.
+ * @param {Date} [date] - A date to compute relative time from now.
  * @param {number} [value] - Explicit numeric value. Requires `unit`.
  * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
+ * @param {string} [name] - Optional name for the variable, used by the GT CLI for additional context during extraction.
  * @param {string[]} [locales] - Override locales.
  * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.
  * @returns {JSX.Element | null} The formatted relative time string.
  */
 function RelativeTime({
+  date,
   children,
   value,
   unit,
   locales,
   options = {},
 }: {
+  date?: Date | null | undefined;
   children?: Date | null | undefined;
+  /** Used by the GT CLI for additional context during extraction. */
   name?: string;
   value?: number;
   unit?: Intl.RelativeTimeFormatUnit;
@@ -44,17 +48,28 @@ function RelativeTime({
   }
 
   const gt = getI18NConfig().getGTClass();
+
+  // Resolve the date from either `date` prop or `children` (for backwards compat)
+  const resolvedDate = date ?? children;
+
   let result: string;
 
   if (value !== undefined && unit) {
-    result = gt.formatRelativeTime(value, unit, { locales, ...options });
-  } else if (children != null) {
-    result = gt.formatRelativeTimeFromDate(children, { locales, ...options });
+    result = gt.formatRelativeTime(value, unit, {
+      locales,
+      numeric: options.numeric,
+      style: options.style,
+    });
+  } else if (resolvedDate != null) {
+    result = gt.formatRelativeTimeFromDate(resolvedDate, {
+      locales,
+      numeric: options.numeric,
+      style: options.style,
+    });
   } else {
     return null;
   }
 
-  result = result.replace(/[\u200F\u202B\u202E]/g, '');
   return <>{result}</>;
 }
 
