@@ -4,6 +4,8 @@
 'gt-react': minor
 'gt-next': minor
 'gt-tanstack-start': minor
+'gt': minor
+'@generaltranslation/compiler': minor
 ---
 
 Add `<RelativeTime>` component for localized relative time formatting
@@ -14,3 +16,4 @@ Add `<RelativeTime>` component for localized relative time formatting
 - Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds → minutes → hours → days → weeks → months → years)
 - Core: `formatRelativeTimeFromDate()` standalone function and `GT.formatRelativeTimeFromDate()` class method
 - Week unit included in auto-selection thresholds (7-27 days)
+- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a variable component

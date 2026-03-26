@@ -43,6 +43,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'Derive',
     'Currency',
     'DateTime',
+    'RelativeTime',
     'Num',
     'Branch',
     'Plural',
@@ -95,6 +96,7 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
       GT_COMPONENT_TYPES.Num,
       GT_COMPONENT_TYPES.Currency,
       GT_COMPONENT_TYPES.DateTime,
+      GT_COMPONENT_TYPES.RelativeTime,
       GT_COMPONENT_TYPES.Derive,
       GT_COMPONENT_TYPES.Static,
     ] as string[]
@@ -197,6 +199,7 @@ export const defaultVariableNames = {
   [GT_COMPONENT_TYPES.Var]: 'value',
   [GT_COMPONENT_TYPES.Num]: 'n',
   [GT_COMPONENT_TYPES.DateTime]: 'date',
+  [GT_COMPONENT_TYPES.RelativeTime]: 'time',
   [GT_COMPONENT_TYPES.Currency]: 'cost',
   [GT_COMPONENT_TYPES.Derive]: 'static',
   [GT_COMPONENT_TYPES.Static]: 'static',

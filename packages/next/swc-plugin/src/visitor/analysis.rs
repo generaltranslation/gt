@@ -7,7 +7,7 @@ pub fn is_translation_component_name(name: &Atom) -> bool {
 
 /// Check if a component name matches known gt-next variable components
 pub fn is_variable_component_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "Var" | "Num" | "Currency" | "DateTime" | "Static" | "Derive")
+  matches!(name.as_ref(), "Var" | "Num" | "Currency" | "DateTime" | "RelativeTime" | "Static" | "Derive")
 }
 
 /// Check if a name is a GT branch
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn recognizes_all_variable_components() {
-      let valid_components = ["Var", "Num", "Currency", "DateTime", "Static", "Derive"];
+      let valid_components = ["Var", "Num", "Currency", "DateTime", "RelativeTime", "Static", "Derive"];
       for component in &valid_components {
         let name = Atom::new(*component);
         assert!(
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn no_overlap_between_categories() {
       let all_names = [
-        "T", "Var", "Num", "Currency", "Static", "Derive", "DateTime", "Branch", "Plural", "useGT", "getGT",
+        "T", "Var", "Num", "Currency", "Static", "Derive", "DateTime", "RelativeTime", "Branch", "Plural", "useGT", "getGT",
       ];
 
       for name_str in &all_names {

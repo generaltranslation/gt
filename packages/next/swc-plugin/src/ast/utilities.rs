@@ -50,6 +50,7 @@ pub fn get_variable_type(component_name: &str) -> VariableType {
     "Num" => VariableType::Number,
     "Currency" => VariableType::Currency,
     "DateTime" => VariableType::Date,
+    "RelativeTime" => VariableType::Date,
     "Static" | "Derive" => VariableType::Static,
     _ => VariableType::Variable,
   }

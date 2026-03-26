@@ -35,6 +35,7 @@ export const GT_TRANSLATION_FUNCS = [
   DERIVE_COMPONENT,
   'Var',
   'DateTime',
+  'RelativeTime',
   'Currency',
   'Num',
   BRANCH_COMPONENT,
@@ -56,6 +57,7 @@ export const GT_DERIVE_STRING_FUNCTIONS = [
 export const VARIABLE_COMPONENTS = [
   'Var',
   'DateTime',
+  'RelativeTime',
   'Currency',
   'Num',
   STATIC_COMPONENT,
