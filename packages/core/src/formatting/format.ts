@@ -231,20 +231,11 @@ export function _formatListToParts<T>({
 }
 
 /**
- * Formats a relative time value according to the specified locales and options.
- *
- * @param {Object} params - The parameters for the relative time formatting.
- * @param {number} params.value - The relative time value to format.
- * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
- * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
- * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
- *
- * @returns {string} The formatted relative time string.
- * @internal
- */
-/**
  * Selects the best unit and computes the value for relative time formatting
- * based on the difference between a date and now.
+ * based on the difference between a date and a base date.
+ * @param {Date} date - The target date.
+ * @param {Date} [baseDate=new Date()] - The base date to compute relative time from.
+ * @returns {{ value: number, unit: Intl.RelativeTimeFormatUnit }} The computed value and unit.
  * @internal
  */
 export function _selectRelativeTimeUnit(date: Date, baseDate: Date = new Date()): {
@@ -272,6 +263,7 @@ export function _selectRelativeTimeUnit(date: Date, baseDate: Date = new Date())
   if (days < 7) return { value: sign * days, unit: 'day' };
   if (days < 28) return { value: sign * weeks, unit: 'week' };
   if (months < 12) return { value: sign * months, unit: 'month' };
+  if (years < 1) return { value: sign * months, unit: 'month' };
   return { value: sign * years, unit: 'year' };
 }
 
@@ -294,6 +286,18 @@ export function _formatRelativeTimeFromDate({
   return _formatRelativeTime({ value, unit, locales, options });
 }
 
+/**
+ * Formats a relative time value according to the specified locales and options.
+ *
+ * @param {Object} params - The parameters for the relative time formatting.
+ * @param {number} params.value - The relative time value to format.
+ * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
+ * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
+ *
+ * @returns {string} The formatted relative time string.
+ * @internal
+ */
 export function _formatRelativeTime({
   value,
   unit,

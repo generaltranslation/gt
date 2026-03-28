@@ -55,6 +55,10 @@ function RelativeTime({
   // Resolve the date from either `date` prop or `children` (for backwards compat)
   const resolvedDate = date ?? children;
 
+  if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
+    console.warn('<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.');
+  }
+
   let result: string;
 
   if (value !== undefined && unit) {
