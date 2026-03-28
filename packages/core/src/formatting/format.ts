@@ -247,11 +247,11 @@ export function _formatListToParts<T>({
  * based on the difference between a date and now.
  * @internal
  */
-export function _selectRelativeTimeUnit(date: Date): {
+export function _selectRelativeTimeUnit(date: Date, baseDate: Date = new Date()): {
   value: number;
   unit: Intl.RelativeTimeFormatUnit;
 } {
-  const now = Date.now();
+  const now = baseDate.getTime();
   const diffMs = date.getTime() - now;
   const absDiffMs = Math.abs(diffMs);
   const sign = diffMs < 0 ? -1 : 1;
@@ -281,14 +281,16 @@ export function _selectRelativeTimeUnit(date: Date): {
  */
 export function _formatRelativeTimeFromDate({
   date,
+  baseDate,
   locales = [libraryDefaultLocale],
   options = {},
 }: {
   date: Date;
+  baseDate?: Date;
   locales?: string | string[];
   options?: Intl.RelativeTimeFormatOptions;
 }): string {
-  const { value, unit } = _selectRelativeTimeUnit(date);
+  const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
   return _formatRelativeTime({ value, unit, locales, options });
 }
 

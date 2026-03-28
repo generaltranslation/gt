@@ -145,6 +145,7 @@ DateTime._gtt = 'variable-datetime';
  * @param {Date} [date] - A date to compute relative time from now.
  * @param {number} [value] - Explicit numeric value. Requires `unit`.
  * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
+ * @param {Date} [baseDate] - Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety.
  * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.
  * @returns {Promise<React.JSX.Element>} The formatted relative time component.
  */

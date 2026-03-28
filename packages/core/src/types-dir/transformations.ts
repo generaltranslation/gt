@@ -9,6 +9,7 @@ export type Transformation =
   | 'variable-currency'
   | 'variable-datetime'
   | 'variable-number'
+  | 'variable-relative-time'
   | 'plural'
   | 'branch';
 export type TransformationPrefix =
@@ -21,4 +22,5 @@ export type VariableTransformationSuffix =
   | 'variable'
   | 'number'
   | 'datetime'
-  | 'currency';
+  | 'currency'
+  | 'relative-time';

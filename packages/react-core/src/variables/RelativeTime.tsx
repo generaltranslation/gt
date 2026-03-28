@@ -34,6 +34,7 @@ function RelativeTime({
   children,
   value,
   unit,
+  baseDate,
   locales,
   options = {},
 }: {
@@ -43,6 +44,8 @@ function RelativeTime({
   name?: string;
   value?: number;
   unit?: Intl.RelativeTimeFormatUnit;
+  /** Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety. */
+  baseDate?: Date;
   locales?: string[];
   options?: Intl.RelativeTimeFormatOptions;
 }): React.JSX.Element | null {
@@ -71,6 +74,7 @@ function RelativeTime({
     // Auto-select unit from Date
     result = gt.formatRelativeTimeFromDate(resolvedDate, {
       locales,
+      baseDate,
       numeric: options.numeric,
       style: options.style,
     });

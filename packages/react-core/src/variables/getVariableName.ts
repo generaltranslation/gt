@@ -3,6 +3,7 @@ const defaultVariableNames = {
   number: 'n',
   datetime: 'date',
   currency: 'cost',
+  'relative-time': 'date',
 } as const;
 
 export const baseVariablePrefix = '_gt_';

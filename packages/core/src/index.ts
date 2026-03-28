@@ -1278,6 +1278,7 @@ export class GT {
     date: Date,
     options?: {
       locales?: string | string[];
+      baseDate?: Date;
     } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
   ): string {
     return formatRelativeTimeFromDate(date, {
@@ -1843,10 +1844,12 @@ export function formatRelativeTimeFromDate(
   date: Date,
   options: {
     locales: string | string[];
+    baseDate?: Date;
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
   return _formatRelativeTimeFromDate({
     date,
+    baseDate: options.baseDate,
     locales: options.locales,
     options,
   });
