@@ -254,9 +254,14 @@ export function findOrCreateEntry(
  */
 export function writeStagedEntries(
   settings: Settings,
-  stagedFiles: { fileId: string; versionId: string; fileName: string }[]
+  stagedFiles: { fileId: string; versionId: string; fileName: string }[],
+  branchId?: string
 ): void {
   const { data, entryMap, originalV1 } = readLockfile(settings);
+
+  if (branchId) {
+    data.branchId = branchId;
+  }
 
   for (const file of stagedFiles) {
     const entry = findOrCreateEntry(
