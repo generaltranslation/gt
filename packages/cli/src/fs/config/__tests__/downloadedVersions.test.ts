@@ -431,6 +431,28 @@ describe('readLockfile / writeLockfile', () => {
       expect(written.entries[0].translations).toEqual({});
     });
 
+    it('uses branchId parameter over settings._branchId', () => {
+      writeStagedEntries(
+        settings(), // no branchId in settings
+        [{ fileId: 'f1', versionId: 'v1', fileName: 'en.json' }],
+        'brc_from_workflow'
+      );
+
+      const written = readLockFile();
+      expect(written.version).toBe(2);
+      expect(written.branchId).toBe('brc_from_workflow');
+      expect(written.entries[0].staged).toBe(true);
+    });
+
+    it('falls back to settings branchId when parameter is not provided', () => {
+      writeStagedEntries(settings('brc_from_settings'), [
+        { fileId: 'f1', versionId: 'v1', fileName: 'en.json' },
+      ]);
+
+      const written = readLockFile();
+      expect(written.branchId).toBe('brc_from_settings');
+    });
+
     it('does not clobber non-staged entries', () => {
       writeLockFile({
         version: 2,
