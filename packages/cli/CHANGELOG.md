@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.13.3
+
+### Patch Changes
+
+- [#1156](https://github.com/generaltranslation/gt/pull/1156) [`0606939`](https://github.com/generaltranslation/gt/commit/0606939da3b78c7423688fd8ee5cbb6af035c193) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add branch ID to lockfile during staging
+
 ## 2.13.2
 
 ### Patch Changes
