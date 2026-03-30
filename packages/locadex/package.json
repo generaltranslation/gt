@@ -1,6 +1,6 @@
 {
   "name": "locadex",
-  "version": "1.0.133",
+  "version": "1.0.134",
   "description": "An AI agent for internationalization",
   "main": "dist/index.js",
   "type": "module",
