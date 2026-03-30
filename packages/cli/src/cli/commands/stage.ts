@@ -65,7 +65,7 @@ export async function handleStage(
           fileName: data.fileName,
         })
       );
-      writeStagedEntries(settings, stagedFiles);
+      writeStagedEntries(settings, stagedFiles, branchData.currentBranch.id);
     }
     const templateData = allFiles.find(
       (file) => file.fileId === TEMPLATE_FILE_ID
