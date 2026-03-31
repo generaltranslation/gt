@@ -1,9 +1,6 @@
 import { getI18nManager } from '../async-i18n-manager/singleton-operations';
-import {
-  AsyncStorageAdapter,
-  ASYNC_STORAGE_ADAPTER_TYPE,
-} from '../async-i18n-manager/AsyncStorageAdapter';
-import { I18nManager, StorageAdapter } from 'gt-i18n/internal';
+import { ASYNC_STORAGE_ADAPTER_TYPE } from '../async-i18n-manager/AsyncStorageAdapter';
+import { I18nManager } from 'gt-i18n/internal';
 import { AsyncStorageI18nManager } from '../async-i18n-manager/AsyncStorageI18nManager';
 
 /**
@@ -28,7 +25,7 @@ export function withGT<T>(locale: string, fn: () => T): T {
  * @returns True if the I18nManager is an AsyncStorageI18nManager, false otherwise
  */
 function isAsyncStorageI18nManager(
-  i18nManager: I18nManager<AsyncStorageAdapter> | I18nManager<StorageAdapter>
+  i18nManager: I18nManager
 ): i18nManager is AsyncStorageI18nManager {
   return (
     i18nManager.getAdapterType() === ASYNC_STORAGE_ADAPTER_TYPE &&
