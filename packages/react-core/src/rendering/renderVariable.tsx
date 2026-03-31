@@ -17,7 +17,12 @@ const renderVariable: RenderVariable = ({
   } else if (variableType === 'c') {
     return <Currency options={variableOptions}>{variableValue}</Currency>;
   } else if (variableType === 'rt') {
-    return <RelativeTime date={variableValue instanceof Date ? variableValue : undefined} options={variableOptions} />;
+    return (
+      <RelativeTime
+        date={variableValue instanceof Date ? variableValue : undefined}
+        options={variableOptions}
+      />
+    );
   }
   return <Var>{variableValue}</Var>;
 };

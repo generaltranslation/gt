@@ -1849,7 +1849,7 @@ export function formatRelativeTimeFromDate(
 ): string {
   return _formatRelativeTimeFromDate({
     date,
-    baseDate: options.baseDate,
+    baseDate: options.baseDate ?? new Date(),
     locales: options.locales,
     options,
   });

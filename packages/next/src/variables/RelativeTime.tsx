@@ -56,7 +56,10 @@ function RelativeTime({
   const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
-    console.warn('<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.');
+    // eslint-disable-next-line no-console
+    console.warn(
+      '<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.'
+    );
   }
 
   let result: string;
@@ -70,7 +73,7 @@ function RelativeTime({
   } else if (resolvedDate != null) {
     result = gt.formatRelativeTimeFromDate(resolvedDate, {
       locales,
-      baseDate,
+      baseDate: baseDate ?? new Date(),
       numeric: options.numeric,
       style: options.style,
     });

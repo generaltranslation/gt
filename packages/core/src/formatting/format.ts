@@ -234,11 +234,11 @@ export function _formatListToParts<T>({
  * Selects the best unit and computes the value for relative time formatting
  * based on the difference between a date and a base date.
  * @param {Date} date - The target date.
- * @param {Date} [baseDate=new Date()] - The base date to compute relative time from.
+ * @param {Date} baseDate - The base date to compute relative time from. Must be provided by the caller for hydration safety.
  * @returns {{ value: number, unit: Intl.RelativeTimeFormatUnit }} The computed value and unit.
  * @internal
  */
-export function _selectRelativeTimeUnit(date: Date, baseDate: Date = new Date()): {
+export function _selectRelativeTimeUnit(date: Date, baseDate: Date): {
   value: number;
   unit: Intl.RelativeTimeFormatUnit;
 } {
@@ -278,7 +278,7 @@ export function _formatRelativeTimeFromDate({
   options = {},
 }: {
   date: Date;
-  baseDate?: Date;
+  baseDate: Date;
   locales?: string | string[];
   options?: Intl.RelativeTimeFormatOptions;
 }): string {
