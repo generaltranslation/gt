@@ -83,7 +83,7 @@ function RelativeTime({
     return null;
   }
 
-  return <span suppressHydrationWarning>{result}</span>;
+  return <>{result}</>;
 }
 
 /** @internal _gtt - The GT transformation for the component. */
