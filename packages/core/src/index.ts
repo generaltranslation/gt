@@ -1847,11 +1847,12 @@ export function formatRelativeTimeFromDate(
     baseDate?: Date;
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
+  const { locales, baseDate, ...intlOptions } = options;
   return _formatRelativeTimeFromDate({
     date,
-    baseDate: options.baseDate ?? new Date(),
-    locales: options.locales,
-    options,
+    baseDate: baseDate ?? new Date(),
+    locales,
+    options: intlOptions,
   });
 }
 
