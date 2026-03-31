@@ -382,6 +382,7 @@ impl<'a> JsxTraversal<'a> {
       VariableType::Number => format!("_gt_n_{}", self.id_counter),
       VariableType::Currency => format!("_gt_cost_{}", self.id_counter),
       VariableType::Date => format!("_gt_date_{}", self.id_counter),
+      VariableType::RelativeTime => format!("_gt_time_{}", self.id_counter),
       VariableType::Variable => format!("_gt_value_{}", self.id_counter),
       VariableType::Static => format!("_gt_static_{}", self.id_counter),
     }

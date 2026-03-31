@@ -17,9 +17,15 @@ const renderVariable: RenderVariable = ({
   } else if (variableType === 'c') {
     return <Currency options={variableOptions}>{variableValue}</Currency>;
   } else if (variableType === 'rt') {
+    const dateValue =
+      variableValue instanceof Date
+        ? variableValue
+        : typeof variableValue === 'string' || typeof variableValue === 'number'
+          ? new Date(variableValue)
+          : undefined;
     return (
       <RelativeTime
-        date={variableValue instanceof Date ? variableValue : undefined}
+        date={dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined}
         options={variableOptions}
       />
     );
