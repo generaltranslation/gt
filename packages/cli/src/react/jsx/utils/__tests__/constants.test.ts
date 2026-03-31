@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  GT_TRANSLATION_FUNCS,
-  VARIABLE_COMPONENTS,
-} from '../constants';
+import { GT_TRANSLATION_FUNCS, VARIABLE_COMPONENTS } from '../constants';
 
 describe('GT_TRANSLATION_FUNCS', () => {
   it('should include RelativeTime', () => {

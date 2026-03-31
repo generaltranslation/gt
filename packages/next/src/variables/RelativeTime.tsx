@@ -69,6 +69,7 @@ function RelativeTime({
       locales,
       numeric: options.numeric,
       style: options.style,
+      localeMatcher: options.localeMatcher,
     });
   } else if (resolvedDate != null) {
     result = gt.formatRelativeTimeFromDate(resolvedDate, {
@@ -76,6 +77,7 @@ function RelativeTime({
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,
       style: options.style,
+      localeMatcher: options.localeMatcher,
     });
   } else {
     return null;

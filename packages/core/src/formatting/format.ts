@@ -238,7 +238,10 @@ export function _formatListToParts<T>({
  * @returns {{ value: number, unit: Intl.RelativeTimeFormatUnit }} The computed value and unit.
  * @internal
  */
-export function _selectRelativeTimeUnit(date: Date, baseDate: Date): {
+export function _selectRelativeTimeUnit(
+  date: Date,
+  baseDate: Date
+): {
   value: number;
   unit: Intl.RelativeTimeFormatUnit;
 } {
