@@ -20,10 +20,7 @@ const renderVariable: RenderVariable = ({
     // RelativeTime supports two modes:
     // 1. value + unit (e.g., value=-3, unit="hour") — explicit relative time
     // 2. date (Date object) — auto-select unit from date difference
-    if (
-      typeof variableValue === 'number' &&
-      variableOptions?.unit
-    ) {
+    if (typeof variableValue === 'number' && variableOptions?.unit) {
       return (
         <RelativeTime
           value={variableValue}

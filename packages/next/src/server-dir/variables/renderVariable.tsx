@@ -11,11 +11,23 @@ const renderVariable: RenderVariable = ({
   variableOptions,
 }) => {
   if (variableType === 'n') {
-    return <Num options={variableOptions as Intl.NumberFormatOptions}>{variableValue}</Num>;
+    return (
+      <Num options={variableOptions as Intl.NumberFormatOptions}>
+        {variableValue}
+      </Num>
+    );
   } else if (variableType === 'd') {
-    return <DateTime options={variableOptions as Intl.DateTimeFormatOptions}>{variableValue}</DateTime>;
+    return (
+      <DateTime options={variableOptions as Intl.DateTimeFormatOptions}>
+        {variableValue}
+      </DateTime>
+    );
   } else if (variableType === 'c') {
-    return <Currency options={variableOptions as Intl.NumberFormatOptions}>{variableValue}</Currency>;
+    return (
+      <Currency options={variableOptions as Intl.NumberFormatOptions}>
+        {variableValue}
+      </Currency>
+    );
   } else if (variableType === 'rt') {
     const rtOptions = variableOptions as Intl.RelativeTimeFormatOptions & {
       unit?: Intl.RelativeTimeFormatUnit;
