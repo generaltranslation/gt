@@ -57,6 +57,8 @@ export type FlattenedDictionary = {
 
 /**
  * Translated content types
+ * TODO: move these types to JsxElement etc from generaltranslation/types
+ * remember to omit the t property (tag name) from the translated element
  */
 export type TranslatedElement = {
   i?: number;

@@ -3,11 +3,15 @@ import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import { determineLocale as gtDetermineLocale } from 'generaltranslation';
 import { createInvalidLocaleWarning } from '../../shared/messages';
+import { Translation } from 'gt-i18n/types';
 
 /**
  * I18nManager implementation for Browser.
  */
-export class BrowserI18nManager extends I18nManager<BrowserStorageAdapter> {
+export class BrowserI18nManager extends I18nManager<
+  BrowserStorageAdapter,
+  Translation
+> {
   constructor(config: I18nManagerConstructorParams<BrowserStorageAdapter>) {
     super(config);
     this.storeAdapter.setConfig({

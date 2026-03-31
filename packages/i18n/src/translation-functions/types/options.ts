@@ -49,3 +49,23 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
 export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;
+
+/**
+ * Options for JSX translation
+ * Used by the resolveJsxTranslation() function
+ */
+export type JsxTranslationOptions = {
+  $context?: string;
+  $id?: string;
+};
+
+/**
+ * Resolution options - options needed to perform a resolution for a given content
+ */
+export type ResolutionOptions =
+  | (Omit<InlineTranslationOptions, '$format'> & {
+      $format: StringFormat;
+    })
+  | (JsxTranslationOptions & {
+      $format: 'JSX';
+    });

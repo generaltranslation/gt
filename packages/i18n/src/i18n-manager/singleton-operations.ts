@@ -16,7 +16,11 @@ let i18nManager: I18nManager | undefined = undefined;
 export function getI18nManager<
   T extends StorageAdapter = StorageAdapter,
   U extends Translation = Translation,
->(): I18nManager<T, U> | I18nManager<StorageAdapter, Translation> {
+>():
+  | I18nManager<T, U>
+  | I18nManager<T, Translation>
+  | I18nManager<StorageAdapter, U>
+  | I18nManager<StorageAdapter, Translation> {
   if (!i18nManager) {
     logger.warn(
       'getI18nManager(): Translation failed because I18nManager not initialized.'
