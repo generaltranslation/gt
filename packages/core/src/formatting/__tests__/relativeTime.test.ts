@@ -89,6 +89,19 @@ describe('_selectRelativeTimeUnit', () => {
     expect(result).toEqual({ value: -3, unit: 'day' });
   });
 
+  it('should handle 28-29 day boundary (months=0, should return weeks)', () => {
+    // 28 days: months = floor(28/30) = 0, weeks = 4
+    // Should return 4 weeks, not "0 months" / "this month"
+    const date28 = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+    const result28 = _selectRelativeTimeUnit(date28, new Date());
+    expect(result28).toEqual({ value: -4, unit: 'week' });
+
+    // 29 days: months = floor(29/30) = 0, weeks = 4
+    const date29 = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+    const result29 = _selectRelativeTimeUnit(date29, new Date());
+    expect(result29).toEqual({ value: -4, unit: 'week' });
+  });
+
   it('should handle 360-364 day edge case (months=12, years=0)', () => {
     // 362 days: months = floor(362/30) = 12, years = floor(362/365) = 0
     // Should return 12 months, not "0 years" / "this year"

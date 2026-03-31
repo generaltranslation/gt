@@ -265,6 +265,7 @@ export function _selectRelativeTimeUnit(
   if (hours < 24) return { value: sign * hours, unit: 'hour' };
   if (days < 7) return { value: sign * days, unit: 'day' };
   if (days < 28) return { value: sign * weeks, unit: 'week' };
+  if (months < 1) return { value: sign * weeks, unit: 'week' };
   if (months < 12) return { value: sign * months, unit: 'month' };
   if (years < 1) return { value: sign * months, unit: 'month' };
   return { value: sign * years, unit: 'year' };
