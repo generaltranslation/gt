@@ -46,6 +46,12 @@ export default function getVariableProps(
         ...(typeof props.currency !== 'undefined' && {
           currency: props.currency,
         }),
+        ...(typeof props.unit !== 'undefined' && {
+          unit: props.unit,
+        }),
+        ...(typeof props.baseDate !== 'undefined' && {
+          baseDate: props.baseDate,
+        }),
         ...(typeof props.options !== 'undefined' && props.options),
       };
       if (Object.keys(variableOptions).length) return variableOptions;

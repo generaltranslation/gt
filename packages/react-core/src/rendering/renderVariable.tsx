@@ -17,6 +17,22 @@ const renderVariable: RenderVariable = ({
   } else if (variableType === 'c') {
     return <Currency options={variableOptions}>{variableValue}</Currency>;
   } else if (variableType === 'rt') {
+    // RelativeTime supports two modes:
+    // 1. value + unit (e.g., value=-3, unit="hour") — explicit relative time
+    // 2. date (Date object) — auto-select unit from date difference
+    if (
+      typeof variableValue === 'number' &&
+      variableOptions?.unit
+    ) {
+      return (
+        <RelativeTime
+          value={variableValue}
+          unit={variableOptions.unit}
+          baseDate={variableOptions?.baseDate}
+          options={variableOptions}
+        />
+      );
+    }
     const dateValue =
       variableValue instanceof Date
         ? variableValue
@@ -26,6 +42,7 @@ const renderVariable: RenderVariable = ({
     return (
       <RelativeTime
         date={dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined}
+        baseDate={variableOptions?.baseDate}
         options={variableOptions}
       />
     );

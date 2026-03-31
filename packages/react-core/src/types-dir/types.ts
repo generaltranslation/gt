@@ -97,7 +97,13 @@ export type RenderMethod = 'skeleton' | 'replace' | 'default';
 export type VariableProps = {
   variableType: VariableType;
   variableValue: any;
-  variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+  variableOptions:
+    | Intl.NumberFormatOptions
+    | Intl.DateTimeFormatOptions
+    | (Intl.RelativeTimeFormatOptions & {
+        unit?: Intl.RelativeTimeFormatUnit;
+        baseDate?: Date;
+      });
   variableName: string;
 };
 
