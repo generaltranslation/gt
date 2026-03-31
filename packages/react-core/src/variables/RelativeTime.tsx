@@ -91,6 +91,10 @@ function RelativeTime({
     return null;
   }
 
+  // Note: This component may cause hydration errors when the output differs
+  // between server and client (e.g., relative time changing between render passes).
+  // We cannot use suppressHydrationWarning because this is a purely logical
+  // component that returns a text fragment, not a DOM element.
   return <>{result}</>;
 }
 
