@@ -7,6 +7,19 @@ import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
 
+const DEFAULT_SETTINGS: PluginSettings = {
+  logLevel: 'warn',
+  compileTimeHash: false,
+  disableBuildChecks: false,
+  enableMacroTransform: true,
+  stringTranslationMacro: GT_OTHER_FUNCTIONS.t,
+  enableTaggedTemplate: true,
+  enableTemplateLiteralArg: true,
+  enableConcatenationArg: true,
+  enableMacroImportInjection: true,
+  enableAutoJsxInjection: false,
+};
+
 /**
  * Initialize processing state for a file
  */
@@ -15,17 +28,9 @@ export function initializeState(
   filename: string
 ): TransformState {
   const settings: PluginSettings = {
-    logLevel: options.logLevel || 'warn',
-    compileTimeHash: options.compileTimeHash || false,
-    disableBuildChecks: options.disableBuildChecks || false,
-    filename: filename,
-    enableMacroTransform: options.enableMacroTransform ?? true,
-    stringTranslationMacro:
-      options.stringTranslationMacro ?? GT_OTHER_FUNCTIONS.t,
-    enableTaggedTemplate: true,
-    enableTemplateLiteralArg: true,
-    enableConcatenationArg: true,
-    enableMacroImportInjection: true,
+    ...DEFAULT_SETTINGS,
+    ...options,
+    filename,
   };
 
   return {

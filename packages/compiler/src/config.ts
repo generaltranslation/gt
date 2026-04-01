@@ -18,6 +18,8 @@ export interface PluginConfig {
   enableMacroTransform?: boolean;
   /** Name of the string translation macro function */
   stringTranslationMacro?: string;
+  /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
+  enableAutoJsxInjection?: boolean;
 }
 
 /**
@@ -34,4 +36,6 @@ export interface PluginSettings {
   enableTemplateLiteralArg: boolean;
   enableConcatenationArg: boolean;
   enableMacroImportInjection: boolean;
+  /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
+  enableAutoJsxInjection: boolean;
 }
