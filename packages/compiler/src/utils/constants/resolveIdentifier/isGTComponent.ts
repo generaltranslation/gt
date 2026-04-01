@@ -1,6 +1,7 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isGTImportSource } from '../gt/helpers';
+import { GT_COMPONENT_TYPES } from '../gt/constants';
 
 /**
  * Given the first argument of a jsx() call (the component identifier),
@@ -35,7 +36,7 @@ export function isUserTranslationComponent(
   firstArg: t.Expression,
   path: NodePath
 ): boolean {
-  return resolveFirstArgGTName(firstArg, path) === 'T';
+  return resolveFirstArgGTName(firstArg, path) === GT_COMPONENT_TYPES.T;
 }
 
 /** Check if first arg is user-written Var, Num, Currency, or DateTime */
@@ -44,7 +45,12 @@ export function isUserVariableComponent(
   path: NodePath
 ): boolean {
   const name = resolveFirstArgGTName(firstArg, path);
-  return ['Var', 'Num', 'Currency', 'DateTime'].includes(name ?? '');
+  return [
+    GT_COMPONENT_TYPES.Var,
+    GT_COMPONENT_TYPES.Num,
+    GT_COMPONENT_TYPES.Currency,
+    GT_COMPONENT_TYPES.DateTime,
+  ].includes((name ?? '') as GT_COMPONENT_TYPES);
 }
 
 /** Check if first arg is Branch or Plural */
@@ -53,7 +59,9 @@ export function isGTBranchComponent(
   path: NodePath
 ): boolean {
   const name = resolveFirstArgGTName(firstArg, path);
-  return name === 'Branch' || name === 'Plural';
+  return (
+    name === GT_COMPONENT_TYPES.Branch || name === GT_COMPONENT_TYPES.Plural
+  );
 }
 
 /** Check if first arg is Derive or Static */
@@ -62,5 +70,7 @@ export function isGTDeriveComponent(
   path: NodePath
 ): boolean {
   const name = resolveFirstArgGTName(firstArg, path);
-  return name === 'Derive' || name === 'Static';
+  return (
+    name === GT_COMPONENT_TYPES.Derive || name === GT_COMPONENT_TYPES.Static
+  );
 }

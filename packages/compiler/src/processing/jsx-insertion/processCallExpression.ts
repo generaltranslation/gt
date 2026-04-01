@@ -89,7 +89,10 @@ function processJsxNode(
 
   // Branch/Plural/Derive/Static → opaque, parent handles
   // Mark all descendants (children AND other props) so Babel skips them
-  if (isGTBranchComponent(firstArg, path) || isGTDeriveComponent(firstArg, path)) {
+  if (
+    isGTBranchComponent(firstArg, path) ||
+    isGTDeriveComponent(firstArg, path)
+  ) {
     markAllDescendantJsxCalls(callExpr, processedNodes);
     return;
   }
@@ -107,7 +110,13 @@ function processJsxNode(
 
   if (shouldClaimT) {
     // Process children: wrap dynamic exprs in Var, recurse child jsx calls
-    const processed = processChildren(children, path, true, state, processedNodes);
+    const processed = processChildren(
+      children,
+      path,
+      true,
+      state,
+      processedNodes
+    );
     // Wrap in T — use the jsx callee name from the current call
     const calleeName = t.isIdentifier(callExpr.callee)
       ? callExpr.callee.name
@@ -119,7 +128,13 @@ function processJsxNode(
     state.statistics.jsxInsertionsCount++;
   } else if (insideAutoT) {
     // Inside a parent's T claim: wrap dynamic exprs, recurse
-    const processed = processChildren(children, path, true, state, processedNodes);
+    const processed = processChildren(
+      children,
+      path,
+      true,
+      state,
+      processedNodes
+    );
     childrenProp.value = processed;
   } else {
     // No text, no opaque, not inside T: just recurse child jsx calls
@@ -253,11 +268,11 @@ function hasNonWhitespaceText(children: t.Expression): boolean {
 function hasOpaqueGTChild(children: t.Expression, path: NodePath): boolean {
   const check = (el: t.Expression): boolean => {
     if (!t.isCallExpression(el) || !isJsxCallee(el)) return false;
-    if (el.arguments.length < 1 || !t.isExpression(el.arguments[0])) return false;
+    if (el.arguments.length < 1 || !t.isExpression(el.arguments[0]))
+      return false;
     const firstArg = el.arguments[0];
     return (
-      isGTBranchComponent(firstArg, path) ||
-      isGTDeriveComponent(firstArg, path)
+      isGTBranchComponent(firstArg, path) || isGTDeriveComponent(firstArg, path)
     );
   };
 
@@ -278,10 +293,7 @@ function needsVarWrapping(expr: t.Expression): boolean {
   if (t.isNumericLiteral(expr)) return false;
   if (t.isBooleanLiteral(expr)) return false;
   if (t.isNullLiteral(expr)) return false;
-  if (
-    t.isTemplateLiteral(expr) &&
-    expr.expressions.length === 0
-  ) {
+  if (t.isTemplateLiteral(expr) && expr.expressions.length === 0) {
     return false;
   }
   if (
@@ -340,9 +352,7 @@ function wrapInVar(
 ): t.CallExpression {
   return t.callExpression(t.cloneNode(jsxCallee), [
     t.identifier(GT_COMPONENT_TYPES.GtInternalVar),
-    t.objectExpression([
-      t.objectProperty(t.identifier('children'), expr),
-    ]),
+    t.objectExpression([t.objectProperty(t.identifier('children'), expr)]),
   ]);
 }
 
@@ -353,9 +363,7 @@ function wrapInT(
 ): t.CallExpression {
   return t.callExpression(t.cloneNode(jsxCallee), [
     t.identifier(GT_COMPONENT_TYPES.GtInternalTranslateJsx),
-    t.objectExpression([
-      t.objectProperty(t.identifier('children'), children),
-    ]),
+    t.objectExpression([t.objectProperty(t.identifier('children'), children)]),
   ]);
 }
 

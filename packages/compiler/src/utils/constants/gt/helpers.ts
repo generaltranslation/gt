@@ -84,9 +84,10 @@ export function isGTComponent(name: string): name is GT_COMPONENT_TYPES {
 export function isTranslationComponent(
   name: string
 ): name is GT_COMPONENT_TYPES.T {
-  return [GT_COMPONENT_TYPES.T, GT_COMPONENT_TYPES.GtInternalTranslateJsx].includes(
-    name as GT_COMPONENT_TYPES
-  );
+  return [
+    GT_COMPONENT_TYPES.T,
+    GT_COMPONENT_TYPES.GtInternalTranslateJsx,
+  ].includes(name as GT_COMPONENT_TYPES);
 }
 
 /**
