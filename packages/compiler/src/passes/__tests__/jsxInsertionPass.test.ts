@@ -750,4 +750,67 @@ describe('jsxInsertionPass', () => {
     expect(output).toMatch(/\bjsx\("div"/);
     expect(output).not.toMatch(/\bjsxs\("div"/);
   });
+
+  // ===== jsxDEV isStaticChildren correctness =====
+
+  it('sets parent isStaticChildren to false after wrapping in _T', () => {
+    // Parent had array children (isStaticChildren=true), now has single _T child → false
+    const code = `
+      import { jsxDEV } from 'react/jsx-dev-runtime';
+      jsxDEV("div", { children: ["Hello ", name] }, undefined, true);
+    `;
+    const { code: output } = transform(code);
+    expect(output).toMatch(/jsxDEV\("div",\s*\{[\s\S]*?\},\s*void 0,\s*false/);
+  });
+
+  it('generated _T wrapper includes isStaticChildren=true for array children', () => {
+    // _T wrapping ["Hello ", _Var(name)] → array children → isStaticChildren=true
+    const code = `
+      import { jsxDEV } from 'react/jsx-dev-runtime';
+      jsxDEV("div", { children: ["Hello ", name] }, undefined, true);
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    const tCall = gtTranslateCalls[0];
+    expect(tCall.arguments.length).toBeGreaterThanOrEqual(4);
+    expect(t.isBooleanLiteral(tCall.arguments[3], { value: true })).toBe(true);
+  });
+
+  it('generated _T wrapper includes isStaticChildren=false for single child', () => {
+    // _T wrapping "Hello" → single child → isStaticChildren=false
+    const code = `
+      import { jsxDEV } from 'react/jsx-dev-runtime';
+      jsxDEV("div", { children: "Hello" }, undefined, false);
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    const tCall = gtTranslateCalls[0];
+    expect(tCall.arguments.length).toBeGreaterThanOrEqual(4);
+    expect(t.isBooleanLiteral(tCall.arguments[3], { value: false })).toBe(true);
+  });
+
+  it('generated _Var wrapper includes isStaticChildren=false (always single child)', () => {
+    const code = `
+      import { jsxDEV } from 'react/jsx-dev-runtime';
+      jsxDEV("div", { children: ["Hello ", name] }, undefined, true);
+    `;
+    const { gtVarCalls } = transform(code);
+    expect(gtVarCalls).toHaveLength(1);
+    const varCall = gtVarCalls[0];
+    expect(varCall.arguments.length).toBeGreaterThanOrEqual(4);
+    expect(t.isBooleanLiteral(varCall.arguments[3], { value: false })).toBe(
+      true
+    );
+  });
+
+  it('_T wrapper has isStaticChildren=true when it has array children alongside _Var', () => {
+    // Parent wraps in _T with ["Hello ", _Var(name)] → _T has array → isStaticChildren=true
+    const code = `
+      import { jsxDEV } from 'react/jsx-dev-runtime';
+      jsxDEV("div", { children: ["Hello ", name] }, undefined, true);
+    `;
+    const { gtTranslateCalls } = transform(code);
+    const tCall = gtTranslateCalls[0];
+    expect(t.isBooleanLiteral(tCall.arguments[3], { value: true })).toBe(true);
+  });
 });

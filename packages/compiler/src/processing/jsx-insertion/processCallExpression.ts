@@ -119,7 +119,8 @@ function processJsxNode({
       : state.calleeInfo.singleCallee;
     const tWrapped = wrapInT(
       currentChildren as t.Expression,
-      t.identifier(tCallee ?? 'jsx')
+      t.identifier(tCallee ?? 'jsx'),
+      state.calleeInfo
     );
     state.processedNodes.add(tWrapped);
     childrenPropPath.get('value').replaceWith(tWrapped);
@@ -171,7 +172,11 @@ function processSingleChild({
   // _Var always has a single child → use singleCallee
   if (insideAutoT && needsVarWrapping(childPath)) {
     const callee = state.calleeInfo.singleCallee ?? 'jsx';
-    const wrapped = wrapInVar(childPath.node, t.identifier(callee));
+    const wrapped = wrapInVar(
+      childPath.node,
+      t.identifier(callee),
+      state.calleeInfo
+    );
     state.processedNodes.add(wrapped);
     childPath.replaceWith(wrapped);
   }
@@ -300,32 +305,66 @@ function updateCalleeToSingle({
   state: JsxInsertionState;
 }): void {
   const { singleCallee, multiCallee } = state.calleeInfo;
-  if (!singleCallee || !multiCallee) return;
-  if (singleCallee === multiCallee) return;
 
-  const callee = jsxCallPath.get('callee');
-  if (callee.isIdentifier() && callee.node.name === multiCallee) {
-    callee.node.name = singleCallee;
+  // Production (jsx/jsxs): update callee name jsxs → jsx
+  if (singleCallee && multiCallee && singleCallee !== multiCallee) {
+    const callee = jsxCallPath.get('callee');
+    if (callee.isIdentifier() && callee.node.name === multiCallee) {
+      callee.node.name = singleCallee;
+    }
+  }
+
+  // Dev (jsxDEV): update isStaticChildren (4th arg, index 3) to false
+  const args = jsxCallPath.get('arguments');
+  const isStaticArg = args[3];
+  if (isStaticArg?.isBooleanLiteral({ value: true })) {
+    isStaticArg.replaceWith(t.booleanLiteral(false));
   }
 }
 
 // ===== AST construction =====
 
-function wrapInVar(expr: t.Expression, callee: t.Expression): t.CallExpression {
-  return t.callExpression(t.cloneNode(callee), [
+function wrapInVar(
+  expr: t.Expression,
+  callee: t.Expression,
+  calleeInfo: JsxCalleeInfo
+): t.CallExpression {
+  const args: t.Expression[] = [
     t.identifier(GT_COMPONENT_TYPES.GtInternalVar),
     t.objectExpression([t.objectProperty(t.identifier('children'), expr)]),
-  ]);
+  ];
+  if (isDevMode(calleeInfo)) {
+    args.push(
+      t.unaryExpression('void', t.numericLiteral(0)),
+      t.booleanLiteral(false)
+    );
+  }
+  return t.callExpression(t.cloneNode(callee), args);
 }
 
 function wrapInT(
   children: t.Expression,
-  callee: t.Expression
+  callee: t.Expression,
+  calleeInfo: JsxCalleeInfo
 ): t.CallExpression {
-  return t.callExpression(t.cloneNode(callee), [
+  const args: t.Expression[] = [
     t.identifier(GT_COMPONENT_TYPES.GtInternalTranslateJsx),
     t.objectExpression([t.objectProperty(t.identifier('children'), children)]),
-  ]);
+  ];
+  if (isDevMode(calleeInfo)) {
+    args.push(
+      t.unaryExpression('void', t.numericLiteral(0)),
+      t.booleanLiteral(t.isArrayExpression(children))
+    );
+  }
+  return t.callExpression(t.cloneNode(callee), args);
+}
+
+function isDevMode(calleeInfo: JsxCalleeInfo): boolean {
+  return (
+    calleeInfo.singleCallee != null &&
+    calleeInfo.singleCallee === calleeInfo.multiCallee
+  );
 }
 
 // ===== Marking descendants as processed =====
@@ -368,7 +407,11 @@ function processOpaqueComponentProps({
       walkAndMark({ exprPath: valuePath, state });
     } else if (insideAutoT && needsVarWrapping(valuePath)) {
       const callee = state.calleeInfo.singleCallee ?? 'jsx';
-      const wrapped = wrapInVar(valuePath.node, t.identifier(callee));
+      const wrapped = wrapInVar(
+        valuePath.node,
+        t.identifier(callee),
+        state.calleeInfo
+      );
       state.processedNodes.add(wrapped);
       valuePath.replaceWith(wrapped);
     }
