@@ -23,15 +23,22 @@ export class TagStep extends WorkflowStep<FileReference[], CreateTagResult> {
       this.spinner.start('Creating translation tag...');
     }
 
-    this.result = await this.gt.createTag({
-      tagId: this.settings.tag!,
-      files: files.map((f) => ({
-        fileId: f.fileId,
-        versionId: f.versionId,
-        branchId: f.branchId,
-      })),
-      message: this.settings.tagMessage,
-    });
+    try {
+      this.result = await this.gt.createTag({
+        tagId: this.settings.tag!,
+        files: files.map((f) => ({
+          fileId: f.fileId,
+          versionId: f.versionId,
+          branchId: f.branchId,
+        })),
+        message: this.settings.tagMessage,
+      });
+    } catch (error) {
+      if (this.userProvided) {
+        this.spinner.stop(chalk.yellow('Failed to create translation tag'));
+      }
+      throw error;
+    }
 
     return this.result;
   }

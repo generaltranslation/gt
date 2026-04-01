@@ -317,18 +317,19 @@ export async function generateSettings(
         }).trim();
       }
     } catch {
-      // Not in a git repo or git unavailable — leave tag as-is
+      // Not in a git repo or git unavailable — fall back to auto-generation
+      mergedOptions.tag = undefined;
     }
-  }
-
-  // Auto-generate tag if none provided
-  if (!mergedOptions.tag) {
-    mergedOptions.tag = crypto.randomUUID().slice(0, 12);
   }
 
   // Map -m/--message flag to tagMessage
   if (flags.message) {
     mergedOptions.tagMessage = flags.message;
+  }
+
+  // Auto-generate a tag ID only when the user provided a message but no explicit tag
+  if (!mergedOptions.tag && mergedOptions.tagMessage) {
+    mergedOptions.tag = crypto.randomBytes(4).toString('hex');
   }
 
   // if there's no existing config file, creates one
