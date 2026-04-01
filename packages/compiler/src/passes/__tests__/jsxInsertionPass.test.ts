@@ -447,4 +447,54 @@ describe('jsxInsertionPass', () => {
     const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
     expect(gtImport).toBeUndefined();
   });
+
+  // ===== Aliased callee names (Vite dev mode) =====
+
+  it('handles aliased jsxDEV import', () => {
+    // Vite dev mode compiles to: import { jsxDEV as _jsxDEV } from 'react/jsx-dev-runtime'
+    // BEFORE JSX:  <div>Hello</div>
+    // AFTER JSX:   <div><_T>Hello</_T></div>
+    const code = `
+      import { jsxDEV as _jsxDEV } from 'react/jsx-dev-runtime';
+      _jsxDEV("div", { children: "Hello" });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  it('handles mixed aliased jsx and jsxs', () => {
+    // BEFORE JSX:  <div>Hello <b>World</b></div>
+    // AFTER JSX:   <div><_T>Hello <b>World</b></_T></div>
+    // jsxs used for div (multiple children), jsx used for b (single child)
+    const code = `
+      import { jsx as _jsx, jsxs as _jsxs } from 'react/jsx-runtime';
+      _jsxs("div", { children: ["Hello ", _jsx("b", { children: "World" })] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(0); // b is a jsx element, not dynamic
+  });
+
+  it('wraps dynamic content in _Var with aliased callee', () => {
+    // BEFORE JSX:  <div>Hello {name}</div>
+    // AFTER JSX:   <div><_T>Hello <_Var>{name}</_Var></_T></div>
+    const code = `
+      import { jsxDEV as _jsxDEV } from 'react/jsx-dev-runtime';
+      _jsxDEV("div", { children: ["Hello ", name] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+  });
+
+  it('handles deep nesting with aliased callee', () => {
+    // BEFORE JSX:  <div><span>Click me</span></div>
+    // AFTER JSX:   <div><span><_T>Click me</_T></span></div>
+    const code = `
+      import { jsxDEV as _jsxDEV } from 'react/jsx-dev-runtime';
+      _jsxDEV("div", { children: _jsxDEV("span", { children: "Click me" }) });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
 });
