@@ -60,6 +60,8 @@ export type GTPluginConfig = Omit<
   'locales'
 > & {
   locales: string[];
+  // Alias for sourceLocale — accepted so users can spread gt.config.json directly.
+  defaultLocale?: string;
   singletons?: string[];
   // Optional mapping function to map source document ids to translated singleton document ids
   // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
@@ -91,7 +93,8 @@ export type GTPluginConfig = Omit<
 export const gtPlugin = definePlugin<GTPluginConfig>(
   ({
     languageField = 'language',
-    sourceLocale = libraryDefaultLocale,
+    sourceLocale,
+    defaultLocale,
     locales,
     customMapping,
     apiKey,
@@ -107,6 +110,10 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     additionalDeserializers = {},
     additionalBlockDeserializers = [],
   }) => {
+    // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
+    const resolvedSourceLocale =
+      sourceLocale ?? defaultLocale ?? libraryDefaultLocale;
+
     // Validate the translateDocuments
     translateDocuments = translateDocuments?.filter((filter) => {
       if (filter.documentId || filter.type) {
@@ -118,7 +125,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     pluginConfig.init(
       secretsNamespace,
       languageField,
-      sourceLocale,
+      resolvedSourceLocale,
       locales,
       singletons || [],
       // singletons is a string array of singleton document ids
@@ -133,7 +140,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalBlockDeserializers
     );
     gt.setConfig({
-      sourceLocale: sourceLocale,
+      sourceLocale: resolvedSourceLocale,
       customMapping: customMapping,
       apiKey: apiKey,
       projectId: projectId,
