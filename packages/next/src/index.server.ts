@@ -4,6 +4,7 @@ import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
 import DateTime from './variables/DateTime';
+import RelativeTime from './variables/RelativeTime';
 import T from './server-dir/buildtime/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
@@ -70,6 +71,7 @@ export {
   Num,
   Currency,
   DateTime,
+  RelativeTime,
   Static,
   Derive,
   Branch,

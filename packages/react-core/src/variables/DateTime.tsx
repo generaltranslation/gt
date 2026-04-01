@@ -42,6 +42,10 @@ function DateTime({
     .formatDateTime(children, { locales, ...options })
     .replace(/[\u200F\u202B\u202E]/g, '');
 
+  // Note: This component may cause hydration errors when the output differs
+  // between server and client (e.g., different timezones or locales).
+  // We cannot use suppressHydrationWarning because this is a purely logical
+  // component that returns a text fragment, not a DOM element.
   return <>{result}</>;
 }
 

@@ -6,7 +6,7 @@ export const DECLARE_STATIC_FUNCTION = 'declareStatic';
 export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
 export const T_REGISTRATION_FUNCTION = 't';
-export const T_GLOBAL_REGISTRATION_FUNCTION = 't';
+export const T_GLOBAL_REGISTRATION_FUNCTION = T_REGISTRATION_FUNCTION;
 export const INLINE_TRANSLATION_HOOK = 'useGT';
 export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
@@ -18,6 +18,14 @@ export const TRANSLATION_COMPONENT = 'T';
 export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
+
+// Variable components
+export const VAR_COMPONENT = 'Var';
+export const DATETIME_COMPONENT = 'DateTime';
+export const RELATIVE_TIME_COMPONENT = 'RelativeTime';
+export const CURRENCY_COMPONENT = 'Currency';
+export const NUM_COMPONENT = 'Num';
+export const PLURAL_COMPONENT = 'Plural';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
@@ -33,12 +41,13 @@ export const GT_TRANSLATION_FUNCS = [
   TRANSLATION_COMPONENT,
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
-  'Var',
-  'DateTime',
-  'Currency',
-  'Num',
+  VAR_COMPONENT,
+  DATETIME_COMPONENT,
+  RELATIVE_TIME_COMPONENT,
+  CURRENCY_COMPONENT,
+  NUM_COMPONENT,
   BRANCH_COMPONENT,
-  'Plural',
+  PLURAL_COMPONENT,
 ];
 // GT String translation functions
 export const STRING_REGISTRATION_FUNCS = [
@@ -54,10 +63,11 @@ export const GT_DERIVE_STRING_FUNCTIONS = [
 
 // Valid variable components
 export const VARIABLE_COMPONENTS = [
-  'Var',
-  'DateTime',
-  'Currency',
-  'Num',
+  VAR_COMPONENT,
+  DATETIME_COMPONENT,
+  RELATIVE_TIME_COMPONENT,
+  CURRENCY_COMPONENT,
+  NUM_COMPONENT,
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
 ];

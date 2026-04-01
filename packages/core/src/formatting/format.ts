@@ -231,6 +231,66 @@ export function _formatListToParts<T>({
 }
 
 /**
+ * Selects the best unit and computes the value for relative time formatting
+ * based on the difference between a date and a base date.
+ * @param {Date} date - The target date.
+ * @param {Date} baseDate - The base date to compute relative time from. Must be provided by the caller for hydration safety.
+ * @returns {{ value: number, unit: Intl.RelativeTimeFormatUnit }} The computed value and unit.
+ * @internal
+ */
+export function _selectRelativeTimeUnit(
+  date: Date,
+  baseDate: Date
+): {
+  value: number;
+  unit: Intl.RelativeTimeFormatUnit;
+} {
+  const now = baseDate.getTime();
+  const diffMs = date.getTime() - now;
+  const absDiffMs = Math.abs(diffMs);
+  const sign = diffMs < 0 ? -1 : 1;
+
+  // Use Math.floor to avoid confusing jumps near boundaries
+  // (e.g. 3.5 days rounding to "1 week ago" instead of "3 days ago")
+  const seconds = Math.floor(absDiffMs / 1000);
+  const minutes = Math.floor(absDiffMs / (1000 * 60));
+  const hours = Math.floor(absDiffMs / (1000 * 60 * 60));
+  const days = Math.floor(absDiffMs / (1000 * 60 * 60 * 24));
+  const weeks = Math.floor(absDiffMs / (1000 * 60 * 60 * 24 * 7));
+  const months = Math.floor(absDiffMs / (1000 * 60 * 60 * 24 * 30));
+  const years = Math.floor(absDiffMs / (1000 * 60 * 60 * 24 * 365));
+
+  if (seconds < 60) return { value: sign * seconds, unit: 'second' };
+  if (minutes < 60) return { value: sign * minutes, unit: 'minute' };
+  if (hours < 24) return { value: sign * hours, unit: 'hour' };
+  if (days < 7) return { value: sign * days, unit: 'day' };
+  if (days < 28) return { value: sign * weeks, unit: 'week' };
+  if (months < 1) return { value: sign * weeks, unit: 'week' };
+  if (months < 12) return { value: sign * months, unit: 'month' };
+  if (years < 1) return { value: sign * months, unit: 'month' };
+  return { value: sign * years, unit: 'year' };
+}
+
+/**
+ * Formats a relative time from a Date, automatically selecting the best unit.
+ * @internal
+ */
+export function _formatRelativeTimeFromDate({
+  date,
+  baseDate,
+  locales = [libraryDefaultLocale],
+  options = {},
+}: {
+  date: Date;
+  baseDate: Date;
+  locales?: string | string[];
+  options?: Intl.RelativeTimeFormatOptions;
+}): string {
+  const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
+  return _formatRelativeTime({ value, unit, locales, options });
+}
+
+/**
  * Formats a relative time value according to the specified locales and options.
  *
  * @param {Object} params - The parameters for the relative time formatting.

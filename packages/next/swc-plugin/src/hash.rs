@@ -14,6 +14,8 @@ pub enum VariableType {
   Date, // Date
   #[serde(rename = "c")]
   Currency, // Currency
+  #[serde(rename = "rt")]
+  RelativeTime, // Relative Time
   #[serde(rename = "s")]
   Static, // Static
 }
