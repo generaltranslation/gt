@@ -45,7 +45,11 @@ import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { gt, pluginConfig } from './adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { IgnoreFields, SkipFields, TranslateDocumentFilter } from './adapter/types';
+import type {
+  IgnoreFields,
+  SkipFields,
+  TranslateDocumentFilter,
+} from './adapter/types';
 import TranslationsTool from './components/page/TranslationsTool';
 import { SECRETS_NAMESPACE } from './utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';

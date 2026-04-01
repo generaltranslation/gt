@@ -1,7 +1,11 @@
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { Secrets } from '../types';
-import type { TranslateDocumentFilter, IgnoreFields, SkipFields } from './types';
+import type {
+  TranslateDocumentFilter,
+  IgnoreFields,
+  SkipFields,
+} from './types';
 import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 export const gt = new GT();
