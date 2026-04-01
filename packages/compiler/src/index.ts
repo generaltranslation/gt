@@ -130,7 +130,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Generate code if any pass modified the AST
           if (
             !hasCollectionContent &&
-            state.statistics.macroExpansionsCount === 0
+            state.statistics.macroExpansionsCount === 0 &&
+            state.statistics.jsxInsertionsCount === 0
           ) {
             return null;
           }

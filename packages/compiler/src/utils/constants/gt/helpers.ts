@@ -46,6 +46,8 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'Num',
     'Branch',
     'Plural',
+    'GtInternalTranslateJsx',
+    'GtInternalVar',
   ].includes(name);
 }
 
@@ -82,7 +84,9 @@ export function isGTComponent(name: string): name is GT_COMPONENT_TYPES {
 export function isTranslationComponent(
   name: string
 ): name is GT_COMPONENT_TYPES.T {
-  return [GT_COMPONENT_TYPES.T].includes(name as GT_COMPONENT_TYPES);
+  return [GT_COMPONENT_TYPES.T, GT_COMPONENT_TYPES.GtInternalTranslateJsx].includes(
+    name as GT_COMPONENT_TYPES
+  );
 }
 
 /**
@@ -97,6 +101,7 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
       GT_COMPONENT_TYPES.DateTime,
       GT_COMPONENT_TYPES.Derive,
       GT_COMPONENT_TYPES.Static,
+      GT_COMPONENT_TYPES.GtInternalVar,
     ] as string[]
   ).includes(name);
 }

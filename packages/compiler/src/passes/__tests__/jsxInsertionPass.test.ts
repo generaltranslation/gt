@@ -14,10 +14,7 @@ function transform(code: string): {
   gtVarCalls: t.CallExpression[];
   imports: t.ImportDeclaration[];
 } {
-  const state = initializeState(
-    { enableAutoJsxInjection: true },
-    'test.tsx'
-  );
+  const state = initializeState({ enableAutoJsxInjection: true }, 'test.tsx');
   const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['typescript'],
@@ -330,6 +327,100 @@ describe('jsxInsertionPass', () => {
     expect(gtTranslateCalls).toHaveLength(1);
   });
 
+  it('does NOT insert _T inside Branch prop arguments', () => {
+    // BEFORE JSX:  <div><Branch branch="mode" summary={<p>Summary text</p>}>Fallback</Branch></div>
+    // AFTER JSX:   <div><_T><Branch branch="mode" summary={<p>Summary text</p>}>Fallback</Branch></_T></div>
+    // The summary prop JSX should NOT get its own _T — Branch args are opaque
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch } from 'gt-react';
+      jsx("div", { children: jsx(Branch, { branch: "mode", summary: jsx("p", { children: "Summary text" }), children: "Fallback" }) });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    // Only 1 _T at the div level wrapping Branch — no _T inside the summary prop
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  it('does NOT insert _T inside Plural prop arguments', () => {
+    // BEFORE JSX:  <div><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></div>
+    // AFTER JSX:   <div><_T><Plural ... /></_T></div>
+    // The one/other prop JSX should NOT get _T — Plural args are opaque
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Plural } from 'gt-react';
+      jsx("div", { children: jsx(Plural, { n: count, one: jsx("span", { children: "One item" }), other: jsx("span", { children: "Many items" }) }) });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    // Only 1 _T at div level — no _T inside one/other props
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  it('does NOT insert _T inside Branch children either', () => {
+    // BEFORE JSX:  <div><Branch branch="test"><p>Fallback text</p></Branch></div>
+    // AFTER JSX:   <div><_T><Branch branch="test"><p>Fallback text</p></Branch></_T></div>
+    // Branch children are also opaque — no _T inside them
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch } from 'gt-react';
+      jsx("div", { children: jsx(Branch, { branch: "test", children: jsx("p", { children: "Fallback text" }) }) });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  // ===== Non-children props (independent subtrees) =====
+
+  it('inserts _T in a non-children prop independently from children', () => {
+    // BEFORE JSX:  <Card header={<h1>Title</h1>}>Body text</Card>
+    // AFTER JSX:   <Card header={<h1><_T>Title</_T></h1>}><_T>Body text</_T></Card>
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      jsx(Card, { header: jsx("h1", { children: "Title" }), children: "Body text" });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(2);
+  });
+
+  it('inserts _T in prop JSX even when children have no text', () => {
+    // BEFORE JSX:  <Card header={<h1>Title</h1>}><div /></Card>
+    // AFTER JSX:   <Card header={<h1><_T>Title</_T></h1>}><div /></Card>
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      jsx(Card, { header: jsx("h1", { children: "Title" }), children: jsx("div", {}) });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  it('does NOT let parent _T claim leak into non-children prop', () => {
+    // BEFORE JSX:  <div>Hello <Button icon={<span>X</span>}>Click</Button></div>
+    // AFTER JSX:   <div><_T>Hello <Button icon={<span><_T>X</_T></span>}>Click</Button></_T></div>
+    // div has direct text "Hello " → _T at div, "Click" is part of that unit.
+    // But "X" in icon prop is independent → gets its own _T.
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", jsx(Button, { icon: jsx("span", { children: "X" }), children: "Click" })] });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    // 2 _Ts: one at div ("Hello ... Click"), one for "X" in icon prop (independent)
+    expect(gtTranslateCalls).toHaveLength(2);
+  });
+
+  it('inserts _T in multiple non-children props independently', () => {
+    // BEFORE JSX:  <Layout header={<h1>Header</h1>} footer={<p>Footer</p>}>Main</Layout>
+    // AFTER JSX:   each prop and children gets its own _T
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      jsx(Layout, {
+        header: jsx("h1", { children: "Header" }),
+        footer: jsx("p", { children: "Footer" }),
+        children: "Main"
+      });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(3);
+  });
+
   // ===== Imports =====
 
   it('injects import when insertions happen', () => {
@@ -338,9 +429,7 @@ describe('jsxInsertionPass', () => {
       jsx("div", { children: "Hello" });
     `;
     const { imports } = transform(code);
-    const gtImport = imports.find(
-      (i) => i.source.value === 'gt-react/browser'
-    );
+    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
     expect(gtImport).toBeDefined();
     const names = gtImport!.specifiers
       .filter((s): s is t.ImportSpecifier => t.isImportSpecifier(s))
@@ -355,9 +444,7 @@ describe('jsxInsertionPass', () => {
       jsx("div", {});
     `;
     const { imports } = transform(code);
-    const gtImport = imports.find(
-      (i) => i.source.value === 'gt-react/browser'
-    );
+    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
     expect(gtImport).toBeUndefined();
   });
 });

@@ -42,6 +42,7 @@ export function validateTranslationComponentArgs(
   // Map to appropriate validation function
   switch (canonicalName) {
     case GT_COMPONENT_TYPES.T:
+    case GT_COMPONENT_TYPES.GtInternalTranslateJsx:
       return validateTComponentArgs(args, state);
     default:
       const errors = [
