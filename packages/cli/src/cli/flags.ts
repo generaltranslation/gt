@@ -109,8 +109,8 @@ export function attachTranslateFlags(command: Command) {
       DEFAULT_GIT_REMOTE_NAME
     )
     .option(
-      '--tag <value>',
-      'Tag ID for this translation run (use "git" to auto-resolve from current commit)'
+      '--tag [value]',
+      'Tag this translation run (auto-resolves from git if no value provided)'
     )
     .option(
       '-m, --message <message>',
