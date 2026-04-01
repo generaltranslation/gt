@@ -73,7 +73,10 @@ export function deleteMatchingFields(
 
   forEachMatchingField(documentId, document, fields, (result) => {
     if (Array.isArray(result.parent)) {
-      arrayRemovals.push({ parent: result.parent, index: Number(result.parentProperty) });
+      arrayRemovals.push({
+        parent: result.parent,
+        index: Number(result.parentProperty),
+      });
     } else {
       delete result.parent[result.parentProperty];
     }

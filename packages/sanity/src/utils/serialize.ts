@@ -66,7 +66,11 @@ function stripIgnoredFields(
 
   const strippedDoc = JSON.parse(JSON.stringify(document)) as SanityDocument;
 
-  deleteMatchingFields(document._id.replace('drafts.', ''), strippedDoc, ignoreFields);
+  deleteMatchingFields(
+    document._id.replace('drafts.', ''),
+    strippedDoc,
+    ignoreFields
+  );
 
   return strippedDoc;
 }

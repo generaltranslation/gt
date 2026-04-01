@@ -268,7 +268,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
-            const serialized = serializeDocument(cleanDoc as typeof doc, schema, baseLanguage);
+            const serialized = serializeDocument(
+              cleanDoc as typeof doc,
+              schema,
+              baseLanguage
+            );
             return {
               info: {
                 documentId: doc._id?.replace('drafts.', '') || doc._id,
