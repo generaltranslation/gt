@@ -1,5 +1,12 @@
 # gt-sanity
 
+## 2.0.0
+
+### Major Changes
+
+- [#1164](https://github.com/generaltranslation/gt/pull/1164) [`2df12cf`](https://github.com/generaltranslation/gt/commit/2df12cf1b28d1ae3fc75222c4aff270ce96a7c28) Thanks [@brian-lou](https://github.com/brian-lou)! - gt-sanity v2: React 19; additional config options
+  See https://generaltranslation.com/en-US/blog/gt-sanity_v2_0_0 for more details.
+
 ## 1.1.31
 
 ### Patch Changes
