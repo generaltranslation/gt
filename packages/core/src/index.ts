@@ -58,6 +58,10 @@ import _setupProject, {
   SetupProjectOptions,
 } from './translate/setupProject';
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
+import _createTag, {
+  CreateTagOptions,
+  CreateTagResult,
+} from './translate/createTag';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import {
   FileQuery,
@@ -524,6 +528,18 @@ export class GT {
       mergedOptions,
       this._getTranslationConfig()
     );
+  }
+
+  /**
+   * Creates or upserts a file tag, associating a set of source files
+   * with a user-defined tag ID and optional message.
+   *
+   * @param {CreateTagOptions} options - Tag creation options including tagId, sourceFileIds, and optional message
+   * @returns {Promise<CreateTagResult>} The created or updated tag
+   */
+  async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
+    this._validateAuth('createTag');
+    return await _createTag(options, this._getTranslationConfig());
   }
 
   /**
