@@ -8,8 +8,8 @@ import { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
-  renderVariable,
 } from '@generaltranslation/react-core/internal';
+import { renderVariable } from '../variables/utils/renderVariable';
 import { requiresTranslation } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 import { JsxChildren } from 'generaltranslation/src/types';

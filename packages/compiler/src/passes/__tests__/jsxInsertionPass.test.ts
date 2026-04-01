@@ -368,6 +368,36 @@ describe('jsxInsertionPass', () => {
     expect(gtTranslateCalls).toHaveLength(1);
   });
 
+  it('wraps dynamic Branch prop value in _Var', () => {
+    // BEFORE JSX:  <div><Branch branch="hello" hello={count} /></div>
+    // AFTER JSX:   <div><_T><Branch branch="hello" hello={<_Var>{count}</_Var>} /></_T></div>
+    // count is dynamic → _Var wraps it (Branch is inside _T region)
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch } from 'gt-react';
+      jsx("div", { children: jsx(Branch, { branch: "hello", hello: count }) });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+  });
+
+  it('wraps ternary in Branch prop with _Var and inserts _T in nested JSX', () => {
+    // BEFORE JSX:  <div><Branch branch="mode" summary={cond ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>
+    // AFTER JSX:   <div><_T><Branch branch="mode" summary={<_Var>{cond ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>Fallback</Branch></_T></div>
+    // The ternary is dynamic → _Var. The <p> elements inside have text → each gets _T.
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch } from 'gt-react';
+      jsx("div", { children: jsx(Branch, { branch: "mode", summary: cond ? jsx("p", { children: "Option A" }) : jsx("p", { children: "Option B" }), children: "Fallback" }) });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    // 3 _Ts: one at div (wrapping Branch), one for "Option A", one for "Option B"
+    expect(gtTranslateCalls).toHaveLength(3);
+    // 1 _Var: the ternary expression
+    expect(gtVarCalls).toHaveLength(1);
+  });
+
   // ===== Non-children props (independent subtrees) =====
 
   it('inserts _T in a non-children prop independently from children', () => {
@@ -446,6 +476,83 @@ describe('jsxInsertionPass', () => {
     const { imports } = transform(code);
     const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
     expect(gtImport).toBeUndefined();
+  });
+
+  // ===== Structural: Var must be nested inside T =====
+
+  it('Var wrapper appears as a descendant of T wrapper, not a sibling', () => {
+    // BEFORE JSX:  <div>Hello {name}</div>
+    // AFTER JSX:   <div><_T>Hello <_Var>{name}</_Var></_T></div>
+    // The _Var must be INSIDE the _T's children, not alongside it
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", name] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+
+    // The T call's children should be an array containing the Var call
+    const tCall = gtTranslateCalls[0];
+    const tProps = tCall.arguments[1];
+    expect(t.isObjectExpression(tProps)).toBe(true);
+    const tChildrenProp = (tProps as t.ObjectExpression).properties.find(
+      (p) =>
+        t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'children' })
+    ) as t.ObjectProperty;
+    expect(tChildrenProp).toBeDefined();
+
+    // children should be an array with the Var call inside it
+    const tChildren = tChildrenProp.value;
+    expect(t.isArrayExpression(tChildren)).toBe(true);
+    const elements = (tChildren as t.ArrayExpression).elements;
+    // First element: "Hello " string
+    expect(t.isStringLiteral(elements[0])).toBe(true);
+    // Second element: the Var wrapper call
+    expect(t.isCallExpression(elements[1])).toBe(true);
+    const varCall = elements[1] as t.CallExpression;
+    expect(
+      t.isIdentifier(varCall.arguments[0], { name: 'GtInternalVar' })
+    ).toBe(true);
+  });
+
+  it('multiple Var wrappers are all inside the same T wrapper', () => {
+    // BEFORE JSX:  <div>Hello {firstName}, welcome to {city}!</div>
+    // AFTER JSX:   <div><_T>Hello <_Var>{firstName}</_Var>, welcome to <_Var>{city}</_Var>!</_T></div>
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", firstName, ", welcome to ", city, "!"] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(2);
+
+    // Both Var calls should be inside the T's children array
+    const tCall = gtTranslateCalls[0];
+    const tProps = tCall.arguments[1] as t.ObjectExpression;
+    const tChildrenProp = tProps.properties.find(
+      (p) =>
+        t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'children' })
+    ) as t.ObjectProperty;
+    const tChildren = tChildrenProp.value as t.ArrayExpression;
+
+    // Should have 5 elements: "Hello ", Var(firstName), ", welcome to ", Var(city), "!"
+    expect(tChildren.elements).toHaveLength(5);
+    expect(t.isStringLiteral(tChildren.elements[0])).toBe(true);
+    expect(t.isCallExpression(tChildren.elements[1])).toBe(true);
+    expect(
+      t.isIdentifier((tChildren.elements[1] as t.CallExpression).arguments[0], {
+        name: 'GtInternalVar',
+      })
+    ).toBe(true);
+    expect(t.isStringLiteral(tChildren.elements[2])).toBe(true);
+    expect(t.isCallExpression(tChildren.elements[3])).toBe(true);
+    expect(
+      t.isIdentifier((tChildren.elements[3] as t.CallExpression).arguments[0], {
+        name: 'GtInternalVar',
+      })
+    ).toBe(true);
+    expect(t.isStringLiteral(tChildren.elements[4])).toBe(true);
   });
 
   // ===== Aliased callee names (Vite dev mode) =====

@@ -202,11 +202,15 @@ User-imported variable components are left untouched. They are valid children of
 <div><_T>Date: <DateTime>{date}</DateTime></_T></div>
 ```
 
-## Rule 8: Branch and Plural — fully opaque, \_T wraps from parent
+## Rule 8: Branch and Plural — \_T wraps from parent, static props untouched, dynamic props get \_Var
 
-Branch and Plural components are treated as **fully opaque** blocks. The pass does not enter their children OR their prop arguments. No \_T or \_Var is inserted anywhere inside a Branch or Plural — not in their children, not in their `summary`, `one`, `other`, or any other JSX-valued prop. Instead, \_T is inserted at the **parent** level, wrapping the entire Branch/Plural component.
+Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone.
 
-This is different from regular components where non-children props are processed independently. Branch and Plural are special because the `<T>` component already knows how to translate their branches — inserting \_T inside them would interfere with that.
+However, **dynamic expressions** in Branch/Plural props are still wrapped in \_Var — the same as they would be anywhere else. And because \_Var is auto-inserted (not user-written), any JSX inside those dynamic expressions remains eligible for \_T insertion.
+
+**Static prop values** (direct JSX like `summary={<p>Text</p>}`) are left untouched — no \_T inside.
+
+**Dynamic prop values** (ternaries, variables, function calls, etc.) get \_Var wrapped. JSX inside those \_Var wrappers still gets \_T.
 
 ```jsx
 // Branch as only child — _T wraps at parent
@@ -217,24 +221,35 @@ This is different from regular components where non-children props are processed
 <div><Plural n={count} one="item" other="items" /></div>
 <div><_T><Plural n={count} one="item" other="items" /></_T></div>
 
-// Branch with JSX in prop arguments — NO _T inside the props
+// Branch with static JSX in prop arguments — NO _T inside the props
 <div><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></div>
 <div><_T><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></_T></div>
-// Only 1 _T at div — "Summary text" and "Details text" do NOT get their own _T
+// Only 1 _T at div — "Summary text" and "Details text" are static, left alone
 
-// Plural with JSX in prop arguments — NO _T inside the props
+// Plural with static JSX in prop arguments — NO _T inside the props
 <div><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></div>
 <div><_T><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></_T></div>
-// Only 1 _T at div — "One item" and "Many items" do NOT get their own _T
+// Only 1 _T at div — "One item" and "Many items" are static, left alone
 
 // Branch with nested JSX children — NO _T inside children either
 <div><Branch branch="test"><p>Fallback text</p></Branch></div>
 <div><_T><Branch branch="test"><p>Fallback text</p></Branch></_T></div>
-// Only 1 _T at div — "Fallback text" does NOT get its own _T
+// Only 1 _T at div — "Fallback text" is static, left alone
 
 // Branch alongside text — _T wraps everything at parent
 <div>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></div>
 <div><_T>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></_T></div>
+
+// Branch with dynamic expression in prop — dynamic value gets _Var
+<div><Branch branch="hello" hello={count} /></div>
+<div><_T><Branch branch="hello" hello={<_Var>{count}</_Var>} /></_T></div>
+// count is dynamic → _Var wraps it (Branch is inside _T region)
+
+// Branch with ternary containing JSX in prop — ternary gets _Var, JSX inside gets _T
+<div><Branch branch="mode" summary={condition ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>
+<div><_T><Branch branch="mode" summary={<_Var>{condition ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>Fallback</Branch></_T></div>
+// The ternary is dynamic → _Var. The <p> elements inside are JSX with text → each gets _T.
+// This works because _Var is auto-inserted, so JSX inside it is still fair game.
 ```
 
 ## Rule 9: Derive and Static — fully opaque, \_T wraps from parent
