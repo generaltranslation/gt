@@ -8,7 +8,9 @@ import { GT_COMPONENT_TYPES } from '../gt/constants';
  * resolve it to its original imported name from a GT source.
  * Returns null if the identifier is not imported from a GT library.
  */
-export function resolveFirstArgGTName(firstArgPath: NodePath): string | null {
+export function resolveFirstArgGTName(
+  firstArgPath: NodePath<t.Expression>
+): string | null {
   if (!firstArgPath.isIdentifier()) return null;
 
   const binding = firstArgPath.scope.getBinding(firstArgPath.node.name);
@@ -29,12 +31,16 @@ export function resolveFirstArgGTName(firstArgPath: NodePath): string | null {
 }
 
 /** Check if first arg of jsx call is user-written T (not GtInternalTranslateJsx) */
-export function isUserTranslationComponent(firstArgPath: NodePath): boolean {
+export function isUserTranslationComponent(
+  firstArgPath: NodePath<t.Expression>
+): boolean {
   return resolveFirstArgGTName(firstArgPath) === GT_COMPONENT_TYPES.T;
 }
 
 /** Check if first arg is user-written Var, Num, Currency, or DateTime */
-export function isUserVariableComponent(firstArgPath: NodePath): boolean {
+export function isUserVariableComponent(
+  firstArgPath: NodePath<t.Expression>
+): boolean {
   const name = resolveFirstArgGTName(firstArgPath);
   return [
     GT_COMPONENT_TYPES.Var,
@@ -45,7 +51,9 @@ export function isUserVariableComponent(firstArgPath: NodePath): boolean {
 }
 
 /** Check if first arg is Branch or Plural */
-export function isGTBranchComponent(firstArgPath: NodePath): boolean {
+export function isGTBranchComponent(
+  firstArgPath: NodePath<t.Expression>
+): boolean {
   const name = resolveFirstArgGTName(firstArgPath);
   return (
     name === GT_COMPONENT_TYPES.Branch || name === GT_COMPONENT_TYPES.Plural
@@ -53,7 +61,9 @@ export function isGTBranchComponent(firstArgPath: NodePath): boolean {
 }
 
 /** Check if first arg is Derive or Static */
-export function isGTDeriveComponent(firstArgPath: NodePath): boolean {
+export function isGTDeriveComponent(
+  firstArgPath: NodePath<t.Expression>
+): boolean {
   const name = resolveFirstArgGTName(firstArgPath);
   return (
     name === GT_COMPONENT_TYPES.Derive || name === GT_COMPONENT_TYPES.Static

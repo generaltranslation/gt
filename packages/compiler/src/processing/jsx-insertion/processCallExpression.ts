@@ -114,7 +114,7 @@ function processJsxNode(
 // ===== Children processing =====
 
 function processChildren(
-  childrenPath: NodePath,
+  childrenPath: NodePath<t.Expression>,
   insideAutoT: boolean,
   state: TransformState,
   processedNodes: WeakSet<t.Node>
@@ -132,7 +132,7 @@ function processChildren(
 }
 
 function processSingleChild(
-  childPath: NodePath,
+  childPath: NodePath<t.Expression>,
   insideAutoT: boolean,
   state: TransformState,
   processedNodes: WeakSet<t.Node>
@@ -153,7 +153,7 @@ function processSingleChild(
 }
 
 function recurseChildJsxCalls(
-  childrenPath: NodePath,
+  childrenPath: NodePath<t.Expression>,
   insideAutoT: boolean,
   state: TransformState,
   processedNodes: WeakSet<t.Node>
@@ -204,7 +204,7 @@ function isJsxCallPath(callPath: NodePath<t.CallExpression>): boolean {
 }
 
 /** Check if children contain non-whitespace text */
-function hasNonWhitespaceText(childrenPath: NodePath): boolean {
+function hasNonWhitespaceText(childrenPath: NodePath<t.Expression>): boolean {
   const isText = (p: NodePath): boolean => {
     if (p.isStringLiteral()) return p.node.value.trim().length > 0;
     if (p.isNumericLiteral()) return true;
@@ -226,7 +226,7 @@ function hasNonWhitespaceText(childrenPath: NodePath): boolean {
 }
 
 /** Check if any child jsx call resolves to Branch/Plural/Derive/Static */
-function hasOpaqueGTChild(childrenPath: NodePath): boolean {
+function hasOpaqueGTChild(childrenPath: NodePath<t.Expression>): boolean {
   const isOpaque = (elPath: NodePath): boolean => {
     if (!elPath.isCallExpression() || !isJsxCallPath(elPath)) return false;
     const firstArg = elPath.get('arguments')[0];
@@ -243,7 +243,7 @@ function hasOpaqueGTChild(childrenPath: NodePath): boolean {
 }
 
 /** Determine if an expression path needs Var wrapping */
-function needsVarWrapping(exprPath: NodePath): boolean {
+function needsVarWrapping(exprPath: NodePath<t.Expression>): boolean {
   if (exprPath.isStringLiteral()) return false;
   if (exprPath.isNumericLiteral()) return false;
   if (exprPath.isBooleanLiteral()) return false;
@@ -336,7 +336,7 @@ function markAllDescendantJsxCalls(
 }
 
 function walkAndMark(
-  exprPath: NodePath,
+  exprPath: NodePath<t.Expression>,
   processedNodes: WeakSet<t.Node>
 ): void {
   if (exprPath.isCallExpression() && isJsxCallPath(exprPath)) {
