@@ -3,7 +3,6 @@ import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import { OTHER_IDENTIFIERS_ENUM } from '../../utils/constants/other/constants';
-import { REACT_FUNTIONS } from '../../utils/constants/react/constants';
 import { isReactJsxFunction } from '../../utils/constants/resolveIdentifier/isReactJsxFunction';
 import {
   resolveFirstArgGTName,
@@ -12,6 +11,16 @@ import {
   isGTBranchComponent,
   isGTDeriveComponent,
 } from '../../utils/constants/resolveIdentifier/isGTComponent';
+import { JsxCalleeInfo } from './processImportDeclaration';
+
+/**
+ * Extended state for the JSX insertion pass.
+ * Bundles the base TransformState with insertion-specific context.
+ */
+interface JsxInsertionState extends TransformState {
+  processedNodes: WeakSet<t.Node>;
+  calleeInfo: JsxCalleeInfo;
+}
 
 /**
  * Babel visitor entry point for the JSX insertion pass.
@@ -21,13 +30,18 @@ import {
  * This handles aliased imports like `import { jsxDEV as _jsxDEV }`.
  */
 export function processCallExpression(
-  state: TransformState
+  state: TransformState,
+  calleeInfo: JsxCalleeInfo
 ): VisitNode<t.Node, t.CallExpression> {
-  const processedNodes = new WeakSet<t.Node>();
+  const jsxState: JsxInsertionState = {
+    ...state,
+    processedNodes: new WeakSet<t.Node>(),
+    calleeInfo,
+  };
 
   return {
     enter: (path) => {
-      if (processedNodes.has(path.node)) return;
+      if (jsxState.processedNodes.has(path.node)) return;
 
       const calleePath = path.get('callee');
       if (
@@ -37,40 +51,40 @@ export function processCallExpression(
         return;
       }
 
-      processJsxNode(path, false, state, processedNodes);
+      processJsxNode({ path, insideAutoT: false, state: jsxState });
     },
   };
 }
 
 // ===== Core recursive function =====
 
-function processJsxNode(
-  path: NodePath<t.CallExpression>,
-  insideAutoT: boolean,
-  state: TransformState,
-  processedNodes: WeakSet<t.Node>
-): void {
-  processedNodes.add(path.node);
+function processJsxNode({
+  path,
+  insideAutoT,
+  state,
+}: {
+  path: NodePath<t.CallExpression>;
+  insideAutoT: boolean;
+  state: JsxInsertionState;
+}): void {
+  state.processedNodes.add(path.node);
 
-  // Get first arg path (the component type)
   const firstArgPath = path.get('arguments')[0];
   if (!firstArgPath?.isExpression()) return;
 
-  // --- Check component type and bail for hands-off cases ---
-
   // User T → mark all descendant jsx calls as processed, hands off
   if (isUserTranslationComponent(firstArgPath)) {
-    markDescendantJsxCalls(path, processedNodes);
+    markDescendantJsxCalls({ jsxCallPath: path, state });
     return;
   }
 
   // User Var/Num/Currency/DateTime → mark descendants, hands off
   if (isUserVariableComponent(firstArgPath)) {
-    markDescendantJsxCalls(path, processedNodes);
+    markDescendantJsxCalls({ jsxCallPath: path, state });
     return;
   }
 
-  // Already auto-inserted components → skip
+  // Already auto-inserted → skip
   const gtName = resolveFirstArgGTName(firstArgPath);
   if (
     gtName === GT_COMPONENT_TYPES.GtInternalTranslateJsx ||
@@ -79,9 +93,9 @@ function processJsxNode(
     return;
   }
 
-  // Branch/Plural/Derive/Static → opaque for static JSX, but dynamic props get _Var
+  // Branch/Plural/Derive/Static → opaque for static JSX, dynamic props get _Var
   if (isGTBranchComponent(firstArgPath) || isGTDeriveComponent(firstArgPath)) {
-    processOpaqueComponentProps(path, insideAutoT, processedNodes);
+    processOpaqueComponentProps({ jsxCallPath: path, insideAutoT, state });
     return;
   }
 
@@ -98,80 +112,93 @@ function processJsxNode(
     (hasNonWhitespaceText(childrenPath) || hasOpaqueGTChild(childrenPath));
 
   if (shouldClaimT) {
-    processChildren(childrenPath, true, state, processedNodes);
-    const calleeName = getCalleeName(path);
-    const tWrapped = wrapInT(childrenPath.node, t.identifier(calleeName));
-    processedNodes.add(tWrapped);
+    processChildren({ childrenPath, insideAutoT: true, state });
+    const currentChildren = childrenPropPath.get('value').node;
+    const tCallee = t.isArrayExpression(currentChildren)
+      ? state.calleeInfo.multiCallee
+      : state.calleeInfo.singleCallee;
+    const tWrapped = wrapInT(
+      currentChildren as t.Expression,
+      t.identifier(tCallee ?? 'jsx')
+    );
+    state.processedNodes.add(tWrapped);
     childrenPropPath.get('value').replaceWith(tWrapped);
+    updateCalleeToSingle({ jsxCallPath: path, state });
     state.statistics.jsxInsertionsCount++;
   } else if (insideAutoT) {
-    processChildren(childrenPath, true, state, processedNodes);
+    processChildren({ childrenPath, insideAutoT: true, state });
   } else {
-    recurseChildJsxCalls(childrenPath, false, state, processedNodes);
+    recurseChildJsxCalls({ childrenPath, insideAutoT: false, state });
   }
 }
 
-// ===== Children processing =====
+// ===== Children processing ===== //
 
-function processChildren(
-  childrenPath: NodePath<t.Expression>,
-  insideAutoT: boolean,
-  state: TransformState,
-  processedNodes: WeakSet<t.Node>
-): void {
+function processChildren({
+  childrenPath,
+  insideAutoT,
+  state,
+}: {
+  childrenPath: NodePath<t.Expression>;
+  insideAutoT: boolean;
+  state: JsxInsertionState;
+}): void {
   if (childrenPath.isArrayExpression()) {
-    const elements = childrenPath.get('elements');
-    for (const elPath of elements) {
+    for (const elPath of childrenPath.get('elements')) {
       if (elPath.isExpression()) {
-        processSingleChild(elPath, insideAutoT, state, processedNodes);
+        processSingleChild({ childPath: elPath, insideAutoT, state });
       }
     }
     return;
   }
-  processSingleChild(childrenPath, insideAutoT, state, processedNodes);
+  processSingleChild({ childPath: childrenPath, insideAutoT, state });
 }
 
-function processSingleChild(
-  childPath: NodePath<t.Expression>,
-  insideAutoT: boolean,
-  state: TransformState,
-  processedNodes: WeakSet<t.Node>
-): void {
-  // If it's a jsx call, recurse into it
+function processSingleChild({
+  childPath,
+  insideAutoT,
+  state,
+}: {
+  childPath: NodePath<t.Expression>;
+  insideAutoT: boolean;
+  state: JsxInsertionState;
+}): void {
   if (childPath.isCallExpression() && isJsxCallPath(childPath)) {
-    processJsxNode(childPath, insideAutoT, state, processedNodes);
+    processJsxNode({ path: childPath, insideAutoT, state });
     return;
   }
 
-  // If inside a T region and needs var wrapping, wrap it
+  // _Var always has a single child → use singleCallee
   if (insideAutoT && needsVarWrapping(childPath)) {
-    const calleeName = findJsxCallee(childPath);
-    const wrapped = wrapInVar(childPath.node, t.identifier(calleeName));
-    processedNodes.add(wrapped);
+    const callee = state.calleeInfo.singleCallee ?? 'jsx';
+    const wrapped = wrapInVar(childPath.node, t.identifier(callee));
+    state.processedNodes.add(wrapped);
     childPath.replaceWith(wrapped);
   }
 }
 
-function recurseChildJsxCalls(
-  childrenPath: NodePath<t.Expression>,
-  insideAutoT: boolean,
-  state: TransformState,
-  processedNodes: WeakSet<t.Node>
-): void {
+function recurseChildJsxCalls({
+  childrenPath,
+  insideAutoT,
+  state,
+}: {
+  childrenPath: NodePath<t.Expression>;
+  insideAutoT: boolean;
+  state: JsxInsertionState;
+}): void {
   if (childrenPath.isArrayExpression()) {
     for (const elPath of childrenPath.get('elements')) {
       if (elPath.isCallExpression() && isJsxCallPath(elPath)) {
-        processJsxNode(elPath, insideAutoT, state, processedNodes);
+        processJsxNode({ path: elPath, insideAutoT, state });
       }
     }
   } else if (childrenPath.isCallExpression() && isJsxCallPath(childrenPath)) {
-    processJsxNode(childrenPath, insideAutoT, state, processedNodes);
+    processJsxNode({ path: childrenPath, insideAutoT, state });
   }
 }
 
 // ===== Helper functions =====
 
-/** Get the children ObjectProperty path from a jsx call's props (second arg) */
 function getChildrenPropPath(
   jsxCallPath: NodePath<t.CallExpression>
 ): NodePath<t.ObjectProperty> | undefined {
@@ -190,20 +217,12 @@ function getChildrenPropPath(
   return undefined;
 }
 
-/** Get the local callee name from a jsx call path */
-function getCalleeName(jsxCallPath: NodePath<t.CallExpression>): string {
-  const callee = jsxCallPath.get('callee');
-  return callee.isIdentifier() ? callee.node.name : REACT_FUNTIONS.jsx;
-}
-
-/** Check if a CallExpression path is a jsx call (via binding lookup) */
 function isJsxCallPath(callPath: NodePath<t.CallExpression>): boolean {
   const callee = callPath.get('callee');
   if (!callee.isIdentifier() && !callee.isMemberExpression()) return false;
   return isReactJsxFunction(callee);
 }
 
-/** Check if children contain non-whitespace text */
 function hasNonWhitespaceText(childrenPath: NodePath<t.Expression>): boolean {
   const isText = (p: NodePath): boolean => {
     if (p.isStringLiteral()) return p.node.value.trim().length > 0;
@@ -225,7 +244,6 @@ function hasNonWhitespaceText(childrenPath: NodePath<t.Expression>): boolean {
   return isText(childrenPath);
 }
 
-/** Check if any child jsx call resolves to Branch/Plural/Derive/Static */
 function hasOpaqueGTChild(childrenPath: NodePath<t.Expression>): boolean {
   const isOpaque = (elPath: NodePath): boolean => {
     if (!elPath.isCallExpression() || !isJsxCallPath(elPath)) return false;
@@ -242,7 +260,6 @@ function hasOpaqueGTChild(childrenPath: NodePath<t.Expression>): boolean {
   return isOpaque(childrenPath);
 }
 
-/** Determine if an expression path needs Var wrapping */
 function needsVarWrapping(exprPath: NodePath<t.Expression>): boolean {
   if (exprPath.isStringLiteral()) return false;
   if (exprPath.isNumericLiteral()) return false;
@@ -265,23 +282,31 @@ function needsVarWrapping(exprPath: NodePath<t.Expression>): boolean {
       OTHER_IDENTIFIERS_ENUM.INFINITY,
     ].includes(exprPath.node.name as OTHER_IDENTIFIERS_ENUM);
   }
-  // jsx call expressions are valid children (nested elements)
   if (exprPath.isCallExpression() && isJsxCallPath(exprPath)) {
     return false;
   }
   return true;
 }
 
-/** Walk ancestors to find the local jsx callee name */
-function findJsxCallee(path: NodePath): string {
-  let current: NodePath | null = path;
-  while (current) {
-    if (current.isCallExpression() && isJsxCallPath(current)) {
-      return getCalleeName(current);
-    }
-    current = current.parentPath;
+/**
+ * After wrapping children in _T, the parent now has a single child.
+ * Update its callee from jsxs → jsx if needed.
+ */
+function updateCalleeToSingle({
+  jsxCallPath,
+  state,
+}: {
+  jsxCallPath: NodePath<t.CallExpression>;
+  state: JsxInsertionState;
+}): void {
+  const { singleCallee, multiCallee } = state.calleeInfo;
+  if (!singleCallee || !multiCallee) return;
+  if (singleCallee === multiCallee) return;
+
+  const callee = jsxCallPath.get('callee');
+  if (callee.isIdentifier() && callee.node.name === multiCallee) {
+    callee.node.name = singleCallee;
   }
-  return REACT_FUNTIONS.jsx;
 }
 
 // ===== AST construction =====
@@ -305,29 +330,30 @@ function wrapInT(
 
 // ===== Marking descendants as processed =====
 
-function markDescendantJsxCalls(
-  jsxCallPath: NodePath<t.CallExpression>,
-  processedNodes: WeakSet<t.Node>
-): void {
+function markDescendantJsxCalls({
+  jsxCallPath,
+  state,
+}: {
+  jsxCallPath: NodePath<t.CallExpression>;
+  state: JsxInsertionState;
+}): void {
   const childrenPropPath = getChildrenPropPath(jsxCallPath);
   if (!childrenPropPath) return;
   const valuePath = childrenPropPath.get('value');
   if (valuePath.isExpression()) {
-    walkAndMark(valuePath, processedNodes);
+    walkAndMark({ exprPath: valuePath, state });
   }
 }
 
-/**
- * Process props of an opaque component (Branch/Plural/Derive/Static).
- * Static JSX props are marked as processed (left alone).
- * Dynamic expressions get _Var wrapped if inside a _T region.
- * JSX inside auto-inserted _Var is NOT marked — Babel visits it independently for _T.
- */
-function processOpaqueComponentProps(
-  jsxCallPath: NodePath<t.CallExpression>,
-  insideAutoT: boolean,
-  processedNodes: WeakSet<t.Node>
-): void {
+function processOpaqueComponentProps({
+  jsxCallPath,
+  insideAutoT,
+  state,
+}: {
+  jsxCallPath: NodePath<t.CallExpression>;
+  insideAutoT: boolean;
+  state: JsxInsertionState;
+}): void {
   const args = jsxCallPath.get('arguments');
   const propsArg = args[1];
   if (!propsArg?.isObjectExpression()) return;
@@ -338,37 +364,37 @@ function processOpaqueComponentProps(
     if (!valuePath.isExpression()) continue;
 
     if (valuePath.isCallExpression() && isJsxCallPath(valuePath)) {
-      // Static JSX prop — mark as processed, leave alone
-      processedNodes.add(valuePath.node);
-      walkAndMark(valuePath, processedNodes);
+      state.processedNodes.add(valuePath.node);
+      walkAndMark({ exprPath: valuePath, state });
     } else if (insideAutoT && needsVarWrapping(valuePath)) {
-      // Dynamic expression inside a _T region — wrap in _Var
-      // JSX inside the _Var is NOT marked, so Babel can visit it for _T insertion
-      const calleeName = findJsxCallee(jsxCallPath);
-      const wrapped = wrapInVar(valuePath.node, t.identifier(calleeName));
-      processedNodes.add(wrapped);
+      const callee = state.calleeInfo.singleCallee ?? 'jsx';
+      const wrapped = wrapInVar(valuePath.node, t.identifier(callee));
+      state.processedNodes.add(wrapped);
       valuePath.replaceWith(wrapped);
     }
   }
 }
 
-function walkAndMark(
-  exprPath: NodePath<t.Expression>,
-  processedNodes: WeakSet<t.Node>
-): void {
+function walkAndMark({
+  exprPath,
+  state,
+}: {
+  exprPath: NodePath<t.Expression>;
+  state: JsxInsertionState;
+}): void {
   if (exprPath.isCallExpression() && isJsxCallPath(exprPath)) {
-    processedNodes.add(exprPath.node);
+    state.processedNodes.add(exprPath.node);
     const childrenPropPath = getChildrenPropPath(exprPath);
     if (childrenPropPath) {
       const valuePath = childrenPropPath.get('value');
       if (valuePath.isExpression()) {
-        walkAndMark(valuePath, processedNodes);
+        walkAndMark({ exprPath: valuePath, state });
       }
     }
   } else if (exprPath.isArrayExpression()) {
     for (const elPath of exprPath.get('elements')) {
       if (elPath.isExpression()) {
-        walkAndMark(elPath, processedNodes);
+        walkAndMark({ exprPath: elPath, state });
       }
     }
   }

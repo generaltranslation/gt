@@ -661,4 +661,93 @@ describe('jsxInsertionPass', () => {
     const { gtTranslateCalls } = transform(code);
     expect(gtTranslateCalls).toHaveLength(1);
   });
+
+  // ===== jsx vs jsxs callee correctness =====
+
+  it('uses jsx callee for _T wrapping a single child', () => {
+    // <div>Hello</div> → _T wraps "Hello" (single child)
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      jsx("div", { children: "Hello" });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(t.isIdentifier(gtTranslateCalls[0].callee, { name: 'jsx' })).toBe(
+      true
+    );
+  });
+
+  it('uses jsxs callee for _T wrapping multiple children', () => {
+    // <div>Hello {name}</div> → _T wraps ["Hello ", _Var(name)] (array)
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", name] });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(t.isIdentifier(gtTranslateCalls[0].callee, { name: 'jsxs' })).toBe(
+      true
+    );
+  });
+
+  it('uses jsx callee for _Var (always single child)', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", name] });
+    `;
+    const { gtVarCalls } = transform(code);
+    expect(gtVarCalls).toHaveLength(1);
+    expect(t.isIdentifier(gtVarCalls[0].callee, { name: 'jsx' })).toBe(true);
+  });
+
+  it('uses aliased jsxs for _T with array children', () => {
+    const code = `
+      import { jsx as _jsx, jsxs as _jsxs } from 'react/jsx-runtime';
+      _jsxs("div", { children: ["Hello ", name] });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(t.isIdentifier(gtTranslateCalls[0].callee, { name: '_jsxs' })).toBe(
+      true
+    );
+  });
+
+  it('uses aliased jsx for _Var with aliased imports', () => {
+    const code = `
+      import { jsx as _jsx, jsxs as _jsxs } from 'react/jsx-runtime';
+      _jsxs("div", { children: ["Hello ", name] });
+    `;
+    const { gtVarCalls } = transform(code);
+    expect(gtVarCalls).toHaveLength(1);
+    expect(t.isIdentifier(gtVarCalls[0].callee, { name: '_jsx' })).toBe(true);
+  });
+
+  it('uses jsxDEV for both _T and _Var in dev mode', () => {
+    const code = `
+      import { jsxDEV as _jsxDEV } from 'react/jsx-dev-runtime';
+      _jsxDEV("div", { children: ["Hello ", name] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+    expect(
+      t.isIdentifier(gtTranslateCalls[0].callee, { name: '_jsxDEV' })
+    ).toBe(true);
+    expect(t.isIdentifier(gtVarCalls[0].callee, { name: '_jsxDEV' })).toBe(
+      true
+    );
+  });
+
+  it('parent div callee changes from jsxs to jsx after wrapping children in _T', () => {
+    // Before: jsxs("div", { children: ["Hello ", name] })
+    // After:  jsx("div", { children: jsxs(_T, { children: [...] }) })
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", name] });
+    `;
+    const { code: output } = transform(code);
+    // The outer div should now use jsx (single child: the _T wrapper)
+    expect(output).toMatch(/\bjsx\("div"/);
+    expect(output).not.toMatch(/\bjsxs\("div"/);
+  });
 });

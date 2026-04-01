@@ -1,7 +1,10 @@
 import { TraverseOptions } from '@babel/traverse';
 import { TransformState } from '../state/types';
 import { processCallExpression } from '../processing/jsx-insertion/processCallExpression';
-import { processImportDeclaration } from '../processing/jsx-insertion/processImportDeclaration';
+import {
+  processImportDeclaration,
+  JsxCalleeInfo,
+} from '../processing/jsx-insertion/processImportDeclaration';
 import { processProgram } from '../processing/jsx-insertion/processProgram';
 
 /**
@@ -15,13 +18,18 @@ export function jsxInsertionPass(state: TransformState): TraverseOptions {
   let alreadyImported = false;
   const countBefore = state.statistics.jsxInsertionsCount;
 
+  const calleeInfo: JsxCalleeInfo = {
+    singleCallee: null,
+    multiCallee: null,
+  };
+
   const onImportFound = () => {
     alreadyImported = true;
   };
 
   return {
-    ImportDeclaration: processImportDeclaration(onImportFound),
-    CallExpression: processCallExpression(state),
+    ImportDeclaration: processImportDeclaration(onImportFound, calleeInfo),
+    CallExpression: processCallExpression(state, calleeInfo),
     Program: processProgram({
       state,
       countBefore,
