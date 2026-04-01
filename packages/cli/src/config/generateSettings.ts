@@ -304,32 +304,30 @@ export async function generateSettings(
     DEFAULT_GIT_REMOTE_NAME;
   mergedOptions.branchOptions = branchOptions;
 
-  // Resolve tag
-  if (flags.tag === 'git') {
-    try {
-      mergedOptions.tag = execSync('git rev-parse --short HEAD', {
-        encoding: 'utf-8',
-      }).trim();
-      // If no message provided, use git commit message
-      if (!flags.message) {
-        mergedOptions.tagMessage = execSync('git log -1 --format=%s', {
-          encoding: 'utf-8',
-        }).trim();
-      }
-    } catch {
-      // Not in a git repo or git unavailable — fall back to auto-generation
-      mergedOptions.tag = undefined;
-    }
-  }
-
   // Map -m/--message flag to tagMessage
   if (flags.message) {
     mergedOptions.tagMessage = flags.message;
   }
 
-  // Auto-generate a tag ID only when the user provided a message but no explicit tag
-  if (!mergedOptions.tag && mergedOptions.tagMessage) {
-    mergedOptions.tag = crypto.randomBytes(4).toString('hex');
+  // Resolve tag:
+  // --tag git (explicit) or -m without --tag: try git SHA, fall back to random hex
+  // --tag <value>: use as-is
+  // No flags: no tag
+  if (flags.tag === 'git' || (!flags.tag && mergedOptions.tagMessage)) {
+    try {
+      mergedOptions.tag = execSync('git rev-parse --short HEAD', {
+        encoding: 'utf-8',
+      }).trim();
+      // If no message provided, use git commit message
+      if (!mergedOptions.tagMessage) {
+        mergedOptions.tagMessage = execSync('git log -1 --format=%s', {
+          encoding: 'utf-8',
+        }).trim();
+      }
+    } catch {
+      // Not in a git repo or git unavailable — fall back to random hex
+      mergedOptions.tag = crypto.randomBytes(4).toString('hex');
+    }
   }
 
   // if there's no existing config file, creates one
