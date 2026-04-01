@@ -64,6 +64,7 @@ export type {
   EnqueueFilesResult,
   Updates,
 } from './types-dir/api/enqueueFiles';
+export type { CreateTagOptions, CreateTagResult } from './translate/createTag';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
 export type {

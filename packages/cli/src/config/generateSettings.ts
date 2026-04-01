@@ -20,6 +20,8 @@ import {
   GT_DASHBOARD_URL,
 } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
+import crypto from 'node:crypto';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
@@ -301,6 +303,33 @@ export async function generateSettings(
     gtConfig.branchOptions?.remoteName ??
     DEFAULT_GIT_REMOTE_NAME;
   mergedOptions.branchOptions = branchOptions;
+
+  // Resolve tag
+  if (flags.tag === 'git') {
+    try {
+      mergedOptions.tag = execSync('git rev-parse --short HEAD', {
+        encoding: 'utf-8',
+      }).trim();
+      // If no message provided, use git commit message
+      if (!flags.message) {
+        mergedOptions.tagMessage = execSync('git log -1 --format=%s', {
+          encoding: 'utf-8',
+        }).trim();
+      }
+    } catch {
+      // Not in a git repo or git unavailable — leave tag as-is
+    }
+  }
+
+  // Auto-generate tag if none provided
+  if (!mergedOptions.tag) {
+    mergedOptions.tag = crypto.randomUUID().slice(0, 12);
+  }
+
+  // Map -m/--message flag to tagMessage
+  if (flags.message) {
+    mergedOptions.tagMessage = flags.message;
+  }
 
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it

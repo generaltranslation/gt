@@ -6,6 +6,7 @@ import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
+import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
@@ -58,6 +59,14 @@ export async function runStageFilesWorkflow({
     if (options?.saveLocal) {
       await userEditDiffsStep.run(uploadedFiles);
       await userEditDiffsStep.wait();
+    }
+
+    // then run the tag step
+    if (settings.tag) {
+      const userProvidedTag = !!options.tag;
+      const tagStep = new TagStep(gt, settings, userProvidedTag);
+      await tagStep.run(uploadedFiles);
+      await tagStep.wait();
     }
 
     // then run the setup step

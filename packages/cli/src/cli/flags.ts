@@ -107,6 +107,14 @@ export function attachTranslateFlags(command: Command) {
       '--remote-name <name>',
       'Specify a custom remote name to use for branch detection',
       DEFAULT_GIT_REMOTE_NAME
+    )
+    .option(
+      '--tag <value>',
+      'Tag ID for this translation run (use "git" to auto-resolve from current commit)'
+    )
+    .option(
+      '-m, --message <message>',
+      'Message to attach to the translation tag'
     );
   return command;
 }
