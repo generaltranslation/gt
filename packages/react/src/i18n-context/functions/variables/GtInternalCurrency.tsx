@@ -37,4 +37,4 @@ function GtInternalCurrency({
 /** @internal _gtt - The GT transformation for the component. */
 GtInternalCurrency._gtt = 'variable-currency';
 
-export { GtInternalCurrency };
+export { GtInternalCurrency, GtInternalCurrency as Currency };

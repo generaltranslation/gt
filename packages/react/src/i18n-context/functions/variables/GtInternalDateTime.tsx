@@ -32,4 +32,4 @@ function GtInternalDateTime({
 /** @internal _gtt - The GT transformation for the component. */
 GtInternalDateTime._gtt = 'variable-datetime';
 
-export { GtInternalDateTime };
+export { GtInternalDateTime, GtInternalDateTime as DateTime };

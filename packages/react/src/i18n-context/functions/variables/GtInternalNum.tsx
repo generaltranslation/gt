@@ -32,4 +32,4 @@ function GtInternalNum({
 /** @internal _gtt - The GT transformation for the component. */
 GtInternalNum._gtt = 'variable-number';
 
-export { GtInternalNum };
+export { GtInternalNum, GtInternalNum as Num };
