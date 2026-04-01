@@ -1,5 +1,26 @@
 # gtx-cli
 
+## 2.14.0
+
+### Minor Changes
+
+- [#1153](https://github.com/generaltranslation/gt/pull/1153) [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add `<RelativeTime>` component for localized relative time formatting
+  - New `<RelativeTime>` component with two usage modes:
+    - Auto-select unit from a Date: `<RelativeTime>{someDate}</RelativeTime>` → "2 hours ago"
+    - Explicit value + unit: `<RelativeTime value={-1} unit="day" />` → "yesterday"
+  - Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds → minutes → hours → days → weeks → months → years)
+  - Core: `formatRelativeTimeFromDate()` standalone function and `GT.formatRelativeTimeFromDate()` class method
+  - Week unit included in auto-selection thresholds (7-27 days)
+  - CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a variable component
+
+### Patch Changes
+
+- [#1160](https://github.com/generaltranslation/gt/pull/1160) [`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding translation tagging
+
+- Updated dependencies [[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290), [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:
+  - generaltranslation@8.2.0
+  - @generaltranslation/python-extractor@0.2.4
+
 ## 2.13.3
 
 ### Patch Changes
