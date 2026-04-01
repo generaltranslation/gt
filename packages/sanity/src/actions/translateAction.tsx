@@ -1,24 +1,20 @@
 import { DocumentActionComponent } from 'sanity';
-import { useRouter } from 'sanity/router';
+import { useDocumentPane } from 'sanity/structure';
 import { TranslateIcon } from '@sanity/icons';
+import { TRANSLATIONS_INSPECTOR_NAME } from '../inspectors/translationsInspector';
 
-export const translateAction: DocumentActionComponent = (props) => {
-  const router = useRouter();
+export const translateAction: DocumentActionComponent = () => {
+  const { openInspector, inspector } = useDocumentPane();
+  const isOpen = inspector?.name === TRANSLATIONS_INSPECTOR_NAME;
 
   return {
     label: 'Translate',
     icon: TranslateIcon,
     tone: 'primary',
     onHandle: () => {
-      // Switch to the translation tab using the document ID and type
-      const { id, type } = props;
-
-      // Navigate to the translation view for this document
-      router.navigateIntent('edit', {
-        id,
-        type,
-        view: 'general-translation',
-      });
+      if (!isOpen) {
+        openInspector(TRANSLATIONS_INSPECTOR_NAME);
+      }
     },
   };
 };
