@@ -1,20 +1,32 @@
+import React, { useState } from 'react';
 import { DocumentActionComponent } from 'sanity';
-import { useDocumentPane } from 'sanity/structure';
 import { TranslateIcon } from '@sanity/icons';
-import { TRANSLATIONS_INSPECTOR_NAME } from '../inspectors/translationsInspector';
+import { BaseTranslationWrapper } from '../components/shared/BaseTranslationWrapper';
+import { TranslationsProvider } from '../components/TranslationsProvider';
+import { TranslationView } from '../components/tab/TranslationView';
 
-export const translateAction: DocumentActionComponent = () => {
-  const { openInspector, inspector } = useDocumentPane();
-  const isOpen = inspector?.name === TRANSLATIONS_INSPECTOR_NAME;
+export const translateAction: DocumentActionComponent = (props) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const document = props.draft || props.published;
 
   return {
     label: 'Translate',
     icon: TranslateIcon,
     tone: 'primary',
-    onHandle: () => {
-      if (!isOpen) {
-        openInspector(TRANSLATIONS_INSPECTOR_NAME);
-      }
-    },
+    onHandle: () => setDialogOpen(true),
+    dialog: dialogOpen
+      ? {
+          type: 'dialog' as const,
+          header: 'Translations',
+          onClose: () => setDialogOpen(false),
+          content: (
+            <BaseTranslationWrapper showContainer={false}>
+              <TranslationsProvider singleDocument={document}>
+                <TranslationView />
+              </TranslationsProvider>
+            </BaseTranslationWrapper>
+          ),
+        }
+      : null,
   };
 };

@@ -17,10 +17,6 @@ import {
   SerializedDocument,
 } from './serialization';
 import { translateAction } from './actions/translateAction';
-import {
-  TranslationsInspector,
-  TRANSLATIONS_INSPECTOR_NAME,
-} from './inspectors/translationsInspector';
 
 export type {
   Secrets,
@@ -146,19 +142,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         },
       ],
       document: {
-        inspectors: (prev) => {
-          return [
-            ...prev,
-            {
-              name: TRANSLATIONS_INSPECTOR_NAME,
-              component: TranslationsInspector,
-              useMenuItem: () => ({
-                title: 'Translations',
-                hidden: true,
-              }),
-            },
-          ];
-        },
         actions: (prev) => {
           return [...prev, translateAction];
         },
