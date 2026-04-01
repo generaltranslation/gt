@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774566686877,
+  "lastUpdate": 1775015780593,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -2088,6 +2088,122 @@ window.BENCHMARK_DATA = {
             "value": 131.89999999996508,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.14.8\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "0a4b73f0ec595300aea0cf53331cb9b8abb2bfd7",
+          "message": "[ci] release (#1159)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.14.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- [#1160](https://github.com/generaltranslation/gt/pull/1160)\n[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding\ntranslation tagging\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   @generaltranslation/python-extractor@0.2.4\n\n## @generaltranslation/compiler@1.2.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n\n## generaltranslation@8.2.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- [#1160](https://github.com/generaltranslation/gt/pull/1160)\n[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding\ntranslation tagging\n\n## gt-next@6.15.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   gt-react@10.16.0\n    -   @generaltranslation/compiler@1.2.0\n    -   gt-i18n@0.7.8\n    -   @generaltranslation/supported-locales@2.0.58\n\n## gt-react@10.16.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   @generaltranslation/react-core@1.7.0\n    -   gt-i18n@0.7.8\n    -   @generaltranslation/supported-locales@2.0.58\n\n## @generaltranslation/react-core@1.7.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   gt-i18n@0.7.8\n    -   @generaltranslation/supported-locales@2.0.58\n\n## gt-tanstack-start@0.3.0\n\n### Minor Changes\n\n- [#1153](https://github.com/generaltranslation/gt/pull/1153)\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add\n`<RelativeTime>` component for localized relative time formatting\n    -   New `<RelativeTime>` component with two usage modes:\n- Auto-select unit from a Date:\n`<RelativeTime>{someDate}</RelativeTime>` → \"2 hours ago\"\n- Explicit value + unit: `<RelativeTime value={-1} unit=\"day\" />` →\n\"yesterday\"\n- Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds\n→ minutes → hours → days → weeks → months → years)\n- Core: `formatRelativeTimeFromDate()` standalone function and\n`GT.formatRelativeTimeFromDate()` class method\n    -   Week unit included in auto-selection thresholds (7-27 days)\n- CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a\nvariable component\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   @generaltranslation/react-core@1.7.0\n    -   gt-react@10.16.0\n    -   gt-i18n@0.7.8\n\n## gtx-cli@2.14.0\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   gt@2.14.0\n\n## gt-i18n@0.7.8\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   @generaltranslation/supported-locales@2.0.58\n\n## locadex@1.0.135\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   gt@2.14.0\n\n## @generaltranslation/gt-next-lint@13.0.0\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   gt-next@6.15.0\n\n## gt-node@0.4.8\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n    -   gt-i18n@0.7.8\n\n## @generaltranslation/python-extractor@0.2.4\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n\n## gt-sanity@1.1.31\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n\n## @generaltranslation/supported-locales@2.0.58\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290),\n[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   generaltranslation@8.2.0\n\n## gt-next-middleware-e2e@0.1.21\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:\n    -   gt-next@6.15.0\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-04-01T03:47:46Z",
+          "url": "https://github.com/generaltranslation/gt/commit/0a4b73f0ec595300aea0cf53331cb9b8abb2bfd7"
+        },
+        "date": 1775015780230,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.039190200172426734,
+            "range": "±0.0145",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.2434723188899716,
+            "range": "±0.0575",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4474337515639017,
+            "range": "±0.073",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.42980283762886806,
+            "range": "±0.0366",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 229.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 239.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 359.3999999999942,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 146,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 16.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 25.10000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 138.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 592,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.300000000017462,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 131.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
           }
         ]
       }
