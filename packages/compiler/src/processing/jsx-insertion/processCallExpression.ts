@@ -144,7 +144,7 @@ function processSingleChild(
   }
 
   // If inside a T region and needs var wrapping, wrap it
-  if (insideAutoT && childPath.isExpression() && needsVarWrapping(childPath)) {
+  if (insideAutoT && needsVarWrapping(childPath)) {
     const calleeName = findJsxCallee(childPath);
     const wrapped = wrapInVar(childPath.node, t.identifier(calleeName));
     processedNodes.add(wrapped);
