@@ -30,10 +30,10 @@ export type JsxTranslationOptions =
  * Equivalent to the `<T>` component, but used for auto insertion
  */
 export function GtInternalTranslateJsx({
-  sourceChildren,
+  children: sourceChildren,
   ...options
 }: {
-  sourceChildren: ReactNode;
+  children: ReactNode;
 } & JsxTranslationOptions): ReactNode {
   // --- (0) Prepare our source children for rendering --- //
   const { taggedSourceChildren, sourceJsxChildren, renderSourceChildren } =

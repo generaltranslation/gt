@@ -18,5 +18,6 @@ export interface TransformState {
     jsxElementCount: number;
     dynamicContentViolations: number;
     macroExpansionsCount: number;
+    jsxInsertionsCount: number;
   };
 }

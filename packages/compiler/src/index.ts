@@ -12,6 +12,7 @@ import { injectionPass } from './passes/injectionPass';
 import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import { jsxInsertionPass } from './passes/jsxInsertionPass';
 
 /**
  * Architecture:
@@ -101,12 +102,17 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowReturnOutsideFunction: true,
           });
 
-          // Pass 0: Macro expansion
+          // Pass 1: Jsx insertion
+          if (state.settings.enableAutoJsxInjection) {
+            traverse(ast, jsxInsertionPass(state));
+          }
+
+          // Pass 2: Macro expansion
           if (state.settings.enableMacroTransform) {
             traverse(ast, macroExpansionPass(state));
           }
 
-          // Pass 1: Collection
+          // Pass 3: Collection
           traverse(ast, collectionPass(state));
 
           // Handle errors
@@ -114,7 +120,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          // Pass 2: Injection
+          // Pass 4: Injection
           const hasCollectionContent = state.stringCollector.hasContent();
 
           if (hasCollectionContent) {

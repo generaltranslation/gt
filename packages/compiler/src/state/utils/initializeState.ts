@@ -43,6 +43,7 @@ export function initializeState(
       jsxElementCount: 0,
       dynamicContentViolations: 0,
       macroExpansionsCount: 0,
+      jsxInsertionsCount: 0,
     },
   };
 }
