@@ -13,13 +13,15 @@ export type BaseTransformation =
   | 'variable-datetime'
   | 'variable-number'
   | 'plural'
-  | 'branch';
+  | 'branch'
+  | 'derive';
 export type TransformationPrefix =
   | 'translate'
   | 'variable'
   | 'plural'
   | 'branch'
-  | 'fragment';
+  | 'fragment'
+  | 'derive';
 export type VariableTransformationSuffix =
   | 'variable'
   | 'number'

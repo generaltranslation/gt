@@ -15,6 +15,12 @@ import { RenderVariable } from '@generaltranslation/react-core/types';
  * Custom override for the renderVariable function
  * to use the GtInternal components instead of the regular components
  *
+ * We have to remove injected Variable components at runtime because the user would not expect them to be there.
+ * For example, we could end up with:
+ * const name = "John";
+ * <StringOnly>{name}</StringOnly> -> <StringOnly><_Var>John</_Var></StringOnly>
+ * This could break logic.
+ *
  * TODO: There are other params that these components should take in (name, locales, etc.), double check we aren't missing these
  */
 export const renderVariable: RenderVariable = ({

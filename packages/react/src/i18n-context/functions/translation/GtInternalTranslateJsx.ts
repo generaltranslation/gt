@@ -3,6 +3,7 @@ import { resolveJsxTranslation } from 'gt-i18n/internal';
 import {
   writeChildrenAsObjects,
   addGTIdentifier,
+  removeInjectedT,
 } from '@generaltranslation/react-core/internal';
 import { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import {
@@ -16,20 +17,39 @@ import { JsxChildren } from 'generaltranslation/src/types';
 import { TaggedChildren } from '@generaltranslation/react-core/types';
 
 /**
- * Strips the sugar character $ from option keys (e.g. `$context` → `context`).
- */
-type StripDollarPrefix<T> = {
-  [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
-};
-
-export type JsxTranslationOptions =
-  StripDollarPrefix<JsxTranslationOptionsWithSugar> &
-    JsxTranslationOptionsWithSugar;
-
-/**
  * Equivalent to the `<T>` component, but used for auto insertion
  */
-export function GtInternalTranslateJsx({
+function GtInternalTranslateJsx(
+  props: {
+    children: ReactNode;
+  } & JsxTranslationOptions
+): ReactNode {
+  return computeT(props);
+}
+
+/**
+ * User facing component for translation.
+ */
+function T(
+  props: {
+    children: ReactNode;
+  } & JsxTranslationOptions
+): ReactNode {
+  return computeT(props);
+}
+
+/** @internal _gtt - The GT transformation and injection identifier for the component. */
+T._gtt = 'translate-client';
+GtInternalTranslateJsx._gtt = 'translate-client-injected';
+
+export { GtInternalTranslateJsx, T };
+
+// ----- Helper Functions ----- //
+
+/**
+ * Implementation for the T component logic
+ */
+function computeT({
   children: sourceChildren,
   ...options
 }: {
@@ -67,8 +87,6 @@ export function GtInternalTranslateJsx({
   return translatedChildren;
 }
 
-// ----- Helper Functions ----- //
-
 /**
  * Returns the tagged source children and the default render function for the source children
  */
@@ -81,8 +99,10 @@ function usePrepSourceRender({
   sourceJsxChildren: JsxChildren;
   renderSourceChildren: () => ReactNode;
 } {
+  // Remove any injected _T components after a derive invocation
+  // Add GT identifying tags for easy analysis
   const taggedSourceChildren = useMemo(
-    () => addGTIdentifier(sourceChildren),
+    () => addGTIdentifier(removeInjectedT(sourceChildren)),
     [sourceChildren]
   );
   const sourceJsxChildren = useMemo(
@@ -98,3 +118,19 @@ function usePrepSourceRender({
   }, [taggedSourceChildren]);
   return { taggedSourceChildren, sourceJsxChildren, renderSourceChildren };
 }
+
+// ----- Types ----- //
+
+/**
+ * Strips the sugar character $ from option keys (e.g. `$context` → `context`).
+ */
+type StripDollarPrefix<T> = {
+  [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
+};
+
+/**
+ * Internal type for the JsxTranslationOptions.
+ * @internal
+ */
+type JsxTranslationOptions = StripDollarPrefix<JsxTranslationOptionsWithSugar> &
+  JsxTranslationOptionsWithSugar;

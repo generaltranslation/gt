@@ -38,6 +38,14 @@ export default function addGTIdentifier(
     }
     if (transformation) {
       const transformationParts = transformation.split('-');
+      // If the component was inserted automatically by the compiler
+      if (
+        transformationParts[1] === 'automatic' ||
+        transformationParts[2] === 'automatic'
+      ) {
+        result.injectionType = 'automatic';
+      }
+
       if (transformationParts[0] === 'translate') {
         // Convert nested <T> to fragments
         // This will nullify translation specific attributes of child, i.e. id, context, etc.
@@ -81,10 +89,6 @@ export default function addGTIdentifier(
           result.branches = resultBranches;
       }
       result.transformation = transformationParts[0] as TransformationPrefix;
-      // Note if the component was inserted automatically by the compiler
-      if (transformationParts[2] === 'automatic') {
-        result.injectionType = 'automatic';
-      }
     }
     return result;
   };

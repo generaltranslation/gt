@@ -2,6 +2,7 @@
 
 import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
+import { removeInjectedT } from './internal/removeInjectedT';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
 import {
@@ -41,6 +42,7 @@ export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
 
 export {
   addGTIdentifier,
+  removeInjectedT,
   writeChildrenAsObjects,
   isVariableObject,
   flattenDictionary,

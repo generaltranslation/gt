@@ -555,6 +555,67 @@ describe('jsxInsertionPass', () => {
     expect(t.isStringLiteral(tChildren.elements[4])).toBe(true);
   });
 
+  it('each dynamic child gets its own individual _Var (1-to-1 mapping)', () => {
+    // BEFORE JSX:  <div>{a + "hello"}sometext{b}{c} and {d + e}</div>
+    // AFTER JSX:   <div><_T><_Var>{a+"hello"}</_Var>sometext<_Var>{b}</_Var><_Var>{c}</_Var> and <_Var>{d+e}</_Var></_T></div>
+    // 4 dynamic expressions → 4 _Vars, 2 static strings
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: [a + "hello", "sometext", b, c, " and ", d + e] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(4);
+
+    // Verify the T's children array has the correct structure:
+    // [Var(a+"hello"), "sometext", Var(b), Var(c), " and ", Var(d+e)]
+    const tCall = gtTranslateCalls[0];
+    const tProps = tCall.arguments[1] as t.ObjectExpression;
+    const tChildrenProp = tProps.properties.find(
+      (p) =>
+        t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'children' })
+    ) as t.ObjectProperty;
+    const tChildren = tChildrenProp.value as t.ArrayExpression;
+
+    expect(tChildren.elements).toHaveLength(6);
+    // Element 0: Var(a + "hello")
+    expect(t.isCallExpression(tChildren.elements[0])).toBe(true);
+    expect(
+      t.isIdentifier(
+        (tChildren.elements[0] as t.CallExpression).arguments[0],
+        { name: 'GtInternalVar' }
+      )
+    ).toBe(true);
+    // Element 1: "sometext"
+    expect(t.isStringLiteral(tChildren.elements[1])).toBe(true);
+    // Element 2: Var(b)
+    expect(t.isCallExpression(tChildren.elements[2])).toBe(true);
+    expect(
+      t.isIdentifier(
+        (tChildren.elements[2] as t.CallExpression).arguments[0],
+        { name: 'GtInternalVar' }
+      )
+    ).toBe(true);
+    // Element 3: Var(c)
+    expect(t.isCallExpression(tChildren.elements[3])).toBe(true);
+    expect(
+      t.isIdentifier(
+        (tChildren.elements[3] as t.CallExpression).arguments[0],
+        { name: 'GtInternalVar' }
+      )
+    ).toBe(true);
+    // Element 4: " and "
+    expect(t.isStringLiteral(tChildren.elements[4])).toBe(true);
+    // Element 5: Var(d + e)
+    expect(t.isCallExpression(tChildren.elements[5])).toBe(true);
+    expect(
+      t.isIdentifier(
+        (tChildren.elements[5] as t.CallExpression).arguments[0],
+        { name: 'GtInternalVar' }
+      )
+    ).toBe(true);
+  });
+
   // ===== Aliased callee names (Vite dev mode) =====
 
   it('handles aliased jsxDEV import', () => {

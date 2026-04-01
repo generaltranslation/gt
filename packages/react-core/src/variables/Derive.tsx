@@ -22,11 +22,7 @@ import React from 'react';
  * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
-export function Derive<T extends React.ReactNode>({
-  children,
-}: {
-  children: T;
-}): T {
+function Derive<T extends React.ReactNode>({ children }: { children: T }): T {
   return children;
 }
 
@@ -54,4 +50,12 @@ export function Derive<T extends React.ReactNode>({
  * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
-export const Static = Derive;
+function Static<T extends React.ReactNode>(props: { children: T }): T {
+  return Derive(props);
+}
+
+/** @internal _gtt - The GT transformation for the component. */
+Derive._gtt = 'derive';
+Static._gtt = 'derive';
+
+export { Derive, Static };

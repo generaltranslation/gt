@@ -103,6 +103,19 @@ Any expression that is not statically parseable gets wrapped in `GtInternalVar` 
 <div><_T>Hello <_Var>{firstName}</_Var>, welcome to <_Var>{city}</_Var>!</_T></div>
 ```
 
+**Important: each dynamic child expression gets its own individual \_Var.** Dynamic expressions are never combined or grouped. This is a 1-to-1 mapping: each `{expression}` in the JSX source becomes exactly one \_Var wrapper. This matters for hash agreement between the compiler plugin and the CLI extraction tool — both must produce the same structure.
+
+The React JSX transform (Babel/SWC) preserves expressions exactly as written. It does not precompute, constant-fold, or reorder them. Adjacent bare text (not in `{}`) is merged into a single string literal, but expressions inside `{}` are always kept as-is. This means the children array our pass receives is deterministic and maps directly to the source JSX.
+
+```jsx
+// Each {expr} → one _Var, bare text → string literals
+<div>{a + "hello"}sometext{b}{c} and {d + e}</div>
+<div><_T><_Var>{a + "hello"}</_Var>sometext<_Var>{b}</_Var><_Var>{c}</_Var> and <_Var>{d + e}</_Var></_T></div>
+// 4 _Vars: (a + "hello"), b, c, (d + e)
+// 2 strings: "sometext", " and "
+// Note: a + "hello" is NOT precomputed — the BinaryExpression is preserved as-is
+```
+
 ### Expressions that do NOT need _Var (static/parseable):
 
 ```jsx
@@ -326,6 +339,62 @@ import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
 ```
 
 If `GtInternalTranslateJsx` is already imported from a GT source, no duplicate import is added.
+
+---
+
+## Runtime removal of injected components
+
+The compiler cannot always avoid inserting \_T inside another \_T. The primary case is `<Derive>`: the compiler inserts \_T into any element with text, but it cannot know at compile time whether that element will later appear as a child of `<Derive>`. This would require whole-program analysis of every call site — not practical.
+
+### The Derive problem
+
+```jsx
+// Before injection:
+function getName() {
+  return <div>John</div>;
+}
+
+<div>
+  <Derive>{getName()}</Derive>
+</div>
+
+// After injection:
+function getName() {
+  return <div><_T>John</_T></div>;  // _T injected here — compiler doesn't know this is derived
+}
+
+<div>
+  <_T>
+    <Derive>{getName()}</Derive>
+  </_T>
+</div>
+
+// Result: nested _T inside Derive — the inner _T needs to be removed at runtime
+```
+
+The compiler would have to trace every call site of `getName()` and prove it is never used under `<Derive>` to avoid this. That is not practical.
+
+### Runtime solution: `removeInjectedT()`
+
+Instead of relying on the compiler to never emit nested \_T, the **runtime removes them**. The `_T` component (`GtInternalTranslateJsx`) calls `removeInjectedT()` on its children before processing. This function traverses the React element tree and unwraps any auto-injected \_T components that appear inside a `<Derive>` or `<Static>` context.
+
+**Key invariant that makes this safe:** \_T is always inserted by wrapping the children of an existing element. This means removing \_T is always a simple child replacement — unwrap \_T's children back into the parent. No merging or restructuring needed.
+
+The function uses a `derivationDepth` counter:
+- Entering `<Derive>` or `<Static>` increments the depth
+- When depth > 0 and an auto-injected \_T is encountered, it is unwrapped (replaced by its children)
+- User-written `<T>` components are never removed (distinguished by the `_gtt` transformation tag: `'translate-client'` vs `'translate-client-injected'`)
+
+### Runtime solution: `renderVariable()` removes \_Var
+
+A similar issue exists with \_Var. Auto-injected \_Var wrappers could break user logic if left in the tree (e.g., a component expecting a plain string child gets a \_Var element instead). The `renderVariable()` function handles this by unwrapping auto-injected \_Var components during the render phase, reinserting the original value back to its original place.
+
+### Why this matters for CLI extraction
+
+The CLI extraction tool must be aware that:
+1. The compiler **will** produce nested \_T in Derive cases — this is expected, not a bug
+2. The runtime removes these nested \_T before hash computation, so the **effective** structure (after removal) is what the hash is computed against
+3. The CLI must simulate the same removal when computing hashes from source to maintain agreement
 
 ---
 
