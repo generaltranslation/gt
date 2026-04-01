@@ -45,7 +45,7 @@ import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { gt, pluginConfig } from './adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { IgnoreFields, TranslateDocumentFilter } from './adapter/types';
+import type { IgnoreFields, SkipFields, TranslateDocumentFilter } from './adapter/types';
 import TranslationsTool from './components/page/TranslationsTool';
 import { SECRETS_NAMESPACE } from './utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
@@ -61,6 +61,7 @@ export type GTPluginConfig = Omit<
   // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
   singletonMapping?: (sourceDocumentId: string, locale: string) => string;
   ignoreFields?: IgnoreFields[];
+  skipFields?: SkipFields[];
   languageField?: string;
   translateDocuments?: TranslateDocumentFilter[];
   secretsNamespace?: string;
@@ -94,6 +95,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     singletons,
     singletonMapping,
     ignoreFields,
+    skipFields,
     translateDocuments,
     secretsNamespace = SECRETS_NAMESPACE,
     additionalStopTypes = [],
@@ -119,6 +121,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       singletonMapping ||
         ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`),
       ignoreFields || [],
+      skipFields || [],
       translateDocuments || [],
       additionalStopTypes,
       additionalSerializers,
