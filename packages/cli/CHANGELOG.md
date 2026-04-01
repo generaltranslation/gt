@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.1
+
+### Patch Changes
+
+- [#1162](https://github.com/generaltranslation/gt/pull/1162) [`faa90dc`](https://github.com/generaltranslation/gt/commit/faa90dca8f855712f0f99cd9c9644fb2cf69524f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make `git` tagging command default behavior
+
 ## 2.14.0
 
 ### Minor Changes
