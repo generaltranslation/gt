@@ -53,8 +53,8 @@ function processJsxNode(
   processedNodes.add(path.node);
 
   // Get first arg path (the component type)
-  const firstArgPath = path.get('arguments.0') as NodePath;
-  if (!firstArgPath || !firstArgPath.isExpression()) return;
+  const firstArgPath = path.get('arguments')[0];
+  if (!firstArgPath?.isExpression()) return;
 
   // --- Check component type and bail for hands-off cases ---
 
@@ -229,7 +229,7 @@ function hasNonWhitespaceText(childrenPath: NodePath): boolean {
 function hasOpaqueGTChild(childrenPath: NodePath): boolean {
   const isOpaque = (elPath: NodePath): boolean => {
     if (!elPath.isCallExpression() || !isJsxCallPath(elPath)) return false;
-    const firstArg = elPath.get('arguments.0') as NodePath;
+    const firstArg = elPath.get('arguments')[0];
     if (!firstArg?.isExpression()) return false;
     return isGTBranchComponent(firstArg) || isGTDeriveComponent(firstArg);
   };
