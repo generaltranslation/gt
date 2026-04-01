@@ -581,38 +581,34 @@ describe('jsxInsertionPass', () => {
     // Element 0: Var(a + "hello")
     expect(t.isCallExpression(tChildren.elements[0])).toBe(true);
     expect(
-      t.isIdentifier(
-        (tChildren.elements[0] as t.CallExpression).arguments[0],
-        { name: 'GtInternalVar' }
-      )
+      t.isIdentifier((tChildren.elements[0] as t.CallExpression).arguments[0], {
+        name: 'GtInternalVar',
+      })
     ).toBe(true);
     // Element 1: "sometext"
     expect(t.isStringLiteral(tChildren.elements[1])).toBe(true);
     // Element 2: Var(b)
     expect(t.isCallExpression(tChildren.elements[2])).toBe(true);
     expect(
-      t.isIdentifier(
-        (tChildren.elements[2] as t.CallExpression).arguments[0],
-        { name: 'GtInternalVar' }
-      )
+      t.isIdentifier((tChildren.elements[2] as t.CallExpression).arguments[0], {
+        name: 'GtInternalVar',
+      })
     ).toBe(true);
     // Element 3: Var(c)
     expect(t.isCallExpression(tChildren.elements[3])).toBe(true);
     expect(
-      t.isIdentifier(
-        (tChildren.elements[3] as t.CallExpression).arguments[0],
-        { name: 'GtInternalVar' }
-      )
+      t.isIdentifier((tChildren.elements[3] as t.CallExpression).arguments[0], {
+        name: 'GtInternalVar',
+      })
     ).toBe(true);
     // Element 4: " and "
     expect(t.isStringLiteral(tChildren.elements[4])).toBe(true);
     // Element 5: Var(d + e)
     expect(t.isCallExpression(tChildren.elements[5])).toBe(true);
     expect(
-      t.isIdentifier(
-        (tChildren.elements[5] as t.CallExpression).arguments[0],
-        { name: 'GtInternalVar' }
-      )
+      t.isIdentifier((tChildren.elements[5] as t.CallExpression).arguments[0], {
+        name: 'GtInternalVar',
+      })
     ).toBe(true);
   });
 

@@ -121,6 +121,16 @@ function handleSingleChildElement(
       return 'children' in elementProps
         ? handleChildren(elementProps.children as ReactNode, derivationDepth)
         : undefined;
+    } else if (componentType === 'translate' && injectionType === 'manual') {
+      // TODO: remove
+      console.warn(
+        `DEBUG: removeInjectedT - found a ${injectionType} <${injectionType === 'manual' ? 'T' : '_T'}> component as a child of a <T> or <_T> component`
+      );
+    } else if (componentType === 'translate' && derivationDepth === 0) {
+      // TODO: gracefully fail
+      throw new Error(
+        'DEBUG: removeInjectedT - encountered an injected <T> component that was not inside of a <Derive> context. This is a bug in the compiler.'
+      );
     }
   }
 

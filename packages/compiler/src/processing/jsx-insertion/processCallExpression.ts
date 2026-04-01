@@ -79,9 +79,9 @@ function processJsxNode(
     return;
   }
 
-  // Branch/Plural/Derive/Static → opaque, mark all descendants
+  // Branch/Plural/Derive/Static → opaque for static JSX, but dynamic props get _Var
   if (isGTBranchComponent(firstArgPath) || isGTDeriveComponent(firstArgPath)) {
-    markAllDescendantJsxCalls(path, processedNodes);
+    processOpaqueComponentProps(path, insideAutoT, processedNodes);
     return;
   }
 
@@ -317,8 +317,15 @@ function markDescendantJsxCalls(
   }
 }
 
-function markAllDescendantJsxCalls(
+/**
+ * Process props of an opaque component (Branch/Plural/Derive/Static).
+ * Static JSX props are marked as processed (left alone).
+ * Dynamic expressions get _Var wrapped if inside a _T region.
+ * JSX inside auto-inserted _Var is NOT marked — Babel visits it independently for _T.
+ */
+function processOpaqueComponentProps(
   jsxCallPath: NodePath<t.CallExpression>,
+  insideAutoT: boolean,
   processedNodes: WeakSet<t.Node>
 ): void {
   const args = jsxCallPath.get('arguments');
@@ -326,11 +333,21 @@ function markAllDescendantJsxCalls(
   if (!propsArg?.isObjectExpression()) return;
 
   for (const propPath of propsArg.get('properties')) {
-    if (propPath.isObjectProperty()) {
-      const valuePath = propPath.get('value');
-      if (valuePath.isExpression()) {
-        walkAndMark(valuePath, processedNodes);
-      }
+    if (!propPath.isObjectProperty()) continue;
+    const valuePath = propPath.get('value');
+    if (!valuePath.isExpression()) continue;
+
+    if (valuePath.isCallExpression() && isJsxCallPath(valuePath)) {
+      // Static JSX prop — mark as processed, leave alone
+      processedNodes.add(valuePath.node);
+      walkAndMark(valuePath, processedNodes);
+    } else if (insideAutoT && needsVarWrapping(valuePath)) {
+      // Dynamic expression inside a _T region — wrap in _Var
+      // JSX inside the _Var is NOT marked, so Babel can visit it for _T insertion
+      const calleeName = findJsxCallee(jsxCallPath);
+      const wrapped = wrapInVar(valuePath.node, t.identifier(calleeName));
+      processedNodes.add(wrapped);
+      valuePath.replaceWith(wrapped);
     }
   }
 }
