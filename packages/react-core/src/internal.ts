@@ -34,6 +34,7 @@ import { injectAndMerge } from './dictionaries/injectAndMerge';
 import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
 import { msg, decodeMsg, decodeOptions } from './messages/messages';
 import { Static, Derive } from './variables/Derive';
+import renderVariable from './rendering/renderVariable';
 
 export * from 'gt-i18n/fallbacks';
 export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
@@ -73,4 +74,5 @@ export {
   decodeOptions,
   Static,
   Derive,
+  renderVariable,
 };
