@@ -28,7 +28,7 @@ export default function addGTIdentifier(
   const createGTTag = (child: ReactElement<any>): GTTag => {
     const { type, props } = child;
     index += 1;
-    const result: GTTag = { id: index };
+    const result: GTTag = { id: index, injectionType: 'manual' };
     let transformation: Transformation | undefined;
     try {
       transformation =
@@ -81,6 +81,10 @@ export default function addGTIdentifier(
           result.branches = resultBranches;
       }
       result.transformation = transformationParts[0] as TransformationPrefix;
+      // Note if the component was inserted automatically by the compiler
+      if (transformationParts[2] === 'automatic') {
+        result.injectionType = 'automatic';
+      }
     }
     return result;
   };

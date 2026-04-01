@@ -4,6 +4,7 @@ import {
   TransformationPrefix,
   GTProp,
   VariableType,
+  VariableInjectionType,
 } from 'generaltranslation/types';
 import React from 'react';
 
@@ -20,6 +21,7 @@ export type {
  */
 export type GTTag = {
   id: number;
+  injectionType: VariableInjectionType;
   transformation?: TransformationPrefix;
   branches?: Record<string, TaggedChildren>;
   variableType?: VariableTransformationSuffix;
@@ -108,9 +110,11 @@ export type RenderVariable = ({
   variableValue,
   variableOptions,
   locales,
+  injectionType,
 }: Omit<VariableProps, 'variableName'> & {
   locales: string[];
-}) => React.JSX.Element;
+  injectionType?: VariableInjectionType;
+}) => React.ReactNode;
 
 export type _Message = {
   message: string;

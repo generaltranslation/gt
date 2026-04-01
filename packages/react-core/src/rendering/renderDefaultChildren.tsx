@@ -34,6 +34,7 @@ export default function renderDefaultChildren({
         variableValue,
         variableOptions,
         locales: [defaultLocale],
+        injectionType: generaltranslation?.injectionType,
       });
     }
 

@@ -2,6 +2,9 @@
  * Transformations are made from a prefix and a suffix.
  */
 export type Transformation =
+  | BaseTransformation
+  | `${BaseTransformation}-${VariableInjectionType}`;
+export type BaseTransformation =
   | 'translate-client'
   | 'translate-server'
   | 'translate-runtime'
@@ -22,3 +25,4 @@ export type VariableTransformationSuffix =
   | 'number'
   | 'datetime'
   | 'currency';
+export type VariableInjectionType = 'automatic' | 'manual';

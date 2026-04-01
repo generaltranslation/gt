@@ -15,6 +15,7 @@ import getPluralBranch from '../branches/plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
+  Variable,
 } from 'generaltranslation/types';
 import getGTTag from './getGTTag';
 
@@ -163,6 +164,7 @@ export default function renderTranslatedChildren({
       }
     );
 
+    // TODO: pre-index these to avoid O(n/2) lookups
     const findMatchingSourceElement = (
       targetElement: TranslatedElement
     ): TaggedElement | undefined => {
@@ -179,6 +181,18 @@ export default function renderTranslatedChildren({
       ); // assumes fixed order, not recommended
     };
 
+    // TODO: pre-index these to avoid O(n) lookups
+    const findMatchingSourceVariable = (
+      targetVariable: Variable
+    ): TaggedElement | undefined => {
+      return sourceElements.find(
+        (sourceChild): sourceChild is TaggedElement => {
+          const generaltranslation = getGTTag(sourceChild);
+          return generaltranslation?.id === targetVariable.i;
+        }
+      );
+    };
+
     // map target to source
     return target.map((targetChild, index) => {
       if (typeof targetChild === 'string')
@@ -188,6 +202,21 @@ export default function renderTranslatedChildren({
 
       // Render variable
       if (isVariable(targetChild)) {
+        const matchingSourceVariable = findMatchingSourceVariable(targetChild);
+        if (!matchingSourceVariable) {
+          console.warn(
+            'DEBUG: No matching source variable found for variable',
+            JSON.stringify(targetChild, null, 2)
+          );
+          return null;
+        }
+        const generaltranslation = getGTTag(matchingSourceVariable);
+        if (!generaltranslation) {
+          console.warn(
+            'DEBUG: Variable found but no gt tag found for variable',
+            JSON.stringify(matchingSourceVariable, null, 2)
+          );
+        }
         return (
           <React.Fragment key={`var_${index}`}>
             {renderVariable({
@@ -195,6 +224,7 @@ export default function renderTranslatedChildren({
               variableValue: variables[targetChild.k],
               variableOptions: variablesOptions[targetChild.k],
               locales,
+              injectionType: generaltranslation?.injectionType,
             })}
           </React.Fragment>
         );
@@ -204,17 +234,17 @@ export default function renderTranslatedChildren({
       const matchingSourceElement = findMatchingSourceElement(
         targetChild as TranslatedElement
       );
-      if (matchingSourceElement)
-        return (
-          <React.Fragment key={`element_${index}`}>
-            {renderTranslatedElement({
-              sourceElement: matchingSourceElement,
-              targetElement: targetChild,
-              locales,
-              renderVariable,
-            })}
-          </React.Fragment>
-        );
+      if (!matchingSourceElement) return null;
+      return (
+        <React.Fragment key={`element_${index}`}>
+          {renderTranslatedElement({
+            sourceElement: matchingSourceElement,
+            targetElement: targetChild,
+            locales,
+            renderVariable,
+          })}
+        </React.Fragment>
+      );
     });
   }
 
@@ -238,11 +268,19 @@ export default function renderTranslatedChildren({
       if (isVariableElementProps(source.props)) {
         const { variableValue, variableOptions, variableType } =
           getVariableProps(source.props);
+        const generaltranslation = getGTTag(source);
+        if (!generaltranslation) {
+          console.warn(
+            'DEBUG: Variable found but no gt tag found for variable',
+            JSON.stringify(source, null, 2)
+          );
+        }
         return renderVariable({
           variableType,
           variableValue,
           variableOptions,
           locales,
+          injectionType: generaltranslation?.injectionType,
         });
       }
     }

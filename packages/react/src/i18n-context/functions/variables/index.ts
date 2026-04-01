@@ -1,4 +1,4 @@
-export * from './GtInternalVar';
-export * from './GtInternalNum';
-export * from './GtInternalDateTime';
-export * from './GtInternalCurrency';
+export { Var, GtInternalVar } from './GtInternalVar';
+export { Num, GtInternalNum } from './GtInternalNum';
+export { DateTime, GtInternalDateTime } from './GtInternalDateTime';
+export { Currency, GtInternalCurrency } from './GtInternalCurrency';
