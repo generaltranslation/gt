@@ -304,7 +304,8 @@ const types = [
   localeString,
 ];
 
-export default new Schema({
+const schema: InstanceType<typeof Schema> = new Schema({
   name: 'test',
   types,
 });
+export default schema;

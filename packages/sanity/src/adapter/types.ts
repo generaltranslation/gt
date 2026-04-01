@@ -3,6 +3,11 @@ export type IgnoreFields = {
   fields?: { property: string; type?: string }[];
 };
 
+export type SkipFields = {
+  documentId?: string;
+  fields?: { property: string; type?: string }[];
+};
+
 export type TranslateDocumentFilter = {
   documentId?: string;
   type?: string;
