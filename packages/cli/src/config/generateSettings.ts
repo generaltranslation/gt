@@ -310,10 +310,10 @@ export async function generateSettings(
   }
 
   // Resolve tag:
-  // --tag git (explicit) or -m without --tag: try git SHA, fall back to random hex
+  // --tag (bare) or -m without --tag: try git SHA, fall back to random hex
   // --tag <value>: use as-is
   // No flags: no tag
-  if (flags.tag === 'git' || (!flags.tag && mergedOptions.tagMessage)) {
+  if (flags.tag === true || (!flags.tag && mergedOptions.tagMessage)) {
     try {
       mergedOptions.tag = execSync('git rev-parse --short HEAD', {
         encoding: 'utf-8',
