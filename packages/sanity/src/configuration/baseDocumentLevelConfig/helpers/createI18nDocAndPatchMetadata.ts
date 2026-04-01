@@ -3,6 +3,7 @@
 import { SanityClient, SanityDocumentLike } from 'sanity';
 import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
+import { randomKey } from '../../../utils/randomKey';
 
 export async function createI18nDocAndPatchMetadata(
   sourceDocument: SanityDocumentLike,
@@ -19,11 +20,11 @@ export async function createI18nDocAndPatchMetadata(
     any
   >[];
   const existingLocaleKey = translations.find(
-    (translation) => translation._key === localeId
+    (translation) => translation.language === localeId
   );
   const operation = existingLocaleKey ? 'replace' : 'after';
   const location = existingLocaleKey
-    ? `translations[_key == "${localeId}"]`
+    ? `translations[language == "${localeId}"]`
     : 'translations[-1]';
 
   //remove system fields
@@ -64,7 +65,8 @@ export async function createI18nDocAndPatchMetadata(
     .patch(translationMetadata._id, (p) =>
       p.insert(operation, location, [
         {
-          _key: localeId,
+          _key: randomKey(),
+          language: localeId,
           _type: 'internationalizedArrayReferenceValue',
           value: {
             _type: 'reference',

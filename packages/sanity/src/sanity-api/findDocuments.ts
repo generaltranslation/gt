@@ -22,10 +22,10 @@ export async function findTranslatedDocumentForLocale(
   const query = `*[
     _type == "translation.metadata" &&
     (
-      translations[_key == $sourceLocale][0].value._ref == $cleanDocId
+      translations[language == $sourceLocale][0].value._ref == $cleanDocId
     ) &&
-    defined(translations[_key == $localeId])
-  ][0].translations[_key == $localeId][0].value->`;
+    defined(translations[language == $localeId])
+  ][0].translations[language == $localeId][0].value->`;
 
   const translatedDoc = await client.fetch(query, {
     sourceLocale: pluginConfig.getSourceLocale(),

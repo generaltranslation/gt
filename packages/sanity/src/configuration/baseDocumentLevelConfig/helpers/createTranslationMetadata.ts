@@ -6,6 +6,7 @@ import {
   SanityClient,
   SanityDocumentLike,
 } from 'sanity';
+import { randomKey } from '../../../utils/randomKey';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -18,7 +19,8 @@ export const createTranslationMetadata = (
   baseLanguage: string
 ): Promise<SanityDocumentLike> => {
   const baseLangEntry: TranslationReference = {
-    _key: baseLanguage,
+    _key: randomKey(),
+    language: baseLanguage,
     _type: 'internationalizedArrayReferenceValue',
     value: {
       _type: 'reference',

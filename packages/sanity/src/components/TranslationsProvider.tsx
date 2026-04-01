@@ -221,10 +221,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const query = `*[
         _type == 'translation.metadata' &&
-        translations[_key == $sourceLocale][0].value._ref in $documentIds
+        translations[language == $sourceLocale][0].value._ref in $documentIds
       ] {
-        'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-        'existingTranslations': translations[_key in $localeIds]._key
+        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
+        'existingTranslations': translations[language in $localeIds].language
       }`;
 
       const existingMetadata = await client.fetch(query, {
@@ -391,11 +391,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const query = `*[
       _type == 'translation.metadata' &&
-      translations[_key == $sourceLocale][0].value._ref in $documentIds
+      translations[language == $sourceLocale][0].value._ref in $documentIds
     ] {
       _rev,
-      'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-      'existingTranslations': translations[_key in $localeIds]._key
+      'sourceDocId': translations[language == $sourceLocale][0].value._ref,
+      'existingTranslations': translations[language in $localeIds].language
     }`;
 
       const existingMetadata = await client.fetch(query, {
@@ -829,10 +829,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const query = `*[
         _type == 'translation.metadata' &&
-        translations[_key == $sourceLocale][0].value._ref in $publishedDocumentIds
+        translations[language == $sourceLocale][0].value._ref in $publishedDocumentIds
       ] {
-        'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-        'translationDocs': translations[_key != $sourceLocale && defined(value._ref)]{
+        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
+        'translationDocs': translations[language != $sourceLocale && defined(value._ref)]{
           _key,
           'docId': value._ref
         }

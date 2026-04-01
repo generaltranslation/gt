@@ -10,7 +10,7 @@ export const getTranslationMetadata = (
   return client.fetch(
     `*[
         _type == 'translation.metadata' &&
-        translations[_key == $baseLanguage][0].value._ref == $id
+        translations[language == $baseLanguage][0].value._ref == $id
       ][0]`,
     { baseLanguage, id: id.replace('drafts.', '') }
   );
