@@ -57,8 +57,16 @@ describe('_createTag', () => {
         body: {
           tagId: 'v1.0.0',
           files: [
-            { fileId: 'file-123', versionId: 'version-456', branchId: 'branch-123' },
-            { fileId: 'file-456', versionId: 'version-456', branchId: 'branch-123' },
+            {
+              fileId: 'file-123',
+              versionId: 'version-456',
+              branchId: 'branch-123',
+            },
+            {
+              fileId: 'file-456',
+              versionId: 'version-456',
+              branchId: 'branch-123',
+            },
           ],
           message: 'initial release',
         },
@@ -86,7 +94,11 @@ describe('_createTag', () => {
         body: {
           tagId: 'v2.0.0',
           files: [
-            { fileId: 'file-123', versionId: 'version-456', branchId: 'branch-123' },
+            {
+              fileId: 'file-123',
+              versionId: 'version-456',
+              branchId: 'branch-123',
+            },
           ],
         },
       }
@@ -108,10 +120,7 @@ describe('_createTag', () => {
   it('should call the correct endpoint', async () => {
     vi.mocked(apiRequest).mockResolvedValue(mockTagResult);
 
-    await _createTag(
-      { tagId: 'test', files: [createMockFile()] },
-      mockConfig
-    );
+    await _createTag({ tagId: 'test', files: [createMockFile()] }, mockConfig);
 
     expect(apiRequest).toHaveBeenCalledWith(
       mockConfig,
