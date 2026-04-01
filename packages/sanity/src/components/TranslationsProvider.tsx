@@ -265,10 +265,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const transformedDocuments = documents
         .map((doc) => {
-          delete doc[pluginConfig.getLanguageField()];
+          const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
-            const serialized = serializeDocument(doc, schema, baseLanguage);
+            const serialized = serializeDocument(cleanDoc as typeof doc, schema, baseLanguage);
             return {
               info: {
                 documentId: doc._id?.replace('drafts.', '') || doc._id,
@@ -927,9 +927,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setImportedTranslations(new Set(downloadStatus.downloaded));
   }, [downloadStatus.downloaded]);
 
-  if (secrets) {
-    handleGetBranchId(secrets);
-  }
+  useEffect(() => {
+    if (secrets) {
+      handleGetBranchId(secrets);
+    }
+  }, [secrets, handleGetBranchId]);
+
   const contextValue: TranslationsContextType = {
     // State
     isBusy,

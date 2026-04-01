@@ -9,7 +9,7 @@ import {
 import { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { pluginConfig } from '../adapter/core';
 import merge from 'lodash.merge';
-import { forEachMatchingField } from './applyDocuments';
+import { deleteMatchingFields } from './applyDocuments';
 import type { IgnoreFields } from '../adapter/types';
 
 export function deserializeDocument(document: string) {
@@ -66,9 +66,7 @@ function stripIgnoredFields(
 
   const strippedDoc = JSON.parse(JSON.stringify(document)) as SanityDocument;
 
-  forEachMatchingField(document._id, strippedDoc, ignoreFields, (result) => {
-    delete result.parent[result.parentProperty];
-  });
+  deleteMatchingFields(document._id.replace('drafts.', ''), strippedDoc, ignoreFields);
 
   return strippedDoc;
 }

@@ -64,6 +64,28 @@ export function forEachMatchingField(
   }
 }
 
+export function deleteMatchingFields(
+  documentId: string,
+  document: Record<string, any>,
+  fields: IgnoreFields[]
+): void {
+  const arrayRemovals: Array<{ parent: any[]; index: number }> = [];
+
+  forEachMatchingField(documentId, document, fields, (result) => {
+    if (Array.isArray(result.parent)) {
+      arrayRemovals.push({ parent: result.parent, index: Number(result.parentProperty) });
+    } else {
+      delete result.parent[result.parentProperty];
+    }
+  });
+
+  // Splice array elements in reverse index order to avoid shifting indices
+  arrayRemovals.sort((a, b) => b.index - a.index);
+  for (const { parent, index } of arrayRemovals) {
+    parent.splice(index, 1);
+  }
+}
+
 export function applyDocuments(
   documentId: string,
   sourceDocument: Record<string, any>,
@@ -71,11 +93,12 @@ export function applyDocuments(
   ignore: IgnoreFields[],
   skip: SkipFields[] = []
 ) {
-  // Start with a shallow copy of the source document
-  const mergedDocument = { ...sourceDocument };
+  // Deep copy both documents so mutations (e.g. skip-field deletions) never affect the originals
+  const mergedDocument = JSON.parse(JSON.stringify(sourceDocument));
 
   // Merge top-level properties of targetDocument
-  for (const [key, value] of Object.entries(targetDocument)) {
+  const clonedTarget = JSON.parse(JSON.stringify(targetDocument));
+  for (const [key, value] of Object.entries(clonedTarget)) {
     mergedDocument[key] = value;
   }
 
@@ -85,9 +108,7 @@ export function applyDocuments(
   });
 
   // Remove skip fields from merged document
-  forEachMatchingField(documentId, mergedDocument, skip, (result) => {
-    delete result.parent[result.parentProperty];
-  });
+  deleteMatchingFields(documentId, mergedDocument, skip);
 
   return mergedDocument;
 }
