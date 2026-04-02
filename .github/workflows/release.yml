@@ -71,6 +71,57 @@ jobs:
           event-type: release-published
           client-payload: '{"publishedPackages": ${{ steps.changesets.outputs.publishedPackages }}}'
 
+      - name: Find release PR
+        id: find-release-pr
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          pr_url=$(gh pr list --state merged --search "[ci] release" --limit 1 --json url --jq '.[0].url // ""')
+          echo "pr_url=$pr_url" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format Slack release message
+        id: format-slack
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          published='${{ steps.changesets.outputs.publishedPackages }}'
+          pr_url='${{ steps.find-release-pr.outputs.pr_url }}'
+
+          # Build a bullet list of published packages
+          packages=$(echo "$published" | jq -r '.[] | "• `\(.name)` → `\(.version)`"')
+
+          # Compose the message
+          if [ -n "$pr_url" ]; then
+            message=$(printf '📦 *New packages published!*\n\n%s\n\n🔗 <%s|Release PR>\n\n<@U0AF0LK9ZDY>' "$packages" "$pr_url")
+          else
+            message=$(printf '📦 *New packages published!*\n\n%s\n\n<@U0AF0LK9ZDY>' "$packages")
+          fi
+          
+          # Escape for JSON
+          message_escaped=$(echo "$message" | jq -Rs .)
+          echo "message=$message_escaped" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack of release
+        if: steps.changesets.outputs.published == 'true'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.MOSS_PAGER_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "New packages published",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ${{ steps.format-slack.outputs.message }}
+                  }
+                }
+              ]
+            }
+
       # gt (primary CLI package, lives in packages/cli/)
       - name: Check if gt was published
         id: check-gt
