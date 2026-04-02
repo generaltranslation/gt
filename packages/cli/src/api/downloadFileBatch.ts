@@ -14,10 +14,7 @@ import {
   writeLockfile,
   findOrCreateEntry,
 } from '../fs/config/downloadedVersions.js';
-import {
-  recordDownloaded,
-  recordRemerged,
-} from '../state/recentDownloads.js';
+import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
