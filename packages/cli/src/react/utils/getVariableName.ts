@@ -8,6 +8,7 @@ export const defaultVariableNames = {
   GtInternalVar: 'value',
   Num: 'n',
   DateTime: 'date',
+  RelativeTime: 'time',
   Currency: 'cost',
 } as const;
 
@@ -16,6 +17,7 @@ const minifyVariableTypeMap = {
   GtInternalVar: 'v',
   Num: 'n',
   DateTime: 'd',
+  RelativeTime: 'rt',
   Currency: 'c',
 } as const;
 

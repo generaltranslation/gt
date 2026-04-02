@@ -1020,7 +1020,26 @@ describe('auto JSX injection simulation', () => {
   //  12. USER NUM/CURRENCY/DATETIME (Rule 7)
   // ================================================================ //
 
-  describe('user Num/Currency/DateTime', () => {
+  describe('user Num/Currency/DateTime/RelativeTime', () => {
+    it('user RelativeTime is preserved as variable component', () => {
+      // SOURCE:   <div>Updated: <RelativeTime>{date}</RelativeTime></div>
+      // INJECTED: <div><T>Updated: <RelativeTime>{date}</RelativeTime></T></div>
+      // User RelativeTime untouched — appears as v:"rt" in extraction
+      // EXPECTED: 1 update with RelativeTime variable entry
+      const code = `
+        import { T, RelativeTime } from "gt-next";
+        export default function Page() {
+          return <div>Updated: <RelativeTime>{date}</RelativeTime></div>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.updates).toHaveLength(1);
+      const source = result.updates[0].source;
+      expect(Array.isArray(source)).toBe(true);
+      expect((source as JsxChild[])[0]).toBe('Updated: ');
+      expect((source as JsxChild[])[1]).toHaveProperty('v', 'rt');
+    });
+
     it('user Num is preserved as variable component', () => {
       // SOURCE:   <div>Price: <Num>{price}</Num></div>
       // INJECTED: <div><T>Price: <Num>{price}</Num></T></div>

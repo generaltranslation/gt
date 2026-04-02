@@ -247,6 +247,19 @@ describe('jsxInsertionPass', () => {
     expect(gtVarCalls).toHaveLength(0);
   });
 
+  it('inserts _T but does NOT touch user RelativeTime', () => {
+    // BEFORE JSX:  <div>Updated: <RelativeTime>{date}</RelativeTime></div>
+    // AFTER JSX:   <div><_T>Updated: <RelativeTime>{date}</RelativeTime></_T></div>
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { RelativeTime } from 'gt-react';
+      jsxs("div", { children: ["Updated: ", jsx(RelativeTime, { children: date })] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(0);
+  });
+
   it('inserts _T but does NOT touch user Num', () => {
     // BEFORE JSX:  <div>Price: <Num>{price}</Num></div>
     // AFTER JSX:   <div><_T>Price: <Num>{price}</Num></_T></div>
