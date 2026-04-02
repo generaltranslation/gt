@@ -32,10 +32,8 @@ import {
 import { resolveImportPath } from '../../resolveImportPath.js';
 import generateModule from '@babel/generator';
 
-const traverse: typeof traverseModule.default =
-  (traverseModule as any).default || traverseModule;
-const generate: typeof generateModule.default =
-  (generateModule as any).default || generateModule;
+const traverse = (traverseModule as any).default || traverseModule;
+const generate = (generateModule as any).default || generateModule;
 
 vi.mock('node:fs');
 vi.mock('../../resolveImportPath.js');
@@ -65,10 +63,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
   //  Helper: extract user T (Pass 1) with Derive cross-file resolution
   // ================================================================ //
 
-  function extractUserTWithDeriveSupport(
-    sourceCode: string,
-    filePath: string
-  ) {
+  function extractUserTWithDeriveSupport(sourceCode: string, filePath: string) {
     const ast = parse(sourceCode, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
@@ -412,10 +407,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/derive-reexport/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/derive-reexport/page.tsx');
 
       expect(errors).toHaveLength(0);
       expect(updates.length).toBeGreaterThanOrEqual(1);
@@ -876,10 +868,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/derive-noreturn/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/derive-noreturn/page.tsx');
 
       // Should produce a warning about missing return, not crash
       expect(warnings.size).toBeGreaterThanOrEqual(0);
@@ -927,18 +916,14 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
       );
       mockResolveImportPath.mockImplementation(
         (_currentFile: string, importPath: string) => {
-          if (importPath === './libs/a')
-            return '/test/circular-auto/libs/a.ts';
+          if (importPath === './libs/a') return '/test/circular-auto/libs/a.ts';
           if (importPath === './b') return '/test/circular-auto/libs/b.ts';
           if (importPath === './a') return '/test/circular-auto/libs/a.ts';
           return null;
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/circular-auto/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/circular-auto/page.tsx');
 
       // Should complete without infinite loop or crash
       expect(errors).toHaveLength(0);
@@ -1025,10 +1010,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/reexport-star/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/reexport-star/page.tsx');
 
       expect(errors).toHaveLength(0);
       expect(updates.length).toBeGreaterThanOrEqual(1);
@@ -1071,10 +1053,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/reexport-named/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/reexport-named/page.tsx');
 
       expect(errors).toHaveLength(0);
       expect(updates.length).toBeGreaterThanOrEqual(1);
@@ -1111,13 +1090,9 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         ImportDeclaration(path) {
           if (path.node.source.value === 'gt-next') {
             path.node.specifiers.forEach((spec) => {
-              if (
-                t.isImportSpecifier(spec) &&
-                t.isIdentifier(spec.imported)
-              ) {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
                 importAliases[spec.local.name] = spec.imported.name;
-                if (spec.imported.name === 'T')
-                  tLocalName = spec.local.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
               }
             });
           }
@@ -1237,10 +1212,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/derive-branch/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/derive-branch/page.tsx');
 
       expect(errors).toHaveLength(0);
       expect(updates.length).toBeGreaterThanOrEqual(1);
@@ -1287,10 +1259,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
         }
       );
 
-      extractUserTWithDeriveSupport(
-        pageFile,
-        '/test/multi-derive/page.tsx'
-      );
+      extractUserTWithDeriveSupport(pageFile, '/test/multi-derive/page.tsx');
 
       expect(errors).toHaveLength(0);
       expect(updates.length).toBeGreaterThanOrEqual(1);

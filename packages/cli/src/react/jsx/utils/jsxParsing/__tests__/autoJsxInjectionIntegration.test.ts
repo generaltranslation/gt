@@ -31,10 +31,8 @@ import {
 } from '../../constants.js';
 import generateModule from '@babel/generator';
 
-const traverse: typeof traverseModule.default =
-  (traverseModule as any).default || traverseModule;
-const generate: typeof generateModule.default =
-  (generateModule as any).default || generateModule;
+const traverse = (traverseModule as any).default || traverseModule;
+const generate = (generateModule as any).default || generateModule;
 
 vi.mock('node:fs');
 vi.mock('../../resolveImportPath.js');

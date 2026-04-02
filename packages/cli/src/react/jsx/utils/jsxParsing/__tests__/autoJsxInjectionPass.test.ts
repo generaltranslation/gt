@@ -25,10 +25,8 @@ import {
   INTERNAL_VAR_COMPONENT,
 } from '../../constants.js';
 
-const traverse: typeof traverseModule.default =
-  (traverseModule as any).default || traverseModule;
-const generate: typeof generateModule.default =
-  (generateModule as any).default || generateModule;
+const traverse = (traverseModule as any).default || traverseModule;
+const generate = (generateModule as any).default || generateModule;
 
 // ================================================================ //
 //  Helper
