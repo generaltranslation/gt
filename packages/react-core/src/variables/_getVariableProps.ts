@@ -33,6 +33,7 @@ export default function getVariableProps(
   const result: VariableProps = {
     variableName: getVariableName(props, variableType),
     variableType: minifyVariableType(variableType),
+    injectionType: props['data-_gt']?.injectionType || 'manual',
     variableValue: (() => {
       if (typeof props.value !== 'undefined') return props.value;
       if (typeof props['data-_gt-unformatted-value'] !== 'undefined')

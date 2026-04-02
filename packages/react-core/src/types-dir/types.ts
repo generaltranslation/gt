@@ -4,7 +4,7 @@ import {
   TransformationPrefix,
   GTProp,
   VariableType,
-  VariableInjectionType,
+  InjectionType,
 } from 'generaltranslation/types';
 import React from 'react';
 
@@ -21,7 +21,7 @@ export type {
  */
 export type GTTag = {
   id: number;
-  injectionType: VariableInjectionType;
+  injectionType: InjectionType;
   transformation?: TransformationPrefix;
   branches?: Record<string, TaggedChildren>;
   variableType?: VariableTransformationSuffix;
@@ -99,10 +99,12 @@ export type CustomLoader = (locale: string) => Promise<any>;
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
 export type VariableProps = {
+  /** Whether the variable was automatically injected by the compiler */
   variableType: VariableType;
   variableValue: any;
   variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
   variableName: string;
+  injectionType: InjectionType;
 };
 
 export type RenderVariable = ({
@@ -113,7 +115,6 @@ export type RenderVariable = ({
   injectionType,
 }: Omit<VariableProps, 'variableName'> & {
   locales: string[];
-  injectionType?: VariableInjectionType;
 }) => React.ReactNode;
 
 export type _Message = {

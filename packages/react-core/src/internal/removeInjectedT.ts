@@ -1,8 +1,5 @@
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import {
-  TransformationPrefix,
-  VariableInjectionType,
-} from 'generaltranslation/types';
+import { InjectionType, TransformationPrefix } from 'generaltranslation/types';
 import {
   ReactNode,
   ReactElement,
@@ -187,7 +184,7 @@ function handleChildren(
 function getTransformation(elementType: ReactElement['type']):
   | {
       componentType: TransformationPrefix;
-      injectionType: VariableInjectionType;
+      injectionType: InjectionType;
     }
   | undefined {
   // Extract transformation string

@@ -3,7 +3,7 @@
  */
 export type Transformation =
   | BaseTransformation
-  | `${BaseTransformation}-${VariableInjectionType}`;
+  | `${BaseTransformation}-${InjectionType}`;
 export type BaseTransformation =
   | 'translate-client'
   | 'translate-server'
@@ -27,4 +27,4 @@ export type VariableTransformationSuffix =
   | 'number'
   | 'datetime'
   | 'currency';
-export type VariableInjectionType = 'automatic' | 'manual';
+export type InjectionType = 'automatic' | 'manual';

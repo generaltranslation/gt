@@ -5,6 +5,7 @@ import {
   TranslatedChildren,
   RenderVariable,
   TranslatedElement,
+  VariableProps,
 } from '../types-dir/types';
 import getVariableProps, {
   isVariableElementProps,
@@ -16,6 +17,7 @@ import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
   Variable,
+  InjectionType,
 } from 'generaltranslation/types';
 import getGTTag from './getGTTag';
 
@@ -144,10 +146,17 @@ export default function renderTranslatedChildren({
   // Multiple children
   if (Array.isArray(source) && Array.isArray(target)) {
     // Track the variables
-    const variables: Record<string, any> = {};
-    const variablesOptions: Record<string, any> = {};
+    const variables: Record<string, VariableProps['variableValue']> = {};
+    const variablesOptions: Record<string, VariableProps['variableOptions']> =
+      {};
+    const variableInjectionTypes: Record<
+      string,
+      VariableProps['injectionType']
+    > = {};
 
-    // Extract variable props from source elements, and filter out variable elements
+    // Extract source elements
+    // Extract variable props
+    // Filter out variable elements
     const sourceElements: TaggedElement[] = source.filter(
       (sourceChild): sourceChild is TaggedElement => {
         if (React.isValidElement(sourceChild)) {
@@ -181,18 +190,6 @@ export default function renderTranslatedChildren({
       ); // assumes fixed order, not recommended
     };
 
-    // TODO: pre-index these to avoid O(n) lookups
-    const findMatchingSourceVariable = (
-      targetVariable: Variable
-    ): TaggedElement | undefined => {
-      return sourceElements.find(
-        (sourceChild): sourceChild is TaggedElement => {
-          const generaltranslation = getGTTag(sourceChild);
-          return generaltranslation?.id === targetVariable.i;
-        }
-      );
-    };
-
     // map target to source
     return target.map((targetChild, index) => {
       if (typeof targetChild === 'string')
@@ -202,21 +199,6 @@ export default function renderTranslatedChildren({
 
       // Render variable
       if (isVariable(targetChild)) {
-        const matchingSourceVariable = findMatchingSourceVariable(targetChild);
-        if (!matchingSourceVariable) {
-          console.warn(
-            'DEBUG: No matching source variable found for variable',
-            JSON.stringify(targetChild, null, 2)
-          );
-          return null;
-        }
-        const generaltranslation = getGTTag(matchingSourceVariable);
-        if (!generaltranslation) {
-          console.warn(
-            'DEBUG: Variable found but no gt tag found for variable',
-            JSON.stringify(matchingSourceVariable, null, 2)
-          );
-        }
         return (
           <React.Fragment key={`var_${index}`}>
             {renderVariable({
@@ -224,7 +206,7 @@ export default function renderTranslatedChildren({
               variableValue: variables[targetChild.k],
               variableOptions: variablesOptions[targetChild.k],
               locales,
-              injectionType: generaltranslation?.injectionType,
+              injectionType: variableInjectionTypes[targetChild.k] || 'manual',
             })}
           </React.Fragment>
         );
@@ -271,8 +253,8 @@ export default function renderTranslatedChildren({
         const generaltranslation = getGTTag(source);
         if (!generaltranslation) {
           console.warn(
-            'DEBUG: Variable found but no gt tag found for variable',
-            JSON.stringify(source, null, 2)
+            'DEBUG: Variable found but no gt tag found for variable'
+            // JSON.stringify(source, null, 2)
           );
         }
         return renderVariable({
@@ -280,7 +262,7 @@ export default function renderTranslatedChildren({
           variableValue,
           variableOptions,
           locales,
-          injectionType: generaltranslation?.injectionType,
+          injectionType: generaltranslation?.injectionType || 'manual',
         });
       }
     }

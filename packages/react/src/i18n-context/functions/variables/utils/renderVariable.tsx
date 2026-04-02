@@ -27,7 +27,7 @@ export const renderVariable: RenderVariable = ({
   variableType,
   variableValue,
   variableOptions,
-  injectionType = 'manual',
+  injectionType,
 }) => {
   switch (variableType) {
     case 'n':
