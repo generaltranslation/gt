@@ -23,6 +23,8 @@ import {
   DEFAULT_GT_IMPORT_SOURCE,
   DERIVE_COMPONENT,
   STATIC_COMPONENT,
+  BRANCH_CONTROL_PROPS,
+  PLURAL_CONTROL_PROPS,
 } from '../constants.js';
 
 /** Tracks which AST nodes were auto-inserted by this module */
@@ -183,6 +185,7 @@ function processJsxElement({
       processedNodes,
       tLocalName,
       varLocalName,
+      canonicalName,
     });
     return;
   }
@@ -352,24 +355,56 @@ function processOpaqueComponentProps({
   processedNodes,
   tLocalName,
   varLocalName,
-}: { path: NodePath<t.JSXElement> } & InsertionContext): void {
+  canonicalName,
+}: { path: NodePath<t.JSXElement>; canonicalName: string | undefined } & InsertionContext): void {
   // Mark all descendant JSX in children and props as processed
   markDescendantJsx(path, processedNodes);
 
   if (!insideAutoT) return;
 
-  // Wrap dynamic prop values in <Var>
+  const ctx: InsertionContext = {
+    insideAutoT: true,
+    importAliases,
+    processedNodes,
+    tLocalName,
+    varLocalName,
+  };
+
+  // Wrap dynamic prop values in <Var>, skipping control props
   const attrs = path.get('openingElement').get('attributes');
   for (const attrPath of attrs) {
     if (!attrPath.isJSXAttribute()) continue;
+
+    // Determine prop name and skip control props
+    const nameNode = attrPath.node.name;
+    const propName = t.isJSXIdentifier(nameNode) ? nameNode.name : null;
+    if (isControlProp(canonicalName, propName)) continue;
+
     const valuePath = attrPath.get('value');
     if (
       valuePath.isJSXExpressionContainer() &&
       needsVarWrapping(valuePath.node)
     ) {
-      // Check it's not static JSX inside the expression
       const expr = valuePath.node.expression;
-      if (t.isJSXElement(expr) || t.isJSXFragment(expr)) continue;
+
+      // Content prop with JSX value — recurse into children for Var-wrapping
+      if (t.isJSXElement(expr) || t.isJSXFragment(expr)) {
+        const exprPath = (valuePath as NodePath<t.JSXExpressionContainer>).get(
+          'expression'
+        );
+        if (exprPath.isJSXElement()) {
+          const childPaths = exprPath.get('children');
+          for (const childPath of childPaths) {
+            processChild(childPath, ctx);
+          }
+        } else if (exprPath.isJSXFragment()) {
+          const childPaths = exprPath.get('children');
+          for (const childPath of childPaths) {
+            processChild(childPath, ctx);
+          }
+        }
+        continue;
+      }
 
       const varWrapper = createVarWrapper(
         valuePath.node,
@@ -380,6 +415,20 @@ function processOpaqueComponentProps({
       processedNodes.add(varWrapper);
     }
   }
+}
+
+function isControlProp(
+  canonicalName: string | undefined,
+  propName: string | null
+): boolean {
+  if (!propName) return false;
+  if (canonicalName === BRANCH_COMPONENT) {
+    return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
+  }
+  if (canonicalName === PLURAL_COMPONENT) {
+    return PLURAL_CONTROL_PROPS.has(propName);
+  }
+  return false;
 }
 
 // ===== Helper functions ===== //

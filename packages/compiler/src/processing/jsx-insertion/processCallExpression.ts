@@ -453,6 +453,19 @@ function processOpaqueComponentProps({
     const valuePath = propPath.get('value');
     if (!valuePath.isExpression()) continue;
 
+    // children is fallback content for Branch/Plural — process element-by-element
+    // For Derive/Static, children is opaque — skip entirely
+    if (propName === 'children') {
+      if (
+        insideAutoT &&
+        (gtName === GT_COMPONENT_TYPES.Branch ||
+          gtName === GT_COMPONENT_TYPES.Plural)
+      ) {
+        processChildren({ childrenPath: valuePath, insideAutoT: true, state });
+      }
+      continue;
+    }
+
     if (valuePath.isCallExpression() && isJsxCallPath(valuePath)) {
       // Content prop with JSX value — recurse into children for Var-wrapping
       if (insideAutoT) {

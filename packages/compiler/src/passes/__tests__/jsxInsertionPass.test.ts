@@ -898,6 +898,79 @@ describe('jsxInsertionPass', () => {
     expect(output).toMatch(/branch:\s*"mode"/);
   });
 
+  // ===== Opaque component children (fallback) processing =====
+
+  it('Var-wraps dynamic content inside Branch children (fallback) without losing text', () => {
+    // BEFORE JSX:  <><text><Branch branch={userName}>Fallback with Var {userName}</Branch></>
+    // AFTER JSX:   <><_T><text><Branch branch={userName}>Fallback with Var <_Var>{userName}</_Var></Branch></_T></>
+    // Branch children is ["Fallback with Var ", userName] — must be processed
+    // element-by-element, NOT wrapped as a single Var.
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Fragment } from 'react';
+      import { Branch } from 'gt-react';
+      jsxs(Fragment, { children: [
+        "Hello, my good friend",
+        jsxs(Branch, {
+          branch: userName,
+          children: ["Fallback with Var ", userName]
+        })
+      ] });
+    `;
+    const { gtTranslateCalls, gtVarCalls, code: output } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+    expect(output).toContain('Fallback with Var');
+    expect(output).toMatch(/branch:\s*userName/);
+    // Var wraps userName (Identifier), NOT the entire children array
+    const varProps = gtVarCalls[0].arguments[1] as t.ObjectExpression;
+    const varChildrenProp = varProps.properties.find(
+      (p) =>
+        t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'children' })
+    ) as t.ObjectProperty;
+    expect(t.isIdentifier(varChildrenProp.value)).toBe(true);
+  });
+
+  it('Var-wraps dynamic content inside Plural children (fallback) without losing text', () => {
+    // BEFORE JSX:  <div><Plural n={count}>You have {count} items</Plural></div>
+    // AFTER JSX:   <div><_T><Plural n={count}>You have <_Var>{count}</_Var> items</Plural></_T></div>
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Plural } from 'gt-react';
+      jsx("div", { children: jsxs(Plural, {
+        n: count,
+        children: ["You have ", count, " items"]
+      }) });
+    `;
+    const { gtTranslateCalls, gtVarCalls, code: output } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+    expect(output).toContain('You have');
+    expect(output).toContain('items');
+    expect(output).toMatch(/n:\s*count/);
+    // Var wraps count (Identifier), NOT the entire children array
+    const varProps = gtVarCalls[0].arguments[1] as t.ObjectExpression;
+    const varChildrenProp = varProps.properties.find(
+      (p) =>
+        t.isObjectProperty(p) && t.isIdentifier(p.key, { name: 'children' })
+    ) as t.ObjectProperty;
+    expect(t.isIdentifier(varChildrenProp.value)).toBe(true);
+  });
+
+  it('does NOT Var-wrap Derive children (opaque content)', () => {
+    // BEFORE JSX:  <div>Hello <Derive>{getName()}</Derive></div>
+    // AFTER JSX:   <div><_T>Hello <Derive>{getName()}</Derive></_T></div>
+    // Derive children are opaque — no Var wrapping
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Derive } from 'gt-react';
+      jsxs("div", { children: ["Hello ", jsx(Derive, { children: getName() })] });
+    `;
+    const { gtTranslateCalls, gtVarCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(0);
+  });
+
   // ===== Branch prop value with dynamic content gets _Var =====
 
   it('inserts _Var inside Branch prop value that has dynamic content alongside text', () => {

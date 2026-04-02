@@ -14,9 +14,9 @@ export function hashMessage(
     source: options.$format === 'JSX' ? message : indexVars(message as string),
     ...(options?.$context && { context: options.$context }),
     ...(options?.$id && { id: options.$id }),
-    ...('maxChars' in options &&
-      options.maxChars != null && {
-        maxChars: Math.abs(options.$maxChars),
+    ...('$maxChars' in options &&
+      options.$maxChars != null && {
+        $maxChars: Math.abs(options.$maxChars),
       }),
     dataFormat: options.$format,
   });

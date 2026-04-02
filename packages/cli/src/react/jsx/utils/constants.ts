@@ -87,6 +87,12 @@ export const GT_ATTRIBUTES = [
 // Data attribute prefix injected by build tools
 export const DATA_ATTR_PREFIX = 'data-' as const;
 
+/** Branch control props — not translatable content. */
+export const BRANCH_CONTROL_PROPS = new Set(['branch']);
+
+/** Plural control props — not translatable content. */
+export const PLURAL_CONTROL_PROPS = new Set(['n', 'locales']);
+
 // demarcation for global t macro
 export const T_GLOBAL_REGISTRATION_FUNCTION_MARKER =
   '_gt_internal_t_global_registration_marker';
