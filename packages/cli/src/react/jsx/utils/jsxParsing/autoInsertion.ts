@@ -398,31 +398,26 @@ function processOpaqueComponentProps({
     if (isControlProp(canonicalName, propName)) continue;
 
     const valuePath = attrPath.get('value');
-    if (
-      valuePath.isJSXExpressionContainer() &&
-      needsVarWrapping(valuePath.node)
-    ) {
-      const expr = valuePath.node.expression;
+    if (!valuePath.isJSXExpressionContainer()) continue;
 
-      // Content prop with JSX value — recurse into children for Var-wrapping
-      if (t.isJSXElement(expr) || t.isJSXFragment(expr)) {
-        const exprPath = (valuePath as NodePath<t.JSXExpressionContainer>).get(
-          'expression'
-        );
-        if (exprPath.isJSXElement()) {
-          const childPaths = exprPath.get('children');
-          for (const childPath of childPaths) {
-            processChild(childPath, ctx);
-          }
-        } else if (exprPath.isJSXFragment()) {
-          const childPaths = exprPath.get('children');
-          for (const childPath of childPaths) {
-            processChild(childPath, ctx);
-          }
+    const expr = valuePath.node.expression;
+
+    // Content prop with JSX value — recurse into children for Var-wrapping
+    if (t.isJSXElement(expr) || t.isJSXFragment(expr)) {
+      const exprPath = (valuePath as NodePath<t.JSXExpressionContainer>).get(
+        'expression'
+      );
+      if (exprPath.isJSXElement() || exprPath.isJSXFragment()) {
+        const childPaths = (exprPath as NodePath<t.JSXElement | t.JSXFragment>).get('children');
+        for (const childPath of childPaths) {
+          processChild(childPath, ctx);
         }
-        continue;
       }
+      continue;
+    }
 
+    // Non-JSX dynamic value — wrap in Var
+    if (needsVarWrapping(valuePath.node)) {
       const varWrapper = createVarWrapper(
         valuePath.node,
         varLocalName,

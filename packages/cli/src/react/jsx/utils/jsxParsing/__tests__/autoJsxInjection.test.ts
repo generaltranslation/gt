@@ -880,6 +880,40 @@ describe('auto JSX injection simulation', () => {
       expect(result.updates.length).toBeGreaterThanOrEqual(1);
     });
 
+    it('Var-wraps dynamic content inside Branch content prop JSX', () => {
+      // SOURCE:
+      //   <div>
+      //     <Branch branch="mode" Ernest={<>Hello {userName}</>}>Fallback</Branch>
+      //   </div>
+      //
+      // INJECTED:
+      //   <div>
+      //     <_T>
+      //       <Branch branch="mode" Ernest={<>Hello <_Var>{userName}</_Var></>}>Fallback</Branch>
+      //     </_T>
+      //   </div>
+      //
+      // Ernest prop is a content prop with JSX containing dynamic content.
+      // {userName} inside Ernest's fragment should get Var-wrapped.
+      // EXPECTED: no errors
+      const code = `
+        import { Branch } from "gt-react/browser";
+        export default function Page() {
+          const userName = "Ernest";
+          return (
+            <div>
+              <Branch branch="mode" Ernest={<>Hello {userName}</>}>
+                Fallback
+              </Branch>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
     it('does NOT Var-wrap Derive children (opaque content)', () => {
       // SOURCE:   <div>Hello <Derive>{getName()}</Derive></div>
       // INJECTED: <div><_T>Hello <Derive>{getName()}</Derive></_T></div>
