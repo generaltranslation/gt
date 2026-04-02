@@ -351,18 +351,13 @@ function standardizeLocales(config: {
   };
 }
 
-// /**
-//  * Type definition for a synchronous translation resolution given a hashable message and options
-//  * @template T - The type of the translation (default: Translation)
-//  * @param {T} message - The message to get the translation for
-//  * @param {ResolutionOptions} [options] - The options for the translation
-//  * @returns {T | undefined} The translation for the given message and options or undefined if the translation is not found
-//  */
-// type TranslationResolver<T extends Translation> = (
-//   message: T,
-//   options: ResolutionOptions
-// ) => T | undefined;
-
+/**
+ * Type definition for a translation resolver
+ * @template U - The type of the translation (default: Translation)
+ * @param {U} message - The message to get the translation for
+ * @param {ResolutionOptions} [options] - The options for the translation
+ * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
+ */
 type TranslationResolver<U extends Translation = Translation> = <
   T extends U = U,
 >(

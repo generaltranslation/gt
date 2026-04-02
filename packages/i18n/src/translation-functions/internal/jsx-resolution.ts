@@ -1,4 +1,4 @@
-import { getI18nManager } from 'src/i18n-manager/singleton-operations';
+import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { ResolveJsxTranslationFunction } from '../types/functions';
 
 /**

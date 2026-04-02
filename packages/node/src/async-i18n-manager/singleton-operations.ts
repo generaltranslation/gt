@@ -5,7 +5,7 @@ import {
   StorageAdapter,
 } from 'gt-i18n/internal';
 import { AsyncStorageAdapter } from './AsyncStorageAdapter';
-import { Translation } from 'gt-i18n/src/i18n-manager/translations-manager/utils/types/translation-data';
+import { Translation } from 'gt-i18n/types';
 
 /**
  * @description Get the singleton instance of I18nManager.
