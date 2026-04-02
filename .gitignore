@@ -15,4 +15,3 @@ dist/
 tsconfig.tsbuildinfo
 target/
 .rollup.cache
-_gt_debug_hash_manifest.json
