@@ -43,7 +43,10 @@ import {
   handleTranslate,
   postProcessTranslations,
 } from './commands/translate.js';
-import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
+import {
+  getNeedsPostprocessing,
+  clearDownloaded,
+} from '../state/recentDownloads.js';
 import { clearWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
@@ -281,7 +284,7 @@ export class BaseCLI {
       await handleDownload(initOptions, settings, this.library);
     }
     // Only postprocess files downloaded in this run
-    const include = getDownloaded();
+    const include = getNeedsPostprocessing();
     if (include.size > 0) {
       await postProcessTranslations(settings, include);
     }
