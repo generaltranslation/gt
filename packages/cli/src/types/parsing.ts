@@ -41,6 +41,7 @@ export type BaseParsingFlags = Record<string, unknown>;
 export type GTParsingFlags = BaseParsingFlags & {
   autoDerive: boolean;
   includeSourceCodeContext: boolean;
+  enableAutoJsxInjection: boolean;
 };
 
 /**

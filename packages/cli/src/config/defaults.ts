@@ -8,6 +8,7 @@ import { BaseParsingFlags, GTParsingFlags } from '../types/parsing.js';
 export const GT_PARSING_FLAGS_DEFAULT: GTParsingFlags = {
   autoDerive: true,
   includeSourceCodeContext: false,
+  enableAutoJsxInjection: false,
 };
 
 /**
