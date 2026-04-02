@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.3
+
+### Patch Changes
+
+- [#1168](https://github.com/generaltranslation/gt/pull/1168) [`55d7ccd`](https://github.com/generaltranslation/gt/commit/55d7ccd82683992f8d9a0cfa9d380dd95b24b85e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Record re-merged files for postprocessing
+
 ## 2.14.2
 
 ### Patch Changes
