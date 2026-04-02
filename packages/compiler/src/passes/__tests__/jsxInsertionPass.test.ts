@@ -813,4 +813,52 @@ describe('jsxInsertionPass', () => {
     const tCall = gtTranslateCalls[0];
     expect(t.isBooleanLiteral(tCall.arguments[3], { value: true })).toBe(true);
   });
+
+  // ===== Fragments (Rule 13) =====
+
+  it('inserts _T inside a fragment with text', () => {
+    // BEFORE JSX:  <>Hello World</>
+    // AFTER JSX:   <><_T>Hello World</_T></>
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      jsx(require("react").Fragment, { children: "Hello World" });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  // ===== Ternary with JSX inside auto Var (Rule 14 / 7a) =====
+
+  it('inserts _T inside JSX branches of a ternary wrapped in auto _Var', () => {
+    // BEFORE JSX:  <div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>
+    // AFTER JSX:   <div><_T>Status: <_Var>{isActive ? <span><_T>Active</_T></span> : <span><_T>Inactive</_T></span>}</_Var></_T></div>
+    //
+    // The ternary is dynamic → _Var. Since _Var is auto-inserted, JSX inside it
+    // is still fair game → <span>Active</span> and <span>Inactive</span> each get _T.
+    //
+    // 3 _T total: outer (div), Active, Inactive
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Status: ", isActive ? jsx("span", { children: "Active" }) : jsx("span", { children: "Inactive" })] });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(3);
+  });
+
+  // ===== User Var with JSX inside is opaque (Rule 7b) =====
+
+  it('does NOT insert _T inside user-written Var even if it contains JSX with text', () => {
+    // BEFORE JSX:  <T>Status: <Var>{isActive ? <span>Active</span> : <span>Inactive</span>}</Var></T>
+    // AFTER JSX:   unchanged — user Var is opaque, nothing inside is touched
+    //
+    // "Active" and "Inactive" do NOT get _T because they are inside a user Var.
+    // 0 _T insertions (the user T is not auto-inserted)
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T, Var } from 'gt-react';
+      jsxs(T, { children: ["Status: ", jsx(Var, { children: isActive ? jsx("span", { children: "Active" }) : jsx("span", { children: "Inactive" }) })] });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(0);
+  });
 });

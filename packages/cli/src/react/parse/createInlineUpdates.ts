@@ -23,6 +23,12 @@ import {
   dedupeUpdates,
   linkDeriveUpdates,
 } from '../../extraction/postProcess.js';
+import {
+  ensureTAndVarImported,
+  autoInsertJsxComponents,
+} from '../jsx/utils/jsxParsing/autoInsertion.js';
+import traverseModule from '@babel/traverse';
+const traverse = traverseModule.default || traverseModule;
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -85,7 +91,7 @@ export async function createInlineUpdates(
       );
     }
 
-    // Parse <T> components
+    // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
       for (const { localName, path } of translationComponentPaths) {
         parseTranslationComponent({
@@ -106,6 +112,53 @@ export async function createInlineUpdates(
             unwrappedExpressions: [],
           },
         });
+      }
+
+      // PASS 2: Auto-inject T/Var and extract (flag-gated)
+      if (parsingFlags.enableAutoJsxInjection) {
+        const pass1Paths = new Set(
+          translationComponentPaths.map((p) => p.path)
+        );
+
+        // Ensure T and Var are imported in the AST
+        ensureTAndVarImported(ast, importAliases);
+
+        // Insert T/Var into the AST
+        autoInsertJsxComponents(ast, importAliases);
+
+        // Refresh scope to pick up new T references
+        traverse(ast, {
+          Program(programPath) {
+            programPath.scope.crawl();
+          },
+        });
+
+        // Re-collect with updated AST
+        const refreshed = getPathsAndAliases(ast, pkgs);
+
+        // Extract only new T components (skip Pass 1)
+        for (const { localName, path } of refreshed.translationComponentPaths) {
+          if (pass1Paths.has(path)) continue;
+          parseTranslationComponent({
+            originalName: localName,
+            localName,
+            path,
+            updates,
+            config: {
+              importAliases: refreshed.importAliases,
+              parsingOptions,
+              pkgs,
+              file,
+              includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+              enableAutoJsxInjection: true,
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
+          });
+        }
       }
     }
   }

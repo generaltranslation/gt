@@ -18,6 +18,9 @@ export const TRANSLATION_COMPONENT = 'T';
 export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
+export const PLURAL_COMPONENT = 'Plural';
+export const VAR_COMPONENT = 'Var';
+export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react/browser';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [

@@ -20,6 +20,8 @@ import { JsxCalleeInfo } from './processImportDeclaration';
 interface JsxInsertionState extends TransformState {
   processedNodes: WeakSet<t.Node>;
   calleeInfo: JsxCalleeInfo;
+  /** Depth counter: when > 0, we are inside a user Var/Num/Currency/DateTime — skip all transforms */
+  insideUserVarDepth: number;
 }
 
 /**
@@ -37,12 +39,12 @@ export function processCallExpression(
     ...state,
     processedNodes: new WeakSet<t.Node>(),
     calleeInfo,
+    insideUserVarDepth: 0,
   };
 
   return {
     enter: (path) => {
-      if (jsxState.processedNodes.has(path.node)) return;
-
+      // Check jsx callee first — needed for both user Var detection and processing
       const calleePath = path.get('callee');
       if (
         (!calleePath.isIdentifier() && !calleePath.isMemberExpression()) ||
@@ -51,7 +53,36 @@ export function processCallExpression(
         return;
       }
 
+      // Check if this is a user Var/Num/Currency/DateTime — suppress transforms inside.
+      // This must happen BEFORE the processedNodes check, because user T's
+      // markDescendantJsxCalls may have already added the Var call to processedNodes,
+      // but we still need to increment the depth counter so children are suppressed.
+      const firstArg = path.get('arguments')[0];
+      if (firstArg?.isExpression() && isUserVariableComponent(firstArg)) {
+        jsxState.insideUserVarDepth++;
+        return;
+      }
+
+      // Skip all processing when inside a user variable component
+      if (jsxState.insideUserVarDepth > 0) return;
+
+      if (jsxState.processedNodes.has(path.node)) return;
+
       processJsxNode({ path, insideAutoT: false, state: jsxState });
+    },
+    exit: (path) => {
+      // Decrement depth when exiting a user Var/Num/Currency/DateTime
+      const calleePath = path.get('callee');
+      if (
+        (!calleePath.isIdentifier() && !calleePath.isMemberExpression()) ||
+        !isReactJsxFunction(calleePath)
+      ) {
+        return;
+      }
+      const firstArg = path.get('arguments')[0];
+      if (firstArg?.isExpression() && isUserVariableComponent(firstArg)) {
+        jsxState.insideUserVarDepth--;
+      }
     },
   };
 }

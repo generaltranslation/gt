@@ -204,15 +204,29 @@ If the user has manually written a `<T>` component (imported from a GT library),
 <div><T>Translated</T><span><_T>Auto translate me</_T></span></div>
 ```
 
-## Rule 7: User-written Var, Num, Currency, DateTime — hands off
+## Rule 7: User-written Var, Num, Currency, DateTime — completely hands off
 
-User-imported variable components are left untouched. They are valid children of _T but their internals are not modified.
+User-imported variable components are left untouched. They are valid children of \_T but their internals are **never modified** — no \_T or \_Var insertion happens anywhere inside them, regardless of what content they contain.
+
+**Implementation detail:** When the compiler/CLI traversal enters a user Var/Num/Currency/DateTime, it sets an internal flag to suppress ALL transformations. The flag is cleared on exit of that component. This is more robust than trying to mark individual descendant nodes — it correctly handles JSX nested inside arbitrary expressions (ternaries, logical operators, function calls, etc.) within the user component.
+
+This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var, JSX inside it is still fair game for \_T insertion (since the \_Var was our insertion, not the user's).
 
 ```jsx
-// User Var inside auto-translated content
+// User Var inside auto-translated content — simple case
 <div>Hello <Var>{name}</Var></div>
 <div><_T>Hello <Var>{name}</Var></_T></div>
 // Note: no _Var wrapping — user Var handles it
+
+// User Var with JSX inside a ternary — everything inside is opaque
+<T>Status: <Var>{isActive ? <span>Active</span> : <span>Inactive</span>}</Var></T>
+<T>Status: <Var>{isActive ? <span>Active</span> : <span>Inactive</span>}</Var></T>
+// "Active" and "Inactive" do NOT get _T — they are inside user Var
+
+// Contrast with auto-inserted Var — JSX inside IS translated
+// SOURCE:  <div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>
+// RESULT:  <div><_T>Status: <_Var>{isActive ? <span><_T>Active</_T></span> : <span><_T>Inactive</_T></span>}</_Var></_T></div>
+// "Active" and "Inactive" DO get _T because the _Var was auto-inserted
 
 // User Num
 <div>Price: <Num>{price}</Num></div>

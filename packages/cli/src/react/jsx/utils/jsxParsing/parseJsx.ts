@@ -88,6 +88,7 @@ type ConfigOptions = {
   pkgs: GTLibrary[];
   file: string;
   includeSourceCodeContext?: boolean;
+  enableAutoJsxInjection?: boolean;
 };
 
 /**
@@ -284,6 +285,43 @@ function buildJSXTree({
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
+    }
+
+    // When enableAutoJsxInjection is on and we're inside a Derive context,
+    // any T component was auto-inserted by the injection pass. Since runtime
+    // removeInjectedT strips these, we unwrap transparently — process the T's
+    // children as if the T wasn't there.
+    if (
+      componentType === TRANSLATION_COMPONENT &&
+      inDerive &&
+      config.enableAutoJsxInjection
+    ) {
+      const childResults: (JsxTree | MultiplicationNode)[] = [];
+      const helperChildren = helperPath.get('children');
+      for (let i = 0; i < element.children.length; i++) {
+        const child = element.children[i];
+        const helperChild = helperChildren[i];
+        const result = buildJSXTree({
+          node: child,
+          helperPath: helperChild,
+          scopeNode,
+          insideT: true,
+          inDerive: true,
+          config,
+          state,
+          output,
+        });
+        if (result !== null) {
+          childResults.push(result);
+        }
+      }
+      if (childResults.length === 0) return null;
+      if (childResults.length === 1) return childResults[0];
+      return {
+        nodeType: 'element' as const,
+        type: '',
+        props: { children: childResults },
+      };
     }
 
     // If this JSXElement is one of the recognized variable components,
