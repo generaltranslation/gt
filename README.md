@@ -1,8 +1,8 @@
 <div align="center">
   <a href="https://generaltranslation.com">
     <picture>
-      <source media="(prefers-color-scheme: light)" srcset="https://generaltranslation.com/brand/gt-logo-light.svg">
-      <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-dark.svg" height="64">
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-light.svg" height="64">
     </picture>
   </a>
   <h1>General Translation</h1>

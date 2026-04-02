@@ -1,6 +1,9 @@
 <p align="center">
   <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/brand/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
+      <img src="https://generaltranslation.com/brand/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+    </picture>
   </a>
 </p>
 
