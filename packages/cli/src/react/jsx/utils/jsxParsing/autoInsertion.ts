@@ -356,7 +356,10 @@ function processOpaqueComponentProps({
   tLocalName,
   varLocalName,
   canonicalName,
-}: { path: NodePath<t.JSXElement>; canonicalName: string | undefined } & InsertionContext): void {
+}: {
+  path: NodePath<t.JSXElement>;
+  canonicalName: string | undefined;
+} & InsertionContext): void {
   // Branch/Plural children (fallback content) — process element-by-element before marking
   if (
     insideAutoT &&
@@ -408,7 +411,9 @@ function processOpaqueComponentProps({
         'expression'
       );
       if (exprPath.isJSXElement() || exprPath.isJSXFragment()) {
-        const childPaths = (exprPath as NodePath<t.JSXElement | t.JSXFragment>).get('children');
+        const childPaths = (
+          exprPath as NodePath<t.JSXElement | t.JSXFragment>
+        ).get('children');
         for (const childPath of childPaths) {
           processChild(childPath, ctx);
         }

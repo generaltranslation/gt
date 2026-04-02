@@ -37,6 +37,7 @@ export type BaseParsingFlags = Record<string, unknown>;
  *
  * @property {boolean} autoDerive - Whether to enable auto-derive for the t() function. (true -> 'AUTO', false -> 'DISABLED' {@link ParsingConfig['autoDeriveMethod']})
  * @property {boolean} includeSourceCodeContext - Include surrounding source code lines as context for translations.
+ * @property {boolean} enableAutoJsxInjection - Whether to enable auto-jsx injection for the internal <_T> and <_Var> components.
  */
 export type GTParsingFlags = BaseParsingFlags & {
   autoDerive: boolean;

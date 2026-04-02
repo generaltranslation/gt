@@ -28,8 +28,14 @@ export function initializeState(
   options: GTUnpluginOptions,
   filename: string
 ): TransformState {
+  // Pull enableAutoJsxInjection from gtConfig if provided
+  const gtConfig = options.gtConfig;
+  const enableAutoJsxInjection =
+    gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
+
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
+    enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
     ...options,
     filename,
   };
