@@ -357,6 +357,23 @@ function processOpaqueComponentProps({
   varLocalName,
   canonicalName,
 }: { path: NodePath<t.JSXElement>; canonicalName: string | undefined } & InsertionContext): void {
+  // Branch/Plural children (fallback content) — process element-by-element before marking
+  if (
+    insideAutoT &&
+    (canonicalName === BRANCH_COMPONENT || canonicalName === PLURAL_COMPONENT)
+  ) {
+    const childPaths = path.get('children');
+    for (const childPath of childPaths) {
+      processChild(childPath, {
+        insideAutoT: true,
+        importAliases,
+        processedNodes,
+        tLocalName,
+        varLocalName,
+      });
+    }
+  }
+
   // Mark all descendant JSX in children and props as processed
   markDescendantJsx(path, processedNodes);
 

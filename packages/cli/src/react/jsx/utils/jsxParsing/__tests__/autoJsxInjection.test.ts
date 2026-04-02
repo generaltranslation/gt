@@ -802,6 +802,101 @@ describe('auto JSX injection simulation', () => {
   });
 
   // ================================================================ //
+  //  8b. OPAQUE COMPONENT CHILDREN (fallback) — Var-wrapping
+  // ================================================================ //
+
+  describe('opaque component children (fallback) processing', () => {
+    it('Var-wraps dynamic content inside Branch children without losing text', () => {
+      // SOURCE:
+      //   <>
+      //     Hello, my good friend
+      //     <Branch branch={userName}>Fallback with Var {userName}</Branch>
+      //   </>
+      //
+      // INJECTED:
+      //   <>
+      //     <_T>
+      //       Hello, my good friend
+      //       <Branch branch={userName}>Fallback with Var <_Var>{userName}</_Var></Branch>
+      //     </_T>
+      //   </>
+      //
+      // Branch children is ["Fallback with Var ", {userName}] — must be processed
+      // element-by-element. The {userName} inside children gets Var-wrapped.
+      // EXPECTED: no errors, Branch children in jsxChildren contains text + variable
+      const code = `
+        import { Branch } from "gt-react/browser";
+        export default function Page() {
+          const userName = "Ernest";
+          return (
+            <>
+              Hello, my good friend
+              <Branch branch={userName}>
+                Fallback with Var {userName}
+              </Branch>
+            </>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+      const source = result.updates[0].source as JsxChild[];
+      expect(Array.isArray(source)).toBe(true);
+      // Should contain text + Branch element
+      const branchEl = source.find(
+        (child) =>
+          typeof child === 'object' &&
+          child !== null &&
+          't' in child &&
+          child.t === 'Branch'
+      ) as any;
+      expect(branchEl).toBeDefined();
+      // Branch children should preserve "Fallback with Var" text
+      // (not be a single variable with text lost)
+      const branchChildren = branchEl.c;
+      expect(Array.isArray(branchChildren)).toBe(true);
+    });
+
+    it('Var-wraps dynamic content inside Plural children without losing text', () => {
+      // SOURCE:   <div><Plural n={count}>You have {count} items</Plural></div>
+      // INJECTED: <div><_T><Plural n={count}>You have <_Var>{count}</_Var> items</Plural></_T></div>
+      // EXPECTED: no errors, Plural children contains text + variable
+      const code = `
+        import { Plural } from "gt-react/browser";
+        export default function Page() {
+          const count = 5;
+          return (
+            <div>
+              <Plural n={count}>
+                You have {count} items
+              </Plural>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('does NOT Var-wrap Derive children (opaque content)', () => {
+      // SOURCE:   <div>Hello <Derive>{getName()}</Derive></div>
+      // INJECTED: <div><_T>Hello <Derive>{getName()}</Derive></_T></div>
+      // Derive children are fully opaque — no Var wrapping, no errors
+      const code = `
+        import { Derive } from "gt-react/browser";
+        export default function Page() {
+          return <div>Hello <Derive>{getName()}</Derive></div>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // ================================================================ //
   //  9. NESTED DYNAMIC CONTENT (Rule 12)
   // ================================================================ //
 
