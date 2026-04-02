@@ -1,0 +1,12 @@
+{
+  "defaultLocale": "en",
+  "locales": [],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json",
+      "parsingFlags": {
+        "enableAutoJsxInjection": true
+      }
+    }
+  }
+}

@@ -187,4 +187,50 @@ describe('JSX insertion → collection E2E (no soft locks)', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.code).not.toBeNull();
   });
+
+  // ===== Missing jsx import (only jsxs available) =====
+
+  it('jsxs-only file with dynamic content — _Var needs jsx but only jsxs is imported', () => {
+    // In Vite production, files with only multi-child elements import jsxs but NOT jsx.
+    // The insertion pass creates jsx(GtInternalVar, ...) using singleCallee ?? 'jsx',
+    // but 'jsx' isn't imported. The collection pass then fails with "dynamic content" error.
+    //
+    // BEFORE JSX:  <div>Hello {name}</div>  (compiled with jsxs only)
+    // EXPECTED:    insertion pass should handle missing jsx import gracefully
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      jsxs("div", { children: ["Hello ", name] });
+    `;
+    const result = fullPipeline(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toBeNull();
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('jsxs-only file with multiple dynamic expressions — all need jsx callee', () => {
+    // Same issue but with multiple _Var wrappers — each one uses the missing jsx callee
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      jsxs("p", { children: ["Hello ", firstName, ", welcome to ", city, "!"] });
+    `;
+    const result = fullPipeline(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toBeNull();
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('jsxs-only file with Branch fallback dynamic content', () => {
+    // Branch children with dynamic content — _Var wrapper needs jsx callee
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      import { Branch } from 'gt-react';
+      jsxs("div", { children: [
+        "Label: ",
+        jsxs(Branch, { branch: x, children: ["Fallback ", name] })
+      ] });
+    `;
+    const result = fullPipeline(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toBeNull();
+  });
 });

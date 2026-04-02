@@ -34,6 +34,7 @@ export function jsxInsertionPass(state: TransformState): TraverseOptions {
       state,
       countBefore,
       isAlreadyImported: () => alreadyImported,
+      calleeInfo,
     }),
   };
 }

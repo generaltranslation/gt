@@ -19,6 +19,7 @@
     "next-starter",
     "next-pages-router",
     "vite-create-app",
-    "cli-test-app"
+    "cli-test-app",
+    "compiler-cli-parity"
   ]
 }
