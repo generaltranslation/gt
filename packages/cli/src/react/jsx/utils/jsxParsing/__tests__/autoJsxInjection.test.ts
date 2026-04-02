@@ -931,6 +931,135 @@ describe('auto JSX injection simulation', () => {
   });
 
   // ================================================================ //
+  //  8c. DERIVE EXTRACTION WITH AUTO-INJECTION
+  // ================================================================ //
+
+  describe('Derive extraction with auto-injection', () => {
+    it('Derive with function returning JSX + text — auto-inserted T unwrapped', () => {
+      // SOURCE:
+      //   function getName() { return <span>John</span>; }
+      //   <div>Hello <Derive>{getName()}</Derive></div>
+      //
+      // The compiler inserts _T inside <span>John</span>.
+      // The CLI extraction should unwrap that _T (transparent in Derive context).
+      // EXPECTED: no errors, Derive resolves to the function's return value
+      const code = `
+        import { Derive } from "gt-react/browser";
+        function getName() { return <span>John</span>; }
+        export default function Page() {
+          return <div>Hello <Derive>{getName()}</Derive></div>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('Multiple Derives in same parent — each resolves independently', () => {
+      // SOURCE:
+      //   function getSubject() { return gender === 'male' ? 'boy' : 'girl'; }
+      //   function getObject() { return toy === 'ball' ? 'ball' : 'crayon'; }
+      //   <div>The <Derive>{getSubject()}</Derive> plays with the <Derive>{getObject()}</Derive></div>
+      //
+      // EXPECTED: no errors, multiple updates (multiplicative from Derive resolution)
+      const code = `
+        import { Derive } from "gt-react/browser";
+        function getSubject() { return gender === 'male' ? 'boy' : 'girl'; }
+        function getObject() { return toy === 'ball' ? 'ball' : 'crayon'; }
+        export default function Page() {
+          return (
+            <div>
+              The <Derive>{getSubject()}</Derive> plays with the <Derive>{getObject()}</Derive>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('Derive with conditional returns — produces multiple branches', () => {
+      // SOURCE:
+      //   function getStatus(ok) { if (ok) return 'Success'; return 'Error'; }
+      //   <div>Status: <Derive>{getStatus(ok)}</Derive></div>
+      //
+      // EXPECTED: no errors, multiple updates from conditional branches
+      const code = `
+        import { Derive } from "gt-react/browser";
+        function getStatus(ok) { if (ok) return 'Success'; return 'Error'; }
+        export default function Page() {
+          return <div>Status: <Derive>{getStatus(ok)}</Derive></div>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // ================================================================ //
+  //  8d. USER VAR OPAQUENESS WITH AUTO-INJECTION
+  // ================================================================ //
+
+  describe('user Var opaqueness with auto-injection', () => {
+    it('user Var with ternary containing JSX — no injection inside Var', () => {
+      // SOURCE:   <div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>
+      // INJECTED: <div><_T>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></_T></div>
+      // "A" and "B" must NOT get auto-inserted _T inside Var
+      // EXPECTED: no errors, extraction succeeds
+      const code = `
+        import { Var } from "gt-react/browser";
+        export default function Page() {
+          const flag = true;
+          return <div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('user Var with .map() returning JSX — no injection inside Var', () => {
+      // SOURCE:   <div>Items: <Var>{items.map(i => <li>{i}</li>)}</Var></div>
+      // INJECTED: <div><_T>Items: <Var>{...}</Var></_T></div>
+      // <li> elements inside Var must NOT get _T
+      // EXPECTED: no errors
+      const code = `
+        import { Var } from "gt-react/browser";
+        export default function Page() {
+          const items = ['a', 'b'];
+          return <div>Items: <Var>{items.map(i => <li>{i}</li>)}</Var></div>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('user Var depth resets — sibling content still gets injected', () => {
+      // SOURCE:   <div><Var>{<p>Opaque</p>}</Var><span>Auto {x}</span></div>
+      // INJECTED: Var opaque, span gets _T + _Var
+      // EXPECTED: no errors, extraction includes the span content
+      const code = `
+        import { Var } from "gt-react/browser";
+        export default function Page() {
+          const x = 'dynamic';
+          return (
+            <div>
+              <Var>{<p>Opaque</p>}</Var>
+              <span>Auto {x}</span>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // ================================================================ //
   //  9. NESTED DYNAMIC CONTENT (Rule 12)
   // ================================================================ //
 

@@ -690,7 +690,149 @@ describe('jsxInsertionPass edge cases', () => {
     });
   });
 
-  // ===== 17. Real-world-ish component patterns =====
+  // ===== 17. User Var opaqueness stress tests =====
+
+  describe('user Var opaqueness stress', () => {
+    it('user Var with ternary containing JSX — NO _T inside either branch', () => {
+      // BEFORE JSX:  <div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>
+      // AFTER JSX:   <div><_T>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></_T></div>
+      // 1 _T at div. 0 auto _Var. "A" and "B" do NOT get _T. User Var is fully opaque.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsxs("div", { children: [
+          "Hello ",
+          jsx(Var, { children: flag ? jsx("p", { children: "A" }) : jsx("p", { children: "B" }) })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+
+    it('user Var with .map() returning JSX — no insertion inside', () => {
+      // BEFORE JSX:  <div>Items: <Var>{items.map(i => <li>{i.name}</li>)}</Var></div>
+      // AFTER JSX:   <div><_T>Items: <Var>{items.map(...)}</Var></_T></div>
+      // 1 _T at div. 0 auto _Var. <li> elements NOT processed.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsxs("div", { children: [
+          "Items: ",
+          jsx(Var, { children: items.map(i => jsx("li", { children: i.name })) })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+
+    it('user Var with logical AND containing JSX — no insertion inside', () => {
+      // BEFORE JSX:  <div>Content: <Var>{show && <span>Visible {x}</span>}</Var></div>
+      // AFTER JSX:   <div><_T>Content: <Var>{show && <span>Visible {x}</span>}</Var></_T></div>
+      // 1 _T at div. 0 auto _Var. <span> NOT processed, {x} NOT Var-wrapped.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsxs("div", { children: [
+          "Content: ",
+          jsx(Var, { children: show && jsxs("span", { children: ["Visible ", x] }) })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+
+    it('user Var with OR fallback containing JSX — no insertion inside', () => {
+      // BEFORE JSX:  <div>Value: <Var>{value || <span>Default</span>}</Var></div>
+      // AFTER JSX:   <div><_T>Value: <Var>{value || <span>Default</span>}</Var></_T></div>
+      // 1 _T at div. 0 auto _Var.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsxs("div", { children: [
+          "Value: ",
+          jsx(Var, { children: value || jsx("span", { children: "Default" }) })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+
+    it('user Var with nested component containing prop JSX — no insertion inside', () => {
+      // BEFORE JSX:  <div>Card: <Var>{<Card header={<h1>Title</h1>}>Body</Card>}</Var></div>
+      // AFTER JSX:   <div><_T>Card: <Var>{<Card ...>Body</Card>}</Var></_T></div>
+      // 1 _T at div. 0 auto _Var. "Title" in header prop NOT _T-wrapped. "Body" NOT _T-wrapped.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsxs("div", { children: [
+          "Card: ",
+          jsx(Var, { children: jsx(Card, { header: jsx("h1", { children: "Title" }), children: "Body" }) })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+
+    it('user Num with JSX inside — same opaqueness as Var', () => {
+      // BEFORE JSX:  <div>Price: <Num>{flag ? <span>Discounted</span> : price}</Num></div>
+      // AFTER JSX:   <div><_T>Price: <Num>{flag ? <span>Discounted</span> : price}</Num></_T></div>
+      // 1 _T at div. 0 auto _Var. <span> NOT processed.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Num } from 'gt-react';
+        jsxs("div", { children: [
+          "Price: ",
+          jsx(Num, { children: flag ? jsx("span", { children: "Discounted" }) : price })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+
+    it('user Var depth counter resets between siblings — auto insertion resumes after Var', () => {
+      // BEFORE JSX:  <div><Var>{<p>Opaque</p>}</Var><span>Auto {x}</span></div>
+      // AFTER JSX:   <div><Var>{<p>Opaque</p>}</Var><span><_T>Auto <_Var>{x}</_Var></_T></span></div>
+      // Var is opaque, but sibling span is NOT inside Var — auto insertion resumes.
+      const code = `
+        import { jsx, jsxs } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsxs("div", { children: [
+          jsx(Var, { children: jsx("p", { children: "Opaque" }) }),
+          jsxs("span", { children: ["Auto ", x] })
+        ] });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      // 0 _T inside Var. 1 _T in span. 1 _Var for {x}.
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(1);
+    });
+
+    it('user Var in non-children prop — Var scope prevents insertion in that prop', () => {
+      // BEFORE JSX:  <Layout sidebar={<Var>{<nav>Links</nav>}</Var>}>Body text</Layout>
+      // AFTER JSX:   <Layout sidebar={<Var>{<nav>Links</nav>}</Var>}><_T>Body text</_T></Layout>
+      // sidebar: Var opaque, "Links" NOT _T-wrapped. children: "Body text" gets _T.
+      const code = `
+        import { jsx } from 'react/jsx-runtime';
+        import { Var } from 'gt-react';
+        jsx(Layout, {
+          sidebar: jsx(Var, { children: jsx("nav", { children: "Links" }) }),
+          children: "Body text"
+        });
+      `;
+      const { gtTranslateCalls, gtVarCalls } = transform(code);
+      // 1 _T for "Body text". 0 for "Links" (inside Var).
+      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtVarCalls).toHaveLength(0);
+    });
+  });
+
+  // ===== 18. Real-world-ish component patterns =====
 
   describe('real-world patterns', () => {
     it('nav bar with multiple links — each link gets independent _T', () => {
