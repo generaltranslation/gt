@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775015780593,
+  "lastUpdate": 1775163031970,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -2204,6 +2204,122 @@ window.BENCHMARK_DATA = {
             "value": 131.60000000000582,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.0\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "a74065ba4e3389cebec86182700d171712e42c47",
+          "message": "[ci] release (#1167)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.14.2\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-remark@1.0.7\n    -   generaltranslation@8.2.1\n    -   @generaltranslation/python-extractor@0.2.5\n\n## @generaltranslation/compiler@1.2.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   generaltranslation@8.2.1\n\n## generaltranslation@8.2.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n## gtx-cli@2.14.2\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt@2.14.2\n\n## gt-i18n@0.7.9\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   generaltranslation@8.2.1\n    -   @generaltranslation/supported-locales@2.0.59\n\n## locadex@1.0.137\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt@2.14.2\n\n## @generaltranslation/mcp@1.0.7\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n## gt-next@6.15.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-react@10.16.1\n    -   gt-i18n@0.7.9\n    -   generaltranslation@8.2.1\n    -   @generaltranslation/compiler@1.2.1\n    -   @generaltranslation/next-internal@0.1.2\n    -   @generaltranslation/supported-locales@2.0.59\n\n## @generaltranslation/next-internal@0.1.2\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n## @generaltranslation/gt-next-lint@13.0.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-next@6.15.1\n\n## gt-node@0.4.9\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-i18n@0.7.9\n    -   generaltranslation@8.2.1\n\n## @generaltranslation/python-extractor@0.2.5\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   generaltranslation@8.2.1\n\n## gt-react@10.16.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-i18n@0.7.9\n    -   generaltranslation@8.2.1\n    -   @generaltranslation/react-core@1.7.1\n    -   @generaltranslation/supported-locales@2.0.59\n\n## @generaltranslation/react-core@1.7.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-i18n@0.7.9\n    -   generaltranslation@8.2.1\n    -   @generaltranslation/supported-locales@2.0.59\n\n## @generaltranslation/react-core-linter@0.1.6\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n## gt-remark@1.0.7\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n## gt-sanity@2.0.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   generaltranslation@8.2.1\n\n## @generaltranslation/supported-locales@2.0.59\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   generaltranslation@8.2.1\n\n## gt-tanstack-start@0.3.1\n\n### Patch Changes\n\n- [#1161](https://github.com/generaltranslation/gt/pull/1161)\n[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update\nlogo blocks in READMEs\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-react@10.16.1\n    -   gt-i18n@0.7.9\n    -   generaltranslation@8.2.1\n    -   @generaltranslation/react-core@1.7.1\n\n## gt-next-middleware-e2e@0.1.22\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:\n    -   gt-next@6.15.1\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-04-02T20:41:52Z",
+          "url": "https://github.com/generaltranslation/gt/commit/a74065ba4e3389cebec86182700d171712e42c47"
+        },
+        "date": 1775163031241,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.040324135403225825,
+            "range": "±0.0169",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.2502267158579309,
+            "range": "±0.0603",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.44477220355555963,
+            "range": "±0.0628",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.43240352117546577,
+            "range": "±0.0439",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 233.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 252,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 380.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 156,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 27.599999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 148,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 588,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.599999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.400000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 134,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
           }
         ]
       }
