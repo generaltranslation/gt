@@ -20,6 +20,8 @@ export interface PluginConfig {
   stringTranslationMacro?: string;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection?: boolean;
+  /** Debug: write a hash → jsxChildren manifest file on build */
+  _debugHashManifest?: boolean;
 }
 
 /**
@@ -38,4 +40,6 @@ export interface PluginSettings {
   enableMacroImportInjection: boolean;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
+  /** Debug: write a hash → jsxChildren manifest file on build */
+  _debugHashManifest: boolean;
 }

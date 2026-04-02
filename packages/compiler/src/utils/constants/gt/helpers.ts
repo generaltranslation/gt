@@ -48,6 +48,9 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'Plural',
     'GtInternalTranslateJsx',
     'GtInternalVar',
+    'GtInternalNum',
+    'GtInternalCurrency',
+    'GtInternalDateTime',
   ].includes(name);
 }
 
@@ -103,6 +106,9 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
       GT_COMPONENT_TYPES.Derive,
       GT_COMPONENT_TYPES.Static,
       GT_COMPONENT_TYPES.GtInternalVar,
+      GT_COMPONENT_TYPES.GtInternalNum,
+      GT_COMPONENT_TYPES.GtInternalCurrency,
+      GT_COMPONENT_TYPES.GtInternalDateTime,
     ] as string[]
   ).includes(name);
 }
@@ -201,9 +207,13 @@ export function minifyCanonicalName(canonicalName: GT_COMPONENT_TYPES): string {
  */
 export const defaultVariableNames = {
   [GT_COMPONENT_TYPES.Var]: 'value',
+  [GT_COMPONENT_TYPES.GtInternalVar]: 'value',
   [GT_COMPONENT_TYPES.Num]: 'n',
+  [GT_COMPONENT_TYPES.GtInternalNum]: 'n',
   [GT_COMPONENT_TYPES.DateTime]: 'date',
+  [GT_COMPONENT_TYPES.GtInternalDateTime]: 'date',
   [GT_COMPONENT_TYPES.Currency]: 'cost',
+  [GT_COMPONENT_TYPES.GtInternalCurrency]: 'cost',
   [GT_COMPONENT_TYPES.Derive]: 'static',
   [GT_COMPONENT_TYPES.Static]: 'static',
 } as const;

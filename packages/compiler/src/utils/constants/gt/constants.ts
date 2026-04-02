@@ -24,6 +24,9 @@ export enum GT_COMPONENT_TYPES {
   LocaleSelector = 'LocaleSelector',
   GtInternalTranslateJsx = 'GtInternalTranslateJsx',
   GtInternalVar = 'GtInternalVar',
+  GtInternalNum = 'GtInternalNum',
+  GtInternalCurrency = 'GtInternalCurrency',
+  GtInternalDateTime = 'GtInternalDateTime',
 }
 
 /**
@@ -143,9 +146,13 @@ export enum USEGT_CALLBACK_OPTIONS {
  */
 export const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.Var]: 'v',
+  [GT_COMPONENT_TYPES.GtInternalVar]: 'v',
   [GT_COMPONENT_TYPES.Num]: 'n',
+  [GT_COMPONENT_TYPES.GtInternalNum]: 'n',
   [GT_COMPONENT_TYPES.Currency]: 'c',
+  [GT_COMPONENT_TYPES.GtInternalCurrency]: 'c',
   [GT_COMPONENT_TYPES.DateTime]: 'd',
+  [GT_COMPONENT_TYPES.GtInternalDateTime]: 'd',
   [GT_COMPONENT_TYPES.Static]: 's',
   [GT_COMPONENT_TYPES.Derive]: 's',
   [GT_COMPONENT_TYPES.Branch]: 'b',

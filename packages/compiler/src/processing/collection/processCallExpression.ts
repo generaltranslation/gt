@@ -271,6 +271,11 @@ function handleReactInvocation(
       dataFormat: 'JSX',
     });
 
+  // Debug: record hash → children mapping
+  if (state.debugManifest) {
+    state.debugManifest.set(hash, children!);
+  }
+
   // Track the component (increment counter, initialize aggregator, set hash)
   registerTranslationComponent(state, hash);
 }

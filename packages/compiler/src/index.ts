@@ -71,6 +71,11 @@ export interface GTUnpluginOptions extends PluginConfig {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
+    // Debug manifest: accumulates hash → jsxChildren across all files
+    const debugManifest = options._debugHashManifest
+      ? new Map<string, unknown>()
+      : undefined;
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
@@ -85,6 +90,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       transform(code: string, id: string) {
         // Initialize processing state
         const state = initializeState(options, id);
+        if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
           if (
@@ -149,6 +155,21 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Otherwise, log the error
           state.logger.logError(`Error processing ${id}: ${error}`);
           return null;
+        }
+      },
+      buildEnd() {
+        if (debugManifest && debugManifest.size > 0) {
+          const fs = require('fs');
+          const path = require('path');
+          const outPath = path.resolve(
+            process.cwd(),
+            '_gt_debug_hash_manifest.json'
+          );
+          const manifest = Object.fromEntries(debugManifest);
+          fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
+          console.log(
+            `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
+          );
         }
       },
     };
