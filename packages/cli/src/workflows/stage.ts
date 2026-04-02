@@ -1,4 +1,5 @@
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
@@ -6,6 +7,7 @@ import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
+import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
@@ -58,6 +60,18 @@ export async function runStageFilesWorkflow({
     if (options?.saveLocal) {
       await userEditDiffsStep.run(uploadedFiles);
       await userEditDiffsStep.wait();
+    }
+
+    // then run the tag step (non-fatal — tagging failure should not block translations)
+    if (settings.tag) {
+      try {
+        const userProvidedTag = !!options.tag;
+        const tagStep = new TagStep(gt, settings, userProvidedTag);
+        await tagStep.run(uploadedFiles);
+        await tagStep.wait();
+      } catch {
+        logger.warn('Failed to create translation tag. Continuing...');
+      }
     }
 
     // then run the setup step

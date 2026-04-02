@@ -11,6 +11,7 @@ interface TranslationMetadata {
   _type: 'translation.metadata';
   translations: {
     _key: string;
+    language: string;
     value: Reference;
   }[];
 }
@@ -89,9 +90,9 @@ async function resolveTranslatedReferences(
   const sourceLocale = pluginConfig.getSourceLocale();
 
   // Optimized GROQ query that directly returns only the needed translation pairs
-  const query = `*[_type == "translation.metadata" && count(translations[_key == $sourceLocale && value._ref in $refIds]) > 0] {
-    "originalRef": translations[_key == $sourceLocale][0].value._ref,
-    "translatedRef": translations[_key == $locale][0].value._ref
+  const query = `*[_type == "translation.metadata" && count(translations[language == $sourceLocale && value._ref in $refIds]) > 0] {
+    "originalRef": translations[language == $sourceLocale][0].value._ref,
+    "translatedRef": translations[language == $locale][0].value._ref
   }[defined(originalRef) && defined(translatedRef)]`;
 
   const translationPairs: { originalRef: string; translatedRef: string }[] =

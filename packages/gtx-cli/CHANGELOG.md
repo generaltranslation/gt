@@ -1,5 +1,35 @@
 # gtx-cli
 
+## 2.14.3
+
+### Patch Changes
+
+- Updated dependencies [[`55d7ccd`](https://github.com/generaltranslation/gt/commit/55d7ccd82683992f8d9a0cfa9d380dd95b24b85e)]:
+  - gt@2.14.3
+
+## 2.14.2
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt@2.14.2
+
+## 2.14.1
+
+### Patch Changes
+
+- Updated dependencies [[`faa90dc`](https://github.com/generaltranslation/gt/commit/faa90dca8f855712f0f99cd9c9644fb2cf69524f)]:
+  - gt@2.14.1
+
+## 2.14.0
+
+### Patch Changes
+
+- Updated dependencies [[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290), [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:
+  - gt@2.14.0
+
 ## 2.13.3
 
 ### Patch Changes

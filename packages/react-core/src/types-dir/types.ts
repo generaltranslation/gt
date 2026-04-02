@@ -102,7 +102,13 @@ export type VariableProps = {
   /** Whether the variable was automatically injected by the compiler */
   variableType: VariableType;
   variableValue: any;
-  variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+  variableOptions:
+    | Intl.NumberFormatOptions
+    | Intl.DateTimeFormatOptions
+    | (Intl.RelativeTimeFormatOptions & {
+        unit?: Intl.RelativeTimeFormatUnit;
+        baseDate?: Date;
+      });
   variableName: string;
   injectionType: InjectionType;
 };

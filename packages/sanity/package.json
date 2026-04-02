@@ -1,6 +1,6 @@
 {
   "name": "gt-sanity",
-  "version": "1.1.30",
+  "version": "2.0.1",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -54,14 +54,14 @@
     "watch": "pkg-utils watch --strict"
   },
   "dependencies": {
-    "@portabletext/block-tools": "^3.5.5",
+    "@portabletext/block-tools": "^5.1.1",
     "@portabletext/to-html": "^2.0.14",
     "@sanity/icons": "^3.7.4",
     "@sanity/incompatible-plugin": "^1.0.5",
-    "@sanity/mutator": "^3.98.1",
-    "@sanity/schema": "^3.98.1",
-    "@sanity/ui": "^2.16.4",
-    "@sanity/util": "^3.98.1",
+    "@sanity/mutator": "^5.18.0",
+    "@sanity/schema": "^5.18.0",
+    "@sanity/ui": "^3.1.14",
+    "@sanity/util": "^5.18.0",
     "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
@@ -69,8 +69,8 @@
   },
   "devDependencies": {
     "@portabletext/types": "^2.0.15",
-    "@sanity/pkg-utils": "^8.1.6",
-    "@sanity/plugin-kit": "^4.0.19",
+    "@sanity/pkg-utils": "^10.4.13",
+    "@sanity/plugin-kit": "^4.0.20",
     "@types/lodash.merge": "^4.6.9",
     "@types/react": "^19.2.7",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
@@ -81,12 +81,12 @@
     "prettier-plugin-packagejson": "^2.5.19",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sanity": "^4.6.1",
+    "sanity": "^5.18.0",
     "styled-components": "^6.1.19"
   },
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "sanity": ">=4.0.0"
+    "react": ">=19.2.0",
+    "sanity": ">=5.0.0"
   },
   "sanityPlugin": {
     "verifyPackage": {

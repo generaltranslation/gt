@@ -40,7 +40,8 @@ export async function patchI18nDoc(
     sourceDocumentId,
     cleanedSourceDocument,
     cleanedMerge,
-    pluginConfig.getIgnoreFields()
+    pluginConfig.getIgnoreFields(),
+    pluginConfig.getSkipFields()
   );
   const newDocument = await client
     .patch(i18nDocId, { set: appliedDocument })

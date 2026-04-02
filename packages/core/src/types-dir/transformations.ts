@@ -12,6 +12,7 @@ export type BaseTransformation =
   | 'variable-currency'
   | 'variable-datetime'
   | 'variable-number'
+  | 'variable-relative-time'
   | 'plural'
   | 'branch'
   | 'derive';
@@ -26,5 +27,6 @@ export type VariableTransformationSuffix =
   | 'variable'
   | 'number'
   | 'datetime'
-  | 'currency';
+  | 'currency'
+  | 'relative-time';
 export type InjectionType = 'automatic' | 'manual';

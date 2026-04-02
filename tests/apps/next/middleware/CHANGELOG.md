@@ -1,5 +1,19 @@
 # gt-next-middleware-e2e
 
+## 0.1.22
+
+### Patch Changes
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt-next@6.15.1
+
+## 0.1.21
+
+### Patch Changes
+
+- Updated dependencies [[`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:
+  - gt-next@6.15.0
+
 ## 0.1.20
 
 ### Patch Changes

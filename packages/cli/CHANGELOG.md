@@ -1,5 +1,49 @@
 # gtx-cli
 
+## 2.14.3
+
+### Patch Changes
+
+- [#1168](https://github.com/generaltranslation/gt/pull/1168) [`55d7ccd`](https://github.com/generaltranslation/gt/commit/55d7ccd82683992f8d9a0cfa9d380dd95b24b85e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Record re-merged files for postprocessing
+
+## 2.14.2
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt-remark@1.0.7
+  - generaltranslation@8.2.1
+  - @generaltranslation/python-extractor@0.2.5
+
+## 2.14.1
+
+### Patch Changes
+
+- [#1162](https://github.com/generaltranslation/gt/pull/1162) [`faa90dc`](https://github.com/generaltranslation/gt/commit/faa90dca8f855712f0f99cd9c9644fb2cf69524f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make `git` tagging command default behavior
+
+## 2.14.0
+
+### Minor Changes
+
+- [#1153](https://github.com/generaltranslation/gt/pull/1153) [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add `<RelativeTime>` component for localized relative time formatting
+  - New `<RelativeTime>` component with two usage modes:
+    - Auto-select unit from a Date: `<RelativeTime>{someDate}</RelativeTime>` → "2 hours ago"
+    - Explicit value + unit: `<RelativeTime value={-1} unit="day" />` → "yesterday"
+  - Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds → minutes → hours → days → weeks → months → years)
+  - Core: `formatRelativeTimeFromDate()` standalone function and `GT.formatRelativeTimeFromDate()` class method
+  - Week unit included in auto-selection thresholds (7-27 days)
+  - CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a variable component
+
+### Patch Changes
+
+- [#1160](https://github.com/generaltranslation/gt/pull/1160) [`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding translation tagging
+
+- Updated dependencies [[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290), [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:
+  - generaltranslation@8.2.0
+  - @generaltranslation/python-extractor@0.2.4
+
 ## 2.13.3
 
 ### Patch Changes

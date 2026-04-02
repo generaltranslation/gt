@@ -72,6 +72,8 @@ export type TranslateFlags = SharedFlags & {
   publish?: boolean;
   force?: boolean;
   forceDownload?: boolean;
+  tag?: string;
+  message?: string;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
@@ -241,6 +243,8 @@ export type Settings = {
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
   modelProvider?: string;
+  tag?: string;
+  tagMessage?: string;
   parsingOptions: ParsingConfigOptions;
   branchOptions: BranchOptions;
   // Optional shared static assets config
