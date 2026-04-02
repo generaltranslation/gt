@@ -42,6 +42,10 @@ import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
 import { MultiplicationNode, JsxTree, isElementNode } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
+import {
+  ensureTAndVarImported,
+  autoInsertJsxComponents,
+} from './autoInsertion.js';
 import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
 import { extractSourceCode } from '../extractSourceCode.js';
@@ -279,32 +283,11 @@ function buildJSXTree({
     // Convert from alias to original name
     const componentType = config.importAliases[typeName ?? ''];
 
-    if (
-      (componentType === TRANSLATION_COMPONENT ||
-        componentType === INTERNAL_TRANSLATION_COMPONENT) &&
-      insideT
-    ) {
-      // Add warning: Nested <T> components are allowed, but they are advised against
-      output.warnings.add(
-        warnNestedTComponent(
-          config.file,
-          `${element.loc?.start?.line}:${element.loc?.start?.column}`
-        )
-      );
-      if (componentType === INTERNAL_TRANSLATION_COMPONENT) {
-        output.errors.push(
-          warnNestedInternalTComponent(
-            config.file,
-            `${element.loc?.start?.line}:${element.loc?.start?.column}`
-          )
-        );
-      }
-    }
-
     // When enableAutoJsxInjection is on and we're inside a Derive context,
-    // any T component was auto-inserted by the injection pass. Since runtime
-    // removeInjectedT strips these, we unwrap transparently — process the T's
-    // children as if the T wasn't there.
+    // any auto-inserted T component will be stripped at runtime by
+    // removeInjectedT. Unwrap it transparently — process the T's children
+    // as if the T wasn't there. Check this BEFORE the nested-T warning
+    // so we don't emit spurious errors for expected auto-inserted nesting.
     if (
       componentType === INTERNAL_TRANSLATION_COMPONENT &&
       inDerive &&
@@ -336,6 +319,28 @@ function buildJSXTree({
         type: '',
         props: { children: childResults },
       };
+    }
+
+    if (
+      (componentType === TRANSLATION_COMPONENT ||
+        componentType === INTERNAL_TRANSLATION_COMPONENT) &&
+      insideT
+    ) {
+      // Add warning: Nested <T> components are allowed, but they are advised against
+      output.warnings.add(
+        warnNestedTComponent(
+          config.file,
+          `${element.loc?.start?.line}:${element.loc?.start?.column}`
+        )
+      );
+      if (componentType === INTERNAL_TRANSLATION_COMPONENT) {
+        output.errors.push(
+          warnNestedInternalTComponent(
+            config.file,
+            `${element.loc?.start?.line}:${element.loc?.start?.column}`
+          )
+        );
+      }
     }
 
     // If this JSXElement is one of the recognized variable components,
@@ -981,7 +986,23 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    const { importAliases } = getPathsAndAliases(ast, config.pkgs);
+    const pathsResult = getPathsAndAliases(ast, config.pkgs);
+    const importAliases = { ...pathsResult.importAliases };
+    // Merge translation component names into importAliases so
+    // autoInsertJsxComponents can recognize user T/Var and skip them
+    for (const {
+      localName,
+      originalName,
+    } of pathsResult.translationComponentPaths) {
+      importAliases[localName] = originalName;
+    }
+
+    // Auto-inject T/Var into the cross-file AST when enabled,
+    // so that Derive extraction sees the same structure as same-file
+    if (config.enableAutoJsxInjection) {
+      ensureTAndVarImported(ast, importAliases);
+      autoInsertJsxComponents(ast, importAliases);
+    }
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string> = new Map();
@@ -1014,6 +1035,7 @@ function processFunctionInFile({
               parsingOptions: config.parsingOptions,
               pkgs: config.pkgs,
               file: filePath,
+              enableAutoJsxInjection: config.enableAutoJsxInjection,
             },
             state: {
               ...state,
@@ -1040,6 +1062,7 @@ function processFunctionInFile({
               parsingOptions: config.parsingOptions,
               pkgs: config.pkgs,
               file: filePath,
+              enableAutoJsxInjection: config.enableAutoJsxInjection,
             },
             state: {
               ...state,
@@ -1093,6 +1116,7 @@ function processFunctionInFile({
               parsingOptions: config.parsingOptions,
               pkgs: config.pkgs,
               file: filePath,
+              enableAutoJsxInjection: config.enableAutoJsxInjection,
             },
             state: {
               ...state,
