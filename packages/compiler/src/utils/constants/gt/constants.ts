@@ -116,6 +116,19 @@ export enum GT_IMPORT_SOURCES {
 }
 
 /**
+ * Branch control props — not translatable content.
+ * `branch` is the selector key; `data-*` props are HTML attributes ignored at runtime.
+ * `data-*` is handled as a prefix check, not listed here.
+ */
+export const BRANCH_CONTROL_PROPS = new Set(['branch']);
+
+/**
+ * Plural control props — not translatable content.
+ * `n` is the count, `locales` is the locale hint.
+ */
+export const PLURAL_CONTROL_PROPS = new Set(['n', 'locales']);
+
+/**
  * Set of valid plural forms for Plural components
  */
 export const PLURAL_FORMS = new Set([

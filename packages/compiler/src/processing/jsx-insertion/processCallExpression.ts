@@ -1,7 +1,11 @@
 import { VisitNode, NodePath } from '@babel/traverse';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
-import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
+import {
+  GT_COMPONENT_TYPES,
+  BRANCH_CONTROL_PROPS,
+  PLURAL_CONTROL_PROPS,
+} from '../../utils/constants/gt/constants';
 import { OTHER_IDENTIFIERS_ENUM } from '../../utils/constants/other/constants';
 import { isReactJsxFunction } from '../../utils/constants/resolveIdentifier/isReactJsxFunction';
 import {
@@ -428,12 +432,38 @@ function processOpaqueComponentProps({
   const propsArg = args[1];
   if (!propsArg?.isObjectExpression()) return;
 
+  // Resolve component type to filter control props
+  const firstArgPath = args[0];
+  const gtName = firstArgPath?.isExpression()
+    ? resolveFirstArgGTName(firstArgPath)
+    : null;
+
   for (const propPath of propsArg.get('properties')) {
     if (!propPath.isObjectProperty()) continue;
+
+    // Determine prop name and skip control props
+    const key = propPath.node.key;
+    const propName = t.isIdentifier(key)
+      ? key.name
+      : t.isStringLiteral(key)
+        ? key.value
+        : null;
+    if (isControlProp(gtName, propName)) continue;
+
     const valuePath = propPath.get('value');
     if (!valuePath.isExpression()) continue;
 
     if (valuePath.isCallExpression() && isJsxCallPath(valuePath)) {
+      // Content prop with JSX value — recurse into children for Var-wrapping
+      if (insideAutoT) {
+        const childrenPropPath = getChildrenPropPath(valuePath);
+        if (childrenPropPath) {
+          const childrenPath = childrenPropPath.get('value');
+          if (childrenPath.isExpression()) {
+            processChildren({ childrenPath, insideAutoT: true, state });
+          }
+        }
+      }
       state.processedNodes.add(valuePath.node);
       walkAndMark({ exprPath: valuePath, state });
     } else if (insideAutoT && needsVarWrapping(valuePath)) {
@@ -447,6 +477,20 @@ function processOpaqueComponentProps({
       valuePath.replaceWith(wrapped);
     }
   }
+}
+
+function isControlProp(
+  gtName: string | null,
+  propName: string | null
+): boolean {
+  if (!propName) return false;
+  if (gtName === GT_COMPONENT_TYPES.Branch) {
+    return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
+  }
+  if (gtName === GT_COMPONENT_TYPES.Plural) {
+    return PLURAL_CONTROL_PROPS.has(propName);
+  }
+  return false;
 }
 
 function walkAndMark({

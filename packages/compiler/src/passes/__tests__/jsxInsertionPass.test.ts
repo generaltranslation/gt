@@ -861,4 +861,85 @@ describe('jsxInsertionPass', () => {
     const { gtTranslateCalls } = transform(code);
     expect(gtTranslateCalls).toHaveLength(0);
   });
+
+  // ===== Control props must NOT be Var-wrapped =====
+
+  it('does NOT Var-wrap Plural n prop (control prop, not translatable)', () => {
+    // BEFORE JSX:  <div><Plural n={count} one="item" other="items" /></div>
+    // AFTER JSX:   <div><_T><Plural n={count} one="item" other="items" /></_T></div>
+    // n is the selector — left as-is, never wrapped in Var
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Plural } from 'gt-react';
+      jsx("div", { children: jsx(Plural, { n: count, one: "item", other: "items" }) });
+    `;
+    const { gtTranslateCalls, gtVarCalls, code: output } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(0);
+    expect(output).toMatch(/n:\s*count/);
+  });
+
+  it('Var-wraps dynamic content inside Branch content prop JSX', () => {
+    // BEFORE JSX:  <div><Branch branch="mode" Ernest={<>Hello {userName}</>} /></div>
+    // AFTER JSX:   <div><_T><Branch branch="mode" Ernest={<>Hello <_Var>{userName}</_Var></>} /></_T></div>
+    // branch is the selector (static string here), Ernest is a content prop with dynamic content
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Fragment } from 'react';
+      import { Branch } from 'gt-react';
+      jsx("div", { children: jsx(Branch, {
+        branch: "mode",
+        Ernest: jsxs(Fragment, { children: ["Hello ", userName] })
+      }) });
+    `;
+    const { gtTranslateCalls, gtVarCalls, code: output } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtVarCalls).toHaveLength(1);
+    expect(output).toMatch(/branch:\s*"mode"/);
+  });
+
+  // ===== Branch prop value with dynamic content gets _Var =====
+
+  it('inserts _Var inside Branch prop value that has dynamic content alongside text', () => {
+    // BEFORE JSX:
+    //   <>
+    //     Hello, my good friend
+    //     <Branch branch={userName} Ernest={<>Branch with Var {userName}</>} />
+    //   </>
+    //
+    // AFTER JSX:
+    //   <>
+    //     <_T>
+    //       Hello, my good friend
+    //       <Branch branch={userName} Ernest={<>Branch with Var <_Var>{userName}</_Var></>} />
+    //     </_T>
+    //   </>
+    //
+    // Fragment has text "Hello, my good friend" → _T wraps at fragment level.
+    // Branch is opaque → T wraps from parent (the fragment).
+    // The `branch` prop is the selector — left as-is (not wrapped in Var).
+    // The `Ernest` prop VALUE has text + dynamic content → {userName} gets _Var.
+    //
+    // This should NOT error during compilation.
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Fragment } from 'react';
+      import { Branch } from 'gt-react';
+      jsxs(Fragment, { children: [
+        "Hello, my good friend",
+        jsx(Branch, {
+          branch: userName,
+          Ernest: jsxs(Fragment, { children: ["Branch with Var ", userName] })
+        })
+      ] });
+    `;
+    const { gtTranslateCalls, gtVarCalls, code: output } = transform(code);
+    // _T wraps the fragment content (text + Branch)
+    expect(gtTranslateCalls.length).toBeGreaterThanOrEqual(1);
+    // _Var wraps {userName} INSIDE the Ernest prop value, not the branch selector
+    expect(gtVarCalls.length).toBeGreaterThanOrEqual(1);
+    // The branch selector prop should NOT be Var-wrapped
+    // The output should still have `branch: userName` directly, not `branch: jsx(GtInternalVar, ...)`
+    expect(output).toMatch(/branch:\s*userName/);
+  });
 });

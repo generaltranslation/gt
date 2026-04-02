@@ -241,24 +241,31 @@ This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var
 <div><_T>Date: <DateTime>{date}</DateTime></_T></div>
 ```
 
-## Rule 8: Branch and Plural — \_T wraps from parent, static props untouched, dynamic props get \_Var
+## Rule 8: Branch and Plural — \_T wraps from parent, control props untouched, content props processed
 
 Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone.
 
-However, **dynamic expressions** in Branch/Plural props are still wrapped in \_Var — the same as they would be anywhere else. And because \_Var is auto-inserted (not user-written), any JSX inside those dynamic expressions remains eligible for \_T insertion.
+**Control props are never modified.** These are selector/configuration props, not translatable content:
+- Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
+- Plural: `n` (count), `locales` (locale hint)
 
-**Static prop values** (direct JSX like `summary={<p>Text</p>}`) are left untouched — no \_T inside.
+**Content props** (branch value keys like `Ernest`, `summary`, plural forms like `one`, `other`, and `children` as fallback) are processed:
 
-**Dynamic prop values** (ternaries, variables, function calls, etc.) get \_Var wrapped. JSX inside those \_Var wrappers still gets \_T.
+- **Static content prop values** (direct JSX like `summary={<p>Text</p>}`) are left untouched — no \_T inside.
+- **Dynamic non-JSX content prop values** (variables, function calls, etc.) get \_Var wrapped.
+- **JSX content prop values with dynamic children** (e.g., `Ernest={<>Text {name}</>}`) — the JSX itself is not \_T-wrapped, but dynamic expressions inside its children get \_Var wrapped.
+- **Dynamic content prop values containing JSX** (ternaries, logical expressions) get \_Var wrapped. JSX inside those \_Var wrappers still gets \_T.
 
 ```jsx
-// Branch as only child — _T wraps at parent
+// Branch as only child — _T wraps at parent, `branch` selector untouched
 <div><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></div>
 <div><_T><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></_T></div>
+// `branch` is a control prop → never Var-wrapped, even if dynamic
 
-// Plural as only child — _T wraps at parent
+// Plural as only child — _T wraps at parent, `n` and `locales` untouched
 <div><Plural n={count} one="item" other="items" /></div>
 <div><_T><Plural n={count} one="item" other="items" /></_T></div>
+// `n` is a control prop → never Var-wrapped, even though `count` is dynamic
 
 // Branch with static JSX in prop arguments — NO _T inside the props
 <div><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></div>
@@ -279,10 +286,16 @@ However, **dynamic expressions** in Branch/Plural props are still wrapped in \_V
 <div>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></div>
 <div><_T>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></_T></div>
 
-// Branch with dynamic expression in prop — dynamic value gets _Var
+// Branch with dynamic expression in content prop — dynamic value gets _Var
 <div><Branch branch="hello" hello={count} /></div>
 <div><_T><Branch branch="hello" hello={<_Var>{count}</_Var>} /></_T></div>
 // count is dynamic → _Var wraps it (Branch is inside _T region)
+// Note: `branch` selector stays as-is — it's a control prop
+
+// Branch with JSX content prop containing dynamic children — _Var inside JSX
+<div><Branch branch="mode" Ernest={<>Hello {userName}</>} /></div>
+<div><_T><Branch branch="mode" Ernest={<>Hello <_Var>{userName}</_Var></>} /></_T></div>
+// The Fragment itself is static JSX (no _T inside), but {userName} is dynamic → _Var
 
 // Branch with ternary containing JSX in prop — ternary gets _Var, JSX inside gets _T
 <div><Branch branch="mode" summary={condition ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>
