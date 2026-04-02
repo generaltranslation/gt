@@ -75,7 +75,7 @@ jobs:
         id: find-release-pr
         if: steps.changesets.outputs.published == 'true'
         run: |
-          pr_url=$(gh pr list --state merged --search "[ci] release" --limit 1 --json url --jq '.[0].url')
+          pr_url=$(gh pr list --state merged --search "[ci] release" --limit 1 --json url --jq '.[0].url // ""')
           echo "pr_url=$pr_url" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -91,7 +91,11 @@ jobs:
           packages=$(echo "$published" | jq -r '.[] | "• `\(.name)` → `\(.version)`"')
 
           # Compose the message
-          message="📦 *New packages published!*\n\n${packages}\n\n🔗 <${pr_url}|Release PR>"
+          if [ -n "$pr_url" ]; then
+            message=$(printf '📦 *New packages published!*\n\n%s\n\n🔗 <%s|Release PR>' "$packages" "$pr_url")
+          else
+            message=$(printf '📦 *New packages published!*\n\n%s' "$packages")
+          fi
           
           # Escape for JSON
           message_escaped=$(echo "$message" | jq -Rs .)
@@ -99,6 +103,7 @@ jobs:
 
       - name: Notify Slack of release
         if: steps.changesets.outputs.published == 'true'
+        continue-on-error: true
         uses: slackapi/slack-github-action@v2.1.1
         with:
           webhook: ${{ secrets.MOSS_PAGER_SLACK_WEBHOOK_URL }}
