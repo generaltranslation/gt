@@ -1,5 +1,12 @@
 # @generaltranslation/python-extractor
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - generaltranslation@8.2.1
+
 ## 0.2.4
 
 ### Patch Changes
