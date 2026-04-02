@@ -1,5 +1,15 @@
 # gt-node
 
+## 0.4.9
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt-i18n@0.7.9
+  - generaltranslation@8.2.1
+
 ## 0.4.8
 
 ### Patch Changes

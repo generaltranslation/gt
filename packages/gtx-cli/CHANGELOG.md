@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.2
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt@2.14.2
+
 ## 2.14.1
 
 ### Patch Changes

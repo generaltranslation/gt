@@ -1,5 +1,14 @@
 # @generaltranslation/gt-next-lint
 
+## 13.0.1
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt-next@6.15.1
+
 ## 13.0.0
 
 ### Patch Changes
