@@ -17,6 +17,7 @@ import {
   warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
   warnDataAttrOnBranch,
+  warnNestedInternalTComponent,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -25,6 +26,7 @@ import {
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
   TRANSLATION_COMPONENT,
+  INTERNAL_TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
 } from '../constants.js';
 import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
@@ -277,7 +279,11 @@ function buildJSXTree({
     // Convert from alias to original name
     const componentType = config.importAliases[typeName ?? ''];
 
-    if (componentType === TRANSLATION_COMPONENT && insideT) {
+    if (
+      (componentType === TRANSLATION_COMPONENT ||
+        componentType === INTERNAL_TRANSLATION_COMPONENT) &&
+      insideT
+    ) {
       // Add warning: Nested <T> components are allowed, but they are advised against
       output.warnings.add(
         warnNestedTComponent(
@@ -285,6 +291,14 @@ function buildJSXTree({
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
+      if (componentType === INTERNAL_TRANSLATION_COMPONENT) {
+        output.errors.push(
+          warnNestedInternalTComponent(
+            config.file,
+            `${element.loc?.start?.line}:${element.loc?.start?.column}`
+          )
+        );
+      }
     }
 
     // When enableAutoJsxInjection is on and we're inside a Derive context,
@@ -292,7 +306,7 @@ function buildJSXTree({
     // removeInjectedT strips these, we unwrap transparently — process the T's
     // children as if the T wasn't there.
     if (
-      componentType === TRANSLATION_COMPONENT &&
+      componentType === INTERNAL_TRANSLATION_COMPONENT &&
       inDerive &&
       config.enableAutoJsxInjection
     ) {
@@ -644,7 +658,11 @@ function parseJSXElement({
   // Only proceed if it's <T> ...
   // TODO: i don't think this condition is needed anymore
   if (
-    !(name.type === 'JSXIdentifier' && originalName === TRANSLATION_COMPONENT)
+    !(
+      name.type === 'JSXIdentifier' &&
+      (originalName === TRANSLATION_COMPONENT ||
+        originalName === INTERNAL_TRANSLATION_COMPONENT)
+    )
   ) {
     return;
   }
@@ -735,7 +753,21 @@ function parseJSXElement({
   // TODO: do this in parallel
   const minifiedTress: JsxChildren[] = [];
   for (const multipliedTree of multipliedTrees) {
-    const minifiedTree = addGTIdentifierToSyntaxTree(multipliedTree);
+    // Build set of confirmed GT variable names from importAliases.
+    // Only pass when enableAutoJsxInjection is on, to avoid breaking
+    // existing behavior where importAliases may be incomplete.
+    const gtVariableNames = config.enableAutoJsxInjection
+      ? new Set(
+          Object.values(config.importAliases).filter((name) =>
+            VARIABLE_COMPONENTS.includes(name)
+          )
+        )
+      : undefined;
+    const minifiedTree = addGTIdentifierToSyntaxTree(
+      multipliedTree,
+      0,
+      gtVariableNames
+    );
     minifiedTress.push(
       Array.isArray(minifiedTree) && minifiedTree.length === 1
         ? minifiedTree[0]

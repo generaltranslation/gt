@@ -114,13 +114,13 @@ export async function createInlineUpdates(
         });
       }
 
-      // PASS 2: Auto-inject T/Var and extract (flag-gated)
+      // PASS 2: Auto-inject GtInternalTranslateJsx and GtInternalVar and extract (flag-gated)
       if (parsingFlags.enableAutoJsxInjection) {
         const pass1Paths = new Set(
           translationComponentPaths.map((p) => p.path)
         );
 
-        // Ensure T and Var are imported in the AST
+        // Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST
         ensureTAndVarImported(ast, importAliases);
 
         // Insert T/Var into the AST

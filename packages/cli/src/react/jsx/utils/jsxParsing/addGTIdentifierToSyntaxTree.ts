@@ -89,7 +89,8 @@ function constructGTProp(
  */
 export default function addGTIdentifierToSyntaxTree(
   tree: MultipliedTreeNode,
-  startingIndex = 0
+  startingIndex = 0,
+  gtVariableNames?: Set<string>
 ): JsxChildren {
   // Edge case: boolean or null, just return the tree
   if (typeof tree === 'boolean' || tree === null) {
@@ -116,8 +117,11 @@ export default function addGTIdentifierToSyntaxTree(
         type = '';
       }
 
-      // Variables
-      if (Object.keys(defaultVariableNames).includes(type)) {
+      // Variables — only treat as GT variable if confirmed as GT import
+      const isGTVariable = gtVariableNames
+        ? gtVariableNames.has(type)
+        : Object.keys(defaultVariableNames).includes(type);
+      if (isGTVariable) {
         const variableType = minifyVariableType(
           type as keyof typeof defaultVariableNames
         );

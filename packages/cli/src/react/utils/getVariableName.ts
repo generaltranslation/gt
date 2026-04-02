@@ -5,6 +5,7 @@ import { VariableType } from 'generaltranslation/types';
  */
 export const defaultVariableNames = {
   Var: 'value',
+  GtInternalVar: 'value',
   Num: 'n',
   DateTime: 'date',
   Currency: 'cost',
@@ -12,6 +13,7 @@ export const defaultVariableNames = {
 
 const minifyVariableTypeMap = {
   Var: 'v',
+  GtInternalVar: 'v',
   Num: 'n',
   DateTime: 'd',
   Currency: 'c',

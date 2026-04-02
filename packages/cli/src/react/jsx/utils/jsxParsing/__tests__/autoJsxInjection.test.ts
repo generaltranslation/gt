@@ -25,6 +25,10 @@ import {
   ensureTAndVarImported,
   autoInsertJsxComponents,
 } from '../autoInsertion.js';
+import {
+  INTERNAL_TRANSLATION_COMPONENT,
+  INTERNAL_VAR_COMPONENT,
+} from '../../constants.js';
 import generateModule from '@babel/generator';
 const generate =
   (generateModule as { default?: typeof generateModule }).default ||
@@ -165,37 +169,34 @@ describe('auto JSX injection simulation', () => {
     }
     const pass1Count = localUpdates.length;
 
-    // --- PASS 2: Auto-inject and extract ---
+    // --- PASS 2: Auto-inject using GtInternalTranslateJsx/GtInternalVar ---
+    // Distinct from user T/Var so there's no ambiguity
     ensureTAndVarImported(ast, importAliases);
     autoInsertJsxComponents(ast, importAliases);
 
     // Re-parse the modified AST to get fresh scope/bindings
-    // This avoids the hub/scope corruption from raw node insertion
     const modifiedCode = generate(ast).code;
     const freshAst = parse(modifiedCode, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
 
-    // Find T references in the fresh AST
-    const tLocalName =
-      Object.entries(importAliases).find(([, v]) => v === 'T')?.[0] ?? 'T';
+    // Find GtInternalTranslateJsx references in the fresh AST
+    const internalTName = INTERNAL_TRANSLATION_COMPONENT;
 
     traverse(freshAst, {
       Program(programPath) {
-        const tBinding = programPath.scope.getBinding(tLocalName);
+        const tBinding = programPath.scope.getBinding(internalTName);
         if (!tBinding) return;
 
-        // Augment referencePaths with any T JSX usages not captured by scope.
-        // scope.crawl() misses JSX identifiers nested inside expressions
-        // (e.g., <T> inside a ternary branch within a <Var>).
+        // Augment referencePaths with any JSX usages not captured by scope
         const existingRefs = new Set(
           tBinding.referencePaths.map((r) => r.node)
         );
         programPath.traverse({
           JSXIdentifier(jsxIdPath: NodePath<t.JSXIdentifier>) {
             if (
-              jsxIdPath.node.name === tLocalName &&
+              jsxIdPath.node.name === internalTName &&
               jsxIdPath.parentPath?.isJSXOpeningElement() &&
               !existingRefs.has(jsxIdPath.node)
             ) {
@@ -205,12 +206,16 @@ describe('auto JSX injection simulation', () => {
         });
 
         parseTranslationComponent({
-          originalName: 'T',
-          localName: tLocalName,
+          originalName: internalTName,
+          localName: internalTName,
           path: tBinding.path,
           updates: localUpdates,
           config: {
-            importAliases,
+            importAliases: {
+              ...importAliases,
+              [INTERNAL_TRANSLATION_COMPONENT]: INTERNAL_TRANSLATION_COMPONENT,
+              [INTERNAL_VAR_COMPONENT]: INTERNAL_VAR_COMPONENT,
+            },
             parsingOptions,
             pkgs,
             file: '/test/page.tsx',
@@ -950,6 +955,65 @@ describe('auto JSX injection simulation', () => {
         'v',
         'v'
       );
+    });
+  });
+
+  // ================================================================ //
+  //  14. NON-GT COMPONENTS NAMED T/Var SHOULD NOT BE TREATED AS GT
+  // ================================================================ //
+
+  describe('non-GT components sharing GT names', () => {
+    it('Var not imported from GT is treated as a regular element, not a variable', () => {
+      // SOURCE — T and Var are NOT imported from any GT library:
+      //   import { T, Var } from 'some-other-library';
+      //   <T>Hello, <div>World</div> <Var>{userName}</Var>!</T>
+      //
+      // Since T is not from GT, Pass 1 finds no user T components.
+      // Auto-injection (Pass 2) inserts GtInternalTranslateJsx around text.
+      // The <T> and <Var> in the source are just regular components.
+      //
+      // After injection the structure becomes something like:
+      //   <T><GtInternalTranslateJsx>Hello, <div>World</div>
+      //     <Var><GtInternalVar>{userName}</GtInternalVar></Var>
+      //   !</GtInternalTranslateJsx></T>
+      //
+      // When extracting from GtInternalTranslateJsx, <Var> should appear as
+      // a regular element { t: "Var", i: ..., c: ... } because it's NOT
+      // imported from GT. It should NOT be treated as a variable slot { v: "v" }.
+      //
+      // EXPECTED: The Var in the source appears as a regular element in the
+      // extraction, not as a minified variable.
+      const code = `
+        import { T, Var } from 'some-other-library';
+        export default function Page() {
+          const userName = "Ernest";
+          return <T>Hello, <div>World</div> <Var>{userName}</Var>!</T>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.updates.length).toBeGreaterThan(0);
+
+      // Find the update that contains "Hello, " — this is from auto-injection
+      const mainUpdate = result.updates.find((u) => {
+        const s = JSON.stringify(u.source);
+        return s.includes('Hello, ');
+      });
+      expect(mainUpdate).toBeDefined();
+
+      const source = mainUpdate!.source as JsxChild[];
+      expect(Array.isArray(source)).toBe(true);
+
+      // Var should appear as a regular element { t: "Var" } — NOT as { v: "v" }
+      const varSlotWithoutTag = source.find(
+        (child) =>
+          typeof child === 'object' &&
+          child !== null &&
+          'v' in child &&
+          (child as Record<string, unknown>).v === 'v' &&
+          !('t' in child)
+      );
+      // This should be undefined — Var is not a GT variable, it's a regular element
+      expect(varSlotWithoutTag).toBeUndefined();
     });
   });
 });

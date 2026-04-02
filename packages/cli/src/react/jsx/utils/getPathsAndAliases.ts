@@ -9,6 +9,7 @@ import {
   MSG_REGISTRATION_FUNCTION,
   T_REGISTRATION_FUNCTION,
   TRANSLATION_COMPONENT,
+  INTERNAL_TRANSLATION_COMPONENT,
   T_GLOBAL_REGISTRATION_FUNCTION,
   T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from '../../jsx/utils/constants.js';
@@ -92,7 +93,10 @@ export function getPathsAndAliases(
               path,
               originalName: name.original,
             });
-          } else if (name.original === TRANSLATION_COMPONENT) {
+          } else if (
+            name.original === TRANSLATION_COMPONENT ||
+            name.original === INTERNAL_TRANSLATION_COMPONENT
+          ) {
             translationComponentPaths.push({
               localName: name.local,
               path,
@@ -137,7 +141,10 @@ export function getPathsAndAliases(
                   path: parentPath,
                   originalName: name.original,
                 });
-              } else if (name.original === TRANSLATION_COMPONENT) {
+              } else if (
+                name.original === TRANSLATION_COMPONENT ||
+                name.original === INTERNAL_TRANSLATION_COMPONENT
+              ) {
                 translationComponentPaths.push({
                   localName: name.local,
                   path: parentPath,

@@ -15,28 +15,15 @@ const traverse: typeof traverseModule.default =
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   TRANSLATION_COMPONENT,
+  INTERNAL_TRANSLATION_COMPONENT,
+  INTERNAL_VAR_COMPONENT,
   VARIABLE_COMPONENTS,
   BRANCH_COMPONENT,
   PLURAL_COMPONENT,
-  VAR_COMPONENT,
   DEFAULT_GT_IMPORT_SOURCE,
   DERIVE_COMPONENT,
   STATIC_COMPONENT,
 } from '../constants.js';
-import { Libraries } from '../../../../types/libraries.js';
-
-/**
- * GT library import sources that we recognize when checking for existing imports.
- */
-const GT_IMPORT_SOURCES = [
-  Libraries.GT_NEXT,
-  Libraries.GT_REACT,
-  DEFAULT_GT_IMPORT_SOURCE,
-  'gt-next/client',
-  'gt-next/server',
-  'gt-react/client',
-  'gt-i18n',
-];
 
 /** Tracks which AST nodes were auto-inserted by this module */
 const autoInsertedNodes = new WeakSet<t.Node>();
@@ -49,8 +36,9 @@ export function isAutoInserted(node: t.Node): boolean {
 // ===== Public API ===== //
 
 /**
- * Ensure T and Var are imported in the AST. If not already imported from
- * a GT source, adds: import { T, Var } from 'gt-react/browser';
+ * Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST.
+ * Always adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+ * These are distinct from user T/Var so there's no ambiguity.
  *
  * Updates importAliases in-place.
  */
@@ -58,52 +46,35 @@ export function ensureTAndVarImported(
   ast: t.File,
   importAliases: Record<string, string>
 ): void {
-  // Check both importAliases AND the AST's import declarations for T/Var.
-  // getPathsAndAliases puts T into translationComponentPaths (not importAliases),
-  // so we also scan the AST directly.
-  let hasT = Object.values(importAliases).includes(TRANSLATION_COMPONENT);
-  let hasVar = Object.values(importAliases).includes(VAR_COMPONENT);
+  // Check if internal components are already imported
+  const hasInternalT = Object.values(importAliases).includes(
+    INTERNAL_TRANSLATION_COMPONENT
+  );
+  const hasInternalVar = Object.values(importAliases).includes(
+    INTERNAL_VAR_COMPONENT
+  );
 
-  // Scan existing imports for T and Var from GT sources
-  const gtSources = GT_IMPORT_SOURCES;
-
-  for (const node of ast.program.body) {
-    if (!t.isImportDeclaration(node)) continue;
-    if (!gtSources.some((src) => node.source.value.startsWith(src))) continue;
-    for (const spec of node.specifiers) {
-      if (!t.isImportSpecifier(spec) || !t.isIdentifier(spec.imported))
-        continue;
-      if (spec.imported.name === TRANSLATION_COMPONENT) {
-        hasT = true;
-        importAliases[spec.local.name] = TRANSLATION_COMPONENT;
-      }
-      if (spec.imported.name === VAR_COMPONENT) {
-        hasVar = true;
-        importAliases[spec.local.name] = VAR_COMPONENT;
-      }
-    }
-  }
-
-  if (hasT && hasVar) return;
+  if (hasInternalT && hasInternalVar) return;
 
   const specifiers: t.ImportSpecifier[] = [];
-  if (!hasT) {
+  if (!hasInternalT) {
     specifiers.push(
       t.importSpecifier(
-        t.identifier(TRANSLATION_COMPONENT),
-        t.identifier(TRANSLATION_COMPONENT)
+        t.identifier(INTERNAL_TRANSLATION_COMPONENT),
+        t.identifier(INTERNAL_TRANSLATION_COMPONENT)
       )
     );
-    importAliases[TRANSLATION_COMPONENT] = TRANSLATION_COMPONENT;
+    importAliases[INTERNAL_TRANSLATION_COMPONENT] =
+      INTERNAL_TRANSLATION_COMPONENT;
   }
-  if (!hasVar) {
+  if (!hasInternalVar) {
     specifiers.push(
       t.importSpecifier(
-        t.identifier(VAR_COMPONENT),
-        t.identifier(VAR_COMPONENT)
+        t.identifier(INTERNAL_VAR_COMPONENT),
+        t.identifier(INTERNAL_VAR_COMPONENT)
       )
     );
-    importAliases[VAR_COMPONENT] = VAR_COMPONENT;
+    importAliases[INTERNAL_VAR_COMPONENT] = INTERNAL_VAR_COMPONENT;
   }
 
   const importDecl = t.importDeclaration(
@@ -111,7 +82,6 @@ export function ensureTAndVarImported(
     t.stringLiteral(DEFAULT_GT_IMPORT_SOURCE)
   );
 
-  // Insert at top of file
   traverse(ast, {
     Program(path) {
       path.unshiftContainer('body', importDecl);
@@ -121,7 +91,7 @@ export function ensureTAndVarImported(
 }
 
 /**
- * Traverse the AST and insert <T> and <Var> JSX elements following
+ * Traverse the AST and insert GtInternalTranslateJsx and GtInternalVar JSX elements following
  * the insertion rules. Uses deliberate children traversal.
  *
  * Every inserted node gets node._autoInserted = true.
@@ -131,8 +101,11 @@ export function autoInsertJsxComponents(
   importAliases: Record<string, string>
 ): void {
   const processedNodes = new WeakSet<t.Node>();
-  const tLocalName = getLocalName(importAliases, TRANSLATION_COMPONENT);
-  const varLocalName = getLocalName(importAliases, VAR_COMPONENT);
+  const tLocalName = getLocalName(
+    importAliases,
+    INTERNAL_TRANSLATION_COMPONENT
+  );
+  const varLocalName = getLocalName(importAliases, INTERNAL_VAR_COMPONENT);
 
   traverse(ast, {
     JSXElement(path) {

@@ -21,6 +21,8 @@ export const BRANCH_COMPONENT = 'Branch';
 export const PLURAL_COMPONENT = 'Plural';
 export const VAR_COMPONENT = 'Var';
 export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react/browser';
+export const INTERNAL_TRANSLATION_COMPONENT = 'GtInternalTranslateJsx';
+export const INTERNAL_VAR_COMPONENT = 'GtInternalVar';
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [
@@ -42,6 +44,8 @@ export const GT_TRANSLATION_FUNCS = [
   'Num',
   BRANCH_COMPONENT,
   'Plural',
+  INTERNAL_TRANSLATION_COMPONENT,
+  INTERNAL_VAR_COMPONENT,
 ];
 // GT String translation functions
 export const STRING_REGISTRATION_FUNCS = [
@@ -63,6 +67,7 @@ export const VARIABLE_COMPONENTS = [
   'Num',
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
+  INTERNAL_VAR_COMPONENT,
 ];
 
 export const GT_ATTRIBUTES_WITH_SUGAR = [
