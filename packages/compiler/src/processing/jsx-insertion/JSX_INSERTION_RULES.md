@@ -13,9 +13,9 @@ This document is the single source of truth for the insertion rules. Both the co
 
 ---
 
-## Rule 1: Insert _T at the highest level that directly contains text
+## Rule 1: Insert \_T at the highest level that directly contains translatable text
 
-_T wraps the children of the **first ancestor element that has non-whitespace text as a direct child**. It hugs the text as closely as possible while capturing the full translation unit.
+\_T wraps the children of the **first ancestor element that has translatable string content as a direct child**. "Translatable text" means `StringLiteral` or static `TemplateLiteral` (no interpolation) with non-whitespace content. Numeric literals (`{42}`), booleans, `null`, `undefined`, etc. are NOT translatable text — they are data, not content a translator would touch. They do not trigger \_T insertion on their own.
 
 ```jsx
 // Text is a direct child of <div>
@@ -116,41 +116,45 @@ The React JSX transform (Babel/SWC) preserves expressions exactly as written. It
 // Note: a + "hello" is NOT precomputed — the BinaryExpression is preserved as-is
 ```
 
-### Expressions that do NOT need _Var (static/parseable):
+### Expressions that do NOT need \_Var (static/parseable):
+
+These are valid children inside a \_T region and do not get wrapped in \_Var. However, they do NOT trigger \_T insertion on their own — only string content does (see Rule 5).
 
 ```jsx
-// String literals
+// String literals — trigger _T AND are valid children
 <div>Hello World</div>
 <div><_T>Hello World</_T></div>
 
-// Numeric literals
-<span>{42}</span>
-<span><_T>{42}</_T></span>
-
-// Static template literals (no interpolation)
+// Static template literals (no interpolation) — trigger _T AND are valid children
 <div>{`Hello`}</div>
 <div><_T>{`Hello`}</_T></div>
 
-// Boolean literals, null — these render nothing in React
+// Numeric literals — valid children but do NOT trigger _T on their own
+<div>Price: {42}</div>          // "Price: " triggers _T, 42 is valid inside it
+<div><_T>Price: {42}</_T></div>
+<div>{42}</div>                 // No text → no _T → unchanged
+<div>{42}</div>
+
+// Boolean literals, null — valid children, do NOT trigger _T
 <div>Text {true} {null}</div>
 <div><_T>Text {true} {null}</_T></div>
 
-// Negative numbers
+// Negative numbers — valid children, do NOT trigger _T on their own
 <div>Temperature: {-5}</div>
 <div><_T>Temperature: {-5}</_T></div>
 
-// Special identifiers: undefined, NaN, Infinity
-<div>Value: {undefined}</div>
+// Special identifiers: undefined, NaN, Infinity — valid children, do NOT trigger _T
+<div>Value: {undefined}</div>   // no _T — "Value: " wait, that IS text
 <div><_T>Value: {undefined}</_T></div>
 
-// Nested JSX elements — they are valid translation children, not variables
+// Nested JSX elements — valid translation children, not variables
 <div>Hello <b>World</b></div>
 <div><_T>Hello <b>World</b></_T></div>
 ```
 
-## Rule 5: No _T when there is no meaningful text
+## Rule 5: No \_T when there is no translatable string content
 
-If an element's children contain no non-whitespace text and no opaque GT components, no _T is inserted.
+If an element's children contain no non-whitespace string content (`StringLiteral` or static `TemplateLiteral`) and no opaque GT components, no \_T is inserted. Numeric literals, booleans, null, and other non-string values do NOT count as translatable content.
 
 ```jsx
 // No children
@@ -165,9 +169,17 @@ If an element's children contain no non-whitespace text and no opaque GT compone
 <div>{firstName} {lastName}</div>
 <div>{firstName} {lastName}</div>  // unchanged — whitespace alone is not translatable
 
+// Only numeric content — not translatable
+<div>{42}</div>
+<div>{42}</div>  // unchanged — numbers are data, not text
+
 // Only nested elements, no direct text
 <div><span><img /></span></div>
 <div><span><img /></span></div>  // unchanged
+
+// Only boolean/null — not translatable
+<div>{true} {null}</div>
+<div>{true} {null}</div>  // unchanged
 ```
 
 ## Rule 6: User-written T — completely hands off
@@ -265,9 +277,9 @@ However, **dynamic expressions** in Branch/Plural props are still wrapped in \_V
 // This works because _Var is auto-inserted, so JSX inside it is still fair game.
 ```
 
-## Rule 9: Derive and Static — fully opaque, \_T wraps from parent
+## Rule 9: Derive and Static — same treatment as Branch/Plural
 
-Same as Branch/Plural. Derive and Static are fully opaque — the pass does not enter their children or props. \_T wraps them from the parent level.
+Same as Branch/Plural. \_T wraps from the parent level. Static JSX props are left alone; dynamic props get \_Var wrapped. JSX inside auto-inserted \_Var is still eligible for \_T.
 
 ```jsx
 // Derive as only child
@@ -277,13 +289,17 @@ Same as Branch/Plural. Derive and Static are fully opaque — the pass does not 
 // Static as only child
 <div><Static>{getLabel()}</Static></div>
 <div><_T><Static>{getLabel()}</Static></_T></div>
+
+// Derive with dynamic prop — gets _Var
+<div><Derive context={someVar}>{getName()}</Derive></div>
+<div><_T><Derive context={<_Var>{someVar}</_Var>}>{getName()}</Derive></_T></div>
 ```
 
 ## Rule 10: Non-children props are independent (except Branch/Plural/Derive/Static)
 
 For **regular components**, JSX in non-`children` props (e.g. `header`, `icon`, `footer`) is an independent subtree. The pass processes it separately — the parent's \_T state does not carry over. This is the default behavior for any component that is not a GT opaque component.
 
-**Exception:** Branch, Plural, Derive, and Static are fully opaque (see Rules 8-9). Their prop arguments are NOT processed independently — they are skipped entirely.
+**Exception:** Branch, Plural, Derive, and Static (see Rules 8-9). Their props are not processed independently as separate subtrees. Instead, static JSX props are left alone and dynamic props get \_Var wrapped within the parent's \_T context.
 
 ```jsx
 // header prop has its own JSX — processed independently
@@ -326,6 +342,61 @@ When _T claims a subtree and a nested element contains dynamic content, the _Var
 // Parent has text, child has mix of text and dynamic
 <div>Welcome <span>to {city}</span>!</div>
 <div><_T>Welcome <span>to <_Var>{city}</_Var></span>!</_T></div>
+```
+
+## Rule 13: Fragments are treated like regular elements
+
+React fragments (`<>...</>`) compile to `jsx(Fragment, { children: ... })`. The pass treats them the same as any other element — if their children contain translatable text, \_T is inserted inside the fragment.
+
+```jsx
+// Fragment with text — _T inside fragment
+<>Hello World</>
+<><_T>Hello World</_T></>
+
+// Fragment with no text — unchanged
+<><div /><span /></>
+<><div /><span /></>  // unchanged
+
+// Fragment with mixed content
+<>Welcome {name}!</>
+<><_T>Welcome <_Var>{name}</_Var>!</_T></>
+```
+
+## Rule 14: Conditional rendering and iterators are dynamic expressions
+
+Ternaries (`? :`), logical expressions (`&&`, `||`), and function calls like `.map()` are dynamic expressions. They get \_Var wrapped if inside a \_T region. JSX inside them (e.g., inside the branches of a ternary or the callback of a map) is still eligible for independent \_T insertion by the Babel visitor since those JSX calls are not marked as processed.
+
+```jsx
+// Ternary — the whole expression is dynamic → _Var
+// JSX inside each branch gets its own _T independently
+<div>Status: {isActive ? <span>Active</span> : <span>Inactive</span>}</div>
+<div><_T>Status: <_Var>{isActive ? <span><_T>Active</_T></span> : <span><_T>Inactive</_T></span>}</_Var></_T></div>
+
+// Logical AND — dynamic expression → _Var
+<div>Hello {showName && <b>{name}</b>}</div>
+<div><_T>Hello <_Var>{showName && <b><_Var>{name}</_Var></b>}</_Var></_T></div>
+
+// .map() — the map call is a single dynamic expression → _Var
+<ul>Items: {items.map(i => <li>{i.name}</li>)}</ul>
+<ul><_T>Items: <_Var>{items.map(i => <li><_Var>{i.name}</_Var></li>)}</_Var></_T></ul>
+
+// Ternary with no surrounding text — no _T at this level
+<div>{show ? <p>Yes</p> : <p>No</p>}</div>
+<div>{show ? <p><_T>Yes</_T></p> : <p><_T>No</_T></p>}</div>
+// No _T at div (no text), but each branch's <p> gets _T independently
+```
+
+## Rule 15: String-only attributes are not touched
+
+The pass only operates on JSX children, not on string-valued props/attributes. Props like `placeholder`, `alt`, `title`, `aria-label`, etc. are left as-is even if they contain translatable text.
+
+```jsx
+// String attributes — unchanged
+<input placeholder="Search here" />
+<input placeholder="Search here" />  // unchanged
+
+<img alt="Company logo" />
+<img alt="Company logo" />  // unchanged
 ```
 
 ---
@@ -400,16 +471,20 @@ The CLI extraction tool must be aware that:
 
 ## Summary table
 
-| Scenario | _T inserted? | _Var inserted? | Where? |
+| Scenario | \_T inserted? | \_Var inserted? | Where? |
 |----------|-------------|----------------|--------|
 | `<div>Hello</div>` | Yes | No | Inside div |
-| `<div>{name}</div>` | No | No | — |
+| `<div>{name}</div>` | No | No | — (no text) |
+| `<div>{42}</div>` | No | No | — (number is not text) |
 | `<div>Hello {name}</div>` | Yes | Yes (name) | Inside div |
 | `<div><span>Hi</span></div>` | Yes | No | Inside span |
 | `<div>Hi <b>W</b></div>` | Yes | No | Inside div |
-| `<div>{a} {b}</div>` | No | No | — |
-| `<T>Hello</T>` | No | No | — (hands off) |
+| `<div>{a} {b}</div>` | No | No | — (whitespace only) |
+| `<>Hello</>` | Yes | No | Inside fragment |
+| `<T>Hello</T>` | No | No | — (user T, hands off) |
 | `<div><Var>{x}</Var></div>` | No | No | — (no text) |
 | `<div>Hi <Var>{x}</Var></div>` | Yes | No | Inside div (user Var untouched) |
 | `<div><Branch ...>F</Branch></div>` | Yes | No | Inside div (wraps Branch) |
 | `<div><Derive>{x}</Derive></div>` | Yes | No | Inside div (wraps Derive) |
+| `<div>Hi {x ? <a/> : <b/>}</div>` | Yes | Yes (ternary) | Inside div |
+| `<input placeholder="Hi" />` | No | No | — (attributes untouched) |
