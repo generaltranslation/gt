@@ -92,9 +92,9 @@ jobs:
 
           # Compose the message
           if [ -n "$pr_url" ]; then
-            message=$(printf '📦 *New packages published!*\n\n%s\n\n🔗 <%s|Release PR>' "$packages" "$pr_url")
+            message=$(printf '📦 *New packages published!*\n\n%s\n\n🔗 <%s|Release PR>\n\n<@U0AF0LK9ZDY>' "$packages" "$pr_url")
           else
-            message=$(printf '📦 *New packages published!*\n\n%s' "$packages")
+            message=$(printf '📦 *New packages published!*\n\n%s\n\n<@U0AF0LK9ZDY>' "$packages")
           fi
           
           # Escape for JSON
