@@ -248,21 +248,14 @@ export default function renderTranslatedChildren({
 
       // Render variable
       if (isVariableElementProps(source.props)) {
-        const { variableValue, variableOptions, variableType } =
+        const { variableValue, variableOptions, variableType, injectionType } =
           getVariableProps(source.props);
-        const generaltranslation = getGTTag(source);
-        if (!generaltranslation) {
-          console.warn(
-            'DEBUG: Variable found but no gt tag found for variable'
-            // JSON.stringify(source, null, 2)
-          );
-        }
         return renderVariable({
           variableType,
           variableValue,
           variableOptions,
           locales,
-          injectionType: generaltranslation?.injectionType || 'manual',
+          injectionType,
         });
       }
     }
