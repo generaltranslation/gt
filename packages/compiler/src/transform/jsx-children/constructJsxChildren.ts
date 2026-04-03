@@ -286,10 +286,12 @@ function constructJsxElement(
   }
 
   // Construct JsxChildren
+  // For branching components (Branch/Plural), use id.copy() so children and
+  // branch props start counting from the same base independently.
   const jsxChildrenValidation = constructJsxChildrenForJsxElement(
     childrenValidation.value,
     state,
-    id
+    isBranchComponent(canonicalName ?? '') ? id.copy() : id
   );
   errors.push(...jsxChildrenValidation.errors);
   if (jsxChildrenValidation.errors.length > 0) {

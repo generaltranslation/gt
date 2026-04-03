@@ -269,4 +269,107 @@ describe('JSX insertion → collection E2E (no soft locks)', () => {
     expect(deriveJson).not.toContain('"v"');
     expect(deriveEl).toHaveProperty('t');
   });
+
+  it('Plural branch prop indices branch independently from children indices', () => {
+    // Branch/Plural prop values (like `one`) and children are separate branches.
+    // Their indices should start from the same base — NOT share a sequential counter.
+    //
+    // SOURCE: <Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>
+    //
+    // EXPECTED jsxChildren:
+    //   {
+    //     "t": "Plural", "i": 1,
+    //     "d": { "b": { "one": { "t": "C2", "i": 2, "c": { "t": "strong", "i": 3, "c": "one" } } }, "t": "p" },
+    //     "c": { "t": "C2", "i": 2, "c": "other" }
+    //   }
+    //
+    // Note: both `one` prop and `children` start at i:2 — indices branch independently.
+    // BUG: compiler uses a shared sequential counter, producing i:3 for `one` prop instead of i:2.
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Fragment } from 'react';
+      import { Plural } from 'gt-react';
+      jsx(Plural, {
+        n: n,
+        one: jsx(Fragment, { children: jsx("strong", { children: "one" }) }),
+        children: jsx(Fragment, { children: "other" })
+      });
+    `;
+    const result = fullPipeline(code);
+    expect(result.errors).toHaveLength(0);
+
+    const entries = Object.values(result.manifest);
+    const pluralEntry = entries.find(
+      (e) =>
+        typeof e === 'object' &&
+        e !== null &&
+        't' in e &&
+        (e as any).t === 'Plural'
+    ) as Record<string, unknown>;
+    expect(pluralEntry).toBeDefined();
+
+    const expected = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: { t: 'C2', i: 2, c: { t: 'strong', i: 3, c: 'one' } },
+        },
+        t: 'p',
+      },
+      c: { t: 'C2', i: 2, c: 'other' },
+    };
+    expect(pluralEntry).toEqual(expected);
+  });
+
+  it('Branch branch prop indices branch independently from children indices', () => {
+    // Same principle as Plural: each branch prop and children count independently.
+    // Children must be JSX (not a plain string) to trigger the counter increment.
+    //
+    // SOURCE: <Branch branch="x" a={<span>Option A</span>}><>Default</></Branch>
+    //
+    // EXPECTED jsxChildren:
+    //   {
+    //     "t": "Branch", "i": 1,
+    //     "d": { "b": { "a": { "t": "span", "i": 2, "c": "Option A" } }, "t": "b" },
+    //     "c": { "t": "C2", "i": 2, "c": "Default" }
+    //   }
+    //
+    // Both `a` prop and `children` start counting at i:2 independently.
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Fragment } from 'react';
+      import { Branch } from 'gt-react';
+      jsx(Branch, {
+        branch: "x",
+        a: jsx("span", { children: "Option A" }),
+        children: jsx(Fragment, { children: "Default" })
+      });
+    `;
+    const result = fullPipeline(code);
+    expect(result.errors).toHaveLength(0);
+
+    const entries = Object.values(result.manifest);
+    const branchEntry = entries.find(
+      (e) =>
+        typeof e === 'object' &&
+        e !== null &&
+        't' in e &&
+        (e as Record<string, unknown>).t === 'Branch'
+    ) as Record<string, unknown>;
+    expect(branchEntry).toBeDefined();
+
+    const expected = {
+      t: 'Branch',
+      i: 1,
+      d: {
+        b: {
+          a: { t: 'span', i: 2, c: 'Option A' },
+        },
+        t: 'b',
+      },
+      c: { t: 'C2', i: 2, c: 'Default' },
+    };
+    expect(branchEntry).toEqual(expected);
+  });
 });

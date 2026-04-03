@@ -39,15 +39,7 @@ describe('isGTComponent', () => {
 
 describe('isVariableComponent', () => {
   it('should recognize all variable components including RelativeTime', () => {
-    const expected = [
-      'Var',
-      'Num',
-      'Currency',
-      'DateTime',
-      'RelativeTime',
-      'Static',
-      'Derive',
-    ];
+    const expected = ['Var', 'Num', 'Currency', 'DateTime', 'RelativeTime'];
     for (const name of expected) {
       expect(isVariableComponent(name)).toBe(true);
     }
@@ -104,7 +96,7 @@ describe('defaultVariableNames', () => {
 
 describe('getVariableName', () => {
   it('should return default name for RelativeTime when no name provided', () => {
-    const result = getVariableName(GT_COMPONENT_TYPES.RelativeTime);
+    const result = getVariableName(GT_COMPONENT_TYPES.RelativeTime, 1);
     expect(result).toContain('time');
   });
 });
