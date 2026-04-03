@@ -27,6 +27,6 @@ function Var<T extends ReactNode>({
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */
 Var._gtt = 'variable-variable';
-GtInternalVar._gtt = 'variable-variable-injected';
+GtInternalVar._gtt = 'variable-variable-automatic';
 
 export { GtInternalVar, Var };

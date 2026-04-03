@@ -481,7 +481,7 @@ Instead of relying on the compiler to never emit nested \_T, the **runtime remov
 The function uses a `derivationDepth` counter:
 - Entering `<Derive>` or `<Static>` increments the depth
 - When depth > 0 and an auto-injected \_T is encountered, it is unwrapped (replaced by its children)
-- User-written `<T>` components are never removed (distinguished by the `_gtt` transformation tag: `'translate-client'` vs `'translate-client-injected'`)
+- User-written `<T>` components are never removed (distinguished by the `_gtt` transformation tag: `'translate-client'` vs `'translate-client-automatic'`)
 
 ### Runtime solution: `renderVariable()` removes \_Var
 

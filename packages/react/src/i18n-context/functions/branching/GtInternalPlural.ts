@@ -44,6 +44,6 @@ function GtInternalPlural(props: {
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */
 Plural._gtt = 'plural';
-GtInternalPlural._gtt = 'plural-injected';
+GtInternalPlural._gtt = 'plural-automatic';
 
 export { GtInternalPlural, Plural };

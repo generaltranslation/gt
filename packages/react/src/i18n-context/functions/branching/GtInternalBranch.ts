@@ -41,6 +41,6 @@ function GtInternalBranch(props: {
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */
 Branch._gtt = 'branch';
-GtInternalBranch._gtt = 'branch-injected';
+GtInternalBranch._gtt = 'branch-automatic';
 
 export { GtInternalBranch, Branch };

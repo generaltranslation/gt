@@ -40,7 +40,7 @@ function T(
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */
 T._gtt = 'translate-client';
-GtInternalTranslateJsx._gtt = 'translate-client-injected';
+GtInternalTranslateJsx._gtt = 'translate-client-automatic';
 
 export { GtInternalTranslateJsx, T };
 

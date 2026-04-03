@@ -22,6 +22,6 @@ function GtInternalDerive<T extends ReactNode>({
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */
 Derive._gtt = 'derive';
-GtInternalDerive._gtt = 'derive-injected';
+GtInternalDerive._gtt = 'derive-automatic';
 
 export { GtInternalDerive, Derive };
