@@ -1578,4 +1578,155 @@ describe('auto JSX injection simulation', () => {
       expect(varSlotWithoutTag).toBeUndefined();
     });
   });
+
+  // ================================================================ //
+  //  9. TERNARY JSX IN BRANCH CONTENT PROP — inner _T extraction
+  // ================================================================ //
+
+  describe('ternary JSX in Branch content prop', () => {
+    it('ternary with JSX branches in Branch prop — inner elements are extracted as independent translation units', () => {
+      // SOURCE:
+      //   <div>
+      //     <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
+      //       Fallback
+      //     </Branch>
+      //   </div>
+      //
+      // INSERTION:
+      //   <div>
+      //     <_T>
+      //       <Branch branch="mode"
+      //         summary={<_Var>{flag ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>
+      //         Fallback
+      //       </Branch>
+      //     </_T>
+      //   </div>
+      //
+      // The ternary is a dynamic expression in a content prop → _Var wrapped.
+      // _Var is auto-inserted, so JSX inside it is still eligible for _T (Rule 14).
+      // Each <p> branch contains text → each gets independent _T → each extracted.
+      //
+      // EXPECTED: 3 translation entries:
+      //   1. Branch structure with summary as variable slot
+      //   2. "Option A" (from inner _T around <p>Option A</p>)
+      //   3. "Option B" (from inner _T around <p>Option B</p>)
+      //
+      // BUG: CLI currently only extracts the Branch structure (1 entry).
+      //      The inner <p> elements inside the ternary are not discovered.
+      const code = `
+        import { Branch } from "gt-react";
+        export default function Page() {
+          const flag = true;
+          return (
+            <div>
+              <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
+                Fallback
+              </Branch>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      // Should have 3 entries: Branch structure + "Option A" + "Option B"
+      expect(result.updates.length).toBe(3);
+
+      // Verify the inner translation entries exist
+      const sources = result.updates.map((u) =>
+        typeof u.source === 'string' ? u.source : JSON.stringify(u.source)
+      );
+      expect(sources).toContain('Option A');
+      expect(sources).toContain('Option B');
+    });
+
+    it('ternary with JSX branches in Branch prop — inner _T found via scope.crawl (no reparse)', () => {
+      // This test simulates the real createInlineUpdates pipeline which uses
+      // scope.crawl() on the mutated AST instead of generate+reparse.
+      // The inner _T elements must be discoverable through the binding's
+      // referencePaths after scope.crawl().
+      const code = `
+        import { Branch } from "gt-react";
+        export default function Page() {
+          const flag = true;
+          return (
+            <div>
+              <Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>
+                Fallback
+              </Branch>
+            </div>
+          );
+        }
+      `;
+      const ast = parse(code, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT];
+      const pass1Result = getPathsAndAliases(ast, pkgs);
+      const importAliases = { ...pass1Result.importAliases };
+      for (const { localName, originalName } of pass1Result.translationComponentPaths) {
+        importAliases[localName] = originalName;
+      }
+
+      ensureTAndVarImported(ast, importAliases);
+      autoInsertJsxComponents(ast, importAliases);
+
+      // Simulate createInlineUpdates: scope.crawl() on mutated AST (NO reparse)
+      traverse(ast, {
+        Program(programPath) {
+          programPath.scope.crawl();
+        },
+      });
+
+      const refreshed = getPathsAndAliases(ast, pkgs);
+
+      // The binding for GtInternalTranslateJsx should include inner _T refs
+      let refCount = 0;
+      for (const { path, originalName, localName } of refreshed.translationComponentPaths) {
+        if (originalName !== INTERNAL_TRANSLATION_COMPONENT) continue;
+        const binding = path.scope.bindings[localName];
+        refCount = binding?.referencePaths?.filter(
+          (r) => t.isJSXOpeningElement(r.parent)
+        ).length ?? 0;
+      }
+
+      // 3 opening elements: outer _T + inner _T(Option A) + inner _T(Option B)
+      expect(refCount).toBe(3);
+    });
+
+    it('ternary with JSX branches in Plural form prop — inner elements are extracted', () => {
+      // Same pattern but with Plural: form prop values containing ternary JSX
+      //
+      // SOURCE:
+      //   <div>
+      //     <Plural n={n} one={flag ? <b>single</b> : <b>solo</b>} other="many" />
+      //   </div>
+      //
+      // EXPECTED: 3 entries: Plural structure + "single" + "solo"
+      const code = `
+        import { Plural } from "gt-react";
+        export default function Page() {
+          const n = 1;
+          const flag = true;
+          return (
+            <div>
+              <Plural n={n} one={flag ? <b>single</b> : <b>solo</b>} other="many" />
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      expect(result.updates.length).toBe(3);
+
+      const sources = result.updates.map((u) =>
+        typeof u.source === 'string' ? u.source : JSON.stringify(u.source)
+      );
+      expect(sources).toContain('single');
+      expect(sources).toContain('solo');
+    });
+  });
 });

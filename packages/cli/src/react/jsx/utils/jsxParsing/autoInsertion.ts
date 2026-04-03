@@ -384,10 +384,10 @@ function processOpaqueComponentProps({
     }
   }
 
-  // Mark all descendant JSX in children and props as processed
-  markDescendantJsx(path, processedNodes);
-
-  if (!insideAutoT) return;
+  if (!insideAutoT) {
+    markDescendantJsx(path, processedNodes);
+    return;
+  }
 
   const ctx: InsertionContext = {
     insideAutoT: true,
@@ -397,7 +397,9 @@ function processOpaqueComponentProps({
     varLocalName,
   };
 
-  // Wrap dynamic prop values in <Var>, skipping control props
+  // Wrap dynamic prop values in <Var>, skipping control props.
+  // This must happen BEFORE markDescendantJsx so that JSX inside auto-inserted
+  // _Var wrappers stays unmarked for the top-level visitor to process independently.
   const attrs = path.get('openingElement').get('attributes');
   for (const attrPath of attrs) {
     if (!attrPath.isJSXAttribute()) continue;
@@ -439,6 +441,10 @@ function processOpaqueComponentProps({
       processedNodes.add(varWrapper);
     }
   }
+
+  // Mark remaining descendant JSX as processed, but skip auto-inserted nodes
+  // so the top-level visitor can still discover JSX inside _Var wrappers
+  markDescendantJsx(path, processedNodes);
 }
 
 function isControlProp(
@@ -571,9 +577,19 @@ function markDescendantJsx(
 ): void {
   path.traverse({
     JSXElement(childPath) {
+      // Don't mark JSX inside auto-inserted _Var — the top-level visitor
+      // needs to find and process those independently
+      if (autoInsertedNodes.has(childPath.node)) {
+        childPath.skip();
+        return;
+      }
       processedNodes.add(childPath.node);
     },
     JSXFragment(childPath) {
+      if (autoInsertedNodes.has(childPath.node)) {
+        childPath.skip();
+        return;
+      }
       processedNodes.add(childPath.node);
     },
   });
